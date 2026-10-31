@@ -104,7 +104,7 @@ class StructureTaskTests(unittest.TestCase):
     def test_registered_deadline_not_renewed(self):
         self.register();original=self.state();store=t.TaskStore(self.config,self.service.config_fingerprint)
         with patch('human_eye_plugin.structure_task.time.perf_counter_ns',return_value=original['deadline_ns']):
-            with self.assertRaisesRegex(ValueError,'expired'): 
+            with self.assertRaisesRegex(ValueError,'expired'):
                 with store.locked():pass
         self.assertEqual(self.state()['deadline_ns'],original['deadline_ns'])
 
