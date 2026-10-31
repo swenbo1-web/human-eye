@@ -1,0 +1,40 @@
+{
+  "description": "Human-Eye structured 3D routing example; configure a real scene connector before activation.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/hefe/examples/agents/hook_entry.py\" --agent codex --config \"D:/hefe/examples/agents/router-config.json\" --spatial-tool mcp__spatial_host__transform",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^mcp__spatial_host__transform$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/hefe/examples/agents/hook_entry.py\" --agent codex --config \"D:/hefe/examples/agents/router-config.json\" --spatial-tool mcp__spatial_host__transform",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^mcp__spatial_host__transform$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"D:/hefe/examples/agents/hook_entry.py\" --agent codex --config \"D:/hefe/examples/agents/router-config.json\" --spatial-tool mcp__spatial_host__transform",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
