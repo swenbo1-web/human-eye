@@ -179,7 +179,7 @@ def _request(operation):
                     task_context=task_context,
                     include_image=None if operation == 'status' else
                         kwargs.get('include_image', operation not in {
-                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment'})) as trace:
+                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure'})) as trace:
                 if self.request_budget_s is not None:
                     annotate(request_budget_s=self.request_budget_s,
                         request_budget_scope='service_entry_to_precommit_checkpoints_not_hard_realtime')
@@ -1117,6 +1117,15 @@ class LiveSpatialService:
         self.record_event("transform", session_id=session_id, status=result["status"],
                           executed=result.get("executed"), verified=result.get("verified"))
         return result
+
+    @_request('mesh_structure')
+    def observe_mesh_structure(self, session_id, object_id, *,
+                               categories=('boundary_edges','loose_edges','isolated_vertices'),
+                               include_image=False, task_context=None):
+        """Private M1 raw observation; public MCP/Hook adoption has its own gate."""
+        if include_image is not False:raise ValueError('Raw structure observation has no images')
+        from .mesh_structure_service import observe
+        return observe(self,session_id,object_id,categories)
 
     @_request('clearance_segment')
     def run_clearance_segment(self, session_id, request_id, request, *, execute=False,

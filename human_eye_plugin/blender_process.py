@@ -178,6 +178,15 @@ class BlenderProcessHost:
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
 
+    def mesh_structure_capabilities(self):
+        if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
+        return self._request('mesh_structure_capabilities',{})
+
+    def observe_mesh_structure(self, request_id, object_id, categories, deadline_ns):
+        if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
+        return self._request('observe_mesh_structure',dict(request_id=request_id,object_id=object_id,
+                             categories=categories,deadline_ns=deadline_ns))
+
     def native_observation_capabilities(self):
         value=self._capabilities.get('native_observation_capabilities')
         if value is None:return None

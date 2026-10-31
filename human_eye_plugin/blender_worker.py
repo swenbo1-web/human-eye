@@ -139,6 +139,13 @@ def run_worker(root: Path) -> None:
                                       ('native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'))) else None}
             elif command == "capture":
                 result = host.capture_scene()
+            elif command == 'mesh_structure_capabilities':
+                if params:raise ValueError('Raw mesh capabilities accepts no arguments')
+                result=host.mesh_structure_capabilities()
+            elif command == 'observe_mesh_structure':
+                if set(params)!={'request_id','object_id','categories','deadline_ns'}:
+                    raise ValueError('Invalid typed raw mesh observation arguments')
+                result=host.observe_mesh_structure(**params)
             elif command in ('native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'):
                 if getattr(host,'native_observation_protocol',None)!=NATIVE_OBSERVATION_PROTOCOL:
                     raise ValueError('Typed readonly native observation is unavailable')

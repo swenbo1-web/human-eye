@@ -57,6 +57,7 @@ _READONLY_DEPENDENCY_SHA256 = {
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
+_RAW_MESH_SHA256 = '6e7e5cb0502c1d1a036767a13821ac3a0a8f8e34d4fdb14a2e5d9e23c9fe7e2a'
 
 
 def _hex_string(value, length):
@@ -564,6 +565,34 @@ class BlenderSceneHost:
                     'independent_physical_measurement': False, 'external_edit_history_proven': False,
                     'execution_authority': False}}
         return scene
+
+    def _raw_mesh_module(self):
+        """Independent pinned raw reader; old native dependency pins stay fixed."""
+        from pathlib import Path
+        source=Path(__file__).resolve().with_name('mesh_structure.py')
+        if source.resolve()!=source:raise BlenderHostError('raw_mesh_source_path_changed')
+        with source.open('rb') as stream:raw=stream.read(_READONLY_SOURCE_LIMIT+1)
+        if len(raw)>_READONLY_SOURCE_LIMIT or hashlib.sha256(raw).hexdigest()!=_RAW_MESH_SHA256:
+            raise BlenderHostError('raw_mesh_source_mismatch')
+        module=getattr(self,'_raw_mesh_module_cache',None)
+        if module is None:
+            module=self._readonly_checked_module(source,raw,'_human_eye_raw_mesh')
+            self._raw_mesh_module_cache=module
+        return module
+
+    def mesh_structure_capabilities(self):
+        module=self._raw_mesh_module()
+        return {'protocol':module.PROTOCOL,'supported_categories':list(module.SUPPORTED),
+                'helper_sha256':_RAW_MESH_SHA256,'process_id':os.getpid(),
+                'clock':self._readonly_clock_module().counter_descriptor(),
+                'read_only':True,'execution_authority':False,'images':False}
+
+    def observe_mesh_structure(self, request_id, object_id, categories, deadline_ns):
+        """Single-target structural facts; never call the pair/render/write path."""
+        self._main_thread()
+        with self._lock:
+            return self._raw_mesh_module().observe_raw(self,object_id,request_id=request_id,
+                categories=categories,deadline_ns=deadline_ns)
 
     def capture_scene(self):
         """Read evaluated world geometry; raises if collision coverage is incomplete."""
