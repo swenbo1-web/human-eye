@@ -45,6 +45,9 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode')=='mesh_structure':
+        from .structure_task import query as validate_structure_query
+        return validate_structure_query(query)
     if query is None:
         query = {}
     if not isinstance(query, dict) or set(query) - {'mode', 'object_ids', 'max_exact_pairs', 'visual_diagnostic', 'label_object_ids', 'alignment_evidence', 'support_plane_discovery', 'native_visual'}:

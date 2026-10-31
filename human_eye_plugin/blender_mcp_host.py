@@ -39,7 +39,8 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
-_READONLY_COMMANDS = _OBSERVATION_COMMANDS | {'capture', 'capture_evidence'}
+_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','patch_observation_capabilities','observe_patch'})
+_READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
 
 
 class _ReadonlyPreconnectUnavailable(HostTransportError):
@@ -193,6 +194,22 @@ class BlenderMCPHost:
         _validate_native_observation_request(request_id,diagnostic=True)
         return self._request('last_readonly_native_audit',{'request_id':request_id})
 
+    def mesh_structure_capabilities(self):
+        return self._request('mesh_structure_capabilities',{})
+
+    def observe_mesh_structure(self,request_id,object_id,categories,deadline_ns):
+        return self._request('observe_mesh_structure',dict(request_id=request_id,object_id=object_id,
+            categories=categories,deadline_ns=deadline_ns))
+
+    def patch_observation_capabilities(self):
+        value=self._request('patch_observation_capabilities',{})
+        _validate_native_observation_capabilities(value['native'],source=self.source)
+        return value
+
+    def observe_patch(self,request_id,object_id,patch,deadline_ns):
+        return self._request('observe_patch',dict(request_id=request_id,object_id=object_id,
+            patch=patch,deadline_ns=deadline_ns))
+
     def begin_motion_goal(self, goal_id, focal_id, reference_id, limits=None):
         return self._request('motion_begin', {'goal_id':goal_id, 'focal_id':focal_id,
                                              'reference_id':reference_id, 'limits':limits})
@@ -230,6 +247,8 @@ class BlenderMCPHost:
         return self._request("apply", params)
 
     def _code(self, command, params, request_id):
+        if command in _STRUCTURE_COMMANDS:
+            return self._structure_code(command,params,request_id)
         if command in _OBSERVATION_COMMANDS:
             return self._observation_code(command,params,request_id)
         if command in {'capture_evidence', 'motion_begin', 'motion_status', 'motion_end'}:
@@ -338,6 +357,42 @@ class BlenderMCPHost:
             "                if set(_request['params'])!={'request_id'}: raise ValueError('Invalid native audit arguments')",
             "                _result = _host.last_readonly_native_audit(**_request['params'])",
             "            else: raise ValueError('Unsupported fixed native observation command')",
+            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'result':_result}",
+            'except Exception as _exc:',
+            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'error':{'type':type(_exc).__name__,'message':str(_exc)[:2000],'mutation_uncertain':False}}",
+            'print('+repr(RPC_PREFIX)+" + _json.dumps(_envelope,ensure_ascii=True,allow_nan=False,separators=(',',':')))",
+        ])
+
+    def _structure_code(self,command,params,request_id):
+        """A separate pinned, typed read template; old template bytes stay fixed."""
+        required={'mesh_structure_capabilities':set(),'patch_observation_capabilities':set(),
+            'observe_mesh_structure':{'request_id','object_id','categories','deadline_ns'},
+            'observe_patch':{'request_id','object_id','patch','deadline_ns'}}
+        if command not in required or type(params) is not dict or set(params)!=required[command]:
+            raise ValueError('Invalid fixed structure observation command')
+        request=json.dumps(dict(id=request_id,command=command,params=params),ensure_ascii=True,
+            allow_nan=False,separators=(',',':'))
+        if len(request.encode('utf8'))>16384:raise ValueError('Structure observation request exceeds 16384 bytes')
+        return '\n'.join([
+            'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
+            '_request = _json.loads('+repr(request)+')',
+            'try:',
+            '    from pathlib import Path as _Path',
+            '    _source = _Path('+repr(str(self.source))+')',
+            "    if _source.resolve()!=_source: raise ValueError('Readonly host source escaped its fixed root')",
+            "    with _source.open('rb') as _stream: _source_bytes = _stream.read(512*1024+1)",
+            '    _source_sha = _hl.sha256(_source_bytes).hexdigest()',
+            '    if len(_source_bytes)>512*1024 or _source_sha!='+repr(self._readonly_host_source_sha256)+": raise ValueError('Readonly host source differs from the fixed connector snapshot')",
+            "    _spec = _iu.spec_from_file_location('_human_eye_blender_structure_read',str(_source))",
+            "    if _spec is None or _spec.loader is None: raise RuntimeError('Trusted structure host unavailable')",
+            '    _module = _iu.module_from_spec(_spec)',
+            "    exec(compile(_source_bytes,str(_source),'exec',dont_inherit=True),_module.__dict__)",
+            '    _module._READONLY_LOADED_HOST_SHA256 = _source_sha',
+            '    _host = _module.BlenderSceneHost(bpy_module=bpy,execution_metadata=True,identity_metadata=True)',
+            '    _allowed = '+repr({key:sorted(value) for key,value in required.items()}),
+            "    if _request['command'] not in _allowed or set(_request['params'])!=set(_allowed[_request['command']]): raise ValueError('Invalid fixed structure arguments')",
+            '    with _cl.redirect_stdout(_io.StringIO()):',
+            "        _result = getattr(_host,_request['command'])(**_request['params'])",
             "    _envelope = {'protocol_version':'1.0','id':_request['id'],'result':_result}",
             'except Exception as _exc:',
             "    _envelope = {'protocol_version':'1.0','id':_request['id'],'error':{'type':type(_exc).__name__,'message':str(_exc)[:2000],'mutation_uncertain':False}}",

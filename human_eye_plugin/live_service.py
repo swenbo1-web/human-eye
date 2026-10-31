@@ -186,7 +186,7 @@ def _request(operation):
                 with span('service.' + operation, kind='cpu'):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
-                    if operation in {"observe", "preview", "transform"}:
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind')!='structure_task':
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -814,6 +814,11 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode']=='mesh_structure':
+            if goal is not None or reference_id is not None or scene_delta is not None:
+                raise ValueError('Structure task does not accept pair goals, reference objects or scene deltas')
+            from .structure_task_service import observe
+            return observe(self,session_id,query,include_image=include_image,focal_id=focal_id)
         if query.get('alignment_evidence') is False and include_image:
             raise ValueError('alignment_evidence=false requires include_image=false')
         scene_delta = validate_scene_delta_request(scene_delta)
