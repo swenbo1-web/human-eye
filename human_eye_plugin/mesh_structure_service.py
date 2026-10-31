@@ -133,19 +133,21 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
          'structure_coverage_completed')
     unknown=coverage['unclassified'];need(type(unknown) is dict,'structure_unclassified_fields')
     for category,row in unknown.items():
-        need(category in categories and category in ('nonmanifold_vertices','degenerate_polygons')
+        need(category in categories and category in ('nonmanifold_vertices','degenerate_polygons','winding_conflicts')
              and type(row) is dict and set(row)=={'count','source_indices','reasons'},'structure_unclassified_fields')
-        extent=counts['vertices' if category=='nonmanifold_vertices' else 'polygons'];ids=row['source_indices']
+        extent=counts[{'nonmanifold_vertices':'vertices','degenerate_polygons':'polygons','winding_conflicts':'edges'}[category]]
+        ids=row['source_indices']
         need(integer(row['count'],1,extent) and type(ids) is list and len(ids)==min(64,row['count'])
              and all(integer(i,0,extent-1) for i in ids) and sorted(set(ids))==ids,'structure_unclassified_indices')
-        reasons=(('duplicate_face_link_ambiguous',) if category=='nonmanifold_vertices' else
-                 ('ngon_predicate_arity_budget','nonplanar_ngon','non_simple_ngon'))
+        reasons={'nonmanifold_vertices':('duplicate_face_link_ambiguous',),
+                 'degenerate_polygons':('ngon_predicate_arity_budget','nonplanar_ngon','non_simple_ngon'),
+                 'winding_conflicts':('nonmanifold_edge_orientation_ambiguous',)}[category]
         need(type(row['reasons']) is list and bool(row['reasons'])
              and all(type(x) is str and x in reasons for x in row['reasons'])
              and sorted(set(row['reasons']))==row['reasons'],'structure_unclassified_reasons')
         need(checks[category]['state']=='partial' and checks[category]['reason']=='predicate_domain_incomplete'
              and checks[category]['scanned']==counts,'structure_unclassified_state')
-        known={i for region in checks[category]['regions'] for i in region}
+        known={i for p in patches if p['category']==category for i in p['source_indices']}
         need(not known.intersection(ids),'structure_known_unknown_overlap')
     for category,record in checks.items():
         need((record['reason']=='predicate_domain_incomplete')==(category in unknown),'structure_unclassified_coverage')

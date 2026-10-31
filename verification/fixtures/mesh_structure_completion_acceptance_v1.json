@@ -1,0 +1,26 @@
+{
+  "schema": "mesh-structure-completion-acceptance-v1",
+  "stage": "M1-02-category-completion",
+  "new_categories": ["duplicate_positions", "duplicate_polygons", "winding_conflicts"],
+  "policies": {
+    "duplicate_positions": "exact numeric equality of all three raw local coordinate values; signed zero and equal int/float values equal; no rounding, tolerance, scaling or transform before grouping",
+    "duplicate_position_clusters": "one equivalence class of two or more source vertex indices; no connectivity merge",
+    "duplicate_polygons": "same original vertex-index cycle modulo cyclic rotation and reversal; equal vertex sets with different cycles or coincident geometry with different indices are not duplicate polygons",
+    "duplicate_polygon_clusters": "one full equivalence class of two or more source polygon indices; do not merge classes sharing an edge",
+    "winding_conflicts": "exactly two distinct raw polygon incidents traverse a source edge in the same direction; direction is source-index order, independent of coordinate degeneracy, edge storage orientation or outward normal",
+    "winding_unknown": "edges with more than two polygon incidents are unclassified with original edge index prefix and nonmanifold_edge_orientation_ambiguous reason; zero or one incident has no pairwise conflict",
+    "winding_clusters": "connected components of flagged original edges only; do not connect through unclassified edges",
+    "unknown_coexistence": "retain known flagged edge groups, total null and category partial when any edge is unclassified; do not hide duplicate-face winding facts because vertex links are unknown",
+    "positions": "existing source-bound full-patch local/world bounds and witness; duplicate position vertex / duplicate polygon face / winding edge element kinds",
+    "default": "legacy three categories unchanged; new capabilities explicitly requested",
+    "protocol": "retain v2 shape, advance fixed algorithm revision and capability/helper SHA together",
+    "excluded": "no near-duplicate welding, outwardness, global orientability, damage inference, geometry modification or repair"
+  },
+  "quality": {"fixed_in_domain_false_positive": 0, "fixed_in_domain_false_negative": 0, "unknown": "keep partial known-fact rows and explicit unknown rows in full task accounting; never count as normal"},
+  "invariants": ["vertex_edge_polygon_order_mapping", "whole_mesh_winding_reversal", "positive_unit_change", "no_welding", "no_geometry_writes"],
+  "budgets": "all existing M1-01 work/count/bytes/original deadline limits unchanged; oversized equivalence classes omitted whole",
+  "old_large_grid_cost_gate": "failed_frozen_not_rerun",
+  "nine_category_full_cost": "not_yet_accepted",
+  "public_mcp_installation": false,
+  "formal_model_trials": 0
+}

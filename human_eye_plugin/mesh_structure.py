@@ -1,8 +1,8 @@
 """Bounded static raw-mesh facts. No triangulation, repair or action authority.
 
 Dependency-free so the exact same source can run inside Blender's typed host.
-Surface links, finite degeneracy predicates and source-bound positions extend
-the first three facts. A boundary is not a damage or visibility diagnosis.
+Nine finite structural predicates retain original indices and source-bound
+positions. A boundary is not a damage or visibility diagnosis.
 """
 from __future__ import annotations
 import hashlib
@@ -14,15 +14,20 @@ from fractions import Fraction
 
 PROTOCOL = 'raw-mesh-structure-v2'
 DEFAULT_CATEGORIES = ('boundary_edges', 'loose_edges', 'isolated_vertices')
-SUPPORTED = DEFAULT_CATEGORIES + ('nonmanifold_edges','nonmanifold_vertices','degenerate_polygons')
-EDGE_CATEGORIES = frozenset(('boundary_edges','loose_edges','nonmanifold_edges'))
-VERTEX_CATEGORIES = frozenset(('isolated_vertices','nonmanifold_vertices'))
-ALGORITHM = {'revision':'raw-topology-link-degeneracy-v1',
+SUPPORTED = DEFAULT_CATEGORIES + ('nonmanifold_edges','nonmanifold_vertices','degenerate_polygons',
+    'duplicate_positions','duplicate_polygons','winding_conflicts')
+EDGE_CATEGORIES = frozenset(('boundary_edges','loose_edges','nonmanifold_edges','winding_conflicts'))
+VERTEX_CATEGORIES = frozenset(('isolated_vertices','nonmanifold_vertices','duplicate_positions'))
+ALGORITHM = {'revision':'raw-topology-nine-facts-v1',
     'vertex_link':'connected_multigraph_cycle_or_path_with_surface_wire_nodes',
     'duplicate_face_link':'unclassified_incident_vertices',
     'degeneracy':'exact_collinearity_or_relative_near_triangle; other_ngons_simple_exactly_planar_max64',
     'triangle_relative_squared_threshold':'2^-80',
     'near_ngon_quality':'not_checked',
+    'duplicate_positions':'exact_raw_local_numeric_value_equivalence; no_tolerance_or_welding',
+    'duplicate_polygons':'original_index_cycle_modulo_rotation_and_reversal_equivalence',
+    'winding_conflicts':'two_incident_same_direction; not_outwardness_or_global_orientability',
+    'winding_nonmanifold':'unclassified_source_edges_with_more_than_two_polygon_incidents',
     'positions':'binary64_forward_map_metres_not_certified_error_bound'}
 CATEGORIES = ('boundary_edges','nonmanifold_edges','nonmanifold_vertices',
     'isolated_vertices','loose_edges','duplicate_positions','degenerate_polygons',
@@ -215,13 +220,46 @@ def _vertex_components(selected, edges, budget):
     return groups
 
 
+def _canonical_polygon(polygon):
+    # Source validation guarantees unique indices within each polygon, so the
+    # minimum index selects the single cyclic origin without quadratic search.
+    first=polygon.index(min(polygon));cycle=polygon[first:]+polygon[:first]
+    return min(tuple(cycle),tuple([cycle[0]]+cycle[:0:-1]))
+
+
+def _duplicate_groups(raw, category, budget):
+    positions=category=='duplicate_positions';table=raw['vertices' if positions else 'polygons']
+    classes={}
+    for index,value in enumerate(table):
+        budget.consume(len(value)+1,'duplicate_equivalence')
+        # Python numeric tuple equality preserves the exact finite input value,
+        # including int/float equality and signed zero, without float coercion.
+        key=tuple(value) if positions else _canonical_polygon(value)
+        classes.setdefault(key,[]).append(index)
+    budget.consume(len(classes),'duplicate_classes')
+    return [indices for indices in classes.values() if len(indices)>1]
+
+
+def _winding_groups(prepared, budget):
+    raw=prepared['raw'];balance=[0]*len(raw['edges']);lookup=prepared['edge_lookup']
+    for polygon in raw['polygons']:
+        budget.consume(len(polygon),'winding_source_directions');previous=polygon[-1]
+        for v in polygon:
+            key=(previous,v) if previous<v else (v,previous)
+            balance[lookup[key]]+=1 if previous<v else -1;previous=v
+    budget.consume(len(balance),'winding_classification');selected=[];unknown=[]
+    for edge,count in enumerate(prepared['edge_use']):
+        if count>2:unknown.append(edge)
+        elif count==2 and abs(balance[edge])==2:selected.append(edge)
+    return _edge_components(selected,raw['edges'],budget),unknown
+
+
 def _vertex_link_groups(prepared, budget):
     raw=prepared['raw'];links=[{} for _ in raw['vertices']];face_use=[0]*len(links)
     canonical={};ambiguous=set()
     for polygon in raw['polygons']:
         budget.consume(len(polygon),'vertex_link_build')
-        first=polygon.index(min(polygon));cycle=polygon[first:]+polygon[:first]
-        key=min(tuple(cycle),tuple([cycle[0]]+cycle[:0:-1]))
+        key=_canonical_polygon(polygon)
         if key in canonical:ambiguous.update(polygon)
         else:canonical[key]=True
         for i,v in enumerate(polygon):
@@ -389,6 +427,11 @@ def analyze_prepared(prepared, *, task_id, categories=DEFAULT_CATEGORIES, budget
                 if unknown:unknown_reasons=['duplicate_face_link_ambiguous']
             elif category=='degenerate_polygons':
                 members,degenerate_kinds,unknown,unknown_reasons=_degenerate_groups(prepared,budget)
+            elif category in ('duplicate_positions','duplicate_polygons'):
+                members=_duplicate_groups(raw,category,budget)
+            elif category=='winding_conflicts':
+                members,unknown=_winding_groups(prepared,budget)
+                if unknown:unknown_reasons=['nonmanifold_edge_orientation_ambiguous']
             else:
                 budget.consume(counts['edges'],'edge_classification')
                 wanted=1 if category=='boundary_edges' else 0

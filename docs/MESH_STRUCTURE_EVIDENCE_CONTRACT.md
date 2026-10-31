@@ -116,3 +116,19 @@ M1-01冻结合同、有限支持域、独立oracle、跨层责任和原始读取
 - 位置：覆盖该patch全部源元素的全部顶点；局部米坐标为`raw × unit_scale`，世界米坐标为`(M_linear × raw + translation) × unit_scale`。提供两套包围界及一个源索引见证点；binary64前向计算不是认证测量误差界。非有限计算或预算耗尽保留明确unknown。
 
 新规则与11个独立夹具已在修改源码前冻结于`verification/fixtures/mesh_structure_topology_acceptance_v1.json`、`verification/mesh_structure_topology_fixtures.py`。原14类fixture与原数值门未改；本批25个owned场景和公共回归只支持声明域的正确性，不证明新六类计算已达到成本门、真实资产全覆盖或公开Codex已消费。重复位置、重复面、方向冲突尚未作为独立诊断类别交付；自交/参考损伤/骨骼继续not_checked。
+
+## 10. M1-02九类候选的当前语义
+
+上述第8、9节保留对应批次历史；当前在原v2字段结构上推进固定`algorithm.revision`至`raw-topology-nine-facts-v1`，能力声明和helper SHA同时更新。默认仍请求原三类；九类必须显式选择。新增算法不增加旧采集的求值/执行准入，也不开放公开MCP或Hook查询。
+
+| 类别 | 有限事实与聚类规则 | 不作的推断 |
+| --- | --- | --- |
+| `duplicate_positions` | 三个原始局部坐标逐值精确相等；正负零及数值相等的int/float等价，每组至少2个原顶点索引 | 不先转float/米制、变换、取整或容差合并；无近邻重复、焊接或损伤结论 |
+| `duplicate_polygons` | 原顶点索引环允许换起点或整体反向；每个完整等价类单独成组，即使两组共边也不合并 | 同顶点集合但不同环不是重复面；不同顶点索引的重合曲面不是此类事实 |
+| `winding_conflicts` | 恰有2个不同原面索引沿共边同向绕行；异常原边按自身连通性聚类 | 不判断应翻哪面、整体朝外或全局可定向性；零面积面也只报告索引方向事实 |
+
+边关联超过2个面时，该边方向归`unclassified`，原因`nonmanifold_edge_orientation_ambiguous`；0/1关联无成对冲突。已知冲突可与未知边共存，category为partial、总异常数null。未知边的前缀是原始edge索引，不是顶点/面索引；consumer按类别检查范围，并拒绝已知patch与未知索引重叠。重复面引起的顶点link未知，不抹掉该面的重复事实或可定义的共边方向事实。
+
+三类patch分别用vertex、polygon、edge源索引，沿用全部源顶点包围界及见证点。超过64成员的等价类整组省略，不返回前64个冒充完整组；计数、工作、输出字节及原deadline上限全部不变。新增14个独立oracle及规则在改运行源码前冻结于`verification/mesh_structure_completion_fixtures.py`、`verification/fixtures/mesh_structure_completion_acceptance_v1.json`；原始与上一批fixture不改。
+
+39个owned解析场景与实际固定worker私有消费支持声明域正确性；总架构M1仍缺问题区域图像、公开消费、任务累计账本及完整成本门。本批不提供几何写入、修复、学习模型或真实资产全域保证。下一项仅由主计划裁定。

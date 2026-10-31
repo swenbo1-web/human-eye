@@ -137,7 +137,7 @@ class StructureRuntimeTests(unittest.TestCase):
 
     def test_unimplemented_detector_is_not_reported_normal(self):
         with self.assertRaisesRegex(m.StructureRefused,'unsupported_diagnostic_categories'):
-            m.analyze_raw(raw_case(fixtures()[1]),identity(),task_id='t',categories=['winding_conflicts'])
+            m.analyze_raw(raw_case(fixtures()[1]),identity(),task_id='t',categories=['self_intersection'])
 
 
 if __name__=='__main__':unittest.main()
