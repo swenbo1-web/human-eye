@@ -58,6 +58,7 @@ _READONLY_DEPENDENCY_SHA256 = {
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
 _RAW_MESH_SHA256 = '30d63f1f6a84350229197a91ed257bc2b9214eb692a26b8d26db6b8b41a362b8'
+_PATCH_FOCUS_SHA256 = 'cd54ed3f2ea100b5cc7662a30523c5f6548c4315d73dc4047c3d93d337964bc8'
 
 
 def _hex_string(value, length):
@@ -593,6 +594,30 @@ class BlenderSceneHost:
         with self._lock:
             return self._raw_mesh_module().observe_raw(self,object_id,request_id=request_id,
                 categories=categories,deadline_ns=deadline_ns)
+
+    def _patch_focus_module(self):
+        from pathlib import Path
+        source=Path(__file__).resolve().with_name('patch_focus.py')
+        if source.resolve()!=source:raise BlenderHostError('patch_source_path_changed')
+        with source.open('rb') as stream:raw=stream.read(_READONLY_SOURCE_LIMIT+1)
+        if len(raw)>_READONLY_SOURCE_LIMIT or hashlib.sha256(raw).hexdigest()!=_PATCH_FOCUS_SHA256:
+            raise BlenderHostError('patch_source_mismatch')
+        module=getattr(self,'_patch_focus_module_cache',None)
+        if module is None:
+            module=self._readonly_checked_module(source,raw,'_human_eye_patch_focus')
+            self._patch_focus_module_cache=module
+        return module
+
+    def patch_observation_capabilities(self):
+        module=self._patch_focus_module()
+        return dict(protocol=module.PROTOCOL,helper_sha256=_PATCH_FOCUS_SHA256,
+            native=self.native_observation_capabilities(),read_only=True,execution_authority=False)
+
+    def observe_patch(self, request_id, object_id, patch, deadline_ns):
+        """Private one-target patch lease; never changes rigid execution admission."""
+        self._main_thread()
+        with self._lock:
+            return self._patch_focus_module().observe(self,object_id,patch,request_id,deadline_ns)
 
     def capture_scene(self):
         """Read evaluated world geometry; raises if collision coverage is incomplete."""

@@ -105,11 +105,11 @@ def _public_native_png(raw):
     return b''.join(kept)
 
 
-def _public_query(raw):
+def _public_query(raw, *, minimum_objects=2):
     _require(type(raw) is dict and raw.get('unit')=='m' and raw.get('coordinate_frame')=='world',
              'complete_common_native_query_required')
     _require(type(raw.get('revision')) is str and bool(raw['revision']), 'native_revision_required')
-    objects=raw.get('objects');_require(type(objects) is list and 2<=len(objects)<=256,'complete_native_objects_required')
+    objects=raw.get('objects');_require(type(objects) is list and minimum_objects<=len(objects)<=256,'complete_native_objects_required')
     result=[];ids=set()
     for obj in objects:
         _require(type(obj) is dict and set(_OBJECT_KEYS)<=set(obj),'complete_native_object_fields_required')
@@ -131,7 +131,7 @@ def _public_query(raw):
     return value
 
 
-def _validate_private_render_state(value, expected_mesh_names):
+def _validate_private_render_state(value, expected_mesh_names, *, minimum_objects=2):
     """Validate complete typed readback, without projecting it to model data."""
     fields={'schema_version','scope','scene_camera','scene_objects','global_objects','camera_datablocks',
         'active_object','selection','render','shading','image_settings','view_settings',
@@ -160,7 +160,7 @@ def _validate_private_render_state(value, expected_mesh_names):
                 identity(row['data'],nullable=True)
     inventory(value['scene_objects'],objects=True);inventory(value['global_objects'],objects=True)
     inventory(value['camera_datablocks'])
-    _require(len(value['scene_objects'])>=2, 'native_render_scene_inventory_empty')
+    _require(len(value['scene_objects'])>=minimum_objects, 'native_render_scene_inventory_empty')
     names={row['identity']['name'] for row in value['scene_objects']}
     _require(set(expected_mesh_names)<=names, 'native_render_scene_mesh_coverage_incomplete')
     global_ids={_json(row['identity']) for row in value['global_objects']}
@@ -230,7 +230,7 @@ def _validate_private_render_state(value, expected_mesh_names):
     return value
 
 
-def _validated_render_audit(audit,view,mesh_names,previous_sequence):
+def _validated_render_audit(audit,view,mesh_names,previous_sequence, *, minimum_objects=2):
     _require(type(audit) is dict and audit.get('schema_version')=='native-render-audit-v1'
         and audit.get('protocol')==RENDER_AUDIT_PROTOCOL and audit.get('status')=='completed'
         and audit.get('view')==view and audit.get('restored') is True
@@ -240,7 +240,8 @@ def _validated_render_audit(audit,view,mesh_names,previous_sequence):
     sequence=audit.get('sequence')
     _require(type(sequence) is int and sequence>previous_sequence,'native_render_audit_not_new')
     before,after=audit.get('before'),audit.get('after')
-    _validate_private_render_state(before,mesh_names);_validate_private_render_state(after,mesh_names)
+    _validate_private_render_state(before,mesh_names,minimum_objects=minimum_objects)
+    _validate_private_render_state(after,mesh_names,minimum_objects=minimum_objects)
     _require(_json(before)==_json(after),'native_render_private_state_not_restored')
     return copy.deepcopy(audit)
 
@@ -669,7 +670,7 @@ def validate_native_capabilities(value):
     return copy.deepcopy(value)
 
 
-def _readonly_evidence(raw, captured):
+def _readonly_evidence(raw, captured, *, minimum_objects=2):
     keys={'protocol','capture','native_scene','coherence'}
     _require(type(raw) is dict and set(raw)==keys
         and raw['protocol']=='native-pose-evidence-v1-20261030'
@@ -681,7 +682,7 @@ def _readonly_evidence(raw, captured):
         'execution_authority','read_only_evidence','read_only_evidence_protocol'}
     capture_digest=hashlib.sha256(json.dumps(captured,sort_keys=True,separators=(',',':'),
         ensure_ascii=False,allow_nan=False).encode('utf8')).hexdigest()
-    native=_public_query(raw['native_scene'])
+    native=_public_query(raw['native_scene'],minimum_objects=minimum_objects)
     _require(type(coherence) is dict and set(coherence)==fields
         and coherence['same_traversal'] is True and coherence['raw_original_mesh_verified'] is True
         and coherence['snapshot_not_history'] is True

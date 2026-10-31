@@ -187,6 +187,18 @@ class BlenderProcessHost:
         return self._request('observe_mesh_structure',dict(request_id=request_id,object_id=object_id,
                              categories=categories,deadline_ns=deadline_ns))
 
+    def patch_observation_capabilities(self):
+        if not self._default_worker:raise ValueError('Patch observation requires the fixed worker')
+        value=self._request('patch_observation_capabilities',{})
+        _validate_native_observation_capabilities(value['native'],
+            source=Path(__file__).resolve().with_name('blender_host.py'),process_id=self._process.pid)
+        return value
+
+    def observe_patch(self, request_id, object_id, patch, deadline_ns):
+        if not self._default_worker:raise ValueError('Patch observation requires the fixed worker')
+        return self._request('observe_patch',dict(request_id=request_id,object_id=object_id,
+                             patch=patch,deadline_ns=deadline_ns))
+
     def native_observation_capabilities(self):
         value=self._capabilities.get('native_observation_capabilities')
         if value is None:return None

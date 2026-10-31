@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-m1-nine-structure-facts-candidate-20261031"
+IMPLEMENTATION_REVISION = "v21-m1-planar-patch-candidate-20261101"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 

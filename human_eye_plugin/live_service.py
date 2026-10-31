@@ -1127,6 +1127,13 @@ class LiveSpatialService:
         from .mesh_structure_service import observe
         return observe(self,session_id,object_id,categories)
 
+    @_request('patch_observation')
+    def observe_patch(self, session_id, object_id, patch, *, include_image=True, task_context=None):
+        """Private M1-03 patch image candidate; public routing remains gated."""
+        if include_image is not True:raise ValueError('Patch observation is an explicit image request')
+        from .patch_observation import observe
+        return observe(self,session_id,object_id,patch)
+
     @_request('clearance_segment')
     def run_clearance_segment(self, session_id, request_id, request, *, execute=False,
                               include_image=False, task_context=None):
