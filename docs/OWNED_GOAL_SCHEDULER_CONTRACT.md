@@ -1,3 +1,5 @@
+> 文档角色（2026-10-31复核）：本文保留专项合同及当时验收记录，“源码候选/未安装/下一步”等描述只代表所述阶段。当前正式版本与已交付状态见 [PROGRESS](PROGRESS.md)，现行排期仅见 [唯一主计划](PRODUCT_ROADMAP.md)，设计取舍见 [架构分析](ARCHITECTURE_ANALYSIS.md)。本标识不扩展本文原有支持域，也不重标历史测试。
+
 当前为源码候选，未安装到当前聊天，也未新增默认自动动作 MCP 接口。入口为可信嵌入方的 `OwnedGoalScheduler(config_path, host, authority).run(ClearanceTaskSpec(...))`；固定无 UI 后台 typed Blender worker 是当前唯一支持的自动任务宿主。共享窗口与自定义 worker 不能声明相同覆盖能力。
 
 一个稳定的已认证任务事件只能对应一个父目标。嵌入方的 `TrustedTaskAuthority` 回调必须验证目标、原对象身份、原支撑三角形、引擎 build、进程与时钟域，并返回明确的 `TaskApproval`。模型 JSON、观察资格和历史授权记录都不能签发动作权限。Python capability 是可信同进程代码边界，不是对任意 Python 的沙箱或远程证明。

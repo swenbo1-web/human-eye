@@ -1,3 +1,5 @@
+> 文档角色（2026-10-31复核）：本文保留专项合同及当时验收记录，“源码候选/未安装/下一步”等描述只代表所述阶段。当前正式版本与已交付状态见 [PROGRESS](PROGRESS.md)，现行排期仅见 [唯一主计划](PRODUCT_ROADMAP.md)，设计取舍见 [架构分析](ARCHITECTURE_ANALYSIS.md)。本标识不扩展本文原有支持域，也不重标历史测试。
+
 # 共同原生入口与任务总账候选（2026-10-31）
 
 本批新增77源码候选，build `sha256:27c2ff862f47fe9656b862c8f2f3ced0dde3080367e19a0a8ee7d3e7bc246062`，SDK目录为 `.human-eye/releases/9.7.2+20261031.common.gateway.candidate.r1/`。当前聊天仍运行既有b77/76，身份和健康已核对；本批未激活新MCP入口。

@@ -2,7 +2,7 @@
 
 Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生 Blender 图像与受预算约束的有限刚体动作。目标是让 Agent 使用可核验的几何事实和合适的视图完成三维任务。
 
-当前落地优先面向Codex；总体目标、阶段依赖与验收出口见 [交付路线](docs/PRODUCT_ROADMAP.md)，已交付能力见 [项目进度](docs/PROGRESS.md)。
+当前落地优先面向Codex；总体目标、阶段依赖与验收出口以 [唯一主计划](docs/PRODUCT_ROADMAP.md) 为准，模块实现与技术取舍见 [架构分析](docs/ARCHITECTURE_ANALYSIS.md)，已交付能力见 [项目进度](docs/PROGRESS.md)。专项合同和历史报告中的“当前/下一步”属于当时阶段，不另行决定排期。
 
 ## 当前能力
 

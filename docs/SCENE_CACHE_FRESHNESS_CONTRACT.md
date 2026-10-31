@@ -1,3 +1,5 @@
+> 文档角色（2026-10-31复核）：本文保留专项合同及当时验收记录，“源码候选/未安装/下一步”等描述只代表所述阶段。当前正式版本与已交付状态见 [PROGRESS](PROGRESS.md)，现行排期仅见 [唯一主计划](PRODUCT_ROADMAP.md)，设计取舍见 [架构分析](ARCHITECTURE_ANALYSIS.md)。本标识不扩展本文原有支持域，也不重标历史测试。
+
 本批完成S1-B：底层alignment复检和gaze视线缓存的新鲜度源码候选。它接在上一批完整Mesh缓存守卫之后，未安装到当前聊天。相关代码为submodule_1_5_alignment_verifier.py和submodule_1_2_sub_frustum_gaze.py。
 
 调用alignment时，focal、reference以及所有供给scene成员都必须在生成复检缓存键前执行完整输入守卫。历史_last_crc_token不是当前数组仍未改变的证据。物体列表超过32项也完整参与键；重新排序、移除、同ID新实例、同尺寸拓扑/轴变更及显式失效都不能复用旧上下文。未变场景仍可命中已验证结果。
