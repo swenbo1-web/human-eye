@@ -3,7 +3,8 @@ from __future__ import annotations
 import base64,copy,json,time,uuid
 from . import mesh_structure as m, mesh_structure_service as raw_consumer
 from . import patch_observation as image_consumer
-from .structure_task import TaskStore,TaskRefused,require,query,digest,TEXT_RESERVATION
+from .structure_task import require,query,digest,TEXT_RESERVATION
+from .structure_task_control import consumption
 from .forward_deadline import counter_descriptor
 from .blender_host import _RAW_MESH_SHA256
 
@@ -54,11 +55,10 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
         value=_base('unsupported',session_id);value['reason']='structure_task_registration_required';return value
     with service._locked() as (legacy,runtime),service._observation_scope():
         if legacy.get('inflight') or runtime.status['quarantined']:return _base('host_quarantined',session_id)
-        store=getattr(service,'_structure_task_store',None)
-        if store is None:
-            store=TaskStore(service.config_path,service.config_fingerprint);service._structure_task_store=store
         remaining=service._remaining_request_budget()
-        with store.locked(timeout_s=20. if remaining is None else min(20.,remaining)) as state:
+        timeout=20. if remaining is None else min(20.,remaining)
+        with consumption(service,normalized,timeout) as store,store.locked(timeout_s=timeout) as state:
+            require(normalized.get('task_ref',state['task_id'])==state['task_id'],'task_ref_generation_mismatch')
             require(focal_id in (None,state['object_id']),'bound_object_cannot_change')
             # Caller labels and natural-language hints do not select a ledger.
             fingerprint=digest(dict(query=normalized,object_id=state['object_id'],include_image=include_image))

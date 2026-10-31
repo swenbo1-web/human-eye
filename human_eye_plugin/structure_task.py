@@ -17,7 +17,8 @@ STATE_BYTES=256*1024
 QUERY_SCHEMA={'type':'object','additionalProperties':False,'required':['mode','operation','request_id'],
     'properties':{'mode':{'const':'mesh_structure'},'operation':{'enum':['diagnose','patch']},
         'request_id':{'type':'string','minLength':1,'maxLength':128},
-        'patch_ref':{'type':'string','pattern':'^[a-f0-9]{32}$'}}}
+        'patch_ref':{'type':'string','pattern':'^[a-f0-9]{32}$'},
+        'task_ref':{'type':'string','pattern':'^[a-f0-9]{32}$'}}}
 
 
 class TaskRefused(ValueError):pass
@@ -41,13 +42,14 @@ def hex_id(value):return type(value) is str and len(value)==32 and all(c in '012
 
 
 def query(value):
-    require(type(value) is dict and not set(value)-{'mode','operation','request_id','patch_ref'}
+    require(type(value) is dict and not set(value)-{'mode','operation','request_id','patch_ref','task_ref'}
         and value.get('mode')=='mesh_structure' and value.get('operation') in ('diagnose','patch'),'query_fields')
     request=value.get('request_id')
     require(type(request) is str and 1<=len(request)<=128
         and all(c.isascii() and (c.isalnum() or c in '_.:-') for c in request),'request_id')
     if value['operation']=='patch':require(hex_id(value.get('patch_ref')),'patch_ref_required')
     else:require('patch_ref' not in value,'diagnose_has_no_patch_ref')
+    if 'task_ref' in value:require(hex_id(value['task_ref']),'invalid_task_ref')
     return dict(value)
 
 
@@ -62,8 +64,7 @@ def _config(path):
     return ledger,fingerprint
 
 
-def register(config_path, object_id, *, categories=None, limits=None):
-    """Explicit trusted local entry; not advertised by any model-facing tool."""
+def _registration_value(fingerprint,object_id,*,categories=None,limits=None):
     from .mesh_structure import SUPPORTED
     require(type(object_id) is str and 1<=len(object_id)<=256 and object_id.strip(),'object_id')
     categories=list(SUPPORTED) if categories is None else categories
@@ -72,22 +73,32 @@ def register(config_path, object_id, *, categories=None, limits=None):
     limits=dict(MAXIMA) if limits is None else dict(limits)
     require(set(limits)==set(MAXIMA) and all(integer(limits[k],0 if k in ('images','png_bytes') else 1,v)
         for k,v in MAXIMA.items()) and limits['text_bytes']>=TEXT_RESERVATION,'limits')
-    ledger,fingerprint=_config(config_path);now=time.perf_counter_ns();wall=time.time_ns()
+    now=time.perf_counter_ns();wall=time.time_ns()
     value=dict(schema=SCHEMA,task_id=uuid.uuid4().hex,config_fingerprint=fingerprint,object_id=object_id,
         categories=categories,limits=limits,created_ns=now,deadline_ns=now+limits['duration_s']*10**9,
         created_wall_ns=wall,deadline_wall_ns=wall+limits['duration_s']*10**9,owner=None,
         spent=dict(queries=0,images=0,png_bytes=0,text_bytes=0),confirmed=dict(images=0,png_bytes=0,text_bytes=0),
         requests={},refs={},inflight=None,stopped=False)
+    return value
+
+
+def register(config_path, object_id, *, categories=None, limits=None):
+    """Explicit trusted local entry; not advertised by any model-facing tool."""
+    from .agent_hooks import _read_object
+    require(not _read_object(Path(config_path)).get('structure_task_control_file'),'use_lifecycle_begin')
+    ledger,fingerprint=_config(config_path)
+    value=_registration_value(fingerprint,object_id,categories=categories,limits=limits)
     with _state_lock(ledger):
         require(not ledger.exists(),'registration_already_exists')
         _atomic_write(ledger,value,_buffered=True)
-    return dict(task_id=value['task_id'],object_id=object_id,limits=limits,execution_authority=False)
+    return dict(task_id=value['task_id'],object_id=object_id,limits=value['limits'],execution_authority=False)
 
 
 class TaskStore:
-    def __init__(self,config_path,config_fingerprint):
+    def __init__(self,config_path,config_fingerprint,*,ledger_path=None):
         self.path,self.fingerprint=_config(config_path)
         require(self.fingerprint==config_fingerprint,'loaded_config_changed')
+        if ledger_path is not None:self.path=Path(ledger_path).resolve()
         self.owner=uuid.uuid4().hex;self.poisoned=False
 
     def _write(self,value):

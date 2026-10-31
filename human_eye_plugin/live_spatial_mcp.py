@@ -61,6 +61,8 @@ _QUERY_SCHEMA = {
             "description":"mesh_structure only: consumes a trusted locally registered single-object task. diagnose requires include_image=false; patch requires a returned patch_ref. Caller labels cannot reset task limits."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
         "patch_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
+        "task_ref": {"type":"string","pattern":"^[a-f0-9]{32}$",
+            "description":"Required in locally controlled lifecycle mode; use the trusted begin handoff. Selects the active registered generation and never creates or renews a task."},
         "object_ids": {"type": "array", "items": copy.deepcopy(_ID_SCHEMA), "minItems": 1, "maxItems": 255, "uniqueItems": True},
         "label_object_ids": {"type": "array", "items": copy.deepcopy(_ID_SCHEMA), "minItems": 1, "maxItems": MAX_VISUAL_LABEL_IDS, "uniqueItems": True,
             "description": "Optional current full object IDs to prioritize in paired image observations. Separate from measurement object_ids; expands only the related annotation budget, up to six related labels plus A/B. Missing pair, unrequested image, occlusion or undersampling is reported explicitly; never an action permission."},

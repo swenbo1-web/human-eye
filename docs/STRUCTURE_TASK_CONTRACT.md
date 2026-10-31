@@ -48,3 +48,29 @@
 这些是小样本的完整RPC观察值，三RPC之和仍不包括登记、工具发现、客户端间隔及模型规划。旧私有工作流记录3次新进程各3轮，首次约382–795毫秒、后续约59–66毫秒；该基线未开production guards且不是相同stdio/TCP入口，不能与新值直接计算回退或加速。OS进程峰值、同口径完整任务成本及其他代表资产尚待验收，旧大网格成本失败保持。
 
 本批落实的是显式登记后的有限消费。它没有真实用户消息自动注册、新任务轮换或当前聊天安装验收；重启不会恢复旧任务，需要新的受信登记。相同权限本地代码仍能改写文件，截止检查是协作式检查而非OS硬实时抢占，构造/提交和模型读取也分别记录。未知、支持域和损伤语义不因接通MCP而升级。
+
+## 第二批实现前冻结：本机任务生命周期
+
+现有Hook从stdin读取JSON，当前实现未提供不可重放的宿主任务签发证明，不能用event中的turn/session或模型文字自动领取新额度。本批选择显式本机CLI，登记/结束不作为MCP工具暴露。可选配置`structure_task_control_file`启用稳定控制文件；旧`structure_task_file`单任务方式兼容。控制模式的查询必须带`task_ref`，它只是选择受信入口已经登记且当前活动的任务，不创建、切换、续期或恢复任务。
+
+本机入口提供begin/status/close。begin要求操作者提供registration_id及对象ID；登记ID仅保存摘要。同ID同参数返回原登记状态，同ID不同参数拒绝，关闭后的同ID不能重开。每个控制文件最多16次登记，不淘汰旧ID；到上限显式拒绝，避免无界历史或遗忘去重。活动任务必须先显式关闭才能新建，失败/到期不自动领取下一份预算。close保留原账本和未决预留，不能撤销已花费额度。
+
+控制文件固定侧锁贯穿一次实际观察，锁顺序为service→control→task；begin/close使用control→task，避免任务在观察中被切换。每个任务使用控制文件旁专属子目录内的随机世代账本。先持久保留登记ID，再写新账本，最后发布活动引用；任何中间失败保留pending，不自动重做或重置。状态读取不领取owner、不读Blender，也不把旧事实当当前观察；公开查询缺少/错/关闭/旧task_ref时调宿主前拒绝。新世代可由同一MCP进程消费，重启仍不能接管已经领取的旧世代。
+
+验收冻结：16/17上限、同ID重试/参数冲突/关闭后重试、活动冲突、错/旧/缺任务引用、真实双进程登记竞争、登记/关闭各发布点故障、原预算及重启、同一stdio进程跨两任务消费、零几何改动与原生像素质量。成本本轮只记录控制入口及完整调用，不新增无依据的性能通过宣称。正式安装、真实用户消息自动登记和正式模型试次仍单独待验。
+
+### 第二批用法与结果
+
+候选源码环境中，稳定配置同时保留`structure_task_file`并增加`structure_task_control_file`（例如`structure-control.json`）；控制模式不使用旧单任务文件创建预算。每个控制文件有独立的`.tasks`子目录，保存已关闭任务的原账本。以下命令由本机操作者执行，配置和对象ID以已核验值为准：
+
+```text
+python -m human_eye_plugin.structure_task_control --config <config.json> begin --registration-id <unique-local-id> --object-id <verified-object-id>
+python -m human_eye_plugin.structure_task_control --config <config.json> status
+python -m human_eye_plugin.structure_task_control --config <config.json> close --task-ref <returned-task-ref>
+```
+
+begin返回的query和include_image可作为Codex交接；其中request_id是一次观察的幂等键，后续新的观察使用新的request_id。控制模式每次诊断及patch查询都须带相同活动task_ref。引用不是权限凭据，模型不能据此新建任务；重启不能接管已消费的旧任务。关闭和status只报告任务状态，不认证当前场景。
+
+最终85运行源构建`307f6ed15e66bffd533bd858321dbb00563fef0fec2b462387dfe736dc350bdc`通过3轮真实本机CLI＋stdio，每轮同一配置和服务连续消费两项任务，旧task_ref/patch_ref不能转用新任务。12条TCP命令/轮、12张原生图合计、6张局部图均12/12边缘对可读；前后原生状态保持。全量1657项运行、1654通过、3项既有跳过，新增15项生命周期测试含跨进程互斥和各持久发布点失败。
+
+本机begin包含进程启动约267–309毫秒，close约261–284毫秒；首次两图完整RPC约457–669毫秒，同宿主第二任务约185–204毫秒，保留全部三轮和首次高值。这些仍是观察值，不能与不同入口的旧私有基线直接算收益，也不构成完整任务性能发布门。当前安装、真实消息自动登记、当前Codex文字消费、代表资产及同口径完整成本仍待后续验收。16次容量和pending需人工核查是本批明确边界，不自动删除旧记录或创建新控制文件绕过。
