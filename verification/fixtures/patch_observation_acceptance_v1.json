@@ -1,0 +1,46 @@
+{
+  "schema": "patch-observation-acceptance-v1",
+  "stage": "M1-03-source-and-visual-reference",
+  "runtime_candidate": false,
+  "feature": "one source-bound inner boundary component on a static planar ring; geometric aperture, not inferred damage",
+  "view_domain": "XY orthographic, opaque factory Workbench; other views and arbitrary materials not certified in this first reference",
+  "oracle": "12 literal inner-edge quarter/midpoint samples; analytic foreground-rectangle inclusion independent of production rays; six fixed scenarios",
+  "quality": {
+    "minimum_aperture_width_px": 16,
+    "minimum_visible_edge_pairs": 8,
+    "edge_pair_offset_px": 3,
+    "blue_control": "outside sample alpha>128, B>R+40 and B>G+20; inside sample not blue, RGB L1 difference>=80",
+    "pixel_scope": "controlled blue opaque planar fixture only, not general segmentation or model readability",
+    "reference_want_detail": "known useful feature visibility >=8/12, overview width<16px, reference width>=16px and zoom>=2",
+    "no_benefit": "problem occluded, fully occluded, overview already readable, source incomplete or precision uncertain => no adopted extra image",
+    "unknown": "keep source/visibility/pixel failures in full case denominator; never count unknown as normal or drop failed scenarios"
+  },
+  "future_candidate_budgets": {
+    "source_vertices": 4096,
+    "source_triangles": 2048,
+    "source_objects": 64,
+    "patch_members": 64,
+    "candidate_windows": 4,
+    "producer_and_consumer_total_triangle_tests": 8192,
+    "images_per_call": 2,
+    "image_side_px": 384,
+    "png_bytes_total": 16777216,
+    "original_deadline_ms": 30000,
+    "task_wide_ledger": "pending_M1-04; no per-task enforcement claim",
+    "budget_change": "new independent patch capability only; existing V3 4096 tests remains unchanged"
+  },
+  "reference_experiment": {
+    "source_cases": "39 frozen raw fixtures, once with one target and once with a real reference mesh; additional transform/occluder domain probes",
+    "native_processes": 3,
+    "visual_cases_per_process": 6,
+    "old_path": "existing actual paired native observation and consumer, up to overview plus detail",
+    "reference_path": "separate oracle-placed local render, not a new automatic engine feature; negative scenes rendered for falsification only",
+    "reference_span_m": "1.6 * max(aperture width, aperture height)",
+    "cost_scope": "host capture plus native old observation plus consumer, versus capture plus reference render plus sanitation; raw diagnosis/transport/patch planning remain separately unmeasured",
+    "candidate_cost_rule_after_reference": "per-case empirical reference p95 + max(20ms, 0.5*reference p95); initial low-sample budget only, independent confirmation required",
+    "no_claim": "not an installed Codex task, current Hook test, candidate improvement or formal model trial"
+  },
+  "old_large_grid_cost_gate": "failed_frozen_not_rerun",
+  "installation": false,
+  "formal_model_trials": 0
+}
