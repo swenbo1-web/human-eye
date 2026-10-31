@@ -819,6 +819,77 @@ def plan_readonly_task_gap(native,focal_id,reference_id,view,unit_scale,*,
     return result,overview,detail
 
 
+def plan_readonly_dense_focus(native,focal_id,reference_id,view,unit_scale,*,
+                              focal_hidden_render=False,reference_hidden_render=False):
+    """Bounded dense-focus opportunity from a projected bounding-box upper bound.
+
+    V1 and the task-gap V2 remain exact. Only a refused dense-focus planning
+    opportunity can add a same-view V3 window; geometry admission is unchanged.
+    """
+    original=plan_readonly_task_gap(native,focal_id,reference_id,view,unit_scale,
+        focal_hidden_render=focal_hidden_render,reference_hidden_render=reference_hidden_render)
+    plan,overview,existing_detail=original
+    if (existing_detail is not None or plan['reason_code']!='focus_budget_exceeded'
+            or view not in ('XY','XZ')):return original
+    focal=next((obj for obj in native['objects'] if obj['object_id']==focal_id),None)
+    if focal is None or focal_hidden_render:return original
+    points=focal['world_vertices'];faces=focal.get('faces',[])
+    triangles=sum(len(obj.get('faces',[])) for obj in native['objects'])
+    vertices=sum(len(obj.get('world_vertices',[])) for obj in native['objects'])
+    if (not (len(points)>64 or len(faces)>128) or 2*triangles>4096 or vertices>4096
+            or any(type(face) is not list or len(face)!=3
+                or any(type(i) is not int or not 0<=i<len(obj['world_vertices']) for i in face)
+                for obj in native['objects'] for face in obj.get('faces',[]))):return original
+    origin=[min(p[k] for p in points)/2+max(p[k] for p in points)/2 for k in range(3)]
+    projected=[[math.fsum((p[k]-origin[k])*axis[k] for k in range(3))
+        for axis in (overview['right'],overview['up'])] for p in points]
+    low=[min(p[k] for p in projected) for k in (0,1)]
+    high=[max(p[k] for p in projected) for k in (0,1)]
+    extents=[high[k]-low[k] for k in (0,1)];width=min(extents)
+    span=plan['overview']['span_m']
+    if not _number(width) or width<=0 or 384*width/span>=12:return original
+    detail_span=max(4*width,span/4096.);detail_px=384*width/detail_span;zoom=span/detail_span
+    if detail_px<32 or not 2<=zoom<=4096:return original
+    mid=[low[k]/2+high[k]/2 for k in (0,1)]
+    center=[math.fsum((origin[k],mid[0]*overview['right'][k],mid[1]*overview['up'][k])) for k in range(3)]
+    precision=width*1e-8
+    if precision<=0 or any(math.ulp(float(x))>precision/8 for x in center):return original
+    sample=_task_gap_sample_hits(native,center,overview)
+    if sample is None or sample[0] is None or sample[1]!={focal_id}:return original
+    center_bu=[x/unit_scale for x in center]
+    depths=[math.fsum((p[k]/unit_scale-center_bu[k])*overview['direction'][k] for k in range(3))
+        for obj in native['objects'] for p in obj['world_vertices']]
+    side=detail_span/unit_scale;margin=max(side,max(depths)-min(depths))*.125;distance=max(depths)+margin
+    detail={**copy.deepcopy(overview),'center_bu':center_bu,
+        'camera_location_bu':[math.fsum((center_bu[k],overview['direction'][k]*distance)) for k in range(3)],
+        'ortho_scale_bu':side,'clip_start_bu':margin*.25,'clip_end_bu':distance-min(depths)+margin}
+    try:
+        location32=[struct.unpack('>f',struct.pack('>f',x))[0] for x in detail['camera_location_bu']]
+        side32=struct.unpack('>f',struct.pack('>f',side))[0]
+        if (not all(_number(x) for x in location32) or not _number(side32) or side32<=0
+                or abs(side32-side)>side*1e-5):return original
+        error=[location32[k]-detail['camera_location_bu'][k] for k in range(3)]
+        if any(abs(math.fsum(error[k]*axis[k] for k in range(3)))>side*.005
+                for axis in (overview['right'],overview['up'])):return original
+    except (OverflowError,struct.error):return original
+    result=copy.deepcopy(plan)
+    result.update(schema_version='native-dense-focus-plan-v3',detail_included=True,image_count=2,
+        reason_code='dense_focus_detail_gain',detail=_public_view_frame(detail,unit_scale,'intentional_local_window'),
+        bounds_feature={'method':'projected_aabb_min_extent_upper_bound',
+            'focal_vertex_count':len(points),'focal_triangle_count':len(faces),
+            'projected_extents_m':extents,'width_upper_bound_m':width,
+            'overview_px_upper_bound':384*width/span,'detail_px_upper_bound':detail_px,'zoom':zoom,
+            'center_world_m':center,'quality_scope':'bounding_box_opportunity_not_thin_section_or_complete_visibility',
+            'execution_authority':False},
+        visibility={'method':'single_orthographic_central_ray','status':'focal_first',
+            'scope':'one_sample_not_complete_visibility','triangle_tests':triangles,
+            'consumer_triangle_tests':triangles,'total_triangle_tests':2*triangles,
+            'max_total_triangle_tests':4096,'work_scope':'producer_plus_independent_consumer',
+            'scene_vertex_count':vertices})
+    _json(result,_MAX_NATIVE_BYTES)
+    return result,overview,detail
+
+
 def native_look(bpy, scene, view_layer, initial_native, view, *, _frame=None,
                 _screen_coverage='all_native_vertices', _frustum_sink=None):
     """True Workbench384 render; restore every property changed by this helper."""

@@ -954,6 +954,8 @@ class LiveSpatialService:
                 if native_visual['plan']['schema_version']=='native-task-gap-plan-v2':
                     facts['canvas'].update(visibility_scope='three_samples_not_complete_visibility',
                         task_quality_scope='bounded_axis_box_gap_opportunity_not_pixel_metrology')
+                elif native_visual['plan']['schema_version']=='native-dense-focus-plan-v3':
+                    facts['canvas'].update(task_quality_scope='projected_bounds_opportunity_not_thin_section_or_complete_visibility')
                 routing['context_text']=json.dumps(facts,ensure_ascii=True,allow_nan=False)
             elif include_image:
                 count=int(routing.get('image') is not None)

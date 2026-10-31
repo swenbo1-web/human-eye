@@ -53,7 +53,7 @@ _READBACK_TOLERANCE_M = 1e-6
 # The host source digest commits transitively to these two read-only helpers.
 # Keep the public V1 capability unchanged; load only the exact checked bytes.
 _READONLY_DEPENDENCY_SHA256 = {
-    'episode_gateway.py': '2f1f488ee721d18f48b40e5313759a9b282e53d16c30b2f12a6a9425a71671ef',
+    'episode_gateway.py': 'b886b4b0d4da8ceaf32b952c810a9843ec4ec7d907830050db1e5b91815fe379',
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
@@ -1109,7 +1109,7 @@ class BlenderSceneHost:
                 actual=actual_pair.get(focal_id);actual_reference=actual_pair.get(reference_id)
                 if actual is None:raise EpisodePrewriteRefused('readonly_observation_focal_missing')
                 if actual_reference is None:raise EpisodePrewriteRefused('readonly_observation_reference_missing')
-                plan,overview_frame,detail_frame=self._episode_call(module,'plan_readonly_task_gap',native,focal_id,reference_id,view,self._scale(),
+                plan,overview_frame,detail_frame=self._episode_call(module,'plan_readonly_dense_focus',native,focal_id,reference_id,view,self._scale(),
                     focal_hidden_render=bool(getattr(actual,'hide_render',False)),
                     reference_hidden_render=bool(getattr(actual_reference,'hide_render',False)))
                 plan['budget_scope']='per_call_readonly_observation_lease_deadline'

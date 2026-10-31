@@ -505,6 +505,102 @@ def _validate_task_gap_plan(plan,native,view,focal_id,reference_id):
     return copy.deepcopy(plan)
 
 
+def _dense_focus_ray_readback(native,point,right,up,eye):
+    """Independent 3D line/triangle replay using the actual view basis."""
+    def cross(a,b):return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]
+    def sub(a,b):return [a[k]-b[k] for k in range(3)]
+    hits=[]
+    for obj in native['objects']:
+        for tri in obj['faces']:
+            a,b,c=[obj['world_vertices'][i] for i in tri]
+            normal=cross(sub(b,a),sub(c,a));n2=_dot(normal,normal)
+            projected=[[_dot(sub(p,point),axis) for axis in (right,up)] for p in (a,b,c)]
+            contains=all(min(p[k] for p in projected)<=0<=max(p[k] for p in projected) for k in (0,1))
+            if not contains:continue
+            den=_dot(normal,eye)
+            _require(n2>0 and abs(den)>1e-12*math.sqrt(n2),'dense_focus_ray_uncertain')
+            distance=_dot(normal,sub(a,point))/den
+            q=[math.fsum((point[k],distance*eye[k])) for k in range(3)]
+            sides=[_dot(normal,cross(sub(v,u),sub(q,u))) for u,v in ((a,b),(b,c),(c,a))]
+            if min(sides)<-1e-12*n2:continue
+            _require(_finite(distance),'dense_focus_ray_nonfinite');hits.append((distance,obj['object_id']))
+    tolerance=1e-9*max([1.]+[abs(t) for t,_ in hits])
+    nearest=max((t for t,_ in hits),default=None)
+    identities={identity for t,identity in hits if nearest-t<=tolerance} if hits else set()
+    return nearest,identities,tolerance
+
+
+def _validate_dense_focus_plan(plan,native,view,focal_id):
+    """Reconstruct the V3 upper bound, framing and one-sample work independently."""
+    keys={'schema_version','view','scene_revision','focal_id','unit','coordinate_frame','image_size',
+        'max_images','max_total_pixels','image_count','detail_included','reason_code','overview','detail',
+        'feature','visibility','execution_authority','budget_scope','bounds_feature'}
+    _require(type(plan) is dict and set(plan)==keys and len(_json(plan))<=65536
+        and plan['schema_version']=='native-dense-focus-plan-v3','dense_focus_plan_schema')
+    _require(view in ('XY','XZ'),'dense_focus_canonical_view_required')
+    _require(plan['reason_code']=='dense_focus_detail_gain' and plan['detail_included'] is True
+        and type(plan['image_count']) is int and plan['image_count']==2,'dense_focus_two_frames_required')
+    legacy=copy.deepcopy(plan);bounds=legacy.pop('bounds_feature')
+    legacy.update(schema_version='native-multiscale-plan-v1',reason_code='focus_budget_exceeded',
+        detail_included=False,image_count=1,detail=None,visibility={'method':'single_orthographic_central_ray',
+        'status':'not_checked','scope':'one_sample_not_complete_visibility'})
+    _validate_multiscale_plan(legacy,native,view,focal_id,budget_scope=READONLY_BUDGET_SCOPE)
+    focal=next(obj for obj in native['objects'] if obj['object_id']==focal_id)
+    points=focal['world_vertices'];faces=focal['faces']
+    vertices=len(_points(native));triangles=sum(len(obj['faces']) for obj in native['objects'])
+    _require((len(points)>64 or len(faces)>128) and vertices<=4096 and 2*triangles<=4096
+        and all(len(face)==3 for obj in native['objects'] for face in obj['faces']),
+        'dense_focus_legacy_branch_and_work_budget')
+    overview=plan['overview'];right=overview['right_world'];up=overview['up_world'];eye=overview['eye_direction_world']
+    origin=_center(points)
+    projected=[[_dot([p[k]-origin[k] for k in range(3)],axis) for axis in (right,up)] for p in points]
+    extents=[max(p[k] for p in projected)-min(p[k] for p in projected) for k in (0,1)]
+    mid=[min(p[k] for p in projected)/2+max(p[k] for p in projected)/2 for k in (0,1)]
+    width=min(extents);span=overview['span_m'];detail_span=max(4*width,span/4096)
+    _require(width>0 and 0<384*width/span<12 and 2<=span/detail_span<=4096
+        and 384*width/detail_span>=32,'dense_focus_gain_unverified')
+    center=[math.fsum((origin[k],mid[0]*right[k],mid[1]*up[k])) for k in range(3)]
+    _require(type(bounds) is dict and set(bounds)=={'method','focal_vertex_count','focal_triangle_count',
+        'projected_extents_m','width_upper_bound_m','overview_px_upper_bound','detail_px_upper_bound','zoom',
+        'center_world_m','quality_scope','execution_authority'}
+        and bounds['method']=='projected_aabb_min_extent_upper_bound'
+        and type(bounds['focal_vertex_count']) is int and bounds['focal_vertex_count']==len(points)
+        and type(bounds['focal_triangle_count']) is int and bounds['focal_triangle_count']==len(faces)
+        and bounds['quality_scope']=='bounding_box_opportunity_not_thin_section_or_complete_visibility'
+        and bounds['execution_authority'] is False,'dense_focus_bound_fields')
+    _require(_vector(bounds['projected_extents_m'],2) and all(_near(a,b,relative=1e-10)
+        for a,b in zip(bounds['projected_extents_m'],extents)),'dense_focus_projected_bounds_disagree')
+    for key,value in [('width_upper_bound_m',width),('overview_px_upper_bound',384*width/span),
+            ('detail_px_upper_bound',384*width/detail_span),('zoom',span/detail_span)]:
+        _require(_near(bounds[key],value,relative=1e-10),'dense_focus_feature_geometry_disagrees')
+    _require(_task_gap_local_point(bounds['center_world_m'],center,width),'dense_focus_center_disagrees')
+    _require(_task_gap_local_point(overview['center_world_m'],_center(_points(native)),width),
+        'dense_focus_overview_center_disagrees')
+    frame=plan['detail'];frame_keys={'center_world_m','right_world','up_world','eye_direction_world','span_m','screen_coverage','depth_coverage'}
+    _require(type(frame) is dict and set(frame)==frame_keys and _near(frame['span_m'],detail_span,relative=1e-10)
+        and frame['screen_coverage']=='intentional_local_window' and frame['depth_coverage']=='all_native_vertices',
+        'dense_focus_detail_frame_fields')
+    _require(_task_gap_local_point(frame['center_world_m'],center,width),'dense_focus_detail_center_disagrees')
+    for key,value in [('right_world',right),('up_world',up),('eye_direction_world',eye)]:
+        _require(_vector(frame[key],3) and all(_near(a,b) for a,b in zip(frame[key],value)),
+            'dense_focus_detail_axes_disagree')
+    visibility=plan['visibility']
+    _require(type(visibility) is dict and set(visibility)=={'method','status','scope','triangle_tests',
+        'consumer_triangle_tests','total_triangle_tests','max_total_triangle_tests','work_scope','scene_vertex_count'}
+        and visibility['method']=='single_orthographic_central_ray' and visibility['status']=='focal_first'
+        and visibility['scope']=='one_sample_not_complete_visibility'
+        and type(visibility['triangle_tests']) is int and visibility['triangle_tests']==triangles
+        and type(visibility['consumer_triangle_tests']) is int and visibility['consumer_triangle_tests']==triangles
+        and type(visibility['total_triangle_tests']) is int and visibility['total_triangle_tests']==2*triangles<=4096
+        and type(visibility['max_total_triangle_tests']) is int and visibility['max_total_triangle_tests']==4096
+        and visibility['work_scope']=='producer_plus_independent_consumer'
+        and type(visibility['scene_vertex_count']) is int and visibility['scene_vertex_count']==vertices,
+        'dense_focus_visibility_budget')
+    nearest,identities,_=_dense_focus_ray_readback(native,center,right,up,eye)
+    _require(nearest is not None and identities=={focal_id},'dense_focus_first_hit_disagrees')
+    return copy.deepcopy(plan)
+
+
 def _validate_multiscale_frustum(proof,frame,native,view,kind):
     keys={'schema_version','view','unit_scale_m','camera_matrix_host_units','ortho_scale_bu','clip_start_bu',
         'clip_end_bu','resolution_px','pixel_aspect','screen_coverage','depth_coverage','depth_vertex_count',
@@ -651,9 +747,12 @@ def validate_readonly_observation(raw, *, captured, capabilities, request_id,
         and type(binding['object_instances']) is dict
         and set(binding['object_instances'])=={obj['object_id'] for obj in native['objects']},
         'native_readonly_incarnation_binding')
-    plan=(_validate_task_gap_plan(raw['plan'],native,view,focal_id,reference_id)
-        if type(raw['plan']) is dict and raw['plan'].get('schema_version')=='native-task-gap-plan-v2'
-        else _validate_multiscale_plan(raw['plan'],native,view,focal_id,budget_scope=READONLY_BUDGET_SCOPE))
+    if type(raw['plan']) is dict and raw['plan'].get('schema_version')=='native-dense-focus-plan-v3':
+        plan=_validate_dense_focus_plan(raw['plan'],native,view,focal_id)
+    else:
+        plan=(_validate_task_gap_plan(raw['plan'],native,view,focal_id,reference_id)
+            if type(raw['plan']) is dict and raw['plan'].get('schema_version')=='native-task-gap-plan-v2'
+            else _validate_multiscale_plan(raw['plan'],native,view,focal_id,budget_scope=READONLY_BUDGET_SCOPE))
     bundle=observation['bundle']
     bundle_keys={'schema_version','protocol','status','view','sequence','native_revision_before',
         'native_revision_after','plan','frames','error','execution_authority'}
