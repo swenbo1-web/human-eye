@@ -1,0 +1,29 @@
+{
+  "schema": "mesh-structure-topology-acceptance-v1",
+  "stage": "M1-02-extension",
+  "new_categories": ["nonmanifold_edges", "nonmanifold_vertices", "degenerate_polygons"],
+  "policies": {
+    "nonmanifold_edges": "more_than_two_distinct_raw_polygon_incidents",
+    "vertex_link": "one_connected_multigraph_cycle_or_path; loose-edge nodes at surface vertices included; pure wires and isolated vertices classified separately",
+    "duplicate_face_vertex_link": "vertices touching duplicate cyclic polygons are unclassified, never reported normal",
+    "vertex_clusters": "connected via original edges restricted to flagged vertices",
+    "degenerate_triangle": "exact_binary_value_cross_squared <= 2^-80 * max_squared_edge_length^2; exact zero distinguished from relative near",
+    "ngon": "exact collinearity for all arities; otherwise only simple exactly planar polygons with at most 64 corners; near-ngon quality not checked",
+    "polygon_clusters": "flagged original polygons sharing a source edge",
+    "positions": "local metres and world metres through original affine matrix then unit scale; full patch-vertex AABB and one source-indexed witness; binary64 forward map, no certified error bound",
+    "position_failure": "nonfinite arithmetic or exhausted budget returns unknown positions and partial outer result without discarding completed topology facts",
+    "output_version": "raw-mesh-structure-v2 with explicit algorithm policies, unclassified indices and position status; old public pair/query contracts remain unchanged"
+  },
+  "quality": {
+    "fixed_in_domain_false_positive": 0,
+    "fixed_in_domain_false_negative": 0,
+    "unknown": "retained_in_original_full_task_denominator; explicitly registered out-of-domain category rows scored separately",
+    "source_repeated_vertex_polygon": "still refused before classification; not silently repaired",
+    "semantic_damage": "not_checked"
+  },
+  "invariants": ["source_index_permutation", "rigid_transform", "positive_unit_scaling", "no_welding", "no_geometry_writes"],
+  "budgets": "unchanged M1-01 work/bytes/counts/original deadline",
+  "old_large_grid_cost_gate": "failed_and_frozen; do_not_rerun_for_score_chasing",
+  "public_mcp_installation": false,
+  "model_trials": 0
+}

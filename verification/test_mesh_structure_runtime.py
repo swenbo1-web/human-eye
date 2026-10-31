@@ -30,7 +30,7 @@ class StructureRuntimeTests(unittest.TestCase):
                 self.assertEqual((metrics['fp'],metrics['fn'],metrics['answer_coverage']),(0,0,1.))
                 self.assertFalse(result['execution_authority']);self.assertEqual(result['images'],[])
                 self.assertIn('surface_damage',result['report']['not_checked']);scored+=1
-        self.assertEqual(scored,11)
+        self.assertEqual(scored,14)
 
     def test_empty_and_vertices_only_are_readable_not_all_domains_normal(self):
         for case in fixtures()[-2:]:
@@ -137,7 +137,7 @@ class StructureRuntimeTests(unittest.TestCase):
 
     def test_unimplemented_detector_is_not_reported_normal(self):
         with self.assertRaisesRegex(m.StructureRefused,'unsupported_diagnostic_categories'):
-            m.analyze_raw(raw_case(fixtures()[1]),identity(),task_id='t',categories=['nonmanifold_vertices'])
+            m.analyze_raw(raw_case(fixtures()[1]),identity(),task_id='t',categories=['winding_conflicts'])
 
 
 if __name__=='__main__':unittest.main()

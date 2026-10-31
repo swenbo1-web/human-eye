@@ -86,7 +86,7 @@ class MeshStructureServiceTests(unittest.TestCase):
     def test_source_bound_regions_survive_consumer_validation(self):
         value=self.service.observe_mesh_structure('s','target')['diagnostic']
         valid=validate_result(value,object_id='target',request_id=value['report']['task']['task_id'],
-            categories=m.SUPPORTED,deadline_ns=value['accounting']['deadline_ns'])
+            categories=m.DEFAULT_CATEGORIES,deadline_ns=value['accounting']['deadline_ns'])
         valid['patches'].clear();self.assertEqual(len(value['patches']),1)
 
 

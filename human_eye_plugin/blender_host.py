@@ -57,7 +57,7 @@ _READONLY_DEPENDENCY_SHA256 = {
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
-_RAW_MESH_SHA256 = '6e7e5cb0502c1d1a036767a13821ac3a0a8f8e34d4fdb14a2e5d9e23c9fe7e2a'
+_RAW_MESH_SHA256 = 'b897b4ee590c10426250f6ff1360b56d5f33de34d918b30e0ef29b383973eca1'
 
 
 def _hex_string(value, length):

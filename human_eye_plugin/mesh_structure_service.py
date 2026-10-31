@@ -14,9 +14,10 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
     need=m._require;integer=m._integer
     raw=m._bytes(value);need(len(raw)<=m.LIMITS['report_bytes'],'structure_result_bytes')
     need(type(value) is dict and set(value)=={'protocol','status','report','patches','coverage',
-         'omitted_reference','accounting','execution_authority','images'},'structure_result_fields')
+         'omitted_reference','accounting','execution_authority','images','algorithm'},'structure_result_fields')
     need(value['protocol']==m.PROTOCOL and value['status'] in ('observed','partial')
          and value['execution_authority'] is False and value['images']==[],'structure_result_capability')
+    need(value['algorithm']==m.ALGORITHM,'structure_algorithm_policy')
     report=value['report'];need(type(report) is dict and set(report)=={'schema','task','source','checks',
          'not_checked','execution_authority','natural_visibility'},'structure_report_fields')
     need(report['schema']=='mesh-structure-evidence-v1' and report['execution_authority'] is False
@@ -53,8 +54,9 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
         seen=set()
         for region in regions:
             need(type(region) is list and 1<=len(region)<=m.LIMITS['members_per_region'],'structure_region_size')
-            if category=='isolated_vertices':
-                need(all(integer(i,0,counts['vertices']-1) for i in region),'structure_vertex_index')
+            if category not in m.EDGE_CATEGORIES:
+                extent=counts['vertices' if category in m.VERTEX_CATEGORIES else 'polygons']
+                need(all(integer(i,0,extent-1) for i in region),'structure_element_index')
                 canonical=tuple(sorted(region))
             else:
                 need(all(type(e) is list and len(e)==2 and e[0]!=e[1]
@@ -68,7 +70,7 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
                  and record['reason'] is None,'structure_complete_scan')
         else:
             has_partial=True;need(record['total'] is None and m._identifier(record['reason']),'structure_partial_total')
-    need(delivered<=m.LIMITS['regions'] and (value['status']=='partial')==has_partial,'structure_summary_status')
+    need(delivered<=m.LIMITS['regions'],'structure_region_budget')
     accounting=value['accounting']
     need(type(accounting) is dict and set(accounting)=={'work_units','max_work_units','source_bytes',
          'deadline_ns','deadline_scope','task_wide_budget_enforced'},'structure_accounting_fields')
@@ -82,29 +84,72 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
     patch_keys=set();patch_counts={c:0 for c in categories}
     for patch in patches:
         need(type(patch) is dict and set(patch)=={'category','cluster_ordinal','element_kind','source_indices',
-             'membership_sha256','raw_sha256','object_instance','document_epoch'},'structure_patch_fields')
+             'membership_sha256','raw_sha256','object_instance','document_epoch','classification','position'},'structure_patch_fields')
         category=patch['category'];need(type(category) is str and category in categories,'structure_patch_category')
         need(integer(patch['cluster_ordinal'],0,checks[category]['found']-1),'structure_patch_ordinal')
         key=(category,patch['cluster_ordinal']);need(key not in patch_keys,'duplicate_structure_patch');patch_keys.add(key)
-        kind='vertex' if category=='isolated_vertices' else 'edge'
-        ids=patch['source_indices'];extent=counts['vertices' if kind=='vertex' else 'edges']
+        kind='edge' if category in m.EDGE_CATEGORIES else ('vertex' if category in m.VERTEX_CATEGORIES else 'polygon')
+        ids=patch['source_indices'];extent=counts[{'vertex':'vertices','edge':'edges','polygon':'polygons'}[kind]]
         need(patch['element_kind']==kind and type(ids) is list and 1<=len(ids)<=64
              and all(integer(i,0,extent-1) for i in ids) and sorted(set(ids))==ids,'structure_patch_indices')
         need(all(patch[k]==source[k] for k in ('raw_sha256','object_instance','document_epoch'))
              and patch['membership_sha256']==m._digest(ids),'structure_patch_source_binding')
         need(patch_counts[category]<len(checks[category]['regions']),'structure_patch_distribution')
         region=checks[category]['regions'][patch_counts[category]];patch_counts[category]+=1
-        need(len(ids)==len(region) and (kind!='vertex' or ids==region),'structure_patch_region')
+        need(len(ids)==len(region) and (kind=='edge' or ids==region),'structure_patch_region')
+        classification=patch['classification']
+        need(type(classification) is list and (len(classification)==len(ids)
+             and all(x in ('exact_zero','relative_near') for x in classification)
+             if category=='degenerate_polygons' else classification==[]),'structure_patch_classification')
+        position=patch['position'];need(type(position) is dict,'structure_position_fields')
+        if position.get('status')=='unknown':
+            need(set(position)=={'status','reason'} and position['reason'] in
+                 ('position_nonfinite','work_budget_exhausted','deadline_exhausted'),'structure_position_unknown')
+            has_partial=True
+        else:
+            need(set(position)=={'status','length_unit','method','scope','local_bounds_m','world_bounds_m',
+                 'witness_vertex_index','witness_local_m','witness_world_m'} and position['status']=='known'
+                 and position['length_unit']=='m' and position['method']==m.ALGORITHM['positions']
+                 and position['scope']=='all_source_vertices_of_reported_elements','structure_position_fields')
+            witness=position['witness_vertex_index']
+            need(integer(witness,0,counts['vertices']-1),'structure_position_witness')
+            if kind=='vertex':need(witness in ids,'structure_position_membership')
+            elif kind=='edge':need(any(witness in edge for edge in region),'structure_position_membership')
+            for frame in ('local','world'):
+                bounds=position[frame+'_bounds_m'];point=position['witness_'+frame+'_m']
+                need(type(bounds) is list and len(bounds)==2 and all(type(row) is list and len(row)==3
+                     and all(m._finite(x) for x in row) for row in bounds) and type(point) is list
+                     and len(point)==3 and all(m._finite(x) for x in point),'structure_position_numbers')
+                need(all(bounds[0][i]<=point[i]<=bounds[1][i] for i in range(3)),'structure_position_bounds')
     need(all(patch_counts[c]==len(checks[c]['regions']) for c in categories),'structure_patch_distribution')
     need(value['omitted_reference']==dict(object_id=object_id,object_instance=source['object_instance'],
         document_epoch=source['document_epoch'],raw_sha256=source['raw_sha256'],
         query='repeat_structure_on_fresh_matching_raw_source',retrieval_endpoint_available=False),'structure_backreference')
     coverage=value['coverage'];need(type(coverage) is dict and set(coverage)=={'vertices_prefix','edges_prefix',
-        'polygons_prefix','polygon_corners','component_categories_completed'},'structure_coverage_fields')
+        'polygons_prefix','polygon_corners','component_categories_completed','unclassified'},'structure_coverage_fields')
     for name,k in [('vertices_prefix','vertices'),('edges_prefix','edges'),('polygons_prefix','polygons'),('polygon_corners','corners')]:
         need(integer(coverage[name],0,counts[k]),'structure_coverage_range')
     need(coverage['component_categories_completed']==[c for c in categories if checks[c]['state']=='complete'],
          'structure_coverage_completed')
+    unknown=coverage['unclassified'];need(type(unknown) is dict,'structure_unclassified_fields')
+    for category,row in unknown.items():
+        need(category in categories and category in ('nonmanifold_vertices','degenerate_polygons')
+             and type(row) is dict and set(row)=={'count','source_indices','reasons'},'structure_unclassified_fields')
+        extent=counts['vertices' if category=='nonmanifold_vertices' else 'polygons'];ids=row['source_indices']
+        need(integer(row['count'],1,extent) and type(ids) is list and len(ids)==min(64,row['count'])
+             and all(integer(i,0,extent-1) for i in ids) and sorted(set(ids))==ids,'structure_unclassified_indices')
+        reasons=(('duplicate_face_link_ambiguous',) if category=='nonmanifold_vertices' else
+                 ('ngon_predicate_arity_budget','nonplanar_ngon','non_simple_ngon'))
+        need(type(row['reasons']) is list and bool(row['reasons'])
+             and all(type(x) is str and x in reasons for x in row['reasons'])
+             and sorted(set(row['reasons']))==row['reasons'],'structure_unclassified_reasons')
+        need(checks[category]['state']=='partial' and checks[category]['reason']=='predicate_domain_incomplete'
+             and checks[category]['scanned']==counts,'structure_unclassified_state')
+        known={i for region in checks[category]['regions'] for i in region}
+        need(not known.intersection(ids),'structure_known_unknown_overlap')
+    for category,record in checks.items():
+        need((record['reason']=='predicate_domain_incomplete')==(category in unknown),'structure_unclassified_coverage')
+    need((value['status']=='partial')==has_partial,'structure_summary_status')
     return copy.deepcopy(value)
 
 
