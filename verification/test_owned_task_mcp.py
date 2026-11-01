@@ -143,4 +143,81 @@ class OwnedTaskMCPTests(unittest.TestCase):
         with self.assertRaises(ValueError):proposal(dict(focal_id='part',reference_id='base',limits={'max_duration_s':31.}))
 
 
+    def episode(self,response):
+        from human_eye_plugin.task_episode import validate_episode
+        ref=self.metadata(response)['task_episode_ref']
+        result=self.mcp.handle(dict(jsonrpc='2.0',id=900,method='resources/read',params={'uri':ref['uri']}))
+        value=validate_episode(json.loads(result['result']['contents'][0]['text']))
+        self.assertEqual(ref['sha256'],value['sha256'])
+        self.assertNotIn('task_episode',value['raw_evidence']['result'])
+        return value
+
+    def test_episode_freezes_receive_binding_and_observed_client_response(self):
+        self.server()
+        with patch.object(self.entry,'execute',return_value=dict(status='review_required',new_setter_count=0)):
+            result=self.call(received_monotonic=98.)
+        value=self.episode(result);raw=value['raw_evidence']
+        self.assertEqual(raw['received_monotonic'],98.)
+        self.assertEqual(raw['admission']['original_deadline_monotonic'],128.)
+        self.assertEqual(raw['binding']['scope'],raw['admission']['scope'])
+        self.assertEqual(raw['approval']['decision'],'accept_true')
+        self.assertTrue(raw['approval']['response']['result']['content']['approve'])
+        self.assertFalse(value['derived']['human_UI_verified'])
+        self.assertFalse(value['derived']['training_positive'])
+        self.assertNotIn('raw_evidence',self.metadata(result))
+        self.assertLess(len(json.dumps(self.metadata(result)['task_episode_ref']).encode()),650)
+
+    def test_episode_resources_are_read_only_connection_scoped_and_cannot_read_paths(self):
+        self.server();self.client_result={'action':'decline'};result=self.call()
+        value=self.episode(result)
+        listed=self.mcp.handle(dict(jsonrpc='2.0',id=901,method='resources/list'))
+        self.assertEqual(len(listed['result']['resources']),1)
+        for uri in ('file:///D:/hefe/.codex/config.toml','human-eye-episode://foreign/receipt',None,{}):
+            response=self.mcp.handle(dict(jsonrpc='2.0',id=902,method='resources/read',params={'uri':uri}))
+            self.assertIn('error',response)
+        value['raw_evidence']['result']['status']='mutated client copy'
+        self.assertNotEqual(self.episode(result)['raw_evidence']['result']['status'],'mutated client copy')
+        self.assertFalse(self.entry.service.state_path.exists())
+
+    def test_episode_decline_cancel_and_rpc_error_do_not_claim_user_intent(self):
+        for index,(answer,decision) in enumerate([({'action':'decline'},'decline'),
+                ({'action':'cancel'},'cancel'),({'action':'accept','content':{'approve':1}},'invalid_or_false')]):
+            self.server();self.client_result=answer;value=self.episode(self.call(request_id=100+index))
+            self.assertEqual(value['raw_evidence']['approval']['decision'],decision)
+            self.assertFalse(value['derived']['human_UI_verified'])
+            self.assertEqual(value['derived']['new_setter_count'],0)
+        self.server()
+        def rpc_error(value):self.mcp.messages.put((dict(jsonrpc='2.0',id=value['id'],error={'code':-1}),self.now))
+        self.mcp.emit=rpc_error;value=self.episode(self.call())
+        self.assertEqual(value['raw_evidence']['approval']['decision'],'rpc_error')
+        self.assertEqual(value['derived']['outcome'],'not_admitted')
+
+    def test_episode_unknown_outcome_never_claims_false_physical_zero(self):
+        self.server()
+        with patch.object(self.entry,'execute',side_effect=OSError('outcome lost')):result=self.call()
+        value=self.episode(result)
+        self.assertTrue(value['raw_evidence']['execution_started'])
+        self.assertIsNone(value['derived']['new_setter_count'])
+        self.assertEqual(value['derived']['outcome'],'unknown')
+
+    def test_recording_failure_preserves_the_actual_execution_receipt(self):
+        self.server()
+        with patch.object(self.entry,'execute',return_value=dict(status='completed',new_setter_count=4)), \
+                patch('human_eye_plugin.owned_task_mcp.TaskEpisode.finish',side_effect=OSError('archive unavailable')):
+            result=self.call()
+        value=self.metadata(result)
+        self.assertEqual(value['status'],'completed');self.assertEqual(value['new_setter_count'],4)
+        self.assertEqual(value['task_episode_unavailable'],'OSError')
+        self.assertNotIn('task_episode_ref',value);self.assertEqual(len(self.mcp.episodes),0)
+
+    def test_duplicate_and_capacity_do_not_create_or_evict_recorded_events(self):
+        self.server();self.client_result={'action':'decline'}
+        first=self.call(request_id=100);self.assertIn('error',self.call(request_id=100))
+        for index in range(101,116):self.call(request_id=index)
+        self.assertEqual(len(self.mcp.episodes),16)
+        response=self.call(request_id=116);self.assertIn('error',response)
+        self.assertEqual(len(self.mcp.episodes),16);self.episode(first)
+
+
+
 if __name__=='__main__':unittest.main()

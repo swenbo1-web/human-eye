@@ -49,3 +49,10 @@ M3-A3/A4/B/C/D仍按主计划各自的数据、几何与修改域验收；新MCP
 当前回合自己的turn_context明确approval_policy=never；项目和用户config均未显式设置它，不能只改磁盘配置就宣称当前会话策略已变。[官方配置文档](https://learn.chatgpt.com/docs/config-file/config-reference)说明never适用于非交互运行，`approval_policy.granular.mcp_elicitations=true`允许提示展示而非自动拒绝。此观察与本次即时未授权相符；插件当前未留存原始client应答类别，因此不能倒推出用户手工decline/cancel或某个具体UI错误。
 
 此轮不重新发起目标/新预算，不自行改审批策略或借其它输入通道制造批准。当前宿主需要操作者允许MCP表单提示；恢复后仍需一次真实accept及终态消费才能过A2b。整个M3、A3/A4/B/C/D均未完成。原始记录在`verification/fixes/20261102_m3_actual_host/`；只保留本聊天相关策略字段，不复制完整聊天或其它账户内容。运行源码、安装、引擎MCP段与Hook保持，不重新打包或重复运行原1868项回归。完整性核对另发现主Codex配置在首次读取后发生agent_learning启动参数变化，修改者未确认，未触及引擎连接或审批字段；保留差异、不还原或声称整个配置文件未变。
+
+
+## 后续无人值守推进边界
+
+2026-11-02，用户已明确允许本项目MCP表单设置；项目磁盘配置已添加granular.mcp_elicitations=true、其余四类提示false，新进程读取过门，但重启后本聊天新回合仍为never/完整文件访问。文件配置与实际回合策略分别判断。没有因此重发该真实目标、伪造真人应答或改动正式live/Hook。
+
+真人表单及真实结果消费保持A2b pending，不能作为全M3停工理由。源码和自建隔离脚本测试、[A3a轨迹](M3_TASK_EPISODE_ACCEPTANCE.md)及独立B/C只读模块继续。当前目标工具保留destructiveHint，宿主可能先有工具级确认，再有引擎具体目标表单；实际UI总次数未验，不通过修改副作用注解隐瞒写入。单个目标内的原预算小步沿原授权运行，无需每步向人请批。

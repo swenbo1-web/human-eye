@@ -57,7 +57,13 @@ def worker(args):
     try:
         with patch.object(host,'apply_transform',side_effect=apply),patch.object(server.entry.service,'_save',side_effect=saving),patch.object(server,'emit',side_effect=emit):server.run()
     finally:
-        host.close();save(folder/'PROCESS.json',dict(exit_code=host._process.poll(),pid=host._process.pid,commands=commands,applied_calls=len(applied)))
+        host.close()
+        from human_eye_plugin.task_episode import archive_episode
+        archive=folder/'episodes';archive.mkdir(exist_ok=False)
+        archived=[archive_episode(value,archive) for value in server.episodes.values()]
+        save(folder/'EPISODE_ARCHIVE.json',dict(records=archived,consumer='scripted_worker_not_Codex_UI',
+            delivery_proven=False,execution_authority=False))
+        save(folder/'PROCESS.json',dict(exit_code=host._process.poll(),pid=host._process.pid,commands=commands,applied_calls=len(applied)))
         assert host._process.poll()==0
 
 
@@ -86,6 +92,7 @@ class Client:
 
 
 def parent(args):
+    sys.path.insert(0,str(ROOT))
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=False)
     scenarios=['accept','decline','cancel_form','numeric_approval','wrong_response_id','legacy_no_elicitation','model_approval_injection',
         'approval_expiry','config_changed','cancel_after_first','EOF_after_first','lost_apply_reply','completion_ack_loss']
@@ -151,7 +158,19 @@ def parent(args):
                 elif scenario=='lost_apply_reply':assert public['new_setter_count'] is None and public['status']=='review_required',public
                 elif scenario=='completion_ack_loss':assert public['physical_task_succeeded'] is True and public['completion_persistence']=='unknown',public
                 else:assert public.get('executed',False) is False and public['new_setter_count']==0,public
-                rows.append(dict(round=repeat,scenario=scenario,status=public['status'],new_setter_count=public['new_setter_count'],elicited=elicited))
+                from human_eye_plugin.task_episode import validate_episode
+                ref=public['task_episode_ref'];assert len(json.dumps(ref).encode())<=650
+                consumed=False
+                if scenario not in ('EOF_after_first','approval_expiry'):
+                    client.rpc(201,'resources/read',{'uri':ref['uri']});resource=client.receive()
+                    episode=validate_episode(json.loads(resource['result']['contents'][0]['text']))
+                    assert episode['sha256']==ref['sha256']
+                    save(folder/'EPISODE_WIRE.json',resource);consumed=True
+                    assert episode['derived']['new_setter_count']==public['new_setter_count']
+                    assert episode['derived']['success_candidate']==(scenario=='accept')
+                    assert episode['derived']['training_positive'] is False
+                rows.append(dict(round=repeat,scenario=scenario,status=public['status'],new_setter_count=public['new_setter_count'],elicited=elicited,
+                    episode_sha256=ref['sha256'],episode_outcome=ref['outcome'],episode_client_read=consumed))
                 print(json.dumps(rows[-1]),flush=True)
             except Exception as exc:save(folder/'FAILURE.json',dict(error=repr(exc),response=response));raise
             finally:
@@ -159,6 +178,12 @@ def parent(args):
             physical=json.loads((folder/'PHYSICAL_0.json').read_text());process=json.loads((folder/'PROCESS.json').read_text())
             count=4 if scenario in ('accept','completion_ack_loss') else 1 if scenario in ('cancel_after_first','EOF_after_first','lost_apply_reply') else 0
             assert physical['actual_setters']==count and process['applied_calls']==count,physical
+            from human_eye_plugin.task_episode import read_episode
+            archived=json.loads((folder/'EPISODE_ARCHIVE.json').read_text())['records'];assert len(archived)==1
+            episode=read_episode(archived[0]['path']);assert episode['sha256']==rows[-1]['episode_sha256']
+            assert episode['derived']['success_candidate']==(scenario=='accept')
+            assert episode['derived']['training_positive'] is False
+            assert episode['derived']['new_setter_count']==(None if scenario=='lost_apply_reply' else count)
             if scenario in ('accept','completion_ack_loss'):assert abs(physical['gap_m']-.001)<=1e-6
     save(output/'RESULT.json',dict(passed=True,rows=rows,source_sha256=args.expected_build,owned_workers=len(rows),
         actual_Codex_UI_approval=False,scripted_client_only=True,formal_activation=False,model_calls=0))

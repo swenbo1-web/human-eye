@@ -20,6 +20,7 @@ import uuid
 from .goal_budget import GoalBudgetLimits
 from .task_authority import ClearanceTaskSpec,TaskApproval,TrustedTaskAuthority
 from .task_entry import TrustedTaskEntry
+from .task_episode import TaskEpisode,approval_decision,task_event_id
 from .live_spatial_mcp import (LiveSpatialMCPServer,LIVE_MCP_TOOLS_SCHEMA,
                                _rpc_error,_tool_result,_configure_utf8_stdio)
 
@@ -74,7 +75,7 @@ class OwnedTaskMCP:
         self.incoming=incoming;self.outgoing=outgoing
         self.messages=queue.Queue(maxsize=16);self.output_lock=threading.Lock();self.active_lock=threading.Lock()
         self.closed=threading.Event();self.active=None;self.initialized=False;self.elicitation=False
-        self.seen={};self.nonce=uuid.uuid4().hex;self.reader=None
+        self.seen={};self.nonce=uuid.uuid4().hex;self.reader=None;self.episode=None;self.episodes={}
         self.authority=TrustedTaskAuthority('owned-mcp-'+self.nonce,self._approve)
         self.entry=TrustedTaskEntry(config_path,host,self.authority)
         self.live=LiveSpatialMCPServer(self.entry.service)
@@ -131,6 +132,7 @@ class OwnedTaskMCP:
         message=('Human Eye owned Blender copy only. Approve this exact finite world-Z clearance task?\n'
             +json.dumps(dict(task=spec.to_dict(),scope=scope,proposal_sha256=binding,
                 deadline_monotonic=active['deadline'],input_file_will_not_be_saved=True),sort_keys=True,allow_nan=False))
+        if self.episode is not None:self.episode.bind(spec.to_dict(),scope,elicitation_id)
         self.emit(dict(jsonrpc='2.0',id=elicitation_id,method='elicitation/create',params=dict(message=message,
             requestedSchema=dict(type='object',properties=dict(approve=dict(type='boolean',default=False,
                 title='Approve this exact task and budget')),required=['approve']))))
@@ -141,13 +143,10 @@ class OwnedTaskMCP:
                 # may change the pending proposal or its client capability.
                 if valid_id(value.get('id')):self.emit(_rpc_error(value['id'],-32000,'owned goal approval is single-flight'))
                 continue
-            if value.get('id')!=elicitation_id or type(value.get('id')) is not str:
-                raise ValueError('MCP_unexpected_approval_response')
-            result=value.get('result')
-            content=result.get('content') if type(result) is dict else None
-            if ('error' in value or type(result) is not dict or set(result)-{'action','content','_meta'}
-                    or result.get('action')!='accept' or type(content) is not dict
-                    or set(content)!={'approve'} or content['approve'] is not True):return None
+            decision=approval_decision(value,elicitation_id)
+            if self.episode is not None:self.episode.response(value,decision)
+            if decision=='wrong_id':raise ValueError('MCP_unexpected_approval_response')
+            if decision!='accept_true':return None
             if time.perf_counter()>=active['deadline'] or active['cancelled'].is_set() or self.closed.is_set():return None
             return TaskApproval(active['event_id'],elicitation_id)
         return None
@@ -155,8 +154,8 @@ class OwnedTaskMCP:
     def _goal(self,request_id,arguments,received):
         if not self.elicitation:raise ValueError('client_form_elicitation_not_negotiated')
         spec=proposal(arguments)
-        active=dict(request_id=request_id,event_id='call:'+self.nonce+':'+hashlib.sha256(
-            json.dumps(request_id).encode('utf8')).hexdigest()[:32],cancelled=threading.Event(),
+        if self.episode is not None:self.episode.proposed(spec.to_dict())
+        active=dict(request_id=request_id,event_id=task_event_id(self.nonce,request_id),cancelled=threading.Event(),
             deadline=received+spec.limits.max_duration_s,registration_id=None)
         with self.active_lock:self.active=active
         try:
@@ -165,7 +164,9 @@ class OwnedTaskMCP:
             key=admission['registration_id']
             with self.active_lock:active['registration_id']=key
             if active['cancelled'].is_set() or self.closed.is_set():self.entry.revoke(key)
+            if self.episode is not None:self.episode.admitted(admission)
             self._execution_started=True
+            if self.episode is not None:self.episode.execution_started()
             result=self.entry.execute(key)
             if 'review_event' in result:
                 result['review_event']['delivery']='MCP_result_constructed_not_client_consumption_proof'
@@ -189,11 +190,23 @@ class OwnedTaskMCP:
             self.elicitation=(modern and type(offered) is dict and (not offered or type(offered.get('form')) is dict))
             response=self.live.handle_jsonrpc_message(req)
             if modern:response['result']['protocolVersion']=PROTOCOL
+            response['result'].setdefault('capabilities',{})['resources']={}
             response['result']['serverInfo']['name']='human-eye-owned-task-candidate'
             response['result']['_meta']['owned_goal_entry']=dict(explicit_opt_in=True,form_elicitation=self.elicitation,
                 trust_boundary='stdio_owner',wire_protocol=response['result']['protocolVersion'],default_Codex_UI_proven=False)
             return response
         if not self.initialized:return _rpc_error(request_id,-32000,'initialize required')
+        if method=='resources/list':
+            return dict(jsonrpc='2.0',id=request_id,result=dict(resources=[
+                dict(uri=uri,name='Frozen Human Eye task episode',mimeType='application/json',
+                    description='Historical evidence only; not execution authority or current scene')
+                for uri in self.episodes]))
+        if method=='resources/read':
+            uri=params.get('uri')
+            if type(uri) is not str or uri not in self.episodes:
+                return _rpc_error(request_id,-32602,'Unknown episode resource in this connection')
+            return dict(jsonrpc='2.0',id=request_id,result=dict(contents=[
+                dict(uri=uri,mimeType='application/json',text=json.dumps(self.episodes[uri],allow_nan=False))]))
         if method=='tools/list':
             tools=[copy.deepcopy(t) for t in LIVE_MCP_TOOLS_SCHEMA if t['name'] in READ_TOOLS]+[copy.deepcopy(GOAL_TOOL)]
             return dict(jsonrpc='2.0',id=request_id,result=dict(tools=tools))
@@ -203,8 +216,11 @@ class OwnedTaskMCP:
             if len(self.seen)>=MAX_CALLS:return _rpc_error(request_id,-32000,'owned goal call capacity reached')
             self.seen[key]=True
             self._execution_started=False
-            try:result=self._goal(request_id,params.get('arguments',{}),
-                time.perf_counter() if received_monotonic is None else received_monotonic)
+            received=time.perf_counter() if received_monotonic is None else received_monotonic
+            self.episode=None
+            try:
+                self.episode=TaskEpisode(self.nonce,request_id,params.get('arguments',{}),received)
+                result=self._goal(request_id,params.get('arguments',{}),received)
             except Exception as exc:
                 # register() cannot dispatch. Once execute() begins it owns
                 # unknown/known physical accounting and catches its exceptions.
@@ -212,6 +228,21 @@ class OwnedTaskMCP:
                     executed=None if self._execution_started else False,
                     new_setter_count=None if self._execution_started else 0,
                     execution_authority=False,retry_authorized=False),is_error=True)
+            if self.episode is not None:
+                public=json.loads(result['content'][0]['text'])
+                try:
+                    episode=self.episode.finish(public,time.perf_counter())
+                    uri='human-eye-episode://'+self.nonce+'/'+episode['sha256']
+                    self.episodes[uri]=episode
+                    public['task_episode_ref']=dict(uri=uri,sha256=episode['sha256'],
+                        outcome=episode['derived']['outcome'],training_positive=False,
+                        human_UI_verified=False,durability='connection_memory_only')
+                except Exception as exc:
+                    # Recording cannot turn a reconciled action into zero or
+                    # grant a retry. Preserve the actual execution receipt.
+                    public['task_episode_unavailable']=type(exc).__name__
+                finally:self.episode=None
+                result=_tool_result(public,is_error=result.get('isError',False))
             return dict(jsonrpc='2.0',id=request_id,result=result)
         if method=='tools/call' and params.get('name') not in READ_TOOLS:
             return _rpc_error(request_id,-32601,'owned entry requires goal elicitation; legacy writes unavailable')
