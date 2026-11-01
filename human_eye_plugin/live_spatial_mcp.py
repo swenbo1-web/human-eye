@@ -30,7 +30,7 @@ from .request_context import (TASK_CONTEXT_SCHEMA, SCENE_DELTA_REQUEST_SCHEMA,
 from .telemetry import current_trace
 from .hook_context import (_observation as _parse_observation,
                            _deduplicate, _contains_reference_key)
-from .task_brief import project_task_brief, project_segment_brief
+from .task_brief import project_task_brief, project_segment_brief, project_structure_brief
 
 span = partial(_trace_span, source_name='mcp_transport')
 _NO_RPC_ID = object()
@@ -493,7 +493,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
     selected_metadata = metadata
     if response_detail == 'brief' and not is_error:
         try:
-            brief = project_segment_brief(metadata) if segment_brief else project_task_brief(metadata)
+            brief = (project_structure_brief(metadata) if metadata.get('result_kind')=='structure_task' else
+                project_segment_brief(metadata) if segment_brief else project_task_brief(metadata))
             if brief is not None:
                 candidate = json.dumps(brief, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
                 full_bytes = len(full_text.encode('utf-8'))

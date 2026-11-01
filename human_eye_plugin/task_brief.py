@@ -16,6 +16,7 @@ from .hook_context import _observation, _deduplicate, _contains_reference_key
 
 BRIEF_REVISION = 'observation-task-brief-v1-20261026'
 SEGMENT_BRIEF_REVISION = 'segment-endpoint-references-v1-20261030'
+STRUCTURE_BRIEF_REVISION = 'structure-task-exact-dictionaries-v1-20261101'
 _SOURCES = {'human_eye_geometry_observation', 'human_eye_live_blender_scene_overview'}
 _REQUIRED = ('observation_status', 'scene_assessment', 'action_eligibility',
              'execution_status', 'pair_goal', 'scene_capabilities')
@@ -26,6 +27,41 @@ _VIEW_DIAGNOSTICS = (
     'geometry_depth_pixels', 'geometry_depth_fraction', 'depth_range_m',
     'geometry_pixels_unchanged_by_annotations', 'object_visible_pixels', 'scale_bar',
 )
+
+
+def project_structure_brief(metadata):
+    """Lossless same-result dictionary references; never a diagnostic policy."""
+    from .mesh_structure import PROTOCOL, ALGORITHM
+    if (type(metadata) is not dict or metadata.get('result_kind')!='structure_task'
+            or metadata.get('status') not in ('observed','partial')
+            or any(metadata.get(k) is not False for k in ('execution_authority','executed','allow_action'))
+            or metadata.get('task_succeeded',False) is not None
+            or 'structure_value_encoding' in metadata or _contains_reference_key(metadata)):
+        return None
+    diagnostic=metadata.get('diagnostic');budget=metadata.get('task_budget')
+    if (type(diagnostic) is not dict or diagnostic.get('protocol')!=PROTOCOL or diagnostic.get('algorithm')!=ALGORITHM
+            or diagnostic.get('status') not in ('observed','partial')
+            or diagnostic.get('status')=='partial' and metadata['status']!='partial'
+            or type(diagnostic.get('report')) is not dict or diagnostic['report'].get('schema')!='mesh-structure-evidence-v1'
+            or type(budget) is not dict or budget.get('scope')!='registered_task_not_caller_session'
+            or budget.get('execution_authority') is not False):
+        return None
+    seen={}
+    def visit(value,path='#'):
+        if type(value) is dict:
+            key=json.dumps(value,ensure_ascii=False,allow_nan=False,sort_keys=True,separators=(',',':'))
+            if len(key.encode('utf8'))>=128:
+                if key in seen:return {'$ref':seen[key]}
+                seen[key]=path
+            return {k:visit(v,path+'/'+k.replace('~','~0').replace('/','~1')) for k,v in value.items()}
+        if type(value) is list:return [visit(v,path+'/'+str(i)) for i,v in enumerate(value)]
+        return value
+    result=visit(metadata)
+    result['structure_value_encoding']=dict(revision=STRUCTURE_BRIEF_REVISION,
+        reference_encoding='exact_dictionary_local_json_pointer',reference_base='this_same_result',
+        expansion='replace_only_single_key_ref_objects_with_the_referenced_dictionary',
+        preservation='all_full_metadata_values_including_unknown_and_omitted',execution_authority=False)
+    return result
 
 
 def project_task_brief(metadata):
