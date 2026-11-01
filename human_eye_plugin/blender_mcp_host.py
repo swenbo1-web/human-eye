@@ -39,7 +39,8 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
-_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','patch_observation_capabilities','observe_patch',
+_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
+    'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
 
@@ -197,6 +198,13 @@ class BlenderMCPHost:
 
     def mesh_structure_capabilities(self):
         return self._request('mesh_structure_capabilities',{})
+
+    def mesh_region_summary_capabilities(self):
+        return self._request('mesh_region_summary_capabilities',{})
+
+    def observe_mesh_structure_summary(self,request_id,object_id,categories,deadline_ns):
+        return self._request('observe_mesh_structure_summary',dict(request_id=request_id,object_id=object_id,
+            categories=categories,deadline_ns=deadline_ns))
 
     def observe_mesh_structure(self,request_id,object_id,categories,deadline_ns):
         return self._request('observe_mesh_structure',dict(request_id=request_id,object_id=object_id,
@@ -375,7 +383,8 @@ class BlenderMCPHost:
 
     def _structure_code(self,command,params,request_id):
         """A separate pinned, typed read template; old template bytes stay fixed."""
-        required={'mesh_structure_capabilities':set(),'patch_observation_capabilities':set(),
+        required={'mesh_structure_capabilities':set(),'mesh_region_summary_capabilities':set(),
+            'observe_mesh_structure_summary':{'request_id','object_id','categories','deadline_ns'},'patch_observation_capabilities':set(),
             'nonplanar_observation_capabilities':set(),
             'observe_nonplanar_patch':{'request_id','object_id','patch','deadline_ns','mode'},
             'observe_mesh_structure':{'request_id','object_id','categories','deadline_ns'},

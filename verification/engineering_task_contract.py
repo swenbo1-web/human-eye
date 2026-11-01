@@ -46,6 +46,16 @@ def he_regions(value):
         position=patch['position']
         regions.append(dict(ref=refs[patch['cluster_ordinal']],bounds=position.get('world_bounds_m')
             if position.get('status')=='known' and position.get('length_unit')=='m' else None))
+    if diagnostic.get('protocol')=='raw-mesh-structure-v3':
+        for region in regions:region.update(patch_ref=region['ref'],selection_only=False)
+        catalog=diagnostic['region_summary']
+        for row in catalog['entries']:
+            if row['category']!='boundary_edges':continue
+            position=row['position']
+            regions.append(dict(ref=row['summary_id'],patch_ref=None,selection_only=True,
+                bounds=position.get('world_bounds_m') if position.get('status')=='known' else None))
+        coverage=catalog['coverage']['boundary_edges']
+        return regions,dict(total=check['total'],omitted=coverage['summaries_omitted'],complete=coverage['scan_complete'])
     return regions,dict(total=check['total'],omitted=check['omitted'],complete=check['state']=='complete')
 
 

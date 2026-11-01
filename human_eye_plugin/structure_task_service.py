@@ -9,19 +9,22 @@ from .forward_deadline import counter_descriptor
 from .blender_host import _RAW_MESH_SHA256
 
 
-def _raw(host,object_id,categories,deadline):
-    require(all(callable(getattr(host,k,None)) for k in ('mesh_structure_capabilities','observe_mesh_structure')),
+def _raw(host,object_id,categories,deadline,mode='legacy'):
+    require(mode in ('legacy','summary_v1'),'unsupported_structure_region_mode')
+    summary=mode=='summary_v1'
+    methods=('mesh_region_summary_capabilities','observe_mesh_structure_summary') if summary else ('mesh_structure_capabilities','observe_mesh_structure')
+    require(all(callable(getattr(host,k,None)) for k in methods),
             'typed_raw_host_unavailable')
-    caps=host.mesh_structure_capabilities()
-    require(type(caps) is dict and caps.get('protocol')==m.PROTOCOL and caps.get('read_only') is True
+    caps=getattr(host,methods[0])()
+    require(type(caps) is dict and caps.get('protocol')==(m.REGION_SUMMARY_PROTOCOL if summary else m.PROTOCOL) and caps.get('read_only') is True
         and caps.get('execution_authority') is False and caps.get('images') is False
         and caps.get('helper_sha256')==_RAW_MESH_SHA256 and caps.get('supported_categories')==list(m.SUPPORTED)
         and caps.get('clock')==counter_descriptor(),'raw_capability_mismatch')
     require(time.perf_counter_ns()<deadline,'deadline_expired')
     request=uuid.uuid4().hex
-    value=host.observe_mesh_structure(request,object_id,categories,deadline)
+    value=getattr(host,methods[1])(request,object_id,categories,deadline)
     require(time.perf_counter_ns()<deadline,'deadline_expired')
-    return raw_consumer.validate_result(value,object_id=object_id,request_id=request,categories=categories,deadline_ns=deadline)
+    return raw_consumer.validate_result(value,object_id=object_id,request_id=request,categories=categories,deadline_ns=deadline,region_summaries=summary)
 
 
 def _references(state,diagnostic):
@@ -74,7 +77,7 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
                 if remaining is not None:deadline=min(deadline,now+int(remaining*1e9))
                 selected=copy.deepcopy(state['refs'].get(normalized.get('patch_ref')))
                 if normalized['operation']=='patch':require(selected is not None,'patch_ref_not_current')
-                diagnostic=_raw(service.host,state['object_id'],state['categories'],deadline)
+                diagnostic=_raw(service.host,state['object_id'],state['categories'],deadline,service.config.get('structure_region_mode','legacy'))
                 result['diagnostic']=diagnostic;result['status']=diagnostic['status']
                 result['routing']['observation_status']='partial' if diagnostic['status']=='partial' else 'complete'
                 result['patch_refs'],result['patch_references_omitted']=_references(state,diagnostic)

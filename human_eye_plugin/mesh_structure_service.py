@@ -9,13 +9,75 @@ from .blender_host import _RAW_MESH_SHA256
 from .forward_deadline import counter_descriptor
 
 
-def validate_result(value, *, object_id, request_id, categories, deadline_ns):
+def _summary_position(position, counts):
+    need=m._require
+    need(type(position) is dict,'structure_summary_position')
+    if position.get('status')=='unknown':
+        need(set(position)=={'status','reason'} and position['reason'] in
+            ('position_nonfinite','work_budget_exhausted','deadline_exhausted'),'structure_summary_position')
+        return False
+    need(set(position)=={'status','length_unit','method','scope','local_bounds_m','world_bounds_m',
+        'witness_vertex_index','witness_local_m','witness_world_m'} and position.get('status')=='known'
+        and position['length_unit']=='m' and position['method']==m.ALGORITHM['positions']
+        and position['scope']=='all_source_vertices_of_reported_elements'
+        and m._integer(position['witness_vertex_index'],0,counts['vertices']-1),'structure_summary_position')
+    for frame in ('local','world'):
+        bounds=position[frame+'_bounds_m'];point=position['witness_'+frame+'_m']
+        need(type(bounds) is list and len(bounds)==2 and all(type(row) is list and len(row)==3
+            and all(m._finite(x) for x in row) for row in bounds) and type(point) is list
+            and len(point)==3 and all(m._finite(x) for x in point),'structure_summary_position')
+        need(all(bounds[0][k]<=point[k]<=bounds[1][k] for k in range(3)),'structure_summary_position')
+    return True
+
+
+def _validate_summary(value, source, checks, patches):
+    """Validate pinned producer claims; omitted raw membership is not received."""
+    need=m._require;catalog=value['region_summary'];counts=source['counts']
+    need(type(catalog) is dict and set(catalog)=={'schema','source_binding_sha256','scope','entries','coverage'}
+        and catalog['schema']==m.REGION_SUMMARY_SCHEMA and catalog['source_binding_sha256']==m._digest(source)
+        and catalog['scope']=='component_positions_not_complete_members_or_visibility','structure_summary_binding')
+    entries=catalog['entries'];coverage=catalog['coverage']
+    need(type(entries) is list and len(entries)+len(patches)<=m.LIMITS['regions'],'structure_summary_slots')
+    need(type(coverage) is dict and set(coverage)==set(checks),'structure_summary_coverage')
+    seen={(p['category'],p['cluster_ordinal']) for p in patches}
+    positions={c:[p['position'] for p in patches if p['category']==c] for c in checks}
+    for row in entries:
+        need(type(row) is dict and set(row)=={'category','cluster_ordinal','element_kind','member_count',
+            'membership_sha256','membership_delivery','position','summary_id'},'structure_summary_fields')
+        c=row['category'];need(type(c) is str and c in checks,'structure_summary_category')
+        ordinal=row['cluster_ordinal'];need(m._integer(ordinal,0,checks[c]['found']-1),'structure_summary_ordinal')
+        key=(c,ordinal);need(key not in seen,'duplicate_structure_summary');seen.add(key)
+        kind='edge' if c in m.EDGE_CATEGORIES else ('vertex' if c in m.VERTEX_CATEGORIES else 'polygon')
+        extent=counts[{'edge':'edges','vertex':'vertices','polygon':'polygons'}[kind]]
+        digest=row['membership_sha256']
+        need(row['element_kind']==kind and m._integer(row['member_count'],1,extent)
+            and row['membership_delivery']=='omitted' and type(digest) is str and len(digest)==64
+            and all(x in '0123456789abcdef' for x in digest),'structure_summary_membership')
+        expected=m._digest(dict(raw_sha256=source['raw_sha256'],object_instance=source['object_instance'],
+            document_epoch=source['document_epoch'],category=c,cluster_ordinal=ordinal,membership_sha256=digest))
+        need(row['summary_id']==expected,'structure_summary_identity')
+        _summary_position(row['position'],counts);positions[c].append(row['position'])
+    partial=False
+    for c,check in checks.items():
+        n=len(positions[c]);known=sum(p['status']=='known' for p in positions[c]);complete=check['state']=='complete'
+        expected=dict(scan_complete=complete,regions_delivered=n,positions_known=known,
+            summaries_omitted=check['found']-n,positions_complete=complete and n==check['found'] and known==n,
+            member_lists_complete=complete and check['omitted']==0)
+        row=coverage[c]
+        need(type(row) is dict and set(row)==set(expected) and all(type(row[k]) is type(v) and row[k]==v
+            for k,v in expected.items()),'structure_summary_coverage')
+        partial|=not expected['positions_complete']
+    return partial
+
+
+def validate_result(value, *, object_id, request_id, categories, deadline_ns, region_summaries=False):
     """Check a pinned typed host's summary, not re-attest its geometry remotely."""
     need=m._require;integer=m._integer
     raw=m._bytes(value);need(len(raw)<=m.LIMITS['report_bytes'],'structure_result_bytes')
-    need(type(value) is dict and set(value)=={'protocol','status','report','patches','coverage',
-         'omitted_reference','accounting','execution_authority','images','algorithm'},'structure_result_fields')
-    need(value['protocol']==m.PROTOCOL and value['status'] in ('observed','partial')
+    fields={'protocol','status','report','patches','coverage','omitted_reference','accounting','execution_authority','images','algorithm'}
+    if region_summaries:fields.add('region_summary')
+    need(type(value) is dict and set(value)==fields,'structure_result_fields')
+    need(value['protocol']==(m.REGION_SUMMARY_PROTOCOL if region_summaries else m.PROTOCOL) and value['status'] in ('observed','partial')
          and value['execution_authority'] is False and value['images']==[],'structure_result_capability')
     need(value['algorithm']==m.ALGORITHM,'structure_algorithm_policy')
     report=value['report'];need(type(report) is dict and set(report)=={'schema','task','source','checks',
@@ -151,6 +213,7 @@ def validate_result(value, *, object_id, request_id, categories, deadline_ns):
         need(not known.intersection(ids),'structure_known_unknown_overlap')
     for category,record in checks.items():
         need((record['reason']=='predicate_domain_incomplete')==(category in unknown),'structure_unclassified_coverage')
+    if region_summaries:has_partial|=_validate_summary(value,source,checks,patches)
     need((value['status']=='partial')==has_partial,'structure_summary_status')
     return copy.deepcopy(value)
 

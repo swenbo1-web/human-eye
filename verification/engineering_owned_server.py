@@ -84,7 +84,6 @@ def main(folder):
                     except Exception as exc:error=type(exc).__name__+': '+str(exc)
                     result=dict(request_id=key,peer_nonce=nonce,deadline_ns=req['deadline_ns'],clock=counter_descriptor(),
                         source_before=source_before,source_after=snapshot(),native=native,error=error)
-                    save('NATIVE_'+key+'.json',result)
                 elif outer['type']=='execute_code':
                     if set(outer['params'])!={'code'}:raise ValueError('code_fields')
                     code=outer['params']['code'];tree=ast.parse(code)
@@ -98,6 +97,9 @@ def main(folder):
                 else:raise ValueError('unadmitted_message')
                 if snapshot()!=before or renderer.native_render_state(bpy,scene,bpy.context.view_layer)!=display:
                     raise ValueError('scene_or_display_changed')
+                # Same one-envelope archive policy for both arms, including
+                # capabilities. Older baselines retain their frozen helper.
+                save('WIRE_'+str(len(records))+'.json',result)
                 encoded=json.dumps(result,allow_nan=False).encode();connection.sendall(encoded)
                 records.append(dict(kind=outer['type'],request_bytes=len(wire),response_bytes=len(encoded),
                     elapsed_ns=time.perf_counter_ns()-started,source_unchanged=True,display_restored=True))

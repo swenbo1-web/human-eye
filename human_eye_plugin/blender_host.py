@@ -57,7 +57,7 @@ _READONLY_DEPENDENCY_SHA256 = {
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
-_RAW_MESH_SHA256 = '30d63f1f6a84350229197a91ed257bc2b9214eb692a26b8d26db6b8b41a362b8'
+_RAW_MESH_SHA256 = 'a9c50cdf2141158a2eff16a5827581cbae5e506a8e40f64b236f4ee676752d5d'
 _PATCH_FOCUS_SHA256 = 'cd54ed3f2ea100b5cc7662a30523c5f6548c4315d73dc4047c3d93d337964bc8'
 _NONPLANAR_FOCUS_SHA256 = 'fad0fd0d5eebebf7f6de907cb74005777b442538998867a342d3e0b218e41c02'
 
@@ -595,6 +595,17 @@ class BlenderSceneHost:
         with self._lock:
             return self._raw_mesh_module().observe_raw(self,object_id,request_id=request_id,
                 categories=categories,deadline_ns=deadline_ns)
+
+    def mesh_region_summary_capabilities(self):
+        caps=self.mesh_structure_capabilities()
+        caps['protocol']=self._raw_mesh_module().REGION_SUMMARY_PROTOCOL
+        return caps
+
+    def observe_mesh_structure_summary(self, request_id, object_id, categories, deadline_ns):
+        self._main_thread()
+        with self._lock:
+            return self._raw_mesh_module().observe_raw(self,object_id,request_id=request_id,
+                categories=categories,deadline_ns=deadline_ns,region_summaries=True)
 
     def _patch_focus_module(self):
         from pathlib import Path

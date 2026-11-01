@@ -13,6 +13,8 @@ import uuid
 from fractions import Fraction
 
 PROTOCOL = 'raw-mesh-structure-v2'
+REGION_SUMMARY_PROTOCOL = 'raw-mesh-structure-v3'
+REGION_SUMMARY_SCHEMA = 'raw-region-summaries-v1'
 DEFAULT_CATEGORIES = ('boundary_edges', 'loose_edges', 'isolated_vertices')
 SUPPORTED = DEFAULT_CATEGORIES + ('nonmanifold_edges','nonmanifold_vertices','degenerate_polygons',
     'duplicate_positions','duplicate_polygons','winding_conflicts')
@@ -393,7 +395,61 @@ def _patch_position(category,indices,raw,budget):
     except (OverflowError,ValueError):return {'status':'unknown','reason':'position_nonfinite'}
 
 
-def analyze_prepared(prepared, *, task_id, categories=DEFAULT_CATEGORIES, budget=None):
+def _region_summary(result, groups, raw, budget):
+    """Position-only omitted components; shared slots/work/bytes, no patch refs."""
+    source=result['report']['source'];checks=result['report']['checks']
+    catalog=dict(schema=REGION_SUMMARY_SCHEMA,source_binding_sha256=_digest(source),
+        scope='component_positions_not_complete_members_or_visibility',entries=[],coverage={})
+    result['protocol']=REGION_SUMMARY_PROTOCOL;result['region_summary']=catalog
+    for category,check in checks.items():
+        # Maximum-width counters reserve the final coverage representation.
+        n=check['found']
+        catalog['coverage'][category]=dict(scan_complete=False,regions_delivered=n,
+            positions_known=n,summaries_omitted=n,positions_complete=False,member_lists_complete=False)
+    while len(_bytes(result))+64>LIMITS['report_bytes'] and result['patches']:
+        patch=result['patches'].pop();check=checks[patch['category']]
+        check['regions'].pop();check['omitted']+=1;check['omission_reason']='output_budget'
+    size=len(_bytes(result));_require(size+64<=LIMITS['report_bytes'],'diagnostic_output_byte_budget')
+    delivered={(p['category'],p['cluster_ordinal']) for p in result['patches']}
+    stopped=False
+    for category,members in groups.items():
+        for ordinal,indices in enumerate(members):
+            if (category,ordinal) in delivered:continue
+            if len(delivered)+len(catalog['entries'])>=LIMITS['regions']:break
+            try:
+                budget.consume(len(indices)+1,'summary_membership_digest')
+                membership=_digest(indices)
+                position=_patch_position(category,indices,raw,budget)
+                kind='edge' if category in EDGE_CATEGORIES else ('vertex' if category in VERTEX_CATEGORIES else 'polygon')
+                row=dict(category=category,cluster_ordinal=ordinal,element_kind=kind,
+                    member_count=len(indices),membership_sha256=membership,membership_delivery='omitted',position=position)
+                row['summary_id']=_digest(dict(raw_sha256=source['raw_sha256'],object_instance=source['object_instance'],
+                    document_epoch=source['document_epoch'],category=category,cluster_ordinal=ordinal,membership_sha256=membership))
+                cost=len(_bytes(row))+(1 if catalog['entries'] else 0)
+                if size+cost+64<=LIMITS['report_bytes']:
+                    catalog['entries'].append(row);size+=cost
+                if position.get('reason') in ('work_budget_exhausted','deadline_exhausted'):
+                    stopped=True;break
+            except StructureStopped:
+                stopped=True;break
+        if stopped:break
+    partial=False
+    for category,check in checks.items():
+        positions=[p['position'] for p in result['patches'] if p['category']==category]
+        positions.extend(p['position'] for p in catalog['entries'] if p['category']==category)
+        known=sum(p['status']=='known' for p in positions);missing=check['found']-len(positions)
+        complete=check['state']=='complete'
+        catalog['coverage'][category]=dict(scan_complete=complete,regions_delivered=len(positions),
+            positions_known=known,summaries_omitted=missing,
+            positions_complete=complete and not missing and known==len(positions),
+            member_lists_complete=complete and check['omitted']==0)
+        partial|=not catalog['coverage'][category]['positions_complete']
+    result['accounting']['work_units']=budget.used
+    result['status']='partial' if partial or any(p['position']['status']=='unknown' for p in result['patches']) else 'observed'
+    return partial
+
+
+def analyze_prepared(prepared, *, task_id, categories=DEFAULT_CATEGORIES, budget=None, region_summaries=False):
     """Internal prepared snapshot only; public untrusted input uses analyze_raw.
 
     Incomplete scans do not expose an unproven total or call the mesh normal.
@@ -487,6 +543,8 @@ def analyze_prepared(prepared, *, task_id, categories=DEFAULT_CATEGORIES, budget
                         source_bytes=prepared['encoded_source_bytes'],deadline_ns=budget.deadline_ns,
                         deadline_scope='single_call_cooperative_checkpoints',task_wide_budget_enforced=False),
         execution_authority=False,images=[])
+    if region_summaries:
+        position_unknown|=_region_summary(result,groups,raw,budget)
     encoded=_bytes(result)
     _require(len(encoded)<=LIMITS['report_bytes'],'diagnostic_output_byte_budget')
     # Stop at the final deadline too; do not turn a late computation into an
@@ -496,10 +554,10 @@ def analyze_prepared(prepared, *, task_id, categories=DEFAULT_CATEGORIES, budget
     return result
 
 
-def analyze_raw(raw, identity, *, task_id, categories=DEFAULT_CATEGORIES, budget=None):
+def analyze_raw(raw, identity, *, task_id, categories=DEFAULT_CATEGORIES, budget=None, region_summaries=False):
     budget=budget or WorkBudget()
     return analyze_prepared(prepare_raw(raw,identity,budget=budget),task_id=task_id,
-                            categories=categories,budget=budget)
+                            categories=categories,budget=budget,region_summaries=region_summaries)
 
 
 def _host_header(host, obj):
@@ -557,7 +615,7 @@ def capture_raw(host, object_id, *, budget=None):
         return prepare_raw(raw,identity,budget=budget)
 
 
-def observe_raw(host, object_id, *, request_id, categories=DEFAULT_CATEGORIES, deadline_ns=None):
+def observe_raw(host, object_id, *, request_id, categories=DEFAULT_CATEGORIES, deadline_ns=None, region_summaries=False):
     budget=WorkBudget(deadline_ns=deadline_ns)
     prepared=capture_raw(host,object_id,budget=budget)
-    return analyze_prepared(prepared,task_id=request_id,categories=categories,budget=budget)
+    return analyze_prepared(prepared,task_id=request_id,categories=categories,budget=budget,region_summaries=region_summaries)
