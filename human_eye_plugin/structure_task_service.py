@@ -89,16 +89,31 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
                         if include_image:
                             result['image_status']='budget_exhausted'
                             if record['reserved']['images']:
-                                require(all(callable(getattr(service.host,k,None)) for k in
-                                    ('patch_observation_capabilities','observe_patch')),'typed_patch_host_unavailable')
-                                caps=image_consumer.validate_capabilities(service.host.patch_observation_capabilities())
-                                require(time.perf_counter_ns()<deadline,'deadline_expired')
-                                image_called=True;image_known=False;request=uuid.uuid4().hex
-                                raw=service.host.observe_patch(request,state['object_id'],fresh,deadline)
-                                visual=image_consumer.validate_result(raw,object_id=state['object_id'],patch=fresh,
-                                    request_id=request,deadline_ns=deadline,capabilities=caps)
-                                images=visual.pop('images');image_known=True
-                                result['visual_evidence']=visual;result['image_status']='observed'
+                                mode=service.config.get('structure_patch_mode','planar_xy')
+                                require(mode in ('planar_xy','nonplanar_boundary_v1','nonplanar_dense_v1'),'unsupported_structure_patch_mode')
+                                if mode!='planar_xy':
+                                    from . import nonplanar_observation as consumer
+                                    require(all(callable(getattr(service.host,k,None)) for k in
+                                        ('nonplanar_observation_capabilities','observe_nonplanar_patch')),'typed_nonplanar_host_unavailable')
+                                    caps=consumer.validate_capabilities(service.host.nonplanar_observation_capabilities())
+                                    require(time.perf_counter_ns()<deadline,'deadline_expired')
+                                    image_called=True;image_known=False;request=uuid.uuid4().hex
+                                    raw=service.host.observe_nonplanar_patch(request,state['object_id'],fresh,deadline,mode)
+                                    visual=consumer.validate_result(raw,object_id=state['object_id'],patch=fresh,
+                                        request_id=request,deadline_ns=deadline,capabilities=caps,mode=mode)
+                                    images=visual.pop('images');image_known=True
+                                    result['visual_evidence']=visual;result['image_status']='observed'
+                                else:
+                                    require(all(callable(getattr(service.host,k,None)) for k in
+                                        ('patch_observation_capabilities','observe_patch')),'typed_patch_host_unavailable')
+                                    caps=image_consumer.validate_capabilities(service.host.patch_observation_capabilities())
+                                    require(time.perf_counter_ns()<deadline,'deadline_expired')
+                                    image_called=True;image_known=False;request=uuid.uuid4().hex
+                                    raw=service.host.observe_patch(request,state['object_id'],fresh,deadline)
+                                    visual=image_consumer.validate_result(raw,object_id=state['object_id'],patch=fresh,
+                                        request_id=request,deadline_ns=deadline,capabilities=caps)
+                                    images=visual.pop('images');image_known=True
+                                    result['visual_evidence']=visual;result['image_status']='observed'
                 if include_image and result['image_status']!='observed':
                     result['status']='partial';result['routing']['observation_status']='partial'
                 require(time.perf_counter_ns()<deadline and time.time_ns()<state['deadline_wall_ns'],'deadline_expired')

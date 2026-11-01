@@ -139,6 +139,10 @@ def run_worker(root: Path) -> None:
                                       ('native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'))) else None}
             elif command == "capture":
                 result = host.capture_scene()
+            elif command in ('nonplanar_observation_capabilities','observe_nonplanar_patch'):
+                required=set() if command=='nonplanar_observation_capabilities' else {'request_id','object_id','patch','deadline_ns','mode'}
+                if set(params)!=required:raise ValueError('Invalid typed nonplanar observation arguments')
+                result=getattr(host,command)(**params)
             elif command in ('patch_observation_capabilities','observe_patch'):
                 required=set() if command=='patch_observation_capabilities' else {'request_id','object_id','patch','deadline_ns'}
                 if set(params)!=required:raise ValueError('Invalid typed patch observation arguments')

@@ -2,7 +2,7 @@
 
 The solid classifier reuses the engine's certified convex-component SAT. It is
 not an independent ground-truth evaluator and does not certify swept paths.
-Clearance uses all vertex/triangle and edge/edge features without display
+Clearance uses all triangle-surface vertex/triangle and edge/edge features without display
 rounding or witness-point attention heuristics. Unsupported solids and resource
 limits remain unknown, never clear.
 """
@@ -23,6 +23,7 @@ MAX_DENSE_ELEMENTS = 1_000_000
 MAX_SAT_PROJECTION_ELEMENTS = 2_000_000
 MAX_SCENE_WORK_ELEMENTS = 8_000_000
 _CHUNK = 64
+SURFACE_SCOPE = "certified_triangle_surface_only_loose_vertices_and_edges_excluded"
 
 
 def _counts(mesh):
@@ -120,7 +121,8 @@ def solid_support_status(mesh):
     budget = work_budget_status([mesh], purpose="mesh_validation")
     result = {"supported": False, "component_count": None, "work_budget": budget,
               "support_method": "existing_closed_convex_components_validation",
-              "evaluator_source": "engine_geometry", "independent_ground_truth": False}
+              "evaluator_source": "engine_geometry", "independent_ground_truth": False,
+              "geometry_scope": SURFACE_SCOPE}
     if not budget["within_budget"]:
         return {**result, "reason": "geometry_resource_limit"}
     try:
@@ -220,11 +222,18 @@ def _segment_min_sq(a0, a1, b0, b1):
     return min(best, float(values.min()))
 
 
+def _surface_vertices(mesh):
+    # Solid certification is over face-referenced vertices. Do not introduce
+    # isolated points into clearance, or mutate/reindex the original mesh.
+    return mesh.vertices[np.unique(mesh.faces)]
+
+
 def _surface_distance(a, b):
     minimum = math.inf
     for points_mesh, faces_mesh in ((a, b), (b, a)):
-        for p in range(0, len(points_mesh.vertices), _CHUNK):
-            points = points_mesh.vertices[p:p + _CHUNK]
+        surface_points = _surface_vertices(points_mesh)
+        for p in range(0, len(surface_points), _CHUNK):
+            points = surface_points[p:p + _CHUNK]
             for f in range(0, len(faces_mesh.faces), _CHUNK):
                 triangles = faces_mesh.vertices[faces_mesh.faces[f:f + _CHUNK]]
                 minimum = min(minimum, _point_triangle_min_sq(points, triangles))
@@ -246,7 +255,7 @@ def _surface_distance(a, b):
 def _surface_distance_with_witness(a, b):
     """Nearest original-surface feature pair, never a decomposition seam."""
     original_a, original_b = a, b
-    origin = np.asarray(a.vertices[0], dtype=float).copy()
+    origin = np.asarray(a.vertices[a.faces[0, 0]], dtype=float).copy()
     a = SimpleNamespace(vertices=np.asarray(a.vertices) - origin, faces=a.faces)
     b = SimpleNamespace(vertices=np.asarray(b.vertices) - origin, faces=b.faces)
     best = math.inf
@@ -275,8 +284,9 @@ def _surface_distance_with_witness(a, b):
         remember(on_segment if reverse else on_points, on_points if reverse else on_segment, squared)
 
     for left, right, reverse in ((a, b, False), (b, a, True)):
-        for start in range(0, len(left.vertices), _CHUNK):
-            points = left.vertices[start:start + _CHUNK]
+        surface_points = _surface_vertices(left)
+        for start in range(0, len(surface_points), _CHUNK):
+            points = surface_points[start:start + _CHUNK]
             for face in range(0, len(right.faces), _CHUNK):
                 triangles = right.vertices[right.faces[face:face + _CHUNK]]
                 p, q, r = triangles[:, 0], triangles[:, 1], triangles[:, 2]
@@ -375,6 +385,7 @@ def measure_pair_geometry(focal, reference, *, collision_tolerance_m=COLLISION_T
               "penetration_depth_m": None, "signed_clearance_m": None,
               "collision_tolerance_m": float(collision_tolerance_m),
               "measurement_method": "certified_convex_components_sat",
+              "geometry_scope": SURFACE_SCOPE,
               "evaluator_source": "engine_geometry", "independent_ground_truth": False,
               "work_budget": budget}
     if not budget["within_budget"]:

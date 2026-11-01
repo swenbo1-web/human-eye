@@ -39,7 +39,8 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
-_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','patch_observation_capabilities','observe_patch'})
+_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','patch_observation_capabilities','observe_patch',
+    'nonplanar_observation_capabilities','observe_nonplanar_patch'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
 
 
@@ -210,6 +211,15 @@ class BlenderMCPHost:
         return self._request('observe_patch',dict(request_id=request_id,object_id=object_id,
             patch=patch,deadline_ns=deadline_ns))
 
+    def nonplanar_observation_capabilities(self):
+        value=self._request('nonplanar_observation_capabilities',{})
+        _validate_native_observation_capabilities(value['native'],source=self.source)
+        return value
+
+    def observe_nonplanar_patch(self,request_id,object_id,patch,deadline_ns,mode):
+        return self._request('observe_nonplanar_patch',dict(request_id=request_id,object_id=object_id,
+            patch=patch,deadline_ns=deadline_ns,mode=mode))
+
     def begin_motion_goal(self, goal_id, focal_id, reference_id, limits=None):
         return self._request('motion_begin', {'goal_id':goal_id, 'focal_id':focal_id,
                                              'reference_id':reference_id, 'limits':limits})
@@ -366,6 +376,8 @@ class BlenderMCPHost:
     def _structure_code(self,command,params,request_id):
         """A separate pinned, typed read template; old template bytes stay fixed."""
         required={'mesh_structure_capabilities':set(),'patch_observation_capabilities':set(),
+            'nonplanar_observation_capabilities':set(),
+            'observe_nonplanar_patch':{'request_id','object_id','patch','deadline_ns','mode'},
             'observe_mesh_structure':{'request_id','object_id','categories','deadline_ns'},
             'observe_patch':{'request_id','object_id','patch','deadline_ns'}}
         if command not in required or type(params) is not dict or set(params)!=required[command]:

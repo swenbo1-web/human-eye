@@ -171,6 +171,7 @@ def evaluate_spatial_goal(scene, goal):
         return result
     clearance = geometry.get("signed_clearance_m")
     penetrating = geometry.get("is_penetrating")
+    result['geometry_scope'] = geometry.get('geometry_scope')
     if (geometry.get("measurement_valid") is not True
             or not _finite_measurement(clearance) or type(penetrating) is not bool):
         result["reason_codes"] = ["geometry_measurement_invalid"]

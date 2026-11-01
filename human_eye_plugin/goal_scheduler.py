@@ -273,10 +273,16 @@ class OwnedGoalScheduler:
                         == {k:v for k,v in physical.items() if k != 'complete'},
                     'host_release_not_confirmed')
             result.update(status='completed', task_succeeded=True, host_closed=True,
+                physical_task_succeeded=True, execution_phase='physical_completion_verified',
+                completion_persistence='unknown',
                 host_process_alive=self.host.is_alive,
                 clearance_at_task_end_m=check['current_clearance_m'])
-            set_authorization_state(value, grant.key, 'completed', result=result)
+            # The record is committed iff the existing atomic save commits.
+            # A failed/lost acknowledgement leaves the caller's copy unknown.
+            committed_result = dict(result, completion_persistence='committed')
+            set_authorization_state(value, grant.key, 'completed', result=committed_result)
             self.service._save(value, runtime)
+            result['completion_persistence'] = 'committed'
             return result
 
     def run(self, spec):
@@ -287,6 +293,8 @@ class OwnedGoalScheduler:
         result = {'schema_version': 'owned-goal-scheduler-v1', 'status': 'review_required',
             'task_succeeded': False, 'executed_this_call': False, 'new_setter_count': 0,
             'engine_confirmed_steps': 0, 'host_closed': False, 'segments': [],
+            'execution_phase': 'not_submitted', 'physical_task_succeeded': None,
+            'completion_persistence': 'not_attempted',
             'execution_authority': False, 'retry_authorized': False,
             'presentation_scope': 'recorded_task_end_snapshot_not_current_after_return'}
         grant = None
@@ -319,6 +327,7 @@ class OwnedGoalScheduler:
                 previous = copy.deepcopy(claimed['record'].get('result') or result)
                 previous.update(historical_receipt=True, replayed=True,
                     current_scene_revalidated=False, executed_this_call=False, new_setter_count=0,
+                    execution_phase='not_submitted',
                     execution_authority=False, retry_authorized=False)
                 if claimed['mode'] != 'historical':
                     previous.update(status='review_required', task_succeeded=False,
@@ -388,6 +397,13 @@ class OwnedGoalScheduler:
                     'fresh_preview_not_executable')
                 _require(_json(self._capture()) == _json(before), 'scene_changed_during_preview')
                 self._ticket = {'child_id': child_id, 'request': copy.deepcopy(request), 'used': False}
+                # This call can raise after the host setter or durable commit.
+                # Mark uncertainty before crossing that boundary. Preserve a
+                # prior segment's confirmed execution and accounting lower bound.
+                previously_executed = result['executed_this_call']
+                result['execution_phase'] = 'dispatch_started'
+                result['executed_this_call'] = True if previously_executed is True else None
+                result['new_setter_count'] = None
                 try:
                     receipt = self.service.run_supervised_clearance_segment(grant.goal_id,
                         grant.session_id, child_id, request)
@@ -395,11 +411,12 @@ class OwnedGoalScheduler:
                     self._ticket = None
                 # Persist known physical accounting before native post-review.
                 # Unknowns are frozen by reconciliation, never resent here.
-                result['executed_this_call'] = (None if receipt.get('executed') is None
-                    else result['executed_this_call'] or receipt.get('executed') is True)
-                if receipt.get('executed') is not False:
-                    result['new_setter_count'] = None
+                executed = receipt.get('executed')
+                result['execution_phase'] = 'receipt_received'
+                result['executed_this_call'] = (True if previously_executed is True or executed is True
+                    else False if previously_executed is False and executed is False else None)
                 budget = self.service.goal_supervision('reconcile', grant.goal_id, request_id=child_id)
+                result['execution_phase'] = 'reconciled'
                 result['engine_confirmed_steps'] = budget['confirmed_steps']
                 result['new_setter_count'] = budget['confirmed_steps']
                 result['budget'] = {k: budget[k] for k in ('started_monotonic', 'deadline_monotonic',
@@ -427,6 +444,10 @@ class OwnedGoalScheduler:
             raise ValueError('whole_goal_segment_limit_reached')
         except Exception as exc:
             reason = (type(exc).__name__ + ':' + str(exc))[:256]
+            # _finish may have verified physical completion and closed the
+            # host before its final save raised. Keep that evidence, while
+            # normal completion requires an acknowledged completion record.
+            result.update(status='review_required', task_succeeded=False)
             result['reason_codes'] = [reason]
             return self._record_stop(grant if fresh_claim else None, result, reason)
         finally:

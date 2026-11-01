@@ -2,6 +2,10 @@
 
 当前为源码候选，未安装到当前聊天，也未新增默认自动动作 MCP 接口。入口为可信嵌入方的 `OwnedGoalScheduler(config_path, host, authority).run(ClearanceTaskSpec(...))`；固定无 UI 后台 typed Blender worker 是当前唯一支持的自动任务宿主。共享窗口与自定义 worker 不能声明相同覆盖能力。
 
+2026-11-01 TF源码修订：`executed_this_call` 的true表示本次至少一次已确认执行，false表示已知本次未执行，null表示可能执行且未确认。进入提交调用前即标记不确定；后段未知不覆盖前段true。`new_setter_count` 在完整对账前为null，`engine_confirmed_steps`是已对账下界，`execution_phase`说明停在哪个边界。返回这些字段不授予重试权。
+
+`physical_task_succeeded`只在最终原生目标及物理计量/宿主关闭均核验后为true；此前为null，不能解释为物理失败。`completion_persistence`区分not_attempted/unknown/committed：提交沿用原有原子保存承诺，committed不等于fsync或物理介质刷新。完成保存失败或回执丢失时，本调用返回review_required/task_succeeded=false，并保留真实物理完成与计量；可能已提交的历史完成记录不被伪改为未执行。真正确认持久完成的历史记录仍可只读返回，不能重复setter。
+
 一个稳定的已认证任务事件只能对应一个父目标。嵌入方的 `TrustedTaskAuthority` 回调必须验证目标、原对象身份、原支撑三角形、引擎 build、进程与时钟域，并返回明确的 `TaskApproval`。模型 JSON、观察资格和历史授权记录都不能签发动作权限。Python capability 是可信同进程代码边界，不是对任意 Python 的沙箱或远程证明。
 
 授权索引与父子账本共用原 connector 的锁、原子保存与持久化级别。首次授权固定总预算及开始/截止时间；注册、复审和接续消耗原窗口。同事件的重复请求只返回历史或复核要求，重启与换 ID 不自动重开预算。完成记录只证明记录结束时的目标，不证明后续场景仍保持该状态。

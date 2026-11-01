@@ -199,6 +199,18 @@ class BlenderProcessHost:
         return self._request('observe_patch',dict(request_id=request_id,object_id=object_id,
                              patch=patch,deadline_ns=deadline_ns))
 
+    def nonplanar_observation_capabilities(self):
+        if not self._default_worker:raise ValueError('Nonplanar observation requires the fixed worker')
+        value=self._request('nonplanar_observation_capabilities',{})
+        _validate_native_observation_capabilities(value['native'],
+            source=Path(__file__).resolve().with_name('blender_host.py'),process_id=self._process.pid)
+        return value
+
+    def observe_nonplanar_patch(self,request_id,object_id,patch,deadline_ns,mode):
+        if not self._default_worker:raise ValueError('Nonplanar observation requires the fixed worker')
+        return self._request('observe_nonplanar_patch',dict(request_id=request_id,object_id=object_id,
+            patch=patch,deadline_ns=deadline_ns,mode=mode))
+
     def native_observation_capabilities(self):
         value=self._capabilities.get('native_observation_capabilities')
         if value is None:return None
