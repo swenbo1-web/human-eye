@@ -186,7 +186,7 @@ def _request(operation):
                 with span('service.' + operation, kind='cpu'):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind')!='structure_task':
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -253,9 +253,13 @@ class LiveSpatialService:
     """
 
     def __init__(self, config_path, host=None, *, production_mode=False,
-                 supervisor_context=None):
+                 supervisor_context=None, surface_references=None):
         if type(production_mode) is not bool:
             raise ValueError('production_mode must be boolean')
+        if surface_references is not None:
+            from .surface_reference import ReferenceRegistry
+            if type(surface_references) is not ReferenceRegistry:raise ValueError('surface_references requires a trusted local registry')
+        self._surface_references=surface_references
         self.production_mode = production_mode
         if supervisor_context is not None:
             from .goal_supervision import GoalSupervisorContext
@@ -814,6 +818,10 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode']=='mesh_surface':
+            if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
+            from .surface_task_service import observe
+            return observe(self,session_id,query,include_image=include_image,focal_id=focal_id)
         if query['mode']=='mesh_structure':
             if goal is not None or reference_id is not None or scene_delta is not None:
                 raise ValueError('Structure task does not accept pair goals, reference objects or scene deltas')

@@ -582,6 +582,45 @@ class BlenderSceneHost:
             self._raw_mesh_module_cache=module
         return module
 
+    def _surface_geometry_module(self):
+        from pathlib import Path
+        source=Path(__file__).resolve().with_name('surface_geometry.py')
+        with source.open('rb') as stream:raw=stream.read(_READONLY_SOURCE_LIMIT+1)
+        if source.resolve()!=source or len(raw)>_READONLY_SOURCE_LIMIT or hashlib.sha256(raw).hexdigest()!='bf6873df6fc9d77e43a062d254805f874a003bf0734acc77441673e544e7b5de':
+            raise BlenderHostError('surface_helper_source_mismatch')
+        return self._readonly_checked_module(source,raw,'_human_eye_surface_geometry')
+
+    def surface_geometry_capabilities(self):
+        m=self._surface_geometry_module()
+        return dict(protocol=m.PROTOCOL,helper_sha256='bf6873df6fc9d77e43a062d254805f874a003bf0734acc77441673e544e7b5de',raw_helper_sha256=_RAW_MESH_SHA256,
+            limits=m.LIMITS,clock=self._readonly_clock_module().counter_descriptor(),read_only=True,execution_authority=False,images=False)
+
+    def capture_surface_source(self,request_id,object_id,deadline_ns):
+        self._main_thread();m=self._surface_geometry_module();raw_module=self._raw_mesh_module()
+        budget=raw_module.WorkBudget(deadline_ns=deadline_ns)
+        with self._lock:
+            prepared=raw_module.capture_raw(self,object_id,budget=budget)
+            obj=next(o for o in self.scene.objects if self.object_id(o)==object_id)
+            before=raw_module._host_header(self,obj)
+            # Count before calculating a possibly large tessellation cache.
+            if sum(len(p.vertices)-2 for p in obj.data.polygons)>m.LIMITS['triangles']:
+                raise BlenderHostError('surface_geometry_budget')
+            budget.check('before_host_tessellation');obj.data.calc_loop_triangles()
+            triangles=[[int(i) for i in t.vertices] for t in obj.data.loop_triangles]
+            polygons=[int(t.polygon_index) for t in obj.data.loop_triangles]
+            if raw_module._host_header(self,obj)!=before:raise BlenderHostError('surface_tessellation_source_changed')
+            m.validate_tessellation(prepared['raw'],triangles,polygons,budget)
+            budget.check('surface_host_reply')
+            return dict(schema=m.PROTOCOL,request_id=request_id,source=prepared['source'],raw=prepared['raw'],
+                triangles=triangles,triangle_polygons=polygons)
+
+    def observe_surface_geometry(self,request_id,object_id,deadline_ns,near_m):
+        packet=self.capture_surface_source(request_id,object_id,deadline_ns)
+        raw_module=self._raw_mesh_module();m=self._surface_geometry_module()
+        packet['diagnostic']=m.analyze(dict(raw=packet['raw'],source=packet['source']),packet['triangles'],packet['triangle_polygons'],
+            budget=raw_module.WorkBudget(deadline_ns=deadline_ns),near_m=near_m)
+        return packet
+
     def mesh_structure_capabilities(self):
         module=self._raw_mesh_module()
         return {'protocol':module.PROTOCOL,'supported_categories':list(module.SUPPORTED),

@@ -187,6 +187,26 @@ class BlenderProcessHost:
         return self._request('observe_mesh_structure',dict(request_id=request_id,object_id=object_id,
                              categories=categories,deadline_ns=deadline_ns))
 
+    def mesh_region_summary_capabilities(self):
+        if not self._default_worker:raise ValueError('Raw mesh summary requires the fixed worker')
+        return self._request('mesh_region_summary_capabilities',{})
+
+    def observe_mesh_structure_summary(self,request_id,object_id,categories,deadline_ns):
+        if not self._default_worker:raise ValueError('Raw mesh summary requires the fixed worker')
+        return self._request('observe_mesh_structure_summary',dict(request_id=request_id,object_id=object_id,categories=categories,deadline_ns=deadline_ns))
+
+    def surface_geometry_capabilities(self):
+        if not self._default_worker:raise ValueError('Surface geometry requires the fixed worker')
+        return self._request('surface_geometry_capabilities',{})
+
+    def capture_surface_source(self,request_id,object_id,deadline_ns):
+        if not self._default_worker:raise ValueError('Surface geometry requires the fixed worker')
+        return self._request('capture_surface_source',dict(request_id=request_id,object_id=object_id,deadline_ns=deadline_ns))
+
+    def observe_surface_geometry(self,request_id,object_id,deadline_ns,near_m):
+        if not self._default_worker:raise ValueError('Surface geometry requires the fixed worker')
+        return self._request('observe_surface_geometry',dict(request_id=request_id,object_id=object_id,deadline_ns=deadline_ns,near_m=near_m))
+
     def patch_observation_capabilities(self):
         if not self._default_worker:raise ValueError('Patch observation requires the fixed worker')
         value=self._request('patch_observation_capabilities',{})

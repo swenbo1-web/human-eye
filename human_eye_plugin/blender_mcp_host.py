@@ -41,7 +41,7 @@ _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
-    'nonplanar_observation_capabilities','observe_nonplanar_patch'})
+    'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
 
 
@@ -195,6 +195,15 @@ class BlenderMCPHost:
             raise ValueError('Typed readonly native observation is unavailable')
         _validate_native_observation_request(request_id,diagnostic=True)
         return self._request('last_readonly_native_audit',{'request_id':request_id})
+
+    def surface_geometry_capabilities(self):
+        return self._request('surface_geometry_capabilities',{})
+
+    def capture_surface_source(self,request_id,object_id,deadline_ns):
+        return self._request('capture_surface_source',dict(request_id=request_id,object_id=object_id,deadline_ns=deadline_ns))
+
+    def observe_surface_geometry(self,request_id,object_id,deadline_ns,near_m):
+        return self._request('observe_surface_geometry',dict(request_id=request_id,object_id=object_id,deadline_ns=deadline_ns,near_m=near_m))
 
     def mesh_structure_capabilities(self):
         return self._request('mesh_structure_capabilities',{})
@@ -383,7 +392,8 @@ class BlenderMCPHost:
 
     def _structure_code(self,command,params,request_id):
         """A separate pinned, typed read template; old template bytes stay fixed."""
-        required={'mesh_structure_capabilities':set(),'mesh_region_summary_capabilities':set(),
+        required={'capture_surface_source':{'request_id','object_id','deadline_ns'},'surface_geometry_capabilities':set(),'observe_surface_geometry':{'request_id','object_id','deadline_ns','near_m'},
+            'mesh_structure_capabilities':set(),'mesh_region_summary_capabilities':set(),
             'observe_mesh_structure_summary':{'request_id','object_id','categories','deadline_ns'},'patch_observation_capabilities':set(),
             'nonplanar_observation_capabilities':set(),
             'observe_nonplanar_patch':{'request_id','object_id','patch','deadline_ns','mode'},

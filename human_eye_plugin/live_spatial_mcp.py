@@ -56,10 +56,14 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Observation precision request; never an execution permission. nearest requires complete exact nonpenetrating order; top1 may exclude supported distant objects by strict outward bounds and reports equal-distance ties. Unknown or budget-limited proofs return no nearest result.",
     "properties": {
-        "mode": {"type": "string", "enum": ["overview", "exact_pairs", "nearest", "top1", "mesh_structure"]},
-        "operation": {"type":"string","enum":["diagnose","patch"],
-            "description":"mesh_structure only: consumes a trusted locally registered single-object task. diagnose requires include_image=false; patch requires a returned patch_ref. Caller labels cannot reset task limits."},
+        "mode": {"type": "string", "enum": ["overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview"],
+            "description":"Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in, include_image=false; diagnose exact bounded contacts, reference uses a trusted local reference_ref, restore_preview proposes vertices without executing. Caller labels never reset budgets."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
+        "near_m": {"type":"number","minimum":0,"maximum":0.001},
+        "threshold_m": {"type":"number","exclusiveMinimum":0,"maximum":0.01},
+        "reference_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
+        "indices": {"type":"array","items":{"type":"integer","minimum":0,"maximum":4095},"minItems":1,"maxItems":64,"uniqueItems":True},
         "patch_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
         "task_ref": {"type":"string","pattern":"^[a-f0-9]{32}$",
             "description":"Required in locally controlled lifecycle mode; use the trusted begin handoff. Selects the active registered generation and never creates or renews a task."},
@@ -485,7 +489,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
     # Keep image bytes in a native MCP image block only, rather than repeating
     # base64 in the JSON text the model needs to read.
     full_text = json.dumps(metadata, ensure_ascii=False, allow_nan=False)
-    if metadata.get('result_kind')=='structure_task' and 'accounted_public_text_bytes' in metadata:
+    if metadata.get('result_kind') in ('structure_task','surface_task') and 'accounted_public_text_bytes' in metadata:
         charge=metadata['accounted_public_text_bytes']
         if type(charge) is not int or not len(full_text.encode('utf8'))<=charge<=96*1024:
             raise ValueError('Structure task text exceeds its committed charge')
@@ -494,7 +498,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
     if response_detail == 'brief' and not is_error:
         try:
             brief = (project_structure_brief(metadata) if metadata.get('result_kind')=='structure_task' else
-                project_segment_brief(metadata) if segment_brief else project_task_brief(metadata))
+                None if metadata.get('result_kind')=='surface_task' else project_segment_brief(metadata) if segment_brief else project_task_brief(metadata))
             if brief is not None:
                 candidate = json.dumps(brief, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
                 full_bytes = len(full_text.encode('utf-8'))
@@ -519,7 +523,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
             # Encoding can only fall back to the unchanged complete payload.
             pass
     content.insert(0, {"type": "text", "text": text})
-    if metadata.get('result_kind')=='structure_task' and 'task_budget' in metadata:
+    if metadata.get('result_kind') in ('structure_task','surface_task') and 'task_budget' in metadata:
         budget=metadata['task_budget']
         if (type(budget) is not dict or type(budget.get('deadline_ns')) is not int
                 or type(budget.get('deadline_wall_ns')) is not int
@@ -595,7 +599,7 @@ class LiveSpatialMCPServer:
                 **delta_kwargs,
             )
             is_error = value.get("status") not in {"observed", "overview", "partial"}
-            if value.get('result_kind')=='structure_task' and value.get('status')=='receipt':is_error=False
+            if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == "human_eye_transform":
             value = self.service.transform(session_id, args["action"], **goal_kwargs, **context_kwargs)
             is_error = value.get("status") not in {"verified", "no_op"}
