@@ -159,7 +159,11 @@ def _spec_from_dict(value):
 
 
 def _scope(value, spec):
-    _require(type(value) is dict and set(value) == _SCOPE_FIELDS, 'Complete resolved task scope required')
+    _require(type(value) is dict and (set(value)==_SCOPE_FIELDS or set(value)==_SCOPE_FIELDS|{'connector_config_sha256'}),
+             'Complete resolved task scope required')
+    if 'connector_config_sha256' in value:
+        _require(type(value['connector_config_sha256']) is str and _HEX.fullmatch(value['connector_config_sha256']),
+                 'Invalid frozen connector configuration digest')
     build = value['engine_build_id']
     _require(type(build) is str and build.startswith('sha256:') and _HEX.fullmatch(build[7:]),
              'Explicit engine build required')
@@ -238,7 +242,7 @@ class TrustedTaskAuthority:
         self._approve = approve_callback
         self._secret = secrets.token_bytes(32)
 
-    def issue(self, spec, resolved_scope):
+    def issue(self, spec, resolved_scope, *, received_monotonic=None):
         _require(type(spec) is ClearanceTaskSpec, 'Typed frozen task proposal required')
         scope = _scope(resolved_scope, spec)
         resolved = ClearanceTaskSpec(spec.focal_id, spec.reference_id, spec.target_clearance_m,
@@ -248,7 +252,10 @@ class TrustedTaskAuthority:
             raise TaskAuthorizationDenied('Trusted task authorization denied')
         _require(type(approval) is TaskApproval, 'Approval must be a trusted typed TaskApproval, not JSON')
         key = _key(self.issuer_id, approval.event_id)
-        issued = _number(time.perf_counter(), 'issued QPC time')
+        current = _number(time.perf_counter(), 'issued QPC time')
+        issued = current if received_monotonic is None else _number(received_monotonic, 'trusted receipt QPC time')
+        _require(issued<=current and current<issued+resolved.limits.max_duration_s,
+                 'Original task receipt window is future or expired')
         payload = {'schema_version':'trusted-clearance-grant-v1','issuer_id':self.issuer_id,
             'event_id':approval.event_id,'authorization_id':approval.authorization_id,
             'key':key,'goal_id':'auth-goal:' + key,'session_id':'auth-session:' + key,
