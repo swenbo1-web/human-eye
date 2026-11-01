@@ -1105,6 +1105,8 @@ class LiveSpatialService:
         execute_options = {} if precommit_deadline is None else {
             '_before_commit': lambda: (precommit_clock or time.monotonic)() < precommit_deadline}
         context = self._supervisor_context
+        if parent_deadline is not None and context is not None and getattr(context,'commit_guard',None) is not None:
+            execute_options['_commit_guard']=lambda:context.commit_guard(value)
         if (parent_deadline is not None and context is not None
                 and context.forward_deadline is not None):
             execute_options['_host_deadline'] = context.forward_deadline(parent_deadline, precommit_deadline)

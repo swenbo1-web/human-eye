@@ -223,7 +223,7 @@ class GuardedHostRuntime:
     @_trace_stage("host.execute_action", kind="host", source_name="host_blender")
     def execute_action(self, *, session_id: str, action: dict,
                        observation_id: str | None = None, goal: dict | None = None,
-                       _before_commit=None, _host_deadline=None) -> dict:
+                       _before_commit=None, _host_deadline=None, _commit_guard=None) -> dict:
         """Accept structured SE(3) only; callers cannot supply a scene or source."""
         action = copy.deepcopy(action)
         with self._lock, self._transaction():
@@ -279,6 +279,13 @@ class GuardedHostRuntime:
                 self.router = HumanEyeAutoRouter(**self._router_options)
                 return self._result('blocked', routing=check, allow_action=False,
                     reason_codes=['segment_time_budget_exhausted_before_commit'])
+            if _commit_guard is not None:
+                try:reason=_commit_guard()
+                except Exception:reason='registered_commit_guard_unavailable'
+                if reason is not None:
+                    if type(reason) is not str or not reason or len(reason)>256:reason='registered_commit_guard_unavailable'
+                    self.router=HumanEyeAutoRouter(**self._router_options);self._sessions.clear()
+                    return self._result('blocked',routing=check,allow_action=False,reason_codes=[reason])
             # Route and host use the same fully validated object IDs.
             action.update(focal_id=saved["focal_id"], reference_id=saved["reference_id"])
             if is_noop:

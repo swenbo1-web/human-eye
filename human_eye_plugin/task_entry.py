@@ -1,4 +1,4 @@
-"""Trusted local registration only; no dispatch, host goal or model JSON API."""
+"""Trusted local registration and one-use owned execution; no model JSON API."""
 from __future__ import annotations
 import copy,hashlib,json,threading,time
 from dataclasses import replace
@@ -16,11 +16,55 @@ def need(condition,reason):
     if not condition:raise TaskEntryError(reason)
 
 
+class _TaskHandoff:
+    """Process-local, one-use bridge; never reconstructed from a receipt."""
+    def __init__(self,*args,**kwargs):raise TaskEntryError('private_task_handoff_required')
+
+    @classmethod
+    def _mint(cls,entry,live):
+        value=object.__new__(cls);value.entry=entry;value.live=live;value.used=False
+        return value
+
+    def take(self,scheduler):
+        with self.entry._cancel_lock:
+            need(scheduler is self.entry._scheduler and self.live.get('handoff') is self
+                and self.entry._live.get(self.live['grant'].key) is self.live and not self.used,
+                'task_handoff_foreign_or_consumed')
+            self.used=True
+        self.check()
+        record=self.entry._record(self.live['grant'].key,require_unstarted=True)
+        need(record['grant']==self.entry.authority.verify(self.live['grant']),'task_handoff_binding_changed')
+        return self.live['grant'],copy.deepcopy(self.live['initial']),self.live['resolved']
+
+    def check(self):
+        with self.entry._cancel_lock:
+            need(self.live.get('handoff') is self and self.live.get('phase')=='executing'
+                and not self.live['revoked'].is_set(),'task_entry_revoked')
+            p=self.entry.authority.verify(self.live['grant'])
+            counter=self.entry._check(started=p['issued_monotonic'],duration=self.live['resolved'].limits.max_duration_s,
+                process=self.live['process'])
+            need(owned_clock_domain(p['scope']['host_identity']['document_epoch'],counter)==p['scope']['clock_domain'],
+                'task_entry_clock_domain_changed')
+
+    def commit_guard(self,value):
+        # No connector lock reentry or host RPC. This is the logical commit
+        # boundary, not preemption of bytes/assignments already in flight.
+        try:
+            self.check()
+            p=self.entry.authority.verify(self.live['grant'])
+            record=value.get('goal_authorizations',{}).get('records',{}).get(p['key'])
+            parent=value.get('goal_supervision',{}).get('records',{}).get(p['goal_id'])
+            need(type(record) is dict and record['status']=='active' and record['grant']==p
+                and type(parent) is dict and parent['status'] in ('active','pending'),'task_entry_commit_binding_changed')
+        except Exception as exc:return ('registered_commit_denied:'+str(exc))[:256]
+        return None
+
+
 class TrustedTaskEntry:
     """Reuse the existing ledger; only this live instance retains a capability.
 
     The embedding authenticates TaskApproval. Receipt JSON grants no right to
-    execute. Pending registrations require a future explicit M3-A2 consumer;
+    execute. Only execute() on the original live entry can consume the grant;
     the old scheduler.run does not reactivate a recorded event.
     """
     def __init__(self,config_path,host,authority):
@@ -65,7 +109,8 @@ class TrustedTaskEntry:
 
     def _receipt(self,record,*,status=None,current=False,persistence='committed'):
         p=record['grant'];live=self._live.get(p['key'])
-        available=(live is not None and not live['revoked'].is_set() and record['status']=='active'
+        available=(live is not None and live.get('phase','registered')=='registered'
+                   and not live['revoked'].is_set() and record['status']=='active'
                    and p['key'] not in self._failed and time.perf_counter()<p['deadline_monotonic'])
         return dict(schema='trusted-local-task-entry-v1',status=status or ('registered' if available else 'review_required'),
             registration_id=p['key'],goal_id=p['goal_id'],session_id=p['session_id'],issuer_id=p['issuer_id'],event_id=p['event_id'],
@@ -116,7 +161,10 @@ class TrustedTaskEntry:
                     connector_config_sha256=self._config_sha)
                 grant=self.authority.issue(resolved,scope,received_monotonic=started)
                 need(grant.key not in self._failed,'task_entry_prior_failure_requires_review')
-                if grant.key in self._live:self._record(grant.key,require_unstarted=True)
+                if grant.key in self._live:
+                    if self._live[grant.key].get('phase','registered')!='registered':
+                        return self._history(grant.key)
+                    self._record(grant.key,require_unstarted=True)
                 self._check(started=started,duration=duration,process=process)
                 need(_json(self._scheduler._capture())==_json(initial),'task_entry_scene_changed_after_approval')
                 outcome=self._scheduler._claim(grant);claimed=outcome['fresh_claim']
@@ -132,7 +180,7 @@ class TrustedTaskEntry:
                 need(record['grant']==grant.payload() and record['status']=='active','task_entry_committed_binding_changed')
                 with self._cancel_lock:
                     self._live[grant.key]=dict(grant=grant,initial=copy.deepcopy(initial),resolved=resolved,
-                        process=process,revoked=threading.Event())
+                        process=process,revoked=threading.Event(),phase='registered')
                 return self._receipt(record,current=True)
             except Exception as exc:
                 # No capability escapes a failed/unknown commit. A possibly
@@ -151,6 +199,7 @@ class TrustedTaskEntry:
         """Freshly check only this process's live registration; history is inert."""
         with self._lock:
             live=self._live.get(key) if type(key) is str else None
+            if live is not None and live.get('phase','registered')!='registered':return self._history(key)
             try:record=self._record(key,require_unstarted=live is not None and not live['revoked'].is_set())
             except Exception:
                 if live is not None:live['revoked'].set();self._failed.add(key)
@@ -175,6 +224,53 @@ class TrustedTaskEntry:
                 receipt=self._receipt(record,status='review_required');receipt['error']=str(exc)[:256]
                 return receipt
 
+    def _history(self,key):
+        live=self._live.get(key)
+        if live is not None and live.get('result') is not None:
+            result=copy.deepcopy(live['result'])
+            result.update(historical_receipt=True,replayed=True,current_scene_revalidated=False,
+                executed_this_call=False,new_setter_count=0,execution_authority=False,retry_authorized=False)
+            if 'review_event' in result:result['review_event']['historical']=True
+            return result
+        if live is not None and live.get('phase')=='executing':
+            # Do not contend with an in-flight connector transaction just to
+            # acknowledge another caller. No physical outcome is known here.
+            p=live['grant'].payload()
+            return dict(status='execution_in_progress',registration_id=key,goal_id=p['goal_id'],
+                original_deadline_monotonic=p['deadline_monotonic'],execution_authority=False,
+                retry_authorized=False,executed_this_call=False,new_setter_count=0,
+                task_succeeded=None,current_scene_revalidated=False)
+        record=self._record(key)
+        result=self._receipt(record);result.update(historical_receipt=True,replayed=True)
+        return result
+
+    def execute(self,key):
+        """Consume the original live registration once; never reapprove/reset."""
+        with self._lock:
+            live=self._live.get(key) if type(key) is str else None
+            if live is None or live.get('phase','registered')!='registered':return self._history(key)
+            receipt=self.snapshot(key)
+            if not receipt['live_registration_available']:return receipt
+            with self._cancel_lock:
+                if live['revoked'].is_set():return self._receipt(self._record(key))
+                live['phase']='executing';handoff=_TaskHandoff._mint(self,live);live['handoff']=handoff
+        # Never hold the entry lock across execution: revoke must be able to
+        # flag cancellation while the existing kernel awaits a host receipt.
+        try:result=self._scheduler.run_registered(handoff)
+        except Exception as exc:
+            # An embedding/transport exception may follow physical execution;
+            # do not fabricate zero movement or reopen the consumed entry.
+            reason=('registered_executor_unavailable:'+type(exc).__name__)[:256]
+            result=dict(status='review_required',task_succeeded=False,executed_this_call=None,
+                new_setter_count=None,execution_authority=False,retry_authorized=False,
+                execution_phase='executor_outcome_unknown',reason_codes=[reason],
+                review_event=dict(schema='owned-task-review-v1',event_id=key+':review',kind='review_required',
+                    historical=False,execution_authority=False,retry_authorized=False))
+            result=self._scheduler._record_stop(live['grant'],result,reason)
+        with self._lock:
+            live['result']=copy.deepcopy(result);live['phase']='finished';live['revoked'].set()
+        return result
+
     def revoke(self,key):
         """Stops eligibility first; never a rollback, eviction or budget reset."""
         with self._cancel_lock:
@@ -183,6 +279,10 @@ class TrustedTaskEntry:
         with self._lock:
             live=self._live.get(key) if type(key) is str else None
             if live is not None:live['revoked'].set();self._failed.add(key)
+            if live is not None and live.get('phase')=='executing':
+                result=self._history(key)
+                result.update(status='revocation_requested',persistence='pending_executor_stop')
+                return result
             record=self._record(key)
             try:record=self._freeze(key,'task_entry_revoked',revoked=True)
             except Exception as exc:

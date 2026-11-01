@@ -375,6 +375,12 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             return result
 
         while True:
+            context = service._supervisor_context
+            if (_parent_goal_id is not None and context is not None
+                    and getattr(context, 'commit_guard', None) is not None):
+                reason = context.commit_guard(value)
+                if reason is not None:
+                    return finish('review_required', [reason])
             if clock() >= deadline:
                 return finish('review_required', ['segment_time_budget_exhausted'])
             if feature is not None:

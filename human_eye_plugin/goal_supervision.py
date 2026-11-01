@@ -35,6 +35,7 @@ class GoalSupervisorContext:
     physical_meter: object
     clock: object = None
     forward_deadline: object = None
+    commit_guard: object = None
 
     def __post_init__(self):
         if not all(callable(value) for value in
@@ -44,6 +45,8 @@ class GoalSupervisorContext:
             raise ValueError('Optional supervisor clock must be a trusted callable')
         if self.forward_deadline is not None and (not callable(self.forward_deadline) or self.clock is None):
             raise ValueError('Forward deadline binding requires an explicit trusted clock')
+        if self.commit_guard is not None and not callable(self.commit_guard):
+            raise ValueError('Commit guard requires a trusted local callable')
 
 
 def _context(service):
@@ -320,7 +323,7 @@ def validate_owned_motion_report(host, goal_id, report, *, expected_binding=None
 
 
 def make_owned_host_context(host, goal_id, authorize_dispatch, *, expected_binding=None,
-                           expected_limits=None):
+                           expected_limits=None, commit_guard=None):
     """Bind a registered goal to the fixed owned typed Blender worker.
 
     Its coverage is this isolated worker's legal setters, under trusted local
@@ -391,7 +394,7 @@ def make_owned_host_context(host, goal_id, authorize_dispatch, *, expected_bindi
         return base
 
     return GoalSupervisorContext(clock_domain, authorize, physical_meter,
-                                 clock=time.perf_counter, forward_deadline=forward_deadline)
+                                 clock=time.perf_counter, forward_deadline=forward_deadline,commit_guard=commit_guard)
 
 
 __all__ = ['GoalSupervisorContext', 'make_owned_host_context',

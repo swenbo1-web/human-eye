@@ -126,6 +126,7 @@ class OwnedGoalScheduler:
         self._ticket = None
         self._grant = None
         self._host_binding = None
+        self._handoff = None
 
     def _capture(self):
         packet = self.host.capture_evidence()
@@ -194,6 +195,7 @@ class OwnedGoalScheduler:
         if ticket is None or grant is None:
             return False
         try:
+            if self._handoff is not None:self._handoff.check()
             payload = self.authority.verify(grant)
             valid = (ticket['used'] is False and time.perf_counter() < grant.deadline_monotonic
                 and (goal_id, session_id, child_id) ==
@@ -289,7 +291,26 @@ class OwnedGoalScheduler:
         with self._run_lock:
             return self._run(spec)
 
-    def _run(self, spec):
+    def run_registered(self, handoff):
+        from .task_entry import _TaskHandoff
+        _require(type(handoff) is _TaskHandoff and handoff.entry._scheduler is self
+            and handoff.live.get('handoff') is handoff and not handoff.used,
+            'private_original_task_handoff_required')
+        with self._run_lock:
+            result=self._run(handoff.live['resolved'],_handoff=handoff)
+            reasons=result.get('reason_codes',[])
+            text=' '.join(reasons)
+            kind=('completed' if result['status']=='completed' else
+                'revoked' if 'revok' in text else 'expired_or_budget' if any(x in text for x in ('expired','budget','deadline','limit')) else
+                'external_change' if 'changed' in text else 'review_required')
+            result['review_event']=dict(schema='owned-task-review-v1',event_id=handoff.live['grant'].key+':review',
+                kind=kind,reason_codes=copy.deepcopy(reasons),historical=False,
+                task_succeeded=result['task_succeeded'],executed_this_call=result['executed_this_call'],
+                new_setter_count=result['new_setter_count'],execution_authority=False,retry_authorized=False,
+                delivery='returned_to_trusted_embedding_not_durable_outbox')
+            return result
+
+    def _run(self, spec, *, _handoff=None):
         result = {'schema_version': 'owned-goal-scheduler-v1', 'status': 'review_required',
             'task_succeeded': False, 'executed_this_call': False, 'new_setter_count': 0,
             'engine_confirmed_steps': 0, 'host_closed': False, 'segments': [],
@@ -302,37 +323,46 @@ class OwnedGoalScheduler:
         self._grant = None
         self._host_binding = None
         self._ticket = None
+        self._handoff = _handoff
         try:
             _require(type(spec) is ClearanceTaskSpec, 'frozen_clearance_task_spec_required')
             _require(self.service.config.get('enabled', True), 'connector_disabled')
             _require(self.service._identity_rejection() is None, 'runtime_identity_changed')
-            counter = owned_host_counter(self.host)
-            initial = self._capture()
-            selector = self._discover(spec, initial, 'scheduler-discovery')
-            from dataclasses import replace
-            resolved = replace(spec, reference_triangle_index=selector['reference_triangle_index'])
-            build = self.service.describe_runtime()['build_id']
-            policy = self._policy(resolved, build)
-            native = inspect_current_clearance(initial, policy)
-            _require(native['decision'] != 'stop', 'initial_native_review:' + ','.join(native['reason_codes']))
-            scope = {'engine_build_id': build, 'process_id': self.host._process.pid,
-                'host_identity': initial['capture']['host_identity'],
-                'reference_triangle_index': resolved.reference_triangle_index,
-                'initial_capture_sha256': _digest(initial['capture']),
-                'initial_native_sha256': _digest(initial['native_scene']),
-                'clock_domain': owned_clock_domain(initial['capture']['host_identity']['document_epoch'], counter)}
-            grant = self.authority.issue(resolved, scope)
-            claimed = self._claim(grant)
-            if not claimed['fresh_claim']:
-                previous = copy.deepcopy(claimed['record'].get('result') or result)
-                previous.update(historical_receipt=True, replayed=True,
-                    current_scene_revalidated=False, executed_this_call=False, new_setter_count=0,
-                    execution_phase='not_submitted',
-                    execution_authority=False, retry_authorized=False)
-                if claimed['mode'] != 'historical':
-                    previous.update(status='review_required', task_succeeded=False,
-                                    reason_codes=['existing_authorization_requires_review'])
-                return previous
+            if _handoff is not None:
+                # Own the original active reservation even if take() refuses;
+                # stopping it never creates another grant or budget window.
+                grant=_handoff.live['grant'];fresh_claim=True
+                grant,initial,resolved=_handoff.take(self)
+                scope=grant.payload()['scope'];build=scope['engine_build_id']
+                policy=self._policy(resolved,build)
+            else:
+                counter = owned_host_counter(self.host)
+                initial = self._capture()
+                selector = self._discover(spec, initial, 'scheduler-discovery')
+                from dataclasses import replace
+                resolved = replace(spec, reference_triangle_index=selector['reference_triangle_index'])
+                build = self.service.describe_runtime()['build_id']
+                policy = self._policy(resolved, build)
+                native = inspect_current_clearance(initial, policy)
+                _require(native['decision'] != 'stop', 'initial_native_review:' + ','.join(native['reason_codes']))
+                scope = {'engine_build_id': build, 'process_id': self.host._process.pid,
+                    'host_identity': initial['capture']['host_identity'],
+                    'reference_triangle_index': resolved.reference_triangle_index,
+                    'initial_capture_sha256': _digest(initial['capture']),
+                    'initial_native_sha256': _digest(initial['native_scene']),
+                    'clock_domain': owned_clock_domain(initial['capture']['host_identity']['document_epoch'], counter)}
+                grant = self.authority.issue(resolved, scope)
+                claimed = self._claim(grant)
+                if not claimed['fresh_claim']:
+                    previous = copy.deepcopy(claimed['record'].get('result') or result)
+                    previous.update(historical_receipt=True, replayed=True,
+                        current_scene_revalidated=False, executed_this_call=False, new_setter_count=0,
+                        execution_phase='not_submitted',
+                        execution_authority=False, retry_authorized=False)
+                    if claimed['mode'] != 'historical':
+                        previous.update(status='review_required', task_succeeded=False,
+                                        reason_codes=['existing_authorization_requires_review'])
+                    return previous
             self._grant = grant
             fresh_claim = True
             result.update(goal_id=grant.goal_id, session_id=grant.session_id,
@@ -340,6 +370,7 @@ class OwnedGoalScheduler:
                 target_clearance_m=resolved.target_clearance_m)
             _require(time.perf_counter() < grant.deadline_monotonic, 'task_deadline_expired_before_start')
             with self.host.transaction():
+                if _handoff is not None:_handoff.check()
                 fresh = self._capture()
                 _require(_json(fresh) == _json(initial), 'initial_scene_changed_before_registration')
                 limits = resolved.limits
@@ -360,11 +391,13 @@ class OwnedGoalScheduler:
                     'initial_registered_host_binding_disagrees')
                 self._host_binding = copy.deepcopy(binding)
                 context = make_owned_host_context(self.host, grant.goal_id, self._authorize_dispatch,
-                    expected_binding=self._host_binding, expected_limits=limits)
+                    expected_binding=self._host_binding, expected_limits=limits,
+                    **({'commit_guard':_handoff.commit_guard} if _handoff is not None else {}))
                 _require(context.clock_domain() == scope['clock_domain'], 'registered_clock_domain_changed')
                 self.service._supervisor_context = context
             last = initial
             for index in range(resolved.limits.max_segments):
+                if _handoff is not None:_handoff.check()
                 _require(time.perf_counter() < grant.deadline_monotonic, 'task_deadline_expired')
                 before = self._capture()
                 _require(_json(before) == _json(last), 'scene_changed_between_segments')
@@ -396,6 +429,7 @@ class OwnedGoalScheduler:
                     and candidate.get('status') in {'candidate', 'goal_satisfied'},
                     'fresh_preview_not_executable')
                 _require(_json(self._capture()) == _json(before), 'scene_changed_during_preview')
+                if _handoff is not None:_handoff.check()
                 self._ticket = {'child_id': child_id, 'request': copy.deepcopy(request), 'used': False}
                 # This call can raise after the host setter or durable commit.
                 # Mark uncertainty before crossing that boundary. Preserve a
@@ -422,6 +456,7 @@ class OwnedGoalScheduler:
                 result['budget'] = {k: budget[k] for k in ('started_monotonic', 'deadline_monotonic',
                     'confirmed_steps', 'actual_total_translation_m', 'segments_reserved', 'recoveries_used',
                     'journal_status', 'journal_reason', 'late_accounted_only')}
+                if _handoff is not None:_handoff.check()
                 current = self._capture()
                 if receipt.get('status') == 'satisfied' and receipt.get('steps') == []:
                     zero = inspect_current_clearance(current, policy)
@@ -436,6 +471,7 @@ class OwnedGoalScheduler:
                     'reason_codes': review['reason_codes']})
                 _require(not budget['late_accounted_only'], 'late_accounted_requires_review')
                 if review['decision'] == 'completed' and budget['journal_status'] == 'completed':
+                    if _handoff is not None:_handoff.check()
                     return self._finish(grant, policy, current, budget, result)
                 _require(review['decision'] == 'eligible_for_fresh_preview',
                          'native_continuation_denied:' + ','.join(review['reason_codes']))
@@ -453,6 +489,7 @@ class OwnedGoalScheduler:
         finally:
             self._ticket = None
             self._grant = None
+            self._handoff = None
 
 
 __all__ = ['OwnedGoalScheduler']
