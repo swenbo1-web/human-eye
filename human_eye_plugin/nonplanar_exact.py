@@ -2,6 +2,9 @@
 from fractions import Fraction as Q
 import hashlib, json, math
 
+def _no_checkpoint():
+    pass
+
 def require(test, reason):
     if not test:
         raise ValueError('nonplanar_' + reason)
@@ -43,18 +46,25 @@ def segment_sq(a, b, c, d):
 
 class ExactLocalIndex:
 
-    def __init__(self, target, maximum, policy='strict_coplanar'):
+    def __init__(self, target, maximum, policy='strict_coplanar', *, checkpoint=_no_checkpoint):
         require(type(maximum) is int and 0 <= maximum <= 32768, 'independent_certificate')
         require(policy in ('strict_coplanar', 'visual_nearplanar'), 'independent_certificate')
         self.policy = policy
         self.maximum = maximum
         self.work = 0
-        self.points = [tuple((Q(x) for x in p)) for p in target['world_vertices']]
+        self.checkpoint = checkpoint
+        self.points = []
+        for i, p in enumerate(target['world_vertices']):
+            if i % 32 == 0:
+                self.checkpoint()
+            self.points.append(tuple(Q(x) for x in p))
         self.faces = target['faces']
         self.links = {}
         self.normals = {}
         self.reserve(9 * len(self.faces))
         for i, face in enumerate(self.faces):
+            if i % 32 == 0:
+                self.checkpoint()
             require(len(face) == 3 and len(set(face)) == 3, 'independent_certificate')
             for j in range(3):
                 a, b = (face[j], face[(j + 1) % 3])
@@ -64,6 +74,7 @@ class ExactLocalIndex:
     def reserve(self, count):
         self.work += count
         require(self.work <= self.maximum, 'independent_certificate')
+        self.checkpoint()
 
     def normal(self, index):
         if index not in self.normals:
@@ -75,6 +86,7 @@ class ExactLocalIndex:
         return self.normals[index]
 
     def reconstruct(self, edge, radius):
+        self.checkpoint()
         a, b = edge
         start, end = (self.points[a], self.points[b])
         incident = self.links[frozenset(edge)]
@@ -180,9 +192,11 @@ class ExactLocalIndex:
         return features
 
     def sample_source(self, feature, numerator):
+        self.checkpoint()
         a, b = [self.points[v] for v in feature['edge']]
         point = tuple((((4 - numerator) * a[k] + numerator * b[k]) / 4 for k in range(3)))
         for x, y in feature['source_edges']:
+            self.checkpoint()
             if point_segment_sq(point, self.points[x], self.points[y]) == 0:
                 return [x, y]
         raise AssertionError('sample has no native source')
@@ -196,7 +210,8 @@ def reserved_for(count):
     slots = 2 ** (height + 1) - 1
     return (count * (height + 3) + slots, slots)
 
-def validate_index(index, obj, right, up, binding, coordinates, reservations):
+def validate_index(index, obj, right, up, binding, coordinates, reservations, *, checkpoint=_no_checkpoint):
+    checkpoint()
     require(index['schema'] == 'projected-triangle-bvh-v1' and index['leaf_size'] == 8, 'independent_certificate')
     require(index['object_id'] == obj['object_id'] and index['source_binding'] == binding, 'independent_certificate')
     require(index['right'] == right and index['up'] == up, 'independent_certificate')
@@ -213,6 +228,7 @@ def validate_index(index, obj, right, up, binding, coordinates, reservations):
     faces = []
     pending = [0]
     while pending:
+        checkpoint()
         number = pending.pop()
         require(type(number) is int and 0 <= number < len(nodes) and (number not in seen), 'independent_certificate')
         seen.add(number)
@@ -243,7 +259,8 @@ def validate_index(index, obj, right, up, binding, coordinates, reservations):
                 pending.append(child_id)
     require(len(seen) == len(nodes) and len(faces) == count and (sorted(faces) == list(range(count))), 'independent_certificate')
 
-def validate_query(index, query, name, right, up):
+def validate_query(index, query, name, right, up, *, checkpoint=_no_checkpoint):
+    checkpoint()
     trace = query['traces'][name]
     claimed = query['filters'][name]
     require(type(trace) is list and type(claimed) is list and (claimed == sorted(set(claimed))), 'independent_certificate')
@@ -252,6 +269,7 @@ def validate_query(index, query, name, right, up):
     projected = [sum((Q(v) * Q(a) for v, a in zip(point, axis)), Q(0)) for axis in (right, up)]
     records = {}
     for number, active in trace:
+        checkpoint()
         require(type(number) is int and 0 <= number < len(index['nodes']) and (number not in records), 'independent_certificate')
         require(type(active) is bool, 'independent_certificate')
         records[number] = active
@@ -260,6 +278,7 @@ def validate_query(index, query, name, right, up):
     pending = [0]
     visited = set()
     while pending:
+        checkpoint()
         number = pending.pop()
         if number not in records:
             require(query['complete'] is False, 'independent_certificate')
@@ -276,7 +295,8 @@ def validate_query(index, query, name, right, up):
     require(visited == set(records) and sorted(covered) == claimed, 'independent_certificate')
     return 2 * len(trace)
 
-def validate_view(acceleration, native, right, up, binding, coordinates, reservations, observed):
+def validate_view(acceleration, native, right, up, binding, coordinates, reservations, observed, *, checkpoint=_no_checkpoint):
+    checkpoint()
     if acceleration is None:
         return 0
     require(acceleration['schema'] == 'triangle-index-view-v1', 'independent_certificate')
@@ -285,11 +305,12 @@ def validate_view(acceleration, native, right, up, binding, coordinates, reserva
     indices = acceleration['indices']
     require(set(indices) <= set(by_id), 'independent_certificate')
     for name, index in indices.items():
-        validate_index(index, by_id[name], right, up, binding, coordinates[name], reservations)
+        validate_index(index, by_id[name], right, up, binding, coordinates[name], reservations, checkpoint=checkpoint)
         require(index['reservation_index'] not in observed, 'independent_certificate')
         observed.add(index['reservation_index'])
     work = 0
     for query in acceleration['queries']:
+        checkpoint()
         require(type(query['complete']) is bool, 'independent_certificate')
         expected = set(query['possible_objects']) & set(indices)
         require(set(query['filters']) == set(query['traces']), 'independent_certificate')
@@ -299,5 +320,5 @@ def validate_view(acceleration, native, right, up, binding, coordinates, reserva
         else:
             require(acceleration['complete'] is False, 'independent_certificate')
         for name in query['traces']:
-            work += validate_query(indices[name], query, name, right, up)
+            work += validate_query(indices[name], query, name, right, up, checkpoint=checkpoint)
     return work

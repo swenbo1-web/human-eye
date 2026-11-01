@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-nonplanar-protocol-candidate-20261101"
+IMPLEMENTATION_REVISION = "v21-release-cost-deadline-candidate-20261101"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 
@@ -51,15 +51,19 @@ def _source_manifest(root: Path) -> list[dict]:
     # The rule is stable across checkout and wheel: all top-level Python runtime
     # files in these two packages, plus the declared root modules. Tests, state,
     # machine-local paths and bytecode never enter the digest.
-    paths = {root / relative for relative in _ROOT_MODULES}
+    paths = {root / relative: relative for relative in _ROOT_MODULES}
     for package in ("human_eye_plugin", "human_eye_module1_operators"):
         directory = root / package
         if not (directory / "__init__.py").is_file():
             raise FileNotFoundError("Runtime package is incomplete: " + package)
-        paths.update(directory.glob("*.py"))
-    return [{"path": path.relative_to(root).as_posix(),
+        paths.update((path, package + "/" + path.name) for path in directory.glob("*.py"))
+    # Canonical names follow the same two fixed package prefixes as enumeration.
+    # Every call still enumerates and hashes all current source bytes; no stat
+    # cache or cached successful source check is involved.
+    entries = sorted((relative, path) for path, relative in paths.items())
+    return [{"path": relative,
              "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-            for path in sorted(paths, key=lambda item: item.relative_to(root).as_posix())]
+            for relative, path in entries]
 
 
 def _capture_source_identity() -> dict:

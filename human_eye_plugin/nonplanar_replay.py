@@ -208,7 +208,7 @@ def decision(result, native, object_id, edges, mode, deadline):
     else:
         require(reservation_count == 0, 'index_ledger_missing')
     # The geometric witness replay never calls this producer's planner.
-    work = replay(result, native, object_id, edges)
+    work = replay(result, native, object_id, edges, deadline_ns=deadline)
     valid = [r for r in rows if r['reason'] == 'visible_boundary_gain']
     best = max(valid, key=lambda r: (r['visible_count'], r['projection']['detail_px']), default=None)
     require(selected == best, 'selected_candidate_disagrees')
@@ -230,7 +230,7 @@ def dot(a, b):
 def subtract(a, b):
     return [x - y for x, y in zip(a, b)]
 
-def ray(native, point, direction, allowed_objects=None, *, with_depth=False, allowed_faces=None):
+def ray(native, point, direction, allowed_objects=None, *, with_depth=False, allowed_faces=None, checkpoint=lambda: None):
     """3D Moller line intersection; no producer projection or depth routine."""
     hits = []
     for obj in native['objects']:
@@ -238,6 +238,7 @@ def ray(native, point, direction, allowed_objects=None, *, with_depth=False, all
             continue
         triangles = enumerate(obj['faces']) if allowed_faces is None or obj['object_id'] not in allowed_faces else ((index, obj['faces'][index]) for index in allowed_faces[obj['object_id']])
         for index, face in triangles:
+            checkpoint()
             a, b, c = [obj['world_vertices'][i] for i in face]
             e1 = subtract(b, a)
             e2 = subtract(c, a)
@@ -258,25 +259,31 @@ def ray(native, point, direction, allowed_objects=None, *, with_depth=False, all
     eps = 1e-09 * max(1.0, abs(depth))
     return [(obj, index, z) if with_depth else (obj, index) for z, obj, index in hits if depth - z <= eps]
 
-def replay(result, native, object_id, edges):
+def replay(result, native, object_id, edges, *, deadline_ns=None):
     """Rebuild each proposed view's offsets and independently replay all rays."""
+    def checkpoint():
+        if deadline_ns is not None:
+            require(time.perf_counter_ns() < deadline_ns, 'deadline_expired')
+    checkpoint()
     require(result['selected'] is None or result['selected'] in result['candidates'], 'independent_certificate')
     vertices = next((o['world_vertices'] for o in native['objects'] if o['object_id'] == object_id))
     faces = next((o['faces'] for o in native['objects'] if o['object_id'] == object_id))
     reserved = 0
     require(result['native_binding_sha256'] == independent_binding(native, object_id, edges), 'independent_certificate')
-    local = ExactLocalIndex(next((o for o in native['objects'] if o['object_id'] == object_id)), result['max_locality_work'], result['locality_policy'])
+    local = ExactLocalIndex(next((o for o in native['objects'] if o['object_id'] == object_id)), result['max_locality_work'], result['locality_policy'], checkpoint=checkpoint)
     features = local.validate_features(edges, result['sampling_features'])
     index_node_work = 0
     index_bytes = 0
     observed_indices = set()
     reservations = result.get('index_build_reservations', [])
     for row in result['candidates']:
+        checkpoint()
         acceleration = row.get('acceleration')
         if not row['samples'] and acceleration is None:
             continue
 
         def exact_dot(v, axis):
+            checkpoint()
             return sum((Fraction(x) * Fraction(y) for x, y in zip(v, axis)), Fraction(0))
         if acceleration is not None:
             bounds = {}
@@ -285,7 +292,7 @@ def replay(result, native, object_id, edges):
                 projected = [[exact_dot(v, axis) for v in obj['world_vertices']] for axis in (row['right'], row['up'])]
                 coordinates[obj['object_id']] = projected
                 bounds[obj['object_id']] = [[min(values), max(values)] for values in projected]
-            index_node_work += validate_view(acceleration, native, row['right'], row['up'], result['native_binding_sha256'], coordinates, reservations, observed_indices)
+            index_node_work += validate_view(acceleration, native, row['right'], row['up'], result['native_binding_sha256'], coordinates, reservations, observed_indices, checkpoint=checkpoint)
             index_bytes += sum((len(json.dumps(index, separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()) for index in acceleration['indices'].values()))
             index_bytes += len(json.dumps(acceleration['queries'], separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode())
             if not acceleration['complete']:
@@ -310,6 +317,7 @@ def replay(result, native, object_id, edges):
         rebuilt = []
         visible = []
         for feature in features:
+            checkpoint()
             a, b = feature['edge']
             delta = subtract(vertices[b], vertices[a])
             x = dot(delta, row['right'])
@@ -336,7 +344,7 @@ def replay(result, native, object_id, edges):
                         require(query['complete'] and query['point'] == original_point and (query['possible_objects'] == ids), 'independent_certificate')
                         filters = query['filters']
                     producer_reserved += sum((len(filters[o['object_id']]) if filters is not None and o['object_id'] in filters else len(o['faces']) for o in native['objects'] if o['object_id'] in ids))
-                    hits.append(ray(native, point, row['direction'], ids, with_depth=True, allowed_faces=filters))
+                    hits.append(ray(native, point, row['direction'], ids, with_depth=True, allowed_faces=filters, checkpoint=checkpoint))
                 h0, h1 = hits
                 proof = local_by_edge[tuple(sorted(native_edge))]
                 value = not h0 and local.validate_hit(proof, pair[1], row['direction'], h1, object_id) or (not h1 and local.validate_hit(proof, pair[0], row['direction'], h0, object_id))
