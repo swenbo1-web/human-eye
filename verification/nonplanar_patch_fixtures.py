@@ -13,6 +13,25 @@ def cases():
         dict(id='subpixel_width',rim_warp=True,half=[.0001,.1],blocker=None,want=False,pairs=12,far=True)]
 
 
+def audit_cases():
+    base=cases()[1]
+    return cases()+[dict(base,id='dense_remote',dense='remote'),
+        dict(base,id='dense_projected_blocker',dense='blocker',blocker=[-.04,.04,-.14,.14],want=False,pairs=0),
+        dict(base,id='centroid_refinement',refinement='centroid'),
+        dict(base,id='sliver_refinement',refinement='sliver',known_failure=True)]
+
+
+def refine_boundary(native,edges,sliver=False):
+    obj=native['objects'][0];updated=[];done=False
+    for face in obj['faces']:
+        edge=next(((a,b) for a,b in edges if a in face and b in face),None)
+        if edge is None or (done and not sliver):updated.append(face);continue
+        a,b=edge;c=next(i for i in face if i not in edge);v=obj['world_vertices'];q=len(v)
+        v.append([(.99999*(v[a][k]+v[b][k])/2+.00001*v[c][k]) if sliver else sum(v[j][k] for j in face)/3 for k in range(3)])
+        updated.extend([[face[0],face[1],q],[face[1],face[2],q],[face[2],face[0],q]]);done=True
+    obj['faces']=updated
+
+
 def source(case):
     a,b=case['half'];local=[[-1,-1,1],[1,-1,-1],[1,1,1],[-1,1,-1],[-a,-b,a*b],[a,-b,-a*b],[a,b,a*b],[-a,b,-a*b]]
     if not case['rim_warp']:
@@ -27,7 +46,19 @@ def source(case):
     if case['far']:box('reference',[99,101,-1,1,-1,1])
     if case['blocker']:
         for sign in (-1,1):box('blocker'+str(sign),case['blocker']+([.1,.3] if sign==1 else [-.3,-.1]))
-    return dict(objects=objects),[[4,5],[5,6],[6,7],[7,4]]
+    if case.get('dense'):
+        vertices=[];dense_faces=[];n=12
+        for i in range(n+1):
+            for j in range(n+1):
+                a,b=-1+2*i/n,-1+2*j/n
+                vertices.append(transform([100.,a,b] if case['dense']=='remote' else [a,b,.2]))
+        for i in range(n):
+            for j in range(n):
+                a=i*(n+1)+j;b=a+n+1;dense_faces.extend([[a,b,b+1],[a,b+1,a+1]])
+        objects[1]=dict(object_id='reference',world_vertices=vertices,faces=dense_faces)
+    native=dict(objects=objects);edges=[[4,5],[5,6],[6,7],[7,4]]
+    if case.get('refinement'):refine_boundary(native,edges,sliver=case['refinement']=='sliver')
+    return native,edges
 
 
 def oracle_samples(case,offset):

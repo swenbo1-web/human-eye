@@ -16,10 +16,40 @@ def axes(direction):
 def check(deadline):need(time.perf_counter_ns()<deadline,'deadline')
 
 
-def projected_hit(native,point,right,up,direction):
+def dot_interval(a,b):
+    """Outward enclosure for the dot product of the supplied binary64 values."""
+    low=high=0.
+    for x,y in zip(a,b):
+        value=x*y
+        if not math.isfinite(value):return [-math.inf,math.inf]
+        low=math.nextafter(low+math.nextafter(value,-math.inf),-math.inf)
+        high=math.nextafter(high+math.nextafter(value,math.inf),math.inf)
+        if not math.isfinite(low) or not math.isfinite(high):return [-math.inf,math.inf]
+    return [low,high]
+
+
+def object_bounds(objects,right,up):
+    bounds={}
+    for obj in objects:
+        axes_bounds=[]
+        for axis in (right,up):
+            intervals=[dot_interval(p,axis) for p in obj['world_vertices']]
+            axes_bounds.append([min(v[0] for v in intervals),max(v[1] for v in intervals)])
+        bounds[obj['object_id']]=axes_bounds
+    return bounds
+
+
+def possible_objects(bounds,point,right,up):
+    intervals=[dot_interval(point,a) for a in (right,up)]
+    return [name for name,box in bounds.items() if all(
+        not (intervals[k][1]<box[k][0] or intervals[k][0]>box[k][1]) for k in (0,1))]
+
+
+def projected_hit(native,point,right,up,direction,allowed_objects=None):
     """Projected barycentric depths, independent of verifier's 3D lines."""
     hits=[]
     for obj in native['objects']:
+        if allowed_objects is not None and obj['object_id'] not in allowed_objects:continue
         for index,face in enumerate(obj['faces']):
             a,b,c=[sub(obj['world_vertices'][i],point) for i in face]
             p,q,s=[[dot(v,axis) for axis in (right,up,direction)] for v in (a,b,c)]
@@ -59,7 +89,8 @@ def choose(native,object_id,edges,deadline,*,max_tests=8192):
         faces=[i for i,f in enumerate(target['faces']) if a in f and b in f]
         need(len(faces)==1,'single_native_adjacent_triangle_required');adjacent[tuple((a,b))]=faces[0]
         p,q,r=[vertices[j] for j in target['faces'][faces[0]]]
-        normals.append(cross(sub(q,p),sub(r,p)))
+        face_normal=unit(cross(sub(q,p),sub(r,p)));edge_length=math.hypot(*sub(vertices[a],vertices[b]))
+        normals.append([edge_length*x for x in face_normal])
     need(all(v==2 for v in degree.values()),'closed_component_required')
     reached={edges[0][0]}
     for _ in edges:
@@ -69,13 +100,14 @@ def choose(native,object_id,edges,deadline,*,max_tests=8192):
     normal=[math.fsum(n[k] for n in normals) for k in range(3)]
     need(math.hypot(*normal)>.1*sum(math.hypot(*n) for n in normals),'normal_cancellation_requires_charts')
     n=unit(normal);directions=[]
-    for d in ([0.,0.,1.],n,[-x for x in n],[0.,1.,0.]):
+    for d in (n,[-x for x in n],[0.,0.,1.],[0.,1.,0.]):
         if not any(dot(d,old)>1-1e-10 for old in directions):directions.append(d)
     points=[vertices[i] for i in sorted(degree)];all_points=[p for o in objects for p in o['world_vertices']]
     need(all(type(x) in (int,float) and math.isfinite(x) for p in all_points for x in p),'finite_geometry')
     center=[min(p[k] for p in points)/2+max(p[k] for p in points)/2 for k in range(3)]
     all_center=[min(p[k] for p in all_points)/2+max(p[k] for p in all_points)/2 for k in range(3)]
-    triangle_count=sum(len(o['faces']) for o in objects);combined=0;rows=[];search_complete=True
+    counts={o['object_id']:len(o['faces']) for o in objects}
+    combined=box_work=projection_work=0;rows=[];search_complete=True
     for d in directions:
         check(deadline);right,up,d=axes(d)
         projected={i:[dot(sub(vertices[i],center),axis) for axis in (right,up)] for i in degree}
@@ -100,10 +132,7 @@ def choose(native,object_id,edges,deadline,*,max_tests=8192):
                 eps=span*span*1e-12;o=[orient(p,q,r),orient(p,q,s),orient(r,s,p),orient(r,s,q)]
                 if min(o[:2])<=eps and max(o[:2])>=-eps and min(o[2:])<=eps and max(o[2:])>=-eps:ambiguous=True
         if ambiguous:row['reason']='ambiguous_projected_boundary';continue
-        required=len(edges)*3*2*triangle_count*2
-        if combined+required>max_tests:
-            row['reason']='combined_budget_exhausted';search_complete=False;break
-        combined+=required;row['tests_reserved']=required;row['reason']='boundary_not_visible_enough'
+        row['reason']='boundary_not_visible_enough';staged=[]
         for a,b in edges:
             dx,dy=sub(projected[b],projected[a]);length=math.hypot(dx,dy)
             if length<=6*span/384:row['reason']='edge_subpixel';break
@@ -111,11 +140,27 @@ def choose(native,object_id,edges,deadline,*,max_tests=8192):
             for t in (.25,.5,.75):
                 check(deadline);mid=[vertices[a][k]*(1-t)+vertices[b][k]*t for k in range(3)]
                 pair=[[mid[k]+sign*offset[k] for k in range(3)] for sign in (-1,1)]
-                hits=[projected_hit(native,p,right,up,d) for p in pair];expected={(object_id,adjacent[(a,b)])}
-                kinds=['open' if not h else 'local_surface' if set(h)==expected else 'blocked' for h in hits]
-                visible=sorted(kinds)==['local_surface','open']
-                row['samples'].append(dict(edge=[a,b],pair=pair,visible=visible))
-                row['visible_count']+=visible
+                staged.append(dict(edge=[a,b],pair=pair))
+        if len(staged)!=len(edges)*3:continue
+        # Reserve both ends' broad-phase work before constructing intervals.
+        boxes=len(staged)*2*len(objects)*2;projections=(len(all_points)+len(staged)*2)*2*2
+        if box_work+boxes>32768 or projection_work+projections>65536:
+            row['reason']='broad_phase_budget_exhausted';search_complete=False;break
+        box_work+=boxes;projection_work+=projections;bounds=object_bounds(objects,right,up)
+        for sample in staged:
+            sample['possible_objects']=[possible_objects(bounds,p,right,up) for p in sample['pair']]
+        required=2*sum(counts[name] for s in staged for ids in s['possible_objects'] for name in ids)
+        if combined+required>max_tests:
+            row['reason']='combined_budget_exhausted';search_complete=False;break
+        combined+=required;row['tests_reserved']=required
+        for sample in staged:
+            check(deadline);a,b=sample['edge'];pair=sample['pair']
+            hits=[projected_hit(native,p,right,up,d,ids) for p,ids in zip(pair,sample['possible_objects'])]
+            expected={(object_id,adjacent[(a,b)])}
+            kinds=['open' if not h else 'local_surface' if set(h)==expected else 'blocked' for h in hits]
+            visible=sorted(kinds)==['local_surface','open']
+            row['samples'].append(dict(**sample,visible=visible))
+            row['visible_count']+=visible
         if len(row['samples'])==len(edges)*3 and row['visible_count']>=max(8,math.ceil(len(row['samples'])*2/3)):
             row['reason']='visible_boundary_gain'
     valid=[r for r in rows if r['reason']=='visible_boundary_gain']
@@ -123,6 +168,7 @@ def choose(native,object_id,edges,deadline,*,max_tests=8192):
     if best:
         best['overview_frame']=frame(native,all_center,best['right'],best['up'],best['direction'],best['overview_span'])
         best['detail_frame']=frame(native,center,best['right'],best['up'],best['direction'],best['span'])
-    return dict(schema='verification-nonplanar-boundary-candidate-v1',selected=best,candidates=rows,
+    return dict(schema='verification-nonplanar-boundary-candidate-v2',selected=best,candidates=rows,
         search_complete=search_complete,combined_triangle_tests_reserved=combined,max_triangle_tests=max_tests,
+        combined_box_tests_reserved=box_work,combined_projection_ops_reserved=projection_work,
         maximum_candidates=4,maximum_images=2,execution_authority=False)
