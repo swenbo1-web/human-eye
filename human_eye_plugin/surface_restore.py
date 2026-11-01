@@ -134,6 +134,12 @@ class RestoreController:
         def check():g.require(self.clock()<deadline,'restore_original_deadline')
         def budget():check();return raw.WorkBudget(deadline_ns=deadline,clock=self.clock)
         original=self.capture();check();binding=self.registry.resolve(reference_ref,original)
+        # Blender may change a nonplanar n-gon's tessellation after a vertex
+        # edit. A frozen triangle packet cannot certify that future surface.
+        # This first write domain therefore admits original triangles only.
+        g.require(all(len(p)==3 for p in original['raw']['polygons'])
+            and binding['triangles']==original['raw']['polygons']
+            and binding['polygon_indices']==list(range(len(original['raw']['polygons']))),'restore_original_triangles_required')
         proposal=preview_restore(binding,original,indices,budget=budget(),max_displacement_m=max_displacement_m)
         predicted=copy.deepcopy(original['raw'])
         for i,p in zip(proposal['indices'],proposal['proposed_local_vertices']):predicted['vertices'][i]=p[:]

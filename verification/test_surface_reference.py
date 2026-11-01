@@ -184,5 +184,16 @@ class RestoreTests(unittest.TestCase):
         self.assertEqual(result['status'],'unknown_journal_commit');self.assertEqual(len(self.calls),1)
         self.assertTrue(RestoreJournal.inspect(controller.journal.root)['unknown'])
 
+    def test_quad_tessellation_cannot_authorize_vertex_write(self):
+        controller,_,_,_=self.setup_controller();r=copy.deepcopy(self.state['raw'])
+        r['vertices']=r['vertices'][:4];r['polygons']=[[0,1,2,3]];r['edges']=[[0,1],[1,2],[2,3],[0,3]]
+        reference=raw.prepare_raw(r,{k:self.state['source'][k] for k in ('object_id','object_instance','document_epoch','capture_id')})
+        self.state=copy.deepcopy(reference);self.state['raw']['vertices'][2][2]=.0005
+        current=raw.prepare_raw(self.state['raw'],{k:self.state['source'][k] for k in ('object_id','object_instance','document_epoch','capture_id')})
+        registry=controller.registry;ref=registry.bind(reference,current,[[0,1,2],[0,2,3]],[0,0],
+            intent=ReferenceIntent('owned','quad','same_index_from_owned_copy'))
+        with self.assertRaisesRegex(ValueError,'original_triangles_required'):controller.restore(ref,[2],event_id='quad')
+        self.assertFalse(self.calls)
+
 
 if __name__=='__main__':unittest.main()

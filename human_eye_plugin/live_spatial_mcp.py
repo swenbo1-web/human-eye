@@ -57,8 +57,8 @@ _QUERY_SCHEMA = {
     "description": "Observation precision request; never an execution permission. nearest requires complete exact nonpenetrating order; top1 may exclude supported distant objects by strict outward bounds and reports equal-distance ties. Unknown or budget-limited proofs return no nearest result.",
     "properties": {
         "mode": {"type": "string", "enum": ["overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
-        "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview"],
-            "description":"Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in, include_image=false; diagnose exact bounded contacts, reference uses a trusted local reference_ref, restore_preview proposes vertices without executing. Caller labels never reset budgets."},
+        "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
+            "description":"Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in; diagnose/reference/restore_preview require include_image=false. reference_patch uses a returned opaque feature patch_ref and may request useful native images under the original task budget. Reference input is locally trusted; previews never execute. Caller labels never reset budgets."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
         "near_m": {"type":"number","minimum":0,"maximum":0.001},
         "threshold_m": {"type":"number","exclusiveMinimum":0,"maximum":0.01},

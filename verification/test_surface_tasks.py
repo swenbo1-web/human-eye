@@ -110,5 +110,49 @@ class SurfaceTaskTests(unittest.TestCase):
         value['task_budget']['deadline_ns']=time.perf_counter_ns()-1
         with self.assertRaises(ValueError):_tool_result(value,is_error=False)
 
+    def view_fixture(self):
+        from verification.test_reference_view import fixture
+        packet,_,_=fixture();self.enable();self.service.config['surface_reference_images_enabled']=True
+        self.host.p=raw.prepare_raw(packet['raw'],{k:packet['source'][k] for k in ('object_id','object_instance','document_epoch','capture_id')})
+        self.host.triangles=packet['triangles']
+        def capture(request_id,object_id,deadline_ns):
+            self.host.calls+=1;value=copy.deepcopy(packet);value.update(schema=g.PROTOCOL,request_id=request_id);return value
+        self.host.capture_surface_source=capture
+        registry=ReferenceRegistry();self.service._surface_references=registry
+        ref_raw=copy.deepcopy(packet['raw'])
+        for p in ref_raw['vertices']:p[2]=0
+        reference=raw.prepare_raw(ref_raw,{k:packet['source'][k] for k in ('object_id','object_instance','document_epoch','capture_id')})
+        return registry.bind(reference,self.host.p,packet['triangles'],packet['triangle_polygons'],
+            intent=ReferenceIntent('owned','flat intended shape','same_index_from_owned_copy'))
+
+    def test_reference_features_are_opaque_source_bound_and_stale_safe(self):
+        self.register();ref=self.view_fixture();value,_=self.call('reference',operation='reference',reference_ref=ref,threshold_m=.0002)
+        feature=value['feature_refs'][0]['patch_ref'];self.assertEqual(value['feature_refs'][0]['member_count'],9)
+        packet=copy.deepcopy(self.host.p);packet['raw']['vertices'][40][2]-=.0001
+        self.host.p=raw.prepare_raw(packet['raw'],{k:packet['source'][k] for k in ('object_id','object_instance','document_epoch','capture_id')})
+        original_capture=self.host.capture_surface_source
+        def changed(*args):
+            packet=original_capture(*args);packet['raw']=copy.deepcopy(self.host.p['raw']);packet['source']=copy.deepcopy(self.host.p['source']);return packet
+        self.host.capture_surface_source=changed
+        value,_=self.call('patch',operation='reference_patch',patch_ref=feature,images=True)
+        self.assertEqual(value['reference_status'],'stale');self.assertEqual(value['image_status'],'stale_feature')
+        self.assertIn('diagnostic',value);self.assertEqual(value['task_budget']['spent']['images'],0)
+
+    def test_reference_feature_unknown_reply_preserves_facts_and_original_image_reservation(self):
+        self.register();ref=self.view_fixture();value,_=self.call('reference',operation='reference',reference_ref=ref,threshold_m=.0002)
+        feature=value['feature_refs'][0]['patch_ref']
+        self.host.reference_view_capabilities=lambda:{}
+        def missing(*args):raise TimeoutError('test image result unknown')
+        self.host.observe_reference_patch=missing
+        with patch('human_eye_plugin.reference_view_consumer.validate_capabilities',return_value={}):
+            value,_=self.call('patch',operation='reference_patch',patch_ref=feature,images=True)
+        self.assertEqual(value['status'],'partial');self.assertIn('diagnostic',value)
+        self.assertEqual(value['image_status'],'unavailable');self.assertEqual(value['task_budget']['spent']['images'],2)
+
+    def test_unregistered_feature_does_not_capture_a_scene(self):
+        self.register();self.enable();self.service.config['surface_reference_images_enabled']=True
+        value,_=self.call('unknown',operation='reference_patch',patch_ref='a'*32,images=True)
+        self.assertIn('feature_not_current',value['reason']);self.assertEqual(self.host.calls,0)
+
 
 if __name__=='__main__':unittest.main()

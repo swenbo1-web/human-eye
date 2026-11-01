@@ -41,7 +41,7 @@ _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
-    'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source'})
+    'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
 
 
@@ -195,6 +195,14 @@ class BlenderMCPHost:
             raise ValueError('Typed readonly native observation is unavailable')
         _validate_native_observation_request(request_id,diagnostic=True)
         return self._request('last_readonly_native_audit',{'request_id':request_id})
+
+    def reference_view_capabilities(self):
+        value=self._request('reference_view_capabilities',{})
+        _validate_native_observation_capabilities(value['native'],source=self.source)
+        return value
+
+    def observe_reference_patch(self,request_id,object_id,patch,deadline_ns):
+        return self._request('observe_reference_patch',dict(request_id=request_id,object_id=object_id,patch=patch,deadline_ns=deadline_ns))
 
     def surface_geometry_capabilities(self):
         return self._request('surface_geometry_capabilities',{})
@@ -392,7 +400,7 @@ class BlenderMCPHost:
 
     def _structure_code(self,command,params,request_id):
         """A separate pinned, typed read template; old template bytes stay fixed."""
-        required={'capture_surface_source':{'request_id','object_id','deadline_ns'},'surface_geometry_capabilities':set(),'observe_surface_geometry':{'request_id','object_id','deadline_ns','near_m'},
+        required={'reference_view_capabilities':set(),'observe_reference_patch':{'request_id','object_id','patch','deadline_ns'},'capture_surface_source':{'request_id','object_id','deadline_ns'},'surface_geometry_capabilities':set(),'observe_surface_geometry':{'request_id','object_id','deadline_ns','near_m'},
             'mesh_structure_capabilities':set(),'mesh_region_summary_capabilities':set(),
             'observe_mesh_structure_summary':{'request_id','object_id','categories','deadline_ns'},'patch_observation_capabilities':set(),
             'nonplanar_observation_capabilities':set(),

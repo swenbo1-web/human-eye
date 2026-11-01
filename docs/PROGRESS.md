@@ -309,3 +309,5 @@ M0基线与总体设计复核完成；M1-01已有可执行验收契约及源读�
 M1-01来源预检使用3个新factory Blender进程，14类解析夹具＋3个规模梯度，各组每路径9次。153次原始读取全部保留构造顶点/多边形/边，读取前后几何与选择不变；153次legacy尝试中，空网格和零面网格按原语义拒绝。原始读取、校验、编码与legacy双证据不是相同功能，不用耗时比宣称加速。新算法各组成本门已冻结；真实MCP/原生图的完整成本尚待对应阶段。28项新合同检查＋96项相关兼容回归全部通过，不与旧1595/1520覆盖混计。运行源码与正式安装未改，无需重启；生产诊断、跨调用预算和新增单对象图尚未交付，正式模型试次仍为0。
 
 合同：[结构证据](MESH_STRUCTURE_EVIDENCE_CONTRACT.md)、[高顶点观察](DENSE_FOCUS_NATIVE_CONTRACT.md)、[任务间隙](TASK_GAP_NATIVE_CONTRACT.md)、[自动任务调度](OWNED_GOAL_SCHEDULER_CONTRACT.md)、[共同原生入口](COMMON_OWNED_GATEWAY_CONTRACT.md)、[模型价值协议](V21_MODEL_VALUE_PROTOCOL.md)。历史合同中的安装号按当时阶段保留，当前安装状态以本文与实际身份为准。
+
+本轮补充：M3-C参考变化原生图已完成有限21场景/30图/240反例，源码100源66b6ccf5；SDK同时拒绝会重三角化的原始非三角面。详见[M3-C验收](M3_REFERENCE_FEATURE_VIEW_ACCEPTANCE.md)。原默认安装、旧成本失败与模型价值待验保持；后续顺序只见唯一主计划。

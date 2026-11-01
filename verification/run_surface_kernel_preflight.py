@@ -27,11 +27,17 @@ def main(args):
     cases=[('flat_success','sheet','ok'),('curved_success','curved','ok'),('commit_exception','sheet','commit_error'),
            ('readback_loss','sheet','read_loss'),('recovery_exception','sheet','rollback_error'),('protected_change','sheet','protected'),
            ('declined','sheet','decline'),('already_satisfied','sheet','satisfied'),('revoked_during_approval','sheet','revoke')]
+    cases.append(('original_quads_refused','sheet','quad_refuse'))
     if args.crash_phase:cases=cases[:1]
     for name,kind,mode in cases:
         bpy.ops.wm.read_factory_settings(use_empty=True);obj=build(bpy,dict(kind='sheet',n=5))[0]
         if kind=='curved':
             for v in obj.data.vertices:v.co.z=.3*(v.co.x*v.co.x+v.co.y*v.co.y)
+        if mode!='quad_refuse':
+            # Fixture preparation only, before taking an intended reference.
+            # The product restore kernel never triangulates user geometry.
+            import bmesh
+            bm=bmesh.new();bm.from_mesh(obj.data);bmesh.ops.triangulate(bm,faces=list(bm.faces));bm.to_mesh(obj.data);bm.free()
         obj.data.update();host=hostmodule.BlenderSceneHost(execution_metadata=True,identity_metadata=True);oid=host.object_id(obj)
         reference=m.capture_raw(host,oid);obj.data.calc_loop_triangles()
         tri=[[int(v) for v in t.vertices] for t in obj.data.loop_triangles];polys=[int(t.polygon_index) for t in obj.data.loop_triangles]
@@ -82,7 +88,9 @@ def main(args):
         actual=m.capture_raw(host,oid);after=[list(v.co) for v in obj.data.vertices]
         expected={'ok':'completed','commit_error':'failed_checkpoint_restored','read_loss':'unknown_quarantined',
             'rollback_error':'unknown_quarantined','protected':'unknown_quarantined','satisfied':'completed','revoke':'unknown_quarantined'}
-        if mode=='decline':assert result is None and not calls and after==before
+        if mode in ('decline','quad_refuse'):
+            assert result is None and not calls and after==before
+            if mode=='quad_refuse':assert 'original_triangles_required' in error
         else:
             assert result['status']==expected[mode],result
             assert result['setter_attempts']==len(calls)

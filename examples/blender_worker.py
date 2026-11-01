@@ -147,6 +147,10 @@ def run_worker(root: Path) -> None:
                 required=set() if command=='patch_observation_capabilities' else {'request_id','object_id','patch','deadline_ns'}
                 if set(params)!=required:raise ValueError('Invalid typed patch observation arguments')
                 result=getattr(host,command)(**params)
+            elif command in ('reference_view_capabilities','observe_reference_patch'):
+                required=set() if command=='reference_view_capabilities' else {'request_id','object_id','patch','deadline_ns'}
+                if set(params)!=required:raise ValueError('Invalid typed reference view arguments')
+                result=getattr(host,command)(**params)
             elif command in ('mesh_region_summary_capabilities','observe_mesh_structure_summary','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source'):
                 required={'capture_surface_source':{'request_id','object_id','deadline_ns'},'mesh_region_summary_capabilities':set(),'observe_mesh_structure_summary':{'request_id','object_id','categories','deadline_ns'},
                     'surface_geometry_capabilities':set(),'observe_surface_geometry':{'request_id','object_id','deadline_ns','near_m'}}[command]

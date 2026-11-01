@@ -134,4 +134,41 @@ def preview_restore(binding,target,indices,*,budget,max_displacement_m=.001):
         indices=sorted(indices),protected_vertex_count=len(raw['vertices'])-len(indices),max_displacement_m=max_displacement_m,
         proposed_local_vertices=[raw['vertices'][i] for i in sorted(indices)],
         proposed_raw_sha256=g.digest(raw),execution_authority=False,executed=False,
+        write_domain_support='original_triangles_only' if all(len(p)==3 for p in raw['polygons']) else 'not_eligible_original_ngons',
         status='preview_only',not_checked=['new_self_contacts','actual_setter_and_recovery','authorization_for_vertex_write'])
+
+
+def make_view_patch(binding,target,report,cluster_ordinal,reference_ref,*,budget):
+    """Owner-derived feature only; never accept geometry or ROI from a model."""
+    _compatible(binding['reference'],target)
+    g.require(type(cluster_ordinal) is int and 0<=cluster_ordinal<len(report['clusters']),'view_cluster')
+    cluster=report['clusters'][cluster_ordinal];members=cluster['members']
+    g.require(cluster['members_complete'] and 1<=len(members)==cluster['member_count']<=64,'view_complete_members')
+    r=binding['reference']['raw'];current=target['raw'];matrix=[[Q(x) for x in row] for row in r['matrix_world']];scale=Q(r['unit_scale'])
+    def vector(p):return tuple(sum(matrix[k][j]*Q(p[j]) for j in range(3))*scale for k in range(3))
+    vertices=[vector(p) for p in r['vertices']]
+    deltas=[vector([Q(y)-Q(x) for x,y in zip(a,b)]) for a,b in zip(r['vertices'],current['vertices'])]
+    selected=set(members);candidates=[];normal=(Q(0),)*3
+    for i,tri in enumerate(binding['triangles']):
+        budget.consume(8,'reference_view_witnesses')
+        if not selected.intersection(tri):continue
+        n=g.normal([vertices[v] for v in tri]);normal=g.add(normal,n)
+        delta=tuple(sum(deltas[v][k] for v in tri)/3 for k in range(3));size=g.dot(delta,delta)
+        if size<Q(report['threshold_m'])**2:continue
+        center=tuple(sum(vertices[v][k]+deltas[v][k] for v in tri)/3 for k in range(3))
+        candidates.append((size,i,delta,center))
+    g.require(any(normal) and len(candidates)>=2,'view_witnesses_unavailable')
+    largest=max(c[0] for c in candidates);candidates=[c for c in candidates if 4*c[0]>=largest]
+    chosen=[max(candidates,key=lambda c:(c[0],-c[1]))]
+    while len(chosen)<min(3,len(candidates)):
+        candidates_left=[c for c in candidates if c[1] not in {v[1] for v in chosen}]
+        chosen.append(max(candidates_left,key=lambda c:(min(g.dot(g.sub(c[3],v[3]),g.sub(c[3],v[3])) for v in chosen),c[0],-c[1])))
+    source=target['source'];normal_length=math.sqrt(float(g.dot(normal,normal)))
+    g.require(math.isfinite(normal_length) and normal_length>0,'view_normal_unavailable')
+    patch=dict(schema='reference-feature-patch-v1',**{k:source[k] for k in ('object_id','object_instance','document_epoch','raw_sha256')},
+        reference_raw_sha256=binding['reference']['source']['raw_sha256'],reference_ref=reference_ref,threshold_m=report['threshold_m'],
+        tessellation_sha256=g.digest(dict(triangles=binding['triangles'],polygon_indices=binding['polygon_indices'])),
+        members=members[:],witnesses=[dict(triangle=c[1],reference_offset_m=[float(x) for x in c[2]]) for c in chosen],
+        reference_normal=[float(x)/normal_length for x in normal])
+    g.require(len(g.encoded(patch))<=3000,'view_patch_bytes');budget.check('reference_view_patch_complete')
+    return patch

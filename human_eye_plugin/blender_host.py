@@ -57,6 +57,7 @@ _READONLY_DEPENDENCY_SHA256 = {
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
+_REFERENCE_VIEW_SHA256 = '4680b2c52be8494a59f53283cd2294e066cdfd9de36b062fcf7e5c9d016d4265'
 _RAW_MESH_SHA256 = 'a9c50cdf2141158a2eff16a5827581cbae5e506a8e40f64b236f4ee676752d5d'
 _PATCH_FOCUS_SHA256 = 'cd54ed3f2ea100b5cc7662a30523c5f6548c4315d73dc4047c3d93d337964bc8'
 _NONPLANAR_FOCUS_SHA256 = 'fad0fd0d5eebebf7f6de907cb74005777b442538998867a342d3e0b218e41c02'
@@ -581,6 +582,23 @@ class BlenderSceneHost:
             module=self._readonly_checked_module(source,raw,'_human_eye_raw_mesh')
             self._raw_mesh_module_cache=module
         return module
+
+    def _reference_view_module(self):
+        from pathlib import Path
+        source=Path(__file__).resolve().with_name('reference_view.py')
+        with source.open('rb') as stream:raw=stream.read(_READONLY_SOURCE_LIMIT+1)
+        if source.resolve()!=source or len(raw)>_READONLY_SOURCE_LIMIT or hashlib.sha256(raw).hexdigest()!=_REFERENCE_VIEW_SHA256:
+            raise BlenderHostError('reference_view_source_mismatch')
+        return self._readonly_checked_module(source,raw,'_human_eye_reference_view')
+
+    def reference_view_capabilities(self):
+        module=self._reference_view_module()
+        return dict(protocol=module.PROTOCOL,helper_sha256=_REFERENCE_VIEW_SHA256,native=self.native_observation_capabilities(),
+            limits=module.LIMITS,read_only=True,execution_authority=False)
+
+    def observe_reference_patch(self,request_id,object_id,patch,deadline_ns):
+        self._main_thread()
+        with self._lock:return self._reference_view_module().observe(self,object_id,patch,request_id,deadline_ns)
 
     def _surface_geometry_module(self):
         from pathlib import Path
