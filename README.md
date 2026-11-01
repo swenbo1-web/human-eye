@@ -20,7 +20,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 
 A1c已完成72原生参考及8个HE功能资格任务；共同字段和证据链通过，但一次首次耗时3821ms超过3390ms，M2-A2与模型对照继续未准入。M3-A2a已把受信登记一次性交给原执行器，24项独立Blender终态/故障测试通过；原批准、期限和预算不重发。默认Codex可信事件和审查消费仍待M3-A2b证明，见 [执行验收](docs/M3_REGISTERED_EXECUTION_ACCEPTANCE.md)。
 
-M3-A2b已新增独立owned MCP表单准入候选，26项脚本客户端/真实Blender协议测试及17项新契约测试通过。模型只能提议目标，具体批准来自已协商的client elicitation；新入口没有旧直接移动旁路。`human_eye_owned`已单独配置，正式live与Hook保持；当前聊天尚未加载新工具，真实Codex表单应答/模型消费待宿主重连后验收。整个M3尚未完成，后续按[准入合同](docs/M3_CODEX_ADMISSION_ACCEPTANCE.md)和唯一主计划推进。
+M3-A2b独立owned MCP候选已通过26项脚本客户端/真实Blender协议测试及17项新契约测试。模型只能提议目标，具体批准来自已协商的client elicitation；新入口没有旧直接移动旁路。`human_eye_owned`现已在当前聊天加载，真实目标调用返回未授权，未到派发阶段；新鲜量测仍为3.999997mm。当前回合记录为`approval_policy=never`，真实交互批准未通过；不能计为用户主动拒绝。正式live与Hook保持，整个M3尚未完成，需宿主允许MCP表单后继续[准入验收](docs/M3_CODEX_ADMISSION_ACCEPTANCE.md)。
 
 ## 已验证的有限收益
 

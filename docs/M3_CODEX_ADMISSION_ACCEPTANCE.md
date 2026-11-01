@@ -41,3 +41,11 @@ M3-A3/A4/B/C/D仍按主计划各自的数据、几何与修改域验收；新MCP
 真实阻塞：当前聊天工具表仍只提供旧human_eye_live四工具，未加载human_eye_owned；可用工具无该自定义MCP的热重连接口，CLI管理命令也没有reload。因此需要宿主重新连接/重启后，实际调用新工具、展示具体表单、取得真实accept/decline及终态读取，才能通过M3-A2b。此处按用户“遇真实阻塞才中断”的条件保存状态，不将整个M3标为完成，不新增用户聊天或付费模型绕过验收。A3/A4/B/C/D保持未完成。
 
 本机原始证据在`verification/fixes/20261102_m3_codex_admission/`（rc1及协议/失败记录）和同级`20261102_m3_codex_admission_rc2/`；最终协议组为后者`owned/RESULT.json`。准备好的独占配置在`.human-eye/owned-admission-20261102/connector.json`，只在新独立进程处理该测试副本。
+
+## 实际重连后的否定验收：仍未过门
+
+2026-11-02本聊天已实际加载human_eye_owned三个工具，status来源554b5028正确；当前模型读取公开对象清单并获得未取整3.999996930mm。一次真实目标调用未产生可接受批准，返回`Trusted task authorization denied`、executed=false/new_setter_count=0。随后的新鲜量测和完整捕获指纹保持，账本授权/父目标/子段均0、无inflight；未进入motion begin/引擎派发路径。该结论由拒绝阶段和源码边界支持，不冒称尚未注册的宿主物理计量器独立证明了所有动作。
+
+当前回合自己的turn_context明确approval_policy=never；项目和用户config均未显式设置它，不能只改磁盘配置就宣称当前会话策略已变。[官方配置文档](https://learn.chatgpt.com/docs/config-file/config-reference)说明never适用于非交互运行，`approval_policy.granular.mcp_elicitations=true`允许提示展示而非自动拒绝。此观察与本次即时未授权相符；插件当前未留存原始client应答类别，因此不能倒推出用户手工decline/cancel或某个具体UI错误。
+
+此轮不重新发起目标/新预算，不自行改审批策略或借其它输入通道制造批准。当前宿主需要操作者允许MCP表单提示；恢复后仍需一次真实accept及终态消费才能过A2b。整个M3、A3/A4/B/C/D均未完成。原始记录在`verification/fixes/20261102_m3_actual_host/`；只保留本聊天相关策略字段，不复制完整聊天或其它账户内容。运行源码、安装、引擎MCP段与Hook保持，不重新打包或重复运行原1868项回归。完整性核对另发现主Codex配置在首次读取后发生agent_learning启动参数变化，修改者未确认，未触及引擎连接或审批字段；保留差异、不还原或声称整个配置文件未变。
