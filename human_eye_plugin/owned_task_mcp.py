@@ -21,6 +21,7 @@ from .goal_budget import GoalBudgetLimits
 from .task_authority import ClearanceTaskSpec,TaskApproval,TrustedTaskAuthority
 from .task_entry import TrustedTaskEntry
 from .task_episode import TaskEpisode,approval_decision,task_event_id
+from .task_episode_archive import EpisodeArchive
 from .live_spatial_mcp import (LiveSpatialMCPServer,LIVE_MCP_TOOLS_SCHEMA,
                                _rpc_error,_tool_result,_configure_utf8_stdio)
 
@@ -71,14 +72,21 @@ def valid_id(value):
 
 class OwnedTaskMCP:
     """Single-flight goal entry. Only the transport can deliver an approval."""
-    def __init__(self,config_path,host,incoming,outgoing):
+    def __init__(self,config_path,host,incoming,outgoing,*,episode_archive=None):
         self.incoming=incoming;self.outgoing=outgoing
         self.messages=queue.Queue(maxsize=16);self.output_lock=threading.Lock();self.active_lock=threading.Lock()
         self.closed=threading.Event();self.active=None;self.initialized=False;self.elicitation=False
         self.seen={};self.nonce=uuid.uuid4().hex;self.reader=None;self.episode=None;self.episodes={}
+        if episode_archive is not None and type(episode_archive) is not EpisodeArchive:raise ValueError('typed_episode_archive_required')
+        self.archive=episode_archive;self._archive_slot=None
         self.authority=TrustedTaskAuthority('owned-mcp-'+self.nonce,self._approve)
-        self.entry=TrustedTaskEntry(config_path,host,self.authority)
+        self.entry=TrustedTaskEntry(config_path,host,self.authority,
+            source_observer=self._archive_source if episode_archive is not None else None)
         self.live=LiveSpatialMCPServer(self.entry.service)
+
+    def _archive_source(self,spec,scope,packet):
+        if self.archive is None or self._archive_slot is None:raise ValueError('archive_original_slot_required')
+        self.archive.bind_source(self._archive_slot,spec.to_dict(),scope,packet)
 
     def emit(self,value):
         raw=json.dumps(value,ensure_ascii=False,allow_nan=False)+'\n'
@@ -217,9 +225,10 @@ class OwnedTaskMCP:
             self.seen[key]=True
             self._execution_started=False
             received=time.perf_counter() if received_monotonic is None else received_monotonic
-            self.episode=None
+            self.episode=None;self._archive_slot=None
             try:
                 self.episode=TaskEpisode(self.nonce,request_id,params.get('arguments',{}),received)
+                if self.archive is not None:self._archive_slot=self.archive.begin(self.episode.intake())
                 result=self._goal(request_id,params.get('arguments',{}),received)
             except Exception as exc:
                 # register() cannot dispatch. Once execute() begins it owns
@@ -237,6 +246,14 @@ class OwnedTaskMCP:
                     public['task_episode_ref']=dict(uri=uri,sha256=episode['sha256'],
                         outcome=episode['derived']['outcome'],training_positive=False,
                         human_UI_verified=False,durability='connection_memory_only')
+                    if self.archive is not None:
+                        if self._archive_slot is None:public['task_episode_archive_status']='intake_not_committed_or_unknown'
+                        else:
+                            try:
+                                receipt=self.archive.finish(self._archive_slot,episode)
+                                public['task_episode_archive_status']='file_flushed_directory_durability_unverified'
+                                public['task_episode_archive_sha256']=receipt['sha256']
+                            except Exception as exc:public['task_episode_archive_status']='unknown:'+type(exc).__name__
                 except Exception as exc:
                     # Recording cannot turn a reconciled action into zero or
                     # grant a retry. Preserve the actual execution receipt.
@@ -263,10 +280,12 @@ class OwnedTaskMCP:
 def main(argv=None):
     _configure_utf8_stdio();p=argparse.ArgumentParser(description='Opt-in owned Human Eye task MCP candidate')
     p.add_argument('--config',type=Path,required=True);p.add_argument('--blender',type=Path,required=True)
-    p.add_argument('--scene',type=Path,required=True);args=p.parse_args(argv)
+    p.add_argument('--scene',type=Path,required=True);p.add_argument('--episode-archive',type=Path)
+    args=p.parse_args(argv)
+    archive=EpisodeArchive(args.episode_archive) if args.episode_archive is not None else None
     from .blender_process import BlenderProcessHost
     with BlenderProcessHost(args.blender,args.scene) as host:
-        OwnedTaskMCP(args.config,host,sys.stdin,sys.stdout).run()
+        OwnedTaskMCP(args.config,host,sys.stdin,sys.stdout,episode_archive=archive).run()
 
 
 if __name__=='__main__':main()

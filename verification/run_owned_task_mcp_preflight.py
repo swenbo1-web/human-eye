@@ -22,7 +22,11 @@ def worker(args):
     def request(command,params,**kwargs):commands.append(command);return real_request(command,params,**kwargs)
     host._request=request
     from human_eye_plugin.live_spatial_mcp import _configure_utf8_stdio
-    _configure_utf8_stdio();server=OwnedTaskMCP(args.config,host,sys.stdin,sys.stdout)
+    archive=None
+    if args.with_episode_archive:
+        from human_eye_plugin.task_episode_archive import EpisodeArchive
+        archive_root=folder/'task-evidence';archive_root.mkdir(exist_ok=False);archive=EpisodeArchive(archive_root)
+    _configure_utf8_stdio();server=OwnedTaskMCP(args.config,host,sys.stdin,sys.stdout,episode_archive=archive)
     initial=server.entry._scheduler._capture();save(folder/'INITIAL.json',initial)
     original_emit=server.emit;original_apply=host.apply_transform;original_save=server.entry.service._save
     applied=[];faults=[];snapshots=[]
@@ -58,6 +62,7 @@ def worker(args):
         with patch.object(host,'apply_transform',side_effect=apply),patch.object(server.entry.service,'_save',side_effect=saving),patch.object(server,'emit',side_effect=emit):server.run()
     finally:
         host.close()
+        if archive is not None:save(folder/'RECOVERY.json',archive.recover())
         from human_eye_plugin.task_episode import archive_episode
         archive=folder/'episodes';archive.mkdir(exist_ok=False)
         archived=[archive_episode(value,archive) for value in server.episodes.values()]
@@ -115,6 +120,7 @@ def parent(args):
                 state_file='STATE.json',audit_file='AUDIT.jsonl',quad_size=64,max_sessions=4))
             command=[sys.executable,'-I','-B',str(Path(__file__).resolve()),'--worker','--entry',str(args.entry),'--expected-build',args.expected_build,
                 '--blender',str(args.blender),'--scene',str(blend),'--config',str(config),'--scenario',scenario]
+            if args.with_episode_archive:command.append('--with-episode-archive')
             client=Client(command,folder);response=None
             try:
                 protocol='2025-03-26' if scenario=='legacy_no_elicitation' else '2025-11-25'
@@ -184,13 +190,22 @@ def parent(args):
             assert episode['derived']['success_candidate']==(scenario=='accept')
             assert episode['derived']['training_positive'] is False
             assert episode['derived']['new_setter_count']==(None if scenario=='lost_apply_reply' else count)
+            if args.with_episode_archive:
+                recovered=json.loads((folder/'RECOVERY.json').read_text())
+                assert recovered['terminal_records']==1 and recovered['unknown_records']==0,recovered
+                row=recovered['rows'][0]
+                assert row['recorded_new_setter_count']==(None if scenario=='lost_apply_reply' else count)
+                assert row['source_verified']==(scenario not in ('legacy_no_elicitation','model_approval_injection'))
+                assert recovered['execution_authority'] is False and recovered['training_positives']==0
             if scenario in ('accept','completion_ack_loss'):assert abs(physical['gap_m']-.001)<=1e-6
     save(output/'RESULT.json',dict(passed=True,rows=rows,source_sha256=args.expected_build,owned_workers=len(rows),
-        actual_Codex_UI_approval=False,scripted_client_only=True,formal_activation=False,model_calls=0))
+        actual_Codex_UI_approval=False,scripted_client_only=True,formal_activation=False,model_calls=0,
+        with_episode_archive=args.with_episode_archive))
     print(json.dumps(dict(passed=True,scenarios=len(rows),actual_Codex_UI_approval=False)))
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--entry',type=Path,required=True);p.add_argument('--expected-build',required=True);p.add_argument('--blender',type=Path,required=True)
     p.add_argument('--output',type=Path);p.add_argument('--rounds',type=int,choices=(1,2),default=2);p.add_argument('--worker',action='store_true')
+    p.add_argument('--with-episode-archive',action='store_true')
     p.add_argument('--scene',type=Path);p.add_argument('--config',type=Path);p.add_argument('--scenario');args=p.parse_args();worker(args) if args.worker else parent(args)

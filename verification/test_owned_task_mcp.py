@@ -12,8 +12,8 @@ class OwnedTaskMCPTests(unittest.TestCase):
     state=setup.TaskEntryTests.state
     write=setup.TaskEntryTests.write
 
-    def server(self,protocol='2025-06-18',capabilities=None):
-        self.mcp=OwnedTaskMCP(self.config,self.host,io.StringIO(),io.StringIO())
+    def server(self,protocol='2025-06-18',capabilities=None,episode_archive=None):
+        self.mcp=OwnedTaskMCP(self.config,self.host,io.StringIO(),io.StringIO(),episode_archive=episode_archive)
         self.entry=self.mcp.entry;self.mock_entry(self.entry);self.sent=[]
         self.mcp.handle(dict(jsonrpc='2.0',id=1,method='initialize',params=dict(protocolVersion=protocol,
             capabilities={'elicitation':{}} if capabilities is None else capabilities)))
@@ -217,6 +217,65 @@ class OwnedTaskMCPTests(unittest.TestCase):
         self.assertEqual(len(self.mcp.episodes),16)
         response=self.call(request_id=116);self.assertIn('error',response)
         self.assertEqual(len(self.mcp.episodes),16);self.episode(first)
+
+
+
+    def archive(self):
+        from human_eye_plugin.task_episode_archive import EpisodeArchive
+        folder=self.config.parent/'task_archive';folder.mkdir()
+        return EpisodeArchive(folder)
+
+    def test_archive_source_is_frozen_before_the_form_and_restart_is_read_only(self):
+        archive=self.archive();self.server(episode_archive=archive);emit=self.mcp.emit
+        def checked(value):
+            if value.get('method')=='elicitation/create':
+                self.assertTrue((archive.root/'slot-00/source.json').exists())
+                self.assertEqual(archive.recover()['unknown_records'],1)
+            emit(value)
+        self.mcp.emit=checked
+        with patch.object(self.entry,'execute',return_value=dict(status='review_required',new_setter_count=0)):
+            response=self.call()
+        value=self.metadata(response);self.assertEqual(value['task_episode_archive_status'],'file_flushed_directory_durability_unverified')
+        from human_eye_plugin.task_episode_archive import EpisodeArchive
+        state=EpisodeArchive(archive.root).recover();self.assertEqual(state['terminal_records'],1)
+        self.assertTrue(state['rows'][0]['source_verified']);self.assertFalse(state['execution_authority'])
+
+    def test_archive_source_failure_cannot_reach_approval_or_execute(self):
+        archive=self.archive();self.server(episode_archive=archive)
+        with patch.object(archive,'bind_source',side_effect=OSError('source disk failure')), \
+                patch.object(self.entry,'execute',side_effect=AssertionError('dispatch forbidden')):
+            response=self.call()
+        self.assertFalse(self.sent);self.assertEqual(self.metadata(response)['new_setter_count'],0)
+        state=archive.recover();self.assertEqual(state['terminal_records'],1)
+        self.assertEqual(state['rows'][0]['recorded_outcome'],'not_admitted')
+
+    def test_archive_finish_failure_keeps_actual_counts_and_memory_resource(self):
+        archive=self.archive();self.server(episode_archive=archive)
+        with patch.object(archive,'finish',side_effect=OSError('terminal disk failure')), \
+                patch.object(self.entry,'execute',return_value=dict(status='completed',new_setter_count=4)):
+            response=self.call()
+        value=self.metadata(response);self.assertEqual(value['new_setter_count'],4)
+        self.assertEqual(value['task_episode_archive_status'],'unknown:OSError');self.episode(response)
+        recovered=archive.recover();self.assertEqual(recovered['unknown_records'],1)
+        self.assertIsNone(recovered['rows'][0]['recorded_new_setter_count'])
+
+    def test_archive_intake_failure_prevents_registration_without_requesting_a_form(self):
+        archive=self.archive();self.server(episode_archive=archive)
+        with patch.object(archive,'begin',side_effect=OSError('intake disk failure')), \
+                patch.object(self.entry,'register',side_effect=AssertionError('registration forbidden')):
+            response=self.call()
+        value=self.metadata(response);self.assertEqual(value['new_setter_count'],0)
+        self.assertFalse(self.sent);self.assertEqual(value['task_episode_archive_status'],'intake_not_committed_or_unknown')
+
+    def test_archive_time_is_charged_to_original_window_before_form(self):
+        archive=self.archive();self.server(episode_archive=archive);binding=archive.bind_source
+        def slow(*args):
+            value=binding(*args);self.now=131.;return value
+        with patch.object(archive,'bind_source',side_effect=slow), \
+                patch.object(self.entry,'execute',side_effect=AssertionError('dispatch forbidden')):
+            response=self.call(received_monotonic=100.)
+        self.assertEqual(self.metadata(response)['new_setter_count'],0);self.assertFalse(self.sent)
+        raw=self.episode(response)['raw_evidence'];self.assertEqual(raw['received_monotonic'],100.)
 
 
 

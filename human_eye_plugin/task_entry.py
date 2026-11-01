@@ -67,8 +67,10 @@ class TrustedTaskEntry:
     execute. Only execute() on the original live entry can consume the grant;
     the old scheduler.run does not reactivate a recorded event.
     """
-    def __init__(self,config_path,host,authority):
+    def __init__(self,config_path,host,authority,*,source_observer=None):
         need(type(authority) is a.TrustedTaskAuthority,'trusted_task_authority_required')
+        need(source_observer is None or callable(source_observer),'task_entry_source_observer_callable_required')
+        self._source_observer=source_observer
         self._config=Path(config_path).resolve();self._config_raw=self._read_config()
         self._scheduler=OwnedGoalScheduler(config_path,host,authority)
         self.service=self._scheduler.service;self.host=host;self.authority=authority
@@ -160,6 +162,9 @@ class TrustedTaskEntry:
                     initial_native_sha256=_digest(initial['native_scene']),
                     clock_domain=owned_clock_domain(initial['capture']['host_identity']['document_epoch'],counter),
                     connector_config_sha256=self._config_sha)
+                if self._source_observer is not None:
+                    self._source_observer(resolved,copy.deepcopy(scope),copy.deepcopy(initial))
+                    self._check(started=started,duration=duration,process=process)
                 grant=self.authority.issue(resolved,scope,received_monotonic=started)
                 need(grant.key not in self._failed,'task_entry_prior_failure_requires_review')
                 if grant.key in self._live:

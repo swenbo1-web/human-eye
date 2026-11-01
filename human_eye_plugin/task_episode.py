@@ -173,6 +173,13 @@ class TaskEpisode:
                          execution_started=False, result=None, finished_monotonic=None)
         self._final = None
 
+    def intake(self):
+        self._open()
+        fields=('event_id','connection_id','request_id','request_sha256','received_monotonic','origin')
+        value={k:self._raw[k] for k in fields}
+        if not _number(value['received_monotonic']):value['received_monotonic']=None
+        return _clone(value)
+
     def _open(self):
         _need(self._final is None, 'episode_already_sealed')
 
