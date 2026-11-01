@@ -9,6 +9,14 @@ def main(folder):
     import bpy
     if not bpy.app.background:raise ValueError('owned_background_required')
     asset=json.loads((folder/'ASSET.json').read_text());setup=json.loads((folder/'SERVER_SPEC.json').read_text())
+    if 'qualification_registration' in setup:
+        sys.path.append(str(ROOT))
+        from verification.engineering_qualification import admit,digest,ASSETS
+        admit(setup)
+        if (set(asset)!={'id','objects','task','asset_task_sha256'} or asset['id']!=setup['case_id']
+                or asset['asset_task_sha256']!=ASSETS[asset['id']]
+                or digest(dict(objects=asset['objects'],task=asset['task']))!=asset['asset_task_sha256']):
+            raise ValueError('qualification_host_asset_changed')
     site=Path(setup['site']);sys.path[:0]=[str(site),str(ROOT)]
     package=types.ModuleType('human_eye_plugin');package.__path__=[str(site/'human_eye_plugin')];sys.modules['human_eye_plugin']=package
     from human_eye_plugin.blender_host import BlenderSceneHost

@@ -9,11 +9,26 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.append(str(ROOT))
 def main(spec_path):
     spec=json.loads(Path(spec_path).read_text())
     if spec['arm'] not in ('native','he'):raise ValueError('arm')
-    if spec['arm']=='he':
+    qualification='qualification_registration' in spec
+    if qualification:
+        from verification.engineering_qualification import admit,BUILD
+        admit(spec)
+        import hashlib
+        raw=Path(spec['config']).read_bytes()
+        if hashlib.sha256(raw).hexdigest()!=spec['config_sha256']:raise ValueError('qualification_config_changed')
+        config=json.loads(raw)
+        if (config.get('expected_identity',{}).get('source_sha256')!=BUILD
+                or config.get('structure_region_mode')!='summary_v1'
+                or config.get('structure_patch_mode')!='nonplanar_dense_v1'
+                or config.get('blender',{}).get('port')!=spec['port'] or spec['port']==9876
+                or config.get('blender',{}).get('host')!=spec['host'] or spec['host']!='127.0.0.1'):
+            raise ValueError('qualification_config_scope')
+    elif spec['arm']=='he':
         gate=Path(spec['he_gate_file']);registration=json.loads(gate.read_text())
         if registration.get('new_HE_trials_permitted') is not True:raise ValueError('HE_comparability_not_registered')
     from verification.engineering_task_contract import bootstrap
-    bootstrap(spec['entry'])
+    if qualification:bootstrap(spec['entry'],baseline='region_v3')
+    else:bootstrap(spec['entry'])
     from human_eye_plugin.live_spatial_mcp import LiveSpatialMCPServer
     from human_eye_plugin.live_service import LiveSpatialService
     from verification.engineering_native_service import NativeService,ReadOnly,verify_helpers

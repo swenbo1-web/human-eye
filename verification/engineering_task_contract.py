@@ -59,13 +59,16 @@ def he_regions(value):
     return regions,dict(total=check['total'],omitted=check['omitted'],complete=check['state']=='complete')
 
 
-def bootstrap(entry):
+def bootstrap(entry, *, baseline='legacy_v2'):
     """Use the existing fixed installation recognizer, not a source checkout."""
+    builds={'legacy_v2':'8bcdc431240711482c24915af327b2227a9f4c76b0b437b389339f281451350d',
+            'region_v3':'955895672b5a04308bad314665c564a766589b54b079e9f9d0a5591d24a67bf0'}
+    if baseline not in builds:raise ValueError('unknown_fixed_baseline')
     entry=Path(entry).resolve();spec=importlib.util.spec_from_file_location('_engineering_fixed_entry',entry)
     module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module;spec.loader.exec_module(module)
     proof=module.validate_binding(expected_python=sys.executable)
     sys.path.insert(0,proof['module_root'])
     identity,origins=module.verify_imported_runtime(proof)
-    if identity['source_sha256']!='8bcdc431240711482c24915af327b2227a9f4c76b0b437b389339f281451350d':
+    if identity['source_sha256']!=builds[baseline]:
         raise ValueError('frozen_engine_required')
     return identity,origins
