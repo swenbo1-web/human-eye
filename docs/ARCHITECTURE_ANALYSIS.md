@@ -358,3 +358,11 @@ TrustedTaskEntry.execute只消费同实例原grant，由私有handoff进入同�
 原GoalSupervisorContext新增可选trusted commit_guard，默认None；LS只在有父目标时传递。检查分别置于子段派发、步间及原HostRuntime逻辑提交点；没有新建执行循环/调度服务。此边界允许已经提交的单步完成，不保证OS管道发送/原生赋值可抢占。触发审查以单任务终态事件返回嵌入方，既不每步调用模型，也没有默认Codex回调/可靠通知outbox的交付保证。
 
 24项独立owned验证证明4→1mm的4步闭环、原容差内零写、首步后撤销保留1次、外部变更/到期零引擎写，以及真实移动和完成保存后丢回执的区别。一步子段耗尽仍被原native continuation gate拒绝，不把“更自动”当放宽可恢复原因/恢复额度的理由。静态死区不等于动态噪声滞回；该证据只覆盖本次盒体静态刚体端点，不是通用小脑、共享GUI、模型收益或正式发布。下一项依唯一主计划M3-A2b，先证明Codex真实可信任务与审查消费，之后才扩Episode。
+
+## 32. M3-A2b：批准来源接入MCP宿主，仍须真实UI验收
+
+新增独立owned_task_mcp入口，默认shared live四工具及Hook不变。新入口仅保留两只读工具和一个有限目标工具，阻断旧直接transform/segment旁路。服务器在原register窗口内用MCP elicitation请求明确表单，冻结目标/配置/源/进程/原三角/预算；随机server request id的accept加严格布尔True，才构造原typed TaskApproval。普通提示词、permission_mode、模型工具参数和错id不批准。stdio宿主本身仍是信任边界，不声称是任意本机Python攻击的沙箱。
+
+一条有界输入读取线程仅接收协议/标记取消；原执行循环、CAS/ForwardDeadline、独立回读和账本仍由原scheduler负责。接收时间从传输层传入TrustedTaskEntry，审批或队列等待不重新计时；单连接goal call id只消费一次、最多16次，不清理未决账本。取消/EOF先撤销未来提交资格，在途已执行事实继续回读/对账；异常跨越execute边界后不能伪报零移动。终态review事件进入同一工具结果，不声称已被客户端读取或有恰好一次outbox。
+
+实际CLI 0.152.1 schema存在form elicitation入口，协议候选完成17项新契约及26项脚本客户端/真实owned测试。rc1数值1冒充布尔True的反例保留并修复，rc2是唯一最终候选。新增human_eye_owned已配置，固定入口独立握手通过，但当前聊天没有新工具，缺真实UI批准和模型消费；这构成当前用户允许的外部阻塞。没有因此宣布M3-A3/A4/B/C/D完成，下一出口仍依主计划先处理真实接入。

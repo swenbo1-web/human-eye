@@ -138,9 +138,10 @@ class TrustedTaskEntry:
                 self.service._save(value,runtime)
             return copy.deepcopy(value['goal_authorizations']['records'][key])
 
-    def register(self,spec):
+    def register(self,spec,*,received_monotonic=None):
         """Receive and freeze an approved task without opening a motion goal."""
-        started=time.perf_counter()
+        started=time.perf_counter() if received_monotonic is None else received_monotonic
+        a._number(started,'trusted task receive time',0.)
         need(type(spec) is a.ClearanceTaskSpec,'typed_task_spec_required_not_JSON')
         # Revalidate and detach the frozen proposal before any callback/host work.
         a._limits(spec.limits);proposal=replace(spec)
