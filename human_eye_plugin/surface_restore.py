@@ -106,11 +106,11 @@ class RestoreController:
         self.registry=registry;self.capture=capture;self.set_vertex=set_vertex;self.approve=approve;self.clock=clock
         self._events=set();self.quarantined=journal.poisoned;self._gate=threading.Lock()
 
-    def restore(self,reference_ref,indices,*,event_id,duration_ns=5_000_000_000,max_displacement_m=.001):
+    def restore(self,reference_ref,indices,*,event_id,duration_ns=5_000_000_000,max_displacement_m=.001,received_ns=None):
         g.require(self._gate.acquire(blocking=False),'restore_busy')
         self._ticket=None;self._write_intent=False;self._scope=None
         try:
-            result=self._restore(reference_ref,indices,event_id=event_id,duration_ns=duration_ns,max_displacement_m=max_displacement_m)
+            result=self._restore(reference_ref,indices,event_id=event_id,duration_ns=duration_ns,max_displacement_m=max_displacement_m,received_ns=received_ns)
             try:
                 self.journal.update(self._ticket,event_id,'finished',scope=self._scope,result=result)
                 if result['unknown']:self.journal.poisoned=True
@@ -125,15 +125,16 @@ class RestoreController:
             raise
         finally:self._gate.release()
 
-    def _restore(self,reference_ref,indices,*,event_id,duration_ns,max_displacement_m):
-        received=self.clock();g.require(type(event_id) is str and 1<=len(event_id)<=128,'restore_event')
+    def _restore(self,reference_ref,indices,*,event_id,duration_ns,max_displacement_m,received_ns):
+        now=self.clock();received=now if received_ns is None else received_ns
+        g.require(type(received) is int and 0<=received<=now,'restore_trusted_intake_time');g.require(type(event_id) is str and 1<=len(event_id)<=128,'restore_event')
         g.require(not self.quarantined and event_id not in self._events and len(self._events)<16,'restore_reused_or_quarantined')
         g.require(type(duration_ns) is int and 0<duration_ns<=30_000_000_000,'restore_duration')
         self._events.add(event_id);self._ticket=self.journal.begin(event_id)
         deadline=received+duration_ns;attempts=0;confirmed=0;rollback=0
         def check():g.require(self.clock()<deadline,'restore_original_deadline')
         def budget():check();return raw.WorkBudget(deadline_ns=deadline,clock=self.clock)
-        original=self.capture();check();binding=self.registry.resolve(reference_ref,original)
+        check();original=self.capture();check();binding=self.registry.resolve(reference_ref,original)
         # Blender may change a nonplanar n-gon's tessellation after a vertex
         # edit. A frozen triangle packet cannot certify that future surface.
         # This first write domain therefore admits original triangles only.
@@ -148,12 +149,17 @@ class RestoreController:
             report=g.analyze(prepared,binding['triangles'],binding['polygon_indices'],budget=budget(),near_m=0)
             g.require(report['scan_complete'] and not report['degenerate_triangles_total'] and report['omitted']==0,'restore_incomplete_contact_check')
             return {(tuple(sorted(r['triangles'])),r['kind'],r['relation']) for r in report['regions']}
-        g.require(not contacts(predicted)-contacts(original['raw']),'restore_new_contact')
+        baseline_contacts=contacts(original['raw'])
+        g.require(not contacts(predicted)-baseline_contacts,'restore_new_contact')
         scope=dict(schema='owned-reference-patch-restore-v1',event_id=event_id,source=original['source'],
             reference_source=binding['reference']['source'],indices=proposal['indices'],
             proposed_raw_sha256=g.digest(predicted),max_displacement_m=max_displacement_m,
             maximum_setter_attempts=2*len(indices),deadline_ns=deadline,received_ns=received,
-            semantic_target=binding['intent']['semantic_target'])
+            semantic_target=binding['intent']['semantic_target'],motion_certification='discrete_vertex_endpoints_only_not_swept_surface',
+            vertex_changes=[dict(vertex=i,before_local=original['raw']['vertices'][i][:],
+                target_local=predicted['vertices'][i][:]) for i in proposal['indices']],
+            coordinate_frame='local_blender_units_with_source_matrix_and_unit_scale',
+            unit_scale_m=original['raw']['unit_scale'],matrix_world=original['raw']['matrix_world'])
         self._scope=copy.deepcopy(scope);self.journal.update(self._ticket,event_id,'prepared',scope=scope)
         answer=self.approve(copy.deepcopy(scope));check()
         g.require(type(answer) is dict and set(answer)=={'approved','scope_sha256'} and answer['approved'] is True
@@ -176,6 +182,7 @@ class RestoreController:
                 check();g.require(read()==expected,'restore_external_change')
                 if expected['vertices'][i]==p:continue
                 before=copy.deepcopy(expected);candidate=copy.deepcopy(expected);candidate['vertices'][i]=p[:]
+                g.require(not contacts(candidate)-baseline_contacts,'restore_intermediate_new_contact')
                 self.journal.update(self._ticket,event_id,'setter_pending',scope=scope,next_attempt=attempts+1,
                     confirmed_forward=confirmed,confirmed_rollback=rollback,prior_raw_sha256=g.digest(expected))
                 self._write_intent=True;check();self.registry.resolve(reference_ref,original);attempts+=1

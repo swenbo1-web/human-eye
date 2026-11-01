@@ -184,6 +184,22 @@ class RestoreTests(unittest.TestCase):
         self.assertEqual(result['status'],'unknown_journal_commit');self.assertEqual(len(self.calls),1)
         self.assertTrue(RestoreJournal.inspect(controller.journal.root)['unknown'])
 
+    def test_trusted_intake_original_window_includes_queue_delay(self):
+        controller,ref,_,_=self.setup_controller();now=time.perf_counter_ns()
+        with self.assertRaisesRegex(ValueError,'original_deadline'):
+            controller.restore(ref,[4],event_id='old_intake',received_ns=now-6_000_000_000)
+        self.assertFalse(self.calls)
+        with self.assertRaisesRegex(ValueError,'trusted_intake_time'):
+            controller.restore(ref,[4],event_id='future_intake',received_ns=time.perf_counter_ns()+1_000_000_000)
+
+    def test_approval_freezes_concrete_current_and_target_vertices(self):
+        controller,ref,reference,target=self.setup_controller();scopes=[];approve=controller.approve
+        def inspect(scope):scopes.append(copy.deepcopy(scope));return approve(scope)
+        controller.approve=inspect;controller.restore(ref,[4],event_id='concrete')
+        change=scopes[0]['vertex_changes'][0];self.assertEqual(change['vertex'],4)
+        self.assertEqual(change['before_local'],target['raw']['vertices'][4])
+        self.assertEqual(change['target_local'],reference['raw']['vertices'][4])
+
     def test_quad_tessellation_cannot_authorize_vertex_write(self):
         controller,_,_,_=self.setup_controller();r=copy.deepcopy(self.state['raw'])
         r['vertices']=r['vertices'][:4];r['polygons']=[[0,1,2,3]];r['edges']=[[0,1],[1,2],[2,3],[0,3]]

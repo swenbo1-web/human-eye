@@ -14,7 +14,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 对部分高顶点目标，在 XY／XZ 视图筛查有界局部放大机会；保留真实遮挡，明确区分投影包围界与真实薄截尺寸。
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 
-当前 checkout 为 **源码候选** `v21-reference-view-candidate-20261102`，100运行源，摘要 `66b6ccf5b37da211bf55ea7a762045e28c690c57573469d25cd95fa713ba069b`。隔离安装 `9.7.2+20261102.reference.view.r4` 已完成同索引参考变化的原生局部图：21场景、30图及240项响应篡改核验；默认Codex顶点写入口仍未开放。当前聊天owned仍91源554b5028；正式live仍78源22fb2523，Hook不变。见[本批验收与限制](docs/M3_REFERENCE_FEATURE_VIEW_ACCEPTANCE.md)和[项目进度](docs/PROGRESS.md)。
+当前 checkout 为 **源码候选** `v21-owned-reference-candidate-20261102`，104运行源，摘要 `257121436cf0a89238d8335902f5cbe0e9b14bdd1ed63c9323a4c742264cc56d`。隔离安装 `9.7.2+20261102.owned.reference.r2`：参考变化局部图和专用网格恢复MCP已完成有限工程验收，当前聊天尚未加载此写入口。owned仍91源554b5028、正式live仍78源22fb2523，Hook不变。见[恢复入口及限制](docs/M3_OWNED_REFERENCE_RESTORE_ACCEPTANCE.md)和[项目进度](docs/PROGRESS.md)。
 
 新增显式区域摘要协议已通过24个隔离Blender任务：密集场景省略区域也有位置，可仅凭公开锚点选区；成员省略与渲染权限仍分别记录。默认协议逐字节兼容，候选尚未激活。详见 [区域摘要验收](docs/M2_REGION_SUMMARY_ACCEPTANCE.md)。
 

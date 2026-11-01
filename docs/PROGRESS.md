@@ -311,3 +311,9 @@ M1-01来源预检使用3个新factory Blender进程，14类解析夹具＋3个�
 合同：[结构证据](MESH_STRUCTURE_EVIDENCE_CONTRACT.md)、[高顶点观察](DENSE_FOCUS_NATIVE_CONTRACT.md)、[任务间隙](TASK_GAP_NATIVE_CONTRACT.md)、[自动任务调度](OWNED_GOAL_SCHEDULER_CONTRACT.md)、[共同原生入口](COMMON_OWNED_GATEWAY_CONTRACT.md)、[模型价值协议](V21_MODEL_VALUE_PROTOCOL.md)。历史合同中的安装号按当时阶段保留，当前安装状态以本文与实际身份为准。
 
 本轮补充：M3-C参考变化原生图已完成有限21场景/30图/240反例，源码100源66b6ccf5；SDK同时拒绝会重三角化的原始非三角面。详见[M3-C验收](M3_REFERENCE_FEATURE_VIEW_ACCEPTANCE.md)。原默认安装、旧成本失败与模型价值待验保持；后续顺序只见唯一主计划。
+
+M3-D补充：104源25712143专用单三角网格恢复MCP候选已完成17产品组、10类RNA、6硬退出及1997项回归；[验收](M3_OWNED_REFERENCE_RESTORE_ACCEPTANCE.md)。原输入不保存，真实当前Codex入口未激活。后续继续唯一主计划的时序稳定性复核，不以本批结束替代M3整体退出。
+
+M3静态时序收口：6新owned进程补验近容差稳定读、24外部扰动停止和同平面代表变化；只有合法代表场景4次引擎setter，其余引擎0。原授权/期限/预算与输入文件保持，传感噪声滞回未支持。见[复核](M3_STATIC_TASK_STABILITY_ACCEPTANCE.md)。本轮全部满足前置的M3独立工程已收口，整体产品/模型门未通过，后续只见唯一主计划。
+
+已生成未激活的本地交接 `.human-eye/m3-reference-handoff-20261102/`，固定bootstrap/运行源、仅指向自建0.5mm凹陷测试副本、全新journal，MCP片段默认enabled=false。真实wrapper只读检查已过，0 RNA、0目标槽；不是实际Codex新schema加载或批准。
