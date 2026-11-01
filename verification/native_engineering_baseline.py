@@ -85,10 +85,10 @@ def render_native(original, objects, frame, path, check):
         if not had_result and bpy.data.images.get('Render Result') is not None:bpy.data.images.remove(bpy.data.images['Render Result'])
 
 
-def observe(scene, obj, task, output):
+def observe(scene, obj, task, output, *, deadline_ns=None, focus_edges=None):
     import bpy
     from mathutils import Vector
-    started=time.perf_counter_ns();deadline=started+30_000_000_000
+    started=time.perf_counter_ns();deadline=min(started+30_000_000_000,deadline_ns) if deadline_ns is not None else started+30_000_000_000
     stages={};ray_calls=0
     def check():
         if time.perf_counter_ns()>=deadline:raise ValueError('native_deadline')
@@ -107,7 +107,12 @@ def observe(scene, obj, task, output):
             vertices={v for index in group for v in endpoints[index]};values=[points[obj.name][v] for v in vertices]
             center=Vector([(min(v[k] for v in values)+max(v[k] for v in values))/2 for k in range(3)])
             return ((center-anchor).length_squared,max((p-center).length for p in values),min(group))
-        primary=min(groups,key=key);vertices={v for index in primary for v in endpoints[index]}
+        if focus_edges is None:primary=min(groups,key=key)
+        else:
+            matches=[group for group in groups if sorted(endpoints[i] for i in group)==sorted(focus_edges)]
+            if len(matches)!=1:raise ValueError('explicit_focus_not_current_boundary')
+            primary=matches[0]
+        vertices={v for index in primary for v in endpoints[index]}
         local=[points[obj.name][v] for v in vertices]
         center=Vector([(min(v[k] for v in local)+max(v[k] for v in local))/2 for k in range(3)])
         normal=Vector((0.,0.,0.))
