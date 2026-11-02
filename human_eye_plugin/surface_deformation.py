@@ -142,12 +142,17 @@ def analyze(packet,*,deadline_ns,query=None):
     return _analyze_geometry(proof,deadline_ns=deadline_ns,query=query)
 
 
-def _analyze_geometry(proof,*,deadline_ns,query=None):
+def _analyze_geometry(proof,*,deadline_ns,query=None,region_query=None):
     # Internal numeric core. Public source entry points validate complete source
     # data before calling this helper; no JSON flag can assert validation.
     r.check_time(deadline_ns)
     original=proof['original'];current=proof['current'];triangles=proof['triangles'];world=proof['world'];unit=proof['unit']
     source_sha256=proof['source_sha256']
+    r.require(query is None or region_query is None,'deformation_query_modes')
+    region_membership=None
+    if region_query is not None:
+        from . import deformation_region
+        region_membership=deformation_region.select(proof,region_query,deadline_ns=deadline_ns)
     selected=None
     if query is not None:
         r.require(type(query) is dict and set(query)=={'schema','expected_source_sha256','triangle_indices'}
@@ -166,7 +171,8 @@ def _analyze_geometry(proof,*,deadline_ns,query=None):
     def rank(v):
         change=max([abs(x-1) for x in v['principal_stretches']]+[abs(v['area_ratio']-1)]) if v['principal_stretches'] is not None else 0
         return (0 if v['state']=='collapsed' else 1 if v['state']=='unknown' else 2,-change,v['triangle'])
-    ranked=sorted(rows,key=rank);unknown=[v for v in rows if v['state']=='unknown'];collapsed=[v for v in rows if v['state']=='collapsed']
+    ranked=sorted(rows,key=rank) if region_membership is None else []
+    unknown=[v for v in rows if v['state']=='unknown'];collapsed=[v for v in rows if v['state']=='collapsed']
     result=dict(schema='surface-deformation-diagnostic-v1',source_sha256=source_sha256,assessment='geometric_facts_not_damage',
         source=dict(proof['source']),
         source_summary=dict(vertices_total=len(original),triangles_total=len(rows),bones_total=proof['bones_total'],
@@ -174,7 +180,7 @@ def _analyze_geometry(proof,*,deadline_ns,query=None):
         coordinate_precision_model='binary32 coordinate quantization plus conservative binary64 arithmetic margins; not a certified physical bound',
         status='partial' if unknown else 'observed',triangles_total=len(rows),triangles_measured=sum(v['state']=='measured' for v in rows),
         triangles_collapsed=len(collapsed),triangles_unknown=len(unknown),original_zero_area_total=sum(v['reference_geometry']=='zero_area' for v in rows),
-        triangles=ranked[:16],triangles_omitted=max(0,len(rows)-16),
+        triangles=ranked[:16],triangles_omitted=max(0,len(rows)-len(ranked[:16])),
         unknown_reasons={reason:sum(v['reason']==reason for v in unknown) for reason in sorted({v['reason'] for v in unknown})},
         damage_classification='not_inferred',execution_authority=False,geometry_setters=0,original_file_saved=False,
         not_checked=['volume_Jacobian','inversion_vs_3D_rotation','self_contact','intended_shape_quality','repair','visibility'])
@@ -182,4 +188,8 @@ def _analyze_geometry(proof,*,deadline_ns,query=None):
         requested=[rows[i] for i in selected]
         result['task_query']=dict(schema='surface-deformation-query-result-v1',source_sha256=source_sha256,
             triangle_indices=selected,status='partial' if any(v['state']=='unknown' for v in requested) else 'observed',triangles=requested)
+    if region_membership is not None:
+        result['global_detail_scope']='omitted_for_requested_region'
+        result['region_query']=deformation_region.summarize(region_membership,rows,deadline_ns=deadline_ns)
+        r.require(len(r.encoded(result))<=r.MAX_BYTES,'deformation_region_report_byte_budget')
     r.check_time(deadline_ns);return result

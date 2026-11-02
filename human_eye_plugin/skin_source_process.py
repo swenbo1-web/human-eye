@@ -70,7 +70,7 @@ class SkinSourceProcess(RigPoseProcess):
         self.source=packet;return packet
 
 
-def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,close_before_publish=False):
+def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,region_binder=None,close_before_publish=False):
     """Shared owned source CLI persistence; every analyzer owns source admission."""
     if analyzer is None:analyzer=lambda packet,actor,**kw:surface_deformation.analyze(packet,**kw)
     if selection_binder is None:selection_binder=lambda packet,selection,actor,**kw:surface_deformation.bind_selection(packet,selection,**kw)
@@ -82,18 +82,22 @@ def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,close_befor
         if verifier is not None:verifier()
     try:
         actor=actor_type(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
-        selection=None;query=None
-        if args.triangle_query is not None:
-            path=args.triangle_query;r.require(path.is_absolute() and path.resolve()==path,'deformation_selection_path')
+        selection=None;query=None;region_path=getattr(args,'region_query',None)
+        r.require(args.triangle_query is None or region_path is None,'deformation_query_modes')
+        r.require(region_path is None or region_binder is not None,'deformation_region_entry_unavailable')
+        selection_path=args.triangle_query if region_path is None else region_path
+        if selection_path is not None:
+            path=selection_path;r.require(path.is_absolute() and path.resolve()==path,'deformation_selection_path')
             with path.open('rb') as f:blob=f.read(4097)
             r.require(len(blob)<=4096,'deformation_selection_byte_budget');selection=r.decode(blob)
-            save('SELECTION.json',selection);r.check_time(actor.deadline_ns)
+            save('SELECTION.json' if region_path is None else 'REGION_SELECTION.json',selection);r.check_time(actor.deadline_ns)
         first=actor.inspect()
         if args.triangle_query is not None:query=selection_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
+        if region_path is not None:query=region_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
         second=actor.inspect()
         save('SNAPSHOTS.json',dict(first=first,second=second,capabilities=actor.capabilities))
         r.check_time(actor.deadline_ns)
-        report=analyzer(second,actor,deadline_ns=actor.deadline_ns,**({} if query is None else dict(query=query)))
+        report=analyzer(second,actor,deadline_ns=actor.deadline_ns,**({} if query is None else {('query' if region_path is None else 'region_query'):query}))
         r.check_time(actor.deadline_ns);verify_inputs()
         if close_before_publish:
             actor.close();r.check_time(actor.deadline_ns)
@@ -103,6 +107,7 @@ def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,close_befor
         os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns);verify_inputs()
         encoded=json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
             elapsed_ns=time.perf_counter_ns()-actor.received_ns),allow_nan=False)
+        if region_path is not None:r.require(len(encoded.encode('utf8'))<=r.MAX_BYTES,'deformation_region_report_byte_budget')
         r.check_time(actor.deadline_ns);verify_inputs();print(encoded);return 0
     except Exception as exc:
         if published:os.replace(output/'REPORT.json',output/'REVOKED_REPORT.json')
