@@ -14,7 +14,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 对部分高顶点目标，在 XY／XZ 视图筛查有界局部放大机会；保留真实遮挡，明确区分投影包围界与真实薄截尺寸。
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 
-当前 checkout 为 **源码候选** `v21-owned-clearance-operator-task-20261102`，106运行源，摘要 `fa8e82920d207c27be146396bd29b4a8d03c38404b254c20ae65380f5f9fdc08`。隔离安装 `9.7.2+20261102.clearance.operator.r1`：刚体间隙任务和参考顶点恢复分别支持显式操作者一次任务授权，本地执行和回读无需插件form；两域不能互借授权。当前Codex已通过固定本机入口实测4→1毫米任务，旧MCP没有热更，默认交互模式保留。正式live仍78源22fb2523，Hook不变。见[刚体任务入口及限制](docs/M3_CLEARANCE_OPERATOR_TASK_ACCEPTANCE.md)和[项目进度](docs/PROGRESS.md)。
+当前 checkout 为 **源码候选** `v21-rig-pose-readonly-candidate-20261102`，109运行源，摘要 `03acbda388b24f948a8688cc45e8aa1afdfb80333f3b7fbb551d7068913d66ce`。隔离安装 `9.7.2+20261102.rig.pose.r2` 新增有限静态FK姿态只读入口：可量化头尾不变的轴向扭转、扣除父运动，并明确角色规则覆盖和未知；不推断蒙皮损伤或开放骨骼写入。当前Codex已实读取95°轴向扭转及真实120°父运动负例。原刚体/顶点任务保持，默认MCP没有热更；正式live仍78源22fb2523，Hook不变。见[姿态域及限制](docs/M4_RIG_POSE_ACCEPTANCE.md)和[项目进度](docs/PROGRESS.md)。
 
 新增显式区域摘要协议已通过24个隔离Blender任务：密集场景省略区域也有位置，可仅凭公开锚点选区；成员省略与渲染权限仍分别记录。默认协议逐字节兼容，候选尚未激活。详见 [区域摘要验收](docs/M2_REGION_SUMMARY_ACCEPTANCE.md)。
 

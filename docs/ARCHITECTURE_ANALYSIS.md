@@ -392,3 +392,5 @@ A3a复用原TaskEntry与scheduler的冻结scope/原起点和终态，不另建�
 M3候选后续：专用单三角网格worker与两工具MCP已有实际Codex批准/恢复/回读证据，旧拒绝保留；104源候选当前聊天独立加载。新增105源245e9837任务授权层只固定一次操作者启动的原预算、确切索引/源/参考与单次消费，不新建动作控制器。显式模式可由当前Codex本机固定入口执行，不冒充默认MCP热更新；默认表单和宿主destructive注解保持。独占任务的内部多步继续由RestoreController完成。两种授权来源及崩溃/回读边界见[任务授权验收](M3_OPERATOR_TASK_ACCEPTANCE.md)；与旧刚体scheduler的融合仍由唯一主计划另行准入，不能互借grant。
 
 刚体融合后续：106源fa8e8292新增独立OperatorClearanceTask，不更改旧MCP、TaskEntry或scheduler；固定本机profile绑定真实Popen启动场景/二进制和新鲜完整源，原父预算从操作者接收算起。刚体TaskApproval不能授权顶点内核。物理完成、核心完成持久化、本层回执持久化分开；新目录不能绕过原未决账本。当前Codex本机入口已完成4→1毫米及独立回读，保留默认路由/真人旧表单/模型价值的区别。详见[刚体授权验收](M3_CLEARANCE_OPERATOR_TASK_ACCEPTANCE.md)，后续顺序仍由唯一主计划决定。
+
+M4-A1后续：109源03acbda3新增独立只读骨架数据域，避免让原刚体capture接受带骨骼求值对象。rest/pose/basis明确分开，父/rest相对矩阵导出局部swing/twist；角色规则只绑定其注册骨骼，世界物体反射不改变局部规则语义。当前矩阵不能恢复多圈历史或蒙皮体积变形。完整来源双读、阈值未知、外部RNA审计及当前Codex95°隐藏扭转/真实120°父运动负例已验，详见[姿态合同](M4_RIG_POSE_ACCEPTANCE.md)。下一项应先解决约束/IK下控制与求值数据对应，不能拿FK basis一致性要求直接外推；不以解除unsupported标记代替新域证明。
