@@ -355,6 +355,9 @@ def _validate(packet,*,deadline_ns,expected_bindings,expected_source=None):
     mesh_instances=r.decode(binding.mesh_identity);rig_instances=r.decode(binding.rig_identity)
     result=dict(schema='validated-small-skin-geometry-v1',original=copy.deepcopy(original),current=copy.deepcopy(current),triangles=copy.deepcopy(triangles),
         world=copy.deepcopy(evaluated['mesh_matrix_world']),unit=inputs['unit_scale_m'],unweighted=unweighted,source_sha256=packet['source_sha256'],
+        rig_world=copy.deepcopy(evaluated['rig_matrix_world']),
+        bone_landmarks=[dict(name=b['name'],parent=b['parent'],connected=bones[b['name']]['connected'],use_deform=bones[b['name']]['use_deform'],
+            head=copy.deepcopy(b['pose_head']),tail=copy.deepcopy(b['pose_tail'])) for b in evaluated['bones']],
         source=dict(source_kind=SCHEMA,document_epoch=binding.document_epoch,process_id=binding.process_id,scene_sha256=binding.scene_sha256,
             object_id='blender:'+r.digest(['',binding.rig_name]),rig_identity=rig_instances,mesh_instances=mesh_instances,
             mesh_identity=dict(name=binding.mesh_name,object_id='blender:'+r.digest(['',binding.mesh_name]),

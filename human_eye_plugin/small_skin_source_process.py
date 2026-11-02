@@ -109,21 +109,46 @@ class SmallSkinSourceProcess(RigPoseProcess):
         if self.source is None:self.source=packet['source_sha256']
         return packet
 
-    def analyze(self,packet,*,deadline_ns,query=None,region_query=None):
+    def analyze(self,packet,*,deadline_ns,query=None,region_query=None,anchor_query=None):
         core.need(deadline_ns==self.deadline_ns and not self.closed,'analysis_window','unavailable')
         core.need(self.source is not None,'observation_required','unavailable')
-        r.require(query is None or region_query is None,'deformation_query_modes')
+        r.require(sum(value is not None for value in (query,region_query,anchor_query))<=1,'deformation_query_modes')
         self.verify_inputs()
         proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
         proof['source']=dict(proof['source'],source_sha256=packet['source_sha256'],source_schema=core.SCHEMA,
             profile_sha256=self.bindings.profile_sha256,runtime_source_sha256=self.bindings.runtime_source_sha256,
             worker_sha256=self.bindings.worker_sha256,module_sha256=self.bindings.module_sha256,math_sha256=self.bindings.math_sha256,binary_sha256=self.bindings.binary_sha256)
+        anchor_trace=None
+        if anchor_query is not None:
+            from . import deformation_anchors
+            region_query,anchor_trace=deformation_anchors.resolve(proof,anchor_query,pins=self._anchor_pins(),deadline_ns=deadline_ns)
         report=surface_deformation._analyze_geometry(proof,deadline_ns=deadline_ns,query=query,
             **({} if region_query is None else dict(region_query=region_query)))
         report['source_validation']=dict(schema=core.SCHEMA,method='external_binding_full_dependency_FK_and_LBS',
             max_replay_error=proof['max_replay_error'],replay_atol=core.POSITION_ATOL,animation_curves_checked=proof['animation_curves_checked'],
             not_coordinate_measurement_error=True)
+        if anchor_trace is not None:
+            report['anchor_query']=anchor_trace
+            r.require(len(r.encoded(report))<=r.MAX_BYTES,'deformation_anchor_report_byte_budget')
         self.verify_inputs();return report
+
+    def _anchor_pins(self):return {key:getattr(self.bindings,key) for key in core.PIN_FIELDS}
+
+    def describe_anchors(self,packet,*,deadline_ns):
+        from . import deformation_anchors
+        core.need(deadline_ns==self.deadline_ns and not self.closed,'catalog_window','unavailable')
+        core.need(self.source is not None,'observation_required','unavailable');self.verify_inputs()
+        proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
+        report=deformation_anchors.catalog(proof,pins=self._anchor_pins(),deadline_ns=deadline_ns)
+        self.verify_inputs();return report
+
+    def bind_anchor_selection(self,packet,selection,*,deadline_ns):
+        from . import deformation_anchors
+        core.need(deadline_ns==self.deadline_ns and not self.closed,'selection_window','unavailable')
+        core.need(self.source is not None,'observation_required','unavailable');self.verify_inputs()
+        proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
+        bound=deformation_anchors.bind_selection(proof,selection,pins=self._anchor_pins(),deadline_ns=deadline_ns)
+        self.verify_inputs();return bound
 
     def bind_selection(self,packet,selection,*,deadline_ns):
         core.need(deadline_ns==self.deadline_ns and not self.closed,'selection_window','unavailable')
@@ -154,9 +179,13 @@ def main(argv=None):
     queries=parser.add_mutually_exclusive_group()
     queries.add_argument('--triangle-query',type=Path)
     queries.add_argument('--region-query',type=Path,help='Immutable current-world-metre closed-AABB selection; complete triangle intersection')
+    queries.add_argument('--anchors-only',action='store_true',help='Describe native bone endpoints and triangle-hull bounds; no surface diagnosis')
+    queries.add_argument('--anchor-query',type=Path,help='Select a source-bound native anchor and half extents; recompute the closed box')
     return run_reader(parser.parse_args(argv),SmallSkinSourceProcess,
         analyzer=lambda packet,actor,**kw:actor.analyze(packet,**kw),selection_binder=lambda packet,selection,actor,**kw:actor.bind_selection(packet,selection,**kw),
-        region_binder=lambda packet,selection,actor,**kw:actor.bind_region_selection(packet,selection,**kw),close_before_publish=True)
+        region_binder=lambda packet,selection,actor,**kw:actor.bind_region_selection(packet,selection,**kw),
+        anchor_binder=lambda packet,selection,actor,**kw:actor.bind_anchor_selection(packet,selection,**kw),
+        catalog_analyzer=lambda packet,actor,**kw:actor.describe_anchors(packet,**kw),close_before_publish=True)
 
 
 if __name__=='__main__':raise SystemExit(main())
