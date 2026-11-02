@@ -410,3 +410,9 @@ M4-B1补充：[有限LBS来源合同](M4_SKIN_SOURCE_ACCEPTANCE.md)以115源aad9
 116源e6b55e91仅在现有B2算子上补最多4面的来源绑定查询，保留完整源校验、全量计算及默认top16；指定区域不因unknown/塌缩优先排序被省略。固定CLI将不可变file/roles/frame选择绑定到新的capture，避免复用旧epoch；不向任意活文档承诺面ID跨编辑稳定。五类原生任务源码/安装同过，当前Codex三例正确区分全局partial与选区事实，未增图片或写入。
 
 外部RiggedSimple/CesiumMan作者testing样本原样均超128点，实际固定reader准确拒绝；动画/父子/通道数值另有来源前置，不能只提高cap就声明角色支持。原样支持0/2、真实生产资产0，故应从来源准入设计推进，不能把程序夹具或摘要可用当模型价值。[本批细节](M4_DEFORMATION_TASK_QUALIFICATION.md)，唯一排期仍由主计划决定。
+
+## 2026-11-02：B3a小型来源准入资格
+
+新增verification只读probe与独立NumPy资格器，完整捕获父逆/basis/local/world、rest/pose/raw通道、动作slot/channelbag与静音NLA。RiggedSimple的两个固定帧160点回放与原GLB节点/IBM/动画独立见证通过；真实未来key/补偿父逆改变而当前坐标完全相同仍使旧来源失效。原始通道微小非0/1不等同于真实大尺度变化，应保留原数据并验证矩阵语义，不能把通道归零或删除动画。
+
+3＋1次完整资格流程最长约0.750秒、最大包200959字节，43专项测试通过。此为一个作者样本的静态资格与实现依据，生产116源e6b55e91、旧cap/拒绝和正式入口未改；不认证生产支持、任意NLA/插值、动画时序或模型收益。下一候选应复用原生生命周期和几何，通过明确的新来源合同接入而非整体放宽B1。[来源合同](M4_SMALL_SOURCE_QUALIFICATION.md)，唯一队列仍以主计划为准。

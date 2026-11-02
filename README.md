@@ -16,6 +16,8 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 
 当前checkout为**源码候选**`v21-surface-deformation-task-query-candidate-20261102`，116运行源，摘要`e6b55e91dcf1737759034d1b38efefdf3e5146f3447afde23f2aaf83a9c178c5`。隔离安装`9.7.2+20261102.deformation.task.r1`在[既有局部表面事实](docs/M4_DEFORMATION_CLOSEOUT_ACCEPTANCE.md)上补充[最多4个原始面的来源绑定查询](docs/M4_DEFORMATION_TASK_QUALIFICATION.md)，解决指定区域被概览省略的问题；源码/安装各5任务与原66矩阵通过，当前Codex实际消费3例。两个原样外部作者样本均超来源上限，支持率0/2；真实生产资产及正式模型收益未验证。原FK/约束、有限动作与默认MCP/正式live78源22fb及Hook保持。
 
+新增[M4-B3a小型来源资格预检](docs/M4_SMALL_SOURCE_QUALIFICATION.md)在一个作者样本的两个固定帧核验完整父链、动作slot和160点独立LBS；3＋1次完整运行及43项专项测试通过，值得进入有限产品候选实现。工具位于verification，生产116源未改，预检qualified不代表产品已支持，也未重打包或切换插件。
+
 [此前M4-A2a求值可行性批次](docs/M4_RIG_EVALUATION_FEASIBILITY.md)完成45资产及同文档14步变化核验，作为本批静态复制旋转产品化依据；IK的13个端点真值检查8过/5失败，另5例未认证，仍未进入产品支持域。当前A2b另有43资产及旧FK28组保持验证，不将姿态事实等同于健康结论。
 
 新增显式区域摘要协议已通过24个隔离Blender任务：密集场景省略区域也有位置，可仅凭公开锚点选区；成员省略与渲染权限仍分别记录。默认协议逐字节兼容，候选尚未激活。详见 [区域摘要验收](docs/M2_REGION_SUMMARY_ACCEPTANCE.md)。
