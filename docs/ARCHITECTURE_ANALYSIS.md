@@ -389,4 +389,4 @@ A3a复用原TaskEntry与scheduler的冻结scope/原起点和终态，不另建�
 
 本轮补充：M3-C参考变化原生图已完成有限21场景/30图/240反例，源码100源66b6ccf5；SDK同时拒绝会重三角化的原始非三角面。详见[M3-C验收](M3_REFERENCE_FEATURE_VIEW_ACCEPTANCE.md)。原默认安装、旧成本失败与模型价值待验保持；后续顺序只见唯一主计划。
 
-M3最终候选补充：新增专用单三角网格恢复worker和两工具MCP，将局部执行/每步回读/有限恢复留在Blender内，父进程只处理具体范围批准和终态。旧刚体仲裁保障没有挪用。104源25712143隔离验证，默认入口未激活；静态时序复核采用来源变化停止，未用通用滞回掩盖编辑。见[产品验收](M3_OWNED_REFERENCE_RESTORE_ACCEPTANCE.md)和[时序范围](M3_STATIC_TASK_STABILITY_ACCEPTANCE.md)。
+M3候选后续：专用单三角网格worker与两工具MCP已有实际Codex批准/恢复/回读证据，旧拒绝保留；104源候选当前聊天独立加载。新增105源245e9837任务授权层只固定一次操作者启动的原预算、确切索引/源/参考与单次消费，不新建动作控制器。显式模式可由当前Codex本机固定入口执行，不冒充默认MCP热更新；默认表单和宿主destructive注解保持。独占任务的内部多步继续由RestoreController完成。两种授权来源及崩溃/回读边界见[任务授权验收](M3_OPERATOR_TASK_ACCEPTANCE.md)；与旧刚体scheduler的融合仍由唯一主计划另行准入，不能互借grant。

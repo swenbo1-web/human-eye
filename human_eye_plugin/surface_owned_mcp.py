@@ -22,8 +22,9 @@ TOOLS=[dict(name=INSPECT,description='Read this fixed owned single-triangle-mesh
 
 
 class SurfaceOwnedMCP:
-    def __init__(self,actor,incoming,outgoing):
+    def __init__(self,actor,incoming,outgoing,*,operator_task=None):
         self.actor=actor;self.incoming=incoming;self.outgoing=outgoing;self.closed=threading.Event();self.cancelled=threading.Event()
+        self.operator_task=operator_task
         self.messages=queue.Queue(maxsize=16);self.lock=threading.Lock();self.active_id=None;self.initialized=False
         self.elicitation=False;self.seen={};self.connection_id=uuid.uuid4().hex
         self.cancelled_ids=set();self.state_lock=threading.Lock()
@@ -87,10 +88,15 @@ class SurfaceOwnedMCP:
             self.elicitation=params.get('protocolVersion') in (PROTOCOL,'2025-11-25','2026-07-28') and type(offered) is dict and (not offered or type(offered.get('form')) is dict)
             return dict(jsonrpc='2.0',id=key,result=dict(protocolVersion=PROTOCOL,capabilities=dict(tools={}),
                 serverInfo=dict(name='human-eye-owned-reference-candidate',version='1'),
-                _meta=dict(form_elicitation=self.elicitation,actual_Codex_UI_proven=False,limits=s.LIMITS)))
+                _meta=dict(form_elicitation=self.elicitation,actual_Codex_UI_proven=False,limits=s.LIMITS,
+                    authorization_mode='explicit_operator_task' if self.operator_task is not None else 'per_goal_form')))
         if not self.initialized:return _rpc_error(key,-32000,'initialize required')
         if method=='ping':return dict(jsonrpc='2.0',id=key,result={})
-        if method=='tools/list':return dict(jsonrpc='2.0',id=key,result=dict(tools=copy.deepcopy(TOOLS)))
+        if method=='tools/list':
+            tools=copy.deepcopy(TOOLS)
+            if self.operator_task is not None:
+                tools[1]['description']='Execute the exact single task selected by the trusted operator at launch. Original launch window and total budget apply. No save. Other indices and a second goal are refused.'
+            return dict(jsonrpc='2.0',id=key,result=dict(tools=tools))
         if method!='tools/call':return _rpc_error(key,-32601,'Method not found')
         identity=s.digest(dict(id=key));request=s.digest(params)
         if identity in self.seen:
@@ -111,9 +117,13 @@ class SurfaceOwnedMCP:
             if name==INSPECT:
                 s.require(not arguments,'inspect_fields');result=self.actor.inspect()
             elif name==GOAL:
-                s.require(self.elicitation,'client_form_not_negotiated');s.require(set(arguments)=={'indices'},'proposal_only')
-                selected=s.indices(arguments['indices']);result=self.actor.goal(selected,event_id=event_id,received_ns=received_ns,
-                    approve=self.approve,cancelled=lambda:self.closed.is_set() or self.cancelled.is_set())
+                s.require(set(arguments)=={'indices'},'proposal_only');selected=s.indices(arguments['indices'])
+                cancelled=lambda:self.closed.is_set() or self.cancelled.is_set()
+                if self.operator_task is not None:
+                    result=self.operator_task.execute(self.actor,selected,event_id=event_id,client_received_ns=received_ns,cancelled=cancelled)
+                else:
+                    s.require(self.elicitation,'client_form_not_negotiated')
+                    result=self.actor.goal(selected,event_id=event_id,received_ns=received_ns,approve=self.approve,cancelled=cancelled)
             else:raise ValueError('owned_surface_unknown_tool')
             record.update(status='finished',physical_count=result.get('physical_RNA_attempts',0))
             result.update(event_id=event_id,delivery='MCP_result_constructed_not_client_consumption',execution_authority=False)
@@ -136,14 +146,35 @@ class SurfaceOwnedMCP:
                     raise
                 response=self.handle(value,received)
                 if response is not None:self.emit(response)
-        finally:self.actor.close()
+        finally:
+            if self.operator_task is not None:self.operator_task.close()
+            self.actor.close()
 
 
 def main():
     from .surface_owned_process import OwnedSurfaceProcess
-    p=argparse.ArgumentParser();p.add_argument('--operator-config',required=True);args=p.parse_args()
-    _configure_utf8_stdio();actor=OwnedSurfaceProcess(args.operator_config)
-    SurfaceOwnedMCP(actor,sys.stdin,sys.stdout).run()
+    p=argparse.ArgumentParser();p.add_argument('--operator-config',required=True)
+    p.add_argument('--operator-task-root',help='New absolute durable receipt directory; never reused')
+    p.add_argument('--authorize-indices',type=int,nargs='+',help='Explicit operator launch authorization for one exact task')
+    p.add_argument('--execute-task',action='store_true',help='Run the authorized task locally and return its receipt, without MCP')
+    args=p.parse_args()
+    if bool(args.operator_task_root)!=(args.authorize_indices is not None):p.error('operator-task-root and authorize-indices are required together')
+    if args.execute_task and args.authorize_indices is None:p.error('execute-task requires explicit task authorization')
+    _configure_utf8_stdio();task=None;actor=None
+    try:
+        if args.authorize_indices is not None:
+            from .surface_owned_task import OperatorReferenceTask
+            task=OperatorReferenceTask(args.operator_config,args.authorize_indices,args.operator_task_root)
+        actor=OwnedSurfaceProcess(args.operator_config)
+        if task is not None:task.attach(actor)
+        if args.execute_task:
+            result=task.execute(actor,task.selected,event_id='operator:'+task.task_id,
+                client_received_ns=time.perf_counter_ns(),cancelled=lambda:False)
+            sys.stdout.write(s.encoded(result).decode()+'\n');sys.stdout.flush()
+        else:SurfaceOwnedMCP(actor,sys.stdin,sys.stdout,operator_task=task).run()
+    finally:
+        if task is not None:task.close()
+        if actor is not None:actor.close()
 
 
 if __name__=='__main__':main()
