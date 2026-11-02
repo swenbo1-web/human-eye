@@ -44,8 +44,9 @@ class RigPoseProcess:
                 blob=self.process.stderr.readline(513)
                 if not blob:break
                 if len(self.diagnostics)<16:self.diagnostics.append(blob.decode('utf8','replace'))
-        threading.Thread(target=read,daemon=True).start();threading.Thread(target=stderr,daemon=True).start()
         try:
+            # Reader startup also belongs to the already-spawned process cleanup.
+            threading.Thread(target=read,daemon=True).start();threading.Thread(target=stderr,daemon=True).start()
             ready=self._next();r.require(ready.get('kind')=='ready' and ready.get('protocol')==r.PROTOCOL
                 and ready.get('process_id')==self.process.pid and ready.get('scene_sha256')==p['scene_sha256']
                 and ready.get('profile_sha256')==hashlib.sha256(self.profile_bytes).hexdigest()

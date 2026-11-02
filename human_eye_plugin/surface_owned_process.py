@@ -23,8 +23,9 @@ class OwnedSurfaceProcess:
             '--config',str(config_path),'--config-sha256',self.config_sha]
         self.process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),shell=False)
-        threading.Thread(target=self._reader,daemon=True).start();threading.Thread(target=self._stderr,daemon=True).start()
         try:
+            # Reader startup also belongs to the already-spawned process cleanup.
+            threading.Thread(target=self._reader,daemon=True).start();threading.Thread(target=self._stderr,daemon=True).start()
             ready=self._next(time.perf_counter_ns()+60_000_000_000)
             from .forward_deadline import counter_descriptor
             s.require(ready.get('kind')=='ready' and ready.get('protocol')==s.PROTOCOL and ready.get('config_sha256')==self.config_sha

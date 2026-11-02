@@ -62,7 +62,15 @@ def inspect(blob):
         primitives=[]
         for pi,primitive in enumerate(mesh['primitives']):
             attributes=primitive.get('attributes',{});require('POSITION' in attributes,'position_attribute')
-            position=doc['accessors'][attributes['POSITION']];count=position['count'];mode=primitive.get('mode',4)
+            index=attributes['POSITION']
+            require(type(index) is int and 0<=index<len(doc['accessors']),'position_accessor')
+            position=doc['accessors'][index]
+            require(position.get('type')=='VEC3' and type(position.get('componentType')) is int and position['componentType']==5126
+                and position.get('normalized',False) is False,'position_format')
+            require(type(position.get('count')) is int and 1<=position['count']<=20000,'position_count')
+            # A descriptor/count alone cannot establish even finite positions.
+            # Decode through the same bounded accessor path used for weights.
+            positions=accessor_rows(doc,binary,index);count=len(positions);mode=primitive.get('mode',4)
             require(mode==4,'nontriangle_primitive')
             if 'indices' in primitive:
                 indices=accessor_rows(doc,binary,primitive['indices']);require(all(len(v)==1 and type(v[0]) is int and 0<=v[0]<count for v in indices),'indices')
@@ -82,8 +90,15 @@ def inspect(blob):
                     active=[(j,w) for weights,joints in sets for j,w in zip(joints[i],weights[i]) if w>0]
                     positive.append(len(active));sums.append(math.fsum(w for _,w in active));joint_sets.extend(j for j,_ in active)
                     if not active:unweighted.append(i)
+                weight_state='all_unweighted' if len(unweighted)==count else 'partially_unweighted' if unweighted else 'weighted'
+            else:
+                # Absence is not evidence that every vertex is weighted.
+                # No sums are fabricated for attributes that do not exist.
+                weight_state='absent';unweighted=list(range(count))
             primitives.append(dict(primitive=pi,mode=mode,position_accessor=attributes['POSITION'],vertices=count,triangles=index_count//3,
-                weight_sets=weight_names,max_positive_influences=max(positive,default=0),unweighted_vertices=unweighted,
+                position_state='decoded',position_bounds=[[min(p[k] for p in positions) for k in range(3)],
+                    [max(p[k] for p in positions) for k in range(3)]],
+                weight_state=weight_state,weight_sets=weight_names,max_positive_influences=max(positive,default=0),unweighted_vertices=unweighted,
                 positive_weight_sum_min=min(sums,default=None),positive_weight_sum_max=max(sums,default=None),
                 used_joint_indices=sorted(set(joint_sets)),morph_targets=len(primitive.get('targets',[]))))
         meshes.append(dict(mesh=mi,name=mesh.get('name'),primitives=primitives))

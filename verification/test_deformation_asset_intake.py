@@ -35,6 +35,8 @@ class AssetIntakeTests(unittest.TestCase):
     def test_known_original_counts_weights_nodes_and_animation(self):
         doc,binary=fixture();blob=glb(doc,binary);before=blob[:];out=inspect(blob);p=out['meshes'][0]['primitives'][0]
         self.assertEqual((p['vertices'],p['triangles'],p['max_positive_influences']),(3,1,2))
+        self.assertEqual(p['position_state'],'decoded');self.assertEqual(p['position_bounds'],[[0.,0.,0.],[1.,1.,0.]])
+        self.assertEqual(p['weight_state'],'weighted')
         self.assertEqual((p['positive_weight_sum_min'],p['positive_weight_sum_max']),(1,1))
         self.assertEqual(out['skins'][0]['joints'],2);self.assertEqual(out['animations'][0]['target_paths'],['rotation'])
         self.assertEqual(out['nodes'][2]['parent'],1);self.assertFalse(out['cleanup_performed']);self.assertFalse(out['product_support_certified']);self.assertEqual(blob,before)
@@ -67,6 +69,51 @@ class AssetIntakeTests(unittest.TestCase):
     def test_declared_joint_weight_lengths_must_match_positions(self):
         doc,binary=fixture();doc['accessors'][3]['count']=2
         with self.assertRaisesRegex(ValueError,'weight_shape'):inspect(glb(doc,binary))
+
+    def test_nonfinite_position_is_rejected_before_reporting_a_vertex_count(self):
+        doc,binary=fixture()
+        for value in (float('nan'),float('inf'),-float('inf')):
+            changed=bytearray(binary);struct.pack_into('<f',changed,doc['bufferViews'][0]['byteOffset'],value)
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError,'asset_intake_nonfinite_accessor'):inspect(glb(doc,changed))
+
+    def test_position_requires_its_actual_own_buffer_view(self):
+        doc,binary=fixture();doc['bufferViews'][0]['byteLength']=4
+        with self.assertRaisesRegex(ValueError,'asset_intake_accessor_bounds'):inspect(glb(doc,binary))
+        doc,binary=fixture();doc['accessors'][0]['count']=4
+        with self.assertRaisesRegex(ValueError,'asset_intake_accessor_bounds'):inspect(glb(doc,binary))
+
+    def test_position_accessor_type_index_and_count_are_strict(self):
+        for change in (dict(type='VEC2'),dict(type='VEC4'),dict(componentType=5123),dict(componentType=5126.0),dict(normalized=True),dict(normalized=0)):
+            doc,binary=fixture();doc['accessors'][0].update(change)
+            with self.subTest(change=change):
+                with self.assertRaisesRegex(ValueError,'asset_intake_position_format'):inspect(glb(doc,binary))
+        for index in (True,-1,4,'0'):
+            doc,binary=fixture();doc['meshes'][0]['primitives'][0]['attributes']['POSITION']=index
+            with self.subTest(index=index):
+                with self.assertRaisesRegex(ValueError,'asset_intake_position_accessor'):inspect(glb(doc,binary))
+        for count in (False,0,20001):
+            doc,binary=fixture();doc['accessors'][0]['count']=count
+            with self.subTest(count=count):
+                with self.assertRaisesRegex(ValueError,'asset_intake_position_count'):inspect(glb(doc,binary))
+
+    def test_absent_weight_attributes_are_explicit_and_not_all_weighted(self):
+        doc,binary=fixture();attributes=doc['meshes'][0]['primitives'][0]['attributes']
+        del attributes['WEIGHTS_0'];del attributes['JOINTS_0']
+        out=inspect(glb(doc,binary));p=out['meshes'][0]['primitives'][0]
+        self.assertEqual(p['weight_state'],'absent');self.assertEqual(p['unweighted_vertices'],[0,1,2])
+        self.assertEqual(p['weight_sets'],[]);self.assertEqual(p['max_positive_influences'],0)
+        self.assertIsNone(p['positive_weight_sum_min']);self.assertIsNone(p['positive_weight_sum_max'])
+        self.assertFalse(out['product_support_certified'])
+
+    def test_present_zero_and_partial_weights_are_distinct_from_absence(self):
+        for values,state,unweighted in (([0.]*12,'all_unweighted',[0,1,2]),
+            ([0.]*4+[.25,.75,0.,0.]*2,'partially_unweighted',[0])):
+            doc,binary=fixture();changed=bytearray(binary);struct.pack_into('<12f',changed,doc['bufferViews'][3]['byteOffset'],*values)
+            with self.subTest(state=state):
+                p=inspect(glb(doc,changed))['meshes'][0]['primitives'][0]
+                self.assertEqual(p['weight_state'],state);self.assertEqual(p['unweighted_vertices'],unweighted)
+                self.assertEqual(p['positive_weight_sum_min'],0.);self.assertEqual(p['weight_sets'],['WEIGHTS_0'])
 
 
 if __name__=='__main__':unittest.main()

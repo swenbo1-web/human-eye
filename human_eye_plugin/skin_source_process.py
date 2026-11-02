@@ -46,8 +46,9 @@ class SkinSourceProcess(RigPoseProcess):
                 blob=self.process.stderr.readline(513)
                 if not blob:break
                 if len(self.diagnostics)<16:self.diagnostics.append(blob.decode('utf8','replace'))
-        threading.Thread(target=read,daemon=True).start();threading.Thread(target=stderr,daemon=True).start()
         try:
+            # Reader startup also belongs to the already-spawned process cleanup.
+            threading.Thread(target=read,daemon=True).start();threading.Thread(target=stderr,daemon=True).start()
             ready=self._next();r.require(ready.get('kind')=='ready' and ready.get('protocol')==core.PROTOCOL and ready.get('process_id')==self.process.pid
                 and ready.get('scene_sha256')==p['scene_sha256'] and ready.get('profile_sha256')==hashlib.sha256(self.profile_bytes).hexdigest()
                 and ready.get('module_sha256')==self.module_sha and ready.get('math_sha256')==self.math_sha and ready.get('worker_sha256')==self.worker_sha
@@ -69,15 +70,18 @@ class SkinSourceProcess(RigPoseProcess):
         self.source=packet;return packet
 
 
-def main(argv=None):
-    p=argparse.ArgumentParser(description='Read fixed original/evaluated LBS mesh sources; no edit, frame or save command')
-    p.add_argument('--operator-profile',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--triangle-query',type=Path,help='Optional immutable file/role/frame selection of at most four original triangle IDs');args=p.parse_args(argv)
+def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,close_before_publish=False):
+    """Shared owned source CLI persistence; every analyzer owns source admission."""
+    if analyzer is None:analyzer=lambda packet,actor,**kw:surface_deformation.analyze(packet,**kw)
+    if selection_binder is None:selection_binder=lambda packet,selection,actor,**kw:surface_deformation.bind_selection(packet,selection,**kw)
     output=args.output;r.require(output.is_absolute() and output.resolve()==output,'skin_output_path');output.mkdir(exist_ok=False);actor=None;published=False
     def save(name,value):
         with (output/name).open('xb') as f:f.write(r.encoded(value));f.flush();os.fsync(f.fileno())
+    def verify_inputs():
+        verifier=getattr(actor,'verify_inputs',None)
+        if verifier is not None:verifier()
     try:
-        actor=SkinSourceProcess(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
+        actor=actor_type(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
         selection=None;query=None
         if args.triangle_query is not None:
             path=args.triangle_query;r.require(path.is_absolute() and path.resolve()==path,'deformation_selection_path')
@@ -85,24 +89,35 @@ def main(argv=None):
             r.require(len(blob)<=4096,'deformation_selection_byte_budget');selection=r.decode(blob)
             save('SELECTION.json',selection);r.check_time(actor.deadline_ns)
         first=actor.inspect()
-        if args.triangle_query is not None:query=surface_deformation.bind_selection(first,selection,deadline_ns=actor.deadline_ns)
+        if args.triangle_query is not None:query=selection_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
         second=actor.inspect()
         save('SNAPSHOTS.json',dict(first=first,second=second,capabilities=actor.capabilities))
         r.check_time(actor.deadline_ns)
-        report=surface_deformation.analyze(second,deadline_ns=actor.deadline_ns,**({} if query is None else dict(query=query)))
-        r.check_time(actor.deadline_ns)
-        save('REPORT_PENDING.json',report);r.check_time(actor.deadline_ns)
-        os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns)
+        report=analyzer(second,actor,deadline_ns=actor.deadline_ns,**({} if query is None else dict(query=query)))
+        r.check_time(actor.deadline_ns);verify_inputs()
+        if close_before_publish:
+            actor.close();r.check_time(actor.deadline_ns)
+            r.require(actor.process.poll()==0,'source_worker_exit')
+            verify_inputs()
+        save('REPORT_PENDING.json',report);r.check_time(actor.deadline_ns);verify_inputs()
+        os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns);verify_inputs()
         encoded=json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
             elapsed_ns=time.perf_counter_ns()-actor.received_ns),allow_nan=False)
-        r.check_time(actor.deadline_ns);print(encoded);return 0
+        r.check_time(actor.deadline_ns);verify_inputs();print(encoded);return 0
     except Exception as exc:
         if published:os.replace(output/'REPORT.json',output/'REVOKED_REPORT.json')
-        reason=str(exc)[:400];failure=dict(status='unsupported' if 'unsupported_' in reason else 'unavailable',reason=reason,
+        reason=str(exc)[:400];failure=dict(status=getattr(exc,'status','unsupported' if 'unsupported_' in reason else 'unavailable'),reason=reason,
             execution_authority=False,geometry_setters=0,original_file_saved=False)
         save('FAILURE.json',failure);print(json.dumps(failure));return 1
     finally:
         if actor is not None:actor.close()
+
+
+def main(argv=None):
+    p=argparse.ArgumentParser(description='Read fixed original/evaluated LBS mesh sources; no edit, frame or save command')
+    p.add_argument('--operator-profile',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--triangle-query',type=Path,help='Optional immutable file/role/frame selection of at most four original triangle IDs')
+    return run_reader(p.parse_args(argv),SkinSourceProcess)
 
 
 if __name__=='__main__':raise SystemExit(main())

@@ -14,9 +14,11 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 对部分高顶点目标，在 XY／XZ 视图筛查有界局部放大机会；保留真实遮挡，明确区分投影包围界与真实薄截尺寸。
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 
-当前checkout为**源码候选**`v21-surface-deformation-task-query-candidate-20261102`，116运行源，摘要`e6b55e91dcf1737759034d1b38efefdf3e5146f3447afde23f2aaf83a9c178c5`。隔离安装`9.7.2+20261102.deformation.task.r1`在[既有局部表面事实](docs/M4_DEFORMATION_CLOSEOUT_ACCEPTANCE.md)上补充[最多4个原始面的来源绑定查询](docs/M4_DEFORMATION_TASK_QUALIFICATION.md)，解决指定区域被概览省略的问题；源码/安装各5任务与原66矩阵通过，当前Codex实际消费3例。两个原样外部作者样本均超来源上限，支持率0/2；真实生产资产及正式模型收益未验证。原FK/约束、有限动作与默认MCP/正式live78源22fb及Hook保持。
+当前checkout为**源码候选**`v21-small-skin-source-product-candidate-20261102`，119运行源，摘要`b2bce50a8b5c6c16fcbce7d6cb9d0b6bc33e9655db894a1abfdbe0422d66da67`。新隔离安装`9.7.2+20261102.small.skin.r1`通过显式[小型来源产品入口](docs/M4_SMALL_SOURCE_PRODUCT_ACCEPTANCE.md)读取完整父链、动作slot和当前保存帧；旧B1的128点上限与拒绝不变。源码/安装各22组新来源验收通过，包含同坐标来源变化失效、准确拒因和原期限/请求上限。默认MCP、正式live78源22fb及Hook保持。
 
-新增[M4-B3a小型来源资格预检](docs/M4_SMALL_SOURCE_QUALIFICATION.md)在一个作者样本的两个固定帧核验完整父链、动作slot和160点独立LBS；3＋1次完整运行及43项专项测试通过，值得进入有限产品候选实现。工具位于verification，生产116源未改，预检qualified不代表产品已支持，也未重打包或切换插件。
+一个外部作者testing样本的两个固定帧均完成160点/188面独立GLB与NumPy回放；各176面measured、12面因数值分辨率unknown。指定区域查询实测得到第25帧面65的两主伸长约1.17261/0.739139，面积比0.866722；这是几何事实，不能直接推断损伤、完整体积或应当修复。两个既有外部作者样本中仅这个有限来源通过，CesiumMan继续域外；真实生产资产、整段动画与正式模型收益未认证。
+
+[B3a资格预检](docs/M4_SMALL_SOURCE_QUALIFICATION.md)保留为新合同的历史依据；本批正式路径新增独立schema、原生采集器和消费者，未把verification的qualified当产品信任来源。[既有指定面查询](docs/M4_DEFORMATION_TASK_QUALIFICATION.md)继续可用，实际消费与旧回归的具体变化见新验收记录。
 
 [此前M4-A2a求值可行性批次](docs/M4_RIG_EVALUATION_FEASIBILITY.md)完成45资产及同文档14步变化核验，作为本批静态复制旋转产品化依据；IK的13个端点真值检查8过/5失败，另5例未认证，仍未进入产品支持域。当前A2b另有43资产及旧FK28组保持验证，不将姿态事实等同于健康结论。
 
