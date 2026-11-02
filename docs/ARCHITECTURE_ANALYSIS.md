@@ -390,3 +390,5 @@ A3a复用原TaskEntry与scheduler的冻结scope/原起点和终态，不另建�
 本轮补充：M3-C参考变化原生图已完成有限21场景/30图/240反例，源码100源66b6ccf5；SDK同时拒绝会重三角化的原始非三角面。详见[M3-C验收](M3_REFERENCE_FEATURE_VIEW_ACCEPTANCE.md)。原默认安装、旧成本失败与模型价值待验保持；后续顺序只见唯一主计划。
 
 M3候选后续：专用单三角网格worker与两工具MCP已有实际Codex批准/恢复/回读证据，旧拒绝保留；104源候选当前聊天独立加载。新增105源245e9837任务授权层只固定一次操作者启动的原预算、确切索引/源/参考与单次消费，不新建动作控制器。显式模式可由当前Codex本机固定入口执行，不冒充默认MCP热更新；默认表单和宿主destructive注解保持。独占任务的内部多步继续由RestoreController完成。两种授权来源及崩溃/回读边界见[任务授权验收](M3_OPERATOR_TASK_ACCEPTANCE.md)；与旧刚体scheduler的融合仍由唯一主计划另行准入，不能互借grant。
+
+刚体融合后续：106源fa8e8292新增独立OperatorClearanceTask，不更改旧MCP、TaskEntry或scheduler；固定本机profile绑定真实Popen启动场景/二进制和新鲜完整源，原父预算从操作者接收算起。刚体TaskApproval不能授权顶点内核。物理完成、核心完成持久化、本层回执持久化分开；新目录不能绕过原未决账本。当前Codex本机入口已完成4→1毫米及独立回读，保留默认路由/真人旧表单/模型价值的区别。详见[刚体授权验收](M3_CLEARANCE_OPERATOR_TASK_ACCEPTANCE.md)，后续顺序仍由唯一主计划决定。
