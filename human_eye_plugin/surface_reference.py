@@ -108,6 +108,33 @@ def diagnose(binding,target,*,budget,threshold_m=.0001):
         not_checked=['noncorresponding_assets','topology_change','rig_pose','intent_inference'])
 
 
+def validate_restore_orientation(binding,candidate,indices,*,budget,minimum_shape_ratio=0):
+    """Require each affected discrete endpoint to retain reference orientation.
+
+    Preview retains its original dot>0 rule. The execution-only nonzero margin
+    additionally bounds |cross(edge1,edge2)| / longest_edge_length**2 in local
+    coordinates. This is a conservative discrete eligibility rule, not a full
+    numerical error certificate, continuous-path or swept-collision proof.
+    """
+    reference=binding['reference']['raw'];chosen=set(indices)
+    for tri in binding['triangles']:
+        budget.consume(2,'repair_orientation')
+        if not chosen.intersection(tri):continue
+        a=g.normal([tuple(Q(x) for x in reference['vertices'][i]) for i in tri])
+        points=[tuple(Q(x) for x in candidate['vertices'][i]) for i in tri];b=g.normal(points)
+        if not minimum_shape_ratio:g.require(g.dot(a,b)>0,'repair_orientation_or_area')
+        else:
+            g.require(any(a),'restore_reference_degenerate_step')
+            g.require(any(b),'restore_degenerate_step')
+            g.require(g.dot(a,b)>0,'restore_orientation_step')
+            # Squared exact arithmetic avoids sqrt/normal normalization loss.
+            edges=[g.sub(points[(i+1)%3],points[i]) for i in range(3)]
+            longest2=max(g.dot(edge,edge) for edge in edges)
+            budget.consume(8,'repair_step_shape_margin')
+            g.require(g.dot(b,b)>Q(minimum_shape_ratio)**2*longest2**2,'restore_near_degenerate_step')
+    budget.check('repair_orientation_complete')
+
+
 def preview_restore(binding,target,indices,*,budget,max_displacement_m=.001):
     """A new finite vertex domain preview, never a rigid-body grant."""
     _compatible(binding['reference'],target)
@@ -115,20 +142,16 @@ def preview_restore(binding,target,indices,*,budget,max_displacement_m=.001):
         and all(type(i) is int and 0<=i<len(target['raw']['vertices']) for i in indices),'repair_patch_indices')
     g.require(type(max_displacement_m) in (int,float) and math.isfinite(max_displacement_m)
         and 0<max_displacement_m<=.01,'repair_displacement_budget')
-    predicted=copy.deepcopy(target);raw=predicted['raw'];reference=binding['reference']['raw'];chosen=set(indices)
+    predicted=copy.deepcopy(target);raw=predicted['raw'];reference=binding['reference']['raw']
     matrix=[[Q(x) for x in row] for row in raw['matrix_world']];scale=Q(raw['unit_scale'])
     for i in indices:
         budget.consume(8,'repair_preview');d=[Q(y)-Q(x) for x,y in zip(raw['vertices'][i],reference['vertices'][i])]
         delta=[sum(matrix[r][c]*d[c] for c in range(3))*scale for r in range(3)]
         g.require(sum(x*x for x in delta)<=Q(max_displacement_m)**2,'repair_displacement_exceeded')
         raw['vertices'][i]=reference['vertices'][i][:]
-    # Reject degenerate or flipped affected triangles; checks are against the
-    # approved reference, not the damaged current orientation.
-    for tri in binding['triangles']:
-        budget.consume(2,'repair_orientation')
-        if not chosen.intersection(tri):continue
-        a=g.normal([tuple(Q(x) for x in reference['vertices'][i]) for i in tri]);b=g.normal([tuple(Q(x) for x in raw['vertices'][i]) for i in tri])
-        g.require(g.dot(a,b)>0,'repair_orientation_or_area')
+    # Reject degenerate or flipped affected triangles against the approved
+    # reference. Execution must also apply this rule before EACH setter.
+    validate_restore_orientation(binding,raw,indices,budget=budget)
     budget.check('repair_preview_complete')
     return dict(schema='surface-reference-restore-preview-v1',target_source=target['source'],reference_source=binding['reference']['source'],
         indices=sorted(indices),protected_vertex_count=len(raw['vertices'])-len(indices),max_displacement_m=max_displacement_m,
@@ -159,6 +182,7 @@ def make_view_patch(binding,target,report,cluster_ordinal,reference_ref,*,budget
         candidates.append((size,i,delta,center))
     g.require(any(normal) and len(candidates)>=2,'view_witnesses_unavailable')
     largest=max(c[0] for c in candidates);candidates=[c for c in candidates if 4*c[0]>=largest]
+    g.require(len(candidates)>=2,'view_witnesses_unavailable')
     chosen=[max(candidates,key=lambda c:(c[0],-c[1]))]
     while len(chosen)<min(3,len(candidates)):
         candidates_left=[c for c in candidates if c[1] not in {v[1] for v in chosen}]

@@ -2,6 +2,7 @@
 import argparse,hashlib,json,os,queue,subprocess,sys,threading,time
 from pathlib import Path
 from . import skin_source as core
+from . import surface_deformation
 from .rig_pose_process import RigPoseProcess
 from .surface_owned import pinned_file
 from .runtime_identity import runtime_identity,check_source_drift
@@ -71,16 +72,20 @@ class SkinSourceProcess(RigPoseProcess):
 def main(argv=None):
     p=argparse.ArgumentParser(description='Read fixed original/evaluated LBS mesh sources; no edit, frame or save command')
     p.add_argument('--operator-profile',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args(argv)
-    output=args.output;r.require(output.is_absolute() and output.resolve()==output,'skin_output_path');output.mkdir(exist_ok=False);actor=None
+    output=args.output;r.require(output.is_absolute() and output.resolve()==output,'skin_output_path');output.mkdir(exist_ok=False);actor=None;published=False
     def save(name,value):
         with (output/name).open('xb') as f:f.write(r.encoded(value));f.flush();os.fsync(f.fileno())
     try:
-        actor=SkinSourceProcess(args.operator_profile);save('INPUTS.json',actor.profile);first=actor.inspect();second=actor.inspect()
+        actor=SkinSourceProcess(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns);first=actor.inspect();second=actor.inspect()
         save('SNAPSHOTS.json',dict(first=first,second=second,capabilities=actor.capabilities))
-        report=core.analyze(second,deadline_ns=actor.deadline_ns);save('REPORT.json',report)
-        print(json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
-            elapsed_ns=time.perf_counter_ns()-actor.received_ns),allow_nan=False));return 0
+        r.check_time(actor.deadline_ns);report=surface_deformation.analyze(second,deadline_ns=actor.deadline_ns);r.check_time(actor.deadline_ns)
+        save('REPORT_PENDING.json',report);r.check_time(actor.deadline_ns)
+        os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns)
+        encoded=json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
+            elapsed_ns=time.perf_counter_ns()-actor.received_ns),allow_nan=False)
+        r.check_time(actor.deadline_ns);print(encoded);return 0
     except Exception as exc:
+        if published:os.replace(output/'REPORT.json',output/'REVOKED_REPORT.json')
         reason=str(exc)[:400];failure=dict(status='unsupported' if 'unsupported_' in reason else 'unavailable',reason=reason,
             execution_authority=False,geometry_setters=0,original_file_saved=False)
         save('FAILURE.json',failure);print(json.dumps(failure));return 1

@@ -7,7 +7,12 @@ Unknown readback quarantines the instance; it never retries or renews a budget.
 import copy,time,threading,os,json,uuid
 from pathlib import Path
 from . import mesh_structure as raw,surface_geometry as g
-from .surface_reference import ReferenceRegistry,preview_restore
+from .surface_reference import ReferenceRegistry,preview_restore,validate_restore_orientation
+
+# Execution-only endpoint shape margin, dimensionless and local-coordinate
+# scale/translation invariant. This is roughly eight binary32 epsilons, not a
+# certified renderer/setter error bound. Preview's original rule is unchanged.
+MIN_STEP_SHAPE_RATIO=2**-20
 
 
 class RestoreJournal:
@@ -182,6 +187,7 @@ class RestoreController:
                 check();g.require(read()==expected,'restore_external_change')
                 if expected['vertices'][i]==p:continue
                 before=copy.deepcopy(expected);candidate=copy.deepcopy(expected);candidate['vertices'][i]=p[:]
+                validate_restore_orientation(binding,candidate,[i],budget=budget(),minimum_shape_ratio=MIN_STEP_SHAPE_RATIO)
                 g.require(not contacts(candidate)-baseline_contacts,'restore_intermediate_new_contact')
                 self.journal.update(self._ticket,event_id,'setter_pending',scope=scope,next_attempt=attempts+1,
                     confirmed_forward=confirmed,confirmed_rollback=rollback,prior_raw_sha256=g.digest(expected))
@@ -214,6 +220,7 @@ class RestoreController:
                         check();g.require(read()==expected,'restore_changed_before_recovery')
                         g.require(attempts+1<=scope['maximum_setter_attempts'],'restore_attempt_budget')
                         candidate=copy.deepcopy(expected);candidate['vertices'][i]=original['raw']['vertices'][i][:]
+                        validate_restore_orientation(binding,candidate,[i],budget=budget(),minimum_shape_ratio=MIN_STEP_SHAPE_RATIO)
                         self.journal.update(self._ticket,event_id,'recovery_pending',scope=scope,next_attempt=attempts+1,
                             confirmed_forward=confirmed,confirmed_rollback=rollback,prior_raw_sha256=g.digest(expected))
                         check();self.registry.resolve(reference_ref,original);attempts+=1

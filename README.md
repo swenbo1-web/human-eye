@@ -14,7 +14,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 对部分高顶点目标，在 XY／XZ 视图筛查有界局部放大机会；保留真实遮挡，明确区分投影包围界与真实薄截尺寸。
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 
-当前checkout为**源码候选**`v21-skin-source-readonly-candidate-20261102`，115运行源，摘要`aad9ffba6faaefc5d96e17577db0ee64212162a6d68e42df1f21553e3e912b00`。隔离安装`9.7.2+20261102.skin.source.r1`新增[有限LBS绑定/求值网格来源入口](docs/M4_SKIN_SOURCE_ACCEPTANCE.md)，以坐标、权重、rest/pose和物体变换逐点回放，不只比较点数；无权重明确partial。当前Codex已实读取收缩资产与缺权重点，尚未自动判损伤。原FK/静态复制旋转、刚体/顶点任务保持；默认MCP未热更，正式live仍78源22fb2523，Hook不变。
+当前checkout为**源码候选**`v21-surface-deformation-closeout-candidate-20261102`，116运行源，摘要`df3c38ab011d57600e3e9ea3097740f18a57eea34e18484181549d7069865bb7`。隔离安装`9.7.2+20261102.deformation.closeout.r1`完成[B1收口、五项旧缺口与B2局部表面事实](docs/M4_DEFORMATION_CLOSEOUT_ACCEPTANCE.md)：从完整可信点面计算两主伸长、面积比、塌缩及unknown。源码/安装各66场景通过，当前Codex已读取8例并由独立文字消费者核验区域、数值和未知；不自动判损伤。原FK/静态复制旋转、刚体/顶点任务保持；默认MCP未热更，正式live仍78源22fb2523，Hook不变。
 
 [此前M4-A2a求值可行性批次](docs/M4_RIG_EVALUATION_FEASIBILITY.md)完成45资产及同文档14步变化核验，作为本批静态复制旋转产品化依据；IK的13个端点真值检查8过/5失败，另5例未认证，仍未进入产品支持域。当前A2b另有43资产及旧FK28组保持验证，不将姿态事实等同于健康结论。
 

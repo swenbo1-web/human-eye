@@ -31,15 +31,20 @@ def run(args):
         rig=scene.objects.get(profile['rig_name']);obj=scene.objects.get(profile['mesh_name'])
         r.require(rig is not None and rig.type=='ARMATURE' and obj is not None and obj.type=='MESH','unsupported_skin_roles')
         r.require(rig.library is None and rig.data.library is None,'unsupported_skin_linked_rig')
-        r.require(1<=len(rig.data.bones)<=r.MAX_BONES and 1<=len(obj.data.vertices)<=core.MAX_VERTICES and
-            1<=len(obj.data.polygons)<=core.MAX_TRIANGLES and len(obj.vertex_groups)<=64,'unsupported_skin_geometry_budget')
+        r.require(1<=len(rig.data.bones)<=r.MAX_BONES,'unsupported_skin_bone_limit')
+        r.require(1<=len(obj.data.vertices)<=core.MAX_VERTICES,'unsupported_skin_vertex_limit')
+        r.require(1<=len(obj.data.polygons)<=core.MAX_TRIANGLES,'unsupported_skin_triangle_limit')
+        r.require(len(obj.vertex_groups)<=64,'unsupported_skin_group_limit')
         r.require(all(len(p.vertices)==3 for p in obj.data.polygons),'unsupported_skin_original_nontriangles')
         r.require(all(len(v.groups)<=core.MAX_INFLUENCES for v in obj.data.vertices),'unsupported_skin_influence_limit')
-        r.require(len(obj.modifiers)==1 and obj.modifiers[0].type=='ARMATURE' and obj.modifiers[0].object is rig,'unsupported_skin_modifier_stack_or_rig')
+        r.require(len(obj.modifiers)==1,'unsupported_skin_modifier_count')
+        r.require(obj.modifiers[0].type=='ARMATURE','unsupported_skin_modifier_type')
+        r.require(obj.modifiers[0].object is rig,'unsupported_skin_modifier_rig')
         mod=obj.modifiers[0];fields={p.identifier for p in mod.bl_rna.properties if p.identifier!='rna_type' and not p.is_readonly}
         r.require(fields==core.MOD_RNA_FIELDS,'unsupported_skin_modifier_RNA_settings')
-        r.require(mod.show_viewport and mod.show_render and mod.use_vertex_groups and not mod.use_bone_envelopes and not mod.use_deform_preserve_volume
-            and not mod.use_multi_modifier and not mod.invert_vertex_group and mod.vertex_group=='','unsupported_skin_modifier_settings')
+        for key,value in (('show_viewport',True),('show_render',True),('use_vertex_groups',True),('use_bone_envelopes',False),
+            ('use_deform_preserve_volume',False),('use_multi_modifier',False),('invert_vertex_group',False),('vertex_group','')):
+            r.require(getattr(mod,key)==value,'unsupported_skin_modifier_'+key)
         r.require(obj.data.shape_keys is None,'unsupported_skin_shape_keys')
         r.require(all(group.index==i for i,group in enumerate(obj.vertex_groups)),'skin_group_index_correspondence')
         def state():

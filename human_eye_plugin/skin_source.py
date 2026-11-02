@@ -30,7 +30,7 @@ def validate(packet,*,deadline_ns,expected=None):
     p=r.validate(packet['rig'],deadline_ns=deadline_ns)
     # Preserve the old FK definition, including its refusal of nonrigid bones.
     rig_report=r.analyze(packet['rig'],deadline_ns=deadline_ns)
-    r.require(rig_report['status']!='unsupported','unsupported_skin_rig_domain')
+    r.require(rig_report['status']!='unsupported','unsupported_skin_rig_domain:'+','.join(rig_report['unsupported_reasons']))
     rigid_object(p['object_matrix_world']);rigid_object(packet['rig_object_basis'])
     r.require(all(abs(p['object_matrix_world'][i][j]-packet['rig_object_basis'][i][j])<=POSITION_ATOL for i in range(4) for j in range(4)),
         'skin_rig_world_basis_disagreement')
@@ -61,8 +61,9 @@ def validate(packet,*,deadline_ns,expected=None):
     r.require(all(abs(m['object_matrix_world'][i][j]-m['basis_matrix'][i][j])<=POSITION_ATOL for i in range(4) for j in range(4)),
         'skin_mesh_world_basis_disagreement')
     flags=m['flags'];r.require(type(flags) is dict and set(flags)=={'animation','drivers','object_parent','linked','shape_keys','constraints'}
-        and all(type(flags[k]) is bool and flags[k] is False for k in ('animation','drivers','object_parent','linked','shape_keys'))
-        and type(flags['constraints']) is int and flags['constraints']==0,'unsupported_skin_mesh_dependencies')
+        and all(type(flags[k]) is bool for k in ('animation','drivers','object_parent','linked','shape_keys'))
+        and type(flags['constraints']) is int and flags['constraints']>=0,'skin_mesh_dependency_fields')
+    bad=sorted(k for k,v in flags.items() if v);r.require(not bad,'unsupported_skin_mesh_dependencies:'+','.join(bad))
     mod=m['modifier'];r.require(type(mod) is dict and set(mod)==MOD_FIELDS and r.text(mod['name']) and mod['type']=='ARMATURE'
         and type(mod['count']) is int and mod['count']==1 and mod['rig_id']==packet['rig']['identity']['object_id']
         and mod['rig_instance']==packet['rig']['identity']['object_instance'],'unsupported_skin_modifier_binding')

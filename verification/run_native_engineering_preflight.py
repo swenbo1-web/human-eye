@@ -27,12 +27,63 @@ def verify_worker_asset(asset):
     if hashlib.sha256(raw).hexdigest()!=asset['asset_task_sha256']:raise ValueError('asset_task_changed')
 
 
+def verify_worker_assets(assets):
+    """A registered batch has an exact, non-repeating ordered task set."""
+    if type(assets) is not list or not assets:raise ValueError('registered_asset_batch')
+    for asset in assets:verify_worker_asset(asset)
+    ids=[asset['id'] for asset in assets]
+    if len(set(ids))!=len(ids):raise ValueError('registered_asset_duplicate_id')
+
+
+def verified_worker_rows(assets,data,*,baseline_sha256,pid):
+    """Validate the WHOLE batch before any fact/pixel scoring can run.
+
+    These bindings already exist in the native worker protocol. They tie the
+    reply to this launch and registered task input; they do not authenticate a
+    hostile same-account producer or replace independent geometry/pixel truth.
+    """
+    if type(assets) is not list or not assets:raise ValueError('registered_asset_batch')
+    try:public=[{key:asset[key] for key in ('id','objects','task','asset_task_sha256')} for asset in assets]
+    except (KeyError,TypeError):raise ValueError('registered_asset_batch') from None
+    verify_worker_assets(public)
+    if type(data) is not dict or set(data)!={'pid','rows','HE_modules_loaded','baseline_sha256','blender_version'}:
+        raise ValueError('worker_result_fields')
+    if type(pid) is not int or pid<=0 or type(data['pid']) is not int or data['pid']!=pid:
+        raise ValueError('worker_result_process_binding')
+    hex_digest=lambda v:type(v) is str and re.fullmatch('[0-9a-f]{64}',v) is not None
+    if not hex_digest(baseline_sha256) or data['baseline_sha256']!=baseline_sha256:
+        raise ValueError('worker_result_baseline_binding')
+    if type(data['HE_modules_loaded']) is not list or data['HE_modules_loaded']:
+        raise ValueError('worker_result_native_independence')
+    if type(data['blender_version']) is not str or not data['blender_version']:
+        raise ValueError('worker_result_blender_version')
+    rows=data['rows']
+    if type(rows) is not list or len(rows)!=len(public):raise ValueError('worker_result_row_count')
+    fields={'case','value','error','preservation_passed','actual_mesh_sha256','state_before_sha256','state_after_sha256',
+            'input_asset_sha256','call_wall_ms','scene_preparation_ms'}
+    if any(type(row) is not dict or set(row)!=fields for row in rows):raise ValueError('worker_result_row_fields')
+    ids=[row['case'] for row in rows]
+    if any(type(key) is not str for key in ids):raise ValueError('worker_result_case_id')
+    if len(set(ids))!=len(ids):raise ValueError('worker_result_duplicate_case')
+    if ids!=[asset['id'] for asset in public]:raise ValueError('worker_result_case_order_or_id')
+    for index,asset in enumerate(public):
+        row=rows[index]
+        if row['input_asset_sha256']!=asset['asset_task_sha256']:raise ValueError('worker_result_asset_binding')
+        if any(not hex_digest(row[key]) for key in ('actual_mesh_sha256','state_before_sha256','state_after_sha256')):
+            raise ValueError('worker_result_state_digest')
+        if (type(row['preservation_passed']) is not bool or row['error'] is not None and type(row['error']) is not str
+            or row['value'] is not None and type(row['value']) is not dict):raise ValueError('worker_result_row_types')
+        if any(type(row[key]) not in (int,float) or not math.isfinite(row[key]) or row[key]<0 for key in ('call_wall_ms','scene_preparation_ms')):
+            raise ValueError('worker_result_timing_shape')
+    return rows
+
+
 def complete_preflight(assets,scored,processes,rounds):
     expected={(repeat,case['id']) for repeat in range(rounds) for case in assets}
     actual=[(row['round'],row['case']) for row in scored]
     return (rounds>=3 and len(processes)==rounds and len(actual)==len(expected)
         and set(actual)==expected and all(r['quality_passed'] is True for r in scored)
-        and all(p['exit_code']==0 and p['reaped'] and not p['timed_out'] for p in processes))
+        and all(p['exit_code']==0 and p['reaped'] and not p['timed_out'] and not p.get('result_integrity_error') for p in processes))
 
 
 def worker(input_path,folder):
@@ -52,7 +103,7 @@ def worker(input_path,folder):
             resolution=[scene.render.resolution_x,scene.render.resolution_y,scene.render.resolution_percentage],
             engine=scene.render.engine,view=scene.view_settings.view_transform,
             active=None if bpy.context.view_layer.objects.active is None else bpy.context.view_layer.objects.active.name)
-    rows=[]
+    verify_worker_assets(spec['assets']);rows=[]
     for asset in spec['assets']:
         verify_worker_asset(asset)
         for obj in list(bpy.data.objects):bpy.data.objects.remove(obj,do_unlink=True)
@@ -140,7 +191,7 @@ def parent(blender,folder,rounds):
     assets=cases();baseline=ROOT/'verification/native_engineering_baseline.py'
     inputs=dict(baseline_sha256=hashlib.sha256(baseline.read_bytes()).hexdigest(),
         assets=[{k:case[k] for k in ('id','objects','task','asset_task_sha256')} for case in assets])
-    for asset in inputs['assets']:verify_worker_asset(asset)
+    verify_worker_assets(inputs['assets'])
     save(folder/'REGISTERED_INPUT.json',inputs);save(folder/'PRIVATE_ORACLES.json',assets)
     records=[];scored=[]
     for repeat in range(rounds):
@@ -156,10 +207,21 @@ def parent(blender,folder,rounds):
         out.close();err.close()
         record=dict(round=repeat,pid=process.pid,exit_code=code,timed_out=expired,reaped=process.poll() is not None,
             process_wall_ms=(time.perf_counter_ns()-begin)/1e6)
-        records.append(record);save(target/'PROCESS.json',record)
-        if code or expired:continue
-        data=json.loads((target/'WORKER_RESULT.json').read_text())
-        for case,row in zip(assets,data['rows']):
+        records.append(record)
+        if code or expired:
+            save(target/'PROCESS.json',record);continue
+        try:
+            data=json.loads((target/'WORKER_RESULT.json').read_text())
+            worker_rows=verified_worker_rows(assets,data,baseline_sha256=inputs['baseline_sha256'],pid=process.pid)
+        except Exception as exc:
+            # No partial batch is scored. Missing, excess, duplicated, reordered
+            # or wrongly bound data keeps the original task denominator failed.
+            record['result_integrity_error']=type(exc).__name__+': '+str(exc)
+            save(target/'PROCESS.json',record);save(target/'WORKER_RESULT_REJECTED.json',dict(reason=record['result_integrity_error']))
+            continue
+        record['result_integrity_passed']=True;save(target/'PROCESS.json',record)
+        for index,case in enumerate(assets):
+            row=worker_rows[index]
             quality_error=None;pixels=None
             try:
                 if row['case']!=case['id'] or not row['preservation_passed']:raise ValueError('scene_or_order_changed')

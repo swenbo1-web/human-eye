@@ -74,9 +74,14 @@ class OwnedSurfaceProcess:
     def _call(self,command,*,deadline,approve=None,cancelled=None):
         s.require(self._gate.acquire(blocking=False),'single_flight');called=False;approval_seen=False
         try:
+            s.require(cancelled is None or not cancelled(),'cancelled_before_dispatch')
             request_id=uuid.uuid4().hex;command=dict(command,id=request_id);self._send(command);called=True
             while True:
-                response=self._next(deadline,cancelled);s.require(response.get('id')==request_id,'reply_id')
+                # The worker cannot write before an affirmative approval. If
+                # cancelled during preparation, deny when its scope arrives.
+                # Once approved, cancellation cannot erase an in-flight write:
+                # drain its actual receipt within the same original deadline.
+                response=self._next(deadline);s.require(response.get('id')==request_id,'reply_id')
                 kind=response.get('kind')
                 if kind=='approval':
                     s.require(approve is not None and not approval_seen and set(response)=={'kind','id','scope','scope_sha256'},'unexpected_approval')
@@ -84,10 +89,31 @@ class OwnedSurfaceProcess:
                         and scope['event_id']==command['event_id'] and scope['received_ns']==command['received_ns']
                         and scope['indices']==command['indices'] and scope['maximum_setter_attempts']==2*len(command['indices'])
                         and scope['max_displacement_m']==s.LIMITS['displacement_m'] and len(scope['vertex_changes'])==len(command['indices']),'scope_binding')
-                    approval_seen=True;answer=approve(scope)
+                    approval_seen=True
+                    answer=False
+                    if cancelled is None or not cancelled():
+                        try:answer=approve(scope)
+                        except Exception:
+                            if cancelled is None or not cancelled():raise
                     s.require(time.perf_counter_ns()<deadline,'approval_expired')
                     s.require(type(answer) is bool,'strict_approval')
-                    self._send(dict(command='approval',id=request_id,approved=answer,scope_sha256=response['scope_sha256']))
+                    message=dict(command='approval',id=request_id,approved=answer,scope_sha256=response['scope_sha256'])
+                    if answer:
+                        # The MCP cancellation token shares its input-state
+                        # lock with this handoff. Whichever takes that lock
+                        # first wins: cancellation, or the approval pipe write.
+                        submit=getattr(cancelled,'submit_if_live',None)
+                        if submit is not None:
+                            sent=submit(lambda:self._send(message))
+                        elif cancelled is None or not cancelled():
+                            # Trusted local callers without a shared token use
+                            # this final check as their logical commit boundary.
+                            self._send(message);sent=True
+                        else:sent=False
+                        s.require(type(sent) is bool,'strict_submission_result')
+                        if not sent:
+                            message['approved']=False;self._send(message)
+                    else:self._send(message)
                 elif kind=='result':
                     s.require(set(response)=={'kind','id','result'},'result_fields');return response['result']
                 elif kind=='error':raise ValueError(response.get('error','worker_error'))

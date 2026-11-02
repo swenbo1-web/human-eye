@@ -21,13 +21,23 @@ TOOLS=[dict(name=INSPECT,description='Read this fixed owned single-triangle-mesh
             minItems=1,maxItems=8,uniqueItems=True)),required=['indices'],additionalProperties=False))]
 
 
+class _RequestCancellation:
+    """Trusted in-process token; no JSON field can supply this capability."""
+    def __init__(self,server):self.server=server
+    def __call__(self):return self.server.closed.is_set() or self.server.cancelled.is_set()
+    def submit_if_live(self,submit):
+        with self.server.state_lock:
+            if self():return False
+            submit();return True
+
+
 class SurfaceOwnedMCP:
     def __init__(self,actor,incoming,outgoing,*,operator_task=None):
         self.actor=actor;self.incoming=incoming;self.outgoing=outgoing;self.closed=threading.Event();self.cancelled=threading.Event()
         self.operator_task=operator_task
         self.messages=queue.Queue(maxsize=16);self.lock=threading.Lock();self.active_id=None;self.initialized=False
         self.elicitation=False;self.seen={};self.connection_id=uuid.uuid4().hex
-        self.cancelled_ids=set();self.state_lock=threading.Lock()
+        self.cancelled_ids=set();self.state_lock=threading.RLock()
 
     def emit(self,value):
         text=s.encoded(value).decode()+'\n'
@@ -50,7 +60,8 @@ class SurfaceOwnedMCP:
                     continue
                 self.messages.put_nowait((value,received))
         except Exception:pass
-        finally:self.closed.set();self.cancelled.set()
+        finally:
+            with self.state_lock:self.closed.set();self.cancelled.set()
 
     def next_message(self,deadline=None,*,stop_on_cancel=False):
         while True:
@@ -67,15 +78,18 @@ class SurfaceOwnedMCP:
         message='Approve this exact intended-reference restore in the configured owned Blender process?\n'+json.dumps(dict(scope=scope,
             scope_sha256=s.digest(scope),scene_scope='only mesh object in this dedicated scene',
             input_file_will_not_be_saved=True),ensure_ascii=False,allow_nan=False)
-        self.emit(dict(jsonrpc='2.0',id=key,method='elicitation/create',params=dict(message=message,
-            requestedSchema=dict(type='object',properties=dict(approve=dict(type='boolean',default=False,title='Approve exact vertices and original budget')),
-                required=['approve'],additionalProperties=False))))
+        with self.state_lock:
+            if self.closed.is_set() or self.cancelled.is_set():return False
+            self.emit(dict(jsonrpc='2.0',id=key,method='elicitation/create',params=dict(message=message,
+                requestedSchema=dict(type='object',properties=dict(approve=dict(type='boolean',default=False,title='Approve exact vertices and original budget')),
+                    required=['approve'],additionalProperties=False))))
         while not self.cancelled.is_set():
             value,_=self.next_message(scope['deadline_ns'],stop_on_cancel=True)
             if 'method' in value:
                 if valid_id(value.get('id')):self.emit(_rpc_error(value['id'],-32000,'reference approval is single-flight'))
                 continue
-            return approval_decision(value,key)=='accept_true'
+            return (approval_decision(value,key)=='accept_true' and not self.closed.is_set()
+                and not self.cancelled.is_set() and time.perf_counter_ns()<scope['deadline_ns'])
         return False
 
     def handle(self,value,received_ns):
@@ -118,7 +132,7 @@ class SurfaceOwnedMCP:
                 s.require(not arguments,'inspect_fields');result=self.actor.inspect()
             elif name==GOAL:
                 s.require(set(arguments)=={'indices'},'proposal_only');selected=s.indices(arguments['indices'])
-                cancelled=lambda:self.closed.is_set() or self.cancelled.is_set()
+                cancelled=_RequestCancellation(self)
                 if self.operator_task is not None:
                     result=self.operator_task.execute(self.actor,selected,event_id=event_id,client_received_ns=received_ns,cancelled=cancelled)
                 else:

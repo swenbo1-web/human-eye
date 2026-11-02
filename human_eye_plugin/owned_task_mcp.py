@@ -74,9 +74,9 @@ class OwnedTaskMCP:
     """Single-flight goal entry. Only the transport can deliver an approval."""
     def __init__(self,config_path,host,incoming,outgoing,*,episode_archive=None):
         self.incoming=incoming;self.outgoing=outgoing
-        self.messages=queue.Queue(maxsize=16);self.output_lock=threading.Lock();self.active_lock=threading.Lock()
+        self.messages=queue.Queue(maxsize=16);self.output_lock=threading.Lock();self.active_lock=threading.RLock()
         self.closed=threading.Event();self.active=None;self.initialized=False;self.elicitation=False
-        self.seen={};self.nonce=uuid.uuid4().hex;self.reader=None;self.episode=None;self.episodes={}
+        self.seen={};self.cancelled_ids=set();self.nonce=uuid.uuid4().hex;self.reader=None;self.episode=None;self.episodes={}
         if episode_archive is not None and type(episode_archive) is not EpisodeArchive:raise ValueError('typed_episode_archive_required')
         self.archive=episode_archive;self._archive_slot=None
         self.authority=TrustedTaskAuthority('owned-mcp-'+self.nonce,self._approve)
@@ -99,6 +99,21 @@ class OwnedTaskMCP:
             active['cancelled'].set();key=active.get('registration_id')
         if key is not None:self.entry.revoke(key)
 
+    def cancel_request(self,request_id):
+        if not valid_id(request_id):return
+        identity=(type(request_id).__name__,str(request_id))
+        key=None
+        with self.active_lock:
+            # Requests can already be queued while another call is active.
+            # Keep typed IDs for this bounded connection; cancellation must not
+            # disappear when the queued request gets its own active Event.
+            self.cancelled_ids.add(identity)
+            if len(self.cancelled_ids)>MAX_CALLS:raise ValueError('MCP_cancel_history_budget')
+            active=self.active
+            if active is not None and type(request_id) is type(active['request_id']) and request_id==active['request_id']:
+                active['cancelled'].set();key=active.get('registration_id')
+        if key is not None:self.entry.revoke(key)
+
     def _read(self):
         try:
             while True:
@@ -109,18 +124,17 @@ class OwnedTaskMCP:
                 received=time.perf_counter()
                 value=json.loads(raw,parse_constant=lambda x:(_ for _ in ()).throw(ValueError(x)))
                 if type(value) is not dict or value.get('jsonrpc')!='2.0':raise ValueError('MCP_request_object_required')
-                with self.active_lock:active=self.active
                 if value.get('method')=='notifications/cancelled':
                     params=value.get('params')
-                    if active is not None and type(params) is dict and type(params.get('requestId')) is type(active['request_id']) and params['requestId']==active['request_id']:
-                        self.stop_active()
+                    if type(params) is dict:self.cancel_request(params.get('requestId'))
                     continue
                 self.messages.put_nowait((value,received))
         except Exception:
             # Input failure cannot renew a goal or silently lose cancellation.
             pass
         finally:
-            self.closed.set();self.stop_active()
+            with self.active_lock:self.closed.set()
+            self.stop_active()
 
     def next_message(self,deadline=None,*,cancelled=None):
         while True:
@@ -141,9 +155,13 @@ class OwnedTaskMCP:
             +json.dumps(dict(task=spec.to_dict(),scope=scope,proposal_sha256=binding,
                 deadline_monotonic=active['deadline'],input_file_will_not_be_saved=True),sort_keys=True,allow_nan=False))
         if self.episode is not None:self.episode.bind(spec.to_dict(),scope,elicitation_id)
-        self.emit(dict(jsonrpc='2.0',id=elicitation_id,method='elicitation/create',params=dict(message=message,
-            requestedSchema=dict(type='object',properties=dict(approve=dict(type='boolean',default=False,
-                title='Approve this exact task and budget')),required=['approve']))))
+        with self.active_lock:
+            # Publication and cancellation acceptance have one ordering. A
+            # cancelled registration must never publish a fresh approval form.
+            if self.active is not active or active['cancelled'].is_set() or self.closed.is_set():return None
+            self.emit(dict(jsonrpc='2.0',id=elicitation_id,method='elicitation/create',params=dict(message=message,
+                requestedSchema=dict(type='object',properties=dict(approve=dict(type='boolean',default=False,
+                    title='Approve this exact task and budget')),required=['approve']))))
         while not active['cancelled'].is_set():
             value,_=self.next_message(active['deadline'],cancelled=active['cancelled'])
             if 'method' in value:
@@ -165,15 +183,33 @@ class OwnedTaskMCP:
         if self.episode is not None:self.episode.proposed(spec.to_dict())
         active=dict(request_id=request_id,event_id=task_event_id(self.nonce,request_id),cancelled=threading.Event(),
             deadline=received+spec.limits.max_duration_s,registration_id=None)
-        with self.active_lock:self.active=active
+        with self.active_lock:
+            if (type(request_id).__name__,str(request_id)) in self.cancelled_ids:active['cancelled'].set()
+            self.active=active
         try:
             if self.closed.is_set():raise ValueError('MCP_connection_closed_before_registration')
+            if active['cancelled'].is_set():raise ValueError('MCP_request_cancelled_before_registration')
             admission=self.entry.register(spec,received_monotonic=received)
             key=admission['registration_id']
-            with self.active_lock:active['registration_id']=key
-            if active['cancelled'].is_set() or self.closed.is_set():self.entry.revoke(key)
+            with self.active_lock:
+                active['registration_id']=key
+                cancelled=active['cancelled'].is_set() or self.closed.is_set()
+            if cancelled:
+                # Cancel may have arrived while register() still had no key.
+                # Revoke before any fallible episode/archive bookkeeping.
+                self.entry.revoke(key)
+                raise ValueError('MCP_request_cancelled_before_execution_handoff')
             if self.episode is not None:self.episode.admitted(admission)
-            self._execution_started=True
+            with self.active_lock:
+                cancelled=active['cancelled'].is_set() or self.closed.is_set()
+                if not cancelled:
+                    # Logical handoff to execute. Later cancellation revokes
+                    # its live capability, but must still consume execute's
+                    # real readback/counter receipt instead of claiming zero.
+                    self._execution_started=True
+            if cancelled:
+                self.entry.revoke(key)
+                raise ValueError('MCP_request_cancelled_before_execution_handoff')
             if self.episode is not None:self.episode.execution_started()
             result=self.entry.execute(key)
             if 'review_event' in result:
