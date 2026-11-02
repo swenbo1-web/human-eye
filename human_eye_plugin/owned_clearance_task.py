@@ -5,6 +5,7 @@ reuses the existing rigid entry, scheduler and connector journal. Local profile
 JSON is input, never approval: only a trusted, explicitly authorized launcher
 may create this live object. Receipts never reconstruct execution capability.
 """
+from .verified_source_loader import worker_arguments
 import argparse,copy,hashlib,json,os,threading,time,uuid
 from pathlib import Path
 from .surface_owned import decode,pinned_file
@@ -83,7 +84,7 @@ class OperatorClearanceTask:
             from . import blender_process
             worker=Path(blender_process.__file__).resolve().with_name('blender_worker.py')
             expected=[str(Path(self.profile['blender_executable']).resolve()),'--factory-startup','--disable-autoexec','--background',
-                str(Path(self.profile['scene_file']).resolve()),'--python',str(worker),'--',str(worker.parents[1])]
+                str(Path(self.profile['scene_file']).resolve()),*worker_arguments(worker.parents[1],worker),'--',str(worker.parents[1])]
             require(host._process.args==expected,'actual_worker_launch_differs_from_profile');self.host=host
             authority=TrustedTaskAuthority('operator-clearance-'+self.task_id,self._approve)
             self.entry=TrustedTaskEntry(self.profile['connector_config'],host,authority,source_observer=self._bind_source)

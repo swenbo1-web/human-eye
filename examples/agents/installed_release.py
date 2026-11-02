@@ -133,10 +133,12 @@ def _target_entry_proof(entry, executable):
     if (not entry.is_absolute() or entry.name != "target_runtime_entry.py"
             or _sha(_read(entry, 128 * 1024)) != _TARGET_ENTRY_SHA256):
         raise AgentSetupError("Unknown or modified fixed target bootstrap")
+    entry_bytes = _read(entry,128*1024)
+    if _sha(entry_bytes) != _TARGET_ENTRY_SHA256:raise AgentSetupError("Modified fixed target bootstrap")
     spec = importlib_util.spec_from_file_location("_human_eye_owned_target_entry", entry)
     module = importlib_util.module_from_spec(spec)
     try:
-        spec.loader.exec_module(module)
+        exec(compile(entry_bytes,str(entry),"exec",dont_inherit=True),module.__dict__)
         return module.validate_binding(expected_python=executable)
     except (ValueError, OSError) as exc:
         raise AgentSetupError("Owned fixed target binding failed: " + str(exc)) from exc

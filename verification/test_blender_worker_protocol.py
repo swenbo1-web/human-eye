@@ -5,6 +5,7 @@ verified separately. Runtime and test roots are obtained from imported files,
 so these tests can run against an isolated wheel with Python -I.
 """
 import copy
+import ast
 import json
 from pathlib import Path
 import subprocess
@@ -56,7 +57,19 @@ class BlenderWorkerProtocolTests(unittest.TestCase):
     def host(self, *, worker_path=None):
         def launch(command, **kwargs):
             self.commands.append(command)
-            worker = command[command.index('--python')+1]
+            if '--python-expr' in command:
+                expression=command[command.index('--python-expr')+1]
+                last=ast.parse(expression).body[-1].value
+                self.assertEqual(last.func.attr,'exec_path')
+                self.assertEqual(last.args[0].id,'_main')
+                worker=last.args[1].args[0].value
+                self.assertEqual(Path(worker),CANONICAL_WORKER)
+                # This protocol double uses fake bpy imported from a test
+                # fixture before running the shipped worker. The separate
+                # verified-source suite executes the actual clean bootstrap.
+                self.assertIn('verified_source_worker_loader_pin',expression)
+                self.assertIn('bootstrap_module=_helper',expression)
+            else:worker = command[command.index('--python')+1]
             root = command[command.index('--')+1]
             return self.original_popen([sys.executable,'-I','-B',str(self.launcher),
                 str(RUNTIME_ROOT),str(TEST_ROOT),worker,root], **kwargs)
@@ -80,7 +93,8 @@ class BlenderWorkerProtocolTests(unittest.TestCase):
 
     def test_default_worker_is_packaged_sibling_and_does_not_require_examples(self):
         host = self.host()
-        selected = Path(self.commands[0][self.commands[0].index('--python')+1])
+        expression=self.commands[0][self.commands[0].index('--python-expr')+1]
+        selected=Path(ast.parse(expression).body[-1].value.args[1].args[0].value)
         self.assertEqual(selected,CANONICAL_WORKER)
         self.assertEqual(selected.parent,Path(host_module.__file__).resolve().parent)
         self.assertTrue(host.capabilities()['persistent'])

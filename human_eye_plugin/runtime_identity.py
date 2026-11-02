@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-deformation-context-query-candidate-20261102"
+IMPLEMENTATION_REVISION = "v21-safety-source-candidate-20261103"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 
@@ -154,6 +154,15 @@ def check_source_drift() -> dict:
                   disk_build_id=current["build_id"], changed_files=changed,
                   added_files=sorted(disk.keys() - loaded.keys()),
                   removed_files=sorted(loaded.keys() - disk.keys()))
+    # Only a controlled entry installs this witness. Ordinary SDK imports
+    # remain ordinary source comparisons and acquire no verified-execution claim.
+    try:
+        import sys
+        for finder in sys.meta_path:
+            if getattr(finder,'protocol',None)=='human-eye-verified-source-v1' and finder.root==Path(__file__).resolve().parents[1]:
+                finder.verify_loaded()
+    except (OSError,ValueError) as exc:
+        result.update(compatible=False,status='unavailable',reasons=['runtime_executed_source_unverified'],error=str(exc))
     return result
 
 

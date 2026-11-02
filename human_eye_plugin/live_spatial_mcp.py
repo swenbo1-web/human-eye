@@ -28,6 +28,7 @@ from .goal_segment import CLEARANCE_SEGMENT_REQUEST_SCHEMA, validate_clearance_s
 from .request_context import (TASK_CONTEXT_SCHEMA, SCENE_DELTA_REQUEST_SCHEMA,
                               validate_task_context, validate_scene_delta_request, bind_task_context)
 from .telemetry import current_trace
+from . import mcp_transport as wire
 from .hook_context import (_observation as _parse_observation,
                            _deduplicate, _contains_reference_key)
 from .task_brief import project_task_brief, project_segment_brief, project_structure_brief
@@ -619,11 +620,8 @@ class LiveSpatialMCPServer:
         return result
 
     def handle_jsonrpc_message(self, req: Any) -> dict | None:
-        if (not isinstance(req, dict) or req.get("jsonrpc") != "2.0"
-                or not isinstance(req.get("method"), str) or not req.get("method")
-                or ("id" in req and (isinstance(req["id"], bool)
-                    or not isinstance(req["id"], (str, int, type(None)))))):
-            return _rpc_error(None, -32600, "Invalid Request")
+        try:wire.validate_request(req,allow_nonfinite=True)
+        except wire.RPCInputError as exc:return _rpc_error(None,exc.code,exc.message)
         method, request_id = req["method"], req.get("id")
         # JSON-RPC notifications never receive responses. They also never run
         # mutating tools, even if a malformed client sends tools/call this way.
@@ -654,7 +652,8 @@ class LiveSpatialMCPServer:
                 result = self._call_tool(params["name"], params.get("arguments", {}),
                                          mcp_request_id=request_id)
             except Exception as exc:
-                metadata = {"status": "error", "error": str(exc)}
+                metadata = {"status": "error", "error": str(exc),
+                            "tool_outcome": "unknown", "automatic_retry": False}
                 from .live_service import StateBindingError, RequestBudgetError
                 if isinstance(exc, (StateBindingError, RequestBudgetError)):
                     metadata.update(exc.to_error_fields())
@@ -680,32 +679,38 @@ def run_stdio_mcp_server(service: Any, input_stream: TextIO | None = None,
     incoming = sys.stdin if input_stream is None else input_stream
     outgoing = sys.stdout if output_stream is None else output_stream
     server = LiveSpatialMCPServer(service)
-    for raw_line in incoming:
-        if not raw_line.strip():
-            continue
-        try:
-            req = json.loads(raw_line, parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
-        except (ValueError, TypeError):
-            response = _rpc_error(None, -32700, "Parse error")
-        else:
-            params = req.get('params') if isinstance(req, dict) else None
-            traced = (isinstance(req, dict) and req.get('method') == 'tools/call'
-                      and 'id' in req and isinstance(params, dict))
-            scope = server.request_trace(params.get('name'), params.get('arguments', {}),
-                                         mcp_request_id=req['id']) if traced else nullcontext()
-            with scope:
-                response = server.handle_jsonrpc_message(req)
-                if response is not None:
-                    with span('mcp.wire_encode', kind='encoding'):
-                        encoded = json.dumps(response, ensure_ascii=False, allow_nan=False) + '\n'
-                    with span('mcp.stdio_write', kind='io'):
-                        outgoing.write(encoded)
-                        outgoing.flush()
-                    annotate(output_bytes=len(encoded.encode('utf-8')), delivery='stdio_write_completed')
-            continue
-        if response is not None:
-            outgoing.write(json.dumps(response, ensure_ascii=False, allow_nan=False) + "\n")
-            outgoing.flush()
+    try:
+        for req,error in wire.requests(incoming):
+            if error is not None:
+                if not wire.write_encoded(outgoing,wire.encode_response(error)):break
+                continue
+            params=req.get('params')
+            traced=(req.get('method')=='tools/call' and 'id' in req and isinstance(params,dict))
+            scope=server.request_trace(params.get('name'),params.get('arguments',{}),mcp_request_id=req['id']) if traced else nullcontext()
+            published=False;pipe_closed=False
+            try:
+                with scope:
+                    response=server.handle_jsonrpc_message(req)
+                    if response is not None:
+                        with span('mcp.wire_encode',kind='encoding'):
+                            encoded=wire.encode_response(response,req)
+                        with span('mcp.stdio_write',kind='io'):
+                            pipe_closed=not wire.write_encoded(outgoing,encoded)
+                        if pipe_closed:break
+                        published=True
+                        annotate(output_bytes=len(encoded.encode('utf8')),delivery='stdio_write_completed')
+            except Exception:
+                # Handler/encoder/trace failures belong to this request. A
+                # completed write must never get a second response or dispatch.
+                if pipe_closed:break
+                if not published and 'id' in req:
+                    if not wire.write_encoded(outgoing,wire.encode_response(wire.internal_error(req),req)):break
+    finally:
+        # EOF and actual output/input failure end the connection. No tool call
+        # or write is retried; close a live host socket before returning.
+        owner=service if callable(getattr(service,'close',None)) else getattr(service,'host',None)
+        close=getattr(owner,'close',None)
+        if callable(close):close()
 
 
 def _configure_utf8_stdio() -> None:

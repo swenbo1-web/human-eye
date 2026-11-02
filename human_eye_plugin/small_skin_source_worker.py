@@ -25,6 +25,34 @@ def decode(blob):
 def source_digest(packet):return digest({k:v for k,v in packet.items() if k not in ('capture_id','source_sha256')})
 
 
+
+def precheck_dependencies(mesh,rig,deadline):
+    """Cheap domain exits BEFORE depsgraph evaluation, without rewriting data."""
+    check(deadline)
+    require(mesh.data.shape_keys is None,'shape_keys')
+    require(len(mesh.modifiers)==1,'modifier_count')
+    mod=mesh.modifiers[0]
+    require(mod.type=='ARMATURE' and mod.object is rig,'modifier_binding')
+    require(mod.use_deform_preserve_volume is False,'DQ')
+    require(mod.use_bone_envelopes is False,'envelopes')
+    require(mod.use_multi_modifier is False and mod.invert_vertex_group is False
+        and mod.vertex_group=='' and mod.use_vertex_groups is True
+        and mod.show_render is True and mod.show_viewport is True
+        and mod.is_override_data is False,'modifier_semantics')
+    check(deadline)
+
+
+def precheck_evaluated(mesh,rig,em,er,deadline):
+    """Only O(1) collection counts before any evaluated array expansion."""
+    check(deadline)
+    require(1<=len(em.data.vertices)<=LIMITS['vertices']
+        and len(em.data.vertices)==len(mesh.data.vertices),'evaluated_vertex_count')
+    require(1<=len(em.data.polygons)<=LIMITS['triangles']
+        and len(em.data.polygons)==len(mesh.data.polygons),'evaluated_topology')
+    require(1<=len(er.pose.bones)<=LIMITS['bones']
+        and len(er.pose.bones)==len(rig.data.bones),'evaluated_bone_count')
+    check(deadline)
+
 def run(args):
     import bpy
     deadline=args.deadline_ns;check(deadline)
@@ -39,7 +67,11 @@ def run(args):
     require(sha(root/'human_eye_plugin/small_skin_source.py')==args.module_sha256 and sha(root/'human_eye_plugin/rig_pose.py')==args.math_sha256,'consumer_math_pin')
     require(sha(Path(bpy.app.binary_path))==p['blender_sha256'],'binary_pin')
     spec=importlib.util.spec_from_file_location('_small_skin_runtime_identity',root/'human_eye_plugin/runtime_identity.py')
-    runtime=importlib.util.module_from_spec(spec);spec.loader.exec_module(runtime)
+    runtime=importlib.util.module_from_spec(spec);path=root/'human_eye_plugin/runtime_identity.py'
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==root),None)
+    if guard is not None:guard.exec_path(runtime,path)
+    else:
+        blob=path.read_bytes();exec(compile(blob,str(path),'exec',dont_inherit=True),runtime.__dict__)
     require(runtime.runtime_identity()['source_sha256']==p['runtime_source_sha256'] and runtime.check_source_drift()['compatible'],'runtime_pin')
     scene=bpy.context.scene;rig=scene.objects.get(p['rig_name']);mesh=scene.objects.get(p['mesh_name']);epoch=uuid.uuid4().hex
     require(dict(number=scene.frame_current,subframe=float(scene.frame_subframe))==p['expected_frame'],'fixed_frame')
@@ -190,8 +222,10 @@ def run(args):
         require(1<=len(mesh.data.polygons)<=LIMITS['triangles'],'triangle_limit')
         require(1<=len(rig.data.bones)<=LIMITS['bones'],'bone_limit')
         require(len(mesh.data.edges)<=LIMITS['edges'],'edge_limit')
+        precheck_dependencies(mesh,rig,deadline)
         audit_before=independent_audit();before=state();graph=bpy.context.evaluated_depsgraph_get();er=rig.evaluated_get(graph);em=mesh.evaluated_get(graph)
         require(er.is_evaluated and em.is_evaluated and er.original==rig and em.original==mesh and em.data.as_pointer()!=mesh.data.as_pointer(),'evaluated_links')
+        precheck_evaluated(mesh,rig,em,er,deadline)
         ev=dict(rig_matrix_world=mat(er.matrix_world),mesh_matrix_world=mat(em.matrix_world),bones=[dict(name=b.name,parent=None if b.parent is None else b.parent.name,
             pose_matrix=mat(b.matrix),pose_head=vec(b.head),pose_tail=vec(b.tail)) for b in sorted(er.pose.bones,key=lambda b:b.name)],
             vertices=[vec(v.co) for v in em.data.vertices],triangles=[list(poly.vertices) for poly in em.data.polygons],original_links_verified=True)

@@ -1,9 +1,9 @@
 """Explicit registered read tasks for finite surface facts and references."""
-import base64,copy,hashlib,json,math,time,uuid
+import copy,hashlib,json,math,time,uuid
 from . import mesh_structure as raw,surface_geometry as g
 from .structure_task import require,digest,TEXT_RESERVATION,hex_id
 from .structure_task_control import consumption
-from .structure_task_service import _base as _structure_base
+from .structure_task_service import _base as _structure_base,_construction_cost
 
 
 def _base(status,session_id):
@@ -91,7 +91,8 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
             if remaining is not None:deadline=min(deadline,time.perf_counter_ns()+int(remaining*1e9))
             result=_base('unavailable',session_id);result['result_kind']='surface_task'
             result['evidence_scope']='finite_raw_surface_facts_not_general_damage_or_write_authority'
-            images=[];image_called=False;image_known=True;report=None
+            images=[];image_known=True;report=None
+            constructed_images=constructed_png_bytes=0
             try:
                 selected=copy.deepcopy(state['refs'].get(value.get('patch_ref')))
                 if value['operation']=='reference_patch':
@@ -129,11 +130,12 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
                                 from . import reference_view_consumer as consumer
                                 require(all(callable(getattr(service.host,k,None)) for k in ('reference_view_capabilities','observe_reference_patch')),'surface_reference_view_host')
                                 caps=consumer.validate_capabilities(service.host.reference_view_capabilities());request=uuid.uuid4().hex
-                                image_called=True;image_known=False
+                                image_known=False
                                 response=service.host.observe_reference_patch(request,state['object_id'],current,deadline)
                                 visual=consumer.validate_result(response,object_id=state['object_id'],patch=current,request_id=request,deadline_ns=deadline,capabilities=caps)
+                                images=visual.pop('images')
+                                constructed_images,constructed_png_bytes=_construction_cost(images);image_known=True
                                 registry.resolve(reference_ref,prepared)
-                                images=visual.pop('images');image_known=True
                                 result['visual_evidence']=visual;result['image_status']=visual['status']
                         if include_image and not images:result['status']='partial';result['routing']['observation_status']='partial'
                 elif value['operation']=='reference_patch':
@@ -150,9 +152,10 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
             size=len(json.dumps(result,ensure_ascii=False,allow_nan=False).encode('utf8'))+4096
             if size>TEXT_RESERVATION:
                 result=_base('unavailable',session_id);result['reason']='surface_public_text_budget';size=8192
-                images=[];image_known=not image_called
-            png_bytes=sum(len(base64.b64decode(image['data'],validate=True)) for image in images)
-            store.finish(state,value['request_id'],text_bytes=size,images=len(images),png_bytes=png_bytes,outcome=result['status'],image_outcome_known=image_known,failed=result['status']=='unavailable')
+                images=[]
+            # Confirmed construction is independent of late reference/text or
+            # delivery failure; unknown work keeps its conservative reservation.
+            store.finish(state,value['request_id'],text_bytes=size,images=constructed_images,png_bytes=constructed_png_bytes,outcome=result['status'],image_outcome_known=image_known,failed=result['status']=='unavailable')
             require(time.perf_counter_ns()<state['deadline_ns'] and time.time_ns()<state['deadline_wall_ns'],'surface_delivery_expired')
             result['task_budget']=store.summary(state);result['accounted_public_text_bytes']=size
             if images:result['routing']['images']=images

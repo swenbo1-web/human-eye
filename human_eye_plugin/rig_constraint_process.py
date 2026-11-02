@@ -1,4 +1,5 @@
 """Fixed static-constraint transport, reusing FK single-flight/expiry/cleanup."""
+from .verified_source_loader import worker_arguments
 import argparse,hashlib,json,os,queue,subprocess,sys,threading,time
 from pathlib import Path
 from . import rig_constraint as core
@@ -26,7 +27,7 @@ class RigConstraintProcess(RigPoseProcess):
         self.worker_sha=hashlib.sha256(worker.read_bytes()).hexdigest();self.queue=queue.Queue(maxsize=16);self.closed=False
         self.sequence=0;self.diagnostics=[];self.source=None;self._gate=threading.Lock();r.check_time(self.deadline_ns)
         self.process=subprocess.Popen([p['blender_executable'],'--factory-startup','--disable-autoexec','--background',p['scene_file'],
-            '--python',str(worker),'--','--root',str(root),'--profile',str(self.path),'--profile-sha256',hashlib.sha256(self.profile_bytes).hexdigest(),
+            *worker_arguments(root,worker),'--','--root',str(root),'--profile',str(self.path),'--profile-sha256',hashlib.sha256(self.profile_bytes).hexdigest(),
             '--module-sha256',self.module_sha,'--math-sha256',self.math_sha,'--deadline-ns',str(self.deadline_ns)],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),shell=False)
         def read():

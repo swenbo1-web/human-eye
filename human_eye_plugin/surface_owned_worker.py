@@ -8,16 +8,24 @@ from pathlib import Path
 sys.dont_write_bytecode=True
 
 
+def _execute(module,path,blob):
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==path.parents[1]),None)
+    if guard is not None:return guard.exec_path(module,path,expected_blob=blob)
+    exec(compile(blob,str(path),'exec',dont_inherit=True),module.__dict__)
+
+
 def run(args):
     import bpy
     root=args.root.resolve();package=types.ModuleType('human_eye_plugin');package.__path__=[str(root/'human_eye_plugin')]
     sys.modules['human_eye_plugin']=package
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==root),None)
+    if guard is not None:guard.allow_namespace(package)
     manifest=json.loads(args.manifest)
     for name in ('mesh_structure','surface_geometry','surface_reference','surface_restore','surface_owned','blender_host','forward_deadline'):
         path=root/'human_eye_plugin'/(name+'.py');blob=path.read_bytes()
         if len(blob)>512*1024 or hashlib.sha256(blob).hexdigest()!=manifest[name]:raise ValueError('surface_worker_source_pin')
         spec=importlib.util.spec_from_file_location('human_eye_plugin.'+name,path);module=importlib.util.module_from_spec(spec)
-        sys.modules[spec.name]=module;exec(compile(blob,str(path),'exec',dont_inherit=True),module.__dict__)
+        sys.modules[spec.name]=module;_execute(module,path,blob)
     from human_eye_plugin import mesh_structure as raw,surface_geometry as g,surface_owned as s
     from human_eye_plugin.surface_reference import ReferenceRegistry,ReferenceIntent,diagnose
     from human_eye_plugin.surface_restore import RestoreController,RestoreJournal

@@ -294,13 +294,15 @@ class BlenderMCPHost:
         if len(request.encode("utf-8")) > 4096:
             raise ValueError("Blender transform request exceeds 4096 bytes")
         return "\n".join([
-            "import importlib.util as _iu, json as _json",
+            "import importlib.util as _iu, json as _json, hashlib as _hl",
             "_request = _json.loads(" + repr(request) + ")",
             "try:",
             "    _spec = _iu.spec_from_file_location('_human_eye_blender_mcp_host', " + repr(str(self.source)) + ")",
             "    if _spec is None or _spec.loader is None: raise RuntimeError('Cannot load trusted Blender host')",
             "    _module = _iu.module_from_spec(_spec)",
-            "    _spec.loader.exec_module(_module)",
+            "    with open("+repr(str(self.source))+",'rb') as _stream: _source_bytes=_stream.read(512*1024+1)",
+            "    if len(_source_bytes)>512*1024 or _hl.sha256(_source_bytes).hexdigest()!="+repr(self._readonly_host_source_sha256)+": raise ValueError('Host source differs from connector snapshot')",
+            "    exec(compile(_source_bytes,"+repr(str(self.source))+",'exec',dont_inherit=True),_module.__dict__)",
             "    _host_options = {'bpy_module': bpy, 'execution_metadata': True}",
             "    if getattr(_module.BlenderSceneHost, 'identity_metadata_protocol', None) == 'host-identity-v1-20261026': _host_options['identity_metadata'] = True",
             "    _host = _module.BlenderSceneHost(**_host_options)",
@@ -322,13 +324,15 @@ class BlenderMCPHost:
         if len(request.encode('utf-8')) > 4096:
             raise ValueError('Host supervision request exceeds 4096 bytes')
         return '\n'.join([
-            'import importlib.util as _iu, json as _json',
+            'import importlib.util as _iu, json as _json, hashlib as _hl',
             '_request = _json.loads(' + repr(request) + ')',
             'try:',
             "    _spec = _iu.spec_from_file_location('_human_eye_blender_mcp_host', " + repr(str(self.source)) + ')',
             "    if _spec is None or _spec.loader is None: raise RuntimeError('Cannot load trusted Blender host')",
             '    _module = _iu.module_from_spec(_spec)',
-            '    _spec.loader.exec_module(_module)',
+            "    with open("+repr(str(self.source))+",'rb') as _stream: _source_bytes=_stream.read(512*1024+1)",
+            "    if len(_source_bytes)>512*1024 or _hl.sha256(_source_bytes).hexdigest()!="+repr(self._readonly_host_source_sha256)+": raise ValueError('Host source differs from connector snapshot')",
+            "    exec(compile(_source_bytes,"+repr(str(self.source))+",'exec',dont_inherit=True),_module.__dict__)",
             '    _host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)',
             "    if _request['command'] == 'capture_evidence':",
             "        if _request['params']: raise ValueError('capture_evidence accepts no arguments')",

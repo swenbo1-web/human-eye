@@ -28,6 +28,19 @@ import uuid
 from contextlib import contextmanager
 
 
+def _exec_source_snapshot(module,source,blob=None):
+    """Use a controlled worker's source witness; never accept cached pyc."""
+    import sys
+    from pathlib import Path
+    source=Path(source).resolve()
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==source.parents[1]),None)
+    if guard is not None:return guard.exec_path(module,source,expected_blob=blob)
+    if blob is None:
+        with source.open('rb') as stream:blob=stream.read(512*1024+1)
+    if len(blob)>512*1024:raise BlenderHostError('host_dependency_source_budget')
+    exec(compile(blob,str(source),'exec',dont_inherit=True),module.__dict__)
+
+
 class BlenderHostError(ValueError):
     """The Blender scene or requested operation exceeds the host contract."""
 
@@ -835,7 +848,7 @@ class BlenderSceneHost:
             spec = importlib.util.spec_from_file_location('_human_eye_owned_episode_gateway',
                 Path(__file__).resolve().with_name('episode_gateway.py'))
             if spec is None or spec.loader is None:raise EpisodeUncertain('episode_module_unavailable')
-            module = importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+            module = importlib.util.module_from_spec(spec);_exec_source_snapshot(module,Path(__file__).resolve().with_name('episode_gateway.py'))
             self._episode_module = module
         return module, state
 
@@ -1098,7 +1111,7 @@ class BlenderSceneHost:
         spec=importlib.util.spec_from_file_location(name,source)
         if spec is None or spec.loader is None:raise BlenderHostError('Readonly native helpers unavailable')
         module=importlib.util.module_from_spec(spec)
-        exec(compile(raw,str(source),'exec',dont_inherit=True),module.__dict__)
+        _exec_source_snapshot(module,source,raw)
         return module
 
     def _readonly_clock_module(self, sources=None):
@@ -1438,7 +1451,7 @@ class BlenderSceneHost:
             if spec is None or spec.loader is None:
                 raise BlenderHostError('Cannot load trusted forward deadline contract')
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            _exec_source_snapshot(module,source)
             self._forward_module = module
         return module
 
@@ -1666,7 +1679,7 @@ class BlenderSceneHost:
             if spec is None or spec.loader is None:
                 raise BlenderHostError('Cannot load trusted host motion accounting')
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            _exec_source_snapshot(module,source)
             self._motion_module = module
         state = namespace[key]
         module.validate_ledger(state)

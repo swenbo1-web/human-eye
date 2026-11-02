@@ -12,6 +12,10 @@ Barnes-Hut 广义环绕数、种子紧上界批量有向距离场（SDF）、各
 并完成 20 项全新空间几何算法与数据结构创新拓展（OP-104..OP-135，全类合计 40 个核心算子方法）。
 """
 
+# The finite common-origin SAT safety correction below intentionally changes
+# cancellation-affected results. Historical optimization/0-ULP descriptions
+# above do not certify equality across this correctness fix.
+
 from __future__ import annotations
 
 import dataclasses
@@ -431,50 +435,115 @@ def _convex_shells(mesh: MeshEntity3D):
     return result
 
 
-def _convex_sat_parts(a, b, tolerance: float):
-    va, na, ea = a
-    vb, nb, eb = b
-    axes = _unique_unit_axes(np.vstack([na, nb, np.cross(ea[:, None, :], eb[None, :, :]).reshape(-1, 3)]))
-    if not len(axes):
-        raise ValueError("empty_convex_axes")
-    pa, pb = va @ axes.T, vb @ axes.T
-    amin, amax, bmin, bmax = pa.min(axis=0), pa.max(axis=0), pb.min(axis=0), pb.max(axis=0)
-    if (np.minimum(amax, bmax)-np.maximum(amin, bmin) <= tolerance).any():
-        return False, 0.0, np.zeros(3)
+# Exact fallback is finite and is only used near numeric classification gates.
+# This is not a physical coordinate uncertainty estimate or a larger tolerance.
+_MAX_EXACT_SAT_DOTS = 8192
+
+
+def _sat_axes(a, b):
+    return _unique_unit_axes(np.vstack([a[1], b[1],
+        np.cross(a[2][:, None, :], b[2][None, :, :]).reshape(-1, 3)]))
+
+
+def _local_sat_projection(va, vb, axes, tolerances):
+    """Project both represented point sets in ONE local frame.
+
+    Threshold-near float decisions are resolved from original binary64 inputs
+    with exact rational dot products, never by treating roundoff as clearance.
+    A bounded fallback that cannot finish raises an explicit numeric unknown.
+    """
+    if not len(axes) or not len(va) or not len(vb):
+        raise ValueError('empty_convex_axes')
+    origin = va[0]
+    la, lb = va-origin, vb-origin
+    pa, pb = la @ axes.T, lb @ axes.T
+    amin, amax = pa.min(axis=0), pa.max(axis=0)
+    bmin, bmax = pb.min(axis=0), pb.max(axis=0)
+    overlap = np.minimum(amax, bmax)-np.maximum(amin, bmin)
     positive, negative = bmax-amin, bmin-amax
-    push = np.where(np.abs(positive) < np.abs(negative), positive, negative)
+    # gamma-style bound for a subtract, three multiplies/two additions,
+    # extremum selection and the last interval difference. It scales with
+    # local coordinates, not the global offset. Tiny covers underflow.
+    eps = np.finfo(np.float64).eps
+    magnitude = np.maximum(np.max(np.abs(la) @ np.abs(axes).T, axis=0),
+                           np.max(np.abs(lb) @ np.abs(axes).T, axis=0))
+    error = np.nextafter(32*eps*magnitude + np.finfo(np.float64).tiny, np.inf)
+    if not all(np.isfinite(v).all() for v in (la, lb, overlap, positive, negative, error)):
+        raise ValueError('sat_projection_precision_unresolved')
+    thresholds = np.asarray(tolerances, dtype=float)
+    uncertain = np.any(np.abs(overlap[:, None]-thresholds[None, :]) <= error[:, None], axis=1)
+    # A large projection error cannot be published as a precise MTV either.
+    # Resolve every high-error axis: recomputing only the first argmin can
+    # change the ranking and expose a second, still-inaccurate MTV axis.
+    uncertain |= error > 1e-9
+    indices = np.flatnonzero(uncertain)
+    if len(indices)*(len(va)+len(vb)) > _MAX_EXACT_SAT_DOTS:
+        raise ValueError('sat_projection_precision_unresolved')
+    if len(indices):
+        from fractions import Fraction as Q
+        qorigin = tuple(Q(float(x)) for x in origin)
+        qa = [tuple(Q(float(x))-qorigin[k] for k,x in enumerate(point)) for point in va]
+        qb = [tuple(Q(float(x))-qorigin[k] for k,x in enumerate(point)) for point in vb]
+        for index in indices:
+            axis = tuple(Q(float(x)) for x in axes[index])
+            aa = [sum((point[k]*axis[k] for k in range(3)), Q(0)) for point in qa]
+            bb = [sum((point[k]*axis[k] for k in range(3)), Q(0)) for point in qb]
+            al, ah, bl, bh = min(aa), max(aa), min(bb), max(bb)
+            exact = min(ah, bh)-max(al, bl)
+            value = float(exact)
+            # Keep each requested <= threshold decision exact, including an
+            # exact threshold that rounds to the other side in binary64.
+            for threshold in tolerances:
+                qthreshold = Q(float(threshold))
+                if (value <= threshold) != (exact <= qthreshold):
+                    raise ValueError('sat_projection_precision_unresolved')
+            overlap[index], positive[index], negative[index] = value, float(bh-al), float(bl-ah)
+    return overlap, positive, negative
+
+
+
+def _sat_metric(va, vb, axes, positive, negative):
+    """Bound scalar/vector publication error; not a world-apply certificate."""
+    from fractions import Fraction as Q
+    push = np.where(np.abs(positive)<np.abs(negative), positive, negative)
     index = int(np.argmin(np.abs(push)))
-    return True, abs(float(push[index])), axes[index]*push[index]
+    if len(va)+len(vb)>_MAX_EXACT_SAT_DOTS:
+        raise ValueError('sat_projection_precision_unresolved')
+    axis=axes[index];qaxis=tuple(Q(float(x)) for x in axis)
+    qa=[sum((Q(float(p[k]))*qaxis[k] for k in range(3)),Q(0)) for p in va]
+    qb=[sum((Q(float(p[k]))*qaxis[k] for k in range(3)),Q(0)) for p in vb]
+    choices=(max(qb)-min(qa),min(qb)-max(qa));exact=min(choices,key=abs)
+    value=float(exact);vector=axis*value
+    limit=Q(1e-9)
+    scalar_error=abs(Q(value)-exact)
+    vector_error=sum(abs(Q(float(v))-qaxis[k]*exact) for k,v in enumerate(vector))
+    scale_error=(abs(float(np.linalg.norm(axis))-1.)+16*np.finfo(float).eps)*abs(value)
+    if (not math.isfinite(value) or not np.isfinite(vector).all()
+            or scalar_error+vector_error+Q(float(scale_error))>limit):
+        raise ValueError('sat_projection_precision_unresolved')
+    return abs(value),vector
+
+def _convex_sat_parts(a, b, tolerance: float):
+    axes = _sat_axes(a, b)
+    overlap, positive, negative = _local_sat_projection(a[0], b[0], axes, (tolerance,))
+    if (overlap <= tolerance).any():
+        return False, 0.0, np.zeros(3)
+    depth, vector = _sat_metric(a[0], b[0], axes, positive, negative)
+    return True, depth, vector
 
 
 def _single_convex_collision_and_zero(focal, reference, tolerance):
-    """Two existing SAT classifications from one exact projection.
-
-    Return None outside the single-component support case so callers keep
-    the original component-union escape and unsupported paths. This is not
-    a reusable proof: current shells are obtained through the same evaluator
-    as _certified_solid_collision on every call.
-    """
+    """Two classifications from the same bounded common-origin projection."""
     fa, rb = _convex_shells(focal), _convex_shells(reference)
     if fa is None or rb is None or len(fa) != 1 or len(rb) != 1:
         return None
-    va, na, ea = fa[0]
-    vb, nb, eb = rb[0]
-    # Keep the scalar operation/order of _convex_sat_parts. Tolerance only
-    # affects classification after these shared axes and projections.
-    axes = _unique_unit_axes(np.vstack([na, nb, np.cross(ea[:, None, :], eb[None, :, :]).reshape(-1, 3)]))
-    if not len(axes):
-        raise ValueError("empty_convex_axes")
-    pa, pb = va @ axes.T, vb @ axes.T
-    amin, amax, bmin, bmax = pa.min(axis=0), pa.max(axis=0), pb.min(axis=0), pb.max(axis=0)
-    overlap = np.minimum(amax, bmax) - np.maximum(amin, bmin)
-    separated = (False, 0.0, np.zeros(3), "convex_components_sat")
+    axes = _sat_axes(fa[0], rb[0])
+    overlap, positive, negative = _local_sat_projection(fa[0][0], rb[0][0], axes, (tolerance, 0.0))
+    separated = (False, 0.0, np.zeros(3), 'convex_components_sat')
     if (overlap <= 0.0).any():
-        return separated, (False, 0.0, np.zeros(3), "convex_components_sat")
-    positive, negative = bmax-amin, bmin-amax
-    push = np.where(np.abs(positive) < np.abs(negative), positive, negative)
-    index = int(np.argmin(np.abs(push)))
-    zero = (True, abs(float(push[index])), axes[index]*push[index], "convex_sat")
+        return separated, (False, 0.0, np.zeros(3), 'convex_components_sat')
+    depth, vector = _sat_metric(fa[0][0], rb[0][0], axes, positive, negative)
+    zero = (True, depth, vector, 'convex_sat')
     if (overlap <= tolerance).any():
         return separated, zero
     return (zero[0], zero[1], zero[2].copy(), zero[3]), zero
@@ -495,8 +564,8 @@ def _certified_solid_collision(focal: MeshEntity3D, reference: MeshEntity3D, tol
     candidates = [item[2] for item in hits]
     directions = _unique_unit_axes(np.asarray(candidates))
     for direction in directions:
-        pa, pb = focal.vertices @ direction, reference.vertices @ direction
-        candidates.extend([direction*(pb.max()-pa.min()), direction*(pb.min()-pa.max())])
+        _, positive, negative = _local_sat_projection(focal.vertices, reference.vertices, direction[None, :], (0.0, tolerance))
+        candidates.extend([direction*positive[0], direction*negative[0]])
     for vector in sorted(candidates, key=lambda value: float(value @ value)):
         moved = [(a[0]+vector, a[1], a[2]) for a in fa]
         if not any(_convex_sat_parts(a, b, tolerance)[0] for a in moved for b in rb):

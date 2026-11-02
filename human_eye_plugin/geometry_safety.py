@@ -441,6 +441,8 @@ def measure_pair_geometry(focal, reference, *, collision_tolerance_m=COLLISION_T
                       signed_clearance_m=None,
                       reason=('original_surface_witness_precision_exceeded'
                               if str(exc) == 'original_surface_witness_precision_exceeded'
+                              else 'sat_projection_precision_unresolved'
+                              if str(exc) == 'sat_projection_precision_unresolved'
                               else 'geometry_evaluation_failed'),
                       error_type=type(exc).__name__)
         return result

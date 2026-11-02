@@ -7,6 +7,8 @@ because a timed-out mutation may already have reached Blender.
 """
 from __future__ import annotations
 
+from .verified_source_loader import worker_arguments
+
 from collections import deque
 from contextlib import contextmanager
 from fractions import Fraction
@@ -135,7 +137,7 @@ class BlenderProcessHost:
         self._sequence = 0
         self._deadline_bindings = {}
         command = [str(executable), "--factory-startup", "--disable-autoexec", "--background",
-                   str(source), "--python", str(worker), "--", str(root)]
+                   str(source), *(worker_arguments(root,worker) if worker_path is None else ["--python",str(worker)]), "--", str(root)]
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
         self._process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, text=True, encoding="utf-8",

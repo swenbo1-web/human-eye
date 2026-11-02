@@ -38,28 +38,20 @@ def run_demo_stdio(input_stream=None, output_stream=None) -> None:
     from .runtime_identity import runtime_identity
     incoming = sys.stdin if input_stream is None else input_stream
     outgoing = sys.stdout if output_stream is None else output_stream
-    for raw_line in incoming:
-        if not raw_line.strip():
-            continue
-        try:
-            request = json.loads(raw_line)
-            # All JSON-RPC notifications are silent, including mutating calls.
-            if isinstance(request, dict) and "id" not in request:
-                continue
-            response = legacy.handle_jsonrpc_message(request)
-            if (isinstance(request, dict) and request.get("method") == "initialize"
-                    and isinstance(response, dict) and isinstance(response.get("result"), dict)):
-                identity = runtime_identity(mode="demo")
-                identity["source_file_count"] = len(identity.pop("source_files", []))
-                identity["production_mode"] = False
-                identity["scene_source"] = "legacy_synthetic_demonstration"
-                response["result"].setdefault("_meta", {})["human_eye"] = identity
-        except Exception as exc:
-            response = {"jsonrpc": "2.0", "id": None,
-                        "error": {"code": -32700, "message": "Demo request error: " + str(exc)}}
-        if response is not None:
-            outgoing.write(json.dumps(response, ensure_ascii=False, allow_nan=False) + "\n")
-            outgoing.flush()
+    from . import mcp_transport as wire
+    def handle(request):
+        # All valid JSON-RPC notifications remain silent and cannot run tools.
+        if 'id' not in request:return None
+        response=legacy.handle_jsonrpc_message(request)
+        if (request.get('method')=='initialize' and isinstance(response,dict)
+                and isinstance(response.get('result'),dict)):
+            identity=runtime_identity(mode='demo')
+            identity['source_file_count']=len(identity.pop('source_files',[]))
+            identity['production_mode']=False
+            identity['scene_source']='legacy_synthetic_demonstration'
+            response['result'].setdefault('_meta',{})['human_eye']=identity
+        return response
+    wire.serve(incoming,outgoing,handle)
 
 
 def construct_live_service(config):

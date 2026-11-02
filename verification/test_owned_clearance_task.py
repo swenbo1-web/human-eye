@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch,Mock
 from human_eye_plugin.owned_clearance_task import OperatorClearanceTask
 from human_eye_plugin.runtime_identity import runtime_identity
+from human_eye_plugin.verified_source_loader import worker_arguments
 from human_eye_plugin.task_entry import TrustedTaskEntry
 from human_eye_plugin.task_authority import TaskApproval,ClearanceTaskSpec
 from human_eye_plugin.surface_restore import RestoreJournal,RestoreController
@@ -30,7 +31,7 @@ class ClearanceOperatorTests(unittest.TestCase):
         path=self.root/(name+'-PROFILE.json');path.write_text(json.dumps(profile),encoding='utf8')
         from human_eye_plugin import blender_process
         worker=Path(blender_process.__file__).resolve().with_name('blender_worker.py')
-        self.host._process.args=[str(binary),'--factory-startup','--disable-autoexec','--background',str(scene),'--python',str(worker),'--',str(worker.parents[1])]
+        self.host._process.args=[str(binary),'--factory-startup','--disable-autoexec','--background',str(scene),*worker_arguments(worker.parents[1],worker),'--',str(worker.parents[1])]
         self.profile=path;return OperatorClearanceTask(path,self.root/name,clock=lambda:self.now)
 
     def entry_factory(self,config,host,authority,*,source_observer):

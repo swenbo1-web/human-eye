@@ -24,6 +24,9 @@ ROOT_MODULES = ("human_eye_hook.py", "human_eye_foveated_renderer.py", "native_3
                 "module_2_low_token_mcp_scene_bridge.py", "module_3_1_mcp_protocol_ipc_engine.py",
                 "module_3_2_vlm_grounding_closed_loop_agent.py", "module_3_3_closed_loop_control_engine.py")
 ROLES = {"mcp": "serve", "hook": "hook", "identity": "identity", "admin": "admin"}
+_VERIFIED_SOURCES = None
+_VERIFIED_ROOT = None
+_SOURCE_GUARD = None
 _BINDING_KEYS = {"schema_version", "kind", "target_release", "site_packages", "dependency_python",
                  "launcher_sha256", "admin_sha256", "identity", "source_files"}
 
@@ -100,11 +103,13 @@ def validate_binding(*, expected_python=None):
         if not (directory / "__init__.py").is_file():
             raise BindingError("Incomplete installed runtime package")
         paths.update(directory.glob("*.py"))
-    manifest = []
+    manifest = [];sources = {}
     for path in sorted(paths, key=lambda item: item.relative_to(site).as_posix()):
         if path.resolve() != path or not path.resolve().is_relative_to(site):
             raise BindingError("Runtime source escapes the installed target")
-        manifest.append({"path": path.relative_to(site).as_posix(), "sha256": _sha(_read(path))})
+        relative = path.relative_to(site).as_posix();blob = _read(path)
+        sources[relative] = blob
+        manifest.append({"path": relative, "sha256": _sha(blob)})
     digest = _sha(json.dumps({"base_version": IDENTITY["base_version"],
         "implementation_revision": IDENTITY["implementation_revision"], "files": manifest},
         sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8"))
@@ -116,6 +121,8 @@ def validate_binding(*, expected_python=None):
             or Path(distributions[0].locate_file("human_eye_plugin/runtime_identity.py")).resolve()
                 != site / "human_eye_plugin/runtime_identity.py"):
         raise BindingError("Installed distribution metadata does not identify the fixed target")
+    global _VERIFIED_SOURCES, _VERIFIED_ROOT
+    _VERIFIED_SOURCES = sources;_VERIFIED_ROOT = site
     return {"kind": "fixed_target_bootstrap", "entry": str(entry), "binding": str(binding_path),
             "target_release": str(release), "module_root": str(site),
             "dependency_python": str(DEPENDENCY_PYTHON.resolve()), "launcher_sha256": launcher_hash,
@@ -126,6 +133,25 @@ def validate_binding(*, expected_python=None):
 
 
 def verify_imported_runtime(proof):
+    global _SOURCE_GUARD
+    root = Path(proof["module_root"])
+    if _VERIFIED_ROOT != root or _VERIFIED_SOURCES is None:
+        raise BindingError("Runtime source snapshot was not validated by this entry")
+    manifest = [{"path": name, "sha256": _sha(blob)} for name, blob in sorted(_VERIFIED_SOURCES.items())]
+    if _SOURCE_GUARD is None:
+        for finder in sys.meta_path:
+            if getattr(finder, 'protocol', None) == 'human-eye-verified-source-v1' and finder.root == root:
+                if dict(finder.sources) != _VERIFIED_SOURCES:raise BindingError("Runtime source generation differs")
+                _SOURCE_GUARD = finder;break
+        if _SOURCE_GUARD is None:
+            path = root / 'human_eye_plugin/verified_source_loader.py'
+            blob = _VERIFIED_SOURCES.get('human_eye_plugin/verified_source_loader.py')
+            if blob is None:raise BindingError("Verified source loader is not in the fixed manifest")
+            spec = util.spec_from_file_location('_human_eye_fixed_source_loader', path)
+            helper = util.module_from_spec(spec);sys.modules[spec.name] = helper
+            exec(compile(blob,str(path),'exec',dont_inherit=True),helper.__dict__)
+            _SOURCE_GUARD = helper.install(root,manifest,sources=_VERIFIED_SOURCES,bootstrap_module=helper)
+    _SOURCE_GUARD.verify_loaded()
     module = importlib.import_module("human_eye_plugin.runtime_identity")
     identity = module.runtime_identity(mode="live")
     if identity.get("source_kind") != "installed_distribution" or any(
@@ -143,6 +169,7 @@ def verify_imported_runtime(proof):
             origins[name] = str(Path(origin).resolve())
     if module.check_source_drift().get("compatible") is not True:
         raise BindingError("Installed target source changed after import")
+    _SOURCE_GUARD.verify_loaded()
     return identity, origins
 
 
@@ -170,7 +197,9 @@ def main(argv=None):
             spec = util.spec_from_file_location("_human_eye_installed_release_admin", path)
             module = util.module_from_spec(spec)
             sys.modules[spec.name] = module
-            spec.loader.exec_module(module)
+            blob = _read(path,1024*1024)
+            if _sha(blob) != proof["admin_sha256"]:raise BindingError("Administration source changed")
+            exec(compile(blob,str(path),"exec",dont_inherit=True),module.__dict__)
             # Only this pinned bootstrap dispatch can grant the outside-prefix
             # import proof; the helper re-reads the receipt every time.
             module._FIXED_TARGET_BOOTSTRAP = sys.modules[__name__]

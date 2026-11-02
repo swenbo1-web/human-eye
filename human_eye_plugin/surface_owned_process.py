@@ -1,4 +1,5 @@
 """One fixed Blender process for local restore goals; no generic command API."""
+from .verified_source_loader import worker_arguments
 import hashlib,os,queue,subprocess,threading,time,uuid
 from collections import deque
 from pathlib import Path
@@ -19,7 +20,7 @@ class OwnedSurfaceProcess:
         s.pinned_file(self.config['reference_file'],self.config['reference_sha256'],65536)
         worker=Path(__file__).with_name('surface_owned_worker.py')
         command=[self.config['blender_executable'],'--factory-startup','--disable-autoexec','--background',self.config['scene_file'],
-            '--python',str(worker),'--','--root',str(self.root),'--manifest',s.encoded(self.manifest).decode(),
+            *worker_arguments(self.root,worker),'--','--root',str(self.root),'--manifest',s.encoded(self.manifest).decode(),
             '--config',str(config_path),'--config-sha256',self.config_sha]
         self.process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),shell=False)

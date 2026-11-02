@@ -5,6 +5,12 @@ sys.dont_write_bytecode=True
 PREFIX='HUMAN_EYE_CONSTRAINT:'
 
 
+def _execute(module,path,blob):
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==path.parents[1]),None)
+    if guard is not None:return guard.exec_path(module,path,expected_blob=blob)
+    exec(compile(blob,str(path),'exec',dont_inherit=True),module.__dict__)
+
+
 def run(args):
     import bpy
     root=args.root.resolve();package=types.ModuleType('_human_eye_constraint_reader');package.__path__=[];sys.modules[package.__name__]=package
@@ -12,7 +18,7 @@ def run(args):
         path=root/'human_eye_plugin'/(name+'.py');blob=path.read_bytes()
         if len(blob)>128*1024 or hashlib.sha256(blob).hexdigest()!=pin:raise ValueError('constraint_module_pin')
         spec=importlib.util.spec_from_file_location(package.__name__+'.'+name,path);module=importlib.util.module_from_spec(spec)
-        sys.modules[spec.name]=module;package.__dict__[name]=module;exec(compile(blob,str(path),'exec',dont_inherit=True),module.__dict__)
+        sys.modules[spec.name]=module;package.__dict__[name]=module;_execute(module,path,blob)
     core=package.rig_constraint;r=package.rig_pose;r.check_time(args.deadline_ns)
     with args.profile.open('rb') as f:blob=f.read(65537)
     r.require(len(blob)<=65536 and hashlib.sha256(blob).hexdigest()==args.profile_sha256,'constraint_profile_pin');profile=r.decode(blob)

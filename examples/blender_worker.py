@@ -51,7 +51,9 @@ def run_worker(root: Path) -> None:
     with source.open('rb') as stream:host_source_bytes=stream.read(512*1024+1)
     if len(host_source_bytes)>512*1024:
         raise RuntimeError('Blender scene host source exceeds its fixed bound')
-    exec(compile(host_source_bytes,str(source),'exec',dont_inherit=True),module.__dict__)
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==root),None)
+    if guard is not None:guard.exec_path(module,source,expected_blob=host_source_bytes)
+    else:exec(compile(host_source_bytes,str(source),'exec',dont_inherit=True),module.__dict__)
     module._READONLY_LOADED_HOST_SHA256=hashlib.sha256(host_source_bytes).hexdigest()
     host_options = {'execution_metadata': True}
     if getattr(module.BlenderSceneHost, 'identity_metadata_protocol', None) == 'host-identity-v1-20261026':

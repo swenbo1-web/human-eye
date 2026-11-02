@@ -5,12 +5,18 @@ sys.dont_write_bytecode=True
 PREFIX='HUMAN_EYE_RIG:'
 
 
+def _execute(module,path,blob):
+    guard=next((f for f in sys.meta_path if getattr(f,'protocol',None)=='human-eye-verified-source-v1' and f.root==path.parents[1]),None)
+    if guard is not None:return guard.exec_path(module,path,expected_blob=blob)
+    exec(compile(blob,str(path),'exec',dont_inherit=True),module.__dict__)
+
+
 def run(args):
     import bpy
     root=args.root.resolve();path=root/'human_eye_plugin/rig_pose.py';blob=path.read_bytes()
     assert hashlib.sha256(blob).hexdigest()==args.module_sha256 and len(blob)<=128*1024
     spec=importlib.util.spec_from_file_location('_human_eye_rig_reader_core',path);r=importlib.util.module_from_spec(spec)
-    exec(compile(blob,str(path),'exec',dont_inherit=True),r.__dict__)
+    _execute(r,path,blob)
     profile_blob=args.profile.read_bytes();r.require(len(profile_blob)<=65536 and hashlib.sha256(profile_blob).hexdigest()==args.profile_sha256,'worker_profile_pin')
     profile=r.decode(profile_blob);scene=bpy.context.scene
     r.require(bpy.app.background and Path(bpy.data.filepath).resolve()==Path(profile['scene_file'])

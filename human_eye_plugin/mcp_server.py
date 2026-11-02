@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional
 
 from .llm_tool_schemas import MCP_TOOLS_SCHEMA
 from .plugin_facade import HumanEyeLLMPlugin
+from . import mcp_transport as wire
 
 _DEFAULT_PLUGIN_INSTANCE: Optional[HumanEyeLLMPlugin] = None
 
@@ -27,6 +28,9 @@ def handle_jsonrpc_message(
     plugin: Optional[HumanEyeLLMPlugin] = None,
 ) -> Optional[Dict[str, Any]]:
     """处理单条标准 MCP JSON-RPC 2.0 请求消息"""
+    try:wire.validate_request(req,allow_nonfinite=True)
+    except wire.RPCInputError as exc:return wire.rpc_error(None,exc.code,exc.message)
+    if 'id' not in req:return None
     plg = get_default_plugin() if plugin is None else plugin
     method = str(req.get("method", ""))
     req_id = req.get("id")
@@ -59,9 +63,12 @@ def handle_jsonrpc_message(
         }
 
     if method == "tools/call":
-        params = req.get("params") or {}
-        t_name = str(params.get("name", ""))
-        t_args = params.get("arguments") or {}
+        params = req.get("params", {})
+        if type(params) is not dict:return wire.rpc_error(req_id,-32602,"params must be an object")
+        if type(params.get('name')) is not str or not params['name']:
+            return wire.rpc_error(req_id,-32602,'Tool name must be a string')
+        t_name=params['name'];t_args=params.get('arguments',{})
+        if type(t_args) is not dict:return wire.rpc_error(req_id,-32602,'arguments must be an object')
         try:
             out = plg.dispatch_tool_call(t_name, t_args)
             text_result = dict(out)
@@ -82,7 +89,7 @@ def handle_jsonrpc_message(
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "result": {
-                    "content": [{"type": "text", "text": f"Tool execution error: {exc}"}],
+                    "content": [{"type": "text", "text": f"Tool execution error; outcome unknown, do not automatically retry: {exc}"}],
                     "isError": True,
                 },
             }
@@ -97,24 +104,7 @@ def handle_jsonrpc_message(
 def run_stdio_mcp_server() -> None:
     """启动基于标准输入输出 (stdio) 的 MCP JSON-RPC 2.0 守护进程"""
     plg = get_default_plugin()
-    for raw_line in sys.stdin:
-        line = raw_line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-            resp = handle_jsonrpc_message(req, plugin=plg)
-            if resp is not None:
-                sys.stdout.write(json.dumps(resp, ensure_ascii=False) + "\n")
-                sys.stdout.flush()
-        except Exception as exc:
-            err_resp = {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": f"Parse error: {exc}"},
-            }
-            sys.stdout.write(json.dumps(err_resp, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+    wire.serve(sys.stdin,sys.stdout,lambda request:handle_jsonrpc_message(request,plugin=plg))
 
 
 if __name__ == "__main__":

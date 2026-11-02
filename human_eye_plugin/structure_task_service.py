@@ -47,6 +47,15 @@ def _base(status,session_id):
         routing={'route':'engine','observation_status':'unavailable','reason_codes':[]})
 
 
+def _construction_cost(images):
+    """Freeze confirmed public-PNG construction before delivery can fail.
+
+    Consumers have already validated these images. An unconfirmed host or
+    consumer outcome keeps the original conservative reservation instead.
+    """
+    return len(images),sum(len(base64.b64decode(image['data'],validate=True)) for image in images)
+
+
 def observe(service,session_id,normalized,*,include_image,focal_id=None):
     normalized=query(normalized)
     require(type(session_id) is str and 1<=len(session_id)<=256,'bounded_session_label')
@@ -69,7 +78,8 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
             if receipt is not None:
                 result=_base('receipt',session_id);result.update(receipt)
                 result['task_budget']=store.summary(state);return result
-            record=state['requests'][normalized['request_id']];image_called=False;image_known=True
+            record=state['requests'][normalized['request_id']];image_known=True
+            constructed_images=constructed_png_bytes=0
             result=_base('partial',session_id);images=[];diagnostic=None;deadline=state['deadline_ns']
             try:
                 remaining=service._check_request_budget('before_structure_task_host')
@@ -100,22 +110,24 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
                                         ('nonplanar_observation_capabilities','observe_nonplanar_patch')),'typed_nonplanar_host_unavailable')
                                     caps=consumer.validate_capabilities(service.host.nonplanar_observation_capabilities())
                                     require(time.perf_counter_ns()<deadline,'deadline_expired')
-                                    image_called=True;image_known=False;request=uuid.uuid4().hex
+                                    image_known=False;request=uuid.uuid4().hex
                                     raw=service.host.observe_nonplanar_patch(request,state['object_id'],fresh,deadline,mode)
                                     visual=consumer.validate_result(raw,object_id=state['object_id'],patch=fresh,
                                         request_id=request,deadline_ns=deadline,capabilities=caps,mode=mode)
-                                    images=visual.pop('images');image_known=True
+                                    images=visual.pop('images')
+                                    constructed_images,constructed_png_bytes=_construction_cost(images);image_known=True
                                     result['visual_evidence']=visual;result['image_status']='observed'
                                 else:
                                     require(all(callable(getattr(service.host,k,None)) for k in
                                         ('patch_observation_capabilities','observe_patch')),'typed_patch_host_unavailable')
                                     caps=image_consumer.validate_capabilities(service.host.patch_observation_capabilities())
                                     require(time.perf_counter_ns()<deadline,'deadline_expired')
-                                    image_called=True;image_known=False;request=uuid.uuid4().hex
+                                    image_known=False;request=uuid.uuid4().hex
                                     raw=service.host.observe_patch(request,state['object_id'],fresh,deadline)
                                     visual=image_consumer.validate_result(raw,object_id=state['object_id'],patch=fresh,
                                         request_id=request,deadline_ns=deadline,capabilities=caps)
-                                    images=visual.pop('images');image_known=True
+                                    images=visual.pop('images')
+                                    constructed_images,constructed_png_bytes=_construction_cost(images);image_known=True
                                     result['visual_evidence']=visual;result['image_status']='observed'
                 if include_image and result['image_status']!='observed':
                     result['status']='partial';result['routing']['observation_status']='partial'
@@ -130,15 +142,16 @@ def observe(service,session_id,normalized,*,include_image,focal_id=None):
                     result['image_status']='unavailable';result['image_reason']=str(exc)[:500]
                 else:
                     result=_base('unavailable',session_id);result['reason']=str(exc)[:500]
-            png_bytes=sum(len(base64.b64decode(i['data'],validate=True)) for i in images)
             # Include room for final budget/trace metadata; the MCP projector
             # enforces the resulting text charge before exposing any image.
             text_bytes=len(json.dumps(result,ensure_ascii=False,allow_nan=False).encode('utf8'))+4096
             if text_bytes>TEXT_RESERVATION:
                 result=_base('unavailable',session_id);result['reason']='structure_task_public_text_limit'
-                images=[];png_bytes=0;image_known=not image_called
+                images=[]
                 text_bytes=len(json.dumps(result,ensure_ascii=False).encode('utf8'))+4096
-            store.finish(state,normalized['request_id'],text_bytes=text_bytes,images=len(images),png_bytes=png_bytes,
+            # A delivery list may have been cleared after confirmed work. Its
+            # cost is still spent; an unknown outcome retains the reservation.
+            store.finish(state,normalized['request_id'],text_bytes=text_bytes,images=constructed_images,png_bytes=constructed_png_bytes,
                 outcome=result['status'],image_outcome_known=image_known,failed=result['status']=='unavailable')
             require(time.perf_counter_ns()<state['deadline_ns'] and time.time_ns()<state['deadline_wall_ns'],'delivery_deadline_expired')
             result['task_budget']=store.summary(state);result['accounted_public_text_bytes']=text_bytes
