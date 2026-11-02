@@ -8,6 +8,38 @@ ROUND32=2**-24
 SUBNORMAL32=2**-149
 MAX_STRETCH_ERROR=.01
 MAX_AREA_ERROR=.02
+MAX_QUERY_TRIANGLES=4
+
+
+def query_indices(value,total):
+    r.require(type(value) is list and 1<=len(value)<=MAX_QUERY_TRIANGLES and all(type(i) is int and 0<=i<total for i in value)
+        and len(set(value))==len(value),'deformation_query_indices')
+    return value[:]
+
+
+def bind_selection(packet,selection,*,deadline_ns):
+    """Bind an immutable file/role/frame selection to this capture, not a grant.
+
+    File-scoped IDs survive reopening the same pinned .blend. A runtime query
+    still uses the new exact capture digest; an old epoch is never reused.
+    The eventual analyzer must validate the full packet independently.
+    """
+    r.check_time(deadline_ns)
+    r.require(type(selection) is dict and set(selection)=={'schema','source_ref','triangle_indices'}
+        and selection['schema']=='surface-deformation-selection-v1','deformation_selection_fields')
+    ref=selection['source_ref']
+    r.require(type(ref) is dict and set(ref)=={'scene_sha256','rig_object_id','mesh_object_id','frame'}
+        and r.hex_text(ref['scene_sha256'],64) and r.text(ref['rig_object_id']) and r.text(ref['mesh_object_id']),
+        'deformation_selection_source_fields')
+    frame=ref['frame']
+    r.require(type(frame) is dict and set(frame)=={'number','subframe'} and type(frame['number']) is int
+        and r.finite(frame['subframe']) and 0<=frame['subframe']<1,'deformation_selection_frame')
+    r.require(ref==dict(scene_sha256=packet['scene_sha256'],rig_object_id=packet['rig']['identity']['object_id'],
+        mesh_object_id=packet['mesh']['identity']['object_id'],frame=packet['rig']['payload']['frame']),
+        'deformation_selection_stale_source')
+    indices=query_indices(selection['triangle_indices'],len(packet['mesh']['triangles']))
+    result=dict(schema='surface-deformation-query-v1',expected_source_sha256=packet['source_sha256'],triangle_indices=indices)
+    r.check_time(deadline_ns);return result
 
 
 def sub(a,b):return [x-y for x,y in zip(a,b)]
@@ -71,8 +103,14 @@ def triangle_facts(original,current,*,unweighted=(),deadline_ns,_rational_cache=
     return finish()
 
 
-def analyze(packet,*,deadline_ns):
+def analyze(packet,*,deadline_ns,query=None):
     proof=source.validate(packet,deadline_ns=deadline_ns);mesh=packet['mesh'];original=mesh['vertices'];current=mesh['evaluated_vertices'];unit=proof['payload']['unit_scale_m']
+    selected=None
+    if query is not None:
+        r.require(type(query) is dict and set(query)=={'schema','expected_source_sha256','triangle_indices'}
+            and query['schema']=='surface-deformation-query-v1' and r.hex_text(query['expected_source_sha256'],64),'deformation_query_fields')
+        r.require(query['expected_source_sha256']==packet['source_sha256'],'deformation_query_stale_source')
+        selected=query_indices(query['triangle_indices'],len(mesh['triangles']))
     unweighted=set(proof['unweighted']);rows=[];rational_cache={}
     for index,tri in enumerate(mesh['triangles']):
         r.check_time(deadline_ns);facts=triangle_facts([original[i] for i in tri],[current[i] for i in tri],
@@ -98,4 +136,8 @@ def analyze(packet,*,deadline_ns):
         unknown_reasons={reason:sum(v['reason']==reason for v in unknown) for reason in sorted({v['reason'] for v in unknown})},
         damage_classification='not_inferred',execution_authority=False,geometry_setters=0,original_file_saved=False,
         not_checked=['volume_Jacobian','inversion_vs_3D_rotation','self_contact','intended_shape_quality','repair','visibility'])
+    if selected is not None:
+        requested=[rows[i] for i in selected]
+        result['task_query']=dict(schema='surface-deformation-query-result-v1',source_sha256=packet['source_sha256'],
+            triangle_indices=selected,status='partial' if any(v['state']=='unknown' for v in requested) else 'observed',triangles=requested)
     r.check_time(deadline_ns);return result

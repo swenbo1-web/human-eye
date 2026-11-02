@@ -71,14 +71,26 @@ class SkinSourceProcess(RigPoseProcess):
 
 def main(argv=None):
     p=argparse.ArgumentParser(description='Read fixed original/evaluated LBS mesh sources; no edit, frame or save command')
-    p.add_argument('--operator-profile',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args(argv)
+    p.add_argument('--operator-profile',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--triangle-query',type=Path,help='Optional immutable file/role/frame selection of at most four original triangle IDs');args=p.parse_args(argv)
     output=args.output;r.require(output.is_absolute() and output.resolve()==output,'skin_output_path');output.mkdir(exist_ok=False);actor=None;published=False
     def save(name,value):
         with (output/name).open('xb') as f:f.write(r.encoded(value));f.flush();os.fsync(f.fileno())
     try:
-        actor=SkinSourceProcess(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns);first=actor.inspect();second=actor.inspect()
+        actor=SkinSourceProcess(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
+        selection=None;query=None
+        if args.triangle_query is not None:
+            path=args.triangle_query;r.require(path.is_absolute() and path.resolve()==path,'deformation_selection_path')
+            with path.open('rb') as f:blob=f.read(4097)
+            r.require(len(blob)<=4096,'deformation_selection_byte_budget');selection=r.decode(blob)
+            save('SELECTION.json',selection);r.check_time(actor.deadline_ns)
+        first=actor.inspect()
+        if args.triangle_query is not None:query=surface_deformation.bind_selection(first,selection,deadline_ns=actor.deadline_ns)
+        second=actor.inspect()
         save('SNAPSHOTS.json',dict(first=first,second=second,capabilities=actor.capabilities))
-        r.check_time(actor.deadline_ns);report=surface_deformation.analyze(second,deadline_ns=actor.deadline_ns);r.check_time(actor.deadline_ns)
+        r.check_time(actor.deadline_ns)
+        report=surface_deformation.analyze(second,deadline_ns=actor.deadline_ns,**({} if query is None else dict(query=query)))
+        r.check_time(actor.deadline_ns)
         save('REPORT_PENDING.json',report);r.check_time(actor.deadline_ns)
         os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns)
         encoded=json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
