@@ -1,6 +1,7 @@
 """Read-only triangle surface stretches. Geometry facts never imply damage."""
 import math
 from fractions import Fraction as Q
+from dataclasses import dataclass
 from . import skin_source as source
 r=source.r
 QUALITY_FLOOR=2**-20
@@ -142,23 +143,22 @@ def analyze(packet,*,deadline_ns,query=None):
     return _analyze_geometry(proof,deadline_ns=deadline_ns,query=query)
 
 
-def _analyze_geometry(proof,*,deadline_ns,query=None,region_query=None):
-    # Internal numeric core. Public source entry points validate complete source
-    # data before calling this helper; no JSON flag can assert validation.
-    r.check_time(deadline_ns)
+@dataclass(frozen=True)
+class _BoundGeometryRows:
+    source_sha256:str
+    geometry_sha256:str
+    payload:bytes
+
+
+def _row_binding(proof):
+    keys=('source_sha256','source','original','current','triangles','world','unit','unweighted','bones_total')
+    r.require(type(proof) is dict and all(k in proof for k in keys) and r.hex_text(proof['source_sha256'],64),'deformation_rows_binding')
+    return r.digest({key:proof[key] for key in keys})
+
+
+def _geometry_rows(proof,*,deadline_ns):
+    r.check_time(deadline_ns);binding=_row_binding(proof)
     original=proof['original'];current=proof['current'];triangles=proof['triangles'];world=proof['world'];unit=proof['unit']
-    source_sha256=proof['source_sha256']
-    r.require(query is None or region_query is None,'deformation_query_modes')
-    region_membership=None
-    if region_query is not None:
-        from . import deformation_region
-        region_membership=deformation_region.select(proof,region_query,deadline_ns=deadline_ns)
-    selected=None
-    if query is not None:
-        r.require(type(query) is dict and set(query)=={'schema','expected_source_sha256','triangle_indices'}
-            and query['schema']=='surface-deformation-query-v1' and r.hex_text(query['expected_source_sha256'],64),'deformation_query_fields')
-        r.require(query['expected_source_sha256']==source_sha256,'deformation_query_stale_source')
-        selected=query_indices(query['triangle_indices'],len(triangles))
     unweighted=set(proof['unweighted']);rows=[];rational_cache={}
     for index,tri in enumerate(triangles):
         r.check_time(deadline_ns);facts=triangle_facts([original[i] for i in tri],[current[i] for i in tri],
@@ -168,6 +168,41 @@ def _analyze_geometry(proof,*,deadline_ns,query=None,region_query=None):
             centroid_world_m=[math.fsum(p[k] for p in points)*unit/3 for k in range(3)],
             bounds_world_m=[[min(p[k] for p in points)*unit for k in range(3)],[max(p[k] for p in points)*unit for k in range(3)]])
         rows.append(facts)
+    r.require(_row_binding(proof)==binding,'deformation_rows_binding')
+    result=_BoundGeometryRows(proof['source_sha256'],binding,r.encoded(rows))
+    r.check_time(deadline_ns);return result
+
+
+def _verified_rows(proof,rows,*,deadline_ns):
+    r.check_time(deadline_ns)
+    r.require(type(rows) is _BoundGeometryRows and rows.source_sha256==proof.get('source_sha256')
+        and rows.geometry_sha256==_row_binding(proof) and type(rows.payload) is bytes,'deformation_rows_binding')
+    values=r.decode(rows.payload)
+    r.require(type(values) is list and len(values)==len(proof['triangles']),'deformation_rows_binding')
+    for index,row in enumerate(values):
+        r.check_time(deadline_ns)
+        r.require(type(row) is dict and type(row.get('triangle')) is int and row['triangle']==index
+            and row.get('vertices')==proof['triangles'][index] and row.get('state') in ('measured','collapsed','unknown'),'deformation_rows_binding')
+    r.check_time(deadline_ns);return values
+
+
+def _query_selection(proof,query):
+    if query is None:return None
+    source_sha256=proof['source_sha256']
+    r.require(type(query) is dict and set(query)=={'schema','expected_source_sha256','triangle_indices'}
+        and query['schema']=='surface-deformation-query-v1' and r.hex_text(query['expected_source_sha256'],64),'deformation_query_fields')
+    r.require(query['expected_source_sha256']==source_sha256,'deformation_query_stale_source')
+    return query_indices(query['triangle_indices'],len(proof['triangles']))
+
+
+def _report_from_rows(proof,rows,*,deadline_ns,query=None,region_membership=None):
+    r.check_time(deadline_ns)
+    r.require(query is None or region_membership is None,'deformation_query_modes')
+    selected=_query_selection(proof,query);rows=_verified_rows(proof,rows,deadline_ns=deadline_ns)
+    original=proof['original'];source_sha256=proof['source_sha256'];unweighted=set(proof['unweighted'])
+    if region_membership is not None:
+        r.require(type(region_membership) is dict and region_membership.get('source_sha256')==source_sha256
+            and region_membership.get('triangles_scanned')==len(rows),'deformation_region_stale_source')
     def rank(v):
         change=max([abs(x-1) for x in v['principal_stretches']]+[abs(v['area_ratio']-1)]) if v['principal_stretches'] is not None else 0
         return (0 if v['state']=='collapsed' else 1 if v['state']=='unknown' else 2,-change,v['triangle'])
@@ -189,7 +224,21 @@ def _analyze_geometry(proof,*,deadline_ns,query=None,region_query=None):
         result['task_query']=dict(schema='surface-deformation-query-result-v1',source_sha256=source_sha256,
             triangle_indices=selected,status='partial' if any(v['state']=='unknown' for v in requested) else 'observed',triangles=requested)
     if region_membership is not None:
+        from . import deformation_region
         result['global_detail_scope']='omitted_for_requested_region'
         result['region_query']=deformation_region.summarize(region_membership,rows,deadline_ns=deadline_ns)
         r.require(len(r.encoded(result))<=r.MAX_BYTES,'deformation_region_report_byte_budget')
     r.check_time(deadline_ns);return result
+
+
+def _analyze_geometry(proof,*,deadline_ns,query=None,region_query=None):
+    # Public source entry points validate complete source before this helper.
+    r.check_time(deadline_ns)
+    r.require(query is None or region_query is None,'deformation_query_modes')
+    _query_selection(proof,query)
+    membership=None
+    if region_query is not None:
+        from . import deformation_region
+        membership=deformation_region.select(proof,region_query,deadline_ns=deadline_ns)
+    rows=_geometry_rows(proof,deadline_ns=deadline_ns)
+    return _report_from_rows(proof,rows,deadline_ns=deadline_ns,query=query,region_membership=membership)

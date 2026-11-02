@@ -70,7 +70,8 @@ class SkinSourceProcess(RigPoseProcess):
         self.source=packet;return packet
 
 
-def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,region_binder=None,anchor_binder=None,catalog_analyzer=None,close_before_publish=False):
+def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,region_binder=None,anchor_binder=None,catalog_analyzer=None,
+        context_binder=None,context_policy_installer=None,close_before_publish=False):
     """Shared owned source CLI persistence; every analyzer owns source admission."""
     if analyzer is None:analyzer=lambda packet,actor,**kw:surface_deformation.analyze(packet,**kw)
     if selection_binder is None:selection_binder=lambda packet,selection,actor,**kw:surface_deformation.bind_selection(packet,selection,**kw)
@@ -81,37 +82,59 @@ def run_reader(args,actor_type,*,analyzer=None,selection_binder=None,region_bind
         verifier=getattr(actor,'verify_inputs',None)
         if verifier is not None:verifier()
     try:
-        actor=actor_type(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
         selection=None;query=None;region_path=getattr(args,'region_query',None);anchor_path=getattr(args,'anchor_query',None)
+        context_path=getattr(args,'context_query',None);policy_path=getattr(args,'context_policy',None);policy_digest=getattr(args,'context_policy_sha256',None)
         anchors_only=getattr(args,'anchors_only',False)
-        r.require(type(anchors_only) is bool and sum((args.triangle_query is not None,region_path is not None,anchor_path is not None,anchors_only))<=1,'deformation_query_modes')
+        r.require(type(anchors_only) is bool and sum((args.triangle_query is not None,region_path is not None,anchor_path is not None,context_path is not None,anchors_only))<=1,'deformation_query_modes')
         r.require(region_path is None or region_binder is not None,'deformation_region_entry_unavailable')
         r.require(anchor_path is None or anchor_binder is not None,'deformation_anchor_entry_unavailable')
         r.require(not anchors_only or catalog_analyzer is not None,'deformation_anchor_entry_unavailable')
+        r.require((context_path is not None and policy_path is not None and policy_digest is not None)
+            or (context_path is None and policy_path is None and policy_digest is None),'deformation_context_operator_fields')
+        r.require(context_path is None or context_binder is not None and context_policy_installer is not None,'deformation_context_entry_unavailable')
+        actor=actor_type(args.operator_profile);save('INPUTS.json',actor.profile);r.check_time(actor.deadline_ns)
+        if context_path is not None:
+            context_policy_installer(args,actor);save('CONTEXT_POLICY.json',r.decode(actor.context_policy_bytes));r.check_time(actor.deadline_ns)
         selection_path=args.triangle_query if region_path is None else region_path
         if anchor_path is not None:selection_path=anchor_path
+        if context_path is not None:selection_path=context_path
         if selection_path is not None:
             path=selection_path;r.require(path.is_absolute() and path.resolve()==path,'deformation_selection_path')
             with path.open('rb') as f:blob=f.read(4097)
             r.require(len(blob)<=4096,'deformation_selection_byte_budget');selection=r.decode(blob)
-            save('ANCHOR_SELECTION.json' if anchor_path is not None else 'SELECTION.json' if region_path is None else 'REGION_SELECTION.json',selection);r.check_time(actor.deadline_ns)
+            save('CONTEXT_SELECTION.json' if context_path is not None else 'ANCHOR_SELECTION.json' if anchor_path is not None else 'SELECTION.json' if region_path is None else 'REGION_SELECTION.json',selection);r.check_time(actor.deadline_ns)
         first=actor.inspect()
         if args.triangle_query is not None:query=selection_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
         if region_path is not None:query=region_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
         if anchor_path is not None:query=anchor_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
+        if context_path is not None:query=context_binder(first,selection,actor,deadline_ns=actor.deadline_ns)
         second=actor.inspect()
         save('SNAPSHOTS.json',dict(first=first,second=second,capabilities=actor.capabilities))
         r.check_time(actor.deadline_ns)
         if anchors_only:report=catalog_analyzer(second,actor,deadline_ns=actor.deadline_ns)
         else:report=analyzer(second,actor,deadline_ns=actor.deadline_ns,
-            **({} if query is None else {('anchor_query' if anchor_path is not None else 'query' if region_path is None else 'region_query'):query}))
+            **({} if query is None else {('context_query' if context_path is not None else 'anchor_query' if anchor_path is not None else 'query' if region_path is None else 'region_query'):query}))
         r.check_time(actor.deadline_ns);verify_inputs()
+        if context_path is not None:
+            r.require(type(getattr(actor,'context_audit_bytes',None)) is bytes,'deformation_context_audit_required')
+            save('CONTEXT_AUDIT.json',r.decode(actor.context_audit_bytes));r.check_time(actor.deadline_ns);verify_inputs()
         if close_before_publish:
             actor.close();r.check_time(actor.deadline_ns)
             r.require(actor.process.poll()==0,'source_worker_exit')
             verify_inputs()
         save('REPORT_PENDING.json',report);r.check_time(actor.deadline_ns);verify_inputs()
         os.replace(output/'REPORT_PENDING.json',output/'REPORT.json');published=True;r.check_time(actor.deadline_ns);verify_inputs()
+        if context_path is not None:
+            from .deformation_context import publication_bytes
+            payload=publication_bytes(report)
+            r.require(len(payload)<=r.MAX_BYTES,'deformation_context_report_byte_budget')
+            save('PUBLICATION.json',dict(payload_bytes=len(payload),payload_sha256=hashlib.sha256(payload).hexdigest(),
+                elapsed_ns=time.perf_counter_ns()-actor.received_ns,report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')))
+            r.check_time(actor.deadline_ns);verify_inputs()
+            binary=getattr(sys.stdout,'buffer',None)
+            if binary is None:print(payload[:-1].decode('ascii'))
+            else:binary.write(payload);binary.flush()
+            return 0
         encoded=json.dumps(dict(report,evidence=dict(report_file=str(output/'REPORT.json'),snapshot_file=str(output/'SNAPSHOTS.json')),
             elapsed_ns=time.perf_counter_ns()-actor.received_ns),allow_nan=False)
         if anchor_path is not None or anchors_only:r.require(len(encoded.encode('utf8'))<=r.MAX_BYTES,'deformation_anchor_report_byte_budget')

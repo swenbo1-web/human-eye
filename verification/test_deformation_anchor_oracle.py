@@ -1,5 +1,5 @@
 """Authored analytic QA for independent public-anchor task answers."""
-import copy,unittest
+import copy,hashlib,unittest
 from decimal import Decimal
 from verification import deformation_anchor_oracle as o
 
@@ -7,6 +7,14 @@ I=[[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.]]
 
 
 class AnchorOracleTests(unittest.TestCase):
+    def test_unicode_native_rig_and_bone_identity_uses_utf8_protocol(self):
+        rig='blender:'+hashlib.sha256('["","骨架"]'.encode('utf8')).hexdigest()
+        expected='bone-anchor:'+hashlib.sha256(('["'+rig+'","左臂","head"]').encode('utf8')).hexdigest()
+        self.assertEqual(o.stable_object('骨架'),rig)
+        self.assertEqual(o.anchor_id('骨架','左臂','head'),expected)
+        self.assertEqual(o.encoded(dict(部位='左臂')),'{"部位":"左臂"}'.encode('utf8'))
+        self.assertNotEqual(o.digest(['','骨架']),hashlib.sha256(b'["","\\u9aa8\\u67b6"]').hexdigest())
+
     def test_decimal_affine_and_outward_interval_preserve_binary_input_residual(self):
         m=copy.deepcopy(I);m[0][0]=.1;m[0][3]=-.01
         values=o.affine_decimal(m,[.1,0.,0.],1.)

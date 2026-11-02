@@ -93,7 +93,27 @@ class SmallSkinSourceProcess(RigPoseProcess):
         with self.path.open('rb') as f:blob=f.read(65537)
         core.need(blob==self.profile_bytes and check_source_drift()['compatible'],'profile_or_runtime_changed','unavailable')
         p=self.profile
-        pin_input(p['scene_file'],p['scene_sha256'],64*1024*1024,'scene');pin_input(p['blender_executable'],p['blender_sha256'],128*1024*1024,'binary');core.check(self.deadline_ns)
+        pin_input(p['scene_file'],p['scene_sha256'],64*1024*1024,'scene');pin_input(p['blender_executable'],p['blender_sha256'],128*1024*1024,'binary')
+        if hasattr(self,'context_policy_bytes'):
+            with self.context_policy_path.open('rb') as f:policy=f.read(4097)
+            core.need(policy==self.context_policy_bytes,'context_policy_changed','unavailable')
+        core.check(self.deadline_ns)
+
+    def set_context_policy(self,path,digest):
+        from . import deformation_context
+        core.need(not self.closed,'closed_transport','unavailable');self.verify_inputs()
+        r.require(not hasattr(self,'context_policy_bytes'),'deformation_context_policy_already_set')
+        path=Path(path);r.require(path.is_absolute() and path.resolve()==path and r.hex_text(digest,64),'deformation_context_policy_pin')
+        pin_input(path,digest,4096,'context_policy')
+        with path.open('rb') as f:blob=f.read(4097)
+        r.require(len(blob)<=4096 and hashlib.sha256(blob).hexdigest()==digest,'deformation_context_policy_pin')
+        deformation_context.validate_policy(r.decode(blob))
+        self.context_policy_path=path;self.context_policy_sha256=digest;self.context_policy_bytes=blob
+        self.verify_inputs()
+
+    def _context_policy(self):
+        r.require(hasattr(self,'context_policy_bytes'),'deformation_context_policy_required')
+        return r.decode(self.context_policy_bytes)
 
     def _inspect(self):
         core.need(not self.closed,'closed_transport','unavailable');self.verify_inputs()
@@ -109,24 +129,37 @@ class SmallSkinSourceProcess(RigPoseProcess):
         if self.source is None:self.source=packet['source_sha256']
         return packet
 
-    def analyze(self,packet,*,deadline_ns,query=None,region_query=None,anchor_query=None):
+    def analyze(self,packet,*,deadline_ns,query=None,region_query=None,anchor_query=None,context_query=None):
         core.need(deadline_ns==self.deadline_ns and not self.closed,'analysis_window','unavailable')
         core.need(self.source is not None,'observation_required','unavailable')
-        r.require(sum(value is not None for value in (query,region_query,anchor_query))<=1,'deformation_query_modes')
+        r.require(sum(value is not None for value in (query,region_query,anchor_query,context_query))<=1,'deformation_query_modes')
         self.verify_inputs()
         proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
         proof['source']=dict(proof['source'],source_sha256=packet['source_sha256'],source_schema=core.SCHEMA,
             profile_sha256=self.bindings.profile_sha256,runtime_source_sha256=self.bindings.runtime_source_sha256,
             worker_sha256=self.bindings.worker_sha256,module_sha256=self.bindings.module_sha256,math_sha256=self.bindings.math_sha256,binary_sha256=self.bindings.binary_sha256)
+        validation=dict(schema=core.SCHEMA,method='external_binding_full_dependency_FK_and_LBS',
+            max_replay_error=proof['max_replay_error'],replay_atol=core.POSITION_ATOL,animation_curves_checked=proof['animation_curves_checked'],
+            not_coordinate_measurement_error=True)
+        if context_query is not None:
+            from . import deformation_context
+            if hasattr(self,'context_audit_bytes'):del self.context_audit_bytes
+            policy=self._context_policy();rows=surface_deformation._geometry_rows(proof,deadline_ns=deadline_ns)
+            def report_factory(membership,trace):
+                report=surface_deformation._report_from_rows(proof,rows,deadline_ns=deadline_ns,region_membership=membership)
+                report['source_validation']=dict(validation);report['anchor_query']=trace;return report
+            report,audit=deformation_context.plan(proof,context_query,policy=policy,policy_sha256=self.context_policy_sha256,
+                pins=self._anchor_pins(),rows=rows,report_factory=report_factory,deadline_ns=deadline_ns)
+            self.context_audit_bytes=r.encoded(audit)
+            r.require(len(self.context_audit_bytes)<=2*1024*1024,'deformation_context_audit_byte_budget')
+            self.verify_inputs();return report
         anchor_trace=None
         if anchor_query is not None:
             from . import deformation_anchors
             region_query,anchor_trace=deformation_anchors.resolve(proof,anchor_query,pins=self._anchor_pins(),deadline_ns=deadline_ns)
         report=surface_deformation._analyze_geometry(proof,deadline_ns=deadline_ns,query=query,
             **({} if region_query is None else dict(region_query=region_query)))
-        report['source_validation']=dict(schema=core.SCHEMA,method='external_binding_full_dependency_FK_and_LBS',
-            max_replay_error=proof['max_replay_error'],replay_atol=core.POSITION_ATOL,animation_curves_checked=proof['animation_curves_checked'],
-            not_coordinate_measurement_error=True)
+        report['source_validation']=validation
         if anchor_trace is not None:
             report['anchor_query']=anchor_trace
             r.require(len(r.encoded(report))<=r.MAX_BYTES,'deformation_anchor_report_byte_budget')
@@ -148,6 +181,15 @@ class SmallSkinSourceProcess(RigPoseProcess):
         core.need(self.source is not None,'observation_required','unavailable');self.verify_inputs()
         proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
         bound=deformation_anchors.bind_selection(proof,selection,pins=self._anchor_pins(),deadline_ns=deadline_ns)
+        self.verify_inputs();return bound
+
+    def bind_context_selection(self,packet,selection,*,deadline_ns):
+        from . import deformation_context
+        core.need(deadline_ns==self.deadline_ns and not self.closed,'selection_window','unavailable')
+        core.need(self.source is not None,'observation_required','unavailable');self.verify_inputs()
+        proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
+        bound=deformation_context.bind_selection(proof,selection,policy=self._context_policy(),policy_sha256=self.context_policy_sha256,
+            pins=self._anchor_pins(),deadline_ns=deadline_ns)
         self.verify_inputs();return bound
 
     def bind_selection(self,packet,selection,*,deadline_ns):
@@ -181,11 +223,20 @@ def main(argv=None):
     queries.add_argument('--region-query',type=Path,help='Immutable current-world-metre closed-AABB selection; complete triangle intersection')
     queries.add_argument('--anchors-only',action='store_true',help='Describe native bone endpoints and triangle-hull bounds; no surface diagnosis')
     queries.add_argument('--anchor-query',type=Path,help='Select a source-bound native anchor and half extents; recompute the closed box')
-    return run_reader(parser.parse_args(argv),SmallSkinSourceProcess,
+    queries.add_argument('--context-query',type=Path,help='Reference a pinned operator policy for core-preserving context compaction')
+    parser.add_argument('--context-policy',type=Path,help='Trusted operator policy, never supplied inside the model selection')
+    parser.add_argument('--context-policy-sha256',help='Exact byte digest of the trusted operator policy')
+    args=parser.parse_args(argv)
+    if (args.context_query is not None and (args.context_policy is None or args.context_policy_sha256 is None)
+            or args.context_query is None and (args.context_policy is not None or args.context_policy_sha256 is not None)):
+        parser.error('--context-query requires both operator policy options; policy options are only valid with --context-query')
+    return run_reader(args,SmallSkinSourceProcess,
         analyzer=lambda packet,actor,**kw:actor.analyze(packet,**kw),selection_binder=lambda packet,selection,actor,**kw:actor.bind_selection(packet,selection,**kw),
         region_binder=lambda packet,selection,actor,**kw:actor.bind_region_selection(packet,selection,**kw),
         anchor_binder=lambda packet,selection,actor,**kw:actor.bind_anchor_selection(packet,selection,**kw),
-        catalog_analyzer=lambda packet,actor,**kw:actor.describe_anchors(packet,**kw),close_before_publish=True)
+        catalog_analyzer=lambda packet,actor,**kw:actor.describe_anchors(packet,**kw),
+        context_binder=lambda packet,selection,actor,**kw:actor.bind_context_selection(packet,selection,**kw),
+        context_policy_installer=lambda args,actor:actor.set_context_policy(args.context_policy,args.context_policy_sha256),close_before_publish=True)
 
 
 if __name__=='__main__':raise SystemExit(main())

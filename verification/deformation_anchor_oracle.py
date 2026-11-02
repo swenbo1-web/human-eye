@@ -10,7 +10,7 @@ STABLE_KEYS={'schema','source_ref','operator_pins','coordinate_model','graph','a
 PIN_KEYS=('scene_sha256','profile_sha256','worker_sha256','module_sha256','math_sha256','binary_sha256','runtime_source_sha256')
 
 
-def encoded(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=True,allow_nan=False).encode()
+def encoded(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode('utf8')
 def digest(value):return hashlib.sha256(encoded(value)).hexdigest()
 def stable_object(name):return 'blender:'+digest(['',name])
 def anchor_id(rig_name,bone,endpoint):return 'bone-anchor:'+digest([stable_object(rig_name),bone,endpoint])

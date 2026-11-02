@@ -6,6 +6,7 @@ Only a complete source consumer may supply the internal geometry proof.
 """
 import copy,math
 from fractions import Fraction as Q
+from dataclasses import dataclass
 from . import rig_pose as r
 
 MAX_BITS=16384
@@ -81,18 +82,29 @@ def clipped(points,low,high,*,deadline_ns):
     r.check_time(deadline_ns);return bool(polygon)
 
 
-def select(proof,query,*,deadline_ns):
-    r.check_time(deadline_ns)
+@dataclass(frozen=True)
+class _PreparedGeometry:
+    source_sha256:str
+    points:tuple
+    triangles:tuple
+
+
+def _query_value(query,source_sha256):
     need(type(query) is dict and set(query)=={'schema','expected_source_sha256','region'}
         and query['schema']=='surface-deformation-region-query-v1' and r.hex_text(query['expected_source_sha256'],64),'query_fields')
+    need(r.hex_text(source_sha256,64),'proof_shape')
+    need(query['expected_source_sha256']==source_sha256,'stale_source');region_value(query['region'])
+
+
+def prepare_geometry(proof,*,deadline_ns):
+    """Freeze the exact affine data once; no source-admission claim is made."""
+    r.check_time(deadline_ns)
     need(type(proof) is dict and r.hex_text(proof.get('source_sha256'),64),'proof_shape')
-    need(query['expected_source_sha256']==proof['source_sha256'],'stale_source');region_value(query['region'])
     current=proof.get('current');triangles=proof.get('triangles');world=proof.get('world');unit=proof.get('unit')
     need(type(current) is list and 1<=len(current)<=MAX_VERTICES and type(triangles) is list and 1<=len(triangles)<=MAX_TRIANGLES,'mesh_budget')
     need(type(world) is list and len(world)==4 and all(type(row) is list and len(row)==4 and all(finite(x,1e12) for x in row) for row in world)
         and world[3]==[0,0,0,1] and finite(unit,1e6) and unit>0,'proof_shape')
-    matrix=[[limited(x) for x in row] for row in world];unit=limited(unit)
-    low,high=[[limited(x) for x in row] for row in query['region']['bounds']];points=[]
+    matrix=[[limited(x) for x in row] for row in world];unit=limited(unit);points=[]
     for point in current:
         r.check_time(deadline_ns)
         need(type(point) is list and len(point)==3 and all(finite(x,10) for x in point),'proof_shape')
@@ -103,15 +115,36 @@ def select(proof,query,*,deadline_ns):
                 r.check_time(deadline_ns);value=limited(value+limited(matrix[axis][k]*p[k]))
             transformed.append(limited(value*unit))
         points.append(tuple(transformed))
-    members=[]
-    for index,tri in enumerate(triangles):
+    frozen=[]
+    for tri in triangles:
         r.check_time(deadline_ns)
         need(type(tri) is list and len(tri)==3 and all(type(i) is int and 0<=i<len(points) for i in tri) and len(set(tri))==3,'proof_shape')
-        if clipped([points[i] for i in tri],low,high,deadline_ns=deadline_ns):members.append(index)
-    result=dict(schema='surface-deformation-region-membership-v1',source_sha256=proof['source_sha256'],region=copy.deepcopy(query['region']),
-        matched_triangle_indices=members,triangles_scanned=len(triangles),vertices_transformed=len(points),membership_complete=True,
+        frozen.append(tuple(tri))
+    result=_PreparedGeometry(proof['source_sha256'],tuple(points),tuple(frozen))
+    r.check_time(deadline_ns);return result
+
+
+def select_prepared(cache,query,*,deadline_ns):
+    r.check_time(deadline_ns)
+    need(type(cache) is _PreparedGeometry,'prepared_geometry');_query_value(query,cache.source_sha256)
+    low,high=[[limited(x) for x in row] for row in query['region']['bounds']];members=[]
+    for index,tri in enumerate(cache.triangles):
+        r.check_time(deadline_ns)
+        if clipped([cache.points[i] for i in tri],low,high,deadline_ns=deadline_ns):members.append(index)
+    result=dict(schema='surface-deformation-region-membership-v1',source_sha256=cache.source_sha256,region=copy.deepcopy(query['region']),
+        matched_triangle_indices=members,triangles_scanned=len(cache.triangles),vertices_transformed=len(cache.points),membership_complete=True,
         coordinate_model=COORDINATE_MODEL,selection_rule=SELECTION_RULE)
     r.check_time(deadline_ns);return result
+
+
+def select(proof,query,*,deadline_ns):
+    r.check_time(deadline_ns)
+    # Preserve the old query gate before preparing any source geometry.
+    need(type(query) is dict and set(query)=={'schema','expected_source_sha256','region'}
+        and query['schema']=='surface-deformation-region-query-v1' and r.hex_text(query['expected_source_sha256'],64),'query_fields')
+    need(type(proof) is dict and r.hex_text(proof.get('source_sha256'),64),'proof_shape')
+    _query_value(query,proof['source_sha256'])
+    return select_prepared(prepare_geometry(proof,deadline_ns=deadline_ns),query,deadline_ns=deadline_ns)
 
 
 def summarize(membership,rows,*,deadline_ns):
