@@ -205,3 +205,22 @@ QA首轮checker误从observation内部读取顶层scene_capabilities的fingerpri
 所有独立部分完成后回来源复核；若还需宿主动作，只报告具体剩余层。004同源码234本地/干净与两隔离路径证据复用，未机械重跑。OwnedScheduler外层旧envelope限制、四动作Hook、真人写表单、正式GUI图片/双物体与整体模型价值未扩验。Google/API/Key/503/费用账本继续暂停，来源US$0.02预留保持；垃圾删除仍为0。
 
 本轮证据独立在`verification/fixes/20261103_review_cycle005/`，包括批准更正、全最新快照/锁、具体doctor/plan/apply/backup、独立复核、实际旧桌面拒绝、正式新进程原始帧与重建当前scene/trace、最新回退plan和最终保留记录。回退计划只对应当时最新状态，未来必须重验，不能恢复旧state、退款或重做committed动作。
+
+
+## REVIEW-CYCLE-005 后续：当前宿主与真实 Hook 已验
+
+原005在封存时准确观察到旧snapshot拒绝，69项封存不改；其后来源和本聊天实际MCP均返回scene.trace.r1/a045/125、installed_distribution、identity compatible、inflight/quarantine/unfinished均false，因此旧“需重连”只保留为历史状态，不再是当前阻塞。没有推测用户或宿主采用何种加载机制，也没有重复apply、改runtime或手工信任存储。
+
+来源当前桌面只读overview的trace`3975c31ff62c4683bde36a64f770c6d0`、request`ae0ac647b8b0413697f3ed018708dfa1`正常，完整/工具stdio交付成功。正文、host.capture及当前revision45622a…/fingerprint6f3c…/1对象8点12面一致。本聊天仅额外一次实际status核对a045/125，trace93966338…a162，没有重复capture或模拟Hook。原始source工具记录内的摘要/完整输出同属于一个请求，不能重复计为多个观察；后来log回显或旧任务bookkeeping未作为新增调用证据。
+
+五条持久Hook信任哈希确已从原005旧值更新，全局记录SHA9936e415…ff88f，观察到mtime为上海14:21:51.503；不推测更新人或机制。只读复核员稍早确实尚未观察到新Hook事件，该负结论按时间保留；随后真实用户输入到达，缺口已关闭，不能继续要求MCP重连/重复同句/新一轮安装批准。
+
+最新人类question_reply的answer是“观察 Blender 当前场景中的 Cube，只观察，不移动、不保存”（无句号）；原wrapper332字符/512 UTF8字节，SHA`84c74d74dde83dfff87f2e65e6aaa1347d475af2739b03f78a7450a7ab9662fd`。作者直接由read_thread原文本计算，与正式host_hook.prompt_input逐项精确匹配。Hook为真实UserPromptSubmit/hook_command、a045 installed/identity compatible、spatial_3d/overview、denied=false，无手工Hook或伪造用户事件。
+
+实际trace`0bc336a215c2412ca0d99b59f49b58a7`、request`fb0ff3622e6243f7965af348849eca95`、source原session/turn绑定一致。作者与只读复核员直接取本机原rollout的role=developer记录`msg_01a1a026-6f27-7830-9c7b-a63ebb34879a`，上海14:43:55.816注入；后续首个模型工具是wait，14:44:05.923，晚10.107秒，随后exec14:44:24.072也晚于注入。这个差值仅证明先后顺序，不是模型/性能收益。原始行hash口径不含JSONL分隔换行，文件整体含换行的SHA由seal另行绑定。
+
+实际payload与request_trace均为当前Cube/#B0001、bbox±1、revision`blender:45622a04ba88f0b00b49ae15c3b94115e1526677ec94b9d1ecbdba79c1da8874`、fingerprint`6f3c828984fced67831b728d86414095e0dfaafd68c6546dc3ebeb1ff050ebfa`、1/8/12，不再混入历史2/16/24。独立复核员只用JSON/SHA校验34个内容寻址blob并重建当前完整scene，未拿生产_validated_scene作oracle。observation complete、read_only true、execution not_requested、image0、无移动保存或新增物体、无双物体间隙或写入授权。
+
+追加证据在独立兄弟目录`verification/fixes/20261103_review_cycle005_host_followup/`，记录旧拒绝→新MCP/GUI→信任更新/未触发快照→新版真人Hook成功的真实时间线，旧005及102旧seal不动。作者记录、只读复核与来源另一次独立原文件核算分栏；当前三项有限入口均有实际证据，本批不再有需要用户执行的重连或触发步骤。
+
+这不是全部产品发布：四个动作Pre/Post Hook、真人写表单、正式GUI图片/双物体、OwnedScheduler外层旧envelope遥测及整体模型价值仍保留边界。原234同源码回归不重跑；最新正向Hook到达后仅追加读取原始证据与文档，未再发产品/测试探测或apply。此前最小实际MCP调用与自动Hook分列记录。Google/API/Key/外部费用账本暂停、来源US$0.02及垃圾0删除保持。
