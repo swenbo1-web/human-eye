@@ -170,3 +170,38 @@ QA首轮checker误从observation内部读取顶层scene_capabilities的fingerpri
 独立只读审查确认最小diff未弱化任何验证，计时保留、oracle独立、11项旧失败准确；作者实际运行与独立审查分栏。范围仅本次MCP/Prompt观察、历史restore与detached delta。OwnedScheduler._discover仍可能在外部场景变化拒绝动作时重验较早envelope而覆写外层遥测，未扩修或认证；不能宣称已建立所有Python helper的通用当前场景ownership。
 
 本批独立证据根`verification/fixes/20261103_review_cycle004/`保留旧反例/夹具错误、候选回归、BUILD/安装/实际QA、原始帧/Hook、冻结账本、正常关闭/完整成本、兼容计划和保护清单。旧seal、003真实输入/旧错误trace全部原样保留。候选可以交来源复核，正式默认不切；Google/API/Key/503/外部账本仍暂停，来源US$0.02不改，垃圾删除审批拒绝不绕过。
+
+
+## REVIEW-CYCLE-005 正式激活 scene.trace.r1
+
+004及追加勘误经来源独立复核后，用户最新明确更正为“批准安装新版本”，覆盖误选保留候选；本批只激活已验收的scene.trace.r1/a045。Git基线001743bb、125执行源、原安装、entry dcdbb830…93ae、admin b09c84ef…65e7、binding3f4671ae…9d3e、wheelf3cbc8b3…7258保持，不重包或改源码。004摘要错误entry保留，使用追加勘误和实际target_runtime_entry作为依据。
+
+先归档最新完整正式state142362B/config/audit/锁，保存原d9及旧78回退材料校验。真实新entry以-I -B运行doctor/plan，明确钉住旧d9 entry281d2c66…26ec3与旧build；旧d9 manager也先实际只读验证当前状态。新计划SHA`675720c75efd78d50e1768e97073ad77bdd166a7d96582183dca59d95198a52d`，只读复核员不调用build_plan，直接由BEFORE字节重构四份after并逐SHA匹配，再由根唯一写入者受setup/stable-state锁apply。
+
+四份实际after与独立预期一致，manifest为applied/committed/recovery_required=false：
+
+- 默认human_eye_live参数中一处目标entry替换；其余MCP、AL、env、权限不变。
+- 三事件五组Hook只替换entry，matcher/timeout等保持；不自行改平台trust存储。
+- connector只改project_root/expected_identity。
+- state只改唯一顶层config_fingerprint令牌，原动作sessions/goal_segments/所有预算回执、unknown/pending/review_required字节保持。
+
+活动audit本身有既有last1000保留策略。BEFORE到提交后快照间的一次正常旧进程status使活动日志轮出1旧行、留下1000旧行并新增1trace；原完整日志已归档，不把这个保留动作说成迁移丢失账本或最终活动前缀完全相同。事务本身没有audit写入。102份旧seal索引保持。
+
+| 本轮实际层 | 结果 |
+| --- | --- |
+| 目标落盘 | 受锁成功，具体计划及四输出匹配；备份manifest正常提交，稳定锁保留 |
+| 新固定identity | actual target_runtime_entry.py返回a045/125/installed_distribution及固定入口绑定 |
+| 正式config独立新MCP | initialize、3ping、2status、1次真实GUI overview，7帧均正常，退出0；关闭174.555ms |
+| 当前观察与遥测 | Cube bbox±1；独立重建内容寻址完整mesh，canonical SHA与正文/trace一致，1对象/8点/12三角面，不再出现历史2/16/24 |
+| 观察语义 | observation complete，execution not_requested，0图/0移动保存命令，无双物体量测或动作授权 |
+| 当前桌面MCP | 实际仍持旧d9配置，返回state_configuration_binding_mismatch/stale_configuration_snapshot，disk与state匹配、allow_action=false、automatic_retry=false |
+| 新版真实Hook | 尚无a045宿主事件；本轮批准消息是旧d9实际Prompt正确skip，不借003旧真人或004模拟结果标新版本通过 |
+| 最新逆向兼容 | oldd9固定manager对最新正式state doctor ready=true，逆planSHA266f49f8d1bbe17563513cd048c5fb5aee692af869a96620a0408715806377e2，未apply |
+
+新观察trace`d2aa997557bc4bf6a6e82d0a97c8807d`、request`43a90214c4ee4807bb660784d238078e`。从保存scene_memory的frame/object/geometry blobs直接重建完整当前scene，独立canonical JSON＋SHA为`6f3c828984fced67831b728d86414095e0dfaafd68c6546dc3ebeb1ff050ebfa`，revision为`blender:45622a04ba88f0b00b49ae15c3b94115e1526677ec94b9d1ecbdba79c1da8874`。不调用生产_validated_scene生成答案。MCP观测单次约134.801ms只是一次请求，不与旧版比较，不当作整任务/模型收益。
+
+当前宿主工具没有reload/reconnect入口，实际桌面app-server为stdio且无可用控制socket；官方存在config/mcpServer/reload协议不等于本聊天能调用，另起server不能刷新当前连接。最短剩余操作是重连human_eye_live或完整重启Codex，随后核对真实新身份、state健康和实际Hook。新Hook定义已指a045，五条持久trusted_hash仍是旧记录，未拿到新定义计算hash，不能先验认定受信或未受信；只有平台界面提示时审查变更后的HumanEye定义。已有升级批准无需重复。
+
+所有独立部分完成后回来源复核；若还需宿主动作，只报告具体剩余层。004同源码234本地/干净与两隔离路径证据复用，未机械重跑。OwnedScheduler外层旧envelope限制、四动作Hook、真人写表单、正式GUI图片/双物体与整体模型价值未扩验。Google/API/Key/503/费用账本继续暂停，来源US$0.02预留保持；垃圾删除仍为0。
+
+本轮证据独立在`verification/fixes/20261103_review_cycle005/`，包括批准更正、全最新快照/锁、具体doctor/plan/apply/backup、独立复核、实际旧桌面拒绝、正式新进程原始帧与重建当前scene/trace、最新回退plan和最终保留记录。回退计划只对应当时最新状态，未来必须重验，不能恢复旧state、退款或重做committed动作。
