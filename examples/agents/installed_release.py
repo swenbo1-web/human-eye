@@ -128,20 +128,48 @@ def _installed_runtime():
     return result
 
 
-def _target_entry_proof(entry, executable):
+def _target_entry_proof(entry, executable, *, expected_sha256=None, expected_build=None):
     """Inspect a byte-pinned fixed launcher without importing its engine."""
+    expected_sha256 = _TARGET_ENTRY_SHA256 if expected_sha256 is None else expected_sha256
     if (not entry.is_absolute() or entry.name != "target_runtime_entry.py"
-            or _sha(_read(entry, 128 * 1024)) != _TARGET_ENTRY_SHA256):
+            or _sha(_read(entry, 128 * 1024)) != expected_sha256):
         raise AgentSetupError("Unknown or modified fixed target bootstrap")
     entry_bytes = _read(entry,128*1024)
-    if _sha(entry_bytes) != _TARGET_ENTRY_SHA256:raise AgentSetupError("Modified fixed target bootstrap")
+    if _sha(entry_bytes) != expected_sha256:raise AgentSetupError("Modified fixed target bootstrap")
     spec = importlib_util.spec_from_file_location("_human_eye_owned_target_entry", entry)
     module = importlib_util.module_from_spec(spec)
     try:
         exec(compile(entry_bytes,str(entry),"exec",dont_inherit=True),module.__dict__)
-        return module.validate_binding(expected_python=executable)
+        proof = module.validate_binding(expected_python=executable)
+        if expected_build is not None and proof.get("identity", {}).get("build_id") != expected_build:
+            raise AgentSetupError("Prior fixed launcher differs from its explicit expected build")
+        return proof
     except (ValueError, OSError) as exc:
         raise AgentSetupError("Owned fixed target binding failed: " + str(exc)) from exc
+
+
+def _prior_launcher_pins(values):
+    """Operator-supplied trust anchors; never derive authority from a receipt."""
+    if not isinstance(values, (list, tuple)) or len(values) > 16:
+        raise AgentSetupError("Prior launcher pins must be a bounded list")
+    result = {}
+    for value in values:
+        if not isinstance(value, (list, tuple)) or len(value) != 3 or any(not isinstance(item, str) for item in value):
+            raise AgentSetupError("Prior launcher pin requires ENTRY SHA256 BUILD_ID")
+        name, digest, build = value
+        entry = Path(name)
+        if (any(character in name for character in "\x00\r\n") or not entry.is_absolute()
+                or entry.name != "target_runtime_entry.py" or entry.absolute() != entry.resolve()
+                or entry.parent.name != "admin" or entry.parent.parent.parent.name != "releases"
+                or entry.parent.parent.parent.parent.name != ".human-eye"
+                or re.fullmatch(r"[a-f0-9]{64}", digest) is None
+                or re.fullmatch(r"sha256:[a-f0-9]{64}", build) is None):
+            raise AgentSetupError("Prior launcher pin needs a canonical absolute entry and SHA256/build")
+        key = str(entry)
+        if key in result:
+            raise AgentSetupError("Duplicate prior launcher pin")
+        result[key] = {"entry_sha256": digest, "build_id": build}
+    return result
 
 
 def _target(expected_build=None):
@@ -233,7 +261,8 @@ def _connector_paths(config, config_path, project):
     return paths
 
 
-def _known_argv(argv, role, config_path=None, event=None, agent=None, *, launcher_proofs=None):
+def _known_argv(argv, role, config_path=None, event=None, agent=None, *, launcher_proofs=None,
+                prior_launcher_pins=None):
     """Recognize one literal owned invocation; never evaluate shell fragments."""
     if role not in {"mcp", "hook"}:
         raise AgentSetupError("Unknown Human-Eye launcher role")
@@ -262,7 +291,9 @@ def _known_argv(argv, role, config_path=None, event=None, agent=None, *, launche
             raise AgentSetupError("Unknown Human-Eye source launcher")
         entry = Path(args[0])
         if entry.name == "target_runtime_entry.py":
-            proof = _target_entry_proof(entry, executable)
+            pin = (prior_launcher_pins or {}).get(str(entry))
+            proof = _target_entry_proof(entry, executable,
+                **({"expected_sha256": pin["entry_sha256"], "expected_build": pin["build_id"]} if pin else {}))
             if seen_flags != {"-I", "-B"} or argv[1:3] != ["-I", "-B"]:
                 raise AgentSetupError("Fixed target requires the exact -I -B launcher flags")
             if args[1] != proof["roles"][role]:
@@ -367,7 +398,7 @@ def _replace_toml_server(raw, original, desired):
 
 
 def _merge_installed_hooks(document, argv_by_event, agent, platform, config_path, *,
-                           bounded_clearance_segment=False, launcher_proofs=None):
+                           bounded_clearance_segment=False, launcher_proofs=None, prior_launcher_pins=None):
     if type(bounded_clearance_segment) is not bool:
         raise AgentSetupError("Goal hook capability must be boolean")
     hooks = document.setdefault("hooks", {})
@@ -402,7 +433,7 @@ def _merge_installed_hooks(document, argv_by_event, agent, platform, config_path
                 if hook.get("type") != "command":
                     raise AgentSetupError("Unknown Human-Eye hook type; preserved")
                 _known_argv(_strict_hook_argv(hook, platform, agent), "hook", config_path, event, agent,
-                            launcher_proofs=launcher_proofs)
+                            launcher_proofs=launcher_proofs, prior_launcher_pins=prior_launcher_pins)
                 matcher = group.get("matcher")
                 if matcher not in owned_matchers:
                     raise AgentSetupError("Human-Eye hook matcher differs from the exact owned tool scope")
@@ -630,7 +661,8 @@ def _current_status(path):
 class InstalledReleasePlan(SetupPlan):
     """Use FileChange/preview with a state-aware, bounded CAS transaction."""
     def __init__(self, *, agent, project, target, config_path, config, state_path,
-                 changes, preconditions, hooks, current_connection, expected_build, launcher_proofs=()):
+                 changes, preconditions, hooks, current_connection, expected_build, launcher_proofs=(),
+                 prior_launcher_pins=None):
         super().__init__(agent, project, Path(target["module_root"]), Path(target["python"]),
                          changes, preconditions=preconditions, hook_argv_by_event=hooks["argv_by_event"])
         self.target = target
@@ -638,6 +670,7 @@ class InstalledReleasePlan(SetupPlan):
         self.hooks, self.current_connection = hooks, current_connection
         self.expected_build = expected_build
         self.launcher_proofs = copy.deepcopy(list(launcher_proofs))
+        self.prior_launcher_pins = copy.deepcopy(prior_launcher_pins or {})
 
     def preview(self):
         result = super().preview()
@@ -665,6 +698,8 @@ class InstalledReleasePlan(SetupPlan):
             transaction_scope="per_file_atomic_replace_with_backups_not_power_loss_atomic")
         if self.launcher_proofs:
             result["owned_launcher_proofs"] = self.launcher_proofs
+        if self.prior_launcher_pins:
+            result["prior_launcher_pins"] = self.prior_launcher_pins
         result["plan_sha256"] = _fingerprint(result)
         return result
 
@@ -673,7 +708,9 @@ class InstalledReleasePlan(SetupPlan):
         if current != self.target:
             raise AgentSetupError("Target runtime identity/origin changed after planning")
         for expected in self.launcher_proofs:
-            if _target_entry_proof(Path(expected["entry"]), Path(expected["dependency_python"])) != expected:
+            pin = self.prior_launcher_pins.get(expected["entry"])
+            if _target_entry_proof(Path(expected["entry"]), Path(expected["dependency_python"]),
+                    **({"expected_sha256": pin["entry_sha256"], "expected_build": pin["build_id"]} if pin else {})) != expected:
                 raise AgentSetupError("Owned launcher binding/source changed after planning")
 
     def _check_preconditions(self):
@@ -826,7 +863,8 @@ class InstalledReleasePlan(SetupPlan):
             raise AgentSetupError("Activation failed; " + manifest["status"] + "; " + str(manifest_path)) from exc
 
 
-def build_plan(agent, project, *, config_path=None, expected_build=None, current_status=None, platform=None):
+def build_plan(agent, project, *, config_path=None, expected_build=None, current_status=None, platform=None,
+               prior_launcher_pins=()):
     agent = "mcp" if agent == "genericmcp" else agent
     if agent not in {"codex", "claude", "mcp"}:
         raise AgentSetupError("Unsupported agent")
@@ -834,6 +872,7 @@ def build_plan(agent, project, *, config_path=None, expected_build=None, current
     if not project.is_dir():
         raise AgentSetupError("Target project must already exist")
     target = _target(expected_build)
+    prior_launcher_pins = _prior_launcher_pins(prior_launcher_pins)
     platform = platform or ("windows" if os.name == "nt" else "posix")
     if platform not in {"windows", "posix"}:
         raise AgentSetupError("Unsupported platform")
@@ -845,7 +884,7 @@ def build_plan(agent, project, *, config_path=None, expected_build=None, current
     launcher_proofs = []
     if old_server is not None:
         found = _relative_path(project, _known_argv([old_server.get("command"), *old_server["args"]], "mcp",
-                                                   launcher_proofs=launcher_proofs))
+            launcher_proofs=launcher_proofs, prior_launcher_pins=prior_launcher_pins))
     if config_path is None:
         if found is None:
             raise AgentSetupError("Pass --config or register one recognized Human-Eye MCP connector first")
@@ -918,7 +957,8 @@ def build_plan(agent, project, *, config_path=None, expected_build=None, current
         hook_document = _json_object(hook_raw, "hook configuration") if hook_raw is not None else {}
         original_hooks = copy.deepcopy(hook_document)
         merged = _merge_installed_hooks(hook_document, argv_by_event, agent, platform, config_path,
-                                        bounded_clearance_segment=goal_hooks, launcher_proofs=launcher_proofs)
+            bounded_clearance_segment=goal_hooks, launcher_proofs=launcher_proofs,
+            prior_launcher_pins=prior_launcher_pins)
         hook_after = hook_raw if hook_raw is not None and merged == original_hooks else _encode(merged)
         add(hook_path, hook_raw, hook_after, {"events": list(EVENTS), "managed_hook": "human_eye_hook"})
     else:
@@ -933,6 +973,12 @@ def build_plan(agent, project, *, config_path=None, expected_build=None, current
         add(hook_path, hook_raw, _encode({**previous, "schema_version": "1.0", "kind": "human_eye_installed_hook_manifest",
             "expected_identity": updated_config["expected_identity"], "connector_path": str(config_path), **hooks}),
             {"kind": "portable_hook_commands_not_host_registration"})
+    used_prior_entries = {proof["entry"] for proof in launcher_proofs} & set(prior_launcher_pins)
+    if used_prior_entries != set(prior_launcher_pins):
+        raise AgentSetupError("Unused prior launcher pin; explicit anchors must identify a registered launcher")
+    for entry in used_prior_entries:
+        if config.get("expected_identity", {}).get("build_id") != prior_launcher_pins[entry]["build_id"]:
+            raise AgentSetupError("Prior launcher build disagrees with the registered connector identity")
     config_after = config_raw if updated_config == config else _encode(updated_config)
     add(config_path, config_raw, config_after, {"changed_keys": ["project_root", "expected_identity"],
                                               "expected_identity": updated_config["expected_identity"]})
@@ -946,7 +992,7 @@ def build_plan(agent, project, *, config_path=None, expected_build=None, current
     return InstalledReleasePlan(agent=agent, project=project, target=target, config_path=config_path,
         config=config, state_path=state_path, changes=changes, preconditions=preconditions,
         hooks=hooks, current_connection=_current_status(current_status), expected_build=expected_build,
-        launcher_proofs=launcher_proofs)
+        launcher_proofs=launcher_proofs, prior_launcher_pins=prior_launcher_pins)
 
 
 def main(argv=None):
@@ -960,6 +1006,9 @@ def main(argv=None):
     parser.add_argument("--config", dest="config_path", type=Path)
     parser.add_argument("--expected-build")
     parser.add_argument("--current-status", type=Path)
+    parser.add_argument("--prior-launcher", action="append", nargs=3, default=[],
+                        metavar=("ENTRY", "SHA256", "BUILD_ID"),
+                        help="Explicit trusted prior fixed launcher, additionally bound to the existing connector build")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--plan-sha256")
     args = parser.parse_args(argv)
@@ -971,7 +1020,8 @@ def main(argv=None):
         if args.apply and not args.expected_build:
             raise AgentSetupError("--apply requires an explicit --expected-build")
         plan = build_plan(args.agent, args.project, config_path=args.config_path,
-            expected_build=args.expected_build, current_status=args.current_status)
+            expected_build=args.expected_build, current_status=args.current_status,
+            prior_launcher_pins=args.prior_launcher)
         result = plan.apply(plan_sha256=args.plan_sha256) if args.apply else plan.preview()
         if args.operation == "doctor":
             result.update(operation="doctor", ready_to_apply=True, applied=False,

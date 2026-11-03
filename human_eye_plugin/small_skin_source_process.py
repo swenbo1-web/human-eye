@@ -130,10 +130,10 @@ class SmallSkinSourceProcess(RigPoseProcess):
         if self.source is None:self.source=packet['source_sha256']
         return packet
 
-    def analyze(self,packet,*,deadline_ns,query=None,region_query=None,anchor_query=None,context_query=None):
+    def analyze(self,packet,*,deadline_ns,query=None,region_query=None,anchor_query=None,context_query=None,core_query=None):
         core.need(deadline_ns==self.deadline_ns and not self.closed,'analysis_window','unavailable')
         core.need(self.source is not None,'observation_required','unavailable')
-        r.require(sum(value is not None for value in (query,region_query,anchor_query,context_query))<=1,'deformation_query_modes')
+        r.require(sum(value is not None for value in (query,region_query,anchor_query,context_query,core_query))<=1,'deformation_query_modes')
         self.verify_inputs()
         proof=core.validate(packet,deadline_ns=deadline_ns,expected_bindings=self.bindings,expected_source=self.source)
         proof['source']=dict(proof['source'],source_sha256=packet['source_sha256'],source_schema=core.SCHEMA,
@@ -142,6 +142,16 @@ class SmallSkinSourceProcess(RigPoseProcess):
         validation=dict(schema=core.SCHEMA,method='external_binding_full_dependency_FK_and_LBS',
             max_replay_error=proof['max_replay_error'],replay_atol=core.POSITION_ATOL,animation_curves_checked=proof['animation_curves_checked'],
             not_coordinate_measurement_error=True)
+        if core_query is not None:
+            from . import deformation_core_facts
+            if hasattr(self,'core_audit_bytes'):del self.core_audit_bytes
+            rows=surface_deformation._geometry_rows(proof,deadline_ns=deadline_ns)
+            report,audit=deformation_core_facts.plan(proof,core_query,policy=self._context_policy(),policy_sha256=self.context_policy_sha256,
+                pins=self._anchor_pins(),rows=rows,source_validation=validation,deadline_ns=deadline_ns)
+            audit['actor_B2_rows_passes']=1
+            self.core_audit_bytes=r.encoded(audit)
+            r.require(len(self.core_audit_bytes)<=2*1024*1024,'deformation_core_audit_byte_budget')
+            self.verify_inputs();return report
         if context_query is not None:
             from . import deformation_context
             if hasattr(self,'context_audit_bytes'):del self.context_audit_bytes
@@ -225,18 +235,21 @@ def main(argv=None):
     queries.add_argument('--anchors-only',action='store_true',help='Describe native bone endpoints and triangle-hull bounds; no surface diagnosis')
     queries.add_argument('--anchor-query',type=Path,help='Select a source-bound native anchor and half extents; recompute the closed box')
     queries.add_argument('--context-query',type=Path,help='Reference a pinned operator policy for core-preserving context compaction')
+    queries.add_argument('--core-query',type=Path,help='Publish complete pinned core facts without peripheral shrinking')
     parser.add_argument('--context-policy',type=Path,help='Trusted operator policy, never supplied inside the model selection')
     parser.add_argument('--context-policy-sha256',help='Exact byte digest of the trusted operator policy')
     args=parser.parse_args(argv)
-    if (args.context_query is not None and (args.context_policy is None or args.context_policy_sha256 is None)
-            or args.context_query is None and (args.context_policy is not None or args.context_policy_sha256 is not None)):
-        parser.error('--context-query requires both operator policy options; policy options are only valid with --context-query')
+    structured=args.context_query is not None or args.core_query is not None
+    if (structured and (args.context_policy is None or args.context_policy_sha256 is None)
+            or not structured and (args.context_policy is not None or args.context_policy_sha256 is not None)):
+        parser.error('--context-query or --core-query requires both operator policy options; policy options require one of these query modes')
     return run_reader(args,SmallSkinSourceProcess,
         analyzer=lambda packet,actor,**kw:actor.analyze(packet,**kw),selection_binder=lambda packet,selection,actor,**kw:actor.bind_selection(packet,selection,**kw),
         region_binder=lambda packet,selection,actor,**kw:actor.bind_region_selection(packet,selection,**kw),
         anchor_binder=lambda packet,selection,actor,**kw:actor.bind_anchor_selection(packet,selection,**kw),
         catalog_analyzer=lambda packet,actor,**kw:actor.describe_anchors(packet,**kw),
         context_binder=lambda packet,selection,actor,**kw:actor.bind_context_selection(packet,selection,**kw),
+        core_binder=lambda packet,selection,actor,**kw:actor.bind_context_selection(packet,selection,**kw),
         context_policy_installer=lambda args,actor:actor.set_context_policy(args.context_policy,args.context_policy_sha256),close_before_publish=True)
 
 

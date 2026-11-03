@@ -1,0 +1,143 @@
+{
+  "schema": "direct-core-heldout-preregistered-v1",
+  "fixed_policy": {
+    "core_half": [
+      0.25,
+      0.25,
+      0.25
+    ],
+    "primary_half": [
+      2.0,
+      2.0,
+      2.0
+    ],
+    "candidates": [
+      [
+        0.5,
+        0.5,
+        0.5
+      ],
+      [
+        1.5,
+        1.5,
+        1.5
+      ]
+    ],
+    "max_surplus_members": 0,
+    "min_saved_bytes": 256,
+    "planning_budget_ms": 250
+  },
+  "source_domain": "B3b unchanged 256v/256tri/16bone; independent QA static frame1; no original author edit",
+  "normal_tri_edge_m": 0.03125,
+  "scene_units_m": 1.0,
+  "core_anchor_native_name": "CoreAnchor",
+  "recipe": "disjoint original triangular islands, B0 identity, B1 rigid +.03125 X and B2 rigid +1Y; whole-vertex weights produce analytic diag(2,1) within core, identity for normal, missing weights for unknown; no scaling/modifier beyond one LBS",
+  "cases": [
+    {
+      "case": "outer_dominates_mixed18",
+      "core_faces": 18,
+      "unknown_core_faces": 4,
+      "exterior_faces": 1,
+      "modifier_translation_outer_y": 1.0,
+      "expected_core_counts": {
+        "measured": 14,
+        "collapsed": 0,
+        "unknown": 4
+      },
+      "independent_expectation": "all measured core are identity; exterior has one translated corner, creates larger stretch/area outside core; first4 primary details occupied by unknown core; shrinking cannot earn >=256B removing a single face"
+    },
+    {
+      "case": "omitted_extremum8",
+      "core_faces": 8,
+      "unknown_core_faces": 4,
+      "deformed_core_face": 7,
+      "modifier_translation_core_x": 0.03125,
+      "expected_core_counts": {
+        "measured": 4,
+        "collapsed": 0,
+        "unknown": 4
+      },
+      "expected_core_extrema": {
+        "max_principal_stretch": 2.0,
+        "min_principal_stretch": 1.0,
+        "min_area_ratio": 1.0,
+        "max_area_ratio": 2.0
+      },
+      "independent_expectation": "four unknown rows precede measured detail; required core face7 extrema remain correct and witness inside omitted members"
+    },
+    {
+      "case": "empty_core",
+      "core_faces": 0,
+      "exterior_faces": 3,
+      "expected_core_counts": {
+        "measured": 0,
+        "collapsed": 0,
+        "unknown": 0
+      },
+      "expected_core_extrema": null
+    },
+    {
+      "case": "all_unknown_core3",
+      "core_faces": 3,
+      "unknown_core_faces": 3,
+      "exterior_faces": 2,
+      "expected_core_counts": {
+        "measured": 0,
+        "collapsed": 0,
+        "unknown": 3
+      },
+      "expected_unknown_reason": "unweighted_vertex_source",
+      "expected_core_extrema": null
+    },
+    {
+      "case": "closed_boundary_contacts",
+      "core_faces": 2,
+      "contact_dimensions": [
+        "vertex",
+        "edge"
+      ],
+      "exterior_faces": 2,
+      "expected_core_counts": {
+        "measured": 2,
+        "collapsed": 0,
+        "unknown": 0
+      },
+      "expected_core_extrema": {
+        "max_principal_stretch": 1.0,
+        "min_principal_stretch": 1.0,
+        "min_area_ratio": 1.0,
+        "max_area_ratio": 1.0
+      },
+      "not_positive_area_support": true
+    },
+    {
+      "case": "mixed_analytic3",
+      "core_faces": 3,
+      "unknown_core_faces": 1,
+      "deformed_core_face": 1,
+      "modifier_translation_core_x": 0.03125,
+      "exterior_faces": 1,
+      "expected_core_counts": {
+        "measured": 2,
+        "collapsed": 0,
+        "unknown": 1
+      },
+      "expected_core_extrema": {
+        "max_principal_stretch": 2.0,
+        "min_principal_stretch": 1.0,
+        "min_area_ratio": 1.0,
+        "max_area_ratio": 2.0
+      }
+    }
+  ],
+  "independent_oracles": [
+    "analytic whole triangle affine maps with exact dyadic coordinates",
+    "independent exact SAT membership and NumPy QR/SVD",
+    "Blender raw+evaluated snapshot full source validation under final candidate"
+  ],
+  "holdout_visibility": "implementation agent must not read HELDOUT* before candidate algorithm/source is fixed",
+  "no_B3e_policy_tuning": true,
+  "candidate_generation_limit": 1,
+  "no_net_gain_action": "freeze direct projection candidate with measured failures and preserve previous version; no parameter search",
+  "model_consumption_after_offline_gate_only": true
+}
