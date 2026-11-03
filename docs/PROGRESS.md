@@ -4,6 +4,14 @@
 
 推进顺序仅以[唯一主计划](PRODUCT_ROADMAP.md)为准。当前隔离125源候选`9.7.2+20261103.source.guard.r1`，SHA`d9b01eec9ce561b9f9fe5304cc37c50aa641b1826ed3ee788501eb2f49192360`；原125/dbeb、124/3fa和默认78/22fb原安装保持。默认MCP/live/Hook不切换。
 
+## REVIEW-CYCLE-002：可测外围极值原生反例
+
+[本批单案作者验收](MEASURABLE_OUTER_EXTREMUM_ACCEPTANCE.md)已补：一个公开预注册12点4面/2根骨LBS资产，外围F=diag(1.5,1)独立解析与SAT/QR-SVD先证可测，正式triangle查询再次确认B2的1.5/1/area1.5。core自身完整捕获独立重算后，正式core报告仍为[0,1,2]、2measured/1unknown、四极值1、四见证0；global1.5冒用及外部等值见证均被拒。旧外围unknown/not_realized不改、不回填。
+
+运行125源d9/安装/wheel完全保持，无版本变更。3正式只读CLI、6inspect、1自建资产；源/角色/policy/各自capture、期限/退出与原文件保持已核，0product setter/保存。修验收器PID/固定容差两处误接受，仅重验既有记录。49相关公共项本地与干净导出无失败，不重跑旧广域或新模型/性能/图片。Google暂停。交来源复核后预期进入用户固定版本/代价与默认激活决策材料，本轮不另开模块。
+
+以下为前批当时范围。
+
 ## REVIEW-CYCLE-001：来源检查成本
 
 [本批作者验收](SOURCE_GUARD_COST_ACCEPTANCE.md)完成：实际125加载316相关模块，62个owned首分类解析可省，全部125源完整读取/hash、最终见证、外部/alias/namespace不减；无跨调用缓存。单候选8块未插桩160工具/16owned正常，文字块配对省5.671ms、热图5.295ms，64张PNG原字节和RGBA完全一致。owned p95+4.74%近预预算，明确待独立审核；不宣称全部尾部改善。
