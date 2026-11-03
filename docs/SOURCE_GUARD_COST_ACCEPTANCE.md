@@ -86,3 +86,37 @@ rollback使用已外部固定的旧78新manager kit，保留最新状态而不�
 本地证据根`verification/fixes/20261103_review_cycle001/`：`BEFORE.json`、`AUTHORIZATION.json`、`PROFILE_ATTRIBUTION.*`、`SINGLE_CANDIDATE_DESIGN.json`、`COST_PREREGISTRATION.json`、`COST_CONFIG_EXTERNAL_PIN.json`、`COST_R1/`、`COST_QUALIFICATION_SUMMARY.*`、`CONTROLLED_GUARD_R1/RESULT.json`、`RELEASE_HANDOFF.json`及公共回归记录。公开profile和成本wrapper可在固定环境重放；私有本机配置和第三方资产不进Git。
 
 本批完成后按已核对的人类授权回报管理员对话，等待下一任务。建议下一项仅做发布目标差异复审，先裁定owned尾部代价，不自行调第二热点、core、外围阈值或扩域。Google/API、Key读取/生成、503重试和外部费用账本继续暂停，来源US$0.02预留不改。
+
+
+## REVIEW-CYCLE-003 正式激活与入口验收
+
+用户明确批准固定 `9.7.2+20261103.source.guard.r1`，接受owned生命周期p95增加4.74%的已披露取舍。本次125份运行源码、隔离安装、wheel、entry/admin/binding与001/002完全相同，没有性能调参、新算法、新来源或写域；既有广域测试按原身份复用，没有冒充本轮重跑。
+
+本轮重新对正式项目运行doctor及plan，最新配置和完整状态仍与历史输入同字节，所以新计算的计划SHA仍为`02db3f46c050a0b305f00baefa2bf6f5b9fad4a6a0acddee86521c119f96e9ff`。这不是读取并应用旧保存计划。只读独立复核员从本轮BEFORE字节重构四份预期输出并核对全部SHA，然后原管理器以具体计划、setup锁和稳定state锁执行apply，交易manifest为applied/committed，recovery_required=false。
+
+| 变更 | 实际范围 |
+| --- | --- |
+| 项目MCP | 仅human_eye_live参数中的固定entry路径 |
+| 项目Hook | 三种事件、五组登记中相同entry路径替换；matcher/期限等不变 |
+| connector | project_root与expected_identity |
+| state | 唯一顶层config_fingerprint令牌；其他原始字节保持 |
+
+Agent Learning、其他MCP服务、env、审批设置保持；全部回执、消耗预算、goal状态、现存review_required均保持。audit在提交点逐字节一致。随后正常状态/启动/失败观察trace触发现有last1000有界尾日志保留，活动日志的前5旧行共72,146字节被轮出；完整旧内容已在本轮BEFORE及AFTER_APPLY快照保留，不回写旧快照覆盖新trace。活动尾文件并非完整历史库。这个保留机制没有在本批改造。
+
+| 验收层 | 本轮实际结果 |
+| --- | --- |
+| 配置落盘/交易 | 成功；四份输出SHA均与独立预期一致，setup锁正常释放，稳定sidecar锁原样保留 |
+| 固定新版identity | 实际-I -B入口返回源d9与125文件，安装及依赖绑定通过 |
+| 正式配置新MCP进程 | initialize、3次ping、2次status通过并正常关闭；一次只读observe明确返回BlenderMCP离线，未重试、未执行动作 |
+| 当前桌面聊天MCP | 仍为旧进程；实际调用返回state_configuration_binding_mismatch并拒绝动作，需要重连后复验 |
+| 独立QA Blender | 新建测试文件/独占随机端口，文字和原生图都测得4毫米；PNG384×384成功解码并目视核对；geometry/display保持，0产品setter、0源文件保存，进程正常关闭 |
+| 真实Hook/用户消息/真人表单 | 未运行；不将手工stdin、QA或独立进程算作真实宿主触发 |
+| 最新状态回退准备 | 受固定旧78＋新manager kit完成迁移前后doctor和新reverse plan，ready=true；未无故实际回退 |
+
+旧78回退kit的87文件、新版142文件均与受信登记匹配；98份既有seal索引保留。回退计划只证明当时最新状态兼容，未来有任何新状态必须重新验证和计划，禁止覆盖历史state、退款或重做已提交动作。
+
+Codex官方App Server提供`config/mcpServer/reload`协议，但本聊天工具没有暴露该调用；现有桌面服务使用stdio，另起服务不能刷新当前聊天。用户可在[Settings → MCP servers中Restart](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)，必要时完整重启Codex；[变更后的Hook定义需要审查当前hash](https://learn.chatgpt.com/docs/hooks)，在Review hooks或Settings → Hooks处理。未修改trust存储、未绕过真人审查。完成重连和Blender连接后，应由真实用户只读消息验证自动观察，再分别决定其他未验层。
+
+垃圾盘点确认1,520文件、57,332,922字节：29个与保留源码逐字节相同的build副本，以及1个可再生pycache。递归删除命令被自动执行策略拒绝，原始原因仅为`blocked by policy`，因此实际删除为0。候选路径、SHA和保留原件已形成清单；未用其他路径重试绕过。旧stage失败记录/视觉/源码/依赖/wheel/安装元数据、证据、运行状态、回退材料均保留。
+
+本地证据独立保存在`verification/fixes/20261103_review_cycle003/`：本轮doctor/plan/apply、独立审查、BEFORE/AFTER_APPLY、交易manifest、实际聊天拒绝、正式新进程、独立QA原生图/零setter、回退doctor/plan及清理清单。宿主重连和真实消息仍是后续验收，不宣称整个产品已发布或模型有巨大提升。Google/API/Key/外部费用账本继续暂停，来源US$0.02预留保持。
