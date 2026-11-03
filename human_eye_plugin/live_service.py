@@ -334,6 +334,133 @@ class LiveSpatialService:
             return None
         return value['deadline'] - time.monotonic()
 
+    def observe_readview(self,session_id,request_id,*,target_id=None,expected_source_sha256=None):
+        """Opt-in SDK candidate. Not exposed through the default MCP/Hook."""
+        from PIL import Image
+        from .forward_deadline import counter_descriptor
+        started=time.perf_counter_ns();deadline=started+30_000_000_000
+        receipt={'request_id':request_id,'status':'unavailable','images_constructed':0,
+            'construction_status':'not_attempted',
+            'publishable_images':0,'consumer_delivery_confirmed':False,'error':None,
+            'started_ns':started,'finished_ns':None,'read_only':True,'execution_authority':False}
+        self._last_readview_receipt=receipt
+        raw=None
+        try:
+            if type(session_id) is not str or not session_id or type(request_id) is not str or not request_id:
+                raise ValueError('material_readview_request_invalid')
+            if _read_object(self.config_path)!=self.config:raise ValueError('material_readview_config_changed')
+            reject=self._identity_rejection()
+            if reject is not None:raise ValueError('material_readview_runtime_identity_changed')
+            policy=self.config.get('material_readview')
+            if type(policy) is not dict or policy.get('enabled') is not True:
+                raise ValueError('material_readview_not_enabled')
+            binding=policy.get('binding')
+            if type(binding) is not dict:raise ValueError('material_readview_binding_missing')
+            if target_id is not None and target_id!=binding['target_id']:
+                raise ValueError('material_readview_target_conflict')
+            if expected_source_sha256 is not None and expected_source_sha256!=binding['source_sha256']:
+                raise ValueError('material_readview_source_conflict')
+            with self.host.transaction():
+                header=self.host.material_readview_header(binding)
+                binding_digest=hashlib.sha256(json.dumps(binding,sort_keys=True,separators=(',', ':'),
+                    ensure_ascii=False,allow_nan=False).encode('utf8')).hexdigest()
+                if (type(header) is not dict or header.get('protocol')!='static-material-readview-v1'
+                        or header.get('binding')!=binding or header.get('binding_digest')!=binding_digest
+                        or header.get('clock')!=counter_descriptor()
+                        or type(header.get('appearance')) is not dict
+                        or type(header['appearance'].get('fingerprint')) is not str
+                        or len(header['appearance']['fingerprint'])!=64
+                        or any(c not in '0123456789abcdef' for c in header['appearance']['fingerprint'])
+                        or header.get('read_only') is not True or header.get('execution_authority') is not False):
+                    raise ValueError('material_readview_header_invalid')
+                receipt['images_constructed']=None
+                receipt['construction_status']='unknown_until_host_receipt'
+                raw=self.host.observe_material_readview(request_id,binding,header['appearance']['fingerprint'],deadline)
+            # A transport reply alone proves neither zero nor one construction.
+            # Validate the complete request-bound receipt before adopting costs,
+            # including for physical failures after a PNG was constructed.
+            receipt['construction_status']='unknown_invalid_host_receipt'
+            audit=raw.get('audit') if type(raw) is dict else None
+            checked_ns=time.perf_counter_ns()
+            def bounded_int(value):
+                return type(value) is int and 0<=value<(1<<63)
+            def hex64(value):
+                return type(value) is str and len(value)==64 and all(c in '0123456789abcdef' for c in value)
+            valid=(type(raw) is dict and type(audit) is dict
+                and {'protocol','request_id','binding','binding_digest','expected_appearance_fingerprint',
+                    'appearance','image','audit','read_only','execution_authority'}<=set(raw)
+                and {'protocol','request_id','clock','status','started_ns','finished_ns','deadline_ns',
+                    'render_attempted','image_constructed','image_returned_to_transport','restored','error',
+                    'attempts_spent','constructed_spent','returned_to_transport','read_only','execution_authority'}<=set(audit)
+                and raw.get('protocol')=='static-material-readview-v1' and raw.get('request_id')==request_id
+                and raw.get('binding')==binding and raw.get('binding_digest')==binding_digest
+                and raw.get('expected_appearance_fingerprint')==header['appearance']['fingerprint']
+                and raw.get('read_only') is True and raw.get('execution_authority') is False
+                and audit.get('protocol')=='static-material-readview-v1' and audit.get('request_id')==request_id
+                and audit.get('clock')==header['clock'] and audit.get('deadline_ns')==deadline
+                and all(bounded_int(audit.get(key)) for key in ('started_ns','finished_ns','deadline_ns',
+                    'attempts_spent','constructed_spent','returned_to_transport'))
+                and started<=audit.get('started_ns',-1)<=audit.get('finished_ns',-1)<=checked_ns
+                and audit.get('started_ns',deadline)<deadline
+                and all(type(audit.get(key)) is bool for key in
+                    ('render_attempted','image_constructed','image_returned_to_transport'))
+                and (audit.get('restored') is None or type(audit.get('restored')) is bool)
+                and audit.get('read_only') is True and audit.get('execution_authority') is False
+                and 0<=audit.get('returned_to_transport',-1)<=audit.get('constructed_spent',-1)
+                    <=audit.get('attempts_spent',-1)<=2)
+            if valid:
+                attempted=audit['render_attempted'];constructed=audit['image_constructed']
+                returned=audit['image_returned_to_transport'];appearance=raw.get('appearance')
+                valid=(audit['attempts_spent']>=int(attempted)
+                    and audit['constructed_spent']>=int(constructed)
+                    and audit['returned_to_transport']>=int(returned)
+                    and (not constructed or attempted)
+                    and (not returned or constructed and audit['restored'] is True)
+                    and (appearance is None or type(appearance) is dict and hex64(appearance.get('fingerprint')))
+                    and (not constructed or appearance==header['appearance'])
+                    and (not constructed or type(audit['restored']) is bool)
+                    and (not constructed or {'png_bytes','png_sha256'}<=set(audit))
+                    and (not constructed or bounded_int(audit.get('png_bytes')) and audit['png_bytes']>0)
+                    and (not constructed or audit.get('png_sha256') is None or hex64(audit['png_sha256']))
+                    and (constructed or audit.get('png_bytes',0)==0 and audit.get('png_sha256') is None))
+                if audit.get('status')=='ready':
+                    valid=valid and (raw.get('status') in (None,'ready') and attempted and constructed and returned
+                        and appearance==header['appearance'] and audit['restored'] is True
+                        and audit.get('error') is None and hex64(audit.get('png_sha256')))
+                elif audit.get('status')=='failed':
+                    error=audit.get('error')
+                    valid=valid and (raw.get('status')=='unavailable' and raw.get('image') is None and not returned
+                        and type(error) is dict and type(error.get('type')) is str and bool(error['type'])
+                        and type(error.get('message')) is str and len(error['message'])<=2000)
+                else:valid=False
+            if not valid:raise ValueError('material_readview_host_receipt_invalid')
+            receipt['host_audit']=copy.deepcopy(audit)
+            receipt['images_constructed']=int(audit['image_constructed'])
+            receipt['construction_status']='validated_host_receipt'
+            if audit['status']!='ready':
+                raise ValueError('material_readview_not_ready:'+str(audit['error']))
+            image=raw['image'];png=base64.b64decode(image['image_base64'],validate=True)
+            if len(png)>8*1024*1024 or hashlib.sha256(png).hexdigest()!=raw['audit']['png_sha256']:
+                raise ValueError('material_readview_png_binding')
+            with Image.open(io.BytesIO(png)) as picture:
+                if picture.format!='PNG' or picture.size!=(384,384):raise ValueError('material_readview_png_shape')
+                picture.verify()
+            if image.get('source')!='blender_cycles_material_readview':raise ValueError('material_readview_wrong_renderer')
+            if time.perf_counter_ns()>=deadline:raise ValueError('material_readview_deadline_expired_before_publish')
+            receipt.update(status='ready',publishable_images=1)
+            return {'status':'observed','source':'candidate_static_material_readview','session_id':session_id,
+                'runtime_identity':copy.deepcopy(self._identity),'header':header,'receipt':receipt,
+                'image':{'type':'image','mimeType':'image/png','data':image['image_base64']},
+                'view':{k:v for k,v in image.items() if k!='image_base64'},
+                'scope':'one_static_local_appearance_view_not_global_visibility_or_motion_certification',
+                'read_only':True,'execution_authority':False}
+        except BaseException as exc:
+            receipt['error']={'type':type(exc).__name__,'message':str(exc)[:2000]}
+            return {'status':'unavailable','receipt':receipt,'image':None,
+                'read_only':True,'execution_authority':False}
+        finally:
+            receipt['finished_ns']=time.perf_counter_ns()
+
     def _check_request_budget(self, stage):
         remaining = self._remaining_request_budget()
         if remaining is not None and remaining <= 0:

@@ -112,7 +112,10 @@ class BlenderProcessHost:
     def __init__(self, blender_executable: str | os.PathLike[str],
                  blend_file: str | os.PathLike[str], *, timeout: float = 30.0,
                  startup_timeout: float = 60.0,
-                 worker_path: str | os.PathLike[str] | None = None) -> None:
+                 worker_path: str | os.PathLike[str] | None = None,
+                 material_readview_only: bool = False) -> None:
+        if type(material_readview_only) is not bool or material_readview_only and worker_path is not None:
+            raise ValueError('Material readview requires the fixed readonly worker')
         for name, value in (("timeout", timeout), ("startup_timeout", startup_timeout)):
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{name} must be finite and greater than zero")
@@ -138,6 +141,7 @@ class BlenderProcessHost:
         self._deadline_bindings = {}
         command = [str(executable), "--factory-startup", "--disable-autoexec", "--background",
                    str(source), *(worker_arguments(root,worker) if worker_path is None else ["--python",str(worker)]), "--", str(root)]
+        if material_readview_only:command.append('material-readview-only-v1')
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
         self._process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, text=True, encoding="utf-8",
@@ -145,9 +149,9 @@ class BlenderProcessHost:
                                          shell=False)
         self._stdout_thread = threading.Thread(target=self._read_stdout, name="human-eye-blender-stdout", daemon=True)
         self._stderr_thread = threading.Thread(target=self._read_stderr, name="human-eye-blender-stderr", daemon=True)
-        self._stdout_thread.start()
-        self._stderr_thread.start()
         try:
+            self._stdout_thread.start()
+            self._stderr_thread.start()
             capabilities = self._request("capabilities", {}, timeout=float(startup_timeout))
             if not isinstance(capabilities, dict) or capabilities.get("protocol_version") != PROTOCOL_VERSION:
                 self._fail("Blender worker protocol version is incompatible")
@@ -160,6 +164,29 @@ class BlenderProcessHost:
     def diagnostics(self) -> tuple[str, ...]:
         """Return a bounded tail of Blender banners and stderr diagnostics."""
         return tuple(self._diagnostics)
+
+    def _check_material_readview(self):
+        if (not getattr(self, '_default_worker', False)
+                or self._capabilities.get('material_readview_protocol')!='static-material-readview-v1'
+                or self._capabilities.get('material_readview_only') is not True
+                or self._capabilities.get('process_id')!=self._process.pid
+                or self._capabilities.get('forward_deadline_clock')!=counter_descriptor()):
+            raise ValueError('No fixed owned readonly material-view worker')
+
+    def material_readview_header(self,binding):
+        self._check_material_readview()
+        return self._request('material_readview_header',{'binding':binding})
+
+    def observe_material_readview(self,request_id,binding,expected_fingerprint,deadline_ns):
+        self._check_material_readview()
+        seconds=(deadline_ns-time.perf_counter_ns())/1e9
+        if seconds<=0:raise ValueError('Material readview deadline expired')
+        return self._request('observe_material_readview',{'request_id':request_id,'binding':binding,
+            'expected_fingerprint':expected_fingerprint,'deadline_ns':deadline_ns},timeout=min(self.timeout,seconds))
+
+    def last_material_readview_audit(self):
+        self._check_material_readview()
+        return self._request('last_material_readview_audit',{})
 
     @property
     def is_alive(self) -> bool:
@@ -563,7 +590,7 @@ class BlenderProcessHost:
                         # the other streams and join their reader threads.
                         self._diagnostics.append('Stream close failed: ' + type(exc).__name__)
             for thread in (self._stdout_thread, self._stderr_thread):
-                thread.join(timeout=1.0)
+                if thread.ident is not None:thread.join(timeout=1.0)
 
     def __enter__(self) -> "BlenderProcessHost":
         self._ensure_live()

@@ -963,3 +963,471 @@ def native_look(bpy, scene, view_layer, initial_native, view, *, _frame=None,
         restore('view_layer_update',view_layer.update)
         if os.path.exists(path):restore('owned_temporary_png',lambda:os.unlink(path))
         if errors:raise EpisodeUncertain('native_render_restore_failed:'+','.join(errors)[:1500])
+
+
+def material_readview_state(bpy, scene, view_layer, target):
+    """Bound static original appearance, including hidden scene geometry.
+
+    This bounded snapshot is separate from the legacy geometry revision. Buffer
+    hashes commit to actual RNA values; packed image hashes commit to the file
+    bytes Blender owns. It grants no action or complete-visibility certificate.
+    """
+    from array import array
+    import sys
+    maxima = dict(vertices=32768, triangles=65536, objects=64, loops=196608,
+                  attributes=64, uv_layers=8, nodes=256, links=512, trees=16,
+                  images=8, packed_bytes=64*1024*1024, buffer_bytes=64*1024*1024)
+    used = dict(nodes=0, links=0, packed_bytes=0, buffer_bytes=0)
+
+    def need(value, reason):
+        _require(value, 'material_readview_'+reason)
+
+    def static(value):
+        need(value is not None and getattr(value, 'library', None) is None,
+             'local_source_required')
+        need(getattr(value, 'animation_data', None) is None, 'animation_unsupported')
+
+    def name(value):
+        return None if value is None else str(getattr(value, 'name_full', value.name))
+
+    def digest(value):
+        return hashlib.sha256(_json(value, 2*1024*1024)).hexdigest()
+
+    def stable(value):
+        if type(value) is dict:
+            if 'identity_kind' in value and 'name' in value:
+                return {'name': value['name']}
+            return {key: stable(child) for key, child in value.items()}
+        if type(value) is list:return [stable(child) for child in value]
+        return value
+
+    def buffer(collection, field, width, kind='f'):
+        count = len(collection)*width
+        size = count*array(kind).itemsize
+        need(used['buffer_bytes']+size <= maxima['buffer_bytes'], 'buffer_bytes')
+        values = array(kind, [0])*count
+        try:
+            collection.foreach_get(field, values)
+        except (AttributeError, TypeError, ValueError, RuntimeError):
+            # Some RNA attribute types do not expose a compatible buffer view.
+            values = array(kind)
+            for item in collection:
+                value = getattr(item, field)
+                values.extend([value] if width == 1 else list(value))
+            need(len(values) == count, 'attribute_width')
+        if kind == 'f':need(all(math.isfinite(value) for value in values), 'nonfinite_buffer')
+        if sys.byteorder != 'little':values.byteswap()
+        used['buffer_bytes'] += size
+        return {'count': len(collection), 'width': width, 'storage': kind+'-little',
+                'bytes': size, 'sha256': hashlib.sha256(values.tobytes()).hexdigest()}
+
+    need(getattr(target, 'type', None) == 'MESH' and target in scene.objects.values(),
+         'target_mesh_required')
+    static(scene)
+    compositor=getattr(scene,'compositing_node_group',None) or getattr(scene,'node_tree',None)
+    need(compositor is None or not len(compositor.nodes),
+         'compositor_unsupported')
+    sequence = scene.sequence_editor
+    strips = getattr(sequence, 'strips', getattr(sequence, 'sequences_all', ())) if sequence else ()
+    need(not len(strips), 'sequencer_unsupported')
+    objects = sorted(scene.objects, key=name)
+    need(1 <= len(objects) <= maxima['objects'], 'object_budget')
+    need(any(bool(layer.use) for layer in scene.view_layers), 'view_layer_unavailable')
+    meshes = [obj for obj in objects if obj.type == 'MESH']
+    vertex_count = sum(len(obj.data.vertices) for obj in meshes)
+    triangle_count = sum(sum(max(0, len(p.vertices)-2) for p in obj.data.polygons) for obj in meshes)
+    need(vertex_count <= maxima['vertices'] and triangle_count <= maxima['triangles'],
+         'scene_geometry_budget')
+    mesh_rows = []; visibility = []; material_sources = {}; lights = []
+    types = {'FLOAT': ('value', 1, 'f'), 'INT': ('value', 1, 'i'),
+             'INT8': ('value', 1, 'i'), 'BOOLEAN': ('value', 1, 'b'),
+             'FLOAT_VECTOR': ('vector', 3, 'f'), 'FLOAT2': ('vector', 2, 'f'),
+             'FLOAT_COLOR': ('color', 4, 'f'), 'BYTE_COLOR': ('color', 4, 'f'),
+             'INT32_2D': ('value', 2, 'i'), 'INT16_2D': ('value', 2, 'i'),
+             'QUATERNION': ('value', 4, 'f')}
+    for obj in objects:
+        static(obj)
+        need(obj.type in ('MESH', 'LIGHT', 'CAMERA', 'EMPTY'), 'object_type_unsupported')
+        need(obj.parent is None and not len(obj.constraints) and
+             not len(getattr(obj, 'modifiers', ())) and obj.instance_type == 'NONE' and
+             not bool(getattr(obj, 'is_instancer', False)), 'dependent_object_unsupported')
+        flags = {key: bool(getattr(obj, key)) for key in
+                 ('hide_render', 'hide_viewport', 'show_in_front')}
+        flags.update(hidden=bool(obj.hide_get(view_layer=view_layer)),
+                     visible=bool(obj.visible_get(view_layer=view_layer)))
+        for key in ('visible_camera', 'visible_diffuse', 'visible_glossy',
+                    'visible_transmission', 'visible_volume_scatter', 'visible_shadow',
+                    'is_holdout', 'is_shadow_catcher'):
+            if hasattr(obj, key):flags[key] = bool(getattr(obj, key))
+        visibility.append({'name': name(obj), 'type': obj.type, 'flags': flags,
+                           'matrix_world': [[float(x) for x in row] for row in obj.matrix_world],
+                           'collections': sorted(name(c) for c in obj.users_collection),
+                           'cycles': _scalar_state(obj.cycles, ()) if hasattr(obj, 'cycles') else {},
+                           'color': _scalar_value(obj.color)})
+        if obj.type == 'MESH':
+            mesh = obj.data;static(mesh)
+            need(obj.mode == 'OBJECT' and mesh.shape_keys is None, 'static_mesh_required')
+            need(len(mesh.loops) <= maxima['loops'] and len(mesh.uv_layers) <= maxima['uv_layers']
+                 and len(mesh.attributes) <= maxima['attributes'], 'mesh_data_budget')
+            normals = mesh.corner_normals
+            need(len(normals) == len(mesh.loops), 'corner_normal_coverage')
+            row = {'object': name(obj), 'mesh': name(mesh), 'settings': _scalar_state(mesh, ()),
+                   'vertices': buffer(mesh.vertices, 'co', 3),
+                   'edge_vertices': buffer(mesh.edges, 'vertices', 2, 'i'),
+                   'loop_vertices': buffer(mesh.loops, 'vertex_index', 1, 'i'),
+                   'loop_edges': buffer(mesh.loops, 'edge_index', 1, 'i'),
+                   'polygon_start': buffer(mesh.polygons, 'loop_start', 1, 'i'),
+                   'polygon_size': buffer(mesh.polygons, 'loop_total', 1, 'i'),
+                   'material_index': buffer(mesh.polygons, 'material_index', 1, 'i'),
+                   'smooth': buffer(mesh.polygons, 'use_smooth', 1, 'b'),
+                   'has_custom_normals': bool(mesh.has_custom_normals),
+                   'corner_normals': buffer(normals, 'vector', 3),
+                   'uv_active_index': int(mesh.uv_layers.active_index), 'uv': [], 'attributes': []}
+            for uv in mesh.uv_layers:
+                row['uv'].append({'name': uv.name, 'active_render': bool(uv.active_render),
+                                  'active_clone': bool(uv.active_clone),
+                                  'values': buffer(uv.data, 'uv', 2)})
+            for attr in sorted(mesh.attributes, key=lambda item: item.name):
+                need(attr.data_type in types, 'attribute_type_unsupported:'+attr.data_type)
+                field, width, kind = types[attr.data_type]
+                row['attributes'].append({'name': attr.name, 'domain': attr.domain,
+                                          'type': attr.data_type,
+                                          'values': buffer(attr.data, field, width, kind)})
+            row['material_slots'] = []
+            for slot in obj.material_slots:
+                material = slot.material
+                row['material_slots'].append({'link': slot.link, 'material': name(material)})
+                if material is not None:material_sources[name(material)] = material
+            mesh_rows.append(row)
+        elif obj.type == 'LIGHT':
+            static(obj.data)
+            lights.append({'object': name(obj), 'data': obj.data})
+        elif obj.type == 'CAMERA':static(obj.data)
+
+    image_rows = {}; trees = {}; active_trees = set()
+    def image_state(image):
+        static(image);key = name(image)
+        if key in image_rows:return key
+        need(len(image_rows) < maxima['images'] and image.source == 'FILE' and
+             not bool(image.is_dirty) and not bool(getattr(image, 'use_multiview', False)),
+             'packed_clean_FILE_image_required')
+        need(image.type == 'IMAGE' and image.file_format in ('JPEG','PNG'),
+             'single_layer_JPEG_or_PNG_required')
+        packed = image.packed_file
+        need(packed is not None and len(getattr(image, 'packed_files', ())) <= 1,
+             'single_packed_image_required')
+        size = int(packed.size)
+        need(0 < size <= maxima['packed_bytes']-used['packed_bytes'], 'packed_image_bytes')
+        blob = bytes(packed.data)
+        need(len(blob) == size, 'packed_image_size')
+        used['packed_bytes'] += size
+        dimensions = [int(x) for x in image.size]
+        need(len(dimensions) == 2 and all(0 < x <= 8192 for x in dimensions), 'image_dimensions')
+        image_rows[key] = {'name': key, 'sha256': hashlib.sha256(blob).hexdigest(),
+                           'packed_bytes': size, 'size': dimensions,
+                           'channels': int(image.channels), 'dirty': False,
+                           'source': image.source, 'colorspace': image.colorspace_settings.name,
+                           'color_settings': _scalar_state(image.colorspace_settings, ('name',)),
+                           # Image.pixels is a writable FLOAT RNA array. A
+                           # generic scalar walk would expand 16M values for
+                           # this 2k FILE image, outside the metadata budget.
+                           # Packed bytes + clean state bind its actual pixels.
+                           'settings': {field: _scalar_value(getattr(image,field)) for field in
+                               ('filepath','filepath_raw','alpha_mode','use_view_as_render',
+                                'use_half_precision','use_deinterlace') if hasattr(image,field)}}
+        return key
+
+    def graph(tree, owner):
+        if tree is None:return None
+        static(tree);key = owner+'/'+name(tree);pointer = tree.as_pointer()
+        need(pointer not in active_trees, 'recursive_node_group_unsupported')
+        if key in trees:return key
+        need(len(trees) < maxima['trees'], 'node_tree_budget')
+        trees[key] = None;active_trees.add(pointer)
+        nodes = sorted(tree.nodes, key=lambda item: item.name)
+        used['nodes'] += len(nodes);used['links'] += len(tree.links)
+        need(used['nodes'] <= maxima['nodes'] and used['links'] <= maxima['links'], 'node_budget')
+        rows = []
+        for node in nodes:
+            need(node.bl_idname != 'ShaderNodeScript', 'script_node_unsupported')
+            if node.bl_idname == 'ShaderNodeAttribute':
+                need(node.attribute_type == 'GEOMETRY', 'nongeometry_shader_attribute_unsupported')
+            row = {'name': node.name, 'type': node.bl_idname, 'settings': _scalar_state(node, ()),
+                   'inputs': [], 'outputs': []}
+            for direction in ('inputs', 'outputs'):
+                sockets = getattr(node, direction)
+                need(len(sockets) <= 128, 'socket_budget')
+                for index, socket in enumerate(sockets):
+                    entry = {'index': index, 'identifier': socket.identifier, 'name': socket.name,
+                             'type': socket.bl_idname, 'enabled': bool(socket.enabled)}
+                    if hasattr(socket, 'default_value'):
+                        entry['default_value'] = _scalar_value(socket.default_value)
+                    row[direction].append(entry)
+            if hasattr(node, 'image') and node.image is not None:row['image'] = image_state(node.image)
+            if hasattr(node, 'node_tree') and node.node_tree is not None:
+                row['group'] = graph(node.node_tree, 'group:'+name(node.node_tree))
+            for pointer_name in ('texture_mapping', 'color_mapping'):
+                mapping = getattr(node, pointer_name, None)
+                if mapping is not None:
+                    row[pointer_name] = {'settings': _scalar_state(mapping, ())}
+                    ramp = getattr(mapping, 'color_ramp', None)
+                    if ramp is not None:
+                        need(len(ramp.elements) <= 32, 'color_ramp_budget')
+                        row[pointer_name]['ramp'] = {'settings': _scalar_state(ramp, ()), 'elements': [
+                            {'position': float(element.position), 'color': _scalar_value(element.color)}
+                            for element in ramp.elements]}
+            if hasattr(node, 'color_ramp'):
+                ramp = node.color_ramp
+                need(len(ramp.elements) <= 32, 'color_ramp_budget')
+                row['ramp'] = {'settings': _scalar_state(ramp, ()), 'elements': [
+                    {'position': float(element.position), 'color': _scalar_value(element.color)}
+                    for element in ramp.elements]}
+            # Curve mappings, external textures and arbitrary object references
+            # need their own evidence contract; never silently omit them.
+            need(not hasattr(node, 'mapping') or node.mapping is None,
+                 'curve_mapping_node_unsupported')
+            for pointer_field in ('object', 'texture'):
+                need(not hasattr(node, pointer_field) or getattr(node, pointer_field) is None,
+                     'external_node_pointer_unsupported')
+            rows.append(row)
+        links = []
+        for link in tree.links:
+            need(bool(link.is_valid), 'invalid_shader_link')
+            links.append([link.from_node.name, list(link.from_node.outputs).index(link.from_socket),
+                          link.to_node.name, list(link.to_node.inputs).index(link.to_socket),
+                          bool(getattr(link, 'is_muted', False)),
+                          int(getattr(link, 'multi_input_sort_id', 0))])
+        trees[key] = {'settings': _scalar_state(tree, ()), 'nodes': rows, 'links': sorted(links)}
+        active_trees.remove(pointer)
+        return key
+
+    materials = []
+    for key, material in sorted(material_sources.items()):
+        static(material)
+        materials.append({'name': key, 'settings': _scalar_state(material, ()),
+                          'cycles': _scalar_state(material.cycles, ()) if hasattr(material, 'cycles') else {},
+                          'tree': graph(material.node_tree, 'material:'+key) if material.use_nodes else None})
+    light_rows = [{'object': row['object'], 'name': name(row['data']),
+                   'settings': _scalar_state(row['data'], ()),
+                   'cycles': _scalar_state(row['data'].cycles, ()) if hasattr(row['data'], 'cycles') else {},
+                   'tree': graph(row['data'].node_tree, 'light:'+name(row['data'])) if row['data'].use_nodes else None}
+                  for row in lights]
+    world = scene.world
+    if world is not None:static(world)
+    world_row = None if world is None else {'name': name(world), 'settings': _scalar_state(world, ()),
+        'cycles': _scalar_state(world.cycles, ()) if hasattr(world, 'cycles') else {},
+        'tree': graph(world.node_tree, 'world:'+name(world)) if world.use_nodes else None}
+    collections = {}; pending = [scene.collection]
+    while pending:
+        collection = pending.pop();static(collection);key = name(collection)
+        if key in collections:continue
+        need(len(collections) < 256, 'collection_budget')
+        collections[key] = {'hide_render': bool(collection.hide_render),
+                            'hide_viewport': bool(collection.hide_viewport),
+                            'objects': sorted(name(obj) for obj in collection.objects),
+                            'children': sorted(name(child) for child in collection.children)}
+        pending.extend(collection.children)
+    layers = []
+    for layer in scene.view_layers:
+        pending = [(layer.layer_collection, '')];rows = []
+        while pending:
+            item, parent = pending.pop();path = parent+'/'+item.name
+            need(len(rows) < 256, 'layer_collection_budget')
+            rows.append({'path': path, 'collection': name(item.collection),
+                         **{key: bool(getattr(item, key)) for key in
+                            ('exclude', 'hide_viewport', 'holdout', 'indirect_only')}})
+            pending.extend((child, path) for child in item.children)
+        need(getattr(layer, 'material_override', None) is None, 'material_override_unsupported')
+        layers.append({'name': layer.name, 'settings': _scalar_state(layer, ()),
+                       'cycles': _scalar_state(layer.cycles, ()) if hasattr(layer, 'cycles') else {},
+                       'collections': sorted(rows, key=lambda item: item['path'])})
+    scene_render = {'state': stable(native_render_state(bpy, scene, view_layer)),
+                    'render': _scalar_state(scene.render, _RENDER_FIELDS),
+                    'cycles': _scalar_state(scene.cycles, ()),
+                    'frame': int(scene.frame_current), 'unit_scale': float(scene.unit_settings.scale_length)}
+    components = {'geometry': digest([{key: value for key, value in row.items()
+                                      if key not in ('uv', 'attributes', 'corner_normals', 'material_slots')}
+                                     for row in mesh_rows]),
+                  'uv': digest([row['uv'] for row in mesh_rows]),
+                  'normals': digest([{'custom': row['has_custom_normals'], 'corners': row['corner_normals']}
+                                     for row in mesh_rows]),
+                  'attributes': digest([row['attributes'] for row in mesh_rows]),
+                  'masks': digest([[attribute for attribute in row['attributes']
+                                    if 'mask' in attribute['name'].lower() or 'select' in attribute['name'].lower()]
+                                   for row in mesh_rows]),
+                  'material_slots': digest([row['material_slots'] for row in mesh_rows]),
+                  'materials': digest(materials), 'images': digest(image_rows),
+                  'shader_graphs': digest(trees), 'lights': digest(light_rows), 'world': digest(world_row),
+                  'visibility': digest({'objects': visibility, 'collections': collections, 'layers': layers}),
+                  'render': digest(scene_render)}
+    summary = {'target': name(target), 'objects': len(objects), 'meshes': len(mesh_rows),
+               'vertices': vertex_count, 'triangles': triangle_count,
+               'uv_layers': sum(len(row['uv']) for row in mesh_rows),
+               'custom_normal_meshes': sum(row['has_custom_normals'] for row in mesh_rows),
+               'materials': len(materials), 'images': len(image_rows),
+               'image_sources': [{key: row[key] for key in
+                    ('name', 'sha256', 'packed_bytes', 'size', 'colorspace', 'dirty')} for _, row in sorted(image_rows.items())],
+               'nodes': used['nodes'], 'links': used['links'], 'packed_bytes': used['packed_bytes'],
+               'hashed_buffer_bytes': used['buffer_bytes'], 'limits': maxima,
+               'visibility_policy': 'original_objects_collections_layers_preserved',
+               'execution_authority': False}
+    payload = {'schema': 'material-readview-state-v1', 'target': name(target),
+               'components': components, 'summary': summary}
+    return {**payload, 'fingerprint': digest(payload)}
+
+
+def native_material_readview(bpy, scene, view_layer, initial_native, view, *, frame,
+                             constructed_sink):
+    """Render shared original assets in a verified temporary scene/settings copy."""
+    _require(type(constructed_sink) is dict and view == 'head_front', 'material_readview_arguments')
+    compositor=getattr(scene,'compositing_node_group',None) or getattr(scene,'node_tree',None)
+    _require(compositor is None or not len(compositor.nodes),'material_readview_compositor_unsupported')
+    sequence=scene.sequence_editor
+    _require(not len(getattr(sequence,'strips',getattr(sequence,'sequences_all',()))) if sequence else True,
+             'material_readview_sequencer_unsupported')
+    _require(view_layer.use,'material_readview_layer_unavailable')
+    from mathutils import Vector
+    source_objects={obj.as_pointer():obj for obj in scene.objects}
+    def layout(owner,layer):
+        rows=[]
+        def walk(node,path):
+            path=path+'/'+(node.name if path else '$ROOT')
+            rows.append({'path':path,'exclude':bool(node.exclude),'hide_viewport':bool(node.hide_viewport),
+                'holdout':bool(node.holdout),'indirect_only':bool(node.indirect_only),
+                'collection_hide_render':bool(node.collection.hide_render),
+                'collection_hide_viewport':bool(node.collection.hide_viewport),
+                'objects':sorted((o.name,o.as_pointer()) for o in node.collection.objects if o.as_pointer() in source_objects)})
+            for child in node.children:walk(child,path)
+        walk(layer.layer_collection,'')
+        flags=[]
+        for obj in sorted(owner.objects,key=lambda o:o.name):
+            if obj.as_pointer() not in source_objects:continue
+            member=obj.name in layer.objects
+            flags.append({'object':obj.name,'pointer':obj.as_pointer(),
+                'data_pointer':obj.data.as_pointer() if obj.data else None,
+                'hide_render':bool(obj.hide_render),'hide_viewport':bool(obj.hide_viewport),
+                'in_layer':member,'hide_get':bool(obj.hide_get(view_layer=layer)) if member else None,
+                'visible_get':bool(obj.visible_get(view_layer=layer)) if member else False,
+                'visible_camera':bool(getattr(obj,'visible_camera',True)),
+                'holdout':bool(getattr(obj,'is_holdout',False)),
+                'selected':bool(obj.select_get(view_layer=layer)) if member else None})
+        return {'layer_name':layer.name,'layer_use':bool(layer.use),'collections':rows,'objects':flags,
+            'active':layer.objects.active.as_pointer() if layer.objects.active else None,
+            'material_override':layer.material_override.as_pointer() if layer.material_override else None}
+    def color_paths(owner):
+        values={'Scene.render.image_settings.file_format':owner.render.image_settings.file_format}
+        for child,data in _image_color_state(owner.render.image_settings).items():
+            for key,value in data.items():values['Scene.render.image_settings.'+child+'.'+key]=value
+        return values
+    source_layouts={layer.name:layout(scene,layer) for layer in scene.view_layers}
+    source_state=native_render_state(bpy,scene,view_layer)
+    source_colors=color_paths(scene)
+    source_render=_scalar_state(scene.render,_RENDER_FIELDS)
+    source_cycles=_scalar_state(scene.cycles,())
+    source_scenes=_inventory(bpy.data.scenes);source_collections=_inventory(bpy.data.collections)
+    source_lights=_inventory(bpy.data.lights)
+    temporary=None;temporary_layer=None;camera_data=None;created=[];lights=[]
+    window=getattr(bpy.context,'window',None);window_scene=window.scene if window else None
+    descriptor,path=tempfile.mkstemp(prefix='human-eye-material-readview-',suffix='.png');os.close(descriptor)
+    profile=[{'energy_w':95.,'position_bu':[1.5,-1.6,2.],'size_bu':1.6},
+             {'energy_w':55.,'position_bu':[1.8,1.8,1.3],'size_bu':1.8},
+             {'energy_w':85.,'position_bu':[-1.2,.8,2.2],'size_bu':1.1}]
+    try:
+        temporary=scene.copy();temporary.name='_human_eye_readview_isolated_scene'
+        _require(temporary.collection!=scene.collection and temporary.world==scene.world and
+            temporary.render.image_settings.as_pointer()!=scene.render.image_settings.as_pointer(),
+            'material_readview_settings_not_isolated')
+        _require(set(layer.name for layer in temporary.view_layers)==set(source_layouts),
+            'material_readview_layer_copy_mismatch')
+        _require({o.as_pointer() for o in temporary.objects}==set(source_objects),
+            'material_readview_object_copy_mismatch')
+        # Rebuild every layer's local flags on the copied hierarchy; never
+        # flatten collections, link objects into a replacement collection, or
+        # change the original collection/object flags.
+        for layer in temporary.view_layers:
+            reference=source_layouts[layer.name];expected={row['path']:row for row in reference['collections']}
+            def rebuild(node,parent):
+                path=parent+'/'+(node.name if parent else '$ROOT')
+                _require(path in expected,'material_readview_collection_copy_mismatch')
+                row=expected[path]
+                _require(node.collection.hide_render==row['collection_hide_render'] and
+                    node.collection.hide_viewport==row['collection_hide_viewport'],
+                    'material_readview_collection_flags_mismatch')
+                for key in ('exclude','hide_viewport','holdout','indirect_only'):setattr(node,key,row[key])
+                for child in node.children:rebuild(child,path)
+            rebuild(layer.layer_collection,'');layer.use=reference['layer_use'];layer.update()
+            for row in reference['objects']:
+                obj=source_objects[row['pointer']]
+                _require((obj.name in layer.objects)==row['in_layer'],'material_readview_layer_membership_mismatch')
+                if row['in_layer']:
+                    obj.hide_set(row['hide_get'],view_layer=layer);obj.select_set(row['selected'],view_layer=layer)
+            layer.objects.active=source_objects.get(reference['active']);layer.update()
+            _require(layout(temporary,layer)==reference,'material_readview_visibility_copy_mismatch')
+        temporary_layer=temporary.view_layers[view_layer.name]
+        camera_data=bpy.data.cameras.new('_human_eye_readview_camera_data')
+        camera=bpy.data.objects.new('_human_eye_readview_camera',camera_data);created.append(camera)
+        temporary.collection.objects.link(camera);camera.location=frame['camera_location_bu']
+        camera.rotation_euler=(-Vector(frame['direction'])).to_track_quat('-Z','Y').to_euler()
+        camera_data.type='ORTHO';camera_data.ortho_scale=frame['ortho_scale_bu']
+        camera_data.clip_start=frame['clip_start_bu'];camera_data.clip_end=frame['clip_end_bu']
+        for i,spec in enumerate(profile):
+            data=bpy.data.lights.new('_human_eye_readview_area_'+str(i),'AREA');lights.append(data)
+            obj=bpy.data.objects.new(data.name,data);created.append(obj);temporary.collection.objects.link(obj)
+            obj.location=spec['position_bu'];obj.rotation_euler=(Vector((0.,0.,.9))-obj.location).to_track_quat('-Z','Y').to_euler()
+            data.energy=spec['energy_w'];data.shape='SQUARE';data.size=spec['size_bu'];data.color=(1.,1.,1.)
+        temporary.camera=camera;temporary.render.engine='CYCLES'
+        temporary.cycles.device='CPU';temporary.cycles.samples=24;temporary.cycles.use_adaptive_sampling=False
+        render=temporary.render;render.resolution_x=render.resolution_y=384;render.resolution_percentage=100
+        render.pixel_aspect_x=render.pixel_aspect_y=1.;render.use_border=False;render.use_crop_to_border=False;render.filepath=path
+        render.image_settings.file_format='PNG';render.image_settings.color_mode='RGBA';render.image_settings.color_depth='8'
+        temporary_layer.update()
+        frustum=_check_native_view_frame(camera,camera_data,initial_native,float(scene.unit_settings.scale_length),frame,
+            screen_coverage='intentional_local_window',render=render,view=view)
+        _require(color_paths(scene)==source_colors,'material_readview_source_colors_changed')
+        actual_bytes=0;png=b''
+        try:bpy.ops.render.render(write_still=True,scene=temporary.name,layer=temporary_layer.name)
+        finally:
+            if os.path.exists(path):
+                actual_bytes=os.path.getsize(path)
+                if actual_bytes:
+                    with open(path,'rb') as stream:png=stream.read(8*1024*1024+1)
+                    constructed_sink.update(image_constructed=True,bytes=actual_bytes,
+                        sha256=hashlib.sha256(png).hexdigest() if len(png)==actual_bytes else None)
+        _require(len(png)==actual_bytes<=8*1024*1024 and png[:8]==b'\x89PNG\r\n\x1a\n' and
+            len(png)>=24 and struct.unpack('>II',png[16:24])==(384,384),'material_readview_png_unavailable')
+        _require(all(layout(temporary,layer)==source_layouts[layer.name] for layer in temporary.view_layers),
+            'material_readview_visibility_changed_after_render')
+        return {'mime_type':'image/png','image_base64':base64.b64encode(png).decode('ascii'),
+            'width':384,'height':384,'view':view,'source':'blender_cycles_material_readview','frustum':frustum,
+            'png_sha256':constructed_sink['sha256'],
+            'scene_isolation':{'method':'scene_copy_with_verified_collection_tree_and_viewlayers',
+                'shared_original_objects':len(source_objects),'visibility_equivalence_verified':True,
+                'source_layout':source_layouts,'original_color_RNA':source_colors,
+                'temporary_output_color_RNA':color_paths(temporary),'original_color_RNA_untouched':color_paths(scene)==source_colors},
+            'lighting':{'profile':'three_area_overlay_v1','areas':profile,'aim_bu':[0.,0.,.9],
+                'shape':'SQUARE','color':[1.,1.,1.],'original_lights':'preserved','world':'shared_original_unchanged'},
+            'color_management':{'policy':'source_scene_color_management_copied_output_settings_isolated',
+                'source_view':_scalar_state(scene.view_settings,_VIEW_FIELDS)},
+            'render_profile':{'engine':'CYCLES','device':'CPU','samples':24,'adaptive_sampling':False,
+                'denoising':bool(temporary.cycles.use_denoising)}}
+    finally:
+        errors=[]
+        def cleanup(label,operation):
+            try:operation()
+            except BaseException as exc:errors.append(label+':'+type(exc).__name__)
+        if window and window_scene:cleanup('context_scene',lambda:setattr(window,'scene',window_scene))
+        for obj in reversed(created):cleanup('temporary_object',lambda obj=obj:bpy.data.objects.remove(obj,do_unlink=True))
+        for data in lights:cleanup('temporary_light',lambda data=data:bpy.data.lights.remove(data))
+        if camera_data is not None:cleanup('temporary_camera',lambda:bpy.data.cameras.remove(camera_data))
+        if temporary is not None:cleanup('temporary_scene',lambda:bpy.data.scenes.remove(temporary))
+        cleanup('source_layer_update',view_layer.update)
+        if os.path.exists(path):cleanup('temporary_png',lambda:os.unlink(path))
+        try:
+            _require(native_render_state(bpy,scene,view_layer)==source_state and
+                _scalar_state(scene.render,_RENDER_FIELDS)==source_render and
+                _scalar_state(scene.cycles,())==source_cycles and color_paths(scene)==source_colors and
+                {layer.name:layout(scene,layer) for layer in scene.view_layers}==source_layouts and
+                _inventory(bpy.data.scenes)==source_scenes and _inventory(bpy.data.collections)==source_collections and
+                _inventory(bpy.data.lights)==source_lights,'material_readview_source_state_readback_mismatch')
+        except BaseException as exc:errors.append('source_readback:'+str(exc)[:300])
+        if errors:raise EpisodeUncertain('material_readview_isolation_cleanup_failed:'+','.join(errors)[:1500])

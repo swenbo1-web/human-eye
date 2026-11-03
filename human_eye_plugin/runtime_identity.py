@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-scene-trace-owner-20261103"
+IMPLEMENTATION_REVISION = "v21-static-material-readview-candidate-20261103"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 

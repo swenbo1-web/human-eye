@@ -1,7 +1,6 @@
 """Pinned read helpers and exact-byte host loading; no Blender is launched."""
 from __future__ import annotations
 
-import ast
 import base64
 import copy
 from fractions import Fraction
@@ -10,6 +9,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import sys
 import tempfile
 from types import ModuleType
 import unittest
@@ -186,17 +186,44 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
 
     def test_capture_uses_checked_template_only_inside_readonly_scope(self):
         from verification.test_blender_mcp_host import _reply,_server
+        from verification.test_blender_native_evidence import fixture
+        import builtins
+        self.poison_pyc(self.package/'blender_host.py')
         with _server(lambda request:_reply(request),connections=4) as (port,requests):
             host=BlenderMCPHost(self.root,port=port)
-            host.capture_scene()
-            with host.observation_transaction():
-                host.capture_scene();host.capture_evidence()
-            host.capture_evidence()
-        code=[request[0]['params']['code'] for request in requests]
-        self.assertNotIn('compile(',code[0]);self.assertNotIn('compile(',code[3])
-        self.assertIn('compile(_source_bytes',code[1]);self.assertIn('compile(_source_bytes',code[2])
-        self.assertNotIn('_host._readonly_dependency_sources(',code[1])
-        self.assertNotIn('_host._readonly_dependency_sources(',code[2])
+            with patch.object(host,'_code',wraps=host._code) as regular, \
+                    patch.object(host,'_observation_code',wraps=host._observation_code) as readonly:
+                host.capture_scene()
+                with host.observation_transaction():
+                    host.capture_scene();host.capture_evidence()
+                    with self.assertRaisesRegex(ValueError,'Only fixed read-only commands'):
+                        host._request('apply',{})
+                host.capture_evidence()
+            self.assertEqual([call.args[0] for call in regular.call_args_list],
+                             ['capture','capture_evidence'])
+            self.assertEqual([call.args[0] for call in readonly.call_args_list],
+                             ['capture','capture_evidence'])
+        expected=(self.package/'blender_host.py').read_bytes()
+        real_compile=builtins.compile;real_open=Path.open
+        for index,(request,_) in enumerate(requests):
+            compiled=[];namespace={'bpy':fixture()[0].bpy};output=io.StringIO()
+            def compile_snapshot(raw,filename,*args,**kwargs):
+                if filename==str(self.package/'blender_host.py'):compiled.append(raw)
+                return real_compile(raw,filename,*args,**kwargs)
+            def open_file(path,*args,**kwargs):
+                if path.parent==self.package and path.name in HELPERS:
+                    raise AssertionError('capture must not read native dependencies')
+                return real_open(path,*args,**kwargs)
+            with self.subTest(index=index),patch('sys.stdout',output), \
+                    patch('builtins.compile',compile_snapshot),patch.object(Path,'open',open_file):
+                exec(real_compile(request['params']['code'],'<capture-scope>','exec'),namespace)
+            value=json.loads(output.getvalue()[len(RPC_PREFIX):])
+            self.assertIn('result',value);self.assertNotIn('error',value)
+            self.assertEqual(compiled,[expected])
+            self.assertEqual(namespace['_module'].__file__,str(self.package/'blender_host.py'))
+            if index in (1,2):
+                self.assertEqual(namespace['_module']._READONLY_LOADED_HOST_SHA256,
+                                 hashlib.sha256(expected).hexdigest())
 
     def test_connector_initial_host_read_is_bounded(self):
         (self.package/'blender_host.py').write_bytes(b'x'*(512*1024+1))
@@ -210,20 +237,47 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
         self.assertNotIn('changed code ran',value['error']['message'])
         self.assertFalse(value['error']['mutation_uncertain'])
 
-    def test_only_readonly_template_changes_and_worker_compiles_one_host_snapshot(self):
-        baseline=WORK.parent/'before/human_eye_plugin/blender_mcp_host.py'
-        def functions(path):
-            source=path.read_text(encoding='utf8');tree=ast.parse(source)
-            cls=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='BlenderMCPHost')
-            return {n.name:ast.get_source_segment(source,n) for n in cls.body if isinstance(n,ast.FunctionDef)}
-        old=functions(baseline);new=functions(ROOT/'human_eye_plugin/blender_mcp_host.py')
-        self.assertEqual(old['_code'],new['_code']);self.assertEqual(old['_supervision_code'],new['_supervision_code'])
-        source=(ROOT/'human_eye_plugin/blender_worker.py').read_text(encoding='utf8')
-        self.assertIn("compile(host_source_bytes,str(source),'exec',dont_inherit=True)",source)
-        self.assertIn('module._READONLY_LOADED_HOST_SHA256=hashlib.sha256(host_source_bytes).hexdigest()',source)
-        self.assertNotIn('spec.loader.exec_module(module)',source)
-        self.assertIn('deadline_module = host._readonly_clock_module()',source)
-        self.assertNotIn('deadline_spec.loader.exec_module',source)
+    def test_readonly_worker_executes_one_verified_host_snapshot(self):
+        from human_eye_plugin.blender_worker import run_worker,RPC_PREFIX as WORKER_PREFIX
+        from human_eye_plugin.verified_source_loader import SourceGuard,capture
+        from verification.test_blender_native_evidence import fixture
+        import builtins
+        manifest=[{'path':'human_eye_plugin/'+name,
+                   'sha256':hashlib.sha256((self.package/name).read_bytes()).hexdigest()}
+                  for name in ('blender_host.py',*HELPERS)]
+        guard=SourceGuard(self.root,capture(self.root,manifest))
+        expected=(self.package/'blender_host.py').read_bytes()
+        self.poison_pyc(self.package/'blender_host.py')
+        bpy=fixture()[0].bpy;bpy.app.version_string='isolated-RNA-fixture'
+        commands=[{'id':index,'command':command,'params':{}} for index,command in enumerate(
+                  ('capabilities','capture','capture_evidence','shutdown'),1)]
+        incoming=io.StringIO(''.join(json.dumps(command)+'\n' for command in commands))
+        output=io.StringIO();compiled=[];real_compile=builtins.compile
+        def compile_snapshot(raw,filename,*args,**kwargs):
+            if filename==str(self.package/'blender_host.py'):compiled.append(raw)
+            return real_compile(raw,filename,*args,**kwargs)
+        with patch.dict(sys.modules,{'bpy':bpy}), \
+                patch.object(sys,'meta_path',[guard,*sys.meta_path]), \
+                patch.object(sys,'dont_write_bytecode',True),patch('sys.stdin',incoming), \
+                patch('sys.stdout',output),patch('builtins.compile',compile_snapshot):
+            run_worker(self.root,material_readview_only=True)
+            loaded=sys.modules['human_eye_blender_host_worker']
+        replies=[json.loads(line[len(WORKER_PREFIX):]) for line in output.getvalue().splitlines()]
+        self.assertEqual([row['id'] for row in replies],[1,2,3,4])
+        capabilities=replies[0]['result']
+        self.assertTrue(capabilities['material_readview_only'])
+        self.assertFalse(capabilities['generic_code_execution'])
+        self.assertEqual(capabilities['native_observation_capabilities']['host_source_sha256'],
+                         hashlib.sha256(expected).hexdigest())
+        for row in replies[1:3]:
+            self.assertFalse(row['error']['mutation_uncertain'])
+            self.assertIn('no setter or general capture',row['error']['message'])
+        self.assertEqual(replies[3]['result'],{'closed':True})
+        self.assertEqual(compiled,[expected])
+        self.assertEqual(guard._executed[id(loaded)][1],'human_eye_plugin/blender_host.py')
+        self.assertEqual(loaded._READONLY_LOADED_HOST_SHA256,hashlib.sha256(expected).hexdigest())
+        self.assertEqual(guard.sources['human_eye_plugin/blender_host.py'],expected)
+        self.assertFalse(any(key.startswith('_human_eye_owned_episode') for key in bpy.app.driver_namespace))
 
 
 if __name__=='__main__':unittest.main()

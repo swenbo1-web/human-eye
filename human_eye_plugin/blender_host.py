@@ -66,7 +66,7 @@ _READBACK_TOLERANCE_M = 1e-6
 # The host source digest commits transitively to these two read-only helpers.
 # Keep the public V1 capability unchanged; load only the exact checked bytes.
 _READONLY_DEPENDENCY_SHA256 = {
-    'episode_gateway.py': 'b886b4b0d4da8ceaf32b952c810a9843ec4ec7d907830050db1e5b91815fe379',
+    'episode_gateway.py': '11bddcf41f775ccb7ee8d01e8c03369258367865f2ec6e0698bd99b3507c88cb',
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
@@ -1133,6 +1133,162 @@ class BlenderSceneHost:
                 '_human_eye_readonly_native_render')
             self._readonly_native_module_cache=module
         return module
+
+    def _material_readview_preflight(self, binding):
+        """Candidate-only static appearance domain; never a motion admission."""
+        from pathlib import Path
+        self._main_thread()
+        if not getattr(self, '_material_readview_only', False):
+            raise EpisodePrewriteRefused('material_readview_owned_readonly_worker_required')
+        keys={'schema','source_path','source_sha256','target_id','view','center_world_m','span_m'}
+        if (type(binding) is not dict or set(binding)!=keys or binding['schema']!='static-material-readview-v1'
+                or binding['view']!='head_front' or not _hex_string(binding['source_sha256'],64)
+                or type(binding['target_id']) is not str or len(binding['target_id'])>256
+                or type(binding['center_world_m']) is not list or len(binding['center_world_m'])!=3
+                or any(type(v) not in (float,int) or not math.isfinite(v) for v in binding['center_world_m'])
+                or type(binding['span_m']) not in (float,int) or not .01<=binding['span_m']<=1.):
+            raise EpisodePrewriteRefused('material_readview_binding_invalid')
+        path=Path(binding['source_path']).resolve()
+        if (path!=Path(self.bpy.data.filepath).resolve() or not path.is_file()
+                or path.stat().st_size>64*1024*1024
+                or hashlib.sha256(path.read_bytes()).hexdigest()!=binding['source_sha256']):
+            raise EpisodePrewriteRefused('material_readview_source_changed')
+        objects=list(self.scene.objects)
+        if len(objects)>32:raise EpisodePrewriteRefused('material_readview_object_budget')
+        counts={'vertices':0,'edges':0,'polygons':0,'corners':0,'triangles':0}
+        for obj in objects:
+            if (getattr(obj,'library',None) is not None or getattr(obj,'animation_data',None) is not None
+                    or len(obj.constraints) or getattr(obj,'parent',None) is not None):
+                raise EpisodePrewriteRefused('material_readview_static_source_required')
+            if obj.type not in ('MESH','CAMERA','LIGHT','EMPTY'):
+                raise EpisodePrewriteRefused('material_readview_object_type_unsupported')
+            if obj.type!='MESH':continue
+            if len(obj.modifiers) or obj.data.shape_keys is not None:
+                raise EpisodePrewriteRefused('material_readview_static_mesh_required')
+            mesh=obj.data
+            for name,amount in [('vertices',len(mesh.vertices)),('edges',len(mesh.edges)),
+                    ('polygons',len(mesh.polygons)),('corners',len(mesh.loops)),
+                    ('triangles',sum(max(0,p.loop_total-2) for p in mesh.polygons))]:counts[name]+=amount
+            if (counts['vertices']>32768 or counts['triangles']>65536 or counts['corners']>262144
+                    or counts['edges']>131072 or counts['polygons']>65536):
+                raise EpisodePrewriteRefused('material_readview_geometry_budget')
+        target=next((obj for obj in objects if obj.type=='MESH' and self.object_id(obj)==binding['target_id']),None)
+        if target is None:raise EpisodePrewriteRefused('material_readview_target_missing')
+        if target.hide_render or target.name not in self.view_layer.objects:
+            raise EpisodePrewriteRefused('material_readview_target_hidden')
+        if (not self.view_layer.use or not bool(getattr(target,'visible_camera',True))
+                or bool(getattr(target,'is_holdout',False)) or bool(getattr(target,'is_shadow_catcher',False))):
+            raise EpisodePrewriteRefused('material_readview_target_not_camera_visible')
+        def visible_path(node,blocked=False):
+            blocked=blocked or node.exclude or node.holdout or node.indirect_only or node.collection.hide_render
+            return ((not blocked and target.name in node.collection.objects)
+                or any(visible_path(child,blocked) for child in node.children))
+        if not visible_path(self.view_layer.layer_collection):
+            raise EpisodePrewriteRefused('material_readview_target_collection_hidden')
+        compositor=getattr(self.scene,'compositing_node_group',None) or getattr(self.scene,'node_tree',None)
+        sequence=getattr(self.scene,'sequence_editor',None)
+        strips=getattr(sequence,'strips',getattr(sequence,'sequences_all',())) if sequence else ()
+        if (self.scene.animation_data is not None or compositor is not None and len(compositor.nodes)
+                or len(strips)):
+            raise EpisodePrewriteRefused('material_readview_pipeline_unsupported')
+        counts.update(source_bytes=path.stat().st_size,linear_work_units=sum(counts.values()))
+        return target,counts
+
+    def _material_readview_store(self):
+        namespace=self.bpy.app.driver_namespace
+        key='_human_eye_static_material_readview_v1'
+        if key not in namespace:
+            namespace[key]={'requests':{},'attempts':0,'constructed':0,'returned':0,'active':False,
+                'quarantined':False,'binding':None,'last_audit':None}
+        return namespace[key]
+
+    def material_readview_header(self, binding):
+        with self._lock:
+            target,counts=self._material_readview_preflight(binding)
+            store=self._material_readview_store();digest=_digest(binding)
+            if store['quarantined'] or store['active']:raise EpisodePrewriteRefused('material_readview_worker_unavailable')
+            if store['binding'] is not None and store['binding']!=digest:
+                raise EpisodePrewriteRefused('material_readview_worker_rebinding_forbidden')
+            store['binding']=digest
+            module=self._readonly_native_module()
+            state=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+            evidence=self.capture_readonly_evidence()
+            return {'protocol':'static-material-readview-v1','binding':binding,'binding_digest':digest,
+                'appearance':state,'capture_revision':evidence['capture']['revision'],'counts':counts,
+                'saved_frame':self.scene.frame_current,'process_id':os.getpid(),
+                'clock':self._readonly_clock_module().counter_descriptor(),
+                'read_only':True,'execution_authority':False,'max_attempts':2,
+                'geometry_limits':{'vertices':32768,'triangles':65536,'corners':262144},
+                'native_packet_bytes':len(json.dumps(evidence['native_scene'],allow_nan=False).encode('utf8'))}
+
+    def last_material_readview_audit(self):
+        return json.loads(json.dumps(self._material_readview_store()['last_audit'],allow_nan=False))
+
+    def observe_material_readview(self, request_id, binding, expected_fingerprint, deadline_ns):
+        """An image is constructed evidence, never confirmed consumer delivery."""
+        self._main_thread()
+        with self._lock:
+            self._readonly_request_id(request_id)
+            now=time.perf_counter_ns()
+            if type(deadline_ns) is not int or not now<deadline_ns<=now+30_000_000_000:
+                raise EpisodePrewriteRefused('material_readview_deadline_invalid')
+            store=self._material_readview_store()
+            if store['active'] or store['quarantined']:raise EpisodePrewriteRefused('material_readview_worker_unavailable')
+            if request_id in store['requests']:raise EpisodePrewriteRefused('material_readview_request_reused')
+            if len(store['requests'])>=16:raise EpisodePrewriteRefused('material_readview_request_budget')
+            store['requests'][request_id]=True;store['active']=True
+            audit={'protocol':'static-material-readview-v1','request_id':request_id,'status':'failed',
+                'clock':self._readonly_clock_module().counter_descriptor(),
+                'started_ns':now,'deadline_ns':deadline_ns,'finished_ns':None,'render_attempted':False,
+                'image_constructed':False,'image_returned_to_transport':False,'restored':None,
+                'error':None,'read_only':True,'execution_authority':False}
+            store['last_audit']=audit;constructed={};before=None;result=None
+            try:
+                target,counts=self._material_readview_preflight(binding)
+                if store['binding']!=_digest(binding):raise EpisodePrewriteRefused('material_readview_binding_changed')
+                module=self._readonly_native_module()
+                before=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+                if (not _hex_string(expected_fingerprint,64) or before['fingerprint']!=expected_fingerprint):
+                    raise EpisodePrewriteRefused('material_readview_stale_appearance')
+                evidence=self.capture_readonly_evidence();native=evidence['native_scene'];scale=self._scale()
+                center=[v/scale for v in binding['center_world_m']]
+                frame={'center_bu':center,'direction':[1.,0.,0.],'right':[0.,1.,0.],'up':[0.,0.,1.],
+                    'camera_location_bu':[center[0]+4./scale,center[1],center[2]],
+                    'ortho_scale_bu':binding['span_m']/scale,'clip_start_bu':.001/scale,'clip_end_bu':10./scale}
+                if time.perf_counter_ns()>=deadline_ns:raise EpisodePrewriteRefused('material_readview_deadline_expired')
+                if store['attempts']>=2:raise EpisodePrewriteRefused('material_readview_render_budget')
+                store['attempts']+=1;audit['render_attempted']=True
+                result=self._episode_call(module,'native_material_readview',self.bpy,self.scene,self.view_layer,
+                    native,binding['view'],frame=frame,constructed_sink=constructed)
+                after=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+                audit['restored']=after==before and self.capture_readonly_evidence()==evidence
+                if not audit['restored']:raise EpisodeUncertain('material_readview_state_not_restored')
+                self._material_readview_preflight(binding)
+                if time.perf_counter_ns()>=deadline_ns:raise EpisodePrewriteRefused('material_readview_deadline_expired_after_render')
+                if not constructed.get('image_constructed'):raise EpisodeUncertain('material_readview_construction_receipt_missing')
+                audit.update(status='ready',image_returned_to_transport=True)
+                store['returned']+=1
+                return {'protocol':'static-material-readview-v1','request_id':request_id,'binding':binding,
+                    'binding_digest':store['binding'],'appearance':before,'counts':counts,'image':result,
+                    'expected_appearance_fingerprint':expected_fingerprint,
+                    'audit':audit,'delivery':'constructed_not_confirmed_model_read','read_only':True,'execution_authority':False}
+            except BaseException as exc:
+                audit['error']={'type':type(exc).__name__,'message':str(exc)[:2000]}
+                if before is not None:
+                    try:audit['restored']=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)==before
+                    except BaseException:audit['restored']=False
+                if audit['restored'] is False:store['quarantined']=True
+                return {'protocol':'static-material-readview-v1','request_id':request_id,'status':'unavailable',
+                    'binding':binding,'binding_digest':store['binding'],'appearance':before,
+                    'expected_appearance_fingerprint':expected_fingerprint,
+                    'audit':audit,'image':None,'read_only':True,'execution_authority':False}
+            finally:
+                if constructed.get('image_constructed'):
+                    store['constructed']+=1;audit.update(image_constructed=True,
+                        png_sha256=constructed.get('sha256'),png_bytes=constructed.get('bytes'))
+                audit.update(finished_ns=time.perf_counter_ns(),attempts_spent=store['attempts'],
+                    constructed_spent=store['constructed'],returned_to_transport=store['returned'])
+                store['active']=False
 
     @staticmethod
     def _readonly_request_id(value):
