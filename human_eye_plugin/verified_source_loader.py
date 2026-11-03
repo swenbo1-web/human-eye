@@ -94,9 +94,15 @@ class SourceGuard(importlib.abc.MetaPathFinder):
     def verify_loaded(self):
         for name,module in list(sys.modules.items()):
             path=getattr(module,'__file__',None)
-            internal=path is not None and Path(path).is_absolute() and Path(path).resolve().is_relative_to(self.root)
-            if not self._owned_name(name) and not internal:continue
-            if self._namespaces.get(id(module)) is module:continue
+            owned=self._owned_name(name);namespace=self._namespaces.get(id(module)) is module
+            # Owned non-namespace names always require an execution witness;
+            # origin classification cannot exempt them. Keep the final fresh
+            # origin resolution below, without resolving twice for classification.
+            # Unknown names and namespaces retain their original path checks.
+            if not owned or namespace:
+                internal=path is not None and Path(path).is_absolute() and Path(path).resolve().is_relative_to(self.root)
+                if not owned and not internal:continue
+            if namespace:continue
             witness=self._executed.get(id(module))
             if witness is None or witness[0] is not module or path is None or Path(path).resolve()!=self.root/witness[1]:
                 raise SourceBindingError('verified_source_preloaded_module:'+name)
