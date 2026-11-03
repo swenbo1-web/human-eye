@@ -120,3 +120,30 @@ Codex官方App Server提供`config/mcpServer/reload`协议，但本聊天工具�
 垃圾盘点确认1,520文件、57,332,922字节：29个与保留源码逐字节相同的build副本，以及1个可再生pycache。递归删除命令被自动执行策略拒绝，原始原因仅为`blocked by policy`，因此实际删除为0。候选路径、SHA和保留原件已形成清单；未用其他路径重试绕过。旧stage失败记录/视觉/源码/依赖/wheel/安装元数据、证据、运行状态、回退材料均保留。
 
 本地证据独立保存在`verification/fixes/20261103_review_cycle003/`：本轮doctor/plan/apply、独立审查、BEFORE/AFTER_APPLY、交易manifest、实际聊天拒绝、正式新进程、独立QA原生图/零setter、回退doctor/plan及清理清单。宿主重连和真实消息仍是后续验收，不宣称整个产品已发布或模型有巨大提升。Google/API/Key/外部费用账本继续暂停，来源US$0.02预留保持。
+
+
+## REVIEW-CYCLE-003-RECONNECT 真实宿主验收
+
+用户在来源聊天先回复“已经重连”，随后按实际插件面板位置启动Blender连接器，再提交真实三维只读原句。仍为原d9/125候选，原003记录作为当时结果保留，本次不重apply、不建QA、不手工调用Hook、不改trust或权限；99份既有seal索引保持。实际共享GUI只读观察由来源聊天执行，本实施聊天核对当前MCP身份和状态并独立重放来源消息/日志证据。
+
+| 有限入口 | 本轮实际结果 |
+| --- | --- |
+| 当前桌面MCP | 实际status返回installed_distribution/source.guard.r1/d9/125、pins与identity匹配，无inflight/quarantine/unfinished_goal |
+| 正式GUI只读 | 用户连接前1次观察provider unavailable；连接后1次MCP overview成功，Cube/#B0001世界bbox[-1,-1,-1]至[1,1,1]，无移动/保存请求 |
+| 非三维真人Prompt | 两条普通消息“已经重连”“已经打开了”和一条问答分别实际dispatch后intent_unknown/skip，未读取场景 |
+| 真实三维Prompt | 1/1正向：当前question_reply中的answer为“观察 Blender 当前场景中的 Cube，只观察，不移动、不保存。”，实际Hook自动observe为overview/complete |
+| 工具前交付 | 原始source rollout为直接role=developer，不是工具输出中引用文字；2026-11-03上海12:35:14.313注入，早于后续首个模型工具12:35:38.268，共23.955秒；此差值是事件顺序证据，不是性能收益 |
+
+正向消息wrapper为354字符/568 UTF8字节，SHA`79130396e27293a3648460edbf34dec7802b888232a1ce027f9fe702fe0f9b02`。独立从read_thread原始人类内容计算并匹配host_hook.prompt_input；format=codex_question_reply/extraction=answers_only，不能把问答原句当合成输入。实际trace`95e5f1ac021941198dd976138843c898`、request`9a4a88bb0d3f4e21a159d5ecc9312bdb`，request_origin=hook_command、tool_use_id=null，与直接developer消息及product observe/host_hook/request_trace三行对应。当前scene revision为`blender:45622a04ba88f0b00b49ae15c3b94115e1526677ec94b9d1ecbdba79c1da8874`，正文当前fingerprint为`6f3c828984fced67831b728d86414095e0dfaafd68c6546dc3ebeb1ff050ebfa`。
+
+单物体只认证overview：pair unresolved/scene_overview_pair_required、execution_status=not_requested、execution_authority=false、image_count=0均保持。不能把这次成功写成正式GUI的4毫米双物体量测、图片、写入授权或整个产品发布。原003独立QA的4毫米/384图仍是其独立范围。当前addon协议7、服务器期待15的版本差异保留，本轮兼容fallback的有限读取成功不证明所有新版addon能力。
+
+五条当前Hook命令与全局五条trusted_hash记录均已只读核对。Prompt的实际执行证明此次未被信任门拦截；未独立重构当前定义hash算法，不由旧.hook-trust或单纯登记推断所有hook受信。四个动作Pre/Post只匹配transform/clearance_segment，本轮没有对应动作调用，保持未触发/未验；真人写操作表单亦未验。官方宿主日志的generic hook/started与completed仅带targeted_connections，不能单独归因HumanEye，直接用户SHA、product事件和developer输入为本轮关联依据。
+
+### 已确认的遥测缺陷与下一项
+
+本次MCP与Hook实际正文均为当前Cube，但对应request_trace.annotations写入了历史场景fingerprint`d21fef06…8143d4`及2对象/16点/24面，而correlation.scene_revision是当前Cube。只读代码审查定位：overview为清旧pair而runtime.import_state，其重新校验历史router session时，_validated_scene向当前trace重复annotate；last-write-wins覆盖fingerprint/规模，返回包装仅恢复当前route.scene_revision等字段。当前最后历史session恰与旧fingerprint及2/16/24一致。
+
+这是实证的日志元数据污染，尚未修复。实际当前正文、只读状态与工具前注入门保持成立；不能用错误annotations作当前资产来源/规模、精确成本归因，也不据此外推其他动作安全。本轮运行源码固定，记录后交来源审查，后续另做最小遥测修复及反例，不静默改日志或重标旧验收。相比原003状态，动作sessions、goal_segments、消耗预算、quarantine和inflight保持；新增读取仅更新router观察缓存。
+
+本次证据位于独立兄弟目录`verification/fixes/20261103_review_cycle003_reconnect/`，含实际桌面status、真实来源消息、正负Prompt、直接developer注入及首个后续工具原始行、输入SHA绑定、当前Hook定义/信任记录、遥测限制、最终state与seal。原003封存未追加。Google/API/key/付费试验仍暂停，来源US$0.02预留不变；垃圾清理仍为策略拒绝后的0删除，没有绕过。
