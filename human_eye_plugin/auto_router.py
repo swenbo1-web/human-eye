@@ -263,7 +263,7 @@ def _validate_raw_indices(raw, width, vertex_count, field):
 
 
 @_trace_stage("scene.validate")
-def _validated_scene(scene: dict, *, _return_payload=False) -> tuple:
+def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True) -> tuple:
     if not isinstance(scene, dict):
         raise ValueError("scene must be an object")
     if scene.get("unit") != "m" or scene.get("coordinate_frame") != "world":
@@ -368,8 +368,11 @@ def _validated_scene(scene: dict, *, _return_payload=False) -> tuple:
         payload = json.dumps(normalized, sort_keys=True, separators=(",", ":"),
                              ensure_ascii=False, allow_nan=False).encode()
         fingerprint = hashlib.sha256(payload).hexdigest()
-    _trace_annotate(scene_revision=revision, scene_fingerprint=fingerprint,
-                    object_count=len(meshes), vertex_count=vertex_count, face_count=face_count)
+    # Detached history/delta validation retains all checks, hashes and spans,
+    # but does not own the current request capture metadata.
+    if _annotate_scene:
+        _trace_annotate(scene_revision=revision, scene_fingerprint=fingerprint,
+                        object_count=len(meshes), vertex_count=vertex_count, face_count=face_count)
     return ((normalized, meshes, fingerprint, payload) if _return_payload else
             (normalized, meshes, fingerprint))
 
@@ -1682,7 +1685,7 @@ class HumanEyeAutoRouter:
         for sid, state in sessions:
             if not isinstance(sid, str) or not sid or sid in restored:
                 raise ValueError("Invalid persisted session")
-            scene, _, fingerprint = _validated_scene(state["scene"])
+            scene, _, fingerprint = _validated_scene(state["scene"], _annotate_scene=False)
             if fingerprint != state.get("fingerprint"):
                 raise ValueError("Persisted scene fingerprint mismatch")
             item = copy.deepcopy(state); item["scene"] = scene

@@ -15,7 +15,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 - 对有限可信固定帧LBS来源，显式完整core模式交付三态、全部unknown原因、整三角极值与核心内见证；不自动判断损伤或获得写入权。
 
-当前checkout为**来源检查成本候选**`v21-source-guard-cost-20261103`，125源`d9b01eec9ce561b9f9fe5304cc37c50aa641b1826ed3ee788501eb2f49192360`，隔离安装`9.7.2+20261103.source.guard.r1`。唯一改动省去owned非namespace模块的冗余分类解析，保留完整源读取/hash和最终执行见证。8块未插桩配对的文字中位80.29→74.55ms、热图134.18→129.62ms；owned生命周期p95增加4.74%，接近预登记预算，已独立复核，用户明确接受该取舍。详见[REVIEW-CYCLE-001](docs/SOURCE_GUARD_COST_ACCEPTANCE.md)。REVIEW-CYCLE-003已受锁切换默认配置，账本和预算保持；追加RECONNECT已验证当前桌面身份、正式GUI单Cube只读及真人消息自动观察，运行源未改。四个动作Hook与真人表单未扩验；trace场景规模/指纹存在历史导入污染，不能用于当前资产或精确成本归因，实际观察正文与当前Cube一致。详见[真实宿主验收](docs/SOURCE_GUARD_COST_ACCEPTANCE.md#review-cycle-003-reconnect-真实宿主验收)。
+当前checkout为**请求场景遥测修复候选**`v21-scene-trace-owner-20261103`，125源`a045a800256f4767271308d239c735177f992ce3408d927d42bde5f1d4b60d8f`，隔离安装`9.7.2+20261103.scene.trace.r1`。最小修改防止历史恢复/delta校验覆盖当前请求场景字段，保留全部验证/hash/计时。11项定向检查由旧9失败2通过变为全通过，234相关项通过；独立MCP与明确模拟的Hook两路均与当前单Cube一致。正式默认仍为d9/source.guard.r1，003真实只读三门保持；未激活本候选、未做新性能或模型试验。详见[REVIEW-CYCLE-004](docs/SOURCE_GUARD_COST_ACCEPTANCE.md#review-cycle-004-请求场景遥测修复候选)。四个动作Hook、真人表单与OwnedScheduler旧envelope遥测边界未扩验。
 
 [新增单案原生反例](docs/MEASURABLE_OUTER_EXTREMUM_ACCEPTANCE.md)证明：外围可测伸长/面积比1.5时，固定core仍输出1且见证在core；旧失败保留，运行源未改。仅49相关公共回归和一个自建资产，不构成新模型或任意资产资格。
 

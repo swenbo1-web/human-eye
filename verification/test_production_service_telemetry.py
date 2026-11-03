@@ -156,5 +156,175 @@ class ProductionServiceTelemetryTests(unittest.TestCase):
         self.assertFalse((self.base / 'state.json').exists())
 
 
+class RequestSceneOwnershipTests(unittest.TestCase):
+    """Detached history is validated work, never the request's current scene."""
+
+    def setUp(self):
+        import copy
+        self.copy = copy.deepcopy
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        self.base = Path(temp.name)
+        self.config_path = self.base / 'live.json'
+        self.config_path.write_text(json.dumps({'schema_version': '1.0',
+            'project_root': str(Path(__file__).resolve().parents[1]),
+            'state_file': 'state.json', 'audit_file': 'events.jsonl', 'quad_size': 64,
+            'max_sessions': 16}), encoding='utf8')
+        self.host = SelfLockingHost()
+        self.service = LiveSpatialService(self.config_path, host=self.host)
+        self.service.observe('historical', focal_id='part', reference_id='base', include_image=False)
+        self.history = self.copy(self.host.scene)
+        self.host.scene = self.copy(self.history)
+        self.host.scene['revision'] = 'current-one'
+        self.host.scene['meshes'] = self.host.scene['meshes'][1:]
+
+    def fingerprint(self, scene):
+        import hashlib
+        # Fixtures already use canonical MeshEntity.to_dict; no production
+        # validator or trace output is used as the digest oracle.
+        raw = json.dumps(scene, sort_keys=True, separators=(',', ':'),
+            ensure_ascii=False, allow_nan=False).encode('utf8')
+        return hashlib.sha256(raw).hexdigest()
+
+    def last_trace(self):
+        rows = [json.loads(x) for x in (self.base/'events.jsonl').read_text('utf8').splitlines()]
+        return [x['trace'] for x in rows if x['event'] == 'request_trace'][-1]
+
+    def assert_current(self, trace):
+        scene = self.host.scene
+        self.assertEqual(trace['correlation']['scene_revision'], scene['revision'])
+        self.assertEqual(trace['annotations']['scene_fingerprint'], self.fingerprint(scene))
+        self.assertEqual([trace['annotations'][k] for k in
+            ('object_count', 'vertex_count', 'face_count')],
+            [len(scene['meshes']), sum(len(x['vertices']) for x in scene['meshes']),
+             sum(len(x['faces']) for x in scene['meshes'])])
+
+    def assert_no_scene(self, trace):
+        self.assertIsNone(trace['correlation']['scene_revision'])
+        for key in ('scene_fingerprint', 'object_count', 'vertex_count', 'face_count'):
+            self.assertNotIn(key, trace['annotations'])
+
+    def test_mcp_overview_keeps_current_report_and_trace(self):
+        request = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call', 'params': {
+            'name': 'human_eye_scene_observe', 'arguments': {'session_id': 'current', 'include_image': False}}}
+        out = io.StringIO()
+        run_stdio_mcp_server(self.service, io.StringIO(json.dumps(request)+'\n'), out)
+        envelope = json.loads(out.getvalue())['result']
+        self.assertFalse(envelope['isError'])
+        report = json.loads(envelope['content'][0]['text'])
+        self.assertEqual(report['routing']['scene_fingerprint'], self.fingerprint(self.host.scene))
+        self.assertEqual(len(report['objects']), 1)
+        self.assertEqual(self.host.calls, 0)
+        self.assert_current(self.last_trace())
+
+    def test_simulated_prompt_keeps_current_report_and_trace(self):
+        from human_eye_plugin.live_hooks import route_live_hook
+        result = route_live_hook({'hook_event_name': 'UserPromptSubmit', 'session_id': 'current',
+            'turn_id': 'simulated-unit', 'prompt': 'Observe current scene.'}, self.service,
+            invocation_source='manual_probe')
+        report = json.loads(result['hookSpecificOutput']['additionalContext'])
+        self.assertEqual(report['observation']['scene_revision'], self.host.scene['revision'])
+        self.assertEqual(len(report['observation']['objects']), 1)
+        self.assertEqual(report['correlation']['request_origin'], 'manual_probe')
+        self.assert_current(self.last_trace())
+
+    def test_status_does_not_claim_historical_scene_as_current(self):
+        captures = self.host.captures
+        self.assertFalse(self.service.status()['host_connectivity_checked'])
+        self.assertEqual(self.host.captures, captures)
+        self.assert_no_scene(self.last_trace())
+
+    def test_failed_capture_retains_unknown_scene_and_state(self):
+        old = (self.base/'state.json').read_bytes()
+        self.host.mode = 'capture_failure'
+        with self.assertRaisesRegex(RuntimeError, 'Cannot read actual host'):
+            self.service.observe('current', include_image=False)
+        self.assertEqual((self.base/'state.json').read_bytes(), old)
+        self.assertEqual(self.host.calls, 0)
+        self.assert_no_scene(self.last_trace())
+
+    def test_failure_after_valid_capture_still_identifies_current_scene(self):
+        old = (self.base/'state.json').read_bytes()
+        with self.assertRaisesRegex(ValueError, 'unknown scene object'):
+            self.service.observe('current', include_image=False,
+                query={'mode': 'exact_pairs', 'object_ids': ['missing']})
+        self.assertEqual((self.base/'state.json').read_bytes(), old)
+        self.assertEqual(self.host.calls, 0)
+        self.assert_current(self.last_trace())
+
+    def test_supported_pair_still_identifies_current_scene(self):
+        self.host.scene = self.copy(self.history)
+        self.host.scene['revision'] = 'current-pair'
+        self.service.observe('current', focal_id='part', reference_id='base', include_image=False)
+        self.assert_current(self.last_trace())
+
+    def test_delta_base_cannot_overwrite_current_capture(self):
+        from human_eye_plugin.auto_router import _validated_scene
+        from human_eye_plugin.scene_delta import make_scene_delta
+        with RequestTrace('delta') as trace:
+            _validated_scene(self.host.scene)
+            packet = make_scene_delta(self.history, self.host.scene)
+        self.assertEqual(packet['target']['scene_fingerprint'], self.fingerprint(self.host.scene))
+        self.assert_current(trace.record)
+        self.assertGreaterEqual(sum(x['name'] == 'scene.hash' for x in trace.record['spans']), 3)
+
+    def test_restoring_history_keeps_validation_hashes_and_pending(self):
+        from human_eye_plugin.auto_router import _validated_scene, HumanEyeAutoRouter
+        old = json.loads((self.base/'state.json').read_text('utf8'))['runtime']['router']
+        router = HumanEyeAutoRouter(quad_size=64, max_sessions=16)
+        with RequestTrace('restore') as trace:
+            _validated_scene(self.host.scene)
+            router.import_state(old)
+        self.assert_current(trace.record)
+        self.assertGreaterEqual(sum(x['name'] == 'scene.hash' for x in trace.record['spans']), 2)
+        self.assertEqual(router.export_state()['sessions'][0][1]['pending'],
+            old['sessions'][0][1]['pending'])
+        bad = self.copy(old); bad['sessions'][0][1]['fingerprint'] = '0'*64
+        with self.assertRaisesRegex(ValueError, 'fingerprint mismatch'):
+            router.import_state(bad)
+
+    def test_sixteen_history_sessions_cannot_overwrite_current_scene(self):
+        current = self.copy(self.host.scene)
+        self.host.scene = self.copy(self.history)
+        for index in range(15):
+            self.service.observe('history-'+str(index), focal_id='part', reference_id='base', include_image=False)
+        self.host.scene = current
+        self.service.observe('current', include_image=False)
+        self.assert_current(self.last_trace())
+
+    def test_pending_other_session_and_action_receipts_are_untouched(self):
+        from human_eye_plugin.auto_router import HumanEyeAutoRouter
+        current = self.copy(self.host.scene)
+        self.host.scene = self.copy(self.history)
+        old = json.loads((self.base/'state.json').read_text('utf8'))
+        router = HumanEyeAutoRouter(quad_size=64, max_sessions=16)
+        router.import_state(old['runtime']['router'])
+        result = router.handle_event({'event': 'before_action', 'session_id': 'historical',
+            'scene': self.history, 'focal_id': 'part', 'reference_id': 'base',
+            'observation_id': old['runtime']['sessions'][0][1]['observation_id'],
+            'action': {'translation': [0, 0, .05]}})
+        self.assertTrue(result['allow_action'])
+        old['runtime']['router'] = router.export_state()
+        (self.base/'state.json').write_text(json.dumps(old), encoding='utf8')
+        pending = old['runtime']['router']['sessions'][0][1]['pending']
+        self.assertIsNotNone(pending)
+        self.host.scene = current
+        self.service.observe('current', include_image=False)
+        new = json.loads((self.base/'state.json').read_text('utf8'))
+        self.assertEqual(new['runtime']['sessions'], old['runtime']['sessions'])
+        self.assertEqual(new['runtime']['quarantine'], old['runtime']['quarantine'])
+        self.assertEqual(new.get('goal_segments'), old.get('goal_segments'))
+        self.assertEqual(new['runtime']['router']['sessions'][0][1]['pending'], pending)
+        self.assertEqual(self.host.calls, 0)
+        self.assert_current(self.last_trace())
+
+    def test_invalid_current_scene_does_not_claim_old_capture(self):
+        old = (self.base/'state.json').read_bytes()
+        self.host.scene['unit'] = 'cm'
+        with self.assertRaisesRegex(ValueError, 'scene requires unit=m and coordinate_frame=world'):
+            self.service.observe('current', include_image=False)
+        self.assertEqual((self.base/'state.json').read_bytes(), old)
+        self.assert_no_scene(self.last_trace())
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -147,3 +147,26 @@ Codex官方App Server提供`config/mcpServer/reload`协议，但本聊天工具�
 这是实证的日志元数据污染，尚未修复。实际当前正文、只读状态与工具前注入门保持成立；不能用错误annotations作当前资产来源/规模、精确成本归因，也不据此外推其他动作安全。本轮运行源码固定，记录后交来源审查，后续另做最小遥测修复及反例，不静默改日志或重标旧验收。相比原003状态，动作sessions、goal_segments、消耗预算、quarantine和inflight保持；新增读取仅更新router观察缓存。
 
 本次证据位于独立兄弟目录`verification/fixes/20261103_review_cycle003_reconnect/`，含实际桌面status、真实来源消息、正负Prompt、直接developer注入及首个后续工具原始行、输入SHA绑定、当前Hook定义/信任记录、遥测限制、最终state与seal。原003封存未追加。Google/API/key/付费试验仍暂停，来源US$0.02预留不变；垃圾清理仍为策略拒绝后的0删除，没有绕过。
+
+
+## REVIEW-CYCLE-004 请求场景遥测修复候选
+
+来源复核003-RECONNECT三项有限入口通过后，按既有持续修复授权仅派发P2最小修复。正式d9/配置/trust/用户GUI不变；新候选`9.7.2+20261103.scene.trace.r1`，revision`v21-scene-trace-owner-20261103`，125源`a045a800256f4767271308d239c735177f992ce3408d927d42bde5f1d4b60d8f`。运行源只改auto_router、scene_delta和revision三个文件。
+
+_validated_scene新增内部_annotate_scene选项，默认True保持原当前捕获行为。只有router导入历史场景与scene_delta规范化detached target/base传False；False仅绕过最后场景revision、fingerprint和对象/点/面计数写入，不关闭完整校验、规范化、哈希、scene.validate/hash span或错误。增量传输也会先校验当前再旧base，是同一根因的第二覆盖路径；没有改复制、架构、缓存、精度或性能门。
+
+公共反例放在既有test_production_service_telemetry.RequestSceneOwnershipTests：先合法双盒历史2/16/24，再切临时host当前单盒1/8/12。oracle用夹具原始规范JSON SHA与原数组计数，不调用生产验证器或trace构造答案。冻结最终11项在旧代码9失败2通过，MCP/模拟Hook正文原本正确而trace旧指纹；修复后相同11项全过。另覆盖16历史、正常pair、status无捕获、捕获失败、无效当前场景、取得有效捕获后的查询拒绝、旧base delta、坏历史指纹、真实router.before_action产生的非空pending保留，以及validate/hash计时。
+
+早期测试R2中单位错误预期文本与“preview会持久化pending”的测试夹具假设错误已保留；修正夹具后冻结R3，未把这两项当产品缺陷或放宽生产判据。最终R3的9失败均是当前场景注解被旧值覆盖/未知被伪填；2正常对照通过。11项不单独宣称覆盖真实committed预算，另使用冻结真实账本副本及既有安全回归。
+
+11个相关模块共234项本地通过，无skip（已包含新增11项，不能再相加）；干净公开副本同样234项全过，无skip，包含production-service/live-service/telemetry-runtime/image-trace/live-hooks/telemetry/router/host-runtime/verified-source/goal-segment-telemetry/scene-delta。保留原动作不确定、日志失败不可重试、来源约束、数值和碰撞门；不机械重跑旧广域或真人写表单。干净公共副本结果与最终wheel/隔离安装pins见本轮封存记录，分开记账。
+
+实际新固定-I -B入口连接自建后台Blender独占随机端口，对冻结的真实16历史会话及账本副本分别执行MCP和--probe Hook；该Hook明确为manual_probe，不能算真人宿主新版本验收。两条实际路径均正文/trace当前revision与fingerprint一致、1对象/8点/12面；当前Cube bbox±1，0产品setter、未保存源文件，场景/显示还原，所有子进程正常关闭。完整动作sessions、goal_segments及预算与原副本一致，router历史scene/fingerprint/pending和16个ID保持，仅可过期观察/场景缓存更新。
+
+QA首轮checker误从observation内部读取顶层scene_capabilities的fingerprint，产品两个原始响应本已正确；改checker后离线重验原记录通过，再于独立QA_R2完整运行两路径通过，旧失败保留。QA_R2的MCP完整生命周期1034.029ms、模拟Hook1005.352ms，provider启动到关闭2703.542ms；外层等待进程并落盘的完整wall另存QA_R2_PARENT。只有单次正确性调用，不构成性能比较或模型耗时收益。
+
+当前正式旧d9固定manager对独占候选QA最新完整状态执行doctor/plan，ready=true，reverse计划SHA`3b7e7a1a9b578103773325f46cfe13bb1ed1b4d8fbb174138014e3d263fc628d`；未apply或实际回退。最初QA目录未位于.human-eye、第二次缺注册expected_identity均按预期拒绝，修正隔离测试注册后成功，原错误记录保留。当前正式配置/状态没有迁移，未来任何状态变化仍需重新生成计划，不能复用这份QA计划。
+
+独立只读审查确认最小diff未弱化任何验证，计时保留、oracle独立、11项旧失败准确；作者实际运行与独立审查分栏。范围仅本次MCP/Prompt观察、历史restore与detached delta。OwnedScheduler._discover仍可能在外部场景变化拒绝动作时重验较早envelope而覆写外层遥测，未扩修或认证；不能宣称已建立所有Python helper的通用当前场景ownership。
+
+本批独立证据根`verification/fixes/20261103_review_cycle004/`保留旧反例/夹具错误、候选回归、BUILD/安装/实际QA、原始帧/Hook、冻结账本、正常关闭/完整成本、兼容计划和保护清单。旧seal、003真实输入/旧错误trace全部原样保留。候选可以交来源复核，正式默认不切；Google/API/Key/503/外部账本仍暂停，来源US$0.02不改，垃圾删除审批拒绝不绕过。

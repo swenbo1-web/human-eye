@@ -52,7 +52,7 @@ def _normalize(scene, max_bytes):
         raise ValueError("Scene transport requires a complete snapshot object")
     _bounded(scene, max_bytes)
     try:
-        normalized, _, fingerprint, encoded = _validated_scene(scene, _return_payload=True)
+        normalized, _, fingerprint, encoded = _validated_scene(scene, _return_payload=True, _annotate_scene=False)
     except (TypeError, ValueError, OverflowError, RecursionError) as exc:
         raise ValueError("Invalid complete scene snapshot: " + str(exc)) from exc
     if len(encoded) > max_bytes:
