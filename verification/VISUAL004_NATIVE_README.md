@@ -1,58 +1,68 @@
-# VISUAL-BENEFIT-004: neutral native execution fixture
+# VISUAL-BENEFIT-004: neutral owner-broker contract
 
-This is a generic persistent Blender/Python transport. It provides no Human Eye
-imports, inventory, object selection, relationship solver, task analysis, view
-choice or answer. The N consumer writes its own ordinary Python/bpy code. P may
-use this exact process transport for its existing `BlenderMCPHost` and the same
-native fallback. The product wrapper and its actual costs remain separate.
+## Formal consumer entry: P and N
 
-The coordinator starts one owned worker per condition and keeps its `Popen`
-owner alive until closure. P and N use the same lifetime rule:
-
-```python
-from verification.visual004_native import NativeSession, ImageLedger
-session = NativeSession.start(blender=blender_path, asset=frozen_asset,
-    workspace=own_workspace, deadline_ns=original_task_deadline,
-    condition="N", expected_asset_sha256=frozen_asset_sha256)
-# For P, connect its real BlenderMCPHost to session.host/session.port.
-# For N, execute only code authored by its consumer:
-result = session.run(consumer_code, timeout_s=30)
-receipt = session.close()
-```
-
-The original task window is at most 600 seconds, starts before asset read/copy,
-and never resets. Startup is bounded by its original window and 30 seconds.
-The neutral worker maintains one bpy process and one Python namespace between
-calls. Each request is synchronous. Individual timeouts are capped by the
-remaining original deadline. The worker watchdog exits only its own process at
-that deadline; it never changes a product native-observation lease.
-
-Consumers may execute a saved script through the same session without starting
-Blender again:
+The only permitted formal scene-execution or observation entry is the owned
+broker CLI below. Native scripts run through its `native_run` operation. P
+observation runs through its P-only `observe` operation; P's native fallback
+uses the same `native_run` as N. No task analysis, object selection, inventory,
+best view or prepared solver is injected by this transport.
 
 ```powershell
-python -B verification/visual004_native.py --workspace <own workspace> --script <own script.py> --timeout 30
+python -I -B verification/visual004_session.py --workspace <own workspace> --requestJSON <own request.json>
 ```
 
-`--script` must be inside that workspace, uses UTF-8 with optional BOM, and is
-limited to 256 KiB. It receives `VISUAL004_WORKSPACE` in its environment. The
-consumer can read geometry, vertices and matrices, perform its own math, choose
-views, create temporary cameras/lights, render, zoom, or build its own montage.
-No camera or math helper is injected. Ordinary scripts can retain variables in
-the persistent namespace or save their own intermediate data in the workspace.
-They must not edit source geometry, material/visibility, save a blend, read other
-conditions or references, or import Human Eye in condition N.
+Formal consumers must not invoke `visual004_native.py --script`, use
+`NativeSession.start/open/run`, connect worker/broker sockets directly, run the
+product wrapper directly, or import an alternative execution adapter. Those
+paths bypass the public attempt/text/image/deadline accounting. Source APIs
+and low-level examples later in this document are **coordinator qualification
+and debug only**, not extra consumer permissions. Preparing owned request/code
+files and forwarding already reserved image refs through the approved image
+wrapper remain allowed as described in the common consumer contract.
 
-The worker accepts the BlenderMCP-compatible wire shape
-`{"type":"execute_code","params":{"code":"..."}}`; successful replies are
-exactly `{"status":"success","result":{"executed":true,"result":"stdout"}}`.
-This compatibility does not make N a Human Eye baseline: its code and output
-contain no engine capture, validator or summary. Script exceptions retain full
-bounded stdout/stderr and traceback, and can be fixed within the same task
-window. There is no automatic retry. Output is limited to 8 MiB per Python text
-stream; direct/native process logs are separately bounded by 64 MiB. Up to 64
-execution requests are allowed by default, with a common configurable cap of at
-most 128; rejected attempts count as worker requests.
+The formal limit is **48 public broker attempts**, including the common initial
+operation and failures. The separately available owner `close` is cleanup.
+The low-level 64-default/128-maximum worker RPC limits are internal transport
+bounds and confer no additional public calls. P and N have one persistent
+owned process/namespace, the same original 600-second task window before asset
+read/copy, and no worker/consumer restart or deadline refresh.
+
+Consume the supplied public semantic supplement for all six cases. Its v2
+contract and answer bind `public_contract_sha256`; echo the exact supplied
+digest rather than guessing it. The supplement defines each public role and
+fact, value type, exact enum/unit/tolerance and predicate polarity, including
+the V06 inverse predicate. It provides neither correct values/object IDs nor a
+solver. Do not infer these definitions from private references or prior tasks.
+
+If a formal consumer bypasses this entry or another frozen rule, retain the
+sample, original answer, refusals and all costs, and flag the protocol
+deviation. Do not rerun, replace the sample, repair its answer after submission,
+rewrite the transport, or silently move it to another allowance.
+
+### Code and actual request size
+
+Consumer code must be at most **262144 bytes as UTF-8**. It is additionally
+bounded by the real serialized requests: the broker JSON request is at most
+**294912 bytes** (`MAX_CODE+32768`), and the internal `execute_code` JSON request
+is at most **266240 bytes** (`MAX_CODE+4096`). The neutral CLI/NativeSession
+paths use `ensure_ascii=True` and a terminal LF. P's existing product connector
+also imposes its own **32768-byte** complete request limit and fixed encoding;
+it is not a consumer-configurable alternative. Quotes, backslashes, newlines,
+Unicode escapes and framing consume real wire bytes. A UTF-8 script below
+256 KiB is therefore not
+guaranteed to fit the complete request. A size or encoding refusal is retained
+as a failure; it is not permission to bypass the broker, change serialization
+or add a compatibility shim. An ordinary script revision may be attempted
+only if the existing broker remains usable and the original budgets allow it.
+
+Through `native_run`, a consumer may inspect geometry/vertices/matrices, do its
+own math, retain Python state, choose views, zoom, render, or create a montage.
+Necessary temporary camera/light/render setup and owned workspace output are
+allowed. Source geometry, transforms, material/visibility, animation and blend
+files remain unchanged. N must not import/use Human Eye. No camera or math
+helper is supplied. The next protection details describe implementation
+limits; they do not add an execution path.
 
 Original scene bytes are copied once into the owned workspace and loaded there.
 Before READY, the worker redirects only its in-memory default render filepath
@@ -85,7 +95,9 @@ cannot all be inferred from filesystem diffs; render events and script audit
 must be retained too. The worker's PNG scanner checks signature/chunks/CRC and
 dimensions only; it does not claim to decode pixels.
 
-The parent adapter registers every constructed PNG that is offered for delivery:
+The coordinator adapter registers every constructed PNG offered for delivery.
+This source API example is coordinator-only; formal consumers request/reserve
+images through the broker and use the approved forwarding wrapper:
 
 ```python
 images = ImageLedger(own_workspace)
@@ -117,11 +129,12 @@ tokens from pixels or bytes.
 Qualification in 004A uses only independent calibration input and no formal
 consumer answers. The coordinator schedules real Blender calibration serially.
 
-## Persistent owner broker
+## Owner broker lifecycle and public operations
 
 `visual004_session.py` retains the actual `NativeSession` launcher/`Popen` in one
 owned broker until closure, instead of leaving each CLI to pretend it can reap
-a worker started by another process. Start exactly once per task/condition:
+a worker started by another process. The following start command is for the
+coordinator only, exactly once per task/condition:
 
 ```powershell
 python -I -B verification/visual004_session.py --serve --asset <frozen scene.blend> --blender <blender.exe> --condition N --workspace <new owned workspace> --seconds 600 --expected-asset-sha256 <frozen hash>
@@ -135,8 +148,8 @@ Both conditions use the same broker and original window. The owner never
 reopens or restarts a worker. A P observe request alone dynamically imports
 the existing product adapter; N/status/images/close have no product import.
 
-Write an operation JSON file under the owned workspace, then send it through
-the generic CLI:
+Formal consumers write an operation JSON file under their owned workspace,
+then use only the broker CLI:
 
 ```powershell
 python -I -B verification/visual004_session.py --workspace <own workspace> --requestJSON <own request.json>
@@ -202,3 +215,32 @@ The broker also checks the original deadline after complete result/public
 serialization and persistence. Expiry during these phases changes the public
 reply to an explicit failure and retains the private complete candidate;
 there is no valid late success. Close is a separate cleanup operation.
+
+## Coordinator-only qualification/debug internals
+
+The following APIs/commands are not permitted formal consumer entries. The
+coordinator may use them on a separately authorized independent calibration
+fixture; their costs and failures remain qualification evidence, not consumer
+benefit results.
+
+```python
+from verification.visual004_native import NativeSession
+session = NativeSession.start(blender=blender_path, asset=frozen_asset,
+    workspace=calibration_workspace, deadline_ns=original_calibration_deadline,
+    condition="N", expected_asset_sha256=frozen_asset_sha256)
+result = session.run(calibration_code, timeout_s=30)
+receipt = session.close()
+```
+
+```powershell
+python -B verification/visual004_native.py --workspace <calibration workspace> --script <calibration script.py> --timeout 30
+```
+
+That low-level file is UTF-8 with optional BOM and receives
+`VISUAL004_WORKSPACE`. The worker's compatible internal request shape is
+`{"type":"execute_code","params":{"code":"..."}}`; success is
+`{"status":"success","result":{"executed":true,"result":"stdout"}}`.
+Consumers must not send that shape directly. Internal Python output is bounded
+by 8 MiB per stream and direct process logs by 64 MiB; neither raises the public
+data/control allowance. Startup is bounded by the original window and 30
+seconds. The existing native-observation lease is not extended.

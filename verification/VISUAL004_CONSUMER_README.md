@@ -4,7 +4,25 @@ This is a future paired, read-only pilot. 004A prepares and qualifies it; no
 formal consumer is run in 004A. The public task/asset is identical within a
 pair. No correct object pair, core, best viewpoint, answer, private reference
 or prepared task solver is supplied. Read the public task and the neutral
-native README only. Root keeps the owner broker/Popen alive until cleanup.
+native README, this contract and the supplied public semantic supplement only.
+Root keeps the owner broker/Popen alive until cleanup.
+
+## Formal scene entry: owner broker only
+
+The only permitted formal scene-execution or observation entry is:
+
+```powershell
+python -I -B verification/visual004_session.py --workspace <own workspace> --requestJSON <own request.json>
+```
+
+All native code runs as the broker's `native_run` operation, including P's
+fallback. P observation runs only as its P-only `observe` operation. Formal
+consumers must not use `visual004_native.py --script`, `NativeSession.start`,
+`NativeSession.open/run`, worker sockets, direct broker sockets, a direct
+product wrapper or another adapter. Low-level examples in the native README
+are coordinator qualification/debug only. Preparing owned request/code files
+and the approved reserved-image forwarding wrapper below remain permitted.
+Do not use a low-level path because a public budget or transport refused work.
 
 The immutable task window is 600 seconds starting at broker entry **before**
 asset read/copy, not at initial-report delivery. The same common initial code
@@ -44,6 +62,21 @@ storage and time even when no image enters the model. The neutral image ledger
 enforces count/area; the host forwarding gate below also enforces dimensions.
 Budget refusal is not free retry authorization; failed scripts may be repaired
 with a new request only inside the original remaining budgets and deadline.
+These are **48 broker attempts in total**, including the common initial
+operation and failures; owner `close` is separately available cleanup. The
+64-default/128-maximum internal worker RPC counters do not add public attempts
+or authorize bypassing the broker.
+
+Code must be no larger than 262144 UTF-8 bytes, and its actual serialized
+request must also fit. The neutral broker request ceiling is 294912 bytes;
+the internal neutral `execute_code` request ceiling is 266240 bytes. Neutral
+serialization uses `ensure_ascii=True`, including escaping/framing and a
+terminal LF. P's existing connector separately caps complete product requests
+at 32768 bytes. Arbitrary Unicode code below 256 KiB is not guaranteed to fit
+these wire envelopes. Retain encoding/size failures; do not modify the
+transport, change its serialization, or add a compatibility shim. An ordinary
+code revision is allowed only if the same broker remains usable within its
+original budgets and deadline.
 
 An operation file has exactly `request_id`, `operation`, `args`. It must be
 inside the owned workspace; request IDs are not replayed. Native code is a
@@ -63,6 +96,9 @@ The model may answer/abstain immediately after its first actual input. There
 are no forced extra rounds, automatic target corrections or silent fallbacks.
 Do not inspect private truth/specification, source, qualification artifacts,
 another task/condition, historical answers, shared GUI or learning knowledge.
+If a consumer violates a frozen entry/tool/budget rule, preserve its sample,
+raw answer, refusals, costs and evidence with a protocol-deviation flag. Do not
+rerun or replace it, silently switch allowances, or repair its submitted answer.
 
 Use the same image-forwarding pattern for either condition. Replace only the
 owned workspace/request file paths. Check the original deadline before and
@@ -98,8 +134,17 @@ No image-specific token count is inferred from pixels or PNG bytes. Host usage
 uses real per-event increments; cached counts and reasoning-as-output subset
 are retained. Unexposed provider calls/image tokens/dollars remain unknown.
 
-Return the frozen `visual004-answer-v1` schema with exact case/run/asset/task
-bindings, object roles and every requested fact. Identity may be null and facts
+Return the frozen `visual004-answer-v2` schema with exact case/run/asset/task
+bindings and the supplied `public_contract_sha256`, object roles and every
+requested fact. The same public semantic supplement is supplied to P and N for
+all six cases: it defines each required role/fact, value type, exact enums,
+units/tolerances and predicate polarity. V06's inverse predicate is explicit
+there; do not silently answer its affirmative inverse instead. Read the
+provided definitions and echo the exact digest rather than guessing semantics
+or deriving a replacement contract from an image or question wording. The
+supplement supplies no correct values, target IDs, best views or solver.
+
+Identity may be null and facts
 unknown rather than invented, but safe uncertainty can still be incomplete.
 Use actual evidence IDs. Describe what an image visibly supports separately
 from geometry-derived facts. A closed opaque shell can hide an internal part

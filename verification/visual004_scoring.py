@@ -11,8 +11,12 @@ import hashlib,json,math
 CONTRACT_SCHEMA='visual004-score-contract-v1'
 ANSWER_SCHEMA='visual004-answer-v1'
 BINDINGS=('case_id','task_run_id','asset_sha256','task_sha256')
+BOUND_CONTRACT_SCHEMA='visual004-score-contract-v2'
+BOUND_ANSWER_SCHEMA='visual004-answer-v2'
+BOUND_BINDINGS=(*BINDINGS,'public_contract_sha256')
 IMAGE_LIMITS=dict(max_images=8,max_single_pixels=1024**2,max_total_pixels=4*768**2)
 ANSWER_FIELDS={'schema',*BINDINGS,'objects','identity_evidence_refs','facts','visual_evidence_used','interpretation'}
+BOUND_ANSWER_FIELDS=ANSWER_FIELDS|{'public_contract_sha256'}
 FACT_FIELDS={'status','value','evidence_refs','uncertainty'}
 UNCERTAINTY_FIELDS={'basis','physical_metrology','note'}
 KINDS={'closest_local_region','target_to_reference_world_axis','aabb_center_direction_xyz',
@@ -46,9 +50,14 @@ def parse_answer(raw):
     except ScoringError:raise
     except (ValueError,TypeError,UnicodeError):raise ScoringError('answer_json_invalid') from None
 
-def public_answer_schema():
-    """Public shape only: no truth roles, names, values or selected views."""
-    return dict(schema=ANSWER_SCHEMA,bindings=list(BINDINGS),objects='each public required role maps to exact neutral object name, or null when unknown',
+def public_answer_schema(public_contract=None):
+    """Historical v1 shape, or formal v2 public meanings without truth values.
+
+    The formal input supplies the validated public_contract once at top level;
+    this schema references its definitions without duplicating their text.
+    This formatter neither admits sources nor attests actual evidence delivery.
+    """
+    result=dict(schema=ANSWER_SCHEMA,bindings=list(BINDINGS),objects='each public required role maps to exact neutral object name, or null when unknown',
         identity_evidence_refs='actual delivered evidence IDs, not paths or model-invented proof',
         facts='all public required_fact_ids, each with status/value/evidence_refs/uncertainty',
         fact_status=['known','unknown'],unknown_value=None,
@@ -57,11 +66,26 @@ def public_answer_schema():
         interpretation='spatial reasoning, visible versus occluded limits, numerical versus image evidence',
         closest_region='free description permitted; non-enumerated descriptions await independent blind review',
         directions='world axes; target_to_reference uses nearest target surface toward reference; aabb_center_direction_xyz uses target minus reference')
+    if public_contract is not None:
+        from verification.visual004_contract import supplement_sha256
+        need(type(public_contract) is dict,'public_contract_schema')
+        result.update(schema=BOUND_ANSWER_SCHEMA,bindings=list(BOUND_BINDINGS),
+            public_contract_sha256=supplement_sha256(public_contract),
+            role_definitions='supplied top-level public_contract.roles: semantic meaning of each required role',
+            fact_definitions='supplied top-level public_contract.facts: each fact kind, value_type, complete domain, unit, predicate and direction_semantics')
+    return result
+
+def _bindings(contract):
+    return BOUND_BINDINGS if contract.get('schema')==BOUND_CONTRACT_SCHEMA else BINDINGS
 
 def validate_contract(contract):
-    need(type(contract) is dict and set(contract)=={'schema',*BINDINGS} and contract['schema']==CONTRACT_SCHEMA,'contract_schema')
+    need(type(contract) is dict,'contract_schema')
+    bound=contract.get('schema')==BOUND_CONTRACT_SCHEMA
+    bindings=BOUND_BINDINGS if bound else BINDINGS
+    need(set(contract)=={'schema',*bindings} and contract['schema'] in (CONTRACT_SCHEMA,BOUND_CONTRACT_SCHEMA),'contract_schema')
     need(text(contract['case_id'],64) and text(contract['task_run_id'],256)
         and hex64(contract['asset_sha256']) and hex64(contract['task_sha256']),'contract_binding')
+    if bound:need(hex64(contract['public_contract_sha256']),'contract_public_binding')
 
 def validate_reference(public,truth,contract):
     need(type(public) is dict and type(truth) is dict and public.get('case_id')==truth.get('case_id')==contract['case_id'],'reference_case')
@@ -91,7 +115,7 @@ def validate_deliveries(deliveries,contract):
     """
     need(type(deliveries) is list,'delivery_registry');out={};slots=set();pixels=0;images=0
     for record in deliveries:
-        need(type(record) is dict and all(same(record.get(k),contract[k]) for k in BINDINGS),'delivery_binding')
+        need(type(record) is dict and all(same(record.get(k),contract[k]) for k in _bindings(contract)),'delivery_binding')
         identity=record.get('evidence_id');host=record.get('actual_host_event_id');slot=record.get('host_block_index',0)
         need(text(identity,256) and text(host,512) and type(slot) is int and slot>=0,'delivery_host_identity')
         need(identity not in out and (host,slot) not in slots,'duplicate_delivery_reference')
@@ -122,7 +146,7 @@ def _uncertainty(value):
     need(type(value['physical_metrology']) is bool and value['physical_metrology'] is False,'unsupported_physical_precision_claim')
     return value['basis']
 
-def _fact(row,expected,registry,visual_claim):
+def _fact(row,expected,registry,visual_claim,definition=None):
     need(type(row) is dict and set(row)==FACT_FIELDS,'fact_schema')
     need(row['status'] in ('known','unknown'),'fact_status')
     basis=_uncertainty(row['uncertainty']);modalities=_refs(row['evidence_refs'],registry)
@@ -137,6 +161,10 @@ def _fact(row,expected,registry,visual_claim):
     elif basis=='geometry':need('geometry' in modalities,'geometry_claim_without_geometry_evidence')
     elif basis=='mixed':need('image' in modalities and 'geometry' in modalities and visual_claim,'mixed_claim_without_both_modalities')
     actual=row['value'];wanted=expected['value']
+    if definition is not None:
+        from verification.visual004_contract import normalize_value
+        try:actual=normalize_value(actual,definition)
+        except (ValueError,TypeError,KeyError,OverflowError):raise ScoringError('public_fact_value_domain') from None
     if 'tolerance' in expected:
         need(finite(actual),'numeric_fact_requires_finite_number_not_boolean')
         result['correct']=abs(actual-wanted)<=expected['tolerance'];result['absolute_error_m']=abs(actual-wanted)
@@ -156,13 +184,16 @@ def _fact(row,expected,registry,visual_claim):
         result['evidence_sufficiency_review']='actual PNG resolution, occlusion and claim precision require blind review; native projected pixel opportunities do not substitute'
     return result
 
-def grade(answer,contract,public_task,private_truth,deliveries):
+def grade(answer,contract,public_task,private_truth,deliveries,*,public_contract=None):
     """Score the fixed roles/facts; no P/N mapping or producer success input.
 
     Mechanical correctness does not adjudicate free prose or claim sufficiency.
     Final task quality must combine this result with the retained blind review.
+    Formal v2 contracts require the independently reconstructed public meanings;
+    the v1 path is retained solely for historical scoring and unit fixtures.
     """
-    result=dict(schema='visual004-spatial-score-v1',source='scoring independent',binding_valid=False,
+    score_schema='visual004-spatial-score-v2' if type(contract) is dict and contract.get('schema')==BOUND_CONTRACT_SCHEMA else 'visual004-spatial-score-v1'
+    result=dict(schema=score_schema,source='scoring independent',binding_valid=False,
         objects={},facts={},issues=[],mechanical_complete=False,final_complete=None,
         host_confirmed_image_delivery=False,self_declared_visual_evidence_used=None,
         visual_evidence_causal_gain_proven=False,needs_blind_review=['interpretation_and_evidence_sufficiency'],
@@ -174,9 +205,29 @@ def grade(answer,contract,public_task,private_truth,deliveries):
     try:
         validate_contract(contract);roles,fact_ids=validate_reference(public_task,private_truth,contract)
         result['denominators']=dict(objects=len(roles),facts=len(fact_ids))
+        bound=contract['schema']==BOUND_CONTRACT_SCHEMA
+        definitions=None
+        if bound:
+            from verification.visual004_contract import validate_supplement,normalize_value
+            need(public_contract is not None,'public_contract_required')
+            need(digest(public_task)==contract['task_sha256'],'reference_task_binding')
+            try:validated_public=validate_supplement(public_contract,public_task,contract['public_contract_sha256'])
+            except (ValueError,TypeError,KeyError,OverflowError):raise ScoringError('public_contract_invalid') from None
+            definitions=validated_public['facts']
+            need(set(definitions)==set(fact_ids),'public_contract_facts')
+            for fact_id in fact_ids:
+                expected=private_truth['facts'][fact_id];definition=definitions[fact_id]
+                need(expected['kind']==definition['kind'],'public_truth_kind_mismatch')
+                try:
+                    normalize_value(expected['value'],definition)
+                    for value in expected.get('accepted_values',[]):normalize_value(value,definition)
+                except (ValueError,TypeError,KeyError,OverflowError):raise ScoringError('public_truth_value_domain') from None
+            result.update(schema='visual004-spatial-score-v2',public_contract_sha256=contract['public_contract_sha256'])
+        else:need(public_contract is None,'public_contract_requires_bound_v2_contract')
         registry,image_info=validate_deliveries(deliveries,contract);result.update(image_info)
-        need(type(answer) is dict and set(answer)==ANSWER_FIELDS and answer['schema']==ANSWER_SCHEMA,'answer_schema')
-        need(all(same(answer.get(k),contract[k]) for k in BINDINGS),'answer_binding')
+        fields=BOUND_ANSWER_FIELDS if bound else ANSWER_FIELDS;schema=BOUND_ANSWER_SCHEMA if bound else ANSWER_SCHEMA
+        need(type(answer) is dict and set(answer)==fields and answer['schema']==schema,'answer_schema')
+        need(all(same(answer.get(k),contract[k]) for k in _bindings(contract)),'answer_binding')
         need(type(answer['objects']) is dict and not set(answer['objects'])-set(roles),'answer_object_roles')
         need(type(answer['facts']) is dict and not set(answer['facts'])-set(fact_ids),'answer_fact_ids')
         need(type(answer['visual_evidence_used']) is bool and text(answer['interpretation'],16384),'answer_visual_or_interpretation')
@@ -201,7 +252,8 @@ def grade(answer,contract,public_task,private_truth,deliveries):
                 result['issues'].append('missing_fact:'+fact_id);continue
             row=answer['facts'][fact_id]
             try:
-                scored=_fact(row,private_truth['facts'][fact_id],registry,answer['visual_evidence_used'])
+                scored=_fact(row,private_truth['facts'][fact_id],registry,answer['visual_evidence_used'],
+                    None if definitions is None else definitions[fact_id])
                 result['facts'][fact_id]=scored;all_refs.update(row['evidence_refs'])
                 if scored['correct'] is True:result['correct_counts']['facts']+=1
                 elif scored['safe_unknown']:result['safe_unknown_count']+=1
@@ -220,5 +272,5 @@ def grade(answer,contract,public_task,private_truth,deliveries):
     except (ValueError,TypeError,KeyError,IndexError,OverflowError,RecursionError):result['issues'].append('malformed_input')
     return result
 
-__all__=['CONTRACT_SCHEMA','ANSWER_SCHEMA','IMAGE_LIMITS','canonical','digest','parse_answer',
+__all__=['CONTRACT_SCHEMA','ANSWER_SCHEMA','BINDINGS','BOUND_CONTRACT_SCHEMA','BOUND_ANSWER_SCHEMA','BOUND_BINDINGS','IMAGE_LIMITS','canonical','digest','parse_answer',
     'public_answer_schema','validate_contract','validate_reference','validate_deliveries','grade']

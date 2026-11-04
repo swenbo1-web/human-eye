@@ -6,10 +6,11 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from verification.visual004_native import encoded,load,save,sha,need,IMAGE_LIMITS
-from verification.visual004_scoring import public_answer_schema
+from verification.visual004_scoring import public_answer_schema,BOUND_CONTRACT_SCHEMA,validate_contract
+from verification.visual004_contract import public_supplement,supplement_sha256,validate_supplement
 
-CYCLE='VISUAL-BENEFIT-004A'
-BASELINE='50f20d56f95e5672b213e1247ea00fae9c3a1ee0'
+CYCLE='VISUAL-BENEFIT-004A-R1'
+BASELINE='284699285c349bd4124bf8c863c4546df1c6d033'
 PRODUCT_PIN='6a5375fb5d5577e8de05c043db7523263cf96ad8386ee524a04beb25feb9f382'
 P_MODES=[dict(mode='auto',view=view) for view in ('SCENE','XY','XZ')]+[dict(mode='projection',view='SCENE')]
 PAIR_ORDER=[('V01',['P','N']),('V02',['N','P']),('V03',['P','N']),('V04',['N','P']),('V05',['N','P']),('V06',['P','N'])]
@@ -17,7 +18,20 @@ SOURCE_FILES=('verification/visual004_assets.py','verification/visual004_native.
     'verification/visual004_product.py','verification/visual004_protocol.py','verification/visual004_scoring.py',
     'verification/test_visual004_assets.py','verification/test_visual004_native.py','verification/test_visual004_session.py',
     'verification/test_visual004_product.py','verification/test_visual004_protocol.py','verification/test_visual004_scoring.py',
-    'verification/VISUAL004_NATIVE_README.md','verification/VISUAL004_CONSUMER_README.md')
+    'verification/VISUAL004_NATIVE_README.md','verification/VISUAL004_CONSUMER_README.md',
+    'verification/visual004_contract.py','verification/test_visual004_contract.py')
+
+FORMAL_ENTRY_POLICY=dict(schema='visual004-owner-broker-entry-v1',
+    consumer_cli='verification/visual004_session.py --workspace <own workspace> --requestJSON <owned request JSON>',
+    allowed_operations=dict(N=['native_run','image_reserve','status','close'],P=['native_run','observe','image_reserve','status','close']),
+    coordinator_only=['visual004_native.py --script','NativeSession.open/run','direct worker socket','direct product wrapper','broker serve/start'],
+    public_call_limit=48,internal_worker_limit_is_not_extra_public_allowance=True,
+    code_utf8_limit_bytes=262144,serialized_broker_request_limit_bytes=294912,serialized_worker_request_limit_bytes=266240,
+    serialization='Actual ensure_ascii compact JSON and newline, including envelope; UTF8 code size alone does not guarantee acceptance',
+    audit='Controller audits observed host tools/scripts against owner ledger; a forbidden/unknown path is a protocol deviation, never silently compliant',
+    deviation='Retain original sample and raw answer, all observed time/text/image/script/failure costs and unknown costs; flag deviation; no replacement or restart',
+    enforcement='Public trial contract and observed-path audit, not a Python security sandbox')
+PUBLIC_CONTRACT_POLICY='same trusted public role/fact supplement for both arms; v2 hash required in consumer input, answer and every scoring evidence binding'
 
 COMMON_INITIAL_CODE="""import bpy,json,os
 scene=bpy.context.scene
@@ -38,6 +52,9 @@ P_RULES='''P additionally may call only the actual read-only human_eye_scene_obs
 N_RULES='''N uses only generic native_run and neutral image/session accounting. Do not import, call or read Human Eye capture, validator, facts, renderer, summaries, source or prepared task solvers. Native local scripting, views, numerical inspection and self-maintained in-process state/cache are permitted. You are not limited to one perspective image or a full vertex dump. Common process/time/file/image protections are the same as P.'''
 
 EVIDENCE_REFERENCE_RULES='''Use unique ASCII request_id values matching [A-Za-z0-9_-]{1,64}. For a reply whose text you actually received, use evidence ID text:<request_id>. For an image actually shown from that reply, use image:<request_id>:<reservation_id>:<image_id>, copying those returned identifiers exactly. Example: image:inspect-1:delivery-2:image-3. A redisplay uses the new reserve request and reservation. The common initial input uses its supplied common-initial reply identifiers by the same rule. These public symbols do not attest delivery: the controller admits each only after verifying actual current task/run host event, block slot and text/PNG bytes within the original deadline. Paths, ledger entries and model assertions are not delivery proof. Do not guess host event IDs or later controller-internal IDs.'''
+
+COMMON_RULES+='''\nFormal consumers use ONLY the owned visual004_session.py --workspace --requestJSON CLI for Blender inspection, native_run, observe, image reservation and session control. Direct visual004_native.py --script, NativeSession.open/run, worker sockets, direct product wrappers and broker startup are coordinator qualification/debug interfaces, never extra consumer allowance. Internal worker RPC limits do not add to the48 public broker attempts. The controller audits observed tools/scripts against the owner ledger; retain any deviating sample, original answer and all observed or unknown costs, flag protocol deviation, and never replace/restart it. This is an audited contract, not a Python sandbox.
+Read the supplied public_contract role descriptions and every fact value type, complete enum, boolean predicate, units and direction definition. Use its exact canonical domain; do not infer an enum or boolean meaning from a short fact ID. Echo public_contract_sha256 in the v2 answer. Historical v1 unbound score/answer schemas are not allowed in formal consumers. UTF8 code<=262144 bytes is only one bound: the actual ensure_ascii serialized broker request<=294912 bytes and inner worker execute_code request<=266240 bytes, including envelopes and newline, also apply. Same-size UTF8 Unicode code need not fit those JSON wire bounds.'''
 
 def public_evidence_ids(reply):
     """Public reference symbols only; never attests host receipt or geometry."""
@@ -66,15 +83,21 @@ def task_contract(public_task,asset_sha256,*,task_run_id=None):
     need(type(asset_sha256) is str and len(asset_sha256)==64 and all(c in '0123456789abcdef' for c in asset_sha256),'asset_sha256')
     identifier=uuid.uuid4().hex if task_run_id is None else task_run_id
     need(type(identifier) is str and 1<=len(identifier)<=128,'task_run_id')
-    return dict(schema='visual004-score-contract-v1',case_id=public_task['case_id'],task_run_id=identifier,
-        asset_sha256=asset_sha256,task_sha256=hashlib.sha256(encoded(public_task)).hexdigest())
+    supplement=public_supplement(public_task)
+    return dict(schema=BOUND_CONTRACT_SCHEMA,case_id=public_task['case_id'],task_run_id=identifier,
+        asset_sha256=asset_sha256,task_sha256=hashlib.sha256(encoded(public_task)).hexdigest(),
+        public_contract_sha256=supplement_sha256(supplement))
 
-def consumer_input(public_task,contract,condition):
+def consumer_input(public_task,contract,condition,*,public_contract=None):
     need(condition in ('P','N'),'condition')
     need(contract['case_id']==public_task['case_id'] and contract['task_sha256']==hashlib.sha256(encoded(public_task)).hexdigest(),'public_binding')
-    return dict(schema='visual004-public-consumer-input-v1',contract=contract,task=public_task,
+    need(contract.get('schema')==BOUND_CONTRACT_SCHEMA,'formal_bound_contract_required');validate_contract(contract)
+    supplement=public_supplement(public_task) if public_contract is None else public_contract
+    validate_supplement(supplement,public_task,contract['public_contract_sha256'])
+    return dict(schema='visual004-public-consumer-input-v2',contract=contract,task=public_task,
+        public_contract=supplement,formal_entry_policy=FORMAL_ENTRY_POLICY,
         rules=COMMON_RULES,evidence_reference_rules=EVIDENCE_REFERENCE_RULES,tool_rules=P_RULES if condition=='P' else N_RULES,
-        answer_schema=public_answer_schema(),
+        answer_schema=public_answer_schema(supplement),
         final_response_envelope=dict(agent_id='own host agent ID',status='final or abstain',answer='frozen answer object or null',reason='optional'),
         task_window_seconds=600,tools='owned neutral broker; no default shared Blender/MCP or external API',
         image_budget=dict(IMAGE_LIMITS,max_width=1024,max_height=1024),
@@ -95,6 +118,7 @@ def validate_image_ref(row):
 
 def freeze(root,*,output_dir=None):
     root=Path(root).resolve();assets=root/'assets'
+    destination=root if output_dir is None else Path(output_dir).resolve()
     from verification.visual004_assets import verify
     from human_eye_plugin.runtime_identity import runtime_identity
     verify(assets);identity=runtime_identity()
@@ -103,17 +127,24 @@ def freeze(root,*,output_dir=None):
     cases=[]
     for case_id,order in PAIR_ORDER:
         public=load(assets/case_id/'PUBLIC_TASK.json')
+        supplement=public_supplement(public)
+        supplement_path='public_contracts/'+case_id+'.json'
+        save(destination/supplement_path,supplement)
         cases.append(dict(case_id=case_id,order=order,public_task_sha256=sha(assets/case_id/'PUBLIC_TASK.json'),
             asset_sha256=sha(assets/case_id/'scene.blend'),qualification_initial_png_sha256=sha(assets/case_id/'initial.png'),
             private_truth_sha256=sha(assets/case_id/'PRIVATE_TRUTH.json'),required_roles=public['required_roles'],
-            required_fact_ids=public['required_fact_ids'],question=public['question']))
-    plan=dict(schema='visual004-frozen-paired-plan-v1',cycle_id=CYCLE,created_utc=datetime.now(timezone.utc).isoformat(),
+            required_fact_ids=public['required_fact_ids'],question=public['question'],
+            public_contract_path=supplement_path,public_contract_sha256=supplement_sha256(supplement),
+            public_contract_version=supplement['version']))
+    plan=dict(schema='visual004-frozen-paired-plan-v2',cycle_id=CYCLE,created_utc=datetime.now(timezone.utc).isoformat(),
         baseline_commit=BASELINE,product_source_sha256=PRODUCT_PIN,product_source_count=129,
         case_spec_sha256=sha(assets/'CASESET_SPEC.json'),cases=cases,formal_consumers_planned=12,formal_consumers_run_in_004A=0,
         balanced_order='3 P-first,3 N-first,serial,all fixed cases including unsupported/refused/timeouts retained',
         P='actual existing observation-tool combination plus equally available generic native fallback',
         N='model-authored generic bpy/Python; no HE capture/validation/summary or prepared solver',P_visual_modes=P_MODES,
         common_rules=COMMON_RULES,evidence_reference_rules=EVIDENCE_REFERENCE_RULES,P_rules=P_RULES,N_rules=N_RULES,common_initial_code=COMMON_INITIAL_CODE,
+        public_contract_policy=PUBLIC_CONTRACT_POLICY,
+        score_contract_schema=BOUND_CONTRACT_SCHEMA,formal_entry_policy=FORMAL_ENTRY_POLICY,
         common_initial_scope='same copied bytes,public task,neutral names/types/unit/camera pose; freshly render asset camera before consumer inside original window',
         no_hidden_targets_or_best_view=True,source_file_and_geometry_read_only=True,
         per_task_seconds=600,whole_formal_run_seconds=7800,worker_restarts=0,consumer_restarts=0,
@@ -136,8 +167,7 @@ def freeze(root,*,output_dir=None):
         script_pins=[dict(path=name,sha256=sha(ROOT/name)) for name in SOURCE_FILES],
         protections=['no product/threshold/source domain/default config/install/push changes','original assets/shared GUI untouched',
             'no Google/key/503/paid API/learning; priorUSD0.02 unchanged'],
-        formal_start='004B only after independent review of004A; no further user approval for this already authorized scope')
-    destination=root if output_dir is None else Path(output_dir).resolve()
+        formal_start='004B only after independent review of004A-R1; no further user approval for this already authorized scope')
     save(destination/'FORMAL_PLAN.json',plan);save(destination/'FORMAL_PLAN_SEAL.json',dict(sha256=sha(destination/'FORMAL_PLAN.json'),bytes=(destination/'FORMAL_PLAN.json').stat().st_size))
     return plan
 
@@ -145,10 +175,20 @@ def verify_plan(root,*,output_dir=None):
     root=Path(root).resolve();destination=root if output_dir is None else Path(output_dir).resolve()
     plan=load(destination/'FORMAL_PLAN.json');seal=load(destination/'FORMAL_PLAN_SEAL.json')
     need(sha(destination/'FORMAL_PLAN.json')==seal['sha256'],'plan_changed')
+    need(plan.get('schema')=='visual004-frozen-paired-plan-v2'
+        and plan.get('public_contract_policy')==PUBLIC_CONTRACT_POLICY
+        and plan.get('score_contract_schema')==BOUND_CONTRACT_SCHEMA
+        and plan.get('formal_entry_policy')==FORMAL_ENTRY_POLICY,'formal_entry_contract')
     for row in plan['script_pins']:need(sha(ROOT/row['path'])==row['sha256'],'script_changed')
     for row in plan['cases']:
         for filename,key in [('scene.blend','asset_sha256'),('PUBLIC_TASK.json','public_task_sha256'),('PRIVATE_TRUTH.json','private_truth_sha256')]:
             need(sha(root/'assets'/row['case_id']/filename)==row[key],'case_changed')
+        need(row['public_contract_path']=='public_contracts/'+row['case_id']+'.json','public_contract_path')
+        public=load(root/'assets'/row['case_id']/'PUBLIC_TASK.json')
+        supplement=load(destination/row['public_contract_path'])
+        validate_supplement(supplement,public,row['public_contract_sha256'])
+        need(sha(destination/row['public_contract_path'])==row['public_contract_sha256'],'public_contract_file_bytes')
+        need(supplement['version']==row['public_contract_version'],'public_contract_version')
     return plan
 
 def main():
