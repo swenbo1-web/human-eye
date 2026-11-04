@@ -7,6 +7,12 @@ or prepared task solver is supplied. Read the public task and the neutral
 native README, this contract and the supplied public semantic supplement only.
 Root keeps the owner broker/Popen alive until cleanup.
 
+The coordinator waits for a complete exclusively published broker readiness
+record before assigning the owned endpoint. Incomplete, stale, mismatched or
+expired startup is a retained failure, never permission to refresh the window,
+reopen a failed SESSION or restart the worker. Ordinary tool reads and response
+decoding remain inside the original task deadline; close is bound cleanup only.
+
 ## Formal scene entry: owner broker only
 
 The only permitted formal scene-execution or observation entry is:

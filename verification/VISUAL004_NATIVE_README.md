@@ -244,3 +244,20 @@ Consumers must not send that shape directly. Internal Python output is bounded
 by 8 MiB per stream and direct process logs by 64 MiB; neither raises the public
 data/control allowance. Startup is bounded by the original window and 30
 seconds. The existing native-observation lease is not extended.
+
+Only the two readiness signals use the R2 publication path: a unique owned
+sibling staging file is completely written, flushed, verified and then linked
+once to READY.json or BROKER_READY.json without replacing an existing target.
+Unsupported publication or a duplicate/corrupt existing target fails closed;
+there is no replace fallback, parse retry, startup sleep workaround or restart.
+The tested local filesystem supports this operation; no claim is made for all
+filesystems. Other persistence paths retain their existing behavior.
+
+Native startup checks the full record, owned PID, endpoint, helper, original
+deadline and source/copy/binary bindings within min(original window,30s),
+including after SESSION publication. A failed startup stays failed even if
+its SESSION file exists. Worker failure stops and joins its owned watchdog;
+launcher failure kills/reaps its own child. Broker readiness additionally
+binds the session and owner state. Ordinary client reads and final JSON decode
+remain inside the original task deadline. Only bound close cleanup can use
+its fixed7s control window; it never extends the task or worker lease.

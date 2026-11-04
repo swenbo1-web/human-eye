@@ -96,6 +96,10 @@ class NeutralTransportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'original_deadline'):n.NativeSession.open(self.root)
         n.save(self.root/'POISONED.json',dict(reason='authored previous transport failure'))
         with self.assertRaisesRegex(ValueError,'session_poisoned'):n.NativeSession.open(self.root)
+    def test_reopen_refuses_session_left_by_failed_start(self):
+        n.save(self.root/'SESSION.json',dict(deadline_ns=time.perf_counter_ns()+10**9,helper_sha256=n.sha(n.__file__)))
+        n.save(self.root/'START_FAILURE.json',dict(reason='authored post-session startup failure'))
+        with self.assertRaisesRegex(ValueError,'session_start_failed'):n.NativeSession.open(self.root)
     def test_open_controller_transport_failure_poisons_without_false_reap(self):
         session=n.NativeSession();session.workspace=self.root;session.process=None
         session.config=dict(deadline_ns=time.perf_counter_ns()+10**9)
@@ -112,6 +116,7 @@ class AuthoredWorkerTests(unittest.TestCase):
     """Actual RPC/exec loop, fake empty bpy, never an actual Blender process."""
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
+        self.session=None;self.thread=None;self.control_address=None;self.setup_completed=False
         asset=self.root/'input.blend';asset.write_bytes(b'not a Blender asset; transport fixture only')
         self.deadline=time.perf_counter_ns()+20*10**9
         self.config=dict(workspace=str(self.root),asset=str(asset),asset_copy=str(asset),asset_sha256=n.sha(asset),
@@ -123,23 +128,39 @@ class AuthoredWorkerTests(unittest.TestCase):
         fake.context=types.SimpleNamespace(scene=types.SimpleNamespace(unit_settings=types.SimpleNamespace(scale_length=1),render=types.SimpleNamespace(filepath='source/initial.png')))
         fake.app=types.SimpleNamespace(handlers=types.SimpleNamespace(render_pre=[],render_post=[],render_cancel=[]))
         self.patch=patch.dict(sys.modules,bpy=fake);self.patch.start();self.addCleanup(self.patch.stop)
+        # Own the listening address before publication, parsing, or session
+        # construction can fail. Cleanup must not depend on successful setup.
+        publisher=n.publish_ready
+        def remember_address(path,value,**kwargs):
+            if Path(path).name=='READY.json':self.control_address=(value['host'],value['port'])
+            return publisher(path,value,**kwargs)
+        self.publisher_patch=patch.object(n,'publish_ready',side_effect=remember_address)
+        self.publisher_patch.start();self.addCleanup(self.publisher_patch.stop)
         self.errors=[]
+        self.worker_finished=threading.Event()
         def run_worker():
             try:n.worker(self.root/'CONFIG.json')
             except BaseException as exc:self.errors.append(exc)
-        self.thread=threading.Thread(target=run_worker);self.thread.start();self.addCleanup(self.cleanup_worker)
+            finally:self.worker_finished.set()
+        self.thread=threading.Thread(target=run_worker);self.addCleanup(self.cleanup_worker);self.thread.start()
         ready=self.root/'READY.json'
         while not ready.exists():
             if self.errors:raise self.errors[0]
-            time.sleep(.001)
+            n.check(self.deadline);self.worker_finished.wait(.001)
         value=n.load(ready);self.config.update(host=value['host'],port=value['port'],pid=value['pid'])
-        n.save(self.root/'SESSION.json',self.config);self.session=n.NativeSession.open(self.root)
+        n.save(self.root/'SESSION.json',self.config);self.session=n.NativeSession.open(self.root);self.setup_completed=True
     def cleanup_worker(self):
-        if self.thread.is_alive():
-            try:self.session.close()
-            except BaseException:pass
+        if self.thread is not None and self.thread.is_alive():
+            try:
+                if self.session is not None:self.session.close()
+                elif self.control_address is not None:
+                    with socket.create_connection(self.control_address,timeout=1) as connection:
+                        connection.settimeout(1);connection.sendall(n.encoded(dict(type='close')))
+                        connection.shutdown(socket.SHUT_WR);connection.recv(4096)
+            except (OSError,ValueError):pass
             self.thread.join(timeout=2)
-        self.assertFalse(self.thread.is_alive());self.assertEqual(self.errors,[])
+        self.assertTrue(self.thread is None or not self.thread.is_alive())
+        if self.setup_completed:self.assertEqual(self.errors,[])
     def test_persistent_plain_bpy_exec_and_exact_BlenderMCP_success_envelope(self):
         one=self.session.run("value=17; print('first')")
         two=self.session.run("print(value + 1)")
@@ -173,5 +194,39 @@ class AuthoredWorkerTests(unittest.TestCase):
             self.assertEqual(result['status'],'error');self.assertIn('session_poisoned',result['error']['message'])
         self.thread.join(timeout=2);self.assertFalse(self.thread.is_alive())
         self.assertFalse((self.root/'call_1/SCRIPT.py').exists())
+
+class FixtureCleanupTests(unittest.TestCase):
+    def test_worker_start_publication_and_socket_errors_stop_owned_watchdog(self):
+        def reject_watchdog_start(thread,*args,**kwargs):
+            if thread.name.startswith('visual004-watchdog-'):raise failure
+            return original_start(thread,*args,**kwargs)
+        for stage in ('watchdog_start','publication','socket'):
+            with self.subTest(stage=stage):
+                before={thread.ident for thread in threading.enumerate()};failure=OSError('authored worker '+stage+' failure')
+                original_start=threading.Thread.start
+                intervention=(patch.object(n.threading.Thread,'start',new=reject_watchdog_start) if stage=='watchdog_start' else
+                    patch.object(n,'publish_ready',side_effect=failure) if stage=='publication' else patch.object(n.socket,'socket',side_effect=failure))
+                case=AuthoredWorkerTests('test_persistent_plain_bpy_exec_and_exact_BlenderMCP_success_envelope')
+                with intervention:
+                    try:
+                        with self.assertRaises(OSError) as caught:case.setUp()
+                    finally:self.assertTrue(case.doCleanups())
+                self.assertIs(caught.exception,failure);self.assertEqual(case.errors,[failure]);self.assertFalse(case.thread.is_alive())
+                self.assertFalse(any(t.ident not in before and t.name.startswith('visual004-watchdog-') for t in threading.enumerate()))
+
+    def test_setup_read_failure_closes_worker_before_or_during_session_creation(self):
+        for filename in ('READY.json','SESSION.json'):
+            with self.subTest(filename=filename):
+                before={thread.ident for thread in threading.enumerate()};original=n.load
+                case=AuthoredWorkerTests('test_persistent_plain_bpy_exec_and_exact_BlenderMCP_success_envelope')
+                def fail_selected_read(path):
+                    if Path(path).name==filename:raise ValueError('authored setup read failure '+filename)
+                    return original(path)
+                with patch.object(n,'load',side_effect=fail_selected_read):
+                    try:
+                        with self.assertRaisesRegex(ValueError,'authored setup read failure'):case.setUp()
+                    finally:self.assertTrue(case.doCleanups())
+                self.assertFalse(case.thread.is_alive());self.assertEqual(case.errors,[])
+                self.assertFalse(any(t.ident not in before and t.name.startswith('visual004-watchdog-') for t in threading.enumerate()))
 
 if __name__=='__main__':unittest.main()

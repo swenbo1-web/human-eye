@@ -9,8 +9,8 @@ from verification.visual004_native import encoded,load,save,sha,need,IMAGE_LIMIT
 from verification.visual004_scoring import public_answer_schema,BOUND_CONTRACT_SCHEMA,validate_contract
 from verification.visual004_contract import public_supplement,supplement_sha256,validate_supplement
 
-CYCLE='VISUAL-BENEFIT-004A-R1'
-BASELINE='284699285c349bd4124bf8c863c4546df1c6d033'
+CYCLE='VISUAL-BENEFIT-004A-R2'
+BASELINE='afd851ec5c142e08addd596f6622122e081cac09'
 PRODUCT_PIN='6a5375fb5d5577e8de05c043db7523263cf96ad8386ee524a04beb25feb9f382'
 P_MODES=[dict(mode='auto',view=view) for view in ('SCENE','XY','XZ')]+[dict(mode='projection',view='SCENE')]
 PAIR_ORDER=[('V01',['P','N']),('V02',['N','P']),('V03',['P','N']),('V04',['N','P']),('V05',['N','P']),('V06',['P','N'])]
@@ -19,7 +19,8 @@ SOURCE_FILES=('verification/visual004_assets.py','verification/visual004_native.
     'verification/test_visual004_assets.py','verification/test_visual004_native.py','verification/test_visual004_session.py',
     'verification/test_visual004_product.py','verification/test_visual004_protocol.py','verification/test_visual004_scoring.py',
     'verification/VISUAL004_NATIVE_README.md','verification/VISUAL004_CONSUMER_README.md',
-    'verification/visual004_contract.py','verification/test_visual004_contract.py')
+    'verification/visual004_contract.py','verification/test_visual004_contract.py',
+    'verification/test_visual004_readiness.py')
 
 FORMAL_ENTRY_POLICY=dict(schema='visual004-owner-broker-entry-v1',
     consumer_cli='verification/visual004_session.py --workspace <own workspace> --requestJSON <owned request JSON>',
@@ -154,6 +155,7 @@ def freeze(root,*,output_dir=None):
         public_call_limit=48,text_limits=dict(data_bytes=262144,control_bytes=98304,max_wire_bytes=360448),
         product_subcall_budgets=dict(request_s=20,native_lease_s=10,forwarding='min existing scope and original600s remaining'),
         lifecycle='same neutral persistent owner broker and Blender lifetime; P keeps actual service/host/memo; N keeps own Python namespace/state',
+        readiness='READY and BROKER_READY are complete-verified exclusive atomic publications; startup/broker readers bind owner/source/original deadline; no parse retry or worker restart',
         consumers=dict(fresh=True,fork_turns='none',model='inherit parent no override',reasoning='inherit parent no override',
             actual_backend_configuration='record if observable else unknown',isolation='soft; audit observed paths, do not claim strong isolation'),
         acceptance=dict(correctness='identity,relation,direction/local position/numbers,omission/unknown/evidence fixed by truth and blind review',
@@ -167,7 +169,7 @@ def freeze(root,*,output_dir=None):
         script_pins=[dict(path=name,sha256=sha(ROOT/name)) for name in SOURCE_FILES],
         protections=['no product/threshold/source domain/default config/install/push changes','original assets/shared GUI untouched',
             'no Google/key/503/paid API/learning; priorUSD0.02 unchanged'],
-        formal_start='004B only after independent review of004A-R1; no further user approval for this already authorized scope')
+        formal_start='004B only after independent review of004A-R2; no further user approval for this already authorized scope')
     save(destination/'FORMAL_PLAN.json',plan);save(destination/'FORMAL_PLAN_SEAL.json',dict(sha256=sha(destination/'FORMAL_PLAN.json'),bytes=(destination/'FORMAL_PLAN.json').stat().st_size))
     return plan
 

@@ -8,7 +8,12 @@ from verification.test_visual004_native import png
 
 class FakeOwner:
     def __init__(self,workspace,condition='N'):
-        self.workspace=workspace;self.config=dict(condition=condition,deadline_ns=time.perf_counter_ns()+600*10**9)
+        self.workspace=workspace;started=time.perf_counter_ns();asset=workspace/'authored_asset.blend'
+        asset.write_bytes(b'not a Blender asset; broker metadata fixture only')
+        self.config=dict(schema='visual004-native-session-v1',condition=condition,started_ns=started,
+            deadline_ns=started+600*10**9,pid=os.getpid(),asset=str(asset),asset_copy=str(asset),
+            asset_sha256=b.sha(asset),helper_sha256=b.sha(b.neutral.__file__),protected_public_images=[])
+        b.save(workspace/'SESSION.json',self.config)
         self.calls=[];self.abort_calls=[];self.close_calls=0;self.output='authored generic output';self.failure=None
     def run(self,code,timeout_s):
         self.calls.append((code,timeout_s))
@@ -18,6 +23,12 @@ class FakeOwner:
     def abort(self,reason):
         self.abort_calls.append(reason);(self.workspace/'POISONED.json').write_text('{}',encoding='utf8')
     def close(self):self.close_calls+=1;return dict(pid=12345,exit_code=0,process_reaped=True)
+
+def ready_fixture(owner,port,started):
+    return dict(schema='visual004-owner-broker-ready-v1',pid=os.getpid(),worker_pid=owner.config['pid'],
+        host='127.0.0.1',port=port,condition=owner.config['condition'],started_ns=started,
+        original_deadline_ns=owner.config['deadline_ns'],asset_sha256=owner.config['asset_sha256'],
+        helper_sha256=b.sha(b.__file__),neutral_helper_sha256=owner.config['helper_sha256'])
 
 class BrokerTests(unittest.TestCase):
     def setUp(self):
@@ -137,9 +148,10 @@ class ActualSocketAndCLITests(unittest.TestCase):
         return subprocess.run([sys.executable,'-I','-B',str(Path(b.__file__).resolve()),'--workspace',str(self.root),
             '--requestJSON',str(path)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=5)
     def test_real_serve_socket_and_isolated_CLI_reuse_one_owner_and_close_it(self):
-        owner=FakeOwner(self.root);owner.config.update(pid=os.getpid(),asset_sha256='a'*64,helper_sha256='authored-neutral-fixture')
+        owner=FakeOwner(self.root)
         errors=[]
-        def start_owner(**kwargs):owner.config['deadline_ns']=kwargs['deadline_ns'];return owner
+        def start_owner(**kwargs):
+            owner.config['deadline_ns']=kwargs['deadline_ns'];b.save(self.root/'SESSION.json',owner.config,replace=True);return owner
         def run():
             try:b.serve(asset='unused authored fixture',blender='not started',workspace=self.root,condition='N',seconds=12)
             except BaseException as exc:errors.append(exc)
@@ -169,8 +181,9 @@ class ActualSocketAndCLITests(unittest.TestCase):
             self.assertFalse(thread.is_alive());self.assertEqual(errors,[])
     def _empty_peer(self):
         server=socket.socket(socket.AF_INET,socket.SOCK_STREAM);server.bind(('127.0.0.1',0));server.listen(1)
-        b.save(self.root/'BROKER_READY.json',dict(host='127.0.0.1',port=server.getsockname()[1],
-            helper_sha256=b.sha(b.__file__),original_deadline_ns=time.perf_counter_ns()+10*10**9))
+        owner=FakeOwner(self.root);started=time.perf_counter_ns();owner.config['deadline_ns']=started+10*10**9
+        b.save(self.root/'SESSION.json',owner.config,replace=True);b.OwnerBroker(owner,started_ns=started,deadline_ns=owner.config['deadline_ns'])
+        b.publish_ready(self.root/'BROKER_READY.json',ready_fixture(owner,server.getsockname()[1],started),deadline_ns=owner.config['deadline_ns'])
         def reply_empty():
             try:
                 with server:
@@ -193,5 +206,75 @@ class ActualSocketAndCLITests(unittest.TestCase):
         self.assertNotEqual(result.returncode,0)
         self.assertIn(b'broker_public_budget_rejected_no_payload',result.stderr)
         self.assertNotIn(b'UnboundLocalError',result.stderr)
+
+class ReadinessFailureTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name).resolve()
+        self.owner=FakeOwner(self.root)
+    def _ready(self,expired=False):
+        started=time.perf_counter_ns()-(20*10**9 if expired else 0)
+        self.owner.config['deadline_ns']=started+10*10**9
+        b.save(self.root/'SESSION.json',self.owner.config,replace=True)
+        b.OwnerBroker(self.owner,started_ns=started,deadline_ns=self.owner.config['deadline_ns'])
+        row=ready_fixture(self.owner,32123,started);b.save(self.root/'BROKER_READY.json',row)
+        return row
+    def test_broker_publication_failure_closes_the_original_owner_once(self):
+        def start_owner(**kwargs):self.owner.config['deadline_ns']=kwargs['deadline_ns'];return self.owner
+        with patch.object(b.NativeSession,'start',side_effect=start_owner),patch.object(b,'publish_ready',side_effect=OSError('authored ready publication failure')):
+            with self.assertRaisesRegex(OSError,'authored ready publication failure'):
+                b.serve(asset='fixture',blender='not launched',workspace=self.root,condition='N',seconds=12)
+        self.assertEqual(self.owner.close_calls,1);self.assertFalse((self.root/'BROKER_READY.json').exists())
+    def test_broker_constructor_failure_still_closes_started_owner(self):
+        with patch.object(b.NativeSession,'start',return_value=self.owner),patch.object(b,'OwnerBroker',side_effect=OSError('authored setup failure')):
+            with self.assertRaisesRegex(OSError,'authored setup failure'):
+                b.serve(asset='fixture',blender='not launched',workspace=self.root,condition='N',seconds=12)
+        self.assertEqual(self.owner.close_calls,1)
+    def test_ready_owner_pid_mismatch_never_connects(self):
+        row=self._ready();row['pid']+=1;b.save(self.root/'BROKER_READY.json',row,replace=True)
+        with patch.object(b.socket,'create_connection') as connect:
+            with self.assertRaisesRegex(ValueError,'broker_owner_binding'):
+                b.client(self.root,dict(operation='status'))
+        connect.assert_not_called()
+    def test_expiration_during_complete_marker_read_never_connects(self):
+        self._ready();clock={'late':False};original=b.load;now=time.perf_counter_ns()
+        def loading(path):
+            value=original(path)
+            if Path(path).name=='BROKER_READY.json':clock['late']=True
+            return value
+        with patch.object(b,'load',side_effect=loading),patch.object(b.time,'perf_counter_ns',side_effect=lambda:self.owner.config['deadline_ns']+1 if clock['late'] else now),patch.object(b.socket,'create_connection') as connect:
+            with self.assertRaisesRegex(ValueError,'original_deadline'):b.client(self.root,dict(operation='status'))
+        connect.assert_not_called()
+    def test_response_decode_after_original_deadline_is_not_success(self):
+        self._ready();clock={'late':False};original=b.json.loads;now=time.perf_counter_ns();wire=b'{"ok":true}\n'
+        class Peer:
+            def __init__(self):self.chunks=[wire,b'']
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def sendall(self,*args):pass
+            def shutdown(self,*args):pass
+            def settimeout(self,*args):pass
+            def recv(self,*args):return self.chunks.pop(0)
+        def decoding(raw,*args,**kwargs):
+            value=original(raw,*args,**kwargs)
+            if raw==wire:clock['late']=True
+            return value
+        with patch.object(b.json,'loads',side_effect=decoding),patch.object(b.time,'perf_counter_ns',side_effect=lambda:self.owner.config['deadline_ns']+1 if clock['late'] else now),patch.object(b.socket,'create_connection',return_value=Peer()):
+            with self.assertRaisesRegex(ValueError,'original_deadline'):b.client(self.root,dict(operation='status'))
+    def test_bound_close_remains_available_after_original_expiry(self):
+        self._ready(expired=True);wire=b'{"ok":true,"operation":"close"}\n'
+        class Peer:
+            def __init__(self):self.chunks=[wire,b'']
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def sendall(self,*args):pass
+            def shutdown(self,*args):pass
+            def settimeout(self,*args):pass
+            def recv(self,*args):return self.chunks.pop(0)
+        with patch.object(b.socket,'create_connection',return_value=Peer()) as connect:
+            response=b.client(self.root,dict(operation='close'))
+        self.assertTrue(response['ok']);self.assertLessEqual(connect.call_args.kwargs['timeout'],7)
+        with patch.object(b.socket,'create_connection') as connect:
+            with self.assertRaisesRegex(ValueError,'original_deadline'):b.client(self.root,dict(operation='status'))
+        connect.assert_not_called()
 
 if __name__=='__main__':unittest.main()

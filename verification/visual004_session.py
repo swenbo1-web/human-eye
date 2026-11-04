@@ -8,7 +8,8 @@ import argparse,hashlib,json,os,socket,sys,time,uuid
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
-from verification.visual004_native import NativeSession,ImageLedger,encoded,load,save,sha,check,need,MAX_CODE
+from verification.visual004_native import NativeSession,ImageLedger,encoded,load,save,sha,check,need,MAX_CODE,publish_ready,protected_files_intact
+from verification import visual004_native as neutral
 
 MAX_PUBLIC_CALLS=48;TEXT_LIMIT=256*1024;CONTROL_LIMIT=48*2048;ERROR_RESERVE=2048;REQUEST_LIMIT=MAX_CODE+32768
 OPS={'native_run','observe','image_reserve','status','close'}
@@ -18,6 +19,7 @@ class OwnerBroker:
         self.session=session;self.workspace=session.workspace;self.deadline_ns=deadline_ns
         self.images=ImageLedger(self.workspace)
         self.state=dict(schema='visual004-owner-broker-v1',started_ns=started_ns,original_deadline_ns=deadline_ns,
+            owner_pid=os.getpid(),
             condition=session.config['condition'],public_calls=0,max_public_calls=MAX_PUBLIC_CALLS,
             public_text_limit=TEXT_LIMIT,public_data_limit=TEXT_LIMIT,public_control_limit=CONTROL_LIMIT,
             public_text_bytes=0,public_data_bytes=0,public_control_bytes=0,full_result_bytes_generated=0,
@@ -199,8 +201,9 @@ def serve(*,asset,blender,workspace,condition,seconds=600,expected_asset_sha256=
                 host='127.0.0.1',port=server.getsockname()[1],condition=condition,started_ns=started,
                 original_deadline_ns=deadline,asset_sha256=session.config['asset_sha256'],helper_sha256=sha(Path(__file__)),
                 neutral_helper_sha256=session.config['helper_sha256'])
-            save(session.workspace/'BROKER_READY.json',ready)
+            publish_ready(session.workspace/'BROKER_READY.json',ready,deadline_ns=deadline)
             sys.stdout.buffer.write(encoded(ready));sys.stdout.buffer.flush()
+            check(deadline)
             while not broker.state['closed']:
                 remaining=(deadline-time.perf_counter_ns())/1e9
                 if remaining<=0:break
@@ -225,25 +228,60 @@ def serve(*,asset,blender,workspace,condition,seconds=600,expected_asset_sha256=
         if broker is not None:broker.close('serve_exit_or_original_deadline')
         elif session is not None:session.close()
 
-def client(workspace,request):
-    workspace=Path(workspace).resolve();ready=load(workspace/'BROKER_READY.json')
+def load_broker_ready(workspace,*,allow_expired=False):
+    """One complete marker read, bound to this owned session; no parse retry."""
+    workspace=Path(workspace).resolve()
+    need(not (workspace/'START_FAILURE.json').exists(),'broker_native_start_failed')
+    config=load(workspace/'SESSION.json')
+    need(type(config) is dict and config.get('schema')=='visual004-native-session-v1','broker_session_binding')
+    deadline=config.get('deadline_ns')
+    need(type(deadline) is int and deadline>0 and type(config.get('pid')) is int and config['pid']>0
+        and config.get('condition') in ('P','N'),'broker_session_binding')
+    if not allow_expired:check(deadline)
+    ready=load(workspace/'BROKER_READY.json')
+    if not allow_expired:check(deadline)
+    fields={'schema','pid','worker_pid','host','port','condition','started_ns','original_deadline_ns','asset_sha256','helper_sha256','neutral_helper_sha256'}
+    need(type(ready) is dict and set(ready)==fields and ready['schema']=='visual004-owner-broker-ready-v1','broker_ready_schema')
+    need(ready['host']=='127.0.0.1' and type(ready['port']) is int and 1<=ready['port']<=65535
+        and type(ready['pid']) is int and ready['pid']>0 and type(ready['worker_pid']) is int
+        and ready['worker_pid']==config['pid'],'broker_ready_identity')
+    need(type(ready['started_ns']) is int and 0<ready['started_ns']<deadline
+        and type(ready['original_deadline_ns']) is int and ready['original_deadline_ns']==deadline
+        and deadline-ready['started_ns']<=600*10**9 and ready['condition']==config['condition'],'broker_ready_deadline')
+    need(all(type(ready[key]) is str and len(ready[key])==64 and all(c in '0123456789abcdef' for c in ready[key])
+        for key in ('asset_sha256','helper_sha256','neutral_helper_sha256')),'broker_ready_digests')
     need(ready['helper_sha256']==sha(Path(__file__)),'broker_helper_changed')
-    # Cleanup remains requestable after expiry; owner will attest its outcome.
-    if request.get('operation')!='close':check(ready['original_deadline_ns'])
-    timeout=max(.001,min(35.,(ready['original_deadline_ns']-time.perf_counter_ns())/1e9))
-    if request.get('operation')=='close':timeout=7.
+    need(ready['neutral_helper_sha256']==config.get('helper_sha256')==sha(Path(neutral.__file__))
+        and ready['asset_sha256']==config.get('asset_sha256'),'broker_ready_source_binding')
+    state=load(workspace/'BROKER_STATE.json')
+    need(type(state) is dict and state.get('schema')=='visual004-owner-broker-v1'
+        and type(state.get('owner_pid')) is int and state['owner_pid']==ready['pid']
+        and state.get('started_ns')==ready['started_ns'] and state.get('original_deadline_ns')==deadline
+        and state.get('condition')==ready['condition'],'broker_owner_binding')
+    if not allow_expired:
+        need(protected_files_intact(config),'broker_source_changed');check(deadline)
+    return ready
+
+def client(workspace,request):
+    started=time.perf_counter_ns();workspace=Path(workspace).resolve()
+    is_close=request.get('operation')=='close'
+    ready=load_broker_ready(workspace,allow_expired=is_close)
+    # Only cleanup may use the fixed seven-second control window, after binding.
+    # This never renews the original task or worker deadline.
+    io_deadline=started+7*10**9 if is_close else ready['original_deadline_ns']
+    check(io_deadline)
+    timeout=max(.001,min(7. if is_close else 35.,(io_deadline-time.perf_counter_ns())/1e9))
     with socket.create_connection((ready['host'],ready['port']),timeout=timeout) as connection:
         connection.sendall(encoded(request));connection.shutdown(socket.SHUT_WR);raw=bytearray()
         while True:
-            if request.get('operation')!='close':
-                remaining=(ready['original_deadline_ns']-time.perf_counter_ns())/1e9
-                need(remaining>0,'original_deadline');connection.settimeout(min(35.,remaining))
+            remaining=(io_deadline-time.perf_counter_ns())/1e9
+            need(remaining>0,'original_deadline');connection.settimeout(min(7. if is_close else 35.,remaining))
             chunk=connection.recv(65536)
             if not chunk:break
             raw.extend(chunk);need(len(raw)<=TEXT_LIMIT+CONTROL_LIMIT,'broker_public_response_bytes')
-    if request.get('operation')!='close':check(ready['original_deadline_ns'])
+    check(io_deadline)
     need(raw,'broker_public_budget_rejected_no_payload')
-    return json.loads(raw)
+    result=json.loads(raw);check(io_deadline);return result
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--serve',action='store_true')
