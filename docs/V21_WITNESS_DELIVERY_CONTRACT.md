@@ -43,3 +43,15 @@
 旧 `Control` 仍是离线替身：它的两来源 `collect` 和四份事实上限对应本层逻辑 read，而不是底层 inspect 数；原 nonce/重复响应/交付/取消/终止/预算/原期限合同未被改写。本层不会被藏入 `RecordingReader`，也不声称已完成从首次目录到模型最终答案的生产闭环。完整预取阶段的更大控制协议变更、真实模型消费及后续公平比较留待来源复核后的独立批次。
 
 正常真源验收使用现有合法作者两个保存帧，协议驱动执行 reader → qualified facts → v2 view → 完整持久证据 → 成功发布 → 绑定取证 → 协议交付。失败注入为隔离替身，单独记载，不冒充 Blender 真源验证。原作者资产、共享 GUI、P1、旧 full/audit/scorer、默认 MCP/Hook 与安装保持原状；Google/key/503/付费继续暂停，旧 US$0.02 预留不变。
+
+## 002A：成本缺测与已完成执行分开记账
+
+`cost_integrity` 使用 `deformation-cost-integrity-v1`，状态为 `complete / partial / unknown`。必需累计计数为 `physical_inspect_requests / B2_rows_passes`；其余已出现的顶层计数字段也进入合同，事件、进程状态、期限及时间跨度等明确元数据除外。每个当前计数必须是非负的精确整数，缺失、非法或小于该字段已知高水位时记为 `null`。采集、复制或规范序列化失败时，当前所有计数均为 `null`，不得用旧快照补齐 `reader_costs` 或 `usage`。`complete` 仅表示本次 reader 累计计数完整，不表示整任务成本完整或模型已经消费证据。
+
+`current / counter_fields / unknown_fields / issues` 说明当前可用范围；`last_known` 为逐字段最后可信高水位，每项保留原 `sampled_at_ns`、`snapshot_sequence`、`event_sequence_through`、`logical_source_read_attempts_through` 及关闭状态。合法的部分样本也推进对应字段高水位，不能随后用较低的完整样本抹去它。事件序号表示采样时账本已有的事件边界，不涵盖之后追加的回执。普通缺测后，同一累计来源的完整、未回退样本可以恢复 `complete`；原缺口仍留在 `history`。已识别的 `started_ns` 改变或消失后，本会话不再自动认可该累计周期，也不靠计数归零恢复可信状态。
+
+逻辑预算由执行事实独立确定：初始化逐条验证的两张目录回执仍确定 `directories=2`，事实读取在派发前预扣；成本缺测不能退还预算、重读来源、重算 B2 或改变已完成执行。若当前可用的 `logical_directory_reads` 明确与两次目录读取矛盾，仍按 `prior_directory_costs` 拒绝。缺测本身不撤销已验证的来源事实或有效发布。
+
+`request / resolve / deliver` 的成功回执都复制同一已持久账本状态的 `usage` 与 `cost_integrity`；引用验证同时核对持久与内存的当前成本及完整性。异常退出和取消也尝试保留最新计量状态；不能写盘时保留原失败，不能宣称已经获得有效交付或持久失败回执。
+
+真实 reader 仍先完成来源验证、资源关闭、实际退出码为零以及原任务和 actor 期限检查。只有最后的成本打包失败可以返回 `costs=null` 和 `cost_snapshot_error`；随后构造回执及返回前仍检查原期限。来源、退出或期限失败照常拒绝，不由缺测处理合成成功，也不重试关闭。初始化、逐来源读取、关闭、发布及后续协议操作的计量降级不引入新的来源请求。

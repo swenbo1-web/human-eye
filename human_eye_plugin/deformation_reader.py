@@ -239,10 +239,25 @@ class QualifiedReader:
         for actor in self.actors.values():actor.verify_inputs()
         self._check()
         for actor in self.actors.values():self._check(actor=actor)
-        self.close_receipt=dict(schema='deformation-reader-close-v1',sources_unchanged=True,all_owned_closed=True,
+        cost_error=None
+        try:
+            costs=copy.deepcopy(self.snapshot_costs())
+            need(type(costs) is dict and all(type(key) is str for key in costs),'cost_snapshot')
+            context.publication_bytes(costs)
+        except BaseException as exc:costs=None;cost_error=type(exc).__name__
+        # Cost availability does not invalidate verified closure. It also cannot
+        # extend the original task/actor deadlines while building the receipt.
+        self._check()
+        for actor in self.actors.values():self._check(actor=actor)
+        receipt=dict(schema='deformation-reader-close-v1',sources_unchanged=True,all_owned_closed=True,
             original_deadline_preserved=True,verified_labels=verified,elapsed_ns=self.clock_ns()-started,
-            physical_inspect_requests=0,model_received=False,costs=self.snapshot_costs())
-        return copy.deepcopy(self.close_receipt)
+            physical_inspect_requests=0,model_received=False,costs=costs)
+        if cost_error is not None:receipt['cost_snapshot_error']=cost_error
+        result=copy.deepcopy(receipt)
+        self._check()
+        for actor in self.actors.values():self._check(actor=actor)
+        self.close_receipt=receipt
+        return result
 
     def close(self):
         """Failure cleanup only; this does not produce a publishable receipt."""

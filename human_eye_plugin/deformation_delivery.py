@@ -14,6 +14,9 @@ READ_BINDINGS=('request_id','run_nonce','condition_id','task_sha256','label','so
 SIDECAR_LIMIT=2*1024*1024
 AUDIT_LIMIT=4*1024*1024
 VIEW_LIMIT=512*1024
+COST_PRIMARY=('physical_inspect_requests','B2_rows_passes')
+COST_METADATA={'events','actor_sequences','worker_processes','task_deadline_ns','started_ns','elapsed_ns',
+    'spans_are_inclusive_and_not_additive'}
 
 
 class DeliveryError(ValueError):
@@ -58,6 +61,8 @@ class DeliverySession:
         self.run_nonce=run_nonce;self.condition_id=condition_id;self.deadline_ns=deadline_ns
         self.clock_ns=clock_ns;self.reader=reader;self._gate=threading.RLock();self._cancelled=threading.Event()
         self._closed=False;self._close_attempted=False;self._publication_completed=False;self.ledger_writes=[]
+        self._cost_fields=set(COST_PRIMARY);self._cost_last_known={};self._cost_history=[]
+        self._cost_sequence=0;self._cost_epoch=None;self._cost_epoch_invalid=False
         self.store_root=Path(store).resolve();self.store_root.mkdir(parents=True,exist_ok=True)
         self.store_path=self.store_root/self.task_sha256
         try:self.store_path.mkdir()
@@ -89,14 +94,14 @@ class DeliverySession:
                 and type(receipt.get('task_deadline_ns')) is int and receipt['task_deadline_ns']==self.deadline_ns
                 and type(receipt.get('logical_directory_reads')) is int and receipt['logical_directory_reads']==1,
                 'directory_binding')
-        costs=reader.snapshot_costs()
-        need(type(costs) is dict and type(costs.get('logical_directory_reads')) is int
-            and costs['logical_directory_reads']==self.ledger['usage']['directories'],'prior_directory_costs')
         need(getattr(reader,'task_deadline_ns',self.deadline_ns)==self.deadline_ns,'reader_task_deadline')
         self.ledger['directory_receipts']=copy.deepcopy(directories)
+        self._snapshot()
+        directory_count=self.ledger['cost_integrity']['current'].get('logical_directory_reads')
+        need(directory_count is None or directory_count==self.ledger['usage']['directories'],'prior_directory_costs')
         _persist_blob(self.store_path/'SPEC.json',_blob(self.spec))
         _persist_blob(self.store_path/'BINDING.json',_blob({k:self.ledger[k] for k in ('task_sha256','run_nonce','condition_id','original_deadline_ns','limits')}))
-        self._snapshot();self._save();self._check()
+        self._save();self._check()
 
     def _save(self):
         start=self.clock_ns();blob=_blob(self.ledger)
@@ -106,15 +111,62 @@ class DeliverySession:
         self.ledger_writes.append(dict(bytes=len(blob),elapsed_ns=self.clock_ns()-start,status='completed'))
 
     def _snapshot(self):
-        try:costs=self.reader.snapshot_costs()
+        """Sample telemetry once, without retrying or changing source execution.
+
+        Current counts are never filled from history. Per-field last-known values
+        are high-water marks with their original observation boundary, not totals
+        covering later reads. A complete cumulative sample can bridge a gap.
+        """
+        self._cost_sequence+=1;costs=None;issues={};error=None
+        try:
+            costs=self.reader.snapshot_costs()
+            if type(costs) is not dict or any(type(k) is not str for k in costs):
+                raise ValueError('cost snapshot must be a string-keyed object')
+            costs=copy.deepcopy(costs)
+            # Bad metadata must not turn an otherwise verified publication into
+            # a serialization failure, or leave a half-applied cost observation.
+            _blob(costs)
         except BaseException as exc:
-            self.ledger['cost_snapshot_error']=type(exc).__name__;return
-        need(type(costs) is dict,'reader_costs')
-        self.ledger['reader_costs']=copy.deepcopy(costs)
-        for key in ('physical_inspect_requests','B2_rows_passes'):
-            value=costs.get(key)
-            need(value is None or type(value) is int and value>=0,'reader_costs')
-            self.ledger['usage'][key]=value
+            costs=None;error=type(exc).__name__;issues['_snapshot']=error
+        scope=dict(snapshot_sequence=self._cost_sequence,sampled_at_ns=self.clock_ns(),
+            event_sequence_through=len(self.ledger['events']),
+            logical_source_read_attempts_through=self.ledger['usage'].get('logical_source_read_attempts',0),
+            close_attempted=self._close_attempted,close_completed=self._closed)
+        if costs is not None:
+            self._cost_fields.update(set(costs)-COST_METADATA)
+            if self._cost_epoch is not None:
+                if type(costs.get('started_ns')) is not int or costs['started_ns']!=self._cost_epoch:
+                    self._cost_epoch_invalid=True
+            elif 'started_ns' in costs:
+                if type(costs['started_ns']) is int and costs['started_ns']>=0:self._cost_epoch=costs['started_ns']
+                else:self._cost_epoch_invalid=True
+        current={key:None for key in sorted(self._cost_fields)}
+        if self._cost_epoch_invalid:issues['_epoch']='cumulative_epoch_unverified'
+        if costs is not None and not self._cost_epoch_invalid:
+            for key in current:
+                if key not in costs:issues[key]='missing';continue
+                value=costs[key]
+                if type(value) is not int or value<0:issues[key]='invalid_counter';continue
+                previous=self._cost_last_known.get(key)
+                if previous is not None and value<previous['value']:issues[key]='counter_regression';continue
+                current[key]=value
+                self._cost_last_known[key]=dict(value=value,**scope)
+        known=sum(value is not None for value in current.values())
+        state='complete' if known==len(current) else 'partial' if known else 'unknown'
+        unknown=[key for key,value in current.items() if value is None]
+        if state!='complete':
+            self._cost_history.append(dict(**scope,state=state,unknown_fields=unknown,issues=copy.deepcopy(issues)))
+            self.ledger['cost_snapshot_error']=error or 'incomplete_cost_snapshot'
+        else:self.ledger.pop('cost_snapshot_error',None)
+        self.ledger['reader_costs']={**({key:value for key,value in costs.items() if key in COST_METADATA}
+            if costs is not None else {}),**current}
+        self.ledger['cost_integrity']=dict(schema='deformation-cost-integrity-v1',state=state,**scope,
+            counter_fields=list(current),unknown_fields=unknown,issues=issues,current=current,
+            last_known=copy.deepcopy(self._cost_last_known),history=copy.deepcopy(self._cost_history))
+        for key in COST_PRIMARY:self.ledger['usage'][key]=current[key]
+
+    def _cost_reply(self):
+        return dict(usage=copy.deepcopy(self.ledger['usage']),cost_integrity=copy.deepcopy(self.ledger['cost_integrity']))
 
     def _event(self,name,**values):
         self.ledger['events'].append(dict(sequence=len(self.ledger['events'])+1,event=name,at_ns=self.clock_ns(),**values))
@@ -235,7 +287,7 @@ class DeliverySession:
                 self.ledger['timings']['request_through_publication_ns']=self.clock_ns()-start
                 self._save();self._check()
                 reply=dict(status='published',reference=copy.deepcopy(reference),view=copy.deepcopy(view),published=True,
-                    delivered=False,model_received=False,usage=copy.deepcopy(self.ledger['usage']),
+                    delivered=False,model_received=False,**self._cost_reply(),
                     measurements=dict(timings=copy.deepcopy(self.ledger['timings']),ledger_writes=copy.deepcopy(self.ledger_writes),
                         artifact_persistence=copy.deepcopy(artifact_spans),returned_view_bytes=len(view_blob),
                         complete_request_ns=self.clock_ns()-start))
@@ -280,7 +332,7 @@ class DeliverySession:
         persisted=json.loads(_read_blob(self.store_path/'LEDGER.json',AUDIT_LIMIT))
         need(persisted.get('state') in ('published','delivered') and persisted.get('reference')==reference
             and all(_blob(persisted.get(k))==_blob(self.ledger[k]) for k in
-                ('task_sha256','run_nonce','condition_id','original_deadline_ns','limits','usage')),'publication_binding')
+                ('task_sha256','run_nonce','condition_id','original_deadline_ns','limits','usage','reader_costs','cost_integrity')),'publication_binding')
         artifact_limits={'EVIDENCE.json':SIDECAR_LIMIT,'VIEW.json':VIEW_LIMIT,
             'AUDIT.json':AUDIT_LIMIT,'READ_RECEIPTS.json':VIEW_LIMIT}
         records=self.ledger.get('artifact_persistence')
@@ -319,14 +371,14 @@ class DeliverySession:
             try:
                 self._check();self._event('evidence_resolution_attempt',pointer=pointer)
                 self.ledger['timings']['last_resolution_through_value_ns']=self.clock_ns()-started
-                self.ledger['last_resolved_value_bytes']=len(_blob(value));self._save();self._check()
+                self.ledger['last_resolved_value_bytes']=len(_blob(value));self._snapshot();self._save();self._check()
                 reply=dict(reference=copy.deepcopy(reference),pointer=pointer,value=copy.deepcopy(value),published=True,
-                    delivered=self.ledger['delivered'],model_received=False)
+                    delivered=self.ledger['delivered'],model_received=False,**self._cost_reply())
                 self._check()
             except BaseException as exc:
                 self.ledger.update(state='evidence_delivery_unknown',model_received=False)
                 self.ledger['resolution_error']=str(exc)
-                try:self._save()
+                try:self._snapshot();self._save()
                 except BaseException:pass
                 raise DeliveryError('evidence_delivery_unknown') from exc
             return reply
@@ -344,14 +396,14 @@ class DeliverySession:
                 self._save();self._check()
                 self.ledger.update(state='delivered',delivered=True,model_received=False)
                 self.ledger['timings']['last_delivery_through_ack_ns']=self.clock_ns()-started
-                self._save();self._check()
+                self._snapshot();self._save();self._check()
                 reply=dict(status='delivered',reference=copy.deepcopy(reference),published=True,delivered=True,model_received=False,
-                    scope='protocol_transport_ack_not_model_consumption')
+                    scope='protocol_transport_ack_not_model_consumption',**self._cost_reply())
                 self._check()
             except BaseException as exc:
                 self.ledger.update(state='delivery_unknown',delivered=was_delivered,model_received=False)
                 self.ledger['delivery_error']=str(exc)
-                try:self._save()
+                try:self._snapshot();self._save()
                 except BaseException:pass
                 raise DeliveryError('delivery_unknown') from exc
             return reply
