@@ -1,5 +1,7 @@
 # Human Eye 唯一主计划
 
+**2026-11-05，aggressive-v1 分支更新：** 用户最新要求进行激进架构及算法重写并移除防御性策略。本分支使用 [AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md) 作为当前方案和两端分工依据；本轮实现与复验见 [AGGRESSIVE_V1_RESULTS](AGGRESSIVE_V1_RESULTS.md)。以下是另一历史路径的主计划，保留作为对照，其“当前/下一步/暂停”不决定本实验分支排期。
+
 更新：2026-11-03。**REVIEW-CYCLE-006已独立复核；007只修已证实的离线评测控制合同，不运行真实消费者或Blender。** 正式版本仍为scene.trace.r1、125源a045；005安装及真实MCP/Prompt门已独立关闭，无需重复重连或触发。**只有本文件决定当前任务与后续顺序。**
 
 ### 当前审定批次 REVIEW-CYCLE-007（离线控制合同）

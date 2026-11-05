@@ -1,5 +1,7 @@
 # Human Eye 当前进度
 
+**2026-11-05，aggressive-v1：** 已新增独立 `human_eye_fast` 运行路径，采用批量形变、浮点 SAT、常驻数组、CSR 局部更新和直接任务视图。当前提交与可重跑测量见 [第一版结果](AGGRESSIVE_V1_RESULTS.md)，两端分工见 [激进优化方案](AGGRESSIVE_V1_PLAN.md)。以下为历史产品路径的进度记录，不代表该快速路径的部署或验收状态。
+
 更新：2026-11-03。正式基线按既有封存记录为 `9.7.2+20261031.dense.focus.r1`，78个运行时源、87个固定发布文件；摘要 `22fb2523bdbfb68d6e7227ea3df3b4373daa1a76461344bc1755406c5feeec8a`。本批核对其项目配置保持，新候选仍为独立安装，未切换正式live或Hook。
 
 推进顺序仅以[唯一主计划](PRODUCT_ROADMAP.md)为准。当前隔离125源候选`9.7.2+20261103.source.guard.r1`，SHA`d9b01eec9ce561b9f9fe5304cc37c50aa641b1826ed3ee788501eb2f49192360`；原125/dbeb、124/3fa和默认78/22fb原安装保持。默认MCP/live/Hook不切换。

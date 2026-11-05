@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "human-eye-spatial-plugin"
-version = "9.7.2"
+version = "9.7.2+aggressive.v1"
 description = "Human-Eye (人类之眼) 3D Foveated Spatial Intelligence, Low-Token MCP Scene Bridge & 6-DoF Closed-Loop Control Plugin for LLMs/VLMs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,13 +14,14 @@ dependencies = [
 ]
 
 [project.scripts]
+human-eye-fast = "human_eye_fast.cli:main"
 human-eye-mcp-server = "human_eye_plugin.production_server:main"
 human-eye-live = "human_eye_plugin.production_server:main"
 human-eye-auto-router = "human_eye_plugin.router_server:run_stdio_router"
 human-eye-hook = "human_eye_hook:main"
 
 [tool.setuptools]
-packages = ["human_eye_plugin", "human_eye_module1_operators"]
+packages = ["human_eye_plugin", "human_eye_module1_operators", "human_eye_fast"]
 py-modules = [
     "human_eye_hook",
     "human_eye_foveated_renderer",
