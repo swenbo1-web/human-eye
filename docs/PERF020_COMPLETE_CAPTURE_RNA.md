@@ -96,6 +96,8 @@
 
 READY 文档记录了较早 freezer 的哈希。实际 FREEZE 使用增加了安装预核及生命周期口径的 freezer，执行中的 server、worker、runner 和 scorer 与已复核版本一致。主执行在 GO 前检查并记录这一差异。
 
+阶段归因包含完整入口、capture、桥接、JSON、外部验证及原循环跨度。`evaluated_mesh`、`triangulation` 在当前聚合记录中为空，尚无独立可靠计量。`world_generator` 聚合还包含其他 generator 调用，不能直接当作纯坐标转换时间。原循环跨度和取数微基准也包含 Python 构造成本。后续归因需要继续细分，inclusive 数值保持各自范围。
+
 真实 Undo/redo、排除图层对象求值、共享 GUI 与第三方 addon 调度均列为覆盖边界。本轮保持零新模型消费者，Codex 任务质量与完整模型任务成本仍待后续独立对照。M2 场景驻留与完整架构验收继续开放。
 
 ## 后续主复核输入
