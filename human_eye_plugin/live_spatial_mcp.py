@@ -21,6 +21,7 @@ from typing import Any, TextIO
 from .runtime_identity import BASE_VERSION, MCP_PROTOCOL_VERSION, runtime_identity
 from .auto_router import _trace_span, _trace_annotate as annotate
 from .query_policy import MAX_VISUAL_LABEL_IDS, NATIVE_VISUAL_SCHEMA, validate_query
+from .task_query import FACTS as TASK_FACTS, SELECTOR_SCHEMA
 from .native_observation import _public_native_png
 from .support_plane_discovery import SUPPORT_PLANE_DISCOVERY_REQUEST_SCHEMA
 from .telemetry import set_image_request, record_image_artifact
@@ -57,7 +58,11 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Observation precision request; never an execution permission. nearest requires complete exact nonpenetrating order; top1 may exclude supported distant objects by strict outward bounds and reports equal-distance ties. Unknown or budget-limited proofs return no nearest result.",
     "properties": {
-        "mode": {"type": "string", "enum": ["overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "mode": {"type": "string", "enum": ["task", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
+            "description": "task only: exact name or id selectors bound to one fresh capture. Pair facts use exactly two objects ordered A to B."},
+        "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
+            "minItems": 1, "uniqueItems": True},
         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
             "description":"Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in; diagnose/reference/restore_preview require include_image=false. reference_patch uses a returned opaque feature patch_ref and may request useful native images under the original task budget. Reference input is locally trusted; previews never execute. Caller labels never reset budgets."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
@@ -117,6 +122,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
+            "Read current Blender facts directly: query={mode:'task',objects:[{name:'Part'},{name:'Base'}],"
+            "requested_facts:['surface_clearance','center_delta']} with include_image=false. "
+            "aabb accepts 1..4 objects; pair facts require two ordered A to B. Unknown is field-specific. "
             "Read the current Blender scene and obtain a measured spatial observation. "
             "Use returned object IDs to select focal and reference objects. "
             "Observations describe the live scene and may expire when it changes. "
@@ -455,6 +463,15 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
+    if value.get('result_kind') == 'task_query':
+        # Already selected structured facts. No full diagnostic, alias pass,
+        # copy, model message, nested context JSON or second encoding.
+        text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+        limit = 2048 if set(value['facts']) == {'aabb'} else 4096
+        if len(text.encode('utf8')) > limit:
+            raise ValueError('task_result_body_budget_exceeded; request fewer objects or facts')
+        record_image_artifact('mcp_content', native_block_count=0)
+        return {'content': [{'type': 'text', 'text': text}], 'isError': bool(is_error)}
     metadata = copy.deepcopy(value)
     _project_capability_aliases(metadata)
     _project_support_plane_discovery_aliases(metadata)
@@ -571,7 +588,12 @@ class LiveSpatialMCPServer:
             yield trace
 
     def _call_tool(self, name: str, arguments: dict, *, mcp_request_id=_NO_RPC_ID) -> dict:
-        with self.request_trace(name, arguments, mcp_request_id=mcp_request_id):
+        task_read = (name == 'human_eye_scene_observe' and type(arguments) is dict
+            and type(arguments.get('query')) is dict and arguments['query'].get('mode') == 'task')
+        # Keep the original service deadline alive through selected-body
+        # encoding. Nested service.observe reuses this scope, never renews it.
+        budget = self.service._request_budget if task_read else nullcontext
+        with self.request_trace(name, arguments, mcp_request_id=mcp_request_id), budget():
             annotate(request_origin='mcp')
             value = self._dispatch_tool(name, arguments)
             # Constructing native content proves transport preparation only.
@@ -617,6 +639,8 @@ class LiveSpatialMCPServer:
                 segment_brief=(name == 'human_eye_clearance_segment'),
                 compact_support_planes=(name == 'human_eye_scene_observe'
                     and 'support_plane_discovery' in args.get('query', {})))
+        if value.get('result_kind') == 'task_query':
+            self.service._check_request_budget('before_task_publication')
         return result
 
     def handle_jsonrpc_message(self, req: Any) -> dict | None:

@@ -45,6 +45,9 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode') == 'task':
+        from .task_query import validate_task_query
+        return validate_task_query(query)
     if type(query) is dict and query.get('mode')=='mesh_surface':
         from .surface_task_service import query as validate_surface_query
         return validate_surface_query(query)

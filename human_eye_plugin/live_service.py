@@ -186,7 +186,7 @@ def _request(operation):
                 with span('service.' + operation, kind='cpu'):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -945,6 +945,11 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'task':
+            if (include_image or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('task queries require include_image=false and selectors only in query.objects')
+            return self._observe_task(session_id, query)
         if query['mode']=='mesh_surface':
             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
             from .surface_task_service import observe
@@ -1128,6 +1133,39 @@ class LiveSpatialService:
                             'execution_authority': False}
         self.record_event("observe", session_id=session_id, status=status,
             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
+        return result
+
+    def _observe_task(self, session_id, query):
+        """Read-only finite query, sharing the existing capture/cache/ledger."""
+        from .task_query import task_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        rejected = self._identity_rejection()
+        if rejected is not None:
+            return rejected
+        with self._locked() as (value, runtime), self._observation_scope():
+            if value.get('inflight') or runtime.status['quarantined']:
+                return {'status': 'host_quarantined', 'session_id': session_id, 'routing': None}
+            self._check_request_budget('before_host_capture')
+            with span('host.capture', kind='host'):
+                captured = self.host.capture_scene()
+            self._check_request_budget('after_host_capture')
+            with span('scene.validate'):
+                scene, meshes, fingerprint = _validated_scene(captured)
+            with span('observation.task_facts'):
+                result = task_result(scene, meshes, fingerprint, query,
+                    runtime.router.scene_cache, self._check_request_budget)
+            # This read creates no action token. Drop a prior same-session
+            # prepare context, just as an unpaired legacy overview does.
+            state = runtime.export_state()
+            state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
+            runtime.import_state(state)
+            result['binding']['source_sha256'] = self._identity['source_sha256']
+            self._save(value, runtime)
+            self._check_request_budget('after_task_state_write')
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=scene['revision'], engine_invoked=result['work']['exact_pair_count'] > 0)
+        self._check_request_budget('before_task_result')
         return result
 
     @staticmethod
