@@ -231,13 +231,16 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            result['request_trace'] = {'trace_id': trace.trace_id,
-                                'request_id': trace.request_id, 'model_usage': 'unknown',
-                                'delivery': 'service_result_constructed'}
-                            associated = trace_task_context(trace)
-                            if associated is not None:
-                                result['request_trace']['task_context'] = associated
-                                result['request_trace']['task_context_scope'] = 'caller_correlation_only_not_authority'
+                            if result.get('schema_version') == 'task-query-v2':
+                                result['trace_id'] = trace.trace_id
+                            else:
+                                result['request_trace'] = {'trace_id': trace.trace_id,
+                                    'request_id': trace.request_id, 'model_usage': 'unknown',
+                                    'delivery': 'service_result_constructed'}
+                                associated = trace_task_context(trace)
+                                if associated is not None:
+                                    result['request_trace']['task_context'] = associated
+                                    result['request_trace']['task_context_scope'] = 'caller_correlation_only_not_authority'
                         except Exception:
                             pass
                 return result
@@ -1220,8 +1223,9 @@ class LiveSpatialService:
             with span('scene.validate'):
                 scene, meshes, fingerprint = _validated_scene(captured)
             with span('observation.task_facts'):
+                work = {}
                 result = task_result(scene, meshes, fingerprint, query,
-                    runtime.router.scene_cache, self._check_request_budget)
+                    runtime.router.scene_cache, self._check_request_budget, diagnostics=work)
             # This read creates no action token. Drop a prior same-session
             # prepare context, just as an unpaired legacy overview does.
             state = runtime.export_state()
@@ -1231,7 +1235,7 @@ class LiveSpatialService:
             self._save(value, runtime)
             self._check_request_budget('after_task_state_write')
         self.record_event('observe', session_id=session_id, status=result['status'],
-            scene_revision=scene['revision'], engine_invoked=result['work']['exact_pair_count'] > 0)
+            scene_revision=scene['revision'], engine_invoked=work['exact_pair_count'] > 0, task_work=work)
         self._check_request_budget('before_task_result')
         return result
 

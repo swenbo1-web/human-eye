@@ -170,7 +170,7 @@ def one_request(session, arguments, api, names, identities, spec, expected, ordi
     except (ValueError, KeyError, TypeError) as exc:
         assessment = dict(passed=False, type=type(exc).__name__, message=str(exc))
     after = cache_counts(context['service'])
-    trace_id = metadata.get('request_trace', {}).get('trace_id')
+    trace_id = metadata.get('trace_id') or metadata.get('request_trace', {}).get('trace_id')
     trace = request_trace(session.workspace, trace_id, request_id)
     need(type(trace) is dict, 'local_actual_service_trace')
     trace_id = trace['trace_id']

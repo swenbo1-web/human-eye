@@ -122,14 +122,12 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Read current Blender facts directly: query={mode:'task',objects:[{name:'Part'},{name:'Base'}],"
-            "requested_facts:['surface_clearance','center_delta']} with include_image=false. "
-            "aabb accepts 1..4 objects; pair facts require two ordered A to B. Unknown is field-specific. "
-            "Read the current Blender scene and obtain a measured spatial observation. "
-            "Use returned object IDs to select focal and reference objects. "
-            "Observations describe the live scene and may expire when it changes. "
-            "An optional caller-supplied goal checks current task criteria separately. "
-            "mesh_structure consumes an explicitly registered single-object read task; diagnose returns facts and patch references, then patch can request fresh local images."
+            "Read fresh Blender facts or images. For named/ID text facts use query.mode='task', "
+            "objects, requested_facts and include_image=false. aabb accepts 1..4 objects; pair facts "
+            "take two in A-to-B order. task-query-v2 returns measured values and field-specific unknown "
+            "reasons with a trace_id for diagnostics. Goals evaluate caller criteria. Other observation "
+            "modes retain images and returned object IDs; scene changes expire observations. "
+            "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images."
         ),
         "inputSchema": {
             "type": "object",
@@ -467,9 +465,6 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
         # Already selected structured facts. No full diagnostic, alias pass,
         # copy, model message, nested context JSON or second encoding.
         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
-        limit = 2048 if set(value['facts']) == {'aabb'} else 4096
-        if len(text.encode('utf8')) > limit:
-            raise ValueError('task_result_body_budget_exceeded; request fewer objects or facts')
         record_image_artifact('mcp_content', native_block_count=0)
         return {'content': [{'type': 'text', 'text': text}], 'isError': bool(is_error)}
     metadata = copy.deepcopy(value)

@@ -74,19 +74,21 @@ def bind_objects(scene, selectors):
         reason = 'object_not_found' if not matches else 'object_name_ambiguous' if len(matches) > 1 else None
         item = matches[0] if reason is None else None
         bound.append(item)
-        rows.append({'status': 'bound' if item else 'unknown',
-                     **({'object_id': item['object_id'], 'name': item['name']} if item
-                        else {'selector': dict(selector), 'reason': reason})})
+        rows.append({'object_id': item['object_id'], 'name': item['name']} if item else
+                    {'status': 'unknown', 'selector': dict(selector), 'reason': reason})
     if len(bound) == 2 and all(bound) and bound[0]['object_id'] == bound[1]['object_id']:
         return bound, rows, 'pair_selectors_resolve_to_same_object'
     return bound, rows, None
 
 
-def task_result(scene, meshes, fingerprint, query, cache, checkpoint):
+def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnostics=None):
     """Build only selected fields; cache and solver are the existing instances."""
     bound, bindings, pair_reason = bind_objects(scene, query['objects'])
     by_id = {m.object_id: m for m in meshes}
-    facts, metrics = {}, {'exact_pair_count': 0, 'pair_cache_hit': False}
+    facts = {}
+    metrics = {} if diagnostics is None else diagnostics
+    metrics['exact_pair_count'] = 0
+    metrics['pair_cache_hit'] = False
     if 'aabb' in query['requested_facts']:
         boxes = []
         for item in bound:
@@ -168,12 +170,12 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint):
     for key in ('center_delta', 'axis_gap'):
         if key in facts and facts[key]['status'] == 'measured' and not all(math.isfinite(v) for v in facts[key]['value']):
             facts[key] = _fact(reason='world_arithmetic_not_finite')
-    complete = all(row['status'] == 'bound' for row in bindings) and all(
+    complete = all(bound) and all(
         all(row['status'] == 'measured' for row in value) if type(value) is list else value['status'] == 'measured'
         for value in facts.values())
-    return {'result_kind': 'task_query', 'schema_version': 'task-query-v1',
+    return {'result_kind': 'task_query', 'schema_version': 'task-query-v2',
         'status': 'observed' if complete else 'partial',
         'binding': {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint, 'source': scene['source'],
                     'objects': bindings},
         'unit': 'm', 'coordinate_frame': 'world', 'pair_order': 'A_to_B',
-        'facts': facts, 'work': metrics, 'execution_authority': False}
+        'facts': facts, 'execution_authority': False}

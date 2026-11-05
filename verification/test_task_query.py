@@ -41,6 +41,10 @@ class TaskQueryTests(unittest.TestCase):
     def pair(self, facts):
         return self.observe(facts, [{'name':'part'}, {'name':'base'}])
 
+    def work(self):
+        events = [json.loads(line) for line in self.service.audit_path.read_text(encoding='utf8').splitlines()]
+        return [event['task_work'] for event in events if event['event'] == 'observe'][-1]
+
     def test_single_object_has_no_pair_or_unused_agent_work(self):
         self.host.scene['meshes'] = [self.host.scene['meshes'][1]]
         with patch('human_eye_plugin.task_query.measure_pair_geometry', side_effect=AssertionError('unused solver')),\
@@ -49,7 +53,7 @@ class TaskQueryTests(unittest.TestCase):
         self.assertEqual(result['status'], 'observed')
         self.assertEqual(self.host.captures, 1)
         self.assertEqual(self.host.calls, 0)
-        self.assertEqual(result['work']['exact_pair_count'], 0)
+        self.assertEqual(self.work()['exact_pair_count'], 0)
         self.assertEqual(set(result['facts']), {'aabb'})
         np.testing.assert_allclose(result['facts']['aabb'][0]['value']['dimensions'], [.2,.3,.1], atol=1e-14)
         self.assertFalse(result['execution_authority'])
@@ -67,20 +71,21 @@ class TaskQueryTests(unittest.TestCase):
         self.assertEqual(result['facts']['solid_relation']['value'], 'not_penetrating')
         self.assertEqual(result['facts']['nearest_witness']['status'], 'unknown')
         self.assertEqual(result['facts']['nearest_witness']['reason'], 'strict_nearest_witness_unavailable')
-        self.assertEqual(result['work']['exact_pair_count'], 1)
+        self.assertEqual(self.work()['exact_pair_count'], 1)
 
     def test_only_one_pair_and_warm_cache_reuses_current_geometry(self):
         self.host.scene['meshes'].append(mesh('noise',[10,0,0],[1,1,1]))
-        cold = self.pair(['surface_clearance']); warm = self.pair(['surface_clearance'])
-        self.assertEqual(cold['work']['exact_pair_count'], 1)
-        self.assertEqual(warm['work']['exact_pair_count'], 0)
-        self.assertTrue(warm['work']['pair_cache_hit'])
+        self.pair(['surface_clearance']); cold_work = self.work()
+        self.pair(['surface_clearance']); warm_work = self.work()
+        self.assertEqual(cold_work['exact_pair_count'], 1)
+        self.assertEqual(warm_work['exact_pair_count'], 0)
+        self.assertTrue(warm_work['pair_cache_hit'])
         self.assertEqual(self.host.captures, 2)
 
     def test_aabb_direction_never_runs_exact_pair(self):
         with patch('human_eye_plugin.task_query.measure_pair_geometry', side_effect=AssertionError('unused solver')):
             result = self.pair(['axis_gap','center_delta'])
-        self.assertEqual(result['work']['exact_pair_count'], 0)
+        self.assertEqual(self.work()['exact_pair_count'], 0)
 
     def test_missing_name_preserves_other_known_object(self):
         result = self.observe(objects=[{'name':'part'}, {'name':'missing'}])
@@ -188,7 +193,7 @@ class TaskQueryTests(unittest.TestCase):
     def test_same_object_pair_is_field_unknown(self):
         result = self.observe(['surface_clearance'], [{'id':'part'},{'name':'part'}])
         self.assertEqual(result['facts']['surface_clearance']['reason'], 'pair_selectors_resolve_to_same_object')
-        self.assertEqual(result['work']['exact_pair_count'], 0)
+        self.assertEqual(self.work()['exact_pair_count'], 0)
 
     def test_selector_byte_limit_rejected_before_capture(self):
         for value in ('x'*257, '名'*86):
@@ -196,12 +201,46 @@ class TaskQueryTests(unittest.TestCase):
                 self.observe(objects=[{'name':value}])
         self.assertEqual(self.host.captures, 0)
 
-    def test_long_host_names_fail_explicit_body_budget_without_trimming(self):
+    def test_long_host_names_deliver_complete_facts_without_trimming(self):
         self.host.scene['meshes'][1]['name'] = 'x'*5000
         result = self.observe(objects=[{'id':'part'}])
         self.assertEqual(result['facts']['aabb'][0]['status'], 'measured')
-        with self.assertRaisesRegex(ValueError, 'task_result_body_budget_exceeded'):
-            _tool_result(result, is_error=False)
+        encoded = _tool_result(result, is_error=False)['content'][0]['text']
+        self.assertEqual(json.loads(encoded), result)
+        self.assertEqual(json.loads(encoded)['binding']['objects'][0]['name'], 'x'*5000)
+        self.assertGreater(len(encoded.encode('utf8')), 2048)
+
+    def test_v2_keeps_trace_link_and_audited_work_without_wrapper_construction(self):
+        result = self.pair(['surface_clearance'])
+        self.assertEqual(result['schema_version'], 'task-query-v2')
+        self.assertNotIn('work', result)
+        self.assertNotIn('request_trace', result)
+        self.assertEqual(set(result['binding']['objects'][0]), {'object_id', 'name'})
+        events = [json.loads(line) for line in self.service.audit_path.read_text(encoding='utf8').splitlines()]
+        observe = next(event for event in events if event['event'] == 'observe')
+        trace = next(event for event in events if event['event'] == 'request_trace')
+        self.assertEqual(result['trace_id'], observe['trace_id'])
+        self.assertEqual(result['trace_id'], trace['trace_id'])
+        self.assertEqual(observe['task_work']['exact_pair_count'], 1)
+        self.assertEqual(observe['request_id'], trace['request_id'])
+
+    def test_preconstructed_v1_dictionary_keeps_its_original_schema_and_fields(self):
+        value = {'result_kind': 'task_query', 'schema_version': 'task-query-v1',
+            'facts': {'aabb': [{'status': 'unknown', 'value': None, 'reason': 'selector_unresolved'}]},
+            'work': {'exact_pair_count': 0, 'pair_cache_hit': False},
+            'request_trace': {'trace_id': 'old', 'model_usage': 'unknown'}}
+        result = _tool_result(value, is_error=False)
+        self.assertEqual(json.loads(result['content'][0]['text']), value)
+
+    def test_task_correlation_remains_in_trace_without_response_echo(self):
+        context = {'task_id': 'o1', 'task_run_id': 'one-run'}
+        result = self.service.observe('s', query=self.query(), include_image=False, task_context=context)
+        self.assertNotIn('request_trace', result)
+        events = [json.loads(line) for line in self.service.audit_path.read_text(encoding='utf8').splitlines()]
+        trace = next(event for event in events if event['event'] == 'request_trace')
+        self.assertEqual(result['trace_id'], trace['trace_id'])
+        for key, value in context.items():
+            self.assertEqual(trace['trace']['correlation'][key], value)
 
     def test_mcp_encodes_only_selected_body_once_without_deepcopy(self):
         result = self.pair(['surface_clearance'])
@@ -229,6 +268,27 @@ class TaskQueryTests(unittest.TestCase):
         self.assertLessEqual(len(body.encode('utf8')), 2048)
         for raw, fact in zip(self.host.scene['meshes'], result['facts']['aabb']):
             np.testing.assert_array_equal(fact['value']['min'], np.asarray(raw['vertices']).min(axis=0))
+
+    def test_four_object_ordinary_name_suffix_preserves_fixed_target_and_all_facts(self):
+        self.host.scene['meshes'] = [mesh('Object_'+str(i)+'_a',
+            [i*.1234567,-.3765432,.4891234],[.3923456,.433333,.678901]) for i in range(4)]
+        for item in self.host.scene['meshes']:
+            item['vertices'] = np.asarray(item['vertices'], dtype=np.float32).astype(float).tolist()
+        args = {'include_image': False, 'query': self.query(objects=[{'name': item['name']}
+            for item in self.host.scene['meshes']])}
+        reply = self.server._call_tool('human_eye_scene_observe', args)
+        body = reply['content'][0]['text']
+        self.assertFalse(reply['isError'])
+        self.assertLessEqual(len(body.encode('utf8')), 2048)
+        decoded = json.loads(body)
+        self.assertEqual([row['name'] for row in decoded['binding']['objects']],
+            [item['name'] for item in self.host.scene['meshes']])
+        for raw, fact in zip(self.host.scene['meshes'], decoded['facts']['aabb']):
+            vertices = np.asarray(raw['vertices'])
+            self.assertEqual(fact['status'], 'measured')
+            self.assertEqual(fact['value']['min'], vertices.min(axis=0).tolist())
+            self.assertEqual(fact['value']['max'], vertices.max(axis=0).tolist())
+            self.assertEqual(fact['value']['dimensions'], (vertices.max(axis=0)-vertices.min(axis=0)).tolist())
 
     def test_service_prevalidation_no_capture_for_incompatible_options(self):
         for extra in ({'include_image':True}, {'focal_id':'part'}, {'reference_id':'base'}, {'goal':{}}):
@@ -359,11 +419,15 @@ class CenterDeltaNumericsTests(unittest.TestCase):
                             vector[axis] = expected
                             self.assertEqual(fact['status'], 'measured')
                             self.assertEqual(fact['value'], vector)
-                        self.assertEqual(body['work']['exact_pair_count'], 0)
+                        self.assertNotIn('work', body)
                         self.assertFalse(body['execution_authority'])
                     captures += 1
         self.assertEqual(self.host.captures, captures)
         self.assertEqual(self.host.calls, 0)
+        events = [json.loads(line) for line in self.server.service.audit_path.read_text(encoding='utf8').splitlines()]
+        work = [row['task_work'] for row in events if row['event'] == 'observe']
+        self.assertEqual(len(work), captures)
+        self.assertTrue(all(row['exact_pair_count'] == 0 for row in work))
 
     def test_unrepresentable_center_keeps_other_known_facts(self):
         endpoints = dict(CENTER_ENDPOINT_CASES)['subnormal_unrepresentable']
