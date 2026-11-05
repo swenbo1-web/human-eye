@@ -25,6 +25,7 @@ import struct
 import threading
 import time
 import uuid
+from array import array
 from contextlib import contextmanager
 
 
@@ -74,6 +75,25 @@ _REFERENCE_VIEW_SHA256 = '4680b2c52be8494a59f53283cd2294e066cdfd9de36b062fcf7e5c
 _RAW_MESH_SHA256 = 'a9c50cdf2141158a2eff16a5827581cbae5e506a8e40f64b236f4ee676752d5d'
 _PATCH_FOCUS_SHA256 = 'cd54ed3f2ea100b5cc7662a30523c5f6548c4315d73dc4047c3d93d337964bc8'
 _NONPLANAR_FOCUS_SHA256 = 'fad0fd0d5eebebf7f6de907cb74005777b442538998867a342d3e0b218e41c02'
+
+
+def _mesh_buffer(collection, field, kind, count):
+    """Read bounded evaluated RNA; only a missing capability uses scalars."""
+    missing = object()
+    read = getattr(collection, "foreach_get", missing)
+    if read is missing:
+        return None
+    if not callable(read):
+        raise BlenderHostError("Evaluated mesh bulk reader is not callable")
+    # Sentinels expose a reader that returns without filling the whole buffer.
+    values = array(kind, [math.nan if kind == "f" else -1])
+    if values.itemsize != 4:
+        raise BlenderHostError("Evaluated mesh bulk storage requires four-byte values")
+    values *= 3 * count
+    read(field, values)
+    if len(values) != 3 * count or len(collection) != count:
+        raise BlenderHostError("Evaluated mesh bulk storage length changed")
+    return values
 
 
 def _hex_string(value, length):
@@ -468,20 +488,34 @@ class BlenderSceneHost:
                 if temporary is None:
                     raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
                 temporary.calc_loop_triangles()
-                if (vertex_count + len(temporary.vertices) > 500_000
-                        or face_count + len(temporary.loop_triangles) > 1_000_000):
+                mesh_vertex_count = len(temporary.vertices)
+                mesh_face_count = len(temporary.loop_triangles)
+                if (vertex_count + mesh_vertex_count > 500_000
+                        or face_count + mesh_face_count > 1_000_000):
                     raise BlenderHostError("Scene geometry budget exceeded")
+                local_coordinates = _mesh_buffer(temporary.vertices, "co", "f", mesh_vertex_count)
+                if local_coordinates is None:
+                    points = ([float(vertex.co[i]) for i in range(3)] for vertex in temporary.vertices)
+                else:
+                    points = ([float(local_coordinates[start + i]) for i in range(3)]
+                              for start in range(0, 3 * mesh_vertex_count, 3))
                 vertices = []
                 evaluated_local = [] if _native_evidence else None
-                for vertex in temporary.vertices:
-                    point = [float(vertex.co[i]) for i in range(3)]
+                for point in points:
                     if _native_evidence:
                         evaluated_local.append(point)
                     world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale for r in range(3)]
                     if any(not math.isfinite(v) for v in world):
                         raise BlenderHostError("Nonfinite evaluated geometry: " + obj.name)
                     vertices.append(world)
-                faces = [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles]
+                del points, local_coordinates
+                triangle_indices = _mesh_buffer(temporary.loop_triangles, "vertices", "i", mesh_face_count)
+                if triangle_indices is None:
+                    faces = [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles]
+                else:
+                    faces = [[int(triangle_indices[start + i]) for i in range(3)]
+                             for start in range(0, 3 * mesh_face_count, 3)]
+                del triangle_indices
                 if len(vertices) < 3 or not faces or any(len(face) != 3 or min(face) < 0 or max(face) >= len(vertices) for face in faces):
                     raise BlenderHostError("A mesh requires valid evaluated triangles: " + obj.name)
                 vertex_count, face_count = vertex_count + len(vertices), face_count + len(faces)
