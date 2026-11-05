@@ -131,7 +131,9 @@ def _quality(fixtures, case, phase, results):
 
 
 def _order(sequence, worker, case_id):
-    return METHODS[::-1] if (sequence + worker + case_id) % 2 else METHODS
+    # Two consecutive geometry phases use each order before flipping it;
+    # per-pair alternation would confound phase and method order in a worker.
+    return METHODS[::-1] if (sequence // 2 + worker + case_id) % 2 else METHODS
 
 
 def _check_inputs(fixtures, case, expected, record):
@@ -387,6 +389,7 @@ def main():
         "processor": platform.processor(), "logical_cpu_count": os.cpu_count(),
         "protocol": {**config, "grid_seeds": SEEDS, "methods": METHODS, "worker_thread_env": THREAD_ENV,
                      "main_boundary": "both full vertex updates followed by complete distance and witness",
+                     "order_balance": "pair order changes every two geometry states; each phase sees AB and BA in every process",
                      "cold_boundary": "two independent indexes and the first complete query",
                      "stage_boundary": "separate update and query instrumentation, outside main samples",
                      "quality": "distance equality plus independent barycentric witness membership and analytic dense gaps",
