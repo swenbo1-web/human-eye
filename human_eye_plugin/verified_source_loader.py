@@ -8,12 +8,50 @@ from __future__ import annotations
 import hashlib,importlib.abc,importlib.util,json,sys,types
 from pathlib import Path,PurePosixPath
 from types import MappingProxyType
+import re
+
+try:
+    from nt import _getfinalpathname as _native_final_path
+except ImportError:
+    _native_final_path = None
 
 PROTOCOL='human-eye-verified-source-v1'
 LIMIT=4*1024*1024
 
+_PLAIN_DRIVE_PATH = re.compile(r'[A-Za-z]:\\[^\\/:*?"<>|\x00-\x1f\x7f-\x9f]+(?:\\[^\\/:*?"<>|\x00-\x1f\x7f-\x9f]+)*')
+_RESERVED_NAMES = frozenset({'CON', 'PRN', 'AUX', 'NUL', 'CONIN$', 'CONOUT$'} |
+    {prefix + suffix for prefix in ('COM', 'LPT') for suffix in '123456789\xb9\xb2\xb3'})
+
 
 class SourceBindingError(ValueError):pass
+
+
+def _ordinary_source_path(raw):
+    if type(raw) is not str or len(raw) >= 240:
+        return False
+    if _PLAIN_DRIVE_PATH.fullmatch(raw) is None:
+        return False
+    try:
+        if len(raw.encode('utf-16-le')) >= 480:
+            return False
+    except UnicodeEncodeError:
+        return False
+    return all(part[-1] not in '. ' and
+               part.partition('.')[0].rstrip(' ').upper() not in _RESERVED_NAMES
+               for part in raw[3:].split('\\'))
+
+
+def _resolve_source_origin(path):
+    """Resolve a fresh ordinary origin for comparison, retaining old fallbacks."""
+    if _native_final_path is not None and _ordinary_source_path(path):
+        try:
+            canonical = _native_final_path(path)
+        except (OSError, ValueError):
+            return Path(path).resolve()
+        if (type(canonical) is str and canonical.startswith('\\\\?\\')
+                and _ordinary_source_path(canonical[4:])):
+            return Path(canonical[4:])
+    return Path(path).resolve()
 
 
 def _read(path):
@@ -100,11 +138,11 @@ class SourceGuard(importlib.abc.MetaPathFinder):
             # origin resolution below, without resolving twice for classification.
             # Unknown names and namespaces retain their original path checks.
             if not owned or namespace:
-                internal=path is not None and Path(path).is_absolute() and Path(path).resolve().is_relative_to(self.root)
+                internal=path is not None and Path(path).is_absolute() and _resolve_source_origin(path).is_relative_to(self.root)
                 if not owned and not internal:continue
             if namespace:continue
             witness=self._executed.get(id(module))
-            if witness is None or witness[0] is not module or path is None or Path(path).resolve()!=self.root/witness[1]:
+            if witness is None or witness[0] is not module or path is None or _resolve_source_origin(path)!=self.root/witness[1]:
                 raise SourceBindingError('verified_source_preloaded_module:'+name)
         return True
 

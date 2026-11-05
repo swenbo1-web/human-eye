@@ -231,14 +231,17 @@ class GuardResolveAccountingTests(GuardHarness):
         external=types.ModuleType('_outside');external.__file__=str(self.folder/'outside.py');modules[external.__name__]=external
         namespace=types.ModuleType('human_eye_plugin');namespace.__path__=[str(self.root/'human_eye_plugin')]
         guard.allow_namespace(namespace);modules[namespace.__name__]=namespace
-        original=Path.resolve;calls=[]
-        def resolving(p,*args,**kwargs):calls.append(str(p));return original(p,*args,**kwargs)
-        with mock.patch.object(v,'sys',types.SimpleNamespace(modules=modules)),mock.patch.object(Path,'resolve',resolving):
+        original=v._resolve_source_origin;calls=[]
+        def resolving(p):calls.append(str(p));return original(p)
+        with mock.patch.object(v,'sys',types.SimpleNamespace(modules=modules)),mock.patch.object(v,'_resolve_source_origin',resolving):
             for _ in range(2):
                 calls.clear();self.assertTrue(guard.verify_loaded())
                 # 62 final owned origins + 2 original alias checks + 1 external
                 # classification; namespace has no __file__. Repeat must read
-                # every origin again, with no success cached between calls.
+                # every original origin-check location again. The new helper
+                # does a fresh native lookup or the original resolver, with
+                # no success cached between calls and no alias evaluations
+                # merged. Normal native/stat work is checked separately.
                 self.assertEqual(calls,[str(path)]*64+[external.__file__])
 
 
