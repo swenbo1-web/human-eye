@@ -161,7 +161,7 @@ def _transverse(direction, axis):
     return direction - direction.dot(axis) * axis
 
 
-def _select(prepared, a, b, axis, midpoint, gap, radius, target_ids, section):
+def _select(prepared, a, b, axis, midpoint, gap, radius, target_ids, section, rank_directions=None):
     # Phase the orbit around the fixed view's perpendicular projection. An
     # exactly axial view leaves the phase free, so use any orthogonal vector.
     u = _transverse(_FIXED, axis)
@@ -175,8 +175,11 @@ def _select(prepared, a, b, axis, midpoint, gap, radius, target_ids, section):
     rays = 0
     probes = []
     best_direction, best_score = u, (-1, -1)
-    for c, s in _ORBIT:
-        direction = (c * u + s * v).normalized()
+    directions = ((c * u + s * v).normalized() for c, s in _ORBIT)
+    if rank_directions is not None:
+        canonical = tuple(directions)
+        directions = map(canonical.__getitem__, rank_directions(canonical))
+    for direction in directions:
         start_rays = rays
         forward = -direction
         lift = direction * (0 if section else distance)
@@ -330,7 +333,7 @@ class VGRenderer:
                 label(526, 503, 12, "Original geometry  /  no section")
 
     def observe(self, prepared, witness, *, target_ids, frame_id, scale_length,
-                mode="NATURAL", method="active", audit=False, relation=None):
+                mode="NATURAL", method="active", audit=False, relation=None, rank_directions=None):
         gap = witness.distance_m
         a, b = Vector(witness.point_a), Vector(witness.point_b)
         midpoint = (a + b) / 2
@@ -342,7 +345,8 @@ class VGRenderer:
             raise ValueError("SECTION requires a positive-distance witness")
         if method == "active" and axis is not None:
             direction, count, probes = _select(
-                prepared, a, b, axis, midpoint, gap, radius, target_ids, mode == "SECTION")
+                prepared, a, b, axis, midpoint, gap, radius, target_ids, mode == "SECTION",
+                rank_directions)
         if mode == "SECTION":
             normal = _transverse(direction, axis).normalized()
             if not normal.length_squared:
