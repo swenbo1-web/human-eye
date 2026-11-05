@@ -6,15 +6,15 @@
 
 本文件取代 `3c8a777` 将 F0–F7 当作整体引擎的方案。新依据是用户提供的 [HE-Radical-V1.1 原始规格](RADICAL_V1_SOURCE_SPEC.md)，分析、反例和采用理由见 [规格深度审查](RADICAL_V1_SPEC_REVIEW.md)。附件作为设计输入原样保存，其“完整生产级”“实测 10.5 ms”等措辞不代表本分支已验证结论。
 
-本文保留整体设计初稿；其中RadicalSession、视觉、学习和动作接口仍为拟定。当前human_eye_fast已实现并验收RB-A、RB-B、TD和BC，正在推进VG；BC主干二次优化候选未采用，运行时保持达标实施版。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
+本文保留整体设计初稿；其中RadicalSession、学习和动作接口仍为拟定。当前human_eye_fast已实现并验收RB-A、RB-B、TD、BC和VG，正在推进AO；BC主干二次优化候选未采用，运行时保持达标实施版。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
 
 ## 1. 整体框架：三大引擎，一份常驻状态
 
 采用附件新的三个顶层功能分区。它们不是历史方案中的 core/低 token 桥/Agent 三模块，也不是三个进程。
 
-| 整体引擎 | 对外承担的完整职责 | 第一版已有基础 | 融合后必须补齐 |
+| 整体引擎 | 对外承担的完整职责 | 第一版已有基础 | 后续必须补齐 |
 | --- | --- | --- | --- |
-| **E1 人眼主动感知引擎** | 由任务与几何见证决定看哪里、怎样看；交付全景、局部图及空间解释 | 快速路径无图像实现 | 网格可见性、像素尺度选取、明确的剖切视图、真实 GPU 绘制与图片交付 |
+| **E1 人眼主动感知引擎** | 由任务与几何见证决定看哪里、怎样看；交付全景、局部图及空间解释 | VG已验收真实主动视角、剖切与双联PNG，采用主干流式编码 | AO公开消费与整链编排 |
 | **E2 小脑记忆与先验引擎** | 利用历史观察和动作结果，改进视角/候选顺序及结果预测；从实际反馈更新 | 无学习记忆；`FastSession` 缓存不等于学习 | 特征、经验标签和动作条件；会话内环形库；检索与读出学习；增益消融 |
 | **E3 几何与动作执行引擎** | 常驻场景、空间/形变事实、动作求解、宿主执行与回读，给出实际残差 | `FastSession`、CSR、AABB/SAT、CLI/JSONL；RB-A/B、TD和BC已验收；旧BlenderSession仍保持原边界 | 动作控制器和整链接线 |
 
@@ -59,7 +59,7 @@ flowchart LR
 | `resident_bridge.py` | E3：已实现`resident_bridge.py`及原生`blender_resident_bridge.py` | 稳定多对象米制数组、完整变换、外观和显式更新；旧BlenderSession仍保持原边界 |
 | `fast_bvh_clearance.py` | E3：已实现同名文件，SurfaceIndex/surface_distance | 完整窄相、BVH节点对搜索、原始面ID和世界米制见证；采用已达标实施版 |
 | `tensor_deform.py` | E3：已实现同名文件，复用`kernels.py`数值核 | 流式跨帧归约、面积/法向/位移和稳定Top-K，保留主伸长完整语义 |
-| `raycast_saccade_gpu.py` | E1：同名文件待实施，Blender GPU绘制 | 实际1024×512双联HUD、真实可见性与明确剖切；不能只交配置 |
+| `raycast_saccade_gpu.py` | E1：已实现同名文件，VGRenderer/prepare/observe | 已验收1024×512真实双联HUD、可见性/剖切及流式无损PNG |
 | `cerebellar_flash.py` | E2：同名文件待实施 | 会话持有检索库/学习读出，以真实观察和动作结果监督，不使用全局隐式单例 |
 | `fast_affordance_out.py` | 跨引擎：同名文件待实施，CLI/薄接口交付 | 数值、图像引用与任务结果一次输出；见证向量不直接当建议动作 |
 | **附件缺失：动作控制器** | E3：`control.py` | goal → solve → apply → recapture → residual → feedback |

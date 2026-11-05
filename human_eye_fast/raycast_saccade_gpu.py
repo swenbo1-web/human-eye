@@ -1,13 +1,13 @@
 """Orthographic active vision from resident world-meter geometry in Blender."""
 
 from dataclasses import dataclass
-from io import BytesIO
 from math import cos, hypot, pi, sin
+import struct
+import zlib
 
 import blf
 import bpy
 import gpu
-import imbuf
 import numpy as np
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
@@ -22,6 +22,26 @@ _ORBIT = tuple((cos(k * pi / 8), sin(k * pi / 8)) for k in (
 ))
 _EPS32 = float(np.finfo(np.float32).eps)
 _ZERO = (0.0, 0.0, 0.0)
+
+
+def _png_chunk(kind, payload):
+    return (struct.pack(">I", len(payload)) + kind + payload
+            + struct.pack(">I", zlib.crc32(payload, zlib.crc32(kind))))
+
+
+# Preserve the established display/color and resolution semantics. Only the
+# lossless scanline representation changes: this renderer is fully opaque.
+_PNG_PREFIX = b"\x89PNG\r\n\x1a\n" + _png_chunk(
+    b"IHDR", struct.pack(">IIBBBBB", 2 * PANEL, PANEL, 8, 2, 0, 0, 0))
+_PNG_PREFIX += b"".join(_png_chunk(kind, bytes.fromhex(payload)) for kind, payload in (
+    (b"sRGB", "03"),
+    (b"gAMA", "0000b18f"),
+    (b"cHRM", "00007a26000080840000fa00000080e8000075300000ea6000003a9800001770"),
+    (b"eXIf", "4d4d002a00000018000000480000000100000048000000010002011a00050000000100000008011b0005000000010000001000000000"),
+    (b"oFFs", "000000000000000000"),
+    (b"pHYs", "00000b1200000b1201"),
+))
+_PNG_END = _png_chunk(b"IEND", b"")
 
 
 @dataclass(slots=True)
@@ -208,9 +228,11 @@ class VGRenderer:
         self.shader = _surface_shader()
         self.hud_shader = gpu.shader.from_builtin("SMOOTH_COLOR")
         self.cameras = (_camera("VG Context"), _camera("VG Witness"))
-        self.image = imbuf.new((2 * PANEL, PANEL), planes=32, buffer_type="BYTE")
-        self.image.file_type = "PNG"
-        self.image.compress = 15
+        self.scanlines = np.empty((PANEL, 1 + 2 * PANEL * 3), dtype=np.uint8)
+        self.scanlines[:, 0] = 2  # PNG Up: subtract the preceding top-down row.
+        self.rgb_deltas = self.scanlines[:, 1:].reshape(PANEL, 2 * PANEL, 3)
+        self.rgb = np.empty((64, 2 * PANEL, 3), dtype=np.uint8)
+        self.previous_row = np.empty((2 * PANEL, 3), dtype=np.uint8)
 
     def prepare(self, meshes):
         positions, colors, polygons, points, owners = [], [], [], [], []
@@ -375,17 +397,25 @@ class VGRenderer:
                 gpu.state.depth_test_set(previous_test)
                 gpu.state.depth_mask_set(previous_mask)
                 gpu.state.blend_set(previous_blend)
-        # Both GPU and ImBuf buffers are bottom-up. The PNG writer converts
-        # row order once; the optional independent audit view flips separately.
-        with self.image.with_buffer(write=True) as destination:
-            np.copyto(np.asarray(destination), np.asarray(memoryview(data)))
-        encoded = BytesIO()
-        imbuf.write_to_buffer(self.image, encoded)
-        return Observation(encoded.getvalue(), metadata, bottom)
+        # Compact one stripe at a time: vectorized Up filtering gets contiguous
+        # RGB while the scratch buffer stays smaller than a full source image.
+        source = np.asarray(memoryview(data))[::-1, :, :3]
+        for start in range(0, PANEL, len(self.rgb)):
+            stop = start + len(self.rgb)
+            np.copyto(self.rgb, source[start:stop])
+            if start:
+                np.subtract(self.rgb[0], self.previous_row, out=self.rgb_deltas[start])
+            else:
+                self.rgb_deltas[0] = self.rgb[0]
+            np.subtract(self.rgb[1:], self.rgb[:-1], out=self.rgb_deltas[start+1:stop])
+            self.previous_row[:] = self.rgb[-1]
+        compressed = zlib.compress(self.scanlines, 1)
+        png = _PNG_PREFIX + _png_chunk(b"IDAT", compressed) + _PNG_END
+        return Observation(png, metadata, bottom)
 
     def close(self):
-        self.image.free()
         self.offscreen.free()
+        self.rgb = self.rgb_deltas = self.scanlines = self.previous_row = None
         for camera in self.cameras:
             data = camera.data
             bpy.data.objects.remove(camera)

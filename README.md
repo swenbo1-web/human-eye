@@ -2,9 +2,9 @@
 
 后续按 [六模块竞争推进与收益验收](docs/RADICAL_V1_COMPETITION_WORKFLOW.md) 执行：两端独立实现整引擎，由主对话派工、独立验收，达标后推进。整体功能架构见 [Radical V1 架构](docs/RADICAL_V1_INTEGRATION_PLAN.md)：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。已有 human_eye_fast 是 E3 的数值底座，尚未实现整条视觉、学习与执行闭环。
 
-RB-A、RB-B、TD和BC已通过各自合同，当前推进VG真实主动视觉。BC完成两层优化：实施版达标；主干候选虽改善部分输入，但尾延迟未证明无退化，已撤回并采用实施达标版。证据及边界见[主验收记录](docs/RADICAL_V1_ACCEPTANCE_LOG.md)、[BC二次优化与选择](docs/BC_REFINEMENT_REVIEW.md)。后续实施对话必须先达到原优化标准并自测唤醒主干；主干审计后继续实施架构/算法二次优化，直接对比实施达标版。主干候选无退化且有收益才采用，否则撤回主干改动、保留实施达标版，再推进下一模块。两层均贯彻去运行时防御策略、全面激进提效。
+RB-A、RB-B、TD、BC和VG已通过各自合同，当前推进AO联合观察与真实动作回读。VG完成两层验收并采用主干流式无损PNG：完整观察中位17.09→8.67ms、p95 18.52→9.94ms，24/24质量和逐像素一致，PNG及编码工作区均缩小，详见[VG二次优化](docs/VG_REFINEMENT_REVIEW.md)。BC完成两层优化：实施版达标；主干候选虽改善部分输入，但尾延迟未证明无退化，已撤回并采用实施达标版。证据及边界见[主验收记录](docs/RADICAL_V1_ACCEPTANCE_LOG.md)、[BC二次优化与选择](docs/BC_REFINEMENT_REVIEW.md)。后续实施对话必须先达到原优化标准并自测唤醒主干；主干审计后继续实施架构/算法二次优化，直接对比实施达标版。主干候选无退化且有收益才采用，否则撤回主干改动、保留实施达标版，再推进下一模块。两层均贯彻去运行时防御策略、全面激进提效。
 
-本分支为 **aggressive-v1 激进优化实验版**（2026-11-05）。新入口 `python -B -m human_eye_fast demo` 使用可信输入、常驻数组与批量/稀疏计算；新路径移除来源校验、期限/配额守卫和持久账本。当前分支推进以[最新整体融合方案](docs/RADICAL_V1_INTEGRATION_PLAN.md)为准，产出与测量见[第一版结果](docs/AGGRESSIVE_V1_RESULTS.md)。下文保留历史产品说明，原 MCP/Hook 入口仍属于历史实现。
+本分支为 **aggressive-v1 激进优化实验版**（2026-11-05）。新入口 `python -B -m human_eye_fast demo` 使用可信输入、常驻数组与批量/稀疏计算；新路径移除来源校验、期限/配额守卫和持久账本。当前分支推进以[最新整体引擎方案](docs/RADICAL_V1_INTEGRATION_PLAN.md)为准，产出与测量见[第一版结果](docs/AGGRESSIVE_V1_RESULTS.md)。下文保留历史产品说明，原 MCP/Hook 入口仍属于历史实现。
 
 Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生 Blender 图像与受预算约束的有限刚体动作。目标是让 Agent 使用可核验的几何事实和合适的视图完成三维任务。
 
