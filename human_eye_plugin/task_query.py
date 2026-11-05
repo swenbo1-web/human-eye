@@ -6,6 +6,7 @@ Selectors bind only against this call's validated capture. Pair order is A to B.
 from __future__ import annotations
 
 import math
+import sys
 
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
 from .query_policy import measurement_contract
@@ -20,6 +21,24 @@ SELECTOR_SCHEMA = {
     'oneOf': [{'required': ['id']}, {'required': ['name']}],
     'additionalProperties': False,
 }
+_EXACT_HALF_MIN = 2 * sys.float_info.min
+
+
+def _aabb_center_delta_component(a0, a1, b0, b1):
+    # Sum endpoint contributions together, before rounding either world center.
+    endpoints = (float(b0), float(b1), -float(a0), -float(a1))
+    if all(value == 0 or abs(value) >= _EXACT_HALF_MIN for value in endpoints):
+        try:
+            return math.fsum(value * .5 for value in endpoints)
+        except OverflowError:
+            # An intermediate partial sum can overflow even if the result fits.
+            pass
+    # Halving tiny endpoints can lose a subnormal bit. Preserve their exact
+    # dyadic values here, and round only the final relative quantity.
+    from fractions import Fraction
+    exact = sum(Fraction.from_float(value) for value in endpoints) / 2
+    rounded = float(exact)
+    return None if exact and rounded == 0 else rounded
 
 
 def validate_task_query(query):
@@ -89,10 +108,14 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint):
         else:
             left, right = [by_id[item['object_id']] for item in bound]
             if 'center_delta' in requested_pair:
-                # Half first avoids overflow from adding world coordinates.
-                delta = ((right.bbox_min / 2 + right.bbox_max / 2)
-                         - (left.bbox_min / 2 + left.bbox_max / 2)).tolist()
-                facts['center_delta'] = _fact(delta, semantics='B_AABB_center_minus_A_AABB_center')
+                try:
+                    delta = [_aabb_center_delta_component(*bounds) for bounds in
+                        zip(left.bbox_min, left.bbox_max, right.bbox_min, right.bbox_max)]
+                    facts['center_delta'] = (_fact(reason='world_arithmetic_below_float_resolution')
+                        if any(value is None for value in delta) else
+                        _fact(delta, semantics='B_AABB_center_minus_A_AABB_center'))
+                except OverflowError:
+                    facts['center_delta'] = _fact(reason='world_arithmetic_not_finite')
             if 'axis_gap' in requested_pair:
                 gaps = [max(float(b0 - a1), float(a0 - b1), 0.) for a0, a1, b0, b1 in
                         zip(left.bbox_min, left.bbox_max, right.bbox_min, right.bbox_max)]

@@ -1,7 +1,12 @@
 """Independent analytic task facts and boundary counterexamples; no Blender."""
 import copy
+from fractions import Fraction
 import json
+import math
 from pathlib import Path
+import random
+import struct
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -264,6 +269,156 @@ class TaskQueryTests(unittest.TestCase):
             return original(*values, **kwargs)
         with patch('human_eye_plugin.live_spatial_mcp._tool_result', side_effect=expire):
             with self.assertRaises(RequestBudgetError): self.server._call_tool('human_eye_scene_observe', args)
+
+
+def center_delta_oracle(endpoints):
+    """Exact binary64 endpoints, with one final round-to-nearest conversion."""
+    a0, a1, b0, b1 = map(Fraction.from_float, endpoints)
+    exact = (b0 + b1 - a0 - a1) / 2
+    try:
+        rounded = float(exact)
+    except OverflowError:
+        return None, 'world_arithmetic_not_finite'
+    if exact and rounded == 0:
+        return None, 'world_arithmetic_below_float_resolution'
+    return rounded, None
+
+
+CENTER_ENDPOINT_CASES = (
+    ('origin', (0., 2., 2., 4.)),
+    ('large_translation', (1e16, 1e16 + 2., 1e16 + 2., 1e16 + 4.)),
+    ('negative_translation', (-1e16 - 4., -1e16 - 2., -1e16 - 2., -1e16)),
+    ('opposite_signs', (-4., -2., 2., 4.)),
+    ('half_ulp_midpoints', (1., math.nextafter(1., math.inf),
+        math.nextafter(1., math.inf), 1. + 2. * math.ulp(1.))),
+    ('near_overflow_finite', (sys.float_info.max / 2., sys.float_info.max,
+        sys.float_info.max / 2., sys.float_info.max)),
+    ('intermediate_overflow', (-sys.float_info.max, sys.float_info.max,
+        sys.float_info.max, sys.float_info.max)),
+    ('true_overflow', (-sys.float_info.max, -sys.float_info.max,
+        sys.float_info.max, sys.float_info.max)),
+    ('subnormal_measured', (0., math.ulp(0.), math.ulp(0.), 2. * math.ulp(0.))),
+    ('subnormal_unrepresentable', (0., 0., 0., math.ulp(0.))),
+    ('subnormal_exact_zero', (-math.ulp(0.), math.ulp(0.), 0., 0.)),
+    ('normal_boundary', (sys.float_info.min, math.nextafter(sys.float_info.min, math.inf),
+        math.nextafter(sys.float_info.min, math.inf), sys.float_info.min + 2. * math.ulp(0.))),
+)
+
+
+def center_scene(endpoints, axis=0):
+    """Assign represented endpoint bytes directly, avoiding a midpoint builder."""
+    scene = {'revision': 'center-r1', 'unit': 'm', 'coordinate_frame': 'world',
+             'source': 'test_host', 'meshes': []}
+    for name, low, high in (('A', *endpoints[:2]), ('B', *endpoints[2:])):
+        item = mesh(name, [0., 0., 0.], [2., 2., 2.])
+        for vertex in item['vertices']:
+            vertex[axis] = low if vertex[axis] < 0 else high
+        scene['meshes'].append(item)
+    return scene
+
+
+class CenterDeltaNumericsTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        config = Path(self.temp.name) / 'live.json'
+        config.write_text(json.dumps({'schema_version': '1.0', 'enabled': True,
+            'project_root': str(Path(__file__).resolve().parents[1]), 'quad_size': 64,
+            'state_file': 'state.json', 'audit_file': 'audit.jsonl'}), encoding='utf8')
+        self.host = SelfLockingHost()
+        self.server = LiveSpatialMCPServer(LiveSpatialService(config, host=self.host), 'center-tests')
+
+    def read_case(self, endpoints, axis=0, reverse=False):
+        self.host.scene = center_scene(endpoints, axis)
+        names = ('B', 'A') if reverse else ('A', 'B')
+        with np.errstate(over='ignore', under='ignore', invalid='ignore'):
+            reply = self.server._call_tool('human_eye_scene_observe', {'include_image': False,
+                'query': {'mode': 'task', 'objects': [{'name': name} for name in names],
+                          'requested_facts': ['aabb', 'center_delta', 'axis_gap']}})
+        self.assertFalse(reply['isError'])
+        return json.loads(reply['content'][0]['text'])
+
+    def test_endpoint_oracle_at_mcp_boundary_all_axes_and_orders(self):
+        captures = 0
+        for label, endpoints in CENTER_ENDPOINT_CASES:
+            for axis in range(3):
+                for reverse in (False, True):
+                    with self.subTest(case=label, axis=axis, reverse=reverse):
+                        ordered = endpoints[2:] + endpoints[:2] if reverse else endpoints
+                        expected, reason = center_delta_oracle(ordered)
+                        body = self.read_case(endpoints, axis, reverse)
+                        fact = body['facts']['center_delta']
+                        if reason:
+                            self.assertEqual(fact['status'], 'unknown')
+                            self.assertIsNone(fact['value'])
+                            self.assertEqual(fact['reason'], reason)
+                            self.assertEqual(body['status'], 'partial')
+                            self.assertTrue(any(row['status'] == 'measured' for row in body['facts']['aabb']))
+                        else:
+                            vector = [0., 0., 0.]
+                            vector[axis] = expected
+                            self.assertEqual(fact['status'], 'measured')
+                            self.assertEqual(fact['value'], vector)
+                        self.assertEqual(body['work']['exact_pair_count'], 0)
+                        self.assertFalse(body['execution_authority'])
+                    captures += 1
+        self.assertEqual(self.host.captures, captures)
+        self.assertEqual(self.host.calls, 0)
+
+    def test_unrepresentable_center_keeps_other_known_facts(self):
+        endpoints = dict(CENTER_ENDPOINT_CASES)['subnormal_unrepresentable']
+        body = self.read_case(endpoints)
+        self.assertEqual(body['facts']['axis_gap']['status'], 'measured')
+        self.assertEqual(body['facts']['axis_gap']['value'], [0., 0., 0.])
+        self.assertTrue(all(row['status'] == 'measured' for row in body['facts']['aabb']))
+        self.assertEqual(body['facts']['aabb'][1]['value']['max'][0], math.ulp(0.))
+
+    def test_simultaneous_three_axis_translation(self):
+        self.host.scene = center_scene((1e16, 1e16 + 2., 1e16 + 2., 1e16 + 4.))
+        for item in self.host.scene['meshes']:
+            for vertex in item['vertices']:
+                vertex[1] = -vertex[0]
+                vertex[2] = vertex[0]
+        reply = self.server._call_tool('human_eye_scene_observe', {'include_image': False,
+            'query': {'mode': 'task', 'objects': [{'name': 'A'}, {'name': 'B'}],
+                      'requested_facts': ['center_delta']}})
+        fact = json.loads(reply['content'][0]['text'])['facts']['center_delta']
+        self.assertEqual(fact['status'], 'measured')
+        self.assertEqual(fact['value'], [2., -2., 2.])
+
+    def test_normal_and_large_coordinates_do_not_need_fraction_fallback(self):
+        with patch('fractions.Fraction', side_effect=AssertionError('unnecessary exact fallback')):
+            for label, endpoints in CENTER_ENDPOINT_CASES[:6]:
+                with self.subTest(case=label):
+                    self.assertEqual(self.read_case(endpoints)['facts']['center_delta']['status'], 'measured')
+
+    def test_fixed_seed_finite_endpoints_against_exact_oracle(self):
+        from human_eye_plugin.task_query import task_result
+        from types import SimpleNamespace
+        rng = random.Random(703)
+        for index in range(2000):
+            values = []
+            while len(values) < 4:
+                value = struct.unpack('>d', rng.getrandbits(64).to_bytes(8, 'big'))[0]
+                if math.isfinite(value):
+                    values.append(value)
+            endpoints = (*sorted(values[:2]), *sorted(values[2:]))
+            expected, reason = center_delta_oracle(endpoints)
+            meshes = [SimpleNamespace(object_id=name, bbox_min=np.array([low, 0., 0.]),
+                bbox_max=np.array([high, 0., 0.]))
+                for name, low, high in (('A', *endpoints[:2]), ('B', *endpoints[2:]))]
+            result = task_result({'revision': 'fuzz', 'source': 'test_host',
+                'meshes': [{'object_id': name, 'name': name} for name in ('A', 'B')]},
+                meshes, 'fuzz', {'objects': [{'name': 'A'}, {'name': 'B'}],
+                'requested_facts': ['center_delta']}, None, lambda stage: None)
+            fact = result['facts']['center_delta']
+            with self.subTest(index=index, endpoints=endpoints):
+                if reason:
+                    self.assertEqual(fact['status'], 'unknown')
+                    self.assertEqual(fact['reason'], reason)
+                else:
+                    self.assertEqual(fact['status'], 'measured')
+                    self.assertEqual(fact['value'], [expected, 0., 0.])
 
 
 if __name__ == '__main__': unittest.main()
