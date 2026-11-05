@@ -1,0 +1,458 @@
+"""Run the frozen BC workload in three fresh processes.
+
+From the repository root: python -B verification/benchmark_fast_bvh_clearance.py
+--output artifacts/bc/author_01.json --seed 20261105
+"""
+
+import argparse
+from dataclasses import dataclass
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import subprocess
+import sys
+from time import perf_counter_ns
+import traceback
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from human_eye_fast.fast_bvh_clearance import (
+    SurfaceDistance, SurfaceIndex, _closest_pairs, _prepare_triangles, surface_distance,
+)
+
+PROCESSES = 3
+WARMUPS = 5
+SAMPLES = 31
+STAGE_SAMPLES = 6
+PAIR_BLOCK = 8192
+METHODS = ("bvh", "full_pairs")
+THREAD_ENV = dict.fromkeys(
+    ("BLIS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+     "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"), "1",
+)
+DENSE_SEED = 512
+DENSE_GAP_M = 0.005
+
+
+@dataclass(frozen=True)
+class Case:
+    name: str
+    states: tuple
+    faces_a: np.ndarray
+    faces_b: np.ndarray
+    z_offset_m: float | None = None
+    expected_m: tuple | None = None
+
+
+def _grid_case(cells, z_offset_m, seed):
+    rng = np.random.default_rng([seed, cells, round(100 * z_offset_m)])
+    axis = np.linspace(-0.5, 0.5, cells + 1)
+    x, y = (item.ravel() for item in np.meshgrid(axis, axis))
+    stride = cells + 1
+    corner = np.arange(stride * stride).reshape(stride, stride)[:-1, :-1].ravel()
+    faces = np.empty((2 * cells * cells, 3), dtype=np.intp)
+    faces[0::2] = np.column_stack((corner, corner + 1, corner + stride + 1))
+    faces[1::2] = np.column_stack((corner, corner + stride + 1, corner + stride))
+
+    def vertices(z_base):
+        dx, dy = rng.uniform(-0.075, 0.075, 2)
+        phase_x, phase_y = rng.uniform(0, 2 * np.pi, 2)
+        z = z_base + 0.009 * np.sin(7 * x + phase_x) * np.cos(8 * y + phase_y)
+        return np.column_stack((x + dx, y + dy, z))
+
+    kind = "separated" if z_offset_m == 0.5 else "near"
+    states = tuple((vertices(0.0), vertices(z_offset_m)) for _ in range(2))
+    return Case(f"grid_{len(faces)}_{kind}", states, faces, faces.copy(), z_offset_m)
+
+
+def _dense_case():
+    rng = np.random.default_rng(DENSE_SEED)
+    faces = np.arange(512 * 3, dtype=np.intp).reshape(-1, 3)
+    anchor = np.array([[-1.0, -0.7], [1.0, -0.6], [0.0, 1.0]])
+
+    def vertices(x_slope, z_offset):
+        xy = (anchor + rng.uniform(-0.1, 0.1, (512, 3, 2))).reshape(-1, 2)
+        z = x_slope * xy[:, 0] + 0.5 * xy[:, 1] + z_offset
+        return np.column_stack((xy, z))
+
+    # Each projected triangle contains a neighborhood of the origin. In state
+    # 0 the normal projection across the two parallel planes stays inside
+    # both surfaces. In state 1 both surfaces pass through the origin.
+    states = (
+        (vertices(0.5, 0.0), vertices(0.5, DENSE_GAP_M * np.sqrt(1.5))),
+        (vertices(0.5, 0.0), vertices(-0.5, 0.0)),
+    )
+    return Case("dense_512", states, faces, faces.copy(), expected_m=(DENSE_GAP_M, 0.0))
+
+
+class _IndexedQuery:
+    def __init__(self, case, state):
+        self.a = SurfaceIndex(state[0], case.faces_a)
+        self.b = SurfaceIndex(state[1], case.faces_b)
+
+    def update(self, state):
+        self.a.update(state[0])
+        self.b.update(state[1])
+
+    def query(self):
+        return surface_distance(self.a, self.b)
+
+
+class _FullPairQuery:
+    """Share only the narrow phase, and reuse topology and Cartesian IDs."""
+
+    def __init__(self, case, state):
+        self.faces_a = case.faces_a
+        self.faces_b = case.faces_b
+        pair_a, pair_b = np.indices((len(self.faces_a), len(self.faces_b)), dtype=np.intp)
+        pair_a, pair_b = pair_a.ravel(), pair_b.ravel()
+        self.blocks = tuple(
+            (pair_a[i:i + PAIR_BLOCK], pair_b[i:i + PAIR_BLOCK])
+            for i in range(0, pair_a.size, PAIR_BLOCK)
+        )
+        self.update(state)
+
+    def update(self, state):
+        self.a = _prepare_triangles(state[0][self.faces_a])
+        self.b = _prepare_triangles(state[1][self.faces_b])
+
+    def query(self):
+        best = (np.inf, None, None, None, None)
+        for pair_a, pair_b in self.blocks:
+            hit = _closest_pairs(self.a, self.b, pair_a, pair_b)
+            if hit[0] < best[0]:
+                best = hit
+                if best[0] == 0.0:
+                    break
+        distance_m, face_a, face_b, point_a, point_b = best
+        return SurfaceDistance(
+            float(distance_m), int(face_a), int(face_b), tuple(map(float, point_a)),
+            tuple(map(float, point_b)),
+        )
+
+
+def _array_digest(*arrays):
+    digest = hashlib.sha256()
+    for array in arrays:
+        digest.update(repr((array.shape, array.dtype.str)).encode("ascii"))
+        digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
+def _source_digests():
+    return {
+        path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (Path(__file__).resolve(), ROOT / "human_eye_fast/fast_bvh_clearance.py")
+    }
+
+
+def _overlap_fraction(a, b):
+    lower_a, upper_a = a.min(axis=1), a.max(axis=1)
+    lower_b, upper_b = b.min(axis=1), b.max(axis=1)
+    overlap = (lower_a[:, None, :] <= upper_b) & (lower_b <= upper_a[:, None, :])
+    return float(overlap.all(axis=2).mean())
+
+
+def _witness_error(point, face):
+    # Independent barycentric membership check for these nondegenerate fixtures.
+    edges = (face[1:] - face[0]).T
+    local = np.asarray(point) - face[0]
+    coeff, _, _, _ = np.linalg.lstsq(edges, local, rcond=None)
+    residual = np.linalg.norm(edges @ coeff - local)
+    violation = max(0.0, -float(coeff.min()), float(coeff.sum() - 1.0))
+    return max(float(residual), float(violation * np.linalg.norm(edges)))
+
+
+def _record(result):
+    def numeric(value):
+        # Keep failure records valid JSON even if the implementation returns a
+        # non-finite distance or witness coordinate.
+        return float(value) if np.isfinite(value) else str(float(value))
+
+    return {
+        "distance_m": numeric(result.distance_m),
+        "triangle_a": None if result.triangle_a is None else int(result.triangle_a),
+        "triangle_b": None if result.triangle_b is None else int(result.triangle_b),
+        "point_a": None if result.point_a is None else [numeric(x) for x in result.point_a],
+        "point_b": None if result.point_b is None else [numeric(x) for x in result.point_b],
+    }
+
+
+def _quality(case, phase, results):
+    a, b = case.states[phase]
+    vertices = np.concatenate((a, b))
+    tol = float(1e-10 * np.linalg.norm(np.ptp(vertices, axis=0))
+                + 32 * np.finfo(np.float64).eps * np.abs(vertices).max())
+    expected = None if case.expected_m is None else case.expected_m[phase]
+    errors = {}
+    for name, result in results.items():
+        if (not np.isfinite(result.distance_m) or result.distance_m < 0
+                or result.triangle_a is None or not 0 <= result.triangle_a < len(case.faces_a)
+                or result.triangle_b is None or not 0 <= result.triangle_b < len(case.faces_b)
+                or result.point_a is None or not np.isfinite(result.point_a).all()
+                or result.point_b is None or not np.isfinite(result.point_b).all()):
+            errors[name] = {"valid_output": False}
+            continue
+        a_error = _witness_error(result.point_a, a[case.faces_a[result.triangle_a]])
+        b_error = _witness_error(result.point_b, b[case.faces_b[result.triangle_b]])
+        separation = np.linalg.norm(np.asarray(result.point_a) - result.point_b)
+        checks = {"face_a_error_m": a_error, "face_b_error_m": b_error,
+                  "separation_error_m": float(abs(separation - result.distance_m))}
+        if expected is not None:
+            checks["analytic_distance_error_m"] = abs(expected - result.distance_m)
+        sign_matches = expected is None or (expected == 0.0) == (result.distance_m == 0.0)
+        errors[name] = {**checks, "valid_output": sign_matches and all(error <= tol for error in checks.values())}
+    actual, baseline = (results[name].distance_m for name in METHODS)
+    delta = float(abs(actual - baseline)) if np.isfinite([actual, baseline]).all() else None
+    return {"tolerance_m": tol, "distance_delta_m": delta, "expected_m": expected,
+            "witness_checks": errors,
+            "passed": delta is not None and delta <= tol and all(check["valid_output"] for check in errors.values())}
+
+
+def _order(sequence, worker, case_id):
+    return METHODS[::-1] if (sequence + worker + case_id) % 2 else METHODS
+
+
+def _run_case(case, worker, case_id, run):
+    run.update({
+        "face_counts": [len(case.faces_a), len(case.faces_b)],
+        "vertex_counts": [len(vertices) for vertices in case.states[0]],
+        "z_offset_m": case.z_offset_m,
+        "expected_m": case.expected_m,
+        "state_sha256": [_array_digest(case.faces_a, case.faces_b, *state) for state in case.states],
+        "changed_vertex_counts": [int((state0 != state1).any(axis=1).sum())
+                                  for state0, state1 in zip(*case.states)],
+    })
+    if case.expected_m is not None:
+        run["overlapping_face_aabb_fraction"] = [
+            _overlap_fraction(a[case.faces_a], b[case.faces_b]) for a, b in case.states
+        ]
+    first = case.states[0]
+    factories = dict(zip(METHODS, (_IndexedQuery, _FullPairQuery)))
+    implementations, cold_results = {}, {}
+    cold_order = _order(0, worker, case_id)
+    run["cold"] = {"phase": 0, "order": cold_order, "methods": {}}
+    for name in cold_order:
+        start = perf_counter_ns()
+        implementation = factories[name](case, first)
+        ready = perf_counter_ns()
+        result = implementation.query()
+        done = perf_counter_ns()
+        implementations[name], cold_results[name] = implementation, result
+        run["cold"]["methods"][name] = {
+            "initial_prepare_ns": ready - start, "query_ns": done - ready,
+            "total_ns": done - start, "result": _record(result),
+        }
+    run["cold"]["quality"] = _quality(case, 0, cold_results)
+
+    # Every timed call sees an actual geometry change, including the first
+    # call after cold preparation and the first call after warmup.
+    for sequence in range(WARMUPS + SAMPLES + STAGE_SAMPLES):
+        phase = (sequence + 1) % 2
+        state = case.states[phase]
+        order = _order(sequence, worker, case_id)
+        if sequence < WARMUPS:
+            for name in order:
+                implementation = implementations[name]
+                implementation.update(state)
+                implementation.query()
+            run["warmups"].append({"phase": phase, "order": order})
+            continue
+
+        stage_run = sequence >= WARMUPS + SAMPLES
+        sample = {"phase": phase, "order": order, "methods": {}}
+        run["stages" if stage_run else "samples"].append(sample)
+        results = {}
+        for name in order:
+            implementation = implementations[name]
+            if stage_run:
+                start = perf_counter_ns()
+                implementation.update(state)
+                ready = perf_counter_ns()
+                result = implementation.query()
+                done = perf_counter_ns()
+                sample["methods"][name] = {"prepare_ns": ready - start, "query_ns": done - ready}
+            else:
+                start = perf_counter_ns()
+                implementation.update(state)
+                result = implementation.query()
+                done = perf_counter_ns()
+                sample["methods"][name] = {}
+            results[name] = result
+            sample["methods"][name].update(total_ns=done - start, result=_record(result))
+        sample["quality"] = _quality(case, phase, results)
+
+
+def _worker_result(seed, worker):
+    result = {"pid": os.getpid(), "worker": worker, "source_sha256": _source_digests(),
+              "thread_env": {name: os.environ.get(name) for name in THREAD_ENV}, "cases": {}}
+    cases = [_grid_case(cells, offset, seed) for cells in (8, 16) for offset in (0.5, 0.05)]
+    cases.append(_dense_case())
+    for case_id, case in enumerate(cases):
+        run = {"warmups": [], "samples": [], "stages": []}
+        result["cases"][case.name] = run
+        try:
+            _run_case(case, worker, case_id, run)
+        except Exception:
+            run["error"] = traceback.format_exc()
+    return result
+
+
+def _pooled(samples, field, percentile):
+    return {name: float(np.percentile([s["methods"][name][field] for s in samples], percentile))
+            for name in METHODS}
+
+
+def _summarize(runs):
+    if any("error" in run for run in runs):
+        return {"all_gates_met": False, "errors": [run.get("error") for run in runs]}
+    samples = [sample for run in runs for sample in run["samples"]]
+    stages = [stage for run in runs for stage in run["stages"]]
+    medians = [_pooled(run["samples"], "total_ns", 50) for run in runs]
+    p95 = _pooled(samples, "total_ns", 95)
+    speedups = [timings["full_pairs"] / timings["bvh"] for timings in medians]
+    quality = [item["quality"] for run in runs
+               for item in (run["cold"], *run["samples"], *run["stages"])]
+    gates = {
+        "distance_and_witnesses": all(check["passed"] for check in quality),
+        "complete_samples_and_full_vertex_changes": all(
+            len(run["warmups"]) == WARMUPS and len(run["samples"]) == SAMPLES
+            and len(run["stages"]) == STAGE_SAMPLES
+            and run["changed_vertex_counts"] == run["vertex_counts"] for run in runs
+        ),
+    }
+    p95_ratio = p95["bvh"] / p95["full_pairs"]
+    face_count = runs[0]["face_counts"][0]
+    dense = runs[0]["expected_m"] is not None
+    if not dense:
+        if face_count == 128:
+            gates["pooled_p95_bvh_over_full_pairs_at_most_1_20"] = p95_ratio <= 1.20
+        else:
+            gates["each_process_median_full_pairs_over_bvh_at_least_2"] = min(speedups) >= 2.0
+    summary = {
+        "face_count": face_count,
+        "sample_count": len(samples),
+        "process_medians_ns": medians,
+        "pooled_p95_ns": p95,
+        "process_median_speedups": speedups,
+        "pooled_p95_ratio": p95_ratio,
+        "pooled_p95_difference_ns": p95["bvh"] - p95["full_pairs"],
+        "paired_difference_p95_ns": float(np.percentile([
+            sample["methods"]["bvh"]["total_ns"] - sample["methods"]["full_pairs"]["total_ns"]
+            for sample in samples
+        ], 95)),
+        "cold_per_process_ns": [
+            {name: {key: value for key, value in run["cold"]["methods"][name].items() if key != "result"}
+             for name in METHODS} for run in runs
+        ],
+        "stage_medians_ns": {field: _pooled(stages, field, 50) for field in ("prepare_ns", "query_ns")},
+        "max_absolute_distance_delta_m": max((check["distance_delta_m"] for check in quality
+                                              if check["distance_delta_m"] is not None), default=None),
+        "gates": gates,
+        "all_gates_met": all(gates.values()),
+    }
+    if dense:
+        summary["dense_medians_ns_by_phase"] = [
+            _pooled([sample for sample in samples if sample["phase"] == phase], "total_ns", 50)
+            for phase in range(2)
+        ]
+        summary["overlapping_face_aabb_fraction"] = runs[0]["overlapping_face_aabb_fraction"]
+    return summary
+
+
+def _run_all(seed, report):
+    for worker in range(PROCESSES):
+        command = [sys.executable, "-B", str(Path(__file__).resolve()), "--seed", str(seed),
+                   "--worker", str(worker)]
+        completed = subprocess.run(command, env={**os.environ, **THREAD_ENV}, capture_output=True,
+                                   text=True, encoding="utf-8", errors="replace", check=False)
+        if completed.returncode == 0:
+            try:
+                data = json.loads(completed.stdout)
+            except json.JSONDecodeError:
+                data = {"error": "worker output was not JSON", "stdout": completed.stdout}
+        else:
+            data = {"error": f"worker exit {completed.returncode}", "stdout": completed.stdout}
+        if completed.stderr:
+            data["stderr"] = completed.stderr
+        report["workers"].append(data)
+
+    workers = report["workers"]
+    if any("error" in worker for worker in workers):
+        return
+    cases = {name: _summarize([worker["cases"][name] for worker in workers])
+             for name in workers[0]["cases"]}
+    report["cases"] = cases
+    report["same_code"] = all(worker["source_sha256"] == report["source_sha256"] for worker in workers)
+    report["same_code"] &= _source_digests() == report["source_sha256"]
+    report["thread_env_confirmed"] = all(worker["thread_env"] == THREAD_ENV for worker in workers)
+    report["same_fixtures"] = all(
+        worker["cases"][name].get("state_sha256") == workers[0]["cases"][name].get("state_sha256")
+        for worker in workers for name in cases
+    )
+    report["all_gates_met"] = (
+        report["same_code"] and report["thread_env_confirmed"] and report["same_fixtures"]
+        and len({worker["pid"] for worker in workers}) == PROCESSES
+        and all(case["all_gates_met"] for case in cases.values())
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--seed", type=int, default=20261105)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--worker", type=int, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    if args.seed < 0:
+        parser.error("--seed must be nonnegative")
+    if args.worker is not None:
+        print(json.dumps(_worker_result(args.seed, args.worker), allow_nan=False))
+        return 0
+    if args.output is None:
+        parser.error("--output is required")
+
+    report = {
+        "seed": args.seed, "dense_seed": DENSE_SEED, "source_sha256": _source_digests(),
+        "python": sys.version, "numpy": np.__version__, "platform": platform.platform(),
+        "processor": platform.processor(), "logical_cpu_count": os.cpu_count(),
+        "protocol": {
+            "frozen_commit": "baff857b50e300bd3ddae43af69d5eee9a1925cd",
+            "processes": PROCESSES, "warmups_per_case": WARMUPS, "paired_samples_per_case": SAMPLES,
+            "separate_stage_pairs_per_case": STAGE_SAMPLES, "full_pair_block_size": PAIR_BLOCK,
+            "512_per_process_minimum_speedup": 2.0, "128_pooled_p95_maximum_ratio": 1.20,
+            "worker_thread_env": THREAD_ENV,
+            "main_boundary": "both full vertex updates followed by complete distance and witness",
+            "candidate_prepare": "take triangle coordinates, prepare narrow phase, refit index",
+            "baseline_prepare": "take triangle coordinates and prepare the same narrow phase",
+            "baseline_query": "block-vectorized Cartesian triangle pairs with witness reduction, stopping at zero",
+            "cold_boundary": "initial preparation and first query on phase 0, one pair per process",
+            "dense_phases": ["parallel offset tilted triangle sheets", "crossing tilted triangle sheets"],
+        },
+        "all_gates_met": False, "workers": [],
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        output = args.output.open("x", encoding="utf-8")
+    except FileExistsError:
+        parser.error(f"output already exists, choose a fresh path: {args.output}")
+    with output:
+        try:
+            _run_all(args.seed, report)
+        except BaseException:
+            report["error"] = traceback.format_exc()
+            raise
+        finally:
+            json.dump(report, output, indent=2, allow_nan=False)
+            output.write("\n")
+    print(json.dumps({"output": str(args.output.resolve()), "cases": report.get("cases"),
+                      "all_gates_met": report["all_gates_met"]}, indent=2, allow_nan=False))
+    return 0 if report["all_gates_met"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

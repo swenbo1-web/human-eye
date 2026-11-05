@@ -1,6 +1,6 @@
 # Human Eye 当前进度
 
-**本批实施及主验收：** RB-A、RB-B与TD已通过各自合同。RB-B在70febee完成独立三进程复测，双对象八步采集中位数下降52.7%–60.4%，66项检查通过；RB整体放行，当前推进BC距离核。RB-A局部更新及TD内存收益保持原测量边界。后续自动实施、独立验收、达标继续，真实阻塞才暂停。详见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)、[历史报告教训](HISTORY_LESSONS_FOR_RADICAL_V1.md)。
+**本批实施及主验收：** RB-A、RB-B与TD已通过。BC候选82项检查和换种子主收益门通过，但深审发现密集相交基线缺少零距离早停，当前为REWORK（基准公平性），VG尚未放行。见[BC首审](BC_REVIEW_001.md)及[验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。后续改为实施对话自测完成后主动唤醒主干；主干审计、深审算法与架构并判断退化，达标自动继续，退化恢复上一已验收方案，真实外部阻塞才暂停。历史收益保持各自测量边界。
 
 **当前推进方式：** [六模块独立竞争与收益验收](RADICAL_V1_COMPETITION_WORKFLOW.md)。实施结果由主对话验收，状态见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。
 
