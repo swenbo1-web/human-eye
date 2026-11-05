@@ -588,17 +588,27 @@ class LiveSpatialMCPServer:
             yield trace
 
     def _call_tool(self, name: str, arguments: dict, *, mcp_request_id=_NO_RPC_ID) -> dict:
-        task_read = (name == 'human_eye_scene_observe' and type(arguments) is dict
-            and type(arguments.get('query')) is dict and arguments['query'].get('mode') == 'task')
-        # Keep the original service deadline alive through selected-body
-        # encoding. Nested service.observe reuses this scope, never renews it.
-        budget = self.service._request_budget if task_read else nullcontext
+        budget = getattr(self.service, '_request_budget', nullcontext)
         with self.request_trace(name, arguments, mcp_request_id=mcp_request_id), budget():
             annotate(request_origin='mcp')
             value = self._dispatch_tool(name, arguments)
             # Constructing native content proves transport preparation only.
             annotate(delivery='mcp_content_constructed')
             return value
+
+    def request_error_fields(self, error=None):
+        describe = getattr(self.service, 'request_error_fields', None)
+        return describe(error) if callable(describe) else {}
+
+    def _error_result(self, exc):
+        metadata = {'status': 'error', 'error': str(exc),
+            'tool_outcome': 'unknown', 'automatic_retry': False,
+            **self.request_error_fields(exc)}
+        from .live_service import StateBindingError, RequestBudgetError
+        if isinstance(exc, (StateBindingError, RequestBudgetError)):
+            metadata.update(exc.to_error_fields())
+            metadata['allow_action'] = False
+        return _tool_result(metadata, is_error=True)
 
     def _dispatch_tool(self, name: str, arguments: dict) -> dict:
         _validate_arguments(name, arguments)
@@ -676,13 +686,7 @@ class LiveSpatialMCPServer:
                 result = self._call_tool(params["name"], params.get("arguments", {}),
                                          mcp_request_id=request_id)
             except Exception as exc:
-                metadata = {"status": "error", "error": str(exc),
-                            "tool_outcome": "unknown", "automatic_retry": False}
-                from .live_service import StateBindingError, RequestBudgetError
-                if isinstance(exc, (StateBindingError, RequestBudgetError)):
-                    metadata.update(exc.to_error_fields())
-                    metadata.update(executed=False, execution_verified=False, allow_action=False)
-                result = _tool_result(metadata, is_error=True)
+                result = self._error_result(exc)
         else:
             return _rpc_error(request_id, -32601, f"Method not found: {method}")
         return {"jsonrpc": "2.0", "id": request_id, "result": result}
@@ -711,24 +715,43 @@ def run_stdio_mcp_server(service: Any, input_stream: TextIO | None = None,
             params=req.get('params')
             traced=(req.get('method')=='tools/call' and 'id' in req and isinstance(params,dict))
             scope=server.request_trace(params.get('name'),params.get('arguments',{}),mcp_request_id=req['id']) if traced else nullcontext()
-            published=False;pipe_closed=False
+            budget=getattr(service,'_request_budget',nullcontext) if traced else nullcontext
+            published=False;pipe_closed=False;write_started=False
             try:
-                with scope:
+                with budget(),scope:
                     response=server.handle_jsonrpc_message(req)
                     if response is not None:
-                        with span('mcp.wire_encode',kind='encoding'):
-                            encoded=wire.encode_response(response,req)
+                        terminal_error=('error' in response or response.get('result',{}).get('isError') is True)
+                        try:
+                            with span('mcp.wire_encode',kind='encoding'):
+                                encoded=wire.encode_response(response,req,error_fields=server.request_error_fields)
+                        except Exception as exc:
+                            response={'jsonrpc':'2.0','id':req['id'],'result':server._error_result(exc)}
+                            encoded=wire.encode_response(response,req,error_fields=server.request_error_fields)
+                            terminal_error=True
                         with span('mcp.stdio_write',kind='io'):
+                            check=getattr(service,'_check_request_budget',None)
+                            if traced and not terminal_error and callable(check):
+                                try:
+                                    check('before_stdio_write',publication=True)
+                                except Exception as exc:
+                                    response={'jsonrpc':'2.0','id':req['id'],'result':server._error_result(exc)}
+                                    # Encode the one terminal error without
+                                    # renewing or rechecking its expired budget.
+                                    encoded=wire.encode_response(response,req,error_fields=server.request_error_fields)
+                            write_started=True
                             pipe_closed=not wire.write_encoded(outgoing,encoded)
                         if pipe_closed:break
                         published=True
                         annotate(output_bytes=len(encoded.encode('utf8')),delivery='stdio_write_completed')
-            except Exception:
+            except Exception as exc:
                 # Handler/encoder/trace failures belong to this request. A
                 # completed write must never get a second response or dispatch.
-                if pipe_closed:break
+                if pipe_closed or write_started and not published:break
                 if not published and 'id' in req:
-                    if not wire.write_encoded(outgoing,wire.encode_response(wire.internal_error(req),req)):break
+                    failure=wire.internal_error(req)
+                    failure['error']['data'].update(server.request_error_fields(exc))
+                    if not wire.write_encoded(outgoing,wire.encode_response(failure,req)):break
     finally:
         # EOF and actual output/input failure end the connection. No tool call
         # or write is retried; close a live host socket before returning.

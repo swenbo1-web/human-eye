@@ -131,14 +131,16 @@ def internal_error(request):
         tool_outcome='unknown' if may_have_run else 'not_applicable',automatic_retry=False)
 
 
-def encode_response(response,request=None):
+def encode_response(response,request=None,*,error_fields=None):
     try:
         _tree(response,input_value=False)
         # ASCII escapes avoid relying on the shell/stream locale; image data is
         # unchanged. No input-size cap is applied to output image/report bytes.
         return json.dumps(response,ensure_ascii=True,allow_nan=False)+'\n'
     except (ValueError,TypeError,OverflowError,RecursionError,UnicodeError):
-        return json.dumps(internal_error(request),ensure_ascii=True,allow_nan=False)+'\n'
+        failure=internal_error(request)
+        if error_fields is not None:failure['error']['data'].update(error_fields())
+        return json.dumps(failure,ensure_ascii=True,allow_nan=False)+'\n'
 
 
 def write_encoded(outgoing,encoded):

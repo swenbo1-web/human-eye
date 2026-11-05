@@ -37,6 +37,7 @@ _IMAGE_UNSPECIFIED = object()
 _REQUEST_BUDGET = ContextVar('human_eye_live_request_budget', default=None)
 _STATE_WRITE_BUFFER_LIMIT = 512 * 1024
 _STATE_COMPARE_STREAM_CHUNKS = 2048
+_REQUEST_BUDGET_SCOPE = 'cooperative_service_entry_through_mcp_prewrite_checkpoints'
 
 _DIAGNOSTIC_MANIFEST_LIMIT = 64
 _DIAGNOSTIC_MANIFEST_BYTES = 256 * 1024
@@ -71,8 +72,34 @@ def _state_json_matches(encoded, previous, *, checkpoint=None):
         return matches and offset == len(encoded)
 
 
+def _request_error_fields(error=None):
+    saved = getattr(error, '_human_eye_request_fields', None)
+    if saved is not None:
+        return copy.deepcopy(saved)
+    request = _REQUEST_BUDGET.get()
+    if request is None:
+        return {}
+    writes = request['state_writes']
+    submitted = request['submitted']
+    execution = request['execution'] or {
+        'executed': None if submitted else False, 'verified': False,
+        'execution_verified': False,
+        'execution_status': 'execution_uncertain' if submitted else 'not_executed',
+        'host_mutation_started': None if submitted else False}
+    return {**execution, 'allow_action': False, 'execution_authority': False,
+        'retry_authorized': False,
+        'connector_state_write_attempted': writes['attempts'] > 0,
+        'connector_state_write_committed': (True if writes['commits'] else
+            None if writes['unknowns'] else False),
+        'connector_state_write_status': writes['last_status'],
+        'connector_state_write_attempts': writes['attempts'],
+        'connector_state_write_commits': writes['commits'],
+        'connector_state_write_unknown': writes['unknowns'] > 0,
+        'state_write_scope': 'connector_state_json_not_audit_or_lock_sidecars'}
+
+
 class RequestBudgetError(ValueError):
-    """A precommit wait/checkpoint refusal, never a claim of hard cancellation."""
+    """A cooperative deadline refusal retaining completed or uncertain effects."""
 
     def __init__(self, kind, stage):
         if kind not in {'busy', 'expired'}:
@@ -81,17 +108,13 @@ class RequestBudgetError(ValueError):
         self.diagnostic = {
             'status': kind, 'code': self.code, 'reason_codes': [self.code],
             'budget_stage': stage,
-            'budget_scope': 'service_entry_to_precommit_checkpoints_not_hard_realtime',
-            'executed': False, 'verified': False, 'execution_verified': False,
-            'allow_action': False, 'execution_status': 'not_executed',
-            'host_mutation_started': False, 'connector_state_write_attempted': False,
-            'state_write_scope': 'connector_state_json_not_audit_or_lock_sidecars',
-            'execution_authority': False, 'retry_authorized': False,
+            'budget_scope': _REQUEST_BUDGET_SCOPE,
+            **_request_error_fields(),
         }
-        super().__init__('[' + self.code + '] Local request budget exhausted before commit at ' + stage)
+        super().__init__('[' + self.code + '] Local request budget exhausted at ' + stage)
 
     def to_error_fields(self):
-        return copy.deepcopy(self.diagnostic)
+        return {**copy.deepcopy(self.diagnostic), **_request_error_fields(self)}
 
 
 class StateBindingError(ValueError):
@@ -182,10 +205,11 @@ def _request(operation):
                             'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure'})) as trace:
                 if self.request_budget_s is not None:
                     annotate(request_budget_s=self.request_budget_s,
-                        request_budget_scope='service_entry_to_precommit_checkpoints_not_hard_realtime')
+                        request_budget_scope=_REQUEST_BUDGET_SCOPE)
                 with span('service.' + operation, kind='cpu'):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
+                    self._remember_execution_result(result)
                     if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
@@ -318,19 +342,25 @@ class LiveSpatialService:
         if existing is not None and existing['service'] is self:
             yield existing
             return
-        value = None if self.request_budget_s is None else {
-            'service': self, 'deadline': time.monotonic() + self.request_budget_s,
-            'guard_active': True,
+        value = {
+            'service': self,
+            'deadline': None if self.request_budget_s is None else time.monotonic() + self.request_budget_s,
+            'guard_active': True, 'submitted': False, 'execution': None,
+            'state_writes': {'attempts': 0, 'commits': 0, 'unknowns': 0, 'last_status': 'not_attempted'},
         }
         token = _REQUEST_BUDGET.set(value)
         try:
             yield value
+        except Exception as exc:
+            exc._human_eye_request_fields = _request_error_fields()
+            raise
         finally:
             _REQUEST_BUDGET.reset(token)
 
-    def _remaining_request_budget(self):
+    def _remaining_request_budget(self, *, publication=False):
         value = _REQUEST_BUDGET.get()
-        if value is None or value['service'] is not self or not value['guard_active']:
+        if (value is None or value['service'] is not self or value['deadline'] is None
+                or not publication and not value['guard_active']):
             return None
         return value['deadline'] - time.monotonic()
 
@@ -461,12 +491,36 @@ class LiveSpatialService:
         finally:
             receipt['finished_ns']=time.perf_counter_ns()
 
-    def _check_request_budget(self, stage):
-        remaining = self._remaining_request_budget()
+    def _check_request_budget(self, stage, *, publication=False):
+        remaining = self._remaining_request_budget(publication=publication)
         if remaining is not None and remaining <= 0:
             annotate(request_budget_status='expired', request_budget_stage=stage)
             raise RequestBudgetError('expired', stage)
         return remaining
+
+    @staticmethod
+    def request_error_fields(error=None):
+        return _request_error_fields(error)
+
+    def _remember_execution_result(self, result):
+        request = _REQUEST_BUDGET.get()
+        if request is None or request['service'] is not self:
+            return
+        if 'executed' not in result:
+            return
+        previous = request['execution']
+        if previous and (previous.get('executed') is None
+                or previous.get('executed') is True and result['executed'] is False):
+            return
+        request['execution'] = {key: result[key] for key in
+            ('executed', 'verified', 'execution_verified', 'execution_status', 'host_mutation_started',
+             'historical_receipt', 'replayed', 'current_scene_revalidated')
+            if key in result}
+        request['execution']['operation_status'] = result.get('status')
+        request['execution']['execution_outcome_scope'] = (
+            'historical_receipt' if result.get('historical_receipt') or result.get('replayed') else 'current_request')
+        request['execution'].setdefault('host_mutation_started',
+            False if not request['submitted'] else None if result['executed'] is None else bool(result['executed']))
 
     @contextmanager
     def _observation_scope(self):
@@ -551,6 +605,7 @@ class LiveSpatialService:
         value = _REQUEST_BUDGET.get()
         if value is not None and value['service'] is self:
             value['guard_active'] = False
+            value['submitted'] = True
             annotate(request_budget_enforcement='stopped_after_durable_inflight_commit')
 
     @contextmanager
@@ -824,8 +879,20 @@ class LiveSpatialService:
             # The existing ASCII encoding bounds both compact text length and
             # Unicode widening. Larger states retain the streaming writer.
             with span('state.persist.atomic_write', kind='io'):
-                _atomic_write(self.state_path, value,
-                              _buffered=len(encoded) <= _STATE_WRITE_BUFFER_LIMIT)
+                request = _REQUEST_BUDGET.get()
+                writes = request['state_writes'] if request is not None and request['service'] is self else None
+                receipt = {'status': 'unknown'}
+                if writes is not None:
+                    writes['attempts'] += 1
+                try:
+                    _atomic_write(self.state_path, value,
+                        _buffered=len(encoded) <= _STATE_WRITE_BUFFER_LIMIT, _commit_receipt=receipt)
+                    receipt['status'] = 'committed'
+                finally:
+                    if writes is not None:
+                        writes['last_status'] = receipt['status']
+                        writes['commits'] += receipt['status'] == 'committed'
+                        writes['unknowns'] += receipt['status'] == 'unknown'
 
     def record_event(self, event, **fields):
         """Minimal operational evidence; no user prompts, source code or mesh data."""
@@ -1284,6 +1351,7 @@ class LiveSpatialService:
                 and context.forward_deadline is not None):
             execute_options['_host_deadline'] = context.forward_deadline(parent_deadline, precommit_deadline)
         result = runtime.execute_action(session_id=session_id, action=action, goal=goal, **execute_options)
+        self._remember_execution_result(result)
         result['runtime_identity'] = self.describe_runtime()
         if goal is not None and result.get("goal_evaluation") == "not_requested":
             result["goal_evaluation"] = "not_evaluated"
