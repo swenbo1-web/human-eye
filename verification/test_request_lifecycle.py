@@ -184,7 +184,8 @@ class RequestLifecycleTests(unittest.TestCase):
                 self.assertEqual(body['connector_state_write_commits'], 1)
                 self.assertFalse(body['executed'])
                 self.assertEqual(row['file_receipts'][0]['state_bytes'], 335)
-                self.assertEqual(row['atomic_calls'], 2)
+                self.assertEqual(row['file_receipts'][0]['atomic_calls'], 1)
+                self.assertEqual(row['atomic_calls'], 1)
                 self.assertEqual(row['captures'], 2)
                 self.assertEqual(row['host_mutations'], 0)
                 self.assertTrue(all(item['deadline'] == 101. for item in row['boundaries'] if item['id'] == 1))
@@ -198,7 +199,8 @@ class RequestLifecycleTests(unittest.TestCase):
                 self.assertEqual(body['connector_state_write_status'], 'committed')
                 self.assertEqual(body['connector_state_write_attempts'], 1)
                 self.assertFalse(body['executed'])
-                self.assertEqual(row['atomic_calls'], 2)
+                self.assertEqual(row['file_receipts'][0]['atomic_calls'], 1)
+                self.assertEqual(row['atomic_calls'], 1)
 
     def test_atomic_failure_stages_report_actual_known_or_unknown_outcomes(self):
         cases = [('staging_failure', 'not_committed', False, False),
@@ -215,7 +217,8 @@ class RequestLifecycleTests(unittest.TestCase):
                 self.assertIs(body['connector_state_write_committed'], committed)
                 self.assertEqual(body['connector_state_write_unknown'], status == 'unknown')
                 self.assertEqual(row['file_receipts'][0]['state_exists'], exists)
-                self.assertEqual(row['atomic_calls'], 2)
+                self.assertEqual(row['file_receipts'][0]['atomic_calls'], 1)
+                self.assertEqual(row['atomic_calls'], 1 if exists else 2)
                 self.assertEqual(row['host_mutations'], 0)
 
     def test_verified_action_receipt_survives_publication_and_final_state_failures(self):

@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-perf010-o1-compact-task-facts-20261106"
+IMPLEMENTATION_REVISION = "v21-perf010-o2-task-state-reuse-20261106"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 

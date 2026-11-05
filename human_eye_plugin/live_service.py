@@ -1216,6 +1216,10 @@ class LiveSpatialService:
         with self._locked() as (value, runtime), self._observation_scope():
             if value.get('inflight') or runtime.status['quarantined']:
                 return {'status': 'host_quarantined', 'session_id': session_id, 'routing': None}
+            # Retain the loaded runtime before import-time cleanup is exported.
+            # Other envelope fields must remain detached from this operation.
+            observation_baseline = ({key: old if key == 'runtime' else copy.deepcopy(old)
+                for key, old in value.items()} if type(value.get('runtime')) is dict else None)
             self._check_request_budget('before_host_capture')
             with span('host.capture', kind='host'):
                 captured = self.host.capture_scene()
@@ -1232,7 +1236,7 @@ class LiveSpatialService:
             state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
             runtime.import_state(state)
             result['binding']['source_sha256'] = self._identity['source_sha256']
-            self._save(value, runtime)
+            self._save(value, runtime, _observation_baseline=observation_baseline)
             self._check_request_budget('after_task_state_write')
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=scene['revision'], engine_invoked=work['exact_pair_count'] > 0, task_work=work)
