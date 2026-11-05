@@ -1,6 +1,6 @@
 # Human Eye 当前进度
 
-**本批实施及主验收：** RB-A常驻数组桥和TD跨帧形变已由实施对话交付，主对话独立54项检查与两套三进程收益复测通过。RB-A局部更新约6.6–15倍；TD额外分配峰值下降约83.8%。RB-B真实宿主采集仍待验，后续模块不自动放行。详见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。
+**本批实施及主验收：** RB-A、RB-B与TD已通过各自合同。RB-B在70febee完成独立三进程复测，双对象八步采集中位数下降52.7%–60.4%，66项检查通过；RB整体放行，当前推进BC距离核。RB-A局部更新及TD内存收益保持原测量边界。后续自动实施、独立验收、达标继续，真实阻塞才暂停。详见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)、[历史报告教训](HISTORY_LESSONS_FOR_RADICAL_V1.md)。
 
 **当前推进方式：** [六模块独立竞争与收益验收](RADICAL_V1_COMPETITION_WORKFLOW.md)。实施结果由主对话验收，状态见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。
 
