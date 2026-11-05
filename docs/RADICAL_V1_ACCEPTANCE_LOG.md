@@ -9,7 +9,7 @@
 | 模块/子项 | 状态 | 后续放行 |
 | --- | --- | --- |
 | RB-A 常驻数组桥 | PASS：已完成主对话独立正确性与收益验收 | 单独通过不代表RB整体通过 |
-| RB-B 真实Blender采集 | 待实施/待真实环境验收；本机未发现Blender或bpy | RB整模块未通过前不正式推进BC |
+| RB-B 真实Blender采集 | 待实施/待收益验收；Blender 5.2.3与MCP真实连接已验证 | RB整模块未通过前不正式推进BC |
 | TD 跨帧形变 | PASS：主对话独立正确性、内存和时延均达标 | 不能替代距离、图像或宿主验收 |
 | BC / VG / AO / CF | 未派工 | 按依赖及验收结果推进 |
 
@@ -70,3 +70,16 @@ python -B verification/benchmark_tensor_deform.py --seed 61847 --output artifact
 主对话已向两个实施对话反馈各自验收结果；每个候选至少独立验收一次。本批完成RB-A和TD，剩余RB-B、BC、VG、AO、CF继续按依赖管理。下一项为RB-B真实宿主采集与收益验收；先解决Blender运行环境，不能把已有数组桥通过替代原生采集，也不提前宣称整个引擎完成。
 
 两端比较继续采用完整独立实现。本记录不包含另一端的同口径结果，不据此宣布竞争胜出。
+
+
+## 环境验收 003：Blender MCP — 连接通过，RB-B收益未验
+
+2026-11-05，已确认用户运行的Blender 5.2.3 LTS，并通过Codex配置中的同一命令、同一环境变量启动标准stdio MCP客户端，实际完成initialize、list_tools、get_addon_status和get_scene_info。旧记录的“本机未发现Blender”是受限进程检查未发现宿主进程，不能据此判断本机未安装；现已通过宿主进程与真实协议调用纠正。
+
+- 服务包：mcp-for-blender 2.2.7；MCP SDK 1.30.0；返回9个工具。
+- Blender addon：[1,8]；协议版本15与服务预期一致；up_to_date=true。
+- 实际场景：Scene，Cube/Camera/Light，立方体6面，单位比例1.0；本次只请求状态和场景查询，没有请求修改或保存场景。
+- 连接：127.0.0.1:9876；DISABLE_TELEMETRY=true；原有Codex配置原文保留，仅追加blender服务。
+- 本机原始证据与复现脚本：`D:\human eye\.tools\blender_mcp_connection.json`、同名`.log`、`D:\human eye\.tools\verify_blender_mcp.py`。
+
+本检查证明安装和宿主连接条件具备。当前聊天用已安装SDK完成真实MCP调用，不把配置文件写入等同于宿主已将新工具热加载到本聊天。未执行RB-B捕获性能测试；冻结的捕获＋准备总中位数降低至少20%、全变化汇总p95不超过基线1.20倍，以及主对话独立复验要求均保持。RB整模块仍未PASS，BC尚未放行。
