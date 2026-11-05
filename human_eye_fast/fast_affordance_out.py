@@ -136,7 +136,14 @@ def _deformation(row, fact, object_indices):
     top = fact.metrics["witness_triangle_ids"].tolist()
     face_ids = tuple(dict.fromkeys((*top, *map(int, fact.selected_face_ids))))
     rows = []
-    if face_ids:
+    if len(face_ids) == 1:
+        face_id = face_ids[0]
+        triangle = fact.position_vertices_m[fact.triangles[face_id]]
+        origin = triangle[0]
+        center = (origin + ((triangle[1] - origin) / 3 + (triangle[2] - origin) / 3)).tolist()
+        rows = [row(_FACE, face_id,
+                    *(_finite_or_none(fact.metrics[name][face_id]) for name in _METRICS), center)]
+    elif face_ids:
         indices = list(face_ids)
         columns = [fact.metrics[name][indices].tolist() for name in _METRICS]
         positions = fact.position_vertices_m[fact.triangles[indices]]
@@ -207,8 +214,14 @@ def _row(_columns, *values):
     return values
 
 
+# Facts form a trusted, acyclic tree. Reuse encoding configuration, never
+# projected rows or final text. Every call performs a fresh C JSON traversal.
+_ENCODER = json.JSONEncoder(ensure_ascii=False, allow_nan=False,
+                            check_circular=False, separators=(",", ":"))
+
+
 def _json_bytes(document):
-    return json.dumps(document, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
+    return _ENCODER.encode(document).encode("utf-8")
 
 
 def encode(package: AffordancePackage) -> bytes:
