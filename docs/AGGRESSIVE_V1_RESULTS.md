@@ -1,5 +1,7 @@
 # aggressive-v1 第一版产出与实测
 
+本版数值链在最新整体架构中属于 E3 的已有基础。后续采用 [Radical V1 融合方案](RADICAL_V1_INTEGRATION_PLAN.md)；以下测试与性能仍仅对应原有数组计算链，不覆盖附件的视觉、学习、动作或 <12ms 声明。
+
 日期：2026-11-05。分支 `codex/aggressive-v1`，历史基线 `2846992`。方案与后续两端分工见 [AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md)。本文件所在 Git 提交交付源码和结果；原始测量见 [aggressive_v1_benchmark.json](aggressive_v1_benchmark.json)。
 
 ## 已交付

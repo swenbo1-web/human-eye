@@ -1,0 +1,404 @@
+{
+  "schema": "human-eye-radical-spec-review-v1",
+  "source": {
+    "path": "D:\\human eye\\human-eye\\docs\\RADICAL_V1_SOURCE_SPEC.md",
+    "sha256": "61e30cca6c2511e8e225058ee625781db7a9a05310aafe0d2786e6115dd3c12e"
+  },
+  "reviewed_functions": {
+    "_closest_point_on_triangles_vectorized": {
+      "first_line": 296,
+      "last_line": 344,
+      "ast_sha256": "834a87ce29612aa7bb55e8e1846af989352d1d0a8bea666832cb3111df0549be"
+    },
+    "compute_cross_frame_deformation_tensor": {
+      "first_line": 445,
+      "last_line": 500,
+      "ast_sha256": "6ef790e835929de26be149972106786bd1ec3363b801fee9a8082c236313a276"
+    },
+    "FlashCerebellarCell": {
+      "first_line": 565,
+      "last_line": 640,
+      "ast_sha256": "55569b821c5db54e2efa1711c046b9d46d3c5e2aafc6644a6f091881e3af0581"
+    },
+    "_build_orthogonal_basis": {
+      "first_line": 650,
+      "last_line": 667,
+      "ast_sha256": "095659779bb3375f5404f5b04c0527f903ea49d5c2f638bcff0364694d6f2361"
+    },
+    "solve_saccade_and_render_dual_hud": {
+      "first_line": 670,
+      "last_line": 768,
+      "ast_sha256": "0251bf84b094cbdf7900f11f1a0cec0753a8ec1a13996e3425b892e51c1762bd"
+    }
+  },
+  "numpy_version": "2.3.5",
+  "counterexample_count": 6,
+  "cases": [
+    {
+      "id": "point_projection_outside_triangle",
+      "input": {
+        "point": [
+          2.0,
+          2.0,
+          1.0
+        ],
+        "triangle": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ]
+        ]
+      },
+      "actual": {
+        "projection": [
+          2.0,
+          2.0,
+          0.0
+        ],
+        "distance": 1.0
+      },
+      "expected": {
+        "projection": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "distance": 2.345207879911715
+      },
+      "reason": "Outside plane projection remains closer than every edge and is never excluded.",
+      "evidence_lines": [
+        325
+      ]
+    },
+    {
+      "id": "area_preserving_anisotropic_stretch",
+      "input": {
+        "reference": [
+          [
+            -1.0,
+            -1.0,
+            0.0
+          ],
+          [
+            1.0,
+            -1.0,
+            0.0
+          ],
+          [
+            0.0,
+            2.0,
+            0.0
+          ]
+        ],
+        "diagonal_transform": [
+          2.0,
+          0.5,
+          1.0
+        ]
+      },
+      "actual": {
+        "spec_area_strain": [
+          0.0
+        ],
+        "spec_normal_degrees": [
+          0.0
+        ],
+        "spec_displacement_m": [
+          0.0
+        ],
+        "spec_flipped_faces": []
+      },
+      "expected": {
+        "principal_stretches": [
+          2.0,
+          0.5
+        ],
+        "area_ratio": 1.0,
+        "rigid_motion": false
+      },
+      "existing_fast_kernel": {
+        "stretches": [
+          [
+            2.0,
+            0.5
+          ]
+        ],
+        "area_ratio": [
+          1.0
+        ]
+      },
+      "reason": "Area and normal alone miss compensating stretch/compression.",
+      "evidence_lines": [
+        475,
+        499
+      ]
+    },
+    {
+      "id": "rigid_rotation_reported_as_flip",
+      "input": {
+        "reference": [
+          [
+            -1.0,
+            -1.0,
+            0.0
+          ],
+          [
+            1.0,
+            -1.0,
+            0.0
+          ],
+          [
+            0.0,
+            2.0,
+            0.0
+          ]
+        ],
+        "diagonal_transform": [
+          1.0,
+          -1.0,
+          -1.0
+        ]
+      },
+      "actual": {
+        "spec_area_strain": [
+          0.0
+        ],
+        "spec_normal_degrees": [
+          180.0
+        ],
+        "spec_displacement_m": [
+          0.0
+        ],
+        "spec_flipped_faces": [
+          0
+        ]
+      },
+      "expected": {
+        "principal_stretches": [
+          1.0,
+          1.0
+        ],
+        "area_ratio": 1.0,
+        "rigid_motion": true
+      },
+      "existing_fast_kernel": {
+        "stretches": [
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "area_ratio": [
+          1.0
+        ]
+      },
+      "reason": "Normal rotation relative to a world reference does not establish intrinsic inversion.",
+      "evidence_lines": [
+        475,
+        499
+      ]
+    },
+    {
+      "id": "vertex_and_centroid_probes_miss_edge_edge_minimum",
+      "execution": "Analytic reconstruction of the documented probe set; Blender is not executed.",
+      "input": {
+        "triangle_a": [
+          [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -0.1,
+            0.0
+          ]
+        ],
+        "triangle_b": [
+          [
+            0.9,
+            -1.0,
+            1.0
+          ],
+          [
+            0.9,
+            1.0,
+            1.0
+          ],
+          [
+            0.9,
+            0.0,
+            2.0
+          ]
+        ]
+      },
+      "actual": {
+        "best_distance_over_all_documented_probes": 1.004987562112089
+      },
+      "expected": {
+        "distance": 1.0,
+        "witness_a": [
+          0.9,
+          0,
+          0
+        ],
+        "witness_b": [
+          0.9,
+          0,
+          1
+        ]
+      },
+      "reason": "The global closest pair lies in the interiors of two edges; vertex/centroid sampling omits it.",
+      "evidence_lines": [
+        366,
+        379
+      ]
+    },
+    {
+      "id": "memory_delta_written_to_unread_head_column",
+      "input": {
+        "seed": 42,
+        "fingerprint": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0
+        ],
+        "observed_delta_clearance_m": 123.0,
+        "learning_rate": 0.0
+      },
+      "actual": {
+        "prediction_before": 0.019931046292185783,
+        "prediction_after_matching_memory_hit": 0.019931046292185783,
+        "memory_similarity": 0.9999998807907104,
+        "stored_value_column_5": 123.0
+      },
+      "expected": "Head C prediction reads the observed delta from a matching memory record; current retrieval only blends output columns 0:6.",
+      "reason": "Disabling weight learning isolates recall: stored delta enters out[5], while prediction reads out[25].",
+      "evidence_lines": [
+        600,
+        607,
+        633
+      ]
+    },
+    {
+      "id": "render_pixels_true_returns_only_configuration",
+      "input": {
+        "render_pixels": true,
+        "gap_m": 0.001,
+        "occluder_count": 0
+      },
+      "actual": {
+        "returned_keys": [
+          "hud_resolution",
+          "left_panel_panorama",
+          "right_panel_witness_closeup"
+        ],
+        "output": {
+          "hud_resolution": [
+            1024,
+            512
+          ],
+          "left_panel_panorama": {
+            "viewport": [
+              0,
+              0,
+              512,
+              512
+            ],
+            "target_albedo_rgb": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "reference_albedo_rgb": [
+              0.0,
+              1.0,
+              0.0
+            ]
+          },
+          "right_panel_witness_closeup": {
+            "viewport": [
+              512,
+              0,
+              512,
+              512
+            ],
+            "camera_position_world_m": [
+              0.0,
+              -0.24977466406120044,
+              -0.010612124816193197
+            ],
+            "camera_look_dir": [
+              -0.0,
+              0.9990986562448018,
+              0.04244849926477279
+            ],
+            "camera_up_dir": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "ortho_scale_m": 0.03,
+            "orthogonality_dot_w": 0.0,
+            "shell_piercing_active": false,
+            "clip_start_m": 0.005,
+            "clip_end_m": 0.28
+          }
+        },
+        "raster_or_gpu_image_handle_returned": false
+      },
+      "expected": "The claimed rendered HUD requires image data or a usable GPU image handle; camera configuration alone does not render it.",
+      "reason": "The reviewed function neither renders pixels nor uses render_pixels; its return value contains only configuration.",
+      "evidence_lines": [
+        681,
+        751
+      ]
+    }
+  ],
+  "scope": "Numerical and source-code behavior counterexamples; no end-to-end timing, Blender execution, actual GPU rendering or learned-prior quality evaluation."
+}

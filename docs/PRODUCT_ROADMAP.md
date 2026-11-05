@@ -1,8 +1,8 @@
 # Human Eye 唯一主计划
 
-**本分支当前推进入口：** [整体模块架构](AGGRESSIVE_MODULAR_ARCHITECTURE.md)。按 F0–F7 八模块推进，下一批 R1：F0/F1 常驻数据与宿主接入、F2 空间索引并行，使用已完成 v1 数值链集成。
+**本分支当前推进入口：** [Radical V1 整体融合架构](RADICAL_V1_INTEGRATION_PLAN.md)。顶层为 E1 主动视觉、E2 记忆先验、E3 几何与动作执行。下一批 P1：多对象场景/宿主接入与正确距离/BVH 两线并行；随后接真实观察、动作回读与经验学习。原 F0–F7/R1 排期已取代。
 
-**2026-11-05，aggressive-v1 分支更新：** 用户最新要求进行激进架构及算法重写并移除防御性策略。本分支使用 [AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md) 作为当前方案和两端分工依据；本轮实现与复验见 [AGGRESSIVE_V1_RESULTS](AGGRESSIVE_V1_RESULTS.md)。以下是另一历史路径的主计划，保留作为对照，其“当前/下一步/暂停”不决定本实验分支排期。
+**2026-11-05，aggressive-v1 分支更新：** 用户最新要求进行激进架构及算法重写并移除防御性策略。本分支使用 [RADICAL_V1_INTEGRATION_PLAN](RADICAL_V1_INTEGRATION_PLAN.md) 作为当前整体方案和两端分工依据；[AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md) 保留第一版技术决定；已交付快速第一版的实现与实测见 [AGGRESSIVE_V1_RESULTS](AGGRESSIVE_V1_RESULTS.md)；本轮规格审查见 [RADICAL_V1_SPEC_REVIEW](RADICAL_V1_SPEC_REVIEW.md)。以下是另一历史路径的主计划，保留作为对照，其“当前/下一步/暂停”不决定本实验分支排期。
 
 更新：2026-11-03。**REVIEW-CYCLE-006已独立复核；007只修已证实的离线评测控制合同，不运行真实消费者或Blender。** 正式版本仍为scene.trace.r1、125源a045；005安装及真实MCP/Prompt门已独立关闭，无需重复重连或触发。**只有本文件决定当前任务与后续顺序。**
 
