@@ -2,6 +2,8 @@
 
 后续按 [六模块竞争推进与收益验收](docs/RADICAL_V1_COMPETITION_WORKFLOW.md) 执行：两端独立实现整引擎，由主对话派工、独立验收，达标后推进。整体功能架构见 [Radical V1 架构](docs/RADICAL_V1_INTEGRATION_PLAN.md)：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。已有 human_eye_fast 是 E3 的数值底座，尚未实现整条视觉、学习与执行闭环。
 
+RB原生采集模块已完成实施对话交付及主对话独立验收：在Blender5.2.3的双对象八步采集序列中，两档完整序列中位数分别下降52.7%–53.7%和59.7%–60.4%，66项正确性/回归检查通过。RB-A、RB-B和TD已通过各自合同，下一项为BC距离核。证据及边界见[主验收记录](docs/RADICAL_V1_ACCEPTANCE_LOG.md)、[RB-B实施接口](docs/RB_B_IMPLEMENTATION.md)。
+
 本分支为 **aggressive-v1 激进优化实验版**（2026-11-05）。新入口 `python -B -m human_eye_fast demo` 使用可信输入、常驻数组与批量/稀疏计算；新路径移除来源校验、期限/配额守卫和持久账本。当前分支推进以[最新整体融合方案](docs/RADICAL_V1_INTEGRATION_PLAN.md)为准，产出与测量见[第一版结果](docs/AGGRESSIVE_V1_RESULTS.md)。下文保留历史产品说明，原 MCP/Hook 入口仍属于历史实现。
 
 Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生 Blender 图像与受预算约束的有限刚体动作。目标是让 Agent 使用可核验的几何事实和合适的视图完成三维任务。
