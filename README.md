@@ -1,6 +1,6 @@
 # Human Eye · 三维空间感知引擎
 
-后续整体引擎按 [Radical V1 融合架构](docs/RADICAL_V1_INTEGRATION_PLAN.md) 推进：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。已有 human_eye_fast 是 E3 的数值底座，尚未实现整条视觉、学习与执行闭环。
+后续按 [六模块竞争推进与收益验收](docs/RADICAL_V1_COMPETITION_WORKFLOW.md) 执行：两端独立实现整引擎，由主对话派工、独立验收，达标后推进。整体功能架构见 [Radical V1 架构](docs/RADICAL_V1_INTEGRATION_PLAN.md)：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。已有 human_eye_fast 是 E3 的数值底座，尚未实现整条视觉、学习与执行闭环。
 
 本分支为 **aggressive-v1 激进优化实验版**（2026-11-05）。新入口 `python -B -m human_eye_fast demo` 使用可信输入、常驻数组与批量/稀疏计算；新路径移除来源校验、期限/配额守卫和持久账本。当前分支推进以[最新整体融合方案](docs/RADICAL_V1_INTEGRATION_PLAN.md)为准，产出与测量见[第一版结果](docs/AGGRESSIVE_V1_RESULTS.md)。下文保留历史产品说明，原 MCP/Hook 入口仍属于历史实现。
 

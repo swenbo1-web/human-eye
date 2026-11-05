@@ -1,6 +1,8 @@
 # Human Eye 唯一主计划
 
-**本分支当前推进入口：** [Radical V1 整体融合架构](RADICAL_V1_INTEGRATION_PLAN.md)。顶层为 E1 主动视觉、E2 记忆先验、E3 几何与动作执行。下一批 P1：多对象场景/宿主接入与正确距离/BVH 两线并行；随后接真实观察、动作回读与经验学习。原 F0–F7/R1 排期已取代。
+**本分支当前推进入口：** [独立竞争六模块工作流](RADICAL_V1_COMPETITION_WORKFLOW.md)。用户已取代两端互补合并安排；主对话创建实施对话并独立验收，收益达标再推进。以下整体架构链接定义功能，原P1两线分工不再适用。
+
+**整体功能架构：** [Radical V1 整体融合架构](RADICAL_V1_INTEGRATION_PLAN.md)。顶层为 E1 主动视觉、E2 记忆先验、E3 几何与动作执行。下一批 P1：多对象场景/宿主接入与正确距离/BVH 两线并行；随后接真实观察、动作回读与经验学习。原 F0–F7/R1 排期已取代。
 
 **2026-11-05，aggressive-v1 分支更新：** 用户最新要求进行激进架构及算法重写并移除防御性策略。本分支使用 [RADICAL_V1_INTEGRATION_PLAN](RADICAL_V1_INTEGRATION_PLAN.md) 作为当前整体方案和两端分工依据；[AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md) 保留第一版技术决定；已交付快速第一版的实现与实测见 [AGGRESSIVE_V1_RESULTS](AGGRESSIVE_V1_RESULTS.md)；本轮规格审查见 [RADICAL_V1_SPEC_REVIEW](RADICAL_V1_SPEC_REVIEW.md)。以下是另一历史路径的主计划，保留作为对照，其“当前/下一步/暂停”不决定本实验分支排期。
 
