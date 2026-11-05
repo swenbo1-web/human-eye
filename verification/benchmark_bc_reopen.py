@@ -58,6 +58,11 @@ def _configuration(args):
         config['primary_seeds'] = list(OLD_SEEDS + HELD_OUT_SEEDS)
         config['extra_heldout_seeds'] = list(EXTRA_HELD_OUT_SEEDS)
         config['extra_heldout'] = True
+    if args.focus_case:
+        if args.pilot or args.diagnostic or args.extra_heldout or args.include_tiny:
+            raise ValueError('Focused supplemental runs retain exactly one regular case')
+        config.update(mode='focused_supplement', focus_case=args.focus_case, regular_pairs=256,
+                      seeds=[79463], tiny=False)
     return config
 
 
@@ -189,6 +194,10 @@ def _cases(config):
         items.append(("dense_512", "dense", fixtures.DENSE_SEED, fixtures._dense_case()))
     if config["tiny"]:
         items.append(("tiny_tetrahedra", "tiny", None, _tiny_case()))
+    if config.get('focus_case'):
+        items = [item for item in items if item[0] == config['focus_case']]
+        if len(items) != 1:
+            raise ValueError('Focused case must name one existing fixed ordinary input')
     return items
 
 
@@ -477,6 +486,8 @@ def _summarize(report, config, candidate):
     report["cases"] = {name: _case_summary([worker["cases"][name] for worker in workers], config, case_id)
                        for case_id, name in enumerate(names)}
     regular_count = 4 if config["mode"] == "diagnostic_aa" else 16 if config["mode"] == "pilot" else 32
+    if config.get('focus_case'):
+        regular_count = 2
     primary_cases = {name: case for name, case in report['cases'].items()
                      if case.get('seed') not in config.get('extra_heldout_seeds', [])}
     report["regular_equal_state_statistics"] = {
@@ -517,6 +528,8 @@ def _run_all(args, config, candidate, report, stream):
             command.append("--include-tiny")
         if args.extra_heldout:
             command.append("--extra-heldout")
+        if args.focus_case:
+            command.extend(('--focus-case', args.focus_case))
         print(f"BC {config['mode']} worker {worker}: {worker_path}", flush=True)
         completed = subprocess.run(command, cwd=ROOT, env={**os.environ, **THREAD_ENV, "PYTHONDONTWRITEBYTECODE": "1"},
                                    capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
@@ -544,6 +557,7 @@ def main():
     mode.add_argument("--pilot", action="store_true", help="Only the two old seeds: 1 worker, 8 pairs/case, dense 2 pairs")
     parser.add_argument("--include-tiny", action="store_true", help="Supplementary 4-face-per-object tetrahedra, excluded from regular aggregate")
     parser.add_argument("--extra-heldout", action="store_true", help="Append 16 new blind states; original 32-state gate remains separate")
+    parser.add_argument('--focus-case', choices=['seed_79463_grid_128_near'], help='Predeclared 3-process, 256-pair same-input supplemental check')
     parser.add_argument("--output", type=Path)
     parser.add_argument("--worker", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", type=Path, help=argparse.SUPPRESS)
