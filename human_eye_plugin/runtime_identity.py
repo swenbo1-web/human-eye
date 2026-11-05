@@ -12,10 +12,12 @@ import copy
 from importlib import metadata
 import json
 from pathlib import Path
+import sys
+from types import MappingProxyType
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-perf010-o2-task-state-reuse-20261106"
+IMPLEMENTATION_REVISION = "v21-perf010-o3-task-loaded-generation-20261106"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 
@@ -95,6 +97,44 @@ def _capture_source_identity() -> dict:
 _SOURCE_IDENTITY = _capture_source_identity()
 
 
+def _bind_task_source():
+    """Bind frozen bytes and actual execution witnesses once at import."""
+    finders = [finder for finder in sys.meta_path
+               if getattr(finder, 'protocol', None) == 'human-eye-verified-source-v1']
+    if not finders:
+        return None, None
+    try:
+        if len(finders) != 1 or finders[0].root != _TASK_SOURCE_ROOT:
+            raise ValueError('runtime_source_guard_mismatch')
+        guard = finders[0]
+        loader = sys.modules.get(type(guard).__module__)
+        module = sys.modules[__name__]
+        if (loader is None or vars(loader).get('SourceGuard') is not type(guard)
+                or guard._executed.get(id(loader)) != (loader, 'human_eye_plugin/verified_source_loader.py')
+                or guard._executed.get(id(module)) != (module, 'human_eye_plugin/runtime_identity.py')):
+            raise ValueError('runtime_source_guard_unverified')
+        sources = guard.sources
+        if type(sources) is not MappingProxyType or any(type(blob) is not bytes for blob in sources.values()):
+            raise ValueError('runtime_source_generation_unverified')
+        manifest = {path: hashlib.sha256(blob).hexdigest() for path, blob in sources.items()}
+        if manifest != {row['path']: row['sha256'] for row in _SOURCE_IDENTITY['source_files']}:
+            raise ValueError('runtime_source_generation_changed')
+        verify = guard.verify_loaded
+        if (getattr(verify, '__self__', None) is not guard
+                or getattr(verify, '__func__', None) is not vars(type(guard)).get('verify_loaded')
+                or verify.__func__.__globals__ is not vars(loader)
+                or verify.__func__.__qualname__ != 'SourceGuard.verify_loaded'
+                or verify.__func__.__module__ != loader.__name__):
+            raise ValueError('runtime_source_verifier_unverified')
+        return (guard, sources, loader, module, verify), None
+    except (AttributeError, OSError, TypeError, ValueError) as exc:
+        return None, str(exc)
+
+
+_TASK_SOURCE_ROOT = Path(__file__).resolve().parents[1]
+_TASK_SOURCE_GENERATION, _TASK_SOURCE_ERROR = _bind_task_source()
+
+
 def runtime_identity(*, mode: str = "live") -> dict:
     """Describe the loaded runtime without connecting or reading live state."""
     if mode not in {"live", "router", "demo"}:
@@ -166,6 +206,44 @@ def check_source_drift() -> dict:
     return result
 
 
+def check_task_source() -> dict:
+    """Validate the bound execution generation for explicit readonly tasks.
+
+    Disk diagnosis, new lazy execution and writes retain their original checks.
+    Ordinary SDK imports have no execution-generation claim and compare disk.
+    """
+    finders = [finder for finder in sys.meta_path
+               if getattr(finder, 'protocol', None) == 'human-eye-verified-source-v1']
+    if _TASK_SOURCE_GENERATION is None and _TASK_SOURCE_ERROR is None and not finders:
+        return check_source_drift()
+    result = {'compatible': False, 'check_complete': False, 'status': 'unavailable',
+              'loaded_build_id': _SOURCE_IDENTITY['build_id'], 'disk_build_id': None,
+              'disk_status': 'disk_not_checked', 'reasons': ['runtime_executed_source_unverified']}
+    try:
+        if _TASK_SOURCE_GENERATION is None:
+            raise ValueError(_TASK_SOURCE_ERROR or 'runtime_source_guard_not_bound')
+        guard, sources, loader, module, verify = _TASK_SOURCE_GENERATION
+        if (len(finders) != 1 or finders[0] is not guard or guard.root != _TASK_SOURCE_ROOT
+                or guard.sources is not sources):
+            raise ValueError('runtime_source_generation_changed')
+        if sys.modules.get(__name__) is not module:
+            raise ValueError('verified_source_preloaded_module:' + __name__)
+        if (sys.modules.get(loader.__name__) is not loader
+                or vars(loader).get('SourceGuard') is not type(guard)):
+            raise ValueError('verified_source_preloaded_module:' + loader.__name__)
+        current_verify = guard.verify_loaded
+        if (getattr(current_verify, '__self__', None) is not guard
+                or getattr(current_verify, '__func__', None) is not verify.__func__):
+            raise ValueError('runtime_source_verifier_changed')
+        if verify() is not True:
+            raise ValueError('runtime_executed_source_unverified')
+    except (AttributeError, OSError, TypeError, ValueError) as exc:
+        result['error'] = type(exc).__name__ + ': ' + str(exc)
+        return result
+    result.update(compatible=True, check_complete=True, status='loaded_generation', reasons=[])
+    return result
+
+
 def validate_expected_identity(expected: dict | None, actual: dict | None = None) -> dict:
     """Compare optional trusted pins; a match itself grants no write authority.
 
@@ -195,4 +273,4 @@ def validate_expected_identity(expected: dict | None, actual: dict | None = None
 
 
 __all__ = ["BASE_VERSION", "IMPLEMENTATION_REVISION", "MCP_PROTOCOL_VERSION",
-           "runtime_identity", "validate_expected_identity", "check_source_drift"]
+           "runtime_identity", "validate_expected_identity", "check_source_drift", "check_task_source"]

@@ -21,7 +21,7 @@ from .agent_hooks import _atomic_write, _path, _read_object, _state_lock, StateL
 from .auto_router import _validated_scene, _ValidatedObservation, _trace_span, _trace_annotate as annotate
 from .host_runtime import GuardedHostRuntime, _bound_goal, _goal_fields, _capability_rejection
 from .scene_rendering import render_scene_canvas
-from .runtime_identity import IMPLEMENTATION_REVISION, runtime_identity, validate_expected_identity, check_source_drift
+from .runtime_identity import IMPLEMENTATION_REVISION, runtime_identity, validate_expected_identity, check_source_drift, check_task_source
 from .telemetry import best_effort_trace, current_trace, set_image_request, record_image_artifact
 from .result_contract import scoped_result
 from .query_policy import validate_query
@@ -655,19 +655,23 @@ class LiveSpatialService:
         return identity
 
     def _identity_rejection(self):
+        return self._check_identity()[0]
+
+    def _check_identity(self, *, readonly_task=False):
+        drift = None
         if not self._identity_check['compatible']:
             return {'status': 'implementation_mismatch', 'executed': False, 'verified': False,
                     'execution_verified': False, 'allow_action': False, 'routing': None,
                     'runtime_identity': self.describe_runtime(),
-                    'reason_codes': self._identity_check['reasons']}
+                    'reason_codes': self._identity_check['reasons']}, drift
         if self.production_mode:
             with span('runtime.source_check', kind='io'):
-                drift = check_source_drift()
+                drift = check_task_source() if readonly_task else check_source_drift()
             if not drift['compatible']:
                 return {'status': 'implementation_mismatch', 'executed': False,
                         'verified': False, 'execution_verified': False, 'allow_action': False,
                         'routing': None, 'runtime_identity': self.describe_runtime(),
-                        'source_check': drift, 'reason_codes': drift['reasons']}
+                        'source_check': drift, 'reason_codes': drift['reasons']}, drift
             # Blender executes a fixed helper loaded from project_root. That
             # root may differ from this Python package's import location.
             from .blender_mcp_host import BlenderMCPHost
@@ -684,8 +688,8 @@ class LiveSpatialService:
                             'verified': False, 'execution_verified': False,
                             'allow_action': False, 'routing': None,
                             'runtime_identity': self.describe_runtime(),
-                            'reason_codes': ['host_bridge_source_mismatch']}
-        return None
+                            'reason_codes': ['host_bridge_source_mismatch']}, drift
+        return None, drift
 
     def _matching_activation_fence(self, state_fingerprint):
         """Read bounded sibling backup metadata solely to explain a refusal.
@@ -1210,7 +1214,7 @@ class LiveSpatialService:
         from .task_query import task_result
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
-        rejected = self._identity_rejection()
+        rejected, source_check = self._check_identity(readonly_task=True)
         if rejected is not None:
             return rejected
         with self._locked() as (value, runtime), self._observation_scope():
@@ -1236,6 +1240,8 @@ class LiveSpatialService:
             state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
             runtime.import_state(state)
             result['binding']['source_sha256'] = self._identity['source_sha256']
+            if source_check is not None and source_check['status'] == 'loaded_generation':
+                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked')
             self._save(value, runtime, _observation_baseline=observation_baseline)
             self._check_request_budget('after_task_state_write')
         self.record_event('observe', session_id=session_id, status=result['status'],

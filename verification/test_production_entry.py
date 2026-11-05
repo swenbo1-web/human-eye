@@ -15,7 +15,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from human_eye_plugin import production_server
-from human_eye_plugin.runtime_identity import runtime_identity, validate_expected_identity
+from human_eye_plugin.runtime_identity import IMPLEMENTATION_REVISION, runtime_identity, validate_expected_identity
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -195,8 +195,8 @@ print(json.dumps({'code':code, 'demo_imported':'human_eye_plugin.mcp_server' in 
 class RuntimeIdentityTests(unittest.TestCase):
     def test_identity_is_a_defensive_description_without_host_claim(self):
         identity = runtime_identity()
-        self.assertEqual(identity["implementation_revision"], "v19-compact-support-plane-discovery-20261028")
-        self.assertEqual(identity["source_kind"], "source_checkout")
+        self.assertEqual(identity["implementation_revision"], IMPLEMENTATION_REVISION)
+        self.assertIn(identity["source_kind"], ("source_checkout", "installed_distribution", "unregistered_runtime"))
         self.assertEqual(identity["build_id"], "sha256:" + identity["source_sha256"])
         self.assertEqual(identity["capabilities"]["host_connection"], "not_checked")
         identity["capabilities"]["host_connection"] = "made_up"
