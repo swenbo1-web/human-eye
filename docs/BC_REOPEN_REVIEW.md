@@ -75,4 +75,3 @@ python -B verification/benchmark_bc_reopen_original.py --candidate verification/
 ```
 
 输出必须使用新文件名。要严格重现比较时的来源合同，请在独立checkout使用该试次归档源码，并将生产导入源恢复为冻结A（verification/baselines/bc_implementation.py）；比较脚本独立载入A/R，审计明确核验该来源。不要在正在使用的新默认运行时覆盖旧源码。原生验证用独立factory-startup后台Blender运行verify_bc_reopen_native.py，实际命令/源码/结果在归档中。
-
