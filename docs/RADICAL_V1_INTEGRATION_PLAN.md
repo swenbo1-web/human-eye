@@ -6,7 +6,7 @@
 
 本文件取代 `3c8a777` 将 F0–F7 当作整体引擎的方案。新依据是用户提供的 [HE-Radical-V1.1 原始规格](RADICAL_V1_SOURCE_SPEC.md)，分析、反例和采用理由见 [规格深度审查](RADICAL_V1_SPEC_REVIEW.md)。附件作为设计输入原样保存，其“完整生产级”“实测 10.5 ms”等措辞不代表本分支已验证结论。
 
-本文保留整体设计初稿；其中统一RadicalSession、学习与通用动作求解仍为拟定；明确平移/Shape Key执行回读已实现。当前human_eye_fast已实现并验收RB-A、RB-B、TD、BC、VG和AO，AO两层采用结果见[主干审查](AO_ROOT_REVIEW.md)，CF协议/夹具冻结已通过，正在推进模型、经验库与正式测试；BC早期主干候选被拒后已按用户要求重开，当前采用经完整比较和补测验收的seed16，见[BC重开审查](BC_REOPEN_REVIEW.md)。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
+本文保留整体设计初稿；其中统一RadicalSession、学习与通用动作求解仍为拟定；明确平移/Shape Key执行回读已实现。当前human_eye_fast已实现并验收RB-A、RB-B、TD、BC、VG和AO，AO两层采用结果见[主干审查](AO_ROOT_REVIEW.md)，CF V+A模型/经验库已通过[独立验收](CF_ROOT_REVIEW.md)，S必要性及统一生产编排待验；BC早期主干候选被拒后已按用户要求重开，当前采用经完整比较和补测验收的seed16，见[BC重开审查](BC_REOPEN_REVIEW.md)。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
 
 ## 1. 整体框架：三大引擎，一份常驻状态
 
@@ -14,8 +14,8 @@
 
 | 整体引擎 | 对外承担的完整职责 | 第一版已有基础 | 后续必须补齐 |
 | --- | --- | --- | --- |
-| **E1 人眼主动感知引擎** | 由任务与几何见证决定看哪里、怎样看；交付全景、局部图及空间解释 | VG已验收真实主动视角、剖切与双联PNG，采用主干流式编码 | CF学习与整链编排 |
-| **E2 小脑记忆与先验引擎** | 利用历史观察和动作结果，改进视角/候选顺序及结果预测；从实际反馈更新 | 无学习记忆；`FastSession` 缓存不等于学习 | 特征、经验标签和动作条件；会话内环形库；检索与读出学习；增益消融 |
+| **E1 人眼主动感知引擎** | 由任务与几何见证决定看哪里、怎样看；交付全景、局部图及空间解释 | VG已验收真实主动视角、剖切与双联PNG，CF视角学习已验收 | 统一生产整链编排 |
+| **E2 小脑记忆与先验引擎** | 利用历史观察和动作结果，改进视角/候选顺序及结果预测；从实际反馈更新 | CF V+A特征、真实标签、两头环形库及学习读出已验收；R首seed门未过 | S必要性/协议与统一会话生命周期 |
 | **E3 几何与动作执行引擎** | 常驻场景、空间/形变事实、动作求解、宿主执行与回读，给出实际残差 | `FastSession`、CSR、AABB/SAT、CLI/JSONL；RB-A/B、TD、BC及明确动作回读已验收；旧BlenderSession仍保持原边界 | 通用动作求解及学习整链接线 |
 
 一个场景级 `RadicalSession`（拟定）持有场景、几何索引、E1 渲染资源和 E2 记忆。保留 `FastSession` 作为 E3 的固定拓扑形变子核。CLI/MCP 是薄入口，输出只在真正跨进程或面向模型时序列化。
@@ -60,7 +60,7 @@ flowchart LR
 | `fast_bvh_clearance.py` | E3：已实现同名文件，SurfaceIndex/surface_distance | 完整窄相、BVH节点对搜索、原始面ID和世界米制见证；采用已达标实施版 |
 | `tensor_deform.py` | E3：已实现同名文件，复用`kernels.py`数值核 | 流式跨帧归约、面积/法向/位移和稳定Top-K，保留主伸长完整语义 |
 | `raycast_saccade_gpu.py` | E1：已实现同名文件，VGRenderer/prepare/observe | 已验收1024×512真实双联HUD、可见性/剖切及流式无损PNG |
-| `cerebellar_flash.py` | E2：同名文件待实施 | 会话持有检索库/学习读出，以真实观察和动作结果监督，不使用全局隐式单例 |
+| `cerebellar_flash.py` | E2：已实现同名文件及_cf_features.py，V+A已验收 | 会话持有两头经验环/学习读出，S及统一入口待验 |
 | `fast_affordance_out.py` | 跨引擎：已实现并完成两层验收，列式JSON公开消费 | 数值、图像引用与任务结果一次输出；见证向量不直接当建议动作 |
 | **附件缺失：动作控制器** | E3：`control.py` | goal → solve → apply → recapture → residual → feedback |
 
