@@ -1,5 +1,7 @@
 # Human Eye · 三维空间感知引擎
 
+后续开发按 [整体模块架构与推进表](docs/AGGRESSIVE_MODULAR_ARCHITECTURE.md) 的 F0–F7 模块进行，包含共享数据接口、分批交付和两端分工。
+
 本分支为 **aggressive-v1 激进优化实验版**（2026-11-05）。新入口 `python -B -m human_eye_fast demo` 使用可信输入、常驻数组与批量/稀疏计算；新路径移除来源校验、期限/配额守卫和持久账本。当前分支推进以[激进优化方案](docs/AGGRESSIVE_V1_PLAN.md)为准，产出与测量见[第一版结果](docs/AGGRESSIVE_V1_RESULTS.md)。下文保留历史产品说明，原 MCP/Hook 入口仍属于历史实现。
 
 Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生 Blender 图像与受预算约束的有限刚体动作。目标是让 Agent 使用可核验的几何事实和合适的视图完成三维任务。
