@@ -159,24 +159,30 @@ def _vertex_triangle(vertices, target, target_ids, offset):
     row, vertex = np.unravel_index(np.argmin(face_distance), face_distance.shape)
     best = face_distance[row, vertex]
 
-    directions = target.directions[target_ids]
-    spans = target.spans[target_ids]
-    t = _divide(_dot(offset, directions[:, None]), target.direction_sq[target_ids, None])
-    np.clip(t, 0, spans[:, None], out=t)
-    residual = offset - t[..., None] * directions[:, None]
-    # A clamped endpoint uses its original coordinate difference.
-    residual = np.where((t == spans[:, None])[..., None], offset[:, :, _NEXT], residual)
-    edge_distance = _length(residual)
-    edge_row, edge_vertex, edge = np.unravel_index(np.argmin(edge_distance), edge_distance.shape)
-    if edge_distance[edge_row, edge_vertex, edge] <= best:
-        point = vertices[edge_row, edge_vertex]
-        triangle = target.vertices[target_ids[edge_row]]
-        parameter = t[edge_row, edge_vertex, edge]
-        if parameter == spans[edge_row, edge]:
-            witness = triangle[_NEXT[edge]]
-        else:
-            witness = triangle[edge] + parameter * directions[edge_row, edge]
-        return edge_distance[edge_row, edge_vertex, edge], edge_row, point, witness
+    # An interior orthogonal projection already minimizes distance for that
+    # source vertex. Only outside vertices need the three edge candidates.
+    if best > 0:
+        outside_row, outside_vertex = np.nonzero(~inside)
+        if len(outside_row):
+            ids = target_ids[outside_row]
+            directions, spans = target.directions[ids], target.spans[ids]
+            outside = offset[outside_row, outside_vertex]
+            t = _divide(_dot(outside, directions), target.direction_sq[ids])
+            np.clip(t, 0, spans, out=t)
+            residual = outside - t[..., None] * directions
+            residual = np.where((t == spans)[..., None], outside[:, _NEXT], residual)
+            edge_distance = _length(residual)
+            pair, edge = np.unravel_index(np.argmin(edge_distance), edge_distance.shape)
+            if edge_distance[pair, edge] <= best:
+                edge_row, edge_vertex = outside_row[pair], outside_vertex[pair]
+                point = vertices[edge_row, edge_vertex]
+                triangle = target.vertices[ids[pair]]
+                parameter = t[pair, edge]
+                if parameter == spans[pair, edge]:
+                    witness = triangle[_NEXT[edge]]
+                else:
+                    witness = triangle[edge] + parameter * directions[pair, edge]
+                return edge_distance[pair, edge], edge_row, point, witness
 
     point = vertices[row, vertex]
     triangle = target.vertices[target_ids[row]]
@@ -185,7 +191,8 @@ def _vertex_triangle(vertices, target, target_ids, offset):
     weights = sides[row, vertex]
     largest = weights.max()
     if largest > 0:
-        weights = (weights / largest) * (spans[row] / spans[row].max())
+        face_spans = target.spans[target_ids[row]]
+        weights = (weights / largest) * (face_spans / face_spans.max())
         weights /= weights.sum()
         witness = triangle[0] + weights[2] * (triangle[1] - triangle[0])
         witness += weights[0] * (triangle[2] - triangle[0])
@@ -285,25 +292,67 @@ def _face_pairs(a, b, ids_a, ids_b):
     return np.repeat(faces_a, faces_b.shape[1], axis=1).ravel(), np.tile(faces_b, (1, faces_a.shape[1])).ravel()
 
 
+def _projected_bounds(index, axis, origin):
+    """Current vertex intervals along a common query axis, refit bottom-up."""
+    packed = index._packed
+    projection = np.einsum("fvi,i->fv", packed.vertices - origin, axis)
+    # Include subtraction as well as dot-product roundoff. At very large
+    # world origins the interval becomes looser, never a stronger false bound.
+    magnitude = np.maximum(np.abs(packed.low), np.abs(packed.high)).max(axis=0)
+    error = 32 * np.finfo(np.float64).eps * np.dot(magnitude + np.abs(origin), np.abs(axis))
+    low = np.nextafter(projection.min(axis=1) - error, -np.inf)
+    high = np.nextafter(projection.max(axis=1) + error, np.inf)
+    faces = low, high
+    low = np.minimum.reduceat(low, index._starts)
+    high = np.maximum.reduceat(high, index._starts)
+    result = [(low, high)]
+    while len(low) > 1:
+        low = low.reshape(-1, 2).min(axis=1)
+        high = high.reshape(-1, 2).max(axis=1)
+        result.append((low, high))
+    return result[::-1], faces
+
+
 def _search(a, b):
     root = (0, 0, np.array([0]), np.array([0]))
     leaf_depths = (len(a._bounds) - 1, len(b._bounds) - 1)
 
-    # One greedy descent seeds a valid upper bound. The traversal below still
-    # starts from both roots and can visit every unpruned pair of leaves.
+    # Keep four cheap node candidates only while seeding a tighter upper bound.
+    # The complete traversal below starts again at both roots; this seed does
+    # not truncate the global search or exclude unvisited triangle pairs.
     depth_a, depth_b, ids_a, ids_b = root
     while (depth_a, depth_b) != leaf_depths:
         depth_a, depth_b, ids_a, ids_b = _children(a, b, depth_a, depth_b, ids_a, ids_b)
-        nearest = np.argmin(_node_bounds(a, b, depth_a, depth_b, ids_a, ids_b))
-        ids_a, ids_b = ids_a[nearest:nearest + 1], ids_b[nearest:nearest + 1]
-    best = _closest_pairs(a._packed, b._packed, *_face_pairs(a, b, ids_a, ids_b))
+        nearest = np.argsort(_node_bounds(a, b, depth_a, depth_b, ids_a, ids_b))[:4]
+        ids_a, ids_b = ids_a[nearest], ids_b[nearest]
+    seed_a, seed_b = _face_pairs(a, b, ids_a, ids_b)
+    if len(seed_a) > 16:
+        ta, tb = a._packed, b._packed
+        seed_bound = _lower_distance(ta.low[seed_a], ta.high[seed_a],
+                                     tb.low[seed_b], tb.high[seed_b])
+        first = np.argpartition(seed_bound, 15)[:16]
+        seed_a, seed_b = seed_a[first], seed_b[first]
+    best = _closest_pairs(a._packed, b._packed, seed_a, seed_b)
     if best[0] == 0 or leaf_depths == (0, 0):
         return best
+
+    origin = np.asarray(best[3])
+    delta = np.subtract(best[4], origin)
+    axis = _divide(delta, np.max(np.abs(delta)))
+    axis_length = np.nextafter(_length(axis) * _BOUND_ROUNDING, np.inf)
+    projected_a, faces_projection_a = _projected_bounds(a, axis, origin)
+    projected_b, faces_projection_b = _projected_bounds(b, axis, origin)
 
     stack = [root]
     while stack:
         depth_a, depth_b, ids_a, ids_b = stack.pop()
-        eligible = _node_bounds(a, b, depth_a, depth_b, ids_a, ids_b) <= best[0] * _BOUND_ROUNDING
+        low_a, high_a = projected_a[depth_a]
+        low_b, high_b = projected_b[depth_b]
+        gap = np.maximum(np.maximum(low_a[ids_a] - high_b[ids_b],
+                                    low_b[ids_b] - high_a[ids_a]), 0)
+        projected = np.nextafter(np.nextafter(gap, 0) / axis_length, 0)
+        bound = np.maximum(_node_bounds(a, b, depth_a, depth_b, ids_a, ids_b), projected)
+        eligible = bound <= best[0] * _BOUND_ROUNDING
         if not np.any(eligible):
             continue
         ids_a, ids_b = ids_a[eligible], ids_b[eligible]
@@ -317,15 +366,37 @@ def _search(a, b):
         faces_a, faces_b = _face_pairs(a, b, ids_a, ids_b)
         ta, tb = a._packed, b._packed
         bound = _lower_distance(ta.low[faces_a], ta.high[faces_a], tb.low[faces_b], tb.high[faces_b])
+        low_a, high_a = faces_projection_a
+        low_b, high_b = faces_projection_b
+        gap = np.maximum(np.maximum(low_a[faces_a] - high_b[faces_b],
+                                    low_b[faces_b] - high_a[faces_a]), 0)
+        bound = np.maximum(bound, np.nextafter(np.nextafter(gap, 0) / axis_length, 0))
         possible = bound <= best[0] * _BOUND_ROUNDING
         faces_a, faces_b = faces_a[possible], faces_b[possible]
-        for start in range(0, len(faces_a), _PAIR_BATCH):
-            stop = start + _PAIR_BATCH
-            candidate = _closest_pairs(ta, tb, faces_a[start:stop], faces_b[start:stop])
+        bound = bound[possible]
+        if len(bound) <= _PAIR_BATCH or np.min(bound) == np.max(bound):
+            for start in range(0, len(faces_a), _PAIR_BATCH):
+                stop = start + _PAIR_BATCH
+                candidate = _closest_pairs(ta, tb, faces_a[start:stop], faces_b[start:stop])
+                if candidate[0] < best[0]:
+                    best = candidate
+                    if best[0] == 0:
+                        return best
+            continue
+        order = np.argsort(bound)
+        faces_a, faces_b, bound = faces_a[order], faces_b[order], bound[order]
+        start, count = 0, 32
+        while start < len(bound):
+            stop = start + count
+            keep = bound[start:stop] <= best[0] * _BOUND_ROUNDING
+            if not np.any(keep):
+                break
+            candidate = _closest_pairs(ta, tb, faces_a[start:stop][keep], faces_b[start:stop][keep])
             if candidate[0] < best[0]:
                 best = candidate
                 if best[0] == 0:
                     return best
+            start, count = stop, min(4 * count, _PAIR_BATCH)
     return best
 
 

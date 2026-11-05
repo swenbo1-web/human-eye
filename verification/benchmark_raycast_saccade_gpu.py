@@ -37,7 +37,7 @@ REQUIRED_NEGATIVES = {
     "pure_color", "hud_only_fake_witness", "camera_image_mismatch",
     "wrong_object", "wrong_frame", "undeclared_removed_blocker",
 }
-BC_SHA256 = "03bb9ce3bd5da99299a55d47122b38ceb2bef04aba37d998b80e0ad8de4ffa09"
+BC_SHA256 = "ffc494bf309bb9010854d88007edb54533c9fa9d7fad68905fe0d75663692aeb"
 BC_SOURCE = "human_eye_fast/fast_bvh_clearance.py"
 SOURCES = (
     "docs/VG_ACCEPTANCE_PROTOCOL.md",
