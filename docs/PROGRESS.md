@@ -1,10 +1,12 @@
 # Human Eye 当前进度
 
+**本批实施及主验收：** RB-A常驻数组桥和TD跨帧形变已由实施对话交付，主对话独立54项检查与两套三进程收益复测通过。RB-A局部更新约6.6–15倍；TD额外分配峰值下降约83.8%。RB-B真实宿主采集仍待验，后续模块不自动放行。详见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。
+
 **当前推进方式：** [六模块独立竞争与收益验收](RADICAL_V1_COMPETITION_WORKFLOW.md)。实施结果由主对话验收，状态见 [验收记录](RADICAL_V1_ACCEPTANCE_LOG.md)。
 
 **前批规格分析：** [三大引擎整体方案](RADICAL_V1_INTEGRATION_PLAN.md)已取代原 F0–F7 顶层划分，补齐主动视觉、记忆与动作闭环的架构职责及推进计划。已实际复现 [6 个附件问题](RADICAL_V1_SPEC_REVIEW.md)，并保存原始规格及审查结果。本批为架构与审查产出，运行时代码未改；P1 多对象/BVH 尚未开发，真实 Blender/GPU 未运行。
 
-**2026-11-05，aggressive-v1：** 已新增独立 `human_eye_fast` 运行路径，采用批量形变、浮点 SAT、常驻数组、CSR 局部更新和直接任务视图。当前提交与可重跑测量见 [第一版结果](AGGRESSIVE_V1_RESULTS.md)，两端分工见 [最新融合方案](RADICAL_V1_INTEGRATION_PLAN.md)。以下为历史产品路径的进度记录，不代表该快速路径的部署或验收状态。
+**2026-11-05，aggressive-v1：** 已新增独立 `human_eye_fast` 运行路径，采用批量形变、浮点 SAT、常驻数组、CSR 局部更新和直接任务视图。当前提交与可重跑测量见 [第一版结果](AGGRESSIVE_V1_RESULTS.md)，我方派工与收益验收见 [竞争工作流](RADICAL_V1_COMPETITION_WORKFLOW.md)。以下为历史产品路径的进度记录，不代表该快速路径的部署或验收状态。
 
 更新：2026-11-03。正式基线按既有封存记录为 `9.7.2+20261031.dense.focus.r1`，78个运行时源、87个固定发布文件；摘要 `22fb2523bdbfb68d6e7227ea3df3b4373daa1a76461344bc1755406c5feeec8a`。本批核对其项目配置保持，新候选仍为独立安装，未切换正式live或Hook。
 

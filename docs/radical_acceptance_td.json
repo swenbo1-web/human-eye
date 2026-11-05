@@ -1,0 +1,1749 @@
+{
+  "reviewer": "main_orchestrator_chat",
+  "criteria_commit": "c31f78af3868a4a8a44ce8fac41323a414fdbd0b",
+  "implementation_thread": "01a1aa0e-efc4-76f2-9ba2-eeccfe50ce19",
+  "utc": "2026-11-05T05:12:00.720515+00:00",
+  "module": "TD",
+  "decision": "PASS",
+  "scope": "Portable cross-frame summary module; no Blender/GPU/end-to-end latency claim.",
+  "tests": "54 tests passed in combined independent run, including 4 reviewer-owned held-out checks.",
+  "source_sha256": {
+    "human_eye_fast/tensor_deform.py": "bd7ac9fc0b13ab3dc9b610e63f5e902226f1328f7ee0882a11ee3864e7f50a9e",
+    "human_eye_fast/kernels.py": "925ccc22b7b14e4c241ff27f661ac76f6414c71a911d6eb8e506d3e83efe5a06",
+    "verification/benchmark_tensor_deform.py": "0d9a9cf29326a16f6e9e914c00113afec8445b13f89d1d16d39e40eb1c20c5df",
+    "verification/test_tensor_deform.py": "0aaf47044feb1612eb1b22c05dfd09290da4a4f97c3742609145f10b8a08d26d",
+    "verification/test_radical_acceptance.py": "02e468fdb5fe8849833e709a6f671f2e43ddc95d6aefd00e104c5ff348acb4bd"
+  },
+  "independently_recomputed_gates": [
+    {
+      "face_count": 20000,
+      "median_ratios": [
+        0.8362262963446332,
+        0.8490589162652292,
+        0.8765972793070633
+      ],
+      "p95_ratio": 0.980282803843791,
+      "extra_peak_ratios": [
+        0.16231936662698923,
+        0.16231936662698923,
+        0.16231936662698923
+      ],
+      "pass": true
+    },
+    {
+      "face_count": 100000,
+      "median_ratios": [
+        0.8927773600881622,
+        0.9792797795239057,
+        0.9563306077225283
+      ],
+      "p95_ratio": 0.9570143451620382,
+      "extra_peak_ratios": [
+        0.16208473423445965,
+        0.16208473423445965,
+        0.16208473423445965
+      ],
+      "pass": true
+    }
+  ],
+  "raw_measurement": {
+    "seed": 61847,
+    "fixture": "edge-connected rectangular grid, explicit curved reference",
+    "python": "3.13.14 (main, Jun 11 2026, 04:04:46) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.3.5",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 165 Stepping 5, GenuineIntel",
+    "logical_cpu_count": 16,
+    "worker_thread_env": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "source_sha256": {
+      "human_eye_fast/kernels.py": "925ccc22b7b14e4c241ff27f661ac76f6414c71a911d6eb8e506d3e83efe5a06",
+      "human_eye_fast/tensor_deform.py": "bd7ac9fc0b13ab3dc9b610e63f5e902226f1328f7ee0882a11ee3864e7f50a9e",
+      "verification/benchmark_tensor_deform.py": "0d9a9cf29326a16f6e9e914c00113afec8445b13f89d1d16d39e40eb1c20c5df"
+    },
+    "protocol": {
+      "processes": 3,
+      "warmups_per_method_per_process": 5,
+      "samples_per_method_per_process": 31,
+      "top_k": 12,
+      "latency_ratio_limit": 1.25,
+      "extra_peak_ratio_limit": 0.5,
+      "memory_metric": "tracemalloc peak of a single summary call after gc.collect; excludes pre-existing inputs, not RSS",
+      "time_metric": "perf_counter_ns, paired and interleaved, excludes memory tracing and checks",
+      "baseline": "existing stretch kernel per frame, batched area/normal/centroid over frames and faces"
+    },
+    "workers": [
+      {
+        "pid": 28604,
+        "worker": 0,
+        "cases": [
+          {
+            "grid_cells": [
+              100,
+              100
+            ],
+            "vertex_count": 10201,
+            "face_count": 20000,
+            "frame_count": 16,
+            "input_bytes": 4642008,
+            "warmup_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                174480100,
+                147061900,
+                136142200,
+                135170100,
+                140512400,
+                138084200,
+                149321200,
+                132996400,
+                130749600,
+                134253400,
+                135230000,
+                135292500,
+                133993200,
+                134726100,
+                132725800,
+                135465400,
+                133541300,
+                134994600,
+                134744800,
+                137118200,
+                136889200,
+                141782200,
+                144588600,
+                140163800,
+                160400700,
+                144008200,
+                151036800,
+                184550400,
+                208400700,
+                221883300,
+                147653200
+              ],
+              "full_tensor": [
+                188863400,
+                159067400,
+                163972600,
+                156850000,
+                160056500,
+                158843800,
+                166976800,
+                153389900,
+                191341600,
+                153799500,
+                197226800,
+                156041100,
+                155488200,
+                157084800,
+                156517200,
+                158636800,
+                160997000,
+                161393600,
+                154342200,
+                189114500,
+                160624700,
+                166411300,
+                164571000,
+                173858400,
+                169681600,
+                169724800,
+                197073000,
+                319065700,
+                195412500,
+                199371000,
+                188797900
+              ]
+            },
+            "memory_order": [
+              "full_tensor",
+              "streaming"
+            ],
+            "extra_peak_bytes": {
+              "full_tensor": 67531264,
+              "streaming": 10961632
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 8.881784197001252e-16,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 2.7755575615628914e-16,
+                "score": 1.7763568394002505e-15
+              },
+              "witness_triangle_ids": [
+                19800,
+                19801,
+                19601,
+                19603,
+                19600,
+                19402,
+                19802,
+                19602,
+                19203,
+                19803,
+                19403,
+                19401
+              ]
+            }
+          },
+          {
+            "grid_cells": [
+              200,
+              250
+            ],
+            "vertex_count": 50451,
+            "face_count": 100000,
+            "frame_count": 16,
+            "input_bytes": 22984008,
+            "warmup_orders": [
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                866145200,
+                920362500,
+                883006800,
+                862612500,
+                875037600,
+                881845800,
+                847924000,
+                847908700,
+                851619900,
+                851949000,
+                861612300,
+                875985200,
+                855357100,
+                920529200,
+                935715300,
+                895237700,
+                904076700,
+                863735600,
+                844182900,
+                854209300,
+                969940700,
+                947470200,
+                1127410000,
+                977094000,
+                916841300,
+                866444300,
+                1015682300,
+                851278400,
+                891152400,
+                975272300,
+                855659900
+              ],
+              "full_tensor": [
+                928514400,
+                962948300,
+                973058900,
+                960125200,
+                934478700,
+                993363500,
+                924140400,
+                961606300,
+                996901300,
+                960324400,
+                1044487100,
+                1019846700,
+                1003571500,
+                954109100,
+                926930400,
+                985746100,
+                981191100,
+                986869000,
+                1011664000,
+                1046015500,
+                1063759800,
+                1179421100,
+                1203413700,
+                1005431800,
+                997989300,
+                928728700,
+                920842700,
+                933363500,
+                1029865500,
+                915684400,
+                967012200
+              ]
+            },
+            "memory_order": [
+              "streaming",
+              "full_tensor"
+            ],
+            "extra_peak_bytes": {
+              "streaming": 54721632,
+              "full_tensor": 337611264
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 1.1102230246251565e-15,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 3.608224830031759e-16,
+                "score": 2.220446049250313e-15
+              },
+              "witness_triangle_ids": [
+                98400,
+                98401,
+                97604,
+                90817,
+                97605,
+                90816,
+                96401,
+                96400,
+                97601,
+                97200,
+                97600,
+                97201
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "pid": 36828,
+        "worker": 1,
+        "cases": [
+          {
+            "grid_cells": [
+              100,
+              100
+            ],
+            "vertex_count": 10201,
+            "face_count": 20000,
+            "frame_count": 16,
+            "input_bytes": 4642008,
+            "warmup_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                279628300,
+                152073100,
+                141862300,
+                133414900,
+                133908100,
+                136243200,
+                134818700,
+                137923000,
+                138764600,
+                149207800,
+                137162300,
+                138735600,
+                136286700,
+                133482700,
+                136301200,
+                137662600,
+                136756800,
+                135368200,
+                137964300,
+                130990600,
+                133803200,
+                138260000,
+                135276000,
+                134441200,
+                148755400,
+                138905500,
+                132898100,
+                133844500,
+                141087700,
+                136473400,
+                132934600
+              ],
+              "full_tensor": [
+                181621700,
+                171461600,
+                157775200,
+                159530900,
+                155481700,
+                154928100,
+                158353700,
+                153643000,
+                186465000,
+                160187400,
+                154319200,
+                158172300,
+                160734900,
+                167456700,
+                165567700,
+                186468400,
+                169330100,
+                159532000,
+                158378700,
+                158388600,
+                155862700,
+                154067000,
+                170038500,
+                167330300,
+                170431700,
+                161280100,
+                172761100,
+                167462800,
+                167409200,
+                160299300,
+                168034400
+              ]
+            },
+            "memory_order": [
+              "streaming",
+              "full_tensor"
+            ],
+            "extra_peak_bytes": {
+              "streaming": 10961632,
+              "full_tensor": 67531264
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 8.881784197001252e-16,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 2.7755575615628914e-16,
+                "score": 1.7763568394002505e-15
+              },
+              "witness_triangle_ids": [
+                19800,
+                19801,
+                19601,
+                19603,
+                19600,
+                19402,
+                19802,
+                19602,
+                19203,
+                19803,
+                19403,
+                19401
+              ]
+            }
+          },
+          {
+            "grid_cells": [
+              200,
+              250
+            ],
+            "vertex_count": 50451,
+            "face_count": 100000,
+            "frame_count": 16,
+            "input_bytes": 22984008,
+            "warmup_orders": [
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                1018744000,
+                962538200,
+                955945800,
+                927631600,
+                855866200,
+                863868800,
+                974834400,
+                965375400,
+                987146100,
+                986606000,
+                1105394100,
+                973928500,
+                850456400,
+                857131000,
+                911783900,
+                859544900,
+                999721100,
+                863054600,
+                930824700,
+                904499700,
+                920867600,
+                870280800,
+                974355000,
+                898379200,
+                870457200,
+                994781400,
+                904463200,
+                896763500,
+                859722600,
+                870930100,
+                867797800
+              ],
+              "full_tensor": [
+                955080100,
+                1029909600,
+                931076000,
+                978990500,
+                914698700,
+                930921200,
+                929053300,
+                959739500,
+                956793600,
+                919993400,
+                950534900,
+                919257000,
+                922539000,
+                930383700,
+                920196700,
+                1004857800,
+                1022210800,
+                956053500,
+                987032700,
+                972238700,
+                927748000,
+                976363400,
+                954175600,
+                921090700,
+                921145800,
+                915481900,
+                916819800,
+                922419800,
+                933815900,
+                1043039000,
+                922242600
+              ]
+            },
+            "memory_order": [
+              "streaming",
+              "full_tensor"
+            ],
+            "extra_peak_bytes": {
+              "streaming": 54721632,
+              "full_tensor": 337611264
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 1.1102230246251565e-15,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 3.608224830031759e-16,
+                "score": 2.220446049250313e-15
+              },
+              "witness_triangle_ids": [
+                98400,
+                98401,
+                97604,
+                90817,
+                97605,
+                90816,
+                96401,
+                96400,
+                97601,
+                97200,
+                97600,
+                97201
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "pid": 25436,
+        "worker": 2,
+        "cases": [
+          {
+            "grid_cells": [
+              100,
+              100
+            ],
+            "vertex_count": 10201,
+            "face_count": 20000,
+            "frame_count": 16,
+            "input_bytes": 4642008,
+            "warmup_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                152387900,
+                140417700,
+                200663400,
+                137926500,
+                135218200,
+                134238100,
+                134480800,
+                137372400,
+                136950000,
+                136287500,
+                137667400,
+                136604800,
+                133251900,
+                130689900,
+                132159000,
+                133583100,
+                137238600,
+                188303700,
+                138425700,
+                140560100,
+                210830400,
+                134095600,
+                134577400,
+                132476800,
+                137423900,
+                137108200,
+                133380400,
+                139587400,
+                135207100,
+                135140300,
+                135843200
+              ],
+              "full_tensor": [
+                177009500,
+                163622000,
+                157325300,
+                158267100,
+                155777400,
+                223221700,
+                159361700,
+                155057100,
+                153523500,
+                155991000,
+                153871700,
+                153603700,
+                154263900,
+                162319900,
+                154010800,
+                152261400,
+                152397800,
+                160527300,
+                156918000,
+                163496500,
+                155073700,
+                155315600,
+                156109700,
+                154166400,
+                159163600,
+                155835300,
+                155563500,
+                221397000,
+                154702600,
+                157083100,
+                154156900
+              ]
+            },
+            "memory_order": [
+              "streaming",
+              "full_tensor"
+            ],
+            "extra_peak_bytes": {
+              "streaming": 10961632,
+              "full_tensor": 67531264
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 8.881784197001252e-16,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 2.7755575615628914e-16,
+                "score": 1.7763568394002505e-15
+              },
+              "witness_triangle_ids": [
+                19800,
+                19801,
+                19601,
+                19603,
+                19600,
+                19402,
+                19802,
+                19602,
+                19203,
+                19803,
+                19403,
+                19401
+              ]
+            }
+          },
+          {
+            "grid_cells": [
+              200,
+              250
+            ],
+            "vertex_count": 50451,
+            "face_count": 100000,
+            "frame_count": 16,
+            "input_bytes": 22984008,
+            "warmup_orders": [
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ]
+            ],
+            "sample_orders": [
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "full_tensor",
+                "streaming"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ],
+              [
+                "streaming",
+                "full_tensor"
+              ]
+            ],
+            "time_samples_ns": {
+              "streaming": [
+                964629900,
+                949297300,
+                862182600,
+                981644900,
+                931174200,
+                895065200,
+                931857500,
+                843541300,
+                896464700,
+                933850400,
+                853603400,
+                879151600,
+                915109800,
+                866833700,
+                919693800,
+                852698000,
+                998600900,
+                895927400,
+                849771200,
+                859988700,
+                882391300,
+                856099400,
+                865332600,
+                871752300,
+                851148000,
+                884401500,
+                854445400,
+                921906200,
+                904292700,
+                915879700,
+                928643200
+              ],
+              "full_tensor": [
+                926928100,
+                917305300,
+                916796900,
+                947880500,
+                960214400,
+                931148600,
+                987662100,
+                914177100,
+                953412800,
+                981091600,
+                970535400,
+                955457300,
+                928882800,
+                913537900,
+                920214800,
+                922330100,
+                912658500,
+                970838100,
+                929779300,
+                935937000,
+                920120700,
+                947867100,
+                924777200,
+                1043546400,
+                1012682800,
+                929315500,
+                945502000,
+                978069500,
+                1032120500,
+                918055400,
+                963485700
+              ]
+            },
+            "memory_order": [
+              "full_tensor",
+              "streaming"
+            ],
+            "extra_peak_bytes": {
+              "full_tensor": 337611264,
+              "streaming": 54721632
+            },
+            "quality": {
+              "all_fields_match": true,
+              "rtol": 1e-11,
+              "atol": 1e-11,
+              "max_absolute_errors": {
+                "max_principal_stretch": 0.0,
+                "min_principal_stretch": 0.0,
+                "max_area_strain": 1.1102230246251565e-15,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 3.608224830031759e-16,
+                "score": 2.220446049250313e-15
+              },
+              "witness_triangle_ids": [
+                98400,
+                98401,
+                97604,
+                90817,
+                97605,
+                90816,
+                96401,
+                96400,
+                97601,
+                97200,
+                97600,
+                97201
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "cases": [
+      {
+        "face_count": 20000,
+        "process_medians_ns": [
+          {
+            "streaming": 137118200.0,
+            "full_tensor": 163972600.0
+          },
+          {
+            "streaming": 136473400.0,
+            "full_tensor": 160734900.0
+          },
+          {
+            "streaming": 136604800.0,
+            "full_tensor": 155835300.0
+          }
+        ],
+        "pooled_p95_ns": {
+          "streaming": 193247579.99999988,
+          "full_tensor": 197134520.0
+        },
+        "process_median_ratios": [
+          0.8362262963446332,
+          0.8490589162652292,
+          0.8765972793070633
+        ],
+        "pooled_p95_ratio": 0.980282803843791,
+        "process_extra_peak_ratios": [
+          0.16231936662698923,
+          0.16231936662698923,
+          0.16231936662698923
+        ],
+        "gates": {
+          "full_summary_equivalent": true,
+          "each_process_median": true,
+          "pooled_p95": true,
+          "each_process_extra_peak": true
+        },
+        "all_gates_met": true
+      },
+      {
+        "face_count": 100000,
+        "process_medians_ns": [
+          {
+            "streaming": 875985200.0,
+            "full_tensor": 981191100.0
+          },
+          {
+            "streaming": 911783900.0,
+            "full_tensor": 931076000.0
+          },
+          {
+            "streaming": 895065200.0,
+            "full_tensor": 935937000.0
+          }
+        ],
+        "pooled_p95_ns": {
+          "streaming": 999048980.0,
+          "full_tensor": 1043922680.0
+        },
+        "process_median_ratios": [
+          0.8927773600881622,
+          0.9792797795239057,
+          0.9563306077225283
+        ],
+        "pooled_p95_ratio": 0.9570143451620382,
+        "process_extra_peak_ratios": [
+          0.16208473423445965,
+          0.16208473423445965,
+          0.16208473423445965
+        ],
+        "gates": {
+          "full_summary_equivalent": true,
+          "each_process_median": true,
+          "pooled_p95": true,
+          "each_process_extra_peak": true
+        },
+        "all_gates_met": true
+      }
+    ],
+    "all_gates_met": true
+  }
+}

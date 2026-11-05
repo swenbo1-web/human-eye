@@ -2,7 +2,7 @@
 
 本版数值链在最新整体架构中属于 E3 的已有基础。后续采用 [Radical V1 融合方案](RADICAL_V1_INTEGRATION_PLAN.md)；以下测试与性能仍仅对应原有数组计算链，不覆盖附件的视觉、学习、动作或 <12ms 声明。
 
-日期：2026-11-05。分支 `codex/aggressive-v1`，历史基线 `2846992`。方案与后续两端分工见 [AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md)。本文件所在 Git 提交交付源码和结果；原始测量见 [aggressive_v1_benchmark.json](aggressive_v1_benchmark.json)。
+日期：2026-11-05。分支 `codex/aggressive-v1`，历史基线 `2846992`。已有技术方案见 [AGGRESSIVE_V1_PLAN](AGGRESSIVE_V1_PLAN.md)；当前按 [独立竞争六模块工作流](RADICAL_V1_COMPETITION_WORKFLOW.md) 推进。本文件所在 Git 提交交付源码和结果；原始测量见 [aggressive_v1_benchmark.json](aggressive_v1_benchmark.json)。
 
 ## 已交付
 
@@ -73,6 +73,6 @@ python -B -m human_eye_fast demo
 
 ## 第一版之后的直接进攻点
 
-架构端优先把真实连续 Blender/Live 任务接到常驻数据流，测量全量捕获及模型接口，替掉每次启动/验证/搬运链。算法端优先对连通网格实现更强局部更新与 BVH/refit、普通空间距离/碰撞内核，再试 SIMD/JIT/GPU。固定同一个 v1 起点，使两端产出可分别测量和组合。
+用户已明确两端独立竞争。我方自行推进常驻采集、距离/BVH、跨帧形变、主动视觉、联合输出及经验学习全部六模块；按事前收益标准验收，再推进依赖模块。另一端独立实现整套引擎，结果采用共同任务口径比较。
 
 目前区域查询仍扫描缓存 AABB，Blender 适配器仍全量读取求值顶点，NPZ/JSONL 的传输也仍有复制；这些是明确可继续移除的成本。新增渲染和执行路径尚未实现，历史 MCP/Hook 入口不会自动变成快速版本。
