@@ -21,7 +21,7 @@ from verification.test_bc_acceptance import (
 
 ROOT = Path(__file__).resolve().parents[1]
 VARIANTS = ("bc_projected_bounds", "bc_projected_faces", "bc_projected_order",
-            "bc_projected_compact", "bc_projected_beam")
+            "bc_projected_compact", "bc_projected_beam", "bc_projected_seed16")
 
 
 def _load(name):

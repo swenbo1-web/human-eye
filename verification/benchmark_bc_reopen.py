@@ -36,6 +36,7 @@ BASELINE = ROOT / "verification/baselines/bc_implementation.py"
 BASELINE_SHA256 = "03bb9ce3bd5da99299a55d47122b38ceb2bef04aba37d998b80e0ad8de4ffa09"
 OLD_SEEDS = (20261105, 79463)
 HELD_OUT_SEEDS = (314159, 271828)
+EXTRA_HELD_OUT_SEEDS = (141421, 161803)
 METHODS = ("implementation", "candidate")
 CLOCK_FIELDS = ("wall_ns", "thread_cpu_ns")
 THREAD_ENV = previous.THREAD_ENV
@@ -44,12 +45,20 @@ BOOTSTRAP_REPLICATES = 6000
 
 
 def _configuration(args):
-    return {"mode": "diagnostic_aa" if args.diagnostic else "pilot" if args.pilot else "formal",
+    config = {"mode": "diagnostic_aa" if args.diagnostic else "pilot" if args.pilot else "formal",
             "processes": 1 if args.pilot else 3, "warmups": 5,
             "regular_pairs": 8 if args.pilot else 64,
             "dense_pairs": 2 if args.pilot else 8,
             "aa": bool(args.aa or args.diagnostic), "tiny": bool(args.include_tiny and not args.diagnostic),
             "seeds": [79463] if args.diagnostic else list(OLD_SEEDS if args.pilot else OLD_SEEDS + HELD_OUT_SEEDS)}
+    if args.extra_heldout:
+        if args.pilot or args.diagnostic:
+            raise ValueError('Additional held-out inputs are for frozen formal candidates only')
+        config['seeds'].extend(EXTRA_HELD_OUT_SEEDS)
+        config['primary_seeds'] = list(OLD_SEEDS + HELD_OUT_SEEDS)
+        config['extra_heldout_seeds'] = list(EXTRA_HELD_OUT_SEEDS)
+        config['extra_heldout'] = True
+    return config
 
 
 def _order(index, worker, case_id):
@@ -468,10 +477,21 @@ def _summarize(report, config, candidate):
     report["cases"] = {name: _case_summary([worker["cases"][name] for worker in workers], config, case_id)
                        for case_id, name in enumerate(names)}
     regular_count = 4 if config["mode"] == "diagnostic_aa" else 16 if config["mode"] == "pilot" else 32
+    primary_cases = {name: case for name, case in report['cases'].items()
+                     if case.get('seed') not in config.get('extra_heldout_seeds', [])}
     report["regular_equal_state_statistics"] = {
-        field: {"pooled": _aggregate(report["cases"], field),
-                "per_process": [_aggregate(report["cases"], field, worker) for worker in range(config["processes"])]}
+        field: {"pooled": _aggregate(primary_cases, field),
+                "per_process": [_aggregate(primary_cases, field, worker) for worker in range(config["processes"])]}
         for field in CLOCK_FIELDS}
+    if config.get('extra_heldout'):
+        extra_cases = {name: case for name, case in report['cases'].items()
+                       if case.get('seed') in EXTRA_HELD_OUT_SEEDS}
+        report['extra_heldout_statistics'] = {
+            field: {'pooled': _aggregate(extra_cases, field),
+                    'per_process': [_aggregate(extra_cases, field, worker) for worker in range(config['processes'])]}
+            for field in CLOCK_FIELDS}
+        report['all_observed_regular_statistics'] = {
+            field: _aggregate(report['cases'], field) for field in CLOCK_FIELDS}
     report["expected_regular_state_count"] = regular_count
     report["quality_passed"] = all(case.get("quality_passed", False) for case in report["cases"].values())
     report["evidence_complete"] = bool(report["same_sources"] and report["independent_pids"]
@@ -495,6 +515,8 @@ def _run_all(args, config, candidate, report, stream):
             command.extend(("--candidate", str(candidate)))
         if config["tiny"]:
             command.append("--include-tiny")
+        if args.extra_heldout:
+            command.append("--extra-heldout")
         print(f"BC {config['mode']} worker {worker}: {worker_path}", flush=True)
         completed = subprocess.run(command, cwd=ROOT, env={**os.environ, **THREAD_ENV, "PYTHONDONTWRITEBYTECODE": "1"},
                                    capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
@@ -521,6 +543,7 @@ def main():
     mode.add_argument("--diagnostic", action="store_true", help="A/A only: seed 79463, 128-face separated/near, 3 workers and 64 pairs")
     mode.add_argument("--pilot", action="store_true", help="Only the two old seeds: 1 worker, 8 pairs/case, dense 2 pairs")
     parser.add_argument("--include-tiny", action="store_true", help="Supplementary 4-face-per-object tetrahedra, excluded from regular aggregate")
+    parser.add_argument("--extra-heldout", action="store_true", help="Append 16 new blind states; original 32-state gate remains separate")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--worker", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--worker-output", type=Path, help=argparse.SUPPRESS)
