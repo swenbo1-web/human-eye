@@ -6,7 +6,7 @@
 
 本文件取代 `3c8a777` 将 F0–F7 当作整体引擎的方案。新依据是用户提供的 [HE-Radical-V1.1 原始规格](RADICAL_V1_SOURCE_SPEC.md)，分析、反例和采用理由见 [规格深度审查](RADICAL_V1_SPEC_REVIEW.md)。附件作为设计输入原样保存，其“完整生产级”“实测 10.5 ms”等措辞不代表本分支已验证结论。
 
-本文保留整体设计初稿；其中RadicalSession、学习和动作接口仍为拟定。当前human_eye_fast已实现并验收RB-A、RB-B、TD、BC和VG，正在推进AO；BC主干二次优化候选未采用，运行时保持达标实施版。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
+本文保留整体设计初稿；其中RadicalSession、学习和动作接口仍为拟定。当前human_eye_fast已实现并验收RB-A、RB-B、TD、BC和VG，正在推进AO；BC早期主干候选被拒后已按用户要求重开，当前采用经完整比较和补测验收的seed16，见[BC重开审查](BC_REOPEN_REVIEW.md)。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
 
 ## 1. 整体框架：三大引擎，一份常驻状态
 
