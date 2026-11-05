@@ -1,8 +1,12 @@
-"""Independent geometric properties for main-thread clearance refinements."""
+"""Independent geometric properties of the archived, rejected refinement.
+
+The candidate passed geometry checks but was not adopted because its timing
+did not establish non-regression. Runtime uses the qualified implementation.
+"""
 import unittest
 import numpy as np
 
-from human_eye_fast.fast_bvh_clearance import (
+from verification.baselines.bc_refinement_rejected import (
     _prepare_triangles, _projection_lower_distance, SurfaceIndex, surface_distance,
 )
 from verification.test_bc_acceptance import convex_pair_oracle, exhaustive_convex_oracle, surface_tolerance

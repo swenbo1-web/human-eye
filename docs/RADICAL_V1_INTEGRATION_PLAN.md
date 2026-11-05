@@ -1,4 +1,4 @@
-# Human Eye Radical V1：整体引擎融合架构与模块推进
+# Human Eye Radical V1：整体引擎架构与模块推进
 
 **当前推进规则已更新：两端独立竞争，六模块实施及验收以 [竞争工作流](RADICAL_V1_COMPETITION_WORKFLOW.md) 为准。**
 
@@ -6,7 +6,7 @@
 
 本文件取代 `3c8a777` 将 F0–F7 当作整体引擎的方案。新依据是用户提供的 [HE-Radical-V1.1 原始规格](RADICAL_V1_SOURCE_SPEC.md)，分析、反例和采用理由见 [规格深度审查](RADICAL_V1_SPEC_REVIEW.md)。附件作为设计输入原样保存，其“完整生产级”“实测 10.5 ms”等措辞不代表本分支已验证结论。
 
-本文保留整体设计初稿；其中RadicalSession、视觉、学习和动作接口仍为拟定。当前human_eye_fast已实现并独立验收RB-A、RB-B和TD，正在推进BC；实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
+本文保留整体设计初稿；其中RadicalSession、视觉、学习和动作接口仍为拟定。当前human_eye_fast已实现并验收RB-A、RB-B、TD和BC，正在推进VG；BC主干二次优化候选未采用，运行时保持达标实施版。实际文件及状态以[验收台账](RADICAL_V1_ACCEPTANCE_LOG.md)为准。旧数组链性能保持[第一版结果](AGGRESSIVE_V1_RESULTS.md)的原测量范围。
 
 ## 1. 整体框架：三大引擎，一份常驻状态
 
@@ -16,7 +16,7 @@
 | --- | --- | --- | --- |
 | **E1 人眼主动感知引擎** | 由任务与几何见证决定看哪里、怎样看；交付全景、局部图及空间解释 | 快速路径无图像实现 | 网格可见性、像素尺度选取、明确的剖切视图、真实 GPU 绘制与图片交付 |
 | **E2 小脑记忆与先验引擎** | 利用历史观察和动作结果，改进视角/候选顺序及结果预测；从实际反馈更新 | 无学习记忆；`FastSession` 缓存不等于学习 | 特征、经验标签和动作条件；会话内环形库；检索与读出学习；增益消融 |
-| **E3 几何与动作执行引擎** | 常驻场景、空间/形变事实、动作求解、宿主执行与回读，给出实际残差 | `FastSession`、CSR、AABB/SAT、CLI/JSONL；RB-A/B多对象米制采集与TD已验收；旧BlenderSession仍保持原边界 | BC距离/相交、动作控制器和整链接线 |
+| **E3 几何与动作执行引擎** | 常驻场景、空间/形变事实、动作求解、宿主执行与回读，给出实际残差 | `FastSession`、CSR、AABB/SAT、CLI/JSONL；RB-A/B、TD和BC已验收；旧BlenderSession仍保持原边界 | 动作控制器和整链接线 |
 
 一个场景级 `RadicalSession`（拟定）持有场景、几何索引、E1 渲染资源和 E2 记忆。保留 `FastSession` 作为 E3 的固定拓扑形变子核。CLI/MCP 是薄入口，输出只在真正跨进程或面向模型时序列化。
 
@@ -54,14 +54,14 @@ flowchart LR
 
 附件六个文件是实现单元，不是六个整体引擎。保留其职责，合入一个运行包 `human_eye_fast`，并补上缺少的控制器。
 
-| 附件实现单元 | 融合后归属及建议落点（新文件均拟定） | 接入方式 |
+| 附件实现单元 | 本端归属及落点（未实现项仍拟定） | 接入方式 |
 | --- | --- | --- |
-| `resident_bridge.py` | E3：`scene.py` 管场景，`blender.py` 管宿主 | 复用 `FastSession`；补对象身份、变换、单位、外观与脏更新 |
-| `fast_bvh_clearance.py` | E3：`spatial.py` 索引，`clearance.py` 距离/相交 | 替换附件不正确的最近点核；完整三角窄相与 BVH 节点对搜索 |
-| `tensor_deform.py` | E3：现有 `kernels.py`、`engine.py`，补运动摘要 | 保留主伸长与同面跨帧索引；吸收面积、法向变化、位移、Top-K 思路 |
-| `raycast_saccade_gpu.py` | E1：`vision.py` 规划，Blender 适配渲染 | 分离配置、GPU 完成、外部可消费图片三种产物 |
-| `cerebellar_flash.py` | E2：`memory.py` | 会话持有的检索库与可选学习读出，不使用全局隐式单例 |
-| `fast_affordance_out.py` | 跨引擎：`tasks.py` 组装，`cli.py`/薄接口交付 | 数值、图像引用与任务结果一次输出；见证向量不直接当建议动作 |
+| `resident_bridge.py` | E3：已实现`resident_bridge.py`及原生`blender_resident_bridge.py` | 稳定多对象米制数组、完整变换、外观和显式更新；旧BlenderSession仍保持原边界 |
+| `fast_bvh_clearance.py` | E3：已实现同名文件，SurfaceIndex/surface_distance | 完整窄相、BVH节点对搜索、原始面ID和世界米制见证；采用已达标实施版 |
+| `tensor_deform.py` | E3：已实现同名文件，复用`kernels.py`数值核 | 流式跨帧归约、面积/法向/位移和稳定Top-K，保留主伸长完整语义 |
+| `raycast_saccade_gpu.py` | E1：同名文件待实施，Blender GPU绘制 | 实际1024×512双联HUD、真实可见性与明确剖切；不能只交配置 |
+| `cerebellar_flash.py` | E2：同名文件待实施 | 会话持有检索库/学习读出，以真实观察和动作结果监督，不使用全局隐式单例 |
+| `fast_affordance_out.py` | 跨引擎：同名文件待实施，CLI/薄接口交付 | 数值、图像引用与任务结果一次输出；见证向量不直接当建议动作 |
 | **附件缺失：动作控制器** | E3：`control.py` | goal → solve → apply → recapture → residual → feedback |
 
 原 F0/F1/F2/F3/F4/F6 主要成为 E3 内部的数据、宿主、索引、算子、任务和控制职责；F5 对应 E1，F7 是共同入口。E2 是上版遗漏的独立能力，不能把缓存改名代替。
