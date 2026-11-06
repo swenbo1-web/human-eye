@@ -49,11 +49,21 @@ def _differences(left, right, path=''):
     return [{'field': path, 'baseline': left, 'candidate': right}]
 
 
+def _supported(row):
+    result = row['result']
+    payload = result.get('payload') or {}
+    if result.get('exception'):
+        return False
+    if row['entry'] == 'measure_pair_geometry':
+        return payload.get('measurement_valid') is True
+    return payload.get('facts', {}).get('surface_clearance', {}).get('status') == 'measured'
+
+
 def _stats(rows):
     costs = [row['result'].get('costs', {}) for row in rows]
     values = [item['kernel_ns'] / 1e6 for item in costs if isinstance(item.get('kernel_ns'), (int, float))]
     valid = len(values) == 15 and all(value > 0 and math.isfinite(value) for value in values)
-    valid = valid and all(not row['result'].get('exception') for row in rows)
+    valid = valid and all(_supported(row) for row in rows)
     if not values:
         return {'records': len(rows), 'timed_records': 0, 'valid_15': False}
     ordered = sorted(values)
@@ -128,7 +138,7 @@ def summarize(rows, inputs):
             samples = {}
             for name in ('baseline', 'candidate'):
                 selected = [item for item in arms.get(name, []) if item['block'] == block]
-                if len(selected) == 3 and all('kernel_ns' in item['result'].get('costs', {}) for item in selected):
+                if len(selected) == 3 and all(_supported(item) and 'kernel_ns' in item['result'].get('costs', {}) for item in selected):
                     samples[name] = statistics.median(item['result']['costs']['kernel_ns'] for item in selected)
             improvement = None
             if len(samples) == 2 and samples['baseline'] > 0:
