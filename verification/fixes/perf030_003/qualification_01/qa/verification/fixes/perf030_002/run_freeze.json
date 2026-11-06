@@ -1,0 +1,174 @@
+{
+  "cycle_id": "PERF-030-002",
+  "phase": "static_ready_unexecuted",
+  "baseline_commit": "11c8fc7332e530ead2f8fa30d2a35c7eb14e7d15",
+  "candidate_commit": "326b64c74b2672fd620ddb9cac83bf47dd5355f2",
+  "qa_commit": "474e0e39591a4495991183643b5f14309f297568",
+  "baseline_runtime_source_sha256": "e59048677b7cc05ac0f15b359e5444de2cc3ccc196994a701e74a2510f144163",
+  "candidate_geometry_sha256": "d3b47ed08de23bbf752b01f1ab2a7fe53b636cba5d4aa55621936e79837c384b",
+  "static_freeze_sha256": "71dfa0fe73c109f234ce6d554e313503d879f520dd474234ea4a9366481f5ec2",
+  "python": "D:/hefe/.human-eye/releases/9.7.2+20261028.support.discovery.r1/.venv/Scripts/python.exe",
+  "qa_script_count": 16,
+  "frozen_file_count": 22,
+  "inputs": {
+    "analytic_path": "verification/fixes/perf030_001/inputs.json",
+    "analytic_sha256": "7026df331441f382dfd78b71e6460074994431f9c1c75bd14840cd7ef921200a",
+    "analytic_pairs": 12,
+    "finite_rule_source": "verification/perf030_002_cases.py",
+    "leaf_cases": 10,
+    "closed_constructions": 1,
+    "candidate_probe_leaf_calls": 10,
+    "candidate_test_leaf_rechecks": 10,
+    "baseline_probe_leaf_calls": 2
+  },
+  "formal": {
+    "blocks": 5,
+    "repeats": 3,
+    "arms": [
+      "baseline",
+      "candidate"
+    ],
+    "modes": [
+      "cold",
+      "pose_miss",
+      "geometry_miss",
+      "hot"
+    ],
+    "entries": [
+      "measure_pair_geometry",
+      "task_result"
+    ],
+    "records": 2880,
+    "prime_calls": 2160,
+    "median": "median of all 15 kernel observations per arm/case/mode/entry",
+    "p95": "15-point linear p95 = sorted[13]*0.7+sorted[14]*0.3",
+    "group_unit": "five target cases, median of their median ratios, at least 4/5 case wins",
+    "block_detail": "five paired block improvements and win count per case",
+    "nonregression_median": "max(0.2ms,2% E) per effective case/entry/mode",
+    "nonregression_p95": "max(1ms,5% E) per effective case/entry/mode",
+    "module_target": "20% at each cold/pose_miss/geometry_miss full local entry",
+    "work_deadline_seconds": 295,
+    "hard_deadline_seconds": 300,
+    "initial_state": "same persistent arms after explicit probes; candidate also completes 159 tests",
+    "warmup": "only explicit correctness checks and non-cold original-pair prime, fully counted"
+  },
+  "executed": {
+    "python_compiles": 0,
+    "product_calls": 0,
+    "numpy_probes": 0,
+    "tests": 0,
+    "performance_samples": 0
+  },
+  "files": [
+    {
+      "path": "docs/PERF030_002_PLAN.md",
+      "bytes": 9500,
+      "sha256": "201f4c87495f2878a3f7e0768ccb37da4b44d59f5d01317f34e060b329e966dc"
+    },
+    {
+      "path": "docs/PERF030_002_RUN.md",
+      "bytes": 6781,
+      "sha256": "7007048d2548b0f4dc00852f7d869e1f24fa6311368a10027acd8c17094816b1"
+    },
+    {
+      "path": "human_eye_plugin/geometry_safety.py",
+      "bytes": 25049,
+      "sha256": "d3b47ed08de23bbf752b01f1ab2a7fe53b636cba5d4aa55621936e79837c384b"
+    },
+    {
+      "path": "verification/fixes/perf030_001/inputs.json",
+      "bytes": 265517,
+      "sha256": "7026df331441f382dfd78b71e6460074994431f9c1c75bd14840cd7ef921200a"
+    },
+    {
+      "path": "verification/fixes/perf030_002/archive/test_perf030_001_pruning.py",
+      "bytes": 9016,
+      "sha256": "dea2680f207b337e72d05f304f3e6c7dffca815ce30202b1bafb7a11c098b05d"
+    },
+    {
+      "path": "verification/fixes/perf030_002/static_freeze.json",
+      "bytes": 2054,
+      "sha256": "71dfa0fe73c109f234ce6d554e313503d879f520dd474234ea4a9366481f5ec2"
+    },
+    {
+      "path": "verification/perf030_002_cases.py",
+      "bytes": 4649,
+      "sha256": "7af178369e88c05d6e4a1fbd61a1d8ff1ad2cde6234948491b08d897eb5295f5"
+    },
+    {
+      "path": "verification/perf030_002_results.py",
+      "bytes": 12375,
+      "sha256": "ed6ccc89a1e9854e14d8351e55d21873704e21e061da78c2de67eb9591a166fb"
+    },
+    {
+      "path": "verification/perf030_002_run.py",
+      "bytes": 25209,
+      "sha256": "e28f6e2e5356ef685e666af2d0889c898ae34ad3a5bcc72e750c27c57d8bb6e2"
+    },
+    {
+      "path": "verification/perf030_002_worker.py",
+      "bytes": 24720,
+      "sha256": "5cf98e04221f98801adbb157efc4b51025e2abbbc3aa9be26ccb0585b79fbd7e"
+    },
+    {
+      "path": "verification/test_auto_router.py",
+      "bytes": 18454,
+      "sha256": "24bdaf1f40a5d66f304313745df7d14a418ea63f30bc99cf6cad89d70b6cf406"
+    },
+    {
+      "path": "verification/test_complex_scene_quality.py",
+      "bytes": 20681,
+      "sha256": "a46cf8dc0e0f2fbf0c0613ce41fa6d408d2f16d878eb31eae87996cb1400d10d"
+    },
+    {
+      "path": "verification/test_concave_geometry.py",
+      "bytes": 19890,
+      "sha256": "00ffb8be7a09df8aec79e9d15bc68e00de86b03137d46241166fafda11fbcbba"
+    },
+    {
+      "path": "verification/test_host_runtime.py",
+      "bytes": 11384,
+      "sha256": "708889f138158b12ddf547cfca14704b95d8c831be4a9fb8b9926ef86f02159c"
+    },
+    {
+      "path": "verification/test_live_service.py",
+      "bytes": 6871,
+      "sha256": "569860ac7492a797ed8d94e46e5ef3490885e61f1a0663b8a70fd9b5d3ced1de"
+    },
+    {
+      "path": "verification/test_local_sat_safety.py",
+      "bytes": 9428,
+      "sha256": "ddea97fe115b777ca3a6b79b2430aa1a5ec37bc9e28ac500f225442a423e8d34"
+    },
+    {
+      "path": "verification/test_mesh_mutation_cache.py",
+      "bytes": 10420,
+      "sha256": "63bc04f4475094e4e372a743396952d50284854c421c8e18616c301e70c71510"
+    },
+    {
+      "path": "verification/test_perf030_002_pt_dual.py",
+      "bytes": 3914,
+      "sha256": "5953580919d46936bb6dddc9aa5416c878177430ece76168b74501ed5084fd52"
+    },
+    {
+      "path": "verification/test_scene_cache.py",
+      "bytes": 15128,
+      "sha256": "a2c3c22b58d6223d6e7c469fbbe55faeddbc87981d17270d3e776282b6d4de24"
+    },
+    {
+      "path": "verification/test_strict_execution_collision.py",
+      "bytes": 12461,
+      "sha256": "264888e7976d37ec25204af48e2d6bbd2c4cab04bff8774784bd09cf312ebcc3"
+    },
+    {
+      "path": "verification/test_surface_scope_regression.py",
+      "bytes": 6964,
+      "sha256": "14c995d57177aad00384065e9347f070d69c667897b902af903024d1a3c16eac"
+    },
+    {
+      "path": "verification/test_task_query.py",
+      "bytes": 28663,
+      "sha256": "b9ef0a0766df369eb7ebb946d8fbf507d69ead73d3c4cfa7afc5cc15f40890fb"
+    }
+  ]
+}
