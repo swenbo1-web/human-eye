@@ -21,7 +21,6 @@ import ipaddress
 import json
 import math
 from pathlib import Path
-import re
 import select
 import socket
 import threading
@@ -44,53 +43,6 @@ _STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_struc
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
-_JSON_STRING_EVENT = re.compile(rb'["\\]')
-_JSON_CONTAINER_EVENT = re.compile(rb'[{}\[\]"]')
-
-
-class _JSONObjectBoundary:
-    """Recognize a possible outer endpoint while the strict loader owns syntax."""
-
-    def __init__(self):
-        self.started = self.in_string = self.escape_pending = False
-        self.depth = 0
-
-    def feed(self, chunk):
-        pos = 0
-        if not self.started:
-            while pos < len(chunk) and chunk[pos] in b' \t\r\n':
-                pos += 1
-            if pos == len(chunk):
-                return False
-            if chunk[pos] != 123:
-                raise ValueError('BlenderMCP response must be a JSON object')
-            self.started = True
-        if self.escape_pending:
-            pos += 1
-            self.escape_pending = False
-        while pos < len(chunk):
-            event = (_JSON_STRING_EVENT if self.in_string else _JSON_CONTAINER_EVENT).search(chunk, pos)
-            if event is None:
-                return False
-            token = chunk[event.start()]
-            pos = event.end()
-            if self.in_string:
-                if token == 92:
-                    if pos == len(chunk):
-                        self.escape_pending = True
-                    else:
-                        pos += 1
-                else:
-                    self.in_string = False
-            elif token == 34:
-                self.in_string = True
-            elif token in (123, 91):
-                self.depth += 1
-            else:
-                self.depth -= 1
-                if self.depth == 0:
-                    return True
-        return False
 
 
 class _ReadonlyPreconnectUnavailable(HostTransportError):
@@ -611,7 +563,8 @@ class BlenderMCPHost:
             raise
 
     def _exchange(self, payload):
-        # The addon keeps sockets open. Scan new bytes to find the outer endpoint.
+        # The addon keeps sockets open after replies. Decode one complete JSON
+        # value, rather than waiting for EOF, and bound the complete read time.
         deadline = time.monotonic() + self.timeout_s
         try:
             connection = self._connect(deadline)
@@ -627,7 +580,6 @@ class BlenderMCPHost:
             connection.settimeout(remaining)
             connection.sendall(payload)
             buffer = bytearray()
-            boundary = _JSONObjectBoundary()
             while True:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -639,8 +591,18 @@ class BlenderMCPHost:
                 buffer.extend(chunk)
                 if len(buffer) > _MAX_RESPONSE_BYTES:
                     raise ValueError("BlenderMCP response exceeds the size limit")
-                if boundary.feed(chunk):
-                    return _loads(buffer.decode("utf-8"))
+                try:
+                    decoded = buffer.decode("utf-8")
+                except UnicodeDecodeError as exc:
+                    if exc.reason == "unexpected end of data":
+                        continue
+                    raise
+                try:
+                    return _loads(decoded)
+                except json.JSONDecodeError:
+                    # Could be a partially received JSON object. Never scan past
+                    # banners, concatenated values, or malformed text for data.
+                    continue
 
 
 __all__ = ["BlenderMCPHost", "HostTransportError", "HostRemoteError"]
