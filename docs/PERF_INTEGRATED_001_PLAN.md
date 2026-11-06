@@ -67,7 +67,7 @@ $trialPython = "$runRoot/venv/Scripts/python.exe"
 - `test_perf030_002_pt_dual`、`test_perf030_003_goal`
 - `test_concave_geometry.ConcaveGeometryTests.test_general_rotation_is_unknown_without_snapping`
 
-额外复制依赖为 `test_host_runtime`、`test_live_service`、`test_auto_router`、`test_concave_geometry`、`test_blender_mcp_host`、`perf030_002_cases`，以及固定 `fixes/perf030_001/inputs.json`。测试与模型会话使用独立进程和资产副本。安装／回归失败则保留失败和实际前缀，模型分母为 0，交主线复核。
+额外复制依赖为 `test_host_runtime`、`test_live_service`、`test_auto_router`、`test_concave_geometry`、`test_blender_mcp_host`、`test_complex_scene_quality`、`perf030_002_cases`，以及固定 `fixes/perf030_001/inputs.json`。测试与模型会话使用独立进程和资产副本。安装／回归失败则保留失败和实际前缀，模型分母为 0，交主线复核。
 
 作者构造与真值入口为以下模板，Blender 为已有 `D:/Tools/blender5.2/blender.exe`。所有输出位于本批目录。
 
