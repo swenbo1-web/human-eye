@@ -1,0 +1,772 @@
+{
+  "decision": "ACCEPT_CURRENT_SCOPE_WITHOUT_LEARNED_S",
+  "date": "2026-11-06",
+  "runtime_changes": false,
+  "meaning": "Current AO task uses complete exact TD Top-K. No learned S is deployed.",
+  "not_claimed": [
+    "S training or latency gain",
+    "three learned heads complete",
+    "all future salience tasks unnecessary",
+    "full production engine accepted"
+  ],
+  "conditional_draft_frozen": false,
+  "sources": {
+    "docs/CF_S_WORK_ORDER.md": {
+      "path": "docs/CF_S_WORK_ORDER.md",
+      "sha256": "83d53b4c052af28fb154644c59b3ed0036d486e55867ace268b307e5bcbcdd72",
+      "bytes": 3738
+    },
+    "docs/CF_ROOT_REVIEW.md": {
+      "path": "docs/CF_ROOT_REVIEW.md",
+      "sha256": "0d3c5cf7d568bd88a27b09925cfa88402c4d9a6cabb766e83b68af7fe5fb7bac",
+      "bytes": 8363
+    },
+    "docs/CF_S_ACCEPTANCE_DRAFT.md": {
+      "path": "docs/CF_S_ACCEPTANCE_DRAFT.md",
+      "sha256": "078b38a3069c3bb9889325d0b5a7de93b6701b0dc0731745e7efe7d822a4b17b",
+      "bytes": 16148
+    },
+    "verification/cf_salience_fixtures.py": {
+      "path": "verification/cf_salience_fixtures.py",
+      "sha256": "d672e25023cccbd18410eaf314c62f9cf5e2cce9929cefe7a84eba8ac25e93a7",
+      "bytes": 10984
+    },
+    "verification/test_cf_salience_preflight.py": {
+      "path": "verification/test_cf_salience_preflight.py",
+      "sha256": "03764f5826a27a862821482cb94e08950532d53b4a5714969ff2f9857ac7d7d7",
+      "bytes": 18449
+    },
+    "verification/ao_public_consumer.py": {
+      "path": "verification/ao_public_consumer.py",
+      "sha256": "c78e5744921472252570d81c3c7dfb45aa6d74938384fd1c239e1fa58af5ef81",
+      "bytes": 30274
+    },
+    "human_eye_fast/tensor_deform.py": {
+      "path": "human_eye_fast/tensor_deform.py",
+      "sha256": "bd7ac9fc0b13ab3dc9b610e63f5e902226f1328f7ee0882a11ee3864e7f50a9e",
+      "bytes": 5343
+    },
+    "human_eye_fast/fast_affordance_out.py": {
+      "path": "human_eye_fast/fast_affordance_out.py",
+      "sha256": "84d6d02c66e39367ed30993656bed07106eb9a1a80293ac670708a41183e5f6b",
+      "bytes": 11069
+    }
+  },
+  "root_audit": {
+    "status": "SOURCE_AND_PREFLIGHT_REPLAY_PASS",
+    "source_receipt": {
+      "sha256": "3f42f40a4c67863dd4fcb7196a6ed095cd1b2229f17b0ebef62db58761c50497",
+      "bytes": 4221
+    },
+    "source_and_artifact_checks": [
+      "docs/CF_S_WORK_ORDER.md",
+      "docs/CF_ROOT_REVIEW.md",
+      "docs/CF_S_ACCEPTANCE_DRAFT.md",
+      "verification/cf_salience_fixtures.py",
+      "verification/test_cf_salience_preflight.py",
+      "verification/ao_public_consumer.py",
+      "human_eye_fast/tensor_deform.py",
+      "human_eye_fast/fast_affordance_out.py",
+      "artifacts/cf/s_preflight_001/ao-case13-replay.json",
+      "artifacts/cf/s_preflight_001/manifest-diagnostic.json",
+      "artifacts/cf/s_preflight_001/manifest-evaluation.json",
+      "artifacts/cf/s_preflight_001/manifest-train.json",
+      "artifacts/cf/s_preflight_001/manifest-validation.json",
+      "artifacts/cf/s_preflight_001/README.md",
+      "artifacts/cf/s_preflight_001/train-and-analytic.json",
+      "artifacts/cf/s_preflight_001/unit.log"
+    ],
+    "manifest_counts": {
+      "train": 720,
+      "validation": 180,
+      "evaluation": 180,
+      "diagnostic": 18
+    },
+    "distinct_groups": 1089,
+    "distinct_episodes": 1098,
+    "materialized_train_ids": [
+      "S-20261105-train-square-lattice-000",
+      "S-20261105-train-zigzag-strip-001",
+      "S-20261105-train-annular-sector-002",
+      "S-20261105-train-square-lattice-003"
+    ],
+    "regenerated_train_and_analytic": {
+      "train": [
+        {
+          "group_id": "S-20261105-train-square-lattice-000",
+          "family": "square-lattice",
+          "mechanism": "stretch",
+          "indexed_faces": 200,
+          "nonempty_buckets": 16,
+          "raw_metric_max_abs_error": {
+            "max_principal_stretch": 6.661338147750939e-16,
+            "min_principal_stretch": 6.661338147750939e-16,
+            "max_area_strain": 6.661338147750939e-16,
+            "max_normal_angle_deg": 4.440892098500626e-16,
+            "max_centroid_displacement": 8.131516293641283e-19
+          },
+          "lanes": {
+            "stretch": {
+              "face_ids": [
+                95,
+                114,
+                134,
+                115,
+                116,
+                97
+              ],
+              "oracle_bucket_ids": [
+                14,
+                9
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "area": {
+              "face_ids": [
+                154,
+                75,
+                55,
+                156,
+                57,
+                77
+              ],
+              "oracle_bucket_ids": [
+                9,
+                13
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "normal": {
+              "face_ids": [
+                128,
+                130,
+                89,
+                108,
+                109,
+                73
+              ],
+              "oracle_bucket_ids": [
+                6,
+                5
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "displacement": {
+              "face_ids": [
+                118,
+                110,
+                119,
+                113,
+                99,
+                98
+              ],
+              "oracle_bucket_ids": [
+                10,
+                13
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            }
+          }
+        },
+        {
+          "group_id": "S-20261105-train-zigzag-strip-001",
+          "family": "zigzag-strip",
+          "mechanism": "dilate",
+          "indexed_faces": 90,
+          "nonempty_buckets": 16,
+          "raw_metric_max_abs_error": {
+            "max_principal_stretch": 1.8207657603852567e-14,
+            "min_principal_stretch": 3.885780586188048e-15,
+            "max_area_strain": 1.1102230246251565e-15,
+            "max_normal_angle_deg": 5.329070518200751e-15,
+            "max_centroid_displacement": 9.540979117872439e-18
+          },
+          "lanes": {
+            "stretch": {
+              "face_ids": [
+                8,
+                20,
+                12,
+                33,
+                32,
+                21
+              ],
+              "oracle_bucket_ids": [
+                9,
+                0
+              ],
+              "oracle_bucket_hits": 3,
+              "target_faces": 6
+            },
+            "area": {
+              "face_ids": [
+                33,
+                8,
+                21,
+                14,
+                48,
+                15
+              ],
+              "oracle_bucket_ids": [
+                4,
+                8
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "normal": {
+              "face_ids": [
+                9,
+                32,
+                33,
+                21,
+                36,
+                20
+              ],
+              "oracle_bucket_ids": [
+                4,
+                9
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "displacement": {
+              "face_ids": [
+                12,
+                33,
+                31,
+                7,
+                19,
+                24
+              ],
+              "oracle_bucket_ids": [
+                1,
+                0
+              ],
+              "oracle_bucket_hits": 5,
+              "target_faces": 6
+            }
+          }
+        },
+        {
+          "group_id": "S-20261105-train-annular-sector-002",
+          "family": "annular-sector",
+          "mechanism": "buckle",
+          "indexed_faces": 180,
+          "nonempty_buckets": 16,
+          "raw_metric_max_abs_error": {
+            "max_principal_stretch": 1.5543122344752192e-15,
+            "min_principal_stretch": 1.887379141862766e-15,
+            "max_area_strain": 7.771561172376096e-16,
+            "max_normal_angle_deg": 1.4210854715202004e-14,
+            "max_centroid_displacement": 4.336808689942018e-19
+          },
+          "lanes": {
+            "stretch": {
+              "face_ids": [
+                51,
+                54,
+                62,
+                57,
+                53,
+                52
+              ],
+              "oracle_bucket_ids": [
+                7,
+                6
+              ],
+              "oracle_bucket_hits": 6,
+              "target_faces": 6
+            },
+            "area": {
+              "face_ids": [
+                51,
+                54,
+                62,
+                57,
+                53,
+                52
+              ],
+              "oracle_bucket_ids": [
+                7,
+                6
+              ],
+              "oracle_bucket_hits": 6,
+              "target_faces": 6
+            },
+            "normal": {
+              "face_ids": [
+                57,
+                51,
+                54,
+                62,
+                53,
+                52
+              ],
+              "oracle_bucket_ids": [
+                7,
+                6
+              ],
+              "oracle_bucket_hits": 6,
+              "target_faces": 6
+            },
+            "displacement": {
+              "face_ids": [
+                50,
+                64,
+                65,
+                66,
+                41,
+                48
+              ],
+              "oracle_bucket_ids": [
+                6,
+                2
+              ],
+              "oracle_bucket_hits": 5,
+              "target_faces": 6
+            }
+          }
+        },
+        {
+          "group_id": "S-20261105-train-square-lattice-003",
+          "family": "square-lattice",
+          "mechanism": "drift",
+          "indexed_faces": 128,
+          "nonempty_buckets": 16,
+          "raw_metric_max_abs_error": {
+            "max_principal_stretch": 6.661338147750939e-16,
+            "min_principal_stretch": 5.551115123125783e-16,
+            "max_area_strain": 8.881784197001252e-16,
+            "max_normal_angle_deg": 7.105427357601002e-15,
+            "max_centroid_displacement": 4.336808689942018e-19
+          },
+          "lanes": {
+            "stretch": {
+              "face_ids": [
+                98,
+                82,
+                67,
+                100,
+                83,
+                114
+              ],
+              "oracle_bucket_ids": [
+                2,
+                3
+              ],
+              "oracle_bucket_hits": 5,
+              "target_faces": 6
+            },
+            "area": {
+              "face_ids": [
+                98,
+                82,
+                83,
+                67,
+                114,
+                100
+              ],
+              "oracle_bucket_ids": [
+                2,
+                3
+              ],
+              "oracle_bucket_hits": 5,
+              "target_faces": 6
+            },
+            "normal": {
+              "face_ids": [
+                73,
+                57,
+                88,
+                89,
+                104,
+                71
+              ],
+              "oracle_bucket_ids": [
+                10,
+                6
+              ],
+              "oracle_bucket_hits": 4,
+              "target_faces": 6
+            },
+            "displacement": {
+              "face_ids": [
+                84,
+                87,
+                85,
+                86,
+                71,
+                69
+              ],
+              "oracle_bucket_ids": [
+                6
+              ],
+              "oracle_bucket_hits": 6,
+              "target_faces": 6
+            }
+          }
+        }
+      ],
+      "composite_counterexample": {
+        "direct_metric_top_face_ids": {
+          "stretch": [
+            0
+          ],
+          "area": [
+            3
+          ],
+          "normal": [
+            1
+          ],
+          "displacement": [
+            2
+          ]
+        },
+        "native_composite_top_6": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    "scope": "No training, selection, GPU or holdout/diagnostic geometry; no S performance claim"
+  },
+  "independent_need_probe": {
+    "status": "PASS",
+    "identity_files_checked": 16,
+    "manifest_splits_checked": 4,
+    "selection_cases": 1085,
+    "enumerated_six_face_subsets": 84,
+    "independent_analytic_composite_top6": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "independent_metric_winners": {
+      "stretch": 0,
+      "area": 3,
+      "normal": 1,
+      "displacement": 2
+    },
+    "indistinguishable_hot_buckets": [
+      1,
+      9,
+      13
+    ],
+    "limitation": "No latency, GPU, model fitting, evaluation geometry or blanket impossibility of learned prefetch."
+  },
+  "independent_consumer_probe": {
+    "status": "PASS",
+    "states": [
+      {
+        "state": 0,
+        "question": "Report the reduction size, the ordered top six original face rows, their six metrics and the frame-8 world centroids.",
+        "answer": {
+          "observation_id": "a13-0-0",
+          "deformation": {
+            "object_index": 0,
+            "reference_frame": 7,
+            "sample_frames": [
+              8
+            ],
+            "reduced_face_count": 70,
+            "top_face_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "position_kind": "face_centroid",
+            "position_frame": 8,
+            "faces": [
+              {
+                "original_face_id": 0,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  0.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 1,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  1.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 2,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  2.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 3,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  3.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 4,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  4.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 5,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  5.140625,
+                  0.125,
+                  0.0
+                ],
+                "undefined_metrics": []
+              }
+            ],
+            "object_id": "O13-A",
+            "peak_occurrence_frame": {
+              "available": false,
+              "reason": "No peak-occurrence field in public schema"
+            }
+          }
+        },
+        "all_70_face_analytic_metrics_pass": true,
+        "no_early_deadline_or_prefetch_field_in_task": true
+      },
+      {
+        "state": 1,
+        "question": "Report the reduction size, the ordered top six original face rows, their six metrics and the frame-8 world centroids.",
+        "answer": {
+          "observation_id": "a13-1-0",
+          "deformation": {
+            "object_index": 0,
+            "reference_frame": 7,
+            "sample_frames": [
+              8
+            ],
+            "reduced_face_count": 70,
+            "top_face_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "position_kind": "face_centroid",
+            "position_frame": 8,
+            "faces": [
+              {
+                "original_face_id": 0,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  0.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 1,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  1.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 2,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  2.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 3,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  3.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 4,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  4.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              },
+              {
+                "original_face_id": 5,
+                "max_principal_stretch": 1.0,
+                "min_principal_stretch": 1.0,
+                "max_area_strain": 0.0,
+                "max_normal_angle_deg": 0.0,
+                "max_centroid_displacement": 0.015625,
+                "score": 0.0013782108367825468,
+                "position_m": [
+                  5.265625,
+                  -0.125,
+                  0.5
+                ],
+                "undefined_metrics": []
+              }
+            ],
+            "object_id": "O13-A",
+            "peak_occurrence_frame": {
+              "available": false,
+              "reason": "No peak-occurrence field in public schema"
+            }
+          }
+        },
+        "all_70_face_analytic_metrics_pass": true,
+        "no_early_deadline_or_prefetch_field_in_task": true
+      }
+    ],
+    "actual_data_reads": [
+      {
+        "path": "artifacts/ao/refinement_supplement_001/process-1/method-R/schema.json",
+        "sha256": "9bdb8d317e2644c89c4b2e0868e1a0dc78190adcd79dab51364abc909125d101",
+        "bytes": 3328
+      },
+      {
+        "path": "artifacts/cf/s_preflight_001/ao-case13-replay.json",
+        "sha256": "0474897371450067440918e032f6ea7563407935efd0cae88827c7f279bbad59",
+        "bytes": 8176
+      },
+      {
+        "path": "artifacts/ao/refinement_supplement_001/process-1/method-R/state-0/tasks.json",
+        "sha256": "64a0aaa0d8f4ad3ea27dec16f56d38e1dcdc6cdf437554aa9c0a2ed88928d4e6",
+        "bytes": 3767
+      },
+      {
+        "path": "artifacts/ao/refinement_supplement_001/process-1/method-R/state-0/13.c.json",
+        "sha256": "bd007d16d128d8cc07fe6b8278523ee368b6c2f9495de25f4d8f19c442d46962",
+        "bytes": 548
+      },
+      {
+        "path": "artifacts/ao/refinement_supplement_001/process-1/method-R/state-1/tasks.json",
+        "sha256": "79ff668312bcb835602bb8d2c3d3b667628d670607dc38b8b2b75c78d4de4a00",
+        "bytes": 3766
+      },
+      {
+        "path": "artifacts/ao/refinement_supplement_001/process-1/method-R/state-1/13.c.json",
+        "sha256": "865eeaf84bef5c33f493c7f369a58e51f23cfb703ba25a4f807c5c7c72a39757",
+        "bytes": 554
+      }
+    ],
+    "source_sha256": {
+      "verification/ao_public_consumer.py": "c78e5744921472252570d81c3c7dfb45aa6d74938384fd1c239e1fa58af5ef81",
+      "verification/ao_fixtures.py": "419b87da8d1792faf5756b86e579f2833c951b98600c07a93cab81713ad1749c",
+      "human_eye_fast/fast_affordance_out.py": "84d6d02c66e39367ed30993656bed07106eb9a1a80293ac670708a41183e5f6b",
+      "human_eye_fast/tensor_deform.py": "bd7ac9fc0b13ab3dc9b610e63f5e902226f1328f7ee0882a11ee3864e7f50a9e"
+    },
+    "limit": "Proves the existing AO case-13 contract and these two archive states. It is not a proof about all possible future consumers, visual salience, per-metric extrema outside transmitted rows, or prefetch latency."
+  },
+  "portable_tests": {
+    "count": 10,
+    "passed": 10,
+    "command": "python -B -m unittest verification.test_cf_salience_preflight -v"
+  },
+  "archive": {
+    "path": "docs/cf_s_review_evidence.zip",
+    "sha256": "c70fb31b11a2cf22ecb9645960f0117e59171c04ec996295ffb574e1b901042a",
+    "bytes": 155919
+  },
+  "next": "docs/ENGINE_INTEGRATION_WORK_ORDER.md"
+}
