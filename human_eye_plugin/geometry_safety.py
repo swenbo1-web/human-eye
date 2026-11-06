@@ -228,6 +228,36 @@ def _surface_vertices(mesh):
     return mesh.vertices[np.unique(mesh.faces)]
 
 
+def _aabb_candidates(left_low, left_high, right_low, right_high, best):
+    """Keep original row/column order and all numerically uncertain pairs.
+
+    The retained Cartesian product can include extra pairs. Its leaves still
+    use the original kernels and witness phase order. Bounds live only for
+    this call, in the same coordinates as those kernels.
+    """
+    bounds = (left_low, left_high, right_low, right_high)
+    if not all(np.isfinite(value).all() for value in bounds):
+        return np.arange(len(left_low)), np.arange(len(right_low))
+    scale = max(float(np.max(np.abs(value))) for value in bounds)
+    # Include world-coordinate subtraction and squared-distance rounding.
+    # At extreme scales the margin becomes infinite, retaining every pair.
+    with np.errstate(over='ignore', invalid='ignore'):
+        gap = np.maximum(0.0, np.maximum(left_low[:, None, :] - right_high[None, :, :],
+                                        right_low[None, :, :] - left_high[:, None, :]))
+        lower = np.einsum('ijk,ijk->ij', gap, gap)
+        margin = 128 * np.finfo(float).eps * np.float64(scale) ** 2
+        keep = ~np.isfinite(lower) | (lower <= best + margin)
+    return np.flatnonzero(keep.any(axis=1)), np.flatnonzero(keep.any(axis=0))
+
+
+def _surface_candidates(left, right, best):
+    if not math.isfinite(best):
+        return left, right
+    rows, columns = _aabb_candidates(left.min(axis=1), left.max(axis=1),
+                                    right.min(axis=1), right.max(axis=1), best)
+    return left[rows], right[columns]
+
+
 def _surface_distance(a, b):
     minimum = math.inf
     for points_mesh, faces_mesh in ((a, b), (b, a)):
@@ -236,7 +266,9 @@ def _surface_distance(a, b):
             points = surface_points[p:p + _CHUNK]
             for f in range(0, len(faces_mesh.faces), _CHUNK):
                 triangles = faces_mesh.vertices[faces_mesh.faces[f:f + _CHUNK]]
-                minimum = min(minimum, _point_triangle_min_sq(points, triangles))
+                candidates, triangles = _surface_candidates(points[:, None, :], triangles, minimum)
+                if len(candidates) and len(triangles):
+                    minimum = min(minimum, _point_triangle_min_sq(candidates[:, 0], triangles))
     # Explicit scene edges may describe only visible outlines. Derive complete
     # surface edges from triangles so those hints cannot hide an EE minimum.
     def all_edges(mesh):
@@ -248,7 +280,9 @@ def _surface_distance(a, b):
         ae = a.vertices[edges_a[i:i + _CHUNK]]
         for j in range(0, len(edges_b), _CHUNK):
             be = b.vertices[edges_b[j:j + _CHUNK]]
-            minimum = min(minimum, _segment_min_sq(ae[:, 0], ae[:, 1], be[:, 0], be[:, 1]))
+            left, right = _surface_candidates(ae, be, minimum)
+            if len(left) and len(right):
+                minimum = min(minimum, _segment_min_sq(left[:, 0], left[:, 1], right[:, 0], right[:, 1]))
     return math.sqrt(max(0.0, minimum))
 
 
@@ -286,9 +320,13 @@ def _surface_distance_with_witness(a, b):
     for left, right, reverse in ((a, b, False), (b, a, True)):
         surface_points = _surface_vertices(left)
         for start in range(0, len(surface_points), _CHUNK):
-            points = surface_points[start:start + _CHUNK]
+            block_points = surface_points[start:start + _CHUNK]
             for face in range(0, len(right.faces), _CHUNK):
                 triangles = right.vertices[right.faces[face:face + _CHUNK]]
+                candidates, triangles = _surface_candidates(block_points[:, None, :], triangles, best)
+                if not len(candidates) or not len(triangles):
+                    continue
+                points = candidates[:, 0]
                 p, q, r = triangles[:, 0], triangles[:, 1], triangles[:, 2]
                 ab, ac = q - p, r - p
                 normal = np.cross(ab, ac)
@@ -321,6 +359,10 @@ def _surface_distance_with_witness(a, b):
         a0, a1 = aa[:, 0], aa[:, 1]
         for stop in range(0, len(right_edges), _CHUNK):
             bb = right_edges[stop:stop + _CHUNK]
+            selected_a, bb = _surface_candidates(aa, bb, best)
+            if not len(selected_a) or not len(bb):
+                continue
+            a0, a1 = selected_a[:, 0], selected_a[:, 1]
             b0, b1 = bb[:, 0], bb[:, 1]
             u, v = a1 - a0, b1 - b0
             w = a0[:, None, :] - b0[None, :, :]
