@@ -281,3 +281,13 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 两D非顶点见证与56合成区间经90位Decimal独立复核；原18个微小倒置保留，当前外扩不改变任务容差。N两个数学seed不当性能基线，四V实际标签与真实模型尚缺。新可选human-eye-task-mcp及模块打包验证通过，旧入口不变，未安装或切默认配置。110文件证据包1,794,747B，SHA532588a702b331d812a2873d5b1c28fe07c298ff4add430a4cd67637076a64d7，内部成员完整回读核验。
 
 接续同一实施聊天的真实CLI宿主pilot：最多1个自有GUI worker、2个真实新模型上下文（1数值＋1图），N/V仅可执行准备，无正式收益批次。作者完成主动唤醒，主干不轮询等聊天。功能接收不等于完整E1收益通过，E2不提前；见[功能验收](LLM_ENTRY_FUNCTIONAL_REVIEW.md)、[下一步协议](LLM_HOST_PILOT_PROTOCOL.md)、[机器决定](radical_acceptance_llm_entry_functional.json)和`llm_entry_functional_evidence.zip`。
+
+## 主审026：N/V离线准备 — ACCEPT_OFFLINE_PREPARATION_HOST_BLOCKED
+
+2026-11-06。真实pilot原命令在进程创建前被自动审批拒绝：缺合成任务/回包/图像向现有ChatGPT所连接托管Codex服务的具体外发授权，原命令另含自动审批参数。0 Blender、0模型上下文、0外发，未重试。新版移除该参数、采用read-only CLI，固定33源和两个独立持久空consumer；两次临时目录问题及旧清单完整保留。新manifest22445e963fb685d73611b5670a2504d132ec00ec6cb8fdc9ed5f201158ad879b，待用户明确授权及正常审查，不将登记当许可。
+
+独立核对14源/14引用证据、33pilot源ZIP及17内核，现源一致。N已是通用AABB/refit/向量化窄相，非慢oracle；最终8项CPU独立复跑通过，旧不同版本8项不累计。原剪枝例64/16384配对只是工作量证据。V同源PNG/camera/实际绘制几何、独立射线与像素/五点判定准备通过；作者10合成检查及根侧必要路径复核不代替四V真实资格。未发现需再优化的主要架构或算法缺陷。
+
+接受离线准备，实际N setter/RNA/双方trace、I/N视觉接线与等价条件、模型消费/usage和整任务收益仍未测。新准备源码暂以归档冻结，不提前宣称正式模块或E2通过。51证据文件406284B，SHA9acbb7d8b65c58c22be8b18f0ec8a4d978ce219da37863081d7f845d5746607e，全部成员回读核对。见[审查](LLM_HOST_PREPARATION_REVIEW.md)、[机器决定](radical_acceptance_llm_host_preparation.json)、`llm_host_preparation_evidence.zip`。授权问题由主聊天统一提出，作者保持不启动，完成回报已收到，准备阶段不再重复优化。
+
+封存后追加：用户在主聊天明确回复“授权这两次测试”，同意已说明的合成提示、工具定义、精简回包和一张合成图发往当前ChatGPT所连接的OpenAI托管模型。根侧已通知原实施聊天按22445e96新版清单、经正常自动审批执行，额度与数据范围不扩。归档保留授权前快照；真实运行与验收结果待回报，不能把授权当结果。
