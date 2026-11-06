@@ -203,3 +203,10 @@ VG仅增加可信16方向排序回调，源1aea7325bd5be1a7377ac4ec3817279564166
 2026-11-06。per-object masks/代号、禁图/NONE、实测Outcome先于context、票据与before所有权已补齐。根侧绑定源码重放6个stub及2个后台Blender控制，10个公开AO/PNG字节一致，summary仅40处进程地址差。独立CPU补查TD等四类实测后失败、迟到A与错误V绑定；3项便携测试通过。作者138文件、8份各571源码的启动归档及公开旧新30文件/8视觉记录均核对一致，严格视觉仍7/8。
 
 B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因未定；shape局部1.084746，next工作量等价尚缺，原失败保留。资源7,262,572B是累计追踪峰而非已隔离热峰，close零owner仅限声明根，RSS/DXGI仅分点current。冻结API并放行生产接线/功能测试，正式I/B、旧CF性能和资源增量仍不放行。下一次仅原三例/同seed两个串行进程诊断与一个B资源方法进程，不扩大样本洗失败、不重开已验收优化。见[复审](ENGINE_INTEGRATION_REWORK_REVIEW.md)、[冻结API](ENGINE_INTEGRATION_API.md)、[机器决定](radical_acceptance_integration_rework.json)及[192文件精确证据包](integration_rework_evidence.zip)。
+
+
+## 主验收017：限定计量诊断 — FREEZE_FORWARD_COST_PROTOCOL
+
+2026-11-06。只读冻结42ddcf2归档复核，580源项及2+1串行进程来源一致；两进程各93实测对，432条含预热next记录、8份NPZ及PNG逐项核对一致，独立更新算术和shape预测逐位相等。两进程五段最大比1.028542/1.025193，首次next1.076810失败保留，原因未知，不宣称噪声上界。无需追加B/B循环。
+
+冻结正式前瞻协议：原24例/3seed/31配对、五段1.05及旧CF1.10门保持；生产功能与公开等价先过，再登记一次正式成本实验。资源托管256KiB/1MiB，另验逻辑GPU资源/close-reopen；RSS及同记录LOCAL+NON_LOCAL的观察最大值各新增≤8MiB，不认证未采到瞬时峰。诊断最大间隔22.402ms，2ms仅目标；验证侧frame局部引用残留在正式harness清除，原档不改。见[方法审定](METHOD_DIAGNOSTIC_REVIEW.md)、[正式成本协议](INTEGRATION_COST_PROTOCOL.md)、[机器决定](radical_acceptance_method_diagnostic.json)及[68文件精确证据包](method_diagnostic_evidence.zip)。整机未验收，已确认模块不重开优化。
