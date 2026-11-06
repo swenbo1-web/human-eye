@@ -1,6 +1,6 @@
 # 统一 Blender 生产会话接口（冻结）
 
-2026-11-06，主干已冻结本文件的生产接线、支持域和交付契约，放行实现及功能测试。正式性能与资源方法仍未冻结，见 [本轮复审](ENGINE_INTEGRATION_REWORK_REVIEW.md)。本文保留的提议措辞按本次接口范围实施，若发现实际不可成立须先报告最小修订。现有数组 `FastSession` 仍服务数组调用。统一入口沿用已验收的 RB、BC、TD、VG、AO 和 CF V+A。形变展示继续使用精确 TD。
+2026-11-06，主干已冻结本文件的生产接线、支持域和交付契约，放行实现及功能测试。接口冻结后的成本方法见[正式成本协议](INTEGRATION_COST_PROTOCOL.md)，当前范围最终结果见[第一版整机验收](ENGINE_V1_ACCEPTANCE.md)；早期接口复审保留于[当时记录](ENGINE_INTEGRATION_REWORK_REVIEW.md)。本文保留的提议措辞按本次接口范围实施，若发现实际不可成立须先报告最小修订。现有数组 `FastSession` 仍服务数组调用。统一入口沿用已验收的 RB、BC、TD、VG、AO 和 CF V+A。形变展示继续使用精确 TD。
 
 ## 公开接口
 

@@ -235,3 +235,14 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 主干与独立审查均证明split自循环持有self及数组。唯一生产改动为建树成功后del split，BC由ffc494bf变为76b25ff2；原版5个非空规模生命周期失败保留，修复后30项测试通过，34个查询/重拟合状态和8个构树规模完全等价，独立9正常/6异常边界/42结构数值检查通过。不改搜索、容差或结果，不为split内部人为异常增加运行时防御链。
 
 整机仍未放行，原33个current超门点保持失败。已事前冻结并派发一次9进程复核：3时延+6managed，原3seed/24例、五段1.05、current256KiB/peak1MiB门不变，B/I共用修复依赖。旧CF/OS按旧hash实测范围承接，不声称新hash重测。实施完成主动唤醒后由主干独立验收；不重训、不重开模块优化、不追加到通过。见[审查](SURFACE_INDEX_LIFECYCLE_REVIEW.md)、[复核协议](MANAGED_CURRENT_RECHECK_PROTOCOL.md)、[机器决定](radical_acceptance_surface_lifecycle.json)和[证据索引](surface_lifecycle_evidence_index.json)。
+
+
+## 主验收021：第一版整体引擎 — ACCEPT_RADICAL_V1_FROZEN_ENGINE_SCOPE
+
+2026-11-06。接受生产4372bfc及其17文件固定字节的当前范围整体引擎；六模块、统一Python会话、实际动作回读与V/A反馈学习闭环收口，S采用精确TD。此为本端独立竞争版本，不与另一端合并，不宣称竞争胜出或旧MCP/Hook默认切换。
+
+一次9进程复核16,109产物/599源及各161输入独立核对，实际BC均76b25；明确登记HEAD02afecc仍含旧blob、工作区已修复，4372bfc提交该候选。5184臂/2592对原始时序、31680新旧公开文件/288NPZ及学习算术独立核验；15集合门全过，最大1.030477。逐例total1.052009/feedback1.117581及GC重叠B34/I2均保留；I集合总p95 73.389505/71.417465/67.413700ms，最大实测单臂137.0549ms，不宣称12ms或新增算法提速。
+
+216 current点、72完整峰窗全部过原门，最大差held/released/reference为−2867/−2020/−952B，peak−18645B；2028census、1014对应owner、576相机绑定和144生命周期行核对。288份新旧hot/reopen证明一致，managed摘要与实际pair5 bytes/NPZ/next交叉绑定，证据层次如实披露。无冷基线扣除、强制GC、快照、删样或门限修改。
+
+主干再次深审共享捕获、前后事实所有权、真实Outcome和票据更新、关闭回调及生产依赖，未发现架构/算法退化；唯一生产差异仍是一行闭包解绑。原33个内存失败、视觉与R负例、控制先后及所有首次失败保留；旧CF/OS按旧hash实测范围承接，未在新hash重测。无需新优化或扩测。见[整机验收](ENGINE_V1_ACCEPTANCE.md)、[机器决定](radical_acceptance_engine_v1.json)及`engine_v1_evidence_index.json.gz`/分卷。当前任务收口，后续只推进有明确需求、真实瓶颈或退化依据的增量。
