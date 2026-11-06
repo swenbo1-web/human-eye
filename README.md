@@ -2,7 +2,7 @@
 
 大模型接入正在实现[任务级架构](docs/LLM_ENTRY_ARCHITECTURE.md)：常驻通道＋本地解析间隙任务＋最小结果，减少模型往返、无用计算和输出。主要验收改为质量不退化下复杂任务完整耗时至少减半，当前仅是事前目标，真实宿主接入与模型收益尚未通过。见[第二次设计复审](docs/LLM_TASK_VALUE_REVIEW.md)；旧MCP/Hook不是新版入口。
 
-首个E0/E1候选已交付；[主审024](docs/LLM_ENTRY_PREFLIGHT_REVIEW.md)保留原生0/5失败，要求删除多余写锁/依赖检查、复用渲染资源并补当前证据取回，随后仅做[限定原生复验](docs/LLM_ENTRY_RECHECK_PROTOCOL.md)。CPU/传输通过不等于真实终态或模型收益通过，E2尚未推进。
+[主验收025](docs/LLM_ENTRY_FUNCTIONAL_REVIEW.md)已接收E0/E1功能：四项修正关闭，五例真实Blender功能及独立RNA/几何核对通过，原0/5失败保留。新增可选`human-eye-task-mcp`打包入口，下一步是[1数值＋1图的真实CLI宿主pilot](docs/LLM_HOST_PILOT_PROTOCOL.md)；实际模型任务收益待验，E2尚未推进。
 
 后续按 [六模块竞争推进与收益验收](docs/RADICAL_V1_COMPETITION_WORKFLOW.md) 执行：两端独立实现整引擎，由主对话派工、独立验收，达标后推进。整体功能架构见 [Radical V1 架构](docs/RADICAL_V1_INTEGRATION_PLAN.md)：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。当前 human_eye_fast 已包含 E3 数值与明确动作回读、E1 主动视觉及 AO 联合输出，CF视角与动作学习已验收，S职责采用精确TD展示；统一生产会话及当前冻结范围整机验收已完成，见[第一版整机验收](docs/ENGINE_V1_ACCEPTANCE.md)。
 

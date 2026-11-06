@@ -271,3 +271,13 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 算法/架构审查要求一次返工：删除两层跨新任务/重连写锁、每run依赖扫描与无误差依据的witness重复门；renderer按连接惰性常驻，当前结果/图像metadata按需取回。主干/独立探针复现锁、重复资源创建和合法BC结果遭新阈值拒绝；无GPU时延实测，不造收益。先修正再限定新增2原生进程/5原场景，不删除旧marker或先补跑旧候选。
 
 正式14例数学草案非模型成绩；需两D非顶点见证替换、实际native helper/RNA写入审计及V真图相机标签，主协议暂不冻结。2倍整任务/质量门保持，token缺测不得整体PASS。实施自测完主动唤醒，主干继续独立验收，E2不提前。见[复审](LLM_ENTRY_PREFLIGHT_REVIEW.md)、[复验](LLM_ENTRY_RECHECK_PROTOCOL.md)、[决定](radical_acceptance_llm_entry_preflight.json)与`llm_entry_preflight_review_evidence.zip`。
+
+## 主验收025：E0/E1功能 — ACCEPT_E0_E1_FUNCTIONAL_HOST_AND_VALUE_PENDING
+
+2026-11-06。revision_003的40交付源/33原生源/12证据身份核对通过；17内核与relay/pump不变。R1–R4闭环：移除两层永久写锁、每run依赖扫描及无依据witness门，连接惰性常驻renderer，当前result/camera原样取回。主干独立CPU探针与深审未发现新增重大算法/架构退化，本次不再优化。
+
+两个限定进程五原例5/5，10份实际RNA全三角对离线重算通过；4次动作各1写、已达标0写，原8e-9m门不变，最大顶点/回包分量偏差5.464e-10m。reference/parent/context精确保持，真实PID、主线程、EOF/listener/timer释放闭合。数值四例GPU 0/0/0，图像例1/2/1，两张1024×512 PNG及实际camera/单位/切面/image_id同源。旧0/5失败、初始GUI可见限定保留；根侧未追加原生进程。
+
+两D非顶点见证与56合成区间经90位Decimal独立复核；原18个微小倒置保留，当前外扩不改变任务容差。N两个数学seed不当性能基线，四V实际标签与真实模型尚缺。新可选human-eye-task-mcp及模块打包验证通过，旧入口不变，未安装或切默认配置。110文件证据包1,794,747B，SHA532588a702b331d812a2873d5b1c28fe07c298ff4add430a4cd67637076a64d7，内部成员完整回读核验。
+
+接续同一实施聊天的真实CLI宿主pilot：最多1个自有GUI worker、2个真实新模型上下文（1数值＋1图），N/V仅可执行准备，无正式收益批次。作者完成主动唤醒，主干不轮询等聊天。功能接收不等于完整E1收益通过，E2不提前；见[功能验收](LLM_ENTRY_FUNCTIONAL_REVIEW.md)、[下一步协议](LLM_HOST_PILOT_PROTOCOL.md)、[机器决定](radical_acceptance_llm_entry_functional.json)和`llm_entry_functional_evidence.zip`。

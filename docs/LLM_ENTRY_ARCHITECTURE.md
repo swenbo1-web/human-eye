@@ -1,6 +1,6 @@
 # Radical V1 大模型接入：本地完成任务，按决策需要交付结果
 
-2026-11-06，修订2。用户要求减少多轮传输、无效输出，在复杂三维任务中显著提高原生大模型效率。本次改变接入模块的交互单位和主要验收标准。**当前是设计与实施中的候选，没有任务收益或真实模型接入PASS。** 六模块已验收，不重新开启其优化。修订1保存在提交`37c672c`与`llm_entry_design_evidence.zip`，旧决定保持。见[实施工作单](LLM_ENTRY_WORK_ORDER.md)、[价值复审](LLM_TASK_VALUE_REVIEW.md)。
+2026-11-06，修订2及025实现状态追加。用户要求减少多轮传输、无效输出，在复杂三维任务中显著提高原生大模型效率。本次改变接入模块的交互单位和主要验收标准。**E0/E1有限原生功能已经[验收](LLM_ENTRY_FUNCTIONAL_REVIEW.md)，任务收益或真实模型接入仍无PASS。** 六模块已验收，不重新开启其优化。修订1保存在提交`37c672c`与`llm_entry_design_evidence.zip`，旧决定保持。见[实施工作单](LLM_ENTRY_WORK_ORDER.md)、[价值复审](LLM_TASK_VALUE_REVIEW.md)。
 
 ## 复审结论
 
@@ -50,7 +50,7 @@ BC给出全局最近点a,b，直接计算：
 
 纯间隙路径直接复用public `BlenderControl.observe/execute/close`及其RB/BC，从typed `ClearanceReadback/Outcome`生成结果。不修改17个已验收源、不读Session私有状态、不复制几何核；不需要TD、全AO、CF预测或初始图就不运行。完整`BlenderRadicalSession`留给确需形变/学习的任务，这是按任务选依赖。两执行器不能同时保留独立current再交替修改同一对象。
 
-终态图按需使用同一resident bridge和最终readback，捕获实际context并调用public `VGRenderer.prepare/observe`一次，不新建Session重测。必须保留遮挡对象、顺序、单位和对象身份，不能拿stale context；相机/SECTION语义沿VG。首批采用F视图；零gap只能使用当前支持的NATURAL，不扩写SECTION算法。renderer与control均由任务会话释放。
+终态图按需使用同一resident bridge和最终readback，捕获实际context并调用public `VGRenderer.prepare/observe`一次，不新建Session重测。必须保留遮挡对象、顺序、单位和对象身份，不能拿stale context；相机/SECTION语义沿VG。首批采用F视图；零gap只能使用当前支持的NATURAL，不扩写SECTION算法。renderer由连接惰性创建、跨目标复用，EOF/stop时释放；目标control替换时关闭旧control，连接关闭时释放当前control。
 
 主干已完成32个CPU状态的设计核对，独立凸包穷举oracle最大误差4.44e-16m；这不是Blender执行或LLM收益验收。
 
