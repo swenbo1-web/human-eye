@@ -263,3 +263,11 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 正式任务主目标改为质量不退化、完整均值至少减半、75%配对更快、各族/p95不劣；token/轮次目标与公平native能力明确。原20%桥与大微基准仅在实际瓶颈时归因，无正式入口旧成绩因改门转PASS。E0＋E1继续当前实施，E2 shape和困难小模型后置；独立报告的广域候选任务集未全采纳。不重开已验收六模块或重复优化链。
 
 根侧架构、工单、README、PROGRESS与竞争流程同步，已派修订2。作者自测完整回报主动唤醒，主干再检查流程/算法/架构与退化，收益达标再推进。当前只有设计选择，真实接入和模型收益仍未验。见[复审](LLM_TASK_VALUE_REVIEW.md)、[机器决定](radical_acceptance_llm_task_design.json)、`llm_task_design_evidence.zip`；022及其归档保持历史原状。
+
+## 主审024：E0/E1首次交付 — REWORK_BEFORE_NATIVE_QUALIFICATION
+
+2026-11-06。独立核对38源/10证据、17冻结内核不变；承接真实transport5/5与CPU合同24/24，保留此前失败。原生5例全部断在Windows启动器PID错误假设，after RNA缺失；4written/1零写回包和一张PNG不能补判PASS。GUI exit0被summary FAIL正确挡住。PID/finally修正经离线探针核对，尚未原生执行；首见窗口visible原记录保持。
+
+算法/架构审查要求一次返工：删除两层跨新任务/重连写锁、每run依赖扫描与无误差依据的witness重复门；renderer按连接惰性常驻，当前结果/图像metadata按需取回。主干/独立探针复现锁、重复资源创建和合法BC结果遭新阈值拒绝；无GPU时延实测，不造收益。先修正再限定新增2原生进程/5原场景，不删除旧marker或先补跑旧候选。
+
+正式14例数学草案非模型成绩；需两D非顶点见证替换、实际native helper/RNA写入审计及V真图相机标签，主协议暂不冻结。2倍整任务/质量门保持，token缺测不得整体PASS。实施自测完主动唤醒，主干继续独立验收，E2不提前。见[复审](LLM_ENTRY_PREFLIGHT_REVIEW.md)、[复验](LLM_ENTRY_RECHECK_PROTOCOL.md)、[决定](radical_acceptance_llm_entry_preflight.json)与`llm_entry_preflight_review_evidence.zip`。
