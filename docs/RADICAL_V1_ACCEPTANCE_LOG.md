@@ -291,3 +291,13 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 接受离线准备，实际N setter/RNA/双方trace、I/N视觉接线与等价条件、模型消费/usage和整任务收益仍未测。新准备源码暂以归档冻结，不提前宣称正式模块或E2通过。51证据文件406284B，SHA9acbb7d8b65c58c22be8b18f0ec8a4d978ce219da37863081d7f845d5746607e，全部成员回读核对。见[审查](LLM_HOST_PREPARATION_REVIEW.md)、[机器决定](radical_acceptance_llm_host_preparation.json)、`llm_host_preparation_evidence.zip`。授权问题由主聊天统一提出，作者保持不启动，完成回报已收到，准备阶段不再重复优化。
 
 封存后追加：用户在主聊天明确回复“授权这两次测试”，同意已说明的合成提示、工具定义、精简回包和一张合成图发往当前ChatGPT所连接的OpenAI托管模型。根侧已通知原实施聊天按22445e96新版清单、经正常自动审批执行，额度与数据范围不扩。归档保留授权前快照；真实运行与验收结果待回报，不能把授权当结果。
+
+## 主审027：真实宿主发现 — ACCEPT_HOST_DISCOVERY_ONLY_REWORK_APPROVAL_PATH
+
+2026-11-06。按用户授权完成唯一host pilot：1个自有GUI Blender、2个真实Codex上下文，无重试。独立核对39原件与33冻结源，实际MCP 2025-06-18协商、eye_run/eye_inspect发现、模型提出正确调用参数成立。两案在派发前被内层有效never审批策略拒绝，wire各409B入/1179B出且零tools/call；RNA前后原字节相同，零写零图。CLI/Blender exit0没有掩盖native/summary FAIL，runner exit1。模型如实回答实测与图未知，不算成功消费。
+
+WinError10054、peer_eof0及空tap.json.tmp保留，不能用entry/listener/timer清理完成冒称正常EOF。usage原值input39371/39628、cached12544/25856、output184/270，缺逐请求/来源/文字图片分项；既不归因全是HE，也不以wire字节换token或费用。18.845/20.327s是失败会话耗时，不是任务收益。
+
+根侧宿主方案改为先准备有明确审批应答的app-server双向客户端。官方文档与本机离线schema确认on-request/user/read-only及item/tool/requestUserInput结构，但普通local MCP实际路线未证明；不以mock冒领。app-server不支持ignore-user-config，继承工具与配置隔离必须明确，保留管理要求，不改默认注册、凭证或写工具annotation。原两次额度用完，新候选最多1个occluded上下文尚未授权；目前原实施聊天只写离线客户端/runner和假流检查，完整自测主动唤醒，不等待聊天或再优引擎。
+
+59证据文件225631B，SHA849d3bb64e44de72183f4b18bdd7205aff1d29a3385de493376f5552ba1e6109，全部ZIP成员回读核验；含7个相关本机schema，470项生成身份保留索引。见[失败复审](LLM_HOST_PILOT_FAILURE_REVIEW.md)、[机器决定](radical_acceptance_llm_host_pilot_failure.json)、`llm_host_pilot_failure_evidence.zip`。025原生5/5和026 N/V离线准备继续承接，完整E1收益与E2仍未放行。

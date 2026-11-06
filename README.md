@@ -1,5 +1,7 @@
 # Human Eye · 三维空间感知引擎
 
+**最新主审027**：真实CLI握手/工具发现通过，两项任务因内层审批策略拒绝而未派发，零动作/零图片，任务验收未过。正在[准备可明确应答审批的宿主接入](docs/LLM_HOST_PILOT_FAILURE_REVIEW.md)，不重开已验收引擎优化；原两次额度已用完，当前不再启动模型。
+
 大模型接入正在实现[任务级架构](docs/LLM_ENTRY_ARCHITECTURE.md)：常驻通道＋本地解析间隙任务＋最小结果，减少模型往返、无用计算和输出。主要验收改为质量不退化下复杂任务完整耗时至少减半，当前仅是事前目标，真实宿主接入与模型收益尚未通过。见[第二次设计复审](docs/LLM_TASK_VALUE_REVIEW.md)；旧MCP/Hook不是新版入口。
 
 [主验收025](docs/LLM_ENTRY_FUNCTIONAL_REVIEW.md)已接收E0/E1功能：四项修正关闭，五例真实Blender功能及独立RNA/几何核对通过，原0/5失败保留。新增可选`human-eye-task-mcp`打包入口，下一步是[1数值＋1图的真实CLI宿主pilot](docs/LLM_HOST_PILOT_PROTOCOL.md)；实际模型任务收益待验，E2尚未推进。
