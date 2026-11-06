@@ -1,0 +1,184 @@
+{
+  "decision": "ACCEPT_DELIVERED_FUNCTIONAL_SCOPE_PENDING_PRODUCTION_CF_REGRESSION_AND_COST",
+  "date": "2026-11-06",
+  "review_base": "c25b638",
+  "author_design_base": "42ddcf2",
+  "author_identity_sha256": "95230b0d96b945d937d666c337a3f3aa44b808d6df077efbaf69cc1a9ab7c8d0",
+  "production_sources": {
+    "human_eye_fast/__init__.py": {
+      "sha256": "898068b5225fff2bd98ec440b959932dee42f7cb2d60eaace1cf3c3271be0d96",
+      "bytes": 862
+    },
+    "human_eye_fast/control.py": {
+      "sha256": "85025e57aeac604243f0ff207886621b30674e5c643dc1451522e5ea7351506b",
+      "bytes": 8672
+    },
+    "human_eye_fast/blender_radical_session.py": {
+      "sha256": "81ab7aa48685f07586f397ace0eec27ba77ce36c8de5c09277930dbdc007e5d1",
+      "bytes": 23942
+    },
+    "human_eye_fast/cf_deployment.py": {
+      "sha256": "ae1ddb2bae116b3194dd7922522e67e1d9fa175bd7bfe248e47f44f5de3a0159",
+      "bytes": 6032
+    },
+    "examples/blender_radical_session.py": {
+      "sha256": "6b4a8425d9bffc1d5c59054f3f6203ff185d81f5871dab022901d45797ac72fa",
+      "bytes": 8896
+    },
+    "verification/export_cf_deployment.py": {
+      "sha256": "cfef273a730dbd94df85d338e1f3252210f2d2b0f08ff94bb53543777247eb98",
+      "bytes": 9687
+    },
+    "verification/test_cf_deployment.py": {
+      "sha256": "6b24a5e63f1ec42063cb474eae02ff1a200f0245007e3ebe4ae7f0c074482238",
+      "bytes": 6207
+    },
+    "verification/test_blender_radical_failures.py": {
+      "sha256": "af39a7cfc4548251d45a0f6c32a588ea62df51be252dac1bd879550f8991e8e3",
+      "bytes": 8229
+    },
+    "verification/test_blender_radical_session.py": {
+      "sha256": "64a513a4492a4a61125da9ff47687c4c90926442084c6b1d26ef036089e619ed",
+      "bytes": 25043
+    },
+    "verification/test_radical_session_controls.py": {
+      "sha256": "d782cc222c3902fde975ac5afbb014b1ec89c316057e0ca253ec3a75c840c6f5",
+      "bytes": 26845
+    },
+    "verification/run_radical_functional_job.py": {
+      "sha256": "cb6bb37a946cac263ab4b464578019620364c98efa08ca11bb417f5350c7f56f",
+      "bytes": 7157
+    },
+    "verification/verify_blender_radical_example.py": {
+      "sha256": "284f53598ee33aecb42e9328375078251257b0479a7d3e3263dd0a3be8199abe",
+      "bytes": 15548
+    },
+    "verification/replay_cf_quality_after_integration.py": {
+      "sha256": "89684a784d3f5b1932c0ee7032e38754f72eacddbff597279a7cd1d9c6d1f073",
+      "bytes": 18097
+    }
+  },
+  "no_new_algorithm_optimization": true,
+  "closed_module_targets": [
+    "BC",
+    "VG",
+    "AO",
+    "CF V+A"
+  ],
+  "verified": {
+    "registered_author_artifacts": 1403,
+    "sources": 13,
+    "B_I_public_file_pairs": 180,
+    "B_I_strict_score_pairs": 90,
+    "strict_visual_per_arm": {
+      "passed": 87,
+      "total": 90
+    },
+    "author_main_seed": 20261105,
+    "native_controls": 14,
+    "root_native_fixed_indices": [
+      0,
+      5,
+      9,
+      13,
+      17,
+      20
+    ],
+    "root_native_public_pairs": 36,
+    "root_native_score_pairs": 18,
+    "root_native_controls": 14,
+    "root_example_exact_files": 8,
+    "root_example_public_consumer": true,
+    "root_deployment_tests_passed": 5,
+    "root_numpy_only_import": true,
+    "root_deployment_per_seed": {
+      "seeds": [
+        20261105,
+        79463,
+        310519
+      ],
+      "fields": 18,
+      "live_rows_per_bank": 240,
+      "rank_queries_per_F_R_L": 240,
+      "action_predictions": 240,
+      "max_abs_error_m": 0.0
+    },
+    "root_native_source_input_environment_stable": true
+  },
+  "known_negative_observations": [
+    {
+      "case": "I-nested-drums-1",
+      "phase": "before",
+      "check": "section_declaration",
+      "cause": "witness endpoint float32 quantization before difference",
+      "normal_y_error": -1.70952848e-06,
+      "budget": 1.17565586e-06
+    },
+    {
+      "case": "I-carried-screen-0",
+      "phase": "after",
+      "check": "directions"
+    },
+    {
+      "case": "I-carried-screen-0",
+      "phase": "next",
+      "check": "directions"
+    }
+  ],
+  "feedback": "Nested before and carried after retain real false labels; next has no learning call.",
+  "old_cf_quality_scope": "Exact three-seed replay of old cf_native path only; does not exercise new BlenderRadicalSession/load_cf_deployment.",
+  "required_remaining": [
+    "Production public session and v1 deployment on original three-seed V F/R/L and A L/G lists, including affected quality/control/negative/feedback paths; fixed old zero/shuffle/C controls may be explicitly reused.",
+    "Actual outputs, scores and feedback for new 24-case fixtures under seeds 79463 and 310519 before timing registration.",
+    "One registered formal latency/old-CF/resources batch under docs/INTEGRATION_COST_PROTOCOL.md after functionality is complete."
+  ],
+  "performance_measured_by_this_review": false,
+  "full_engine_accepted": false,
+  "gpu_window_released": true,
+  "implementation_thread": "01a1abad-9d70-7260-8536-1fcd0dc7ae14",
+  "user_spec_sha256": "30b921d6a8f24863b6a1be7aaf9e5ad1e580988db2fc55ea161f0300a8cd50ec",
+  "evidence": {
+    "files": 1606,
+    "archives": [
+      {
+        "path": "docs/production_functional_evidence_01.zip",
+        "files": 532,
+        "bytes": 25520574,
+        "sha256": "476d8c5cf0a2ecea2a992a6b11ec1cf237a6038e90d650aaddd0f590de6b9f37"
+      },
+      {
+        "path": "docs/production_functional_evidence_02.zip",
+        "files": 820,
+        "bytes": 13952909,
+        "sha256": "2d9a5edf13a2c6083b4f20f8d99037fa919678d3a79f2b9aaeb3b8399df5dc0e"
+      },
+      {
+        "path": "docs/production_functional_evidence_03.zip",
+        "files": 16,
+        "bytes": 13266341,
+        "sha256": "61626f5fefafc5fb8dcad3e1ed0f2988b41ed557306af8348d8f367dcdd0f3fe"
+      },
+      {
+        "path": "docs/production_functional_evidence_04.zip",
+        "files": 16,
+        "bytes": 13096160,
+        "sha256": "64ba0e40d8b067ff770ad4379b7d3e8d7f0f607385d7b68be4af4ecbba1788ef"
+      },
+      {
+        "path": "docs/production_functional_evidence_05.zip",
+        "files": 222,
+        "bytes": 21730961,
+        "sha256": "25018057960eb2eb953981921a6c64adf5fd18b0da9004fa7256ae18fb6f353d"
+      }
+    ],
+    "index": "docs/production_functional_evidence_index.json.gz",
+    "index_sha256": "3a6a69b9c498671e24c42ed7610e52b8174cc985f9d63b3c37e251f17f701c66",
+    "roundtrip_exact": true
+  },
+  "limits": [
+    "Independent CPU pixel review uses saved native owner evidence, not new geometry rays.",
+    "Fixed native replay uses author harness in an independent process; independent state and deployment probes are separate.",
+    "Historical failed example/runtime captures and old visual failures retained; no tolerance or scorer change.",
+    "No claim of end-to-end speedup, all-image strict pass, or completion of learned S."
+  ]
+}

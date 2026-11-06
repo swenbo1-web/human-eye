@@ -210,3 +210,10 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 2026-11-06。只读冻结42ddcf2归档复核，580源项及2+1串行进程来源一致；两进程各93实测对，432条含预热next记录、8份NPZ及PNG逐项核对一致，独立更新算术和shape预测逐位相等。两进程五段最大比1.028542/1.025193，首次next1.076810失败保留，原因未知，不宣称噪声上界。无需追加B/B循环。
 
 冻结正式前瞻协议：原24例/3seed/31配对、五段1.05及旧CF1.10门保持；生产功能与公开等价先过，再登记一次正式成本实验。资源托管256KiB/1MiB，另验逻辑GPU资源/close-reopen；RSS及同记录LOCAL+NON_LOCAL的观察最大值各新增≤8MiB，不认证未采到瞬时峰。诊断最大间隔22.402ms，2ms仅目标；验证侧frame局部引用残留在正式harness清除，原档不改。见[方法审定](METHOD_DIAGNOSTIC_REVIEW.md)、[正式成本协议](INTEGRATION_COST_PROTOCOL.md)、[机器决定](radical_acceptance_method_diagnostic.json)及[68文件精确证据包](method_diagnostic_evidence.zip)。整机未验收，已确认模块不重开优化。
+
+
+## 主验收018：统一生产会话功能 — ACCEPT_DELIVERED_SCOPE_FULL_REGRESSION_PENDING
+
+2026-11-06。交付1403项产物与13源身份核验一致；seed20261105的24L+3F/G+3R/G，180对公开文件与90对严格评分相同，严格仍87/90，两个实际负反馈为false、next无反馈。主干固定六族B/I全链与14控制后台复跑通过；公开示例另进程8文件字节一致、旧公开消费者通过。两进程源/输入/环境稳定；三seed部署18字段与240行/排序/预测独立核对通过，5项部署测试通过。独立48三角形捕获/refit/BC失败恢复和shape G解析探针通过；无需新算法优化。
+
+仅接受上述阶段产物，完整生产回归和成本待验。旧CF三seed全量回放实际仍为cf_native旧入口，不替代原清单经新生产session/v1；另两seed新24场景真实反馈也须补齐。实施聊天继续限定余项，通过后按c25b638一次正式成本批次；GPU窗口已释放，完成后主动唤醒。新nested剖切法向量化误差仍超原预算，既有carried方向负例、首次示例代号与runtime capture失败全部保留。1606文件分五卷精确归档。见[功能复审](PRODUCTION_FUNCTIONAL_REVIEW.md)、[机器决定](radical_acceptance_production_functional.json)及[证据索引](production_functional_evidence_index.json.gz)。已确认收益的模块关闭，换聊天不重开优化循环。
