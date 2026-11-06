@@ -67,6 +67,13 @@ def _fact(value=None, *, reason=None, **metadata):
 
 def bind_objects(scene, selectors):
     """Never interpret a name as an ID, choose an active object or break ties."""
+    if scene.get('capture_scope') == 'selected_objects':
+        selection = scene['task_selection']
+        if selection['selectors'] != selectors:
+            raise ValueError('Task selectors differ from the captured selection')
+        by_id = {item['object_id']: item for item in scene['meshes']}
+        rows = [dict(row) for row in selection['bindings']]
+        return ([by_id.get(row.get('object_id')) for row in rows], rows, selection['pair_reason'])
     bound, rows = [], []
     for selector in selectors:
         key = 'object_id' if 'id' in selector else 'name'
@@ -173,9 +180,13 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
     complete = all(bound) and all(
         all(row['status'] == 'measured' for row in value) if type(value) is list else value['status'] == 'measured'
         for value in facts.values())
+    binding = {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
+               'source': scene['source'], 'objects': bindings}
+    if scene.get('capture_scope') == 'selected_objects':
+        binding.update(capture_scope='selected_objects',
+            candidate_count=scene['task_selection']['candidate_count'], selected_count=len(meshes))
     return {'result_kind': 'task_query', 'schema_version': 'task-query-v2',
         'status': 'observed' if complete else 'partial',
-        'binding': {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint, 'source': scene['source'],
-                    'objects': bindings},
+        'binding': binding,
         'unit': 'm', 'coordinate_frame': 'world', 'pair_order': 'A_to_B',
         'facts': facts, 'execution_authority': False}

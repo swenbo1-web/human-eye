@@ -408,7 +408,7 @@ class BlenderSceneHost:
         return {"schema_version": "1.0", "operation": "rigid_transform",
                 "supported": not reasons, "scope": "independent_static_rigid_meshes", "reasons": reasons}
 
-    def _identity_metadata(self, objects):
+    def _identity_metadata(self, objects, *, capture_scope='complete_scene_meshes'):
         """Bind new goal segments to runtime IDs without editing a .blend file.
 
         The driver namespace is ephemeral Blender runtime storage and resets
@@ -432,9 +432,41 @@ class BlenderSceneHost:
         document = [epoch, scene_uid, str(getattr(getattr(self.bpy, 'data', None), 'filepath', ''))]
         return {'schema_version': '1.0', 'document_epoch': _digest(document),
                 'object_instances': {self.object_id(obj): str(value) for obj, value in zip(objects, values)},
-                'capture_scope': 'complete_scene_meshes'}
+                'capture_scope': capture_scope}
 
-    def _capture(self, *, _native_evidence=False, _read_only_native=False):
+    def _task_objects(self, selectors):
+        """Bind finite selectors before expanding any selected geometry."""
+        candidates = [obj for obj in self.scene.objects if getattr(obj, 'type', None) == 'MESH']
+        candidate_ids = ([self.object_id(obj) for obj in candidates]
+                         if any('id' in selector for selector in selectors) else None)
+        selected, bindings = {}, []
+        for selector in selectors:
+            if 'id' in selector:
+                matches = [obj for obj, object_id in zip(candidates, candidate_ids) if object_id == selector['id']]
+            else:
+                matches = [obj for obj in candidates if obj.name == selector['name']]
+            if len(matches) != 1:
+                bindings.append({'status': 'unknown', 'selector': dict(selector),
+                    'reason': 'object_not_found' if not matches else 'object_name_ambiguous'})
+                continue
+            obj = matches[0]
+            object_id = self.object_id(obj)
+            selected[object_id] = obj
+            bindings.append({'object_id': object_id, 'name': str(obj.name)})
+        objects = [selected[object_id] for object_id in sorted(selected)]
+        for obj in objects:
+            if getattr(obj, 'instance_type', 'NONE') != 'NONE' or bool(getattr(obj, 'is_instancer', False)):
+                raise BlenderHostError('Instanced selected geometry is unsupported: ' + obj.name)
+            if any(getattr(modifier, 'type', None) == 'NODES' for modifier in getattr(obj, 'modifiers', ())):
+                raise BlenderHostError('Selected geometry-node instances cannot be excluded: ' + obj.name)
+        pair_reason = None
+        if (len(bindings) == 2 and all('object_id' in row for row in bindings)
+                and bindings[0]['object_id'] == bindings[1]['object_id']):
+            pair_reason = 'pair_selectors_resolve_to_same_object'
+        return objects, {'selectors': [dict(selector) for selector in selectors], 'bindings': bindings,
+                         'pair_reason': pair_reason, 'candidate_count': len(candidates)}
+
+    def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
@@ -442,7 +474,14 @@ class BlenderSceneHost:
         if _native_evidence and not (self.execution_metadata and self.identity_metadata):
             raise BlenderHostError("Native evidence requires explicit execution and identity metadata")
         graph, scale = self._depsgraph(), self._scale()
-        objects = self._objects(graph)
+        task_selection = None
+        if _task_selectors is None:
+            objects = self._objects(graph)
+        else:
+            objects, task_selection = self._task_objects(_task_selectors)
+            task_identity = self._identity_metadata(objects, capture_scope='selected_objects')
+            if task_identity is None:
+                raise BlenderHostError('Selected capture requires document and object instance identity')
         native_objects = [] if _native_evidence else None
         native_capability = native_identity = None
         if _native_evidence:
@@ -543,17 +582,24 @@ class BlenderSceneHost:
                 if temporary is not None:
                     evaluated.to_mesh_clear()
         scene = {"unit": "m", "coordinate_frame": "world", "source": "blender", "meshes": meshes}
-        if self.execution_metadata:
+        if task_selection is not None:
+            scene['capture_scope'] = 'selected_objects'
+            scene['task_selection'] = task_selection
+            scene['host_identity'] = task_identity
+        elif self.execution_metadata:
             scene["host_execution"] = self._execution_status(objects)
-        if self.identity_metadata:
+        if task_selection is None and self.identity_metadata:
             identity = self._identity_metadata(objects)
             if identity is not None:
                 scene['host_identity'] = identity
         # Guard changes must invalidate approvals even if displayed geometry did
         # not move. The digest is deterministic across bridge process launches.
-        scene["revision"] = "blender:" + _digest({"scene": scene, "scale_length": scale,
-                "frame": int(getattr(self.scene, "frame_current", 0)),
-                "guards": [[self.object_id(obj), self._guard_description(obj)] for obj in objects]})
+        if task_selection is None:
+            scene["revision"] = "blender:" + _digest({"scene": scene, "scale_length": scale,
+                    "frame": int(getattr(self.scene, "frame_current", 0)),
+                    "guards": [[self.object_id(obj), self._guard_description(obj)] for obj in objects]})
+        else:
+            scene['revision'] = 'blender:' + _digest({'scene': scene, 'scale_length': scale})
         if _native_evidence:
             current_objects = self._objects(graph)
             if (len(current_objects) != len(objects)
@@ -731,6 +777,19 @@ class BlenderSceneHost:
         self._main_thread()
         with self._lock:
             return self._capture()
+
+    def capture_task_scene(self, selectors):
+        """Read only the uniquely bound targets in one synchronous observation."""
+        self._main_thread()
+        if type(selectors) is not list or not 1 <= len(selectors) <= 4:
+            raise BlenderHostError('Task objects require 1..4 selectors')
+        for selector in selectors:
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('Task selector requires one bounded nonempty id or name')
+        with self._lock:
+            return self._capture(_task_selectors=selectors)
 
     def capture_evidence(self):
         """Read one coherent original-pose sidecar without changing old capture.

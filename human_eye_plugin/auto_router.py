@@ -263,7 +263,8 @@ def _validate_raw_indices(raw, width, vertex_count, field):
 
 
 @_trace_stage("scene.validate")
-def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True) -> tuple:
+def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True,
+                     _task_capture=False) -> tuple:
     if not isinstance(scene, dict):
         raise ValueError("scene must be an object")
     if scene.get("unit") != "m" or scene.get("coordinate_frame") != "world":
@@ -271,9 +272,13 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
     revision = scene.get("revision")
     if not isinstance(revision, str) or not revision.strip():
         raise ValueError("scene requires a nonempty revision string")
+    scope = 'selected_objects' if _task_capture else 'complete_scene_meshes'
+    if scene.get('capture_scope', 'complete_scene_meshes') != scope:
+        raise ValueError('Scene capture_scope does not match this observation entry')
     items = scene.get("meshes")
-    if not isinstance(items, list) or not 1 <= len(items) <= 256:
-        raise ValueError("scene requires 1..256 meshes")
+    minimum, maximum = (0, 4) if _task_capture else (1, 256)
+    if not isinstance(items, list) or not minimum <= len(items) <= maximum:
+        raise ValueError('scene requires ' + str(minimum) + '..' + str(maximum) + ' meshes')
     meshes, ids, marks = [], set(), set()
     vertex_count = face_count = 0
     for item in items:
@@ -350,7 +355,7 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
         if (not isinstance(identity, dict) or set(identity) != {
                 'schema_version', 'document_epoch', 'object_instances', 'capture_scope'}
                 or identity.get('schema_version') != '1.0'
-                or identity.get('capture_scope') != 'complete_scene_meshes'
+                or identity.get('capture_scope') != scope
                 or not isinstance(identity.get('document_epoch'), str)
                 or not 1 <= len(identity['document_epoch']) <= 256
                 or not identity['document_epoch'].strip()
@@ -362,6 +367,43 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
                 or len(set(identity['object_instances'].values())) != len(ids)):
             raise ValueError('Invalid host_identity declaration')
         normalized['host_identity'] = copy.deepcopy(identity)
+    if _task_capture:
+        if 'host_identity' not in normalized:
+            raise ValueError('Selected capture requires host_identity')
+        selection = scene.get('task_selection')
+        if type(selection) is not dict or set(selection) != {
+                'selectors', 'bindings', 'pair_reason', 'candidate_count'}:
+            raise ValueError('Invalid task_selection declaration')
+        from .task_query import validate_task_query
+        selectors = validate_task_query({'mode': 'task', 'objects': selection['selectors'],
+                                         'requested_facts': ['aabb']})['objects']
+        bindings = selection['bindings']
+        if (type(selection['candidate_count']) is not int or selection['candidate_count'] < len(ids)
+                or type(bindings) is not list or len(bindings) != len(selectors)):
+            raise ValueError('Invalid selected candidate count or bindings')
+        by_id = {item['object_id']: item for item in normalized['meshes']}
+        resolved = set()
+        for selector, row in zip(selectors, bindings):
+            if type(row) is not dict:
+                raise ValueError('Invalid task binding')
+            if set(row) == {'object_id', 'name'}:
+                item = by_id.get(row['object_id']) if type(row['object_id']) is str else None
+                field = 'object_id' if 'id' in selector else 'name'
+                if (item is None or row['name'] != item['name']
+                        or item[field] != next(iter(selector.values()))):
+                    raise ValueError('Task binding does not match selected geometry')
+                resolved.add(row['object_id'])
+            elif (set(row) != {'status', 'selector', 'reason'} or row['status'] != 'unknown'
+                    or row['selector'] != selector
+                    or row['reason'] not in {'object_not_found', 'object_name_ambiguous'}):
+                raise ValueError('Invalid unresolved task binding')
+        pair_reason = ('pair_selectors_resolve_to_same_object' if len(bindings) == 2
+            and all('object_id' in row for row in bindings)
+            and bindings[0]['object_id'] == bindings[1]['object_id'] else None)
+        if resolved != ids or selection['pair_reason'] != pair_reason:
+            raise ValueError('Selected geometry coverage or pair reason does not match bindings')
+        normalized['capture_scope'] = scope
+        normalized['task_selection'] = copy.deepcopy(selection)
     # Includes identity, topology, pivots, frames and their provenance; stable
     # across processes, unlike the core's in-process cache tokens.
     with _trace_span("scene.hash"):

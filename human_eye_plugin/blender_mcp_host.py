@@ -39,7 +39,7 @@ PROTOCOL_VERSION = "1.0"
 _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
-_OBSERVATION_COMMANDS=frozenset({'native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+_OBSERVATION_COMMANDS=frozenset({'capture_task','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -214,6 +214,9 @@ class BlenderMCPHost:
 
     def capture_scene(self) -> dict[str, Any]:
         return self._request("capture", {})
+
+    def capture_task_scene(self, selectors) -> dict[str, Any]:
+        return self._request('capture_task', {'selectors': selectors})
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
@@ -403,14 +406,16 @@ class BlenderMCPHost:
 
     def _observation_code(self, command, params, request_id):
         """Separate constant read-only template; legacy template bytes are kept."""
-        required={'capture':set(),'capture_evidence':set(),'native_observation_capabilities':set(),
+        required={'capture':set(),'capture_evidence':set(),'capture_task':{'selectors'},'native_observation_capabilities':set(),
             'observe_readonly_native':{'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'},
             'last_readonly_native_audit':{'request_id'}}
         if command not in required or type(params) is not dict or set(params)!=required[command]:
             raise ValueError('Invalid fixed native observation command')
         request=json.dumps({'id':request_id,'command':command,'params':params},
             ensure_ascii=True,allow_nan=False,separators=(',',':'))
-        if len(request.encode('utf8'))>4096:raise ValueError('Native observation request exceeds4096bytes')
+        limit = 8192 if command == 'capture_task' else 4096
+        if len(request.encode('utf8')) > limit:
+            raise ValueError('Native observation request exceeds ' + str(limit) + ' bytes')
         return '\n'.join([
             'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
             '_request = _json.loads('+repr(request)+')',
@@ -431,6 +436,8 @@ class BlenderMCPHost:
             "    if _request['command'] in ('capture','capture_evidence'):",
             "        if _request['params']: raise ValueError('Capture accepts no arguments')",
             "        _result = _host.capture_scene() if _request['command']=='capture' else _host.capture_evidence()",
+            "    elif _request['command']=='capture_task':",
+            "        _result = _host.capture_task_scene(_request['params']['selectors'])",
             "    elif _request['command']=='native_observation_capabilities':",
             "        if _request['params']: raise ValueError('Capabilities accepts no arguments')",
             "        _result = _host.native_observation_capabilities() if _supported else {'supported':False}",
@@ -538,7 +545,7 @@ class BlenderMCPHost:
                 result = response["result"]
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
-                if self._observation_depth and command in {'capture', 'capture_evidence'}:
+                if self._observation_depth and command in {'capture', 'capture_evidence', 'capture_task'}:
                     capture = result.get('capture') if command == 'capture_evidence' else result
                     self._record_observation_document(capture)
                 if command == "apply" and (result.get("status") == "rejected_before_mutation" or "rejection" in result):

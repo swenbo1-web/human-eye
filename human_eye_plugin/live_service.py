@@ -1225,11 +1225,13 @@ class LiveSpatialService:
             observation_baseline = ({key: old if key == 'runtime' else copy.deepcopy(old)
                 for key, old in value.items()} if type(value.get('runtime')) is dict else None)
             self._check_request_budget('before_host_capture')
+            task_capture = getattr(self.host, 'capture_task_scene', None)
+            selected_capture = callable(task_capture)
             with span('host.capture', kind='host'):
-                captured = self.host.capture_scene()
+                captured = task_capture(query['objects']) if selected_capture else self.host.capture_scene()
             self._check_request_budget('after_host_capture')
             with span('scene.validate'):
-                scene, meshes, fingerprint = _validated_scene(captured)
+                scene, meshes, fingerprint = _validated_scene(captured, _task_capture=selected_capture)
             with span('observation.task_facts'):
                 work = {}
                 result = task_result(scene, meshes, fingerprint, query,
