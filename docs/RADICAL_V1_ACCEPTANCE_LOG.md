@@ -196,3 +196,10 @@ VG仅增加可信16方向排序回调，源1aea7325bd5be1a7377ac4ec3817279564166
 2026-11-06。共享 controller bridge/index、同 graph 上下文和真实动作后回读方向成立。主干源绑定后台复跑7例，15 AO+14 PNG+schema共30文件与作者逐字节相同；完整视觉仍7/8。最小相机探针将约4.24e-6方向差定位到 to_track_quat 返回四元数，RNA赋值无额外差；保留负标签、原VG和原评分，不重新优化。82项身份及24主例48个前后解析距离另核对通过。
 
 尚不冻结正式协议或放行生产实现：同一实施聊天只补B/I同责、上下文新代、已执行动作错误结果、可执行计量方法及完整运行来源。1.05接线集合p95与旧CF1.10门保持，不新增逐例硬门，不宣称每例无退化。内存/GPU方法未冻结，完整生产入口/成本未验收。原序列化失败和方向失败、源码与主干复跑共143文件精确归档。见[独立审查](ENGINE_INTEGRATION_PREFLIGHT_REVIEW.md)、[机器决定](radical_acceptance_integration_preflight.json)、[证据包](integration_preflight_evidence.zip)。所有已确认收益承接，换聊天不触发新优化循环。
+
+
+## 主验收016：统一引擎状态/API — ACCEPT_API_ONLY_COST_NOT_QUALIFIED
+
+2026-11-06。per-object masks/代号、禁图/NONE、实测Outcome先于context、票据与before所有权已补齐。根侧绑定源码重放6个stub及2个后台Blender控制，10个公开AO/PNG字节一致，summary仅40处进程地址差。独立CPU补查TD等四类实测后失败、迟到A与错误V绑定；3项便携测试通过。作者138文件、8份各571源码的启动归档及公开旧新30文件/8视觉记录均核对一致，严格视觉仍7/8。
+
+B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因未定；shape局部1.084746，next工作量等价尚缺，原失败保留。资源7,262,572B是累计追踪峰而非已隔离热峰，close零owner仅限声明根，RSS/DXGI仅分点current。冻结API并放行生产接线/功能测试，正式I/B、旧CF性能和资源增量仍不放行。下一次仅原三例/同seed两个串行进程诊断与一个B资源方法进程，不扩大样本洗失败、不重开已验收优化。见[复审](ENGINE_INTEGRATION_REWORK_REVIEW.md)、[冻结API](ENGINE_INTEGRATION_API.md)、[机器决定](radical_acceptance_integration_rework.json)及[192文件精确证据包](integration_rework_evidence.zip)。

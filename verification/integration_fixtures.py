@@ -34,6 +34,13 @@ CONTROL_CASES = (
     ("unit-recode", 1),
     ("topology-renumber", 0),
 )
+DEPLOYMENT_SNAPSHOTS = (
+    ("20261105", "076112b8a7bc6f5b2c267e61a0dc683873e43fb5a68bbd9b1342a2d15a5a3698"),
+    ("79463", "d585ac84b6167de560d05b11c5d612925b68af1319b2d35303e0237fb80c663e"),
+    ("310519", "9a2df9a97d33ed9c0ddf87f0dedabf0aa8c878c0bfdbc8dc96eba7c1c4e7162b"),
+)
+_OBSERVE_TARGETS = ("VERTICES", "TRANSFORM", "UNITS")
+_AFTER_TARGETS = ("VERTICES", "TRANSFORM")
 
 
 @dataclass(frozen=True, slots=True)
@@ -326,22 +333,321 @@ def build_fixture(spec):
                               followup_gap, positive_task and not follows, obstacle_delta, replacement)
 
 
-def manifest_document():
+def deployment_inputs():
+    """Identify existing sealed sources, before the separate v1 deployment export."""
+    return [
+        {"process_index": index, "seed": seed,
+         "sealed_path": f"artifacts/cf/formal_001/{seed}/seal/frozen.npz",
+         "sealed_sha256": digest,
+         "deployment_v1": "pending_export_and_per_field_equivalence_before_formal_run"}
+        for index, (seed, digest) in enumerate(DEPLOYMENT_SNAPSHOTS)
+    ]
+
+
+def _observation(fixture, observation_id, mode, masks, generations):
     return {
-        "schema": "human-eye-integration-fixtures-v1",
+        "observation_id": observation_id,
+        "frame_id": fixture.spec.frame_id,
+        "mode": mode,
+        "changes": masks,
+        "topology_generations": generations,
+        "attachment_key_if_applicable": None if mode is None else f"{observation_id}.png",
+        "td_top_k": 12,
+        "selected_face_ids": [],
+    }
+
+
+def _formal_plan(spec):
+    fixture = build_fixture(spec)
+    target_ids = fixture.target_ids
+    meshes = tuple(mesh.object_id for mesh in fixture.meshes)
+    context_ids = tuple(key for key in meshes if key not in target_ids)
+    generations = {key: index + 1 for index, key in enumerate(meshes)}
+    reset_context = fixture.expected_obstacle_delta_m
+
+    def masks(target, moved=()):
+        return {**dict.fromkeys(target_ids, target),
+                **{key: ("TRANSFORM",) if key in moved else () for key in context_ids}}
+
+    reference = _observation(fixture, "reference", None, masks(_OBSERVE_TARGETS), generations)
+    before = _observation(fixture, "before", fixture.mode,
+                          masks(_OBSERVE_TARGETS, reset_context), generations)
+    after = _observation(fixture, "after", fixture.mode,
+                         masks(_AFTER_TARGETS, reset_context), generations)
+    next_observation = _observation(fixture, "next", fixture.mode,
+                                    masks(_OBSERVE_TARGETS), generations)
+    is_shape = fixture.command is not None and fixture.command.kind == "set_shape_key"
+    return {
+        "case_id": spec.case_id,
+        "target_ids": target_ids,
+        "context_ids_in_order": context_ids,
+        "meters_per_blender_unit_requested": spec.scale_length,
+        "goal": {"distance_m": fixture.goal_distance_m, "tolerance_m": fixture.goal_tolerance_m},
+        "reference_capture": {
+            **reference,
+            "object_id": target_ids[0],
+            "reference_frame_id": spec.frame_id,
+            "coordinate_space": "evaluated_world_m_owned_snapshot",
+            "state": "fixture_initial_channels",
+            "view_arm": "F",
+            "first_capture_reads_all_mesh_attributes_even_for_NONE": True,
+        },
+        "before": before,
+        "first_command": None if fixture.command is None else {
+            "action_id": "act", "before_observation_id": "before",
+            "command": asdict(fixture.command),
+        },
+        "after_readback_and_publication": after,
+        "next": next_observation,
+        "next_command_prediction_only": None if fixture.followup_command is None else {
+            "action_id": "next-act", "before_observation_id": "next",
+            "command": asdict(fixture.followup_command),
+        },
+        "arms": {"fixed": {"view": "F", "predictor": "G"},
+                 "retrieval": {"view": "R", "predictor": "G"},
+                 "deployment": {"view": "L", "predictor": "L" if is_shape else "G"}},
+        "feedback": {
+            "view_observations_in_order": ["before", "after"],
+            "view_attachment_keys": ["before.png", "after.png"],
+            "action": "actual_finite_Outcome_only_if_learned_action_ticket",
+            "no_feedback_for_next": True,
+            "recording": "independently_score_actual_png_before_timing; seal_report_hash_before_replay",
+            "required_view_fields": [
+                "observation_id", "attachment_key", "canonical_index", "selected_direction",
+                "selected_probe_rays", "native_stop", "png_sha256", "strict_verdict",
+            ],
+        },
+    }
+
+
+def _planned_controls():
+    """Keep bounded current probes and later controls distinct from the formal main set."""
+    return [
+        {"id": "contact-zero", "scope": "prior_native_001_and_fixed_replay", "expected": "NATURAL no ray; no action at goal"},
+        {"id": "empty-reference", "scope": "prior_native_001_and_fixed_replay", "expected": "empty_surface; no image; no action"},
+        {"id": "already-reached", "scope": "prior_native_001_and_fixed_replay", "expected": "goal_reached; no write"},
+        {"id": "nonbasis-key", "scope": "prior_native_001_and_fixed_replay", "expected": "actual non-Basis relative-key readback"},
+        {"id": "reference-follows", "scope": "formal_pending", "expected": "actual explicit NONE; both targets follow; finite delta"},
+        {"id": "unit-recode", "scope": "formal_pending", "expected": "physically equivalent meters under separate .001 and 1 RNA encodings"},
+        {"id": "topology-renumber", "scope": "formal_pending", "expected": "new target session/generation with reversed original triangle rows"},
+        {"id": "reference-replacement", "scope": "rework_probe_and_formal", "expected": "owned reference; old plan revoked; late feedback eligible"},
+        {"id": "zero-open", "scope": "formal_pending", "expected": "finite positive target; execute explicit opening command from contact"},
+        {"id": "zero-section", "scope": "formal_pending", "expected": "section_requires_positive_gap; no image/ticket"},
+        {"id": "same-frame-observation-ids", "scope": "rework_probe_and_formal", "expected": "phase IDs distinct with same frame"},
+        {"id": "wrong-and-repeated-feedback", "scope": "rework_probe_and_formal", "expected": "owner, binding, and single consumption"},
+        {"id": "model-deployment-equivalence", "scope": "formal_pending", "expected": "three exported v1 deployments, ring/order/initial and one-step update"},
+        {"id": "two-sessions-close-reopen", "scope": "formal_pending", "expected": "two isolated sessions; late/foreign tickets reject after close/reopen"},
+        {"id": "context-topology", "scope": "rework_probe_and_formal", "expected": "one same-capture context generation update; target generations fixed"},
+    ]
+
+
+def rework_probe_inputs():
+    """Inputs for the new CPU-stub and bounded native probes, fixed before execution."""
+    main = fixture_manifest()
+    carried = build_fixture(main[20])
+    shape = build_fixture(next(spec for spec in fixture_manifest(partition="control")
+                               if spec.case_id == "nonbasis-key"))
+    ids = tuple(mesh.object_id for mesh in carried.meshes)
+    generations = dict(zip(ids, (6, 7, 8, 9), strict=True))
+    renewed = {**generations, "moving-screen": 10}
+    no_changes = dict.fromkeys(ids, ())
+    context_topology = {**no_changes, "moving-screen": ("TOPOLOGY",)}
+    return {
+        "schema": "human-eye-integration-rework-controls-v1",
+        "cpu_stub": {
+            "kind": "portable_fake_host_uses_verification_only_control_seam",
+            "initial_moving_world_x_m": 0.0,
+            "initial_reference_world_x_m": 2.0,
+            "initial_gap_m": 1.0,
+            "command": {"kind": "translate", "delta_world_m": [0.25, 0.0, 0.0]},
+            "goal": {"distance_m": 0.0, "tolerance_m": 0.0},
+            "before_observation_id": "before",
+            "after_observation_id": "after",
+            "predictor": "NONE",
+            "view_arm": "F",
+            "mode": None,
+            "expected_measured_delta_m_when_available": -0.25,
+            "cases": [
+                {"id": "stale-plan-after-new-observation", "write_applied": False, "outcome_available": False},
+                {"id": "after-target-capture-failure", "write_applied": True, "outcome_available": False},
+                {"id": "after-control-readback-failure", "write_applied": True, "outcome_available": False},
+                {"id": "after-context-capture-failure", "write_applied": True, "outcome_available": True},
+                {"id": "after-vg-render-failure", "write_applied": True, "outcome_available": True,
+                 "after_mode": "NATURAL"},
+                {"id": "after-ao-encode-failure", "write_applied": True, "outcome_available": True},
+            ],
+        },
+        "native": [
+            {
+                "id": "masks-generations-none",
+                "fixture_id": carried.spec.case_id,
+                "view_arm": "F",
+                "predictor": "NONE",
+                "command": asdict(carried.command),
+                "action_id": "act",
+                "capture_reference": _observation(carried, "capture-reference", None,
+                                                   dict.fromkeys(ids, _OBSERVE_TARGETS), generations),
+                "static": _observation(carried, "static", None, no_changes, generations),
+                "after": _observation(carried, "after-none", None,
+                                      {**no_changes, **dict.fromkeys(carried.target_ids, _AFTER_TARGETS),
+                                       "moving-screen": ("TRANSFORM",)}, generations),
+                "topology_change": "reverse moving-screen triangle row order, vertex positions unchanged",
+                "reject_missing_generation": {
+                    "observation_id": "bad-generation", "mode": None, "changes": context_topology,
+                    "context_generations": {},
+                },
+                "context_topology": _observation(carried, "context-topology", None, context_topology, renewed),
+                "unit_change": _observation(carried, "unit-change", None,
+                                            dict.fromkeys(ids, ("UNITS",)), renewed),
+                "unit_change_m_per_BU": 0.5,
+            },
+            {
+                "id": "late-feedback-basis-reference-close",
+                "fixture_id": shape.spec.case_id,
+                "frame_id": shape.spec.frame_id,
+                "deployment_process_index": 0,
+                "topology_generations": dict.fromkeys(shape.target_ids, 1),
+                "capture_reference_id": "capture-reference",
+                "before_observation_id": "before",
+                "action_id": "act",
+                "after_observation_id": "after",
+                "view_arm": "L",
+                "predictor": "L",
+                "mode": "SECTION",
+                "command": asdict(shape.command),
+                "followup": {"action_id": "revoked", "command": asdict(shape.followup_command)},
+                "masks": {"reference": _OBSERVE_TARGETS, "before": _OBSERVE_TARGETS,
+                          "after": _AFTER_TARGETS, "next": _OBSERVE_TARGETS},
+                "replace_reference_from": "after owned actual moving world_m",
+                "authored_basis_change": {"key_name": "Actuate", "relative_key": "Relative",
+                                          "vertex_row": 0, "component": "x", "add_bu": 0.125},
+                "next_observation_id": "next",
+                "feedback_controls": [
+                    "old followup plan rejects after replace_reference",
+                    "before/after V and actual A tickets eligible after replace_reference",
+                    "duplicate and foreign tickets reject",
+                    "next V ticket rejects after close",
+                ],
+            },
+        ],
+    }
+
+
+def _archived_feedback(feedback_root, case_id):
+    records = []
+    for phase in ("before", "after"):
+        relative = Path(case_id) / f"{phase}.visual.json"
+        source = feedback_root / relative
+        payload = source.read_bytes()
+        record = json.loads(payload)
+        evidence, score = record["evidence"], record["score"]
+        png = source.with_name(f"{phase}.png")
+        if sha256(png.read_bytes()).hexdigest() != score["png_sha256"]:
+            raise ValueError(f"Archived feedback does not identify its image: {source}")
+        records.append({
+            "observation_id": phase,
+            "attachment_key": f"{phase}.png",
+            "frame_id": evidence["metadata"]["frame_id"],
+            "target_ids": evidence["metadata"]["target_ids"],
+            "canonical_index": evidence["candidate"],
+            "selected_direction": evidence["metadata"]["selection"]["direction"],
+            "selected_probe_rays": evidence["selected_rays"],
+            "native_stop": evidence["native_stop"],
+            "png_sha256": score["png_sha256"],
+            "strict_verdict": score["passed"],
+            "safe": score["safe"],
+            "archive_record": relative.as_posix(),
+            "archive_record_sha256": sha256(payload).hexdigest(),
+        })
+    return records
+
+
+def method_probe_inputs(feedback_root=None):
+    cases = [fixture_manifest()[i].case_id for i in PROBE_INDICES]
+    archived = (None if feedback_root is None else
+                {key: _archived_feedback(Path(feedback_root), key) for key in cases})
+    return {
+        "schema": "human-eye-integration-method-probe-v1",
+        "purpose": "qualify_instrumentation_only_no_I_measurement",
+        "clock": {"name": "time.perf_counter_ns", "consecutive_empty_pairs": 1000},
+        "bb": {
+            "same_reference_implementation_both_lanes": True,
+            "case_ids": cases,
+            "deployment_process_index": 0,
+            "warm_pairs_per_case": 5,
+            "measured_pairs_per_case": 31,
+            "warm_pair_indices": list(range(5)),
+            "measured_pair_indices": list(range(5, 36)),
+            "lane_labels": [0, 1],
+            "arm_order": "0,1 when (main_case_ordinal + pair_index) % 2 == 0, else 1,0",
+            "observation_id_templates": {
+                name: f"{name}.{{pair:02d}}.{{lane}}" for name in ("before", "after", "next")
+            },
+            "action_id_templates": {
+                name: f"{name}.{{pair:02d}}.{{lane}}" for name in ("act", "next-act")
+            },
+            "attachment_key_rule": "actual current observation ID followed by .png",
+            "segments": ["before", "action", "feedback", "next", "continuous_total"],
+            "state": "one warm B session per case/lane; restore host channels and private weight/ring active state outside each timed interval",
+            "tickets": "fresh plans and feedback tickets inside each repeat; feedback uses its current ticket binding",
+            "score_identity_checks": "outside timing, compare PNG SHA/frame/target/direction/candidate/rays against archived strict audit; public generation metadata need not match historical replay",
+            "actual_feedback_binding_and_consumption": "inside feedback timing",
+            "archived_feedback": archived,
+            "archived_feedback_root": None if feedback_root is None else Path(feedback_root).as_posix(),
+            "known_strict_failure": {"case_id": cases[2], "observation_id": "after",
+                                     "strict_verdict": False, "safe": False},
+            "statistics": "median within case then across-case linear p95; disclose each paired timing and both ratio directions",
+            "qualification": "each segment max(p95_lane_0/p95_lane_1, p95_lane_1/p95_lane_0) <= 1.05",
+        },
+        "resource": {
+            "case_id": cases[0],
+            "deployment_process_index": 0,
+            "separate_process_from_latency": True,
+            "sampling_points": ["cold_start", "after_init", "prepared", "observed", "close"],
+            "managed": "deduplicate NumPy backing allocations and take tracemalloc peak in bounded draw/close",
+            "RSS": "Win32 PROCESS_MEMORY_COUNTERS WorkingSetSize and PeakWorkingSetSize",
+            "GPU": "DXGI adapter3 QueryVideoMemoryInfo LOCAL and NON_LOCAL current process usage and budget",
+            "nvidia_smi": "availability-only if DXGI unavailable",
+            "formal_gates": False,
+        },
+    }
+
+
+def manifest_document(*, feedback_root=None):
+    main = fixture_manifest()
+    return {
+        "schema": "human-eye-integration-fixtures-v2",
         "generator_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
         "coordinates": "local meters; parent-relative dimensionless linear transforms and meter translations",
-        "main": [asdict(spec) for spec in fixture_manifest()],
+        "main": [asdict(spec) for spec in main],
         "controls": [asdict(spec) for spec in fixture_manifest(partition="control")],
         "native_probe_indices": PROBE_INDICES,
+        "formal_plans": [_formal_plan(spec) for spec in main],
+        "formal_performance": {
+            "processes": 3, "warm_pairs_per_case": 5, "measured_pairs_per_case": 31,
+            "arm_order": "(process_index + case_ordinal + repeat_index) modulo 2",
+            "statistics": "per-case median then linear p95 across 24 cases",
+            "cost_segments": ["before", "action", "feedback", "next", "continuous_total"],
+            "I_over_B_limit_per_process_per_segment": 1.05,
+            "old_CF_separate_V_A_and_total_limit": 1.10,
+            "new_per_case_hard_gate": False,
+            "pre_run_identity": "seal actual project import/source closure, dirty/untracked bytes, exact argv/env, deployment-v1 export and scored feedback identities",
+        },
+        "deployments": deployment_inputs(),
+        "control_plans": _planned_controls(),
+        "rework_controls": rework_probe_inputs(),
+        "method_probe": method_probe_inputs(feedback_root),
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--feedback-root", type=Path,
+                        help="Original preflight_001 native_002 tree to bind preregistered B/B feedback.")
     args = parser.parse_args()
-    text = json.dumps(manifest_document(), ensure_ascii=False, allow_nan=False, indent=2) + "\n"
+    text = json.dumps(manifest_document(feedback_root=args.feedback_root),
+                      ensure_ascii=False, allow_nan=False, indent=2) + "\n"
     if args.output is None:
         print(text, end="")
     else:

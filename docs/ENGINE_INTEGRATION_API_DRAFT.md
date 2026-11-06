@@ -11,48 +11,58 @@ reference = ReferenceFrame(frame_id, topology_generation, moving_world_m)
 with BlenderRadicalSession(scene, view_layer, objects, goal, generations,
                            reference=reference, deployment=deployment) as session:
     before = session.observe(ObservationRequest("before", "NATURAL", "L"),
-                             context_changes=before_context_changes)
+                             changes=before_changes)
     planned = session.predict_action(before.observation_id, "command-1", command,
                                      predictor="L")
     if isinstance(planned, PreparedAction):
         result = session.execute(planned, ObservationRequest("after", "NATURAL", "L"),
-                                 context_changes=after_context_changes)
+                                 changes=after_changes)
         session.action_feedback(result.action_ticket)
         session.view_feedback(before.view_ticket, consumer_feedback_for_before)
         session.view_feedback(result.view_ticket, consumer_feedback_for_after)
         next_result = session.observe(ObservationRequest("next", "NATURAL", "L"),
-                                      context_changes=next_context_changes)
+                                      changes=next_changes)
 ```
 
 该示例的评分反馈由调用者从实际返回的 PNG 得到。无图或 F 时无 view ticket，无学习 A 或无有限实测时无 action ticket。调用者仅提交存在的票据。会话串行在同一 Blender 主线程/GPU 上下文使用，调用之间由调用者管理场景变化。不同会话的状态、索引和资源分别持有。
 
 | 调用或返回 | 约定 |
 | --- | --- |
-| `observe(request, *, context_changes)` | 用场景当前帧做一次实际观察。每个需要的对象最多一次 RB capture。返回观察 ID、帧、AO bytes、有序 PNG 附件、清晰的图像状态和可选 V 票据。 |
+| `observe(request, *, changes)` | 用场景当前帧做一次实际观察。`changes` 按对象声明本次捕获，每个需要的对象最多一次 RB capture。返回观察 ID、帧、AO bytes、有序 PNG 附件、图像状态和可选 V 票据。 |
 | `ObservationRequest(observation_id, image_mode, view_arm)` | `image_mode` 为 `NATURAL`、`SECTION` 或显式 `None`。F 为现有 active 默认顺序，R 为检索，L 为学习重排。没有部署模型的请求显式用 F。R/L 均为现有 16 候选全排列，语义等同实际 VG。 |
-| `predict_action(observation_id, action_id, command, *, predictor)` | 使用当前已观察状态与一条显式 `Translate` 或 `SetShapeKey`。预测臂为 `NONE`、`G` 或 `L`。返回绑定观察和命令的 `PreparedAction` 或 `NoAction(reason)`。预测不写宿主。 |
-| `execute(plan, after_request, *, context_changes)` | 调用现有控制器完成一次写入及后回读。复用真实 `Outcome.after` 及同次刷新网格做后 TD/VG/AO。返回一个包含 before、after、Outcome 的 AO 包、对应附件和可用反馈票据，不另编码 standalone after。 |
+| `predict_action(observation_id, action_id, command, *, predictor)` | 使用当前成功发布的观察和明确的 `Translate` 或 `SetShapeKey`。公开预测臂为 `NONE`、`G`、`L`。返回会话绑定的计划或 `NoAction("NO_SURFACE" / "GOAL_REACHED")`。预测不写宿主。 |
+| `execute(plan, after_request, *, changes)` | 完成一次写入及后回读。复用真实 `Outcome.after` 及同次刷新网格做后 TD/VG/AO。成功返回一个包含 before、after、Outcome 的联合 AO 包、对应附件和可用反馈票据，不另编码 standalone after。 |
 | `action_feedback(ticket)` | 学习 A 只用成功执行后实际 `Outcome.measured_delta_m`，与动作前的合法特征和米制尺度一起形成一次更新。调用者不提供任意 delta。 |
 | `view_feedback(ticket, feedback)` | 反馈绑定观察 ID、附件键、实际方向的规范候选 ID 和消费者的像素判断。安全标签为 VG 实际提前停止且消费者判像素合格。只写实际方向及其实际探测 ray 数。R 写库，L 按已验收规则写库及更新。 |
 | `replace_reference(reference)` | 显式替换同一拓扑代的世界米制参考并撤销当前观察的可执行性，下一次真正观察使用新参考。参考切换不回写过去观察。 |
 | `close()`、上下文管理 | 清除 controller 持有的 bridge/index/current、会话 TD 参考、临时准备数据和 CF 参数/经验库，在所属 GPU 上下文释放 VG offscreen 和相机。关闭后引用旧返回包仍可消费其 bytes。 |
 
-调用者使用本次会话内唯一观察 ID。同帧可有不同观察 ID，禁止以 frame number 代替动作绑定。当前捕获与已计划动作之间场景稳定，执行用绑定当前观察的计划。迟到的 V 反馈通过相应票据仍可作用于实际呈现。一次更新消耗票据。票据由调用者持有，包含会话身份对象、操作绑定和必要特征，小票据本身标记已消费，不设未决字典、散列、TTL 或等待队列。复制或重放相同票据属于调用错误。用于冻结正式质量评估时，基准直接从同一部署参数启动独立状态，把计时更新写入独立 shadow；真实闭环使用同一活动会话更新后再查询。
+调用者使用本会话内唯一观察 ID，同帧仍可有不同 ID。当前捕获与计划执行之间由调用者保持场景稳定。计划绑定活动会话身份和当前成功发布的观察身份。新观察、执行开始、参考替换、关闭都撤销旧计划。通过检查后，执行开始时消耗该计划，同一观察的其他计划同时失效。跨会话、旧、已消费或关闭后的计划拒绝，宿主未写入。
+
+V/A 票据由调用者持有。V 票据保存真实呈现的绑定和必要特征，A 票据保存动作前特征、尺度及实测 Outcome 的 delta。活动会话内迟到的 V/A 可更新一次，包括下一观察或参考替换之后。替换参考只撤销计划与当前观察，不抹除已经呈现或执行的证据。反馈校验 owner、是否已消费和各自操作绑定后消耗票据，再调用真实更新。关闭后旧票据失效，新会话不得消费旧会话票据。票据和计划按原对象传递，复制属于合同外，单个消费标志只约束正常调用。小票据无回指会话，不使用未决表、散列、TTL 或等待队列。下一查询必须读取本次反馈更新后的活动状态。质量对照另从相同部署启动，不能把计时更新写入下一查询不读取的 shadow。
 
 ## 最小共享捕获接缝
 
 控制器是唯一的目标 `BlenderResidentBridge` 和两份目标 `SurfaceIndex` 的所有者。生产会话调用其 `observe` 或 `execute` 并从同一 bridge 借用最新 target/context mesh。两者各自在现有依赖图和米/BU 下运行。
 
-建议只在 `human_eye_fast/control.py` 增加两个可选构造关键字，以及内部捕获阶段标识。语义示意如下。
+建议在 `human_eye_fast/control.py` 增加可选的显式 view layer、目标逐对象 mask 和共享上下文回调。原控制器继续拥有唯一 bridge/index。回调留在依赖图有效的 override 中，精确顺序如下。
 
 ```python
 BlenderControl(scene, objects, goal, *, view_layer=None, capture_context=None)
-# capture_context(phase, bridge, depsgraph, scale_length) -> None
-# phase 为 "observe" 或 "after"，只采集显式非目标网格
+# observe(..., *, target_changes=None), execute(..., *, target_changes=None)
+# capture_context(phase, bridge, graph, scale_length, measured_outcome)
+# 只采集非目标网格，observe 时 measured_outcome=None
+#
+# observe: graph → capture targets/BC → context callback → publish latest
+# execute: revoke before → read prior control → host setter →
+#          graph → capture targets/BC → read actual control_after →
+#          construct Outcome → context callback(same graph, outcome) →
+#          TD/VG/AO using outcome.after → publish latest
 ```
 
-- `_view_layer` 采用显式参数，否则沿用原 `scene.view_layers[0]`。在 `_capture` 原目标 capture、索引建/更新和真实 BC 查询后，在同一 temp override 和 graph 调用可选回调，随后返回原 `ClearanceReadback`。显式 phase 由 `observe`/成功 `execute` 调用点传入。默认无回调的分支保持既有返回和可见行为。
-- 目标初次加入时仍读拓扑、顶点、变换和外观。每次显式观察用原 `VERTICES|TRANSFORM|UNITS`，动作成功后的两目标用原 `VERTICES|TRANSFORM`。已持有上下文可由调用者显式声明 `MeshChange.NONE`；动态上下文声明所需变更位，包括拓扑和外观。回调不再次取 graph、不捕获目标、不运行第二次 BC。目标外观和目标拓扑在单会话代内固定，外观或拓扑替换通过关闭旧会话并显式新建代，且给出匹配新原面的参考。
+- `_view_layer` 使用显式参数，独立控制器未提供时沿用原 `scene.view_layers[0]`。保留 `_capture` 的目标采集、索引更新及单次全局 BC，回调由公开方法在图内调用，不塞进目标窄相。独立旧调用省略参数，保留原目标捕获 flags、返回、空面和已达目标行为。
+- 会话复制构造代号映射。每次 `changes` 逐对象指定 `CaptureChange(mask, generation=None)`。首次登记即使 NONE 也建立完整 mesh 状态。目标固定拓扑和外观，每次动作后两目标至少刷新 VERTICES 和 TRANSFORM。观察时由显式声明决定。未改变目标顶点/变换/单位可复用现有索引，BC 仍做单次查询。静态上下文用 NONE，随动用 TRANSFORM，单位重编码用 UNITS。上下文 TOPOLOGY 必须携带新 generation，同一次成功重建后即时更新该对象私有代号，AO 使用每对象代号。无 TOPOLOGY 不更新代号。后续发布失败不回滚已经成功重建的状态。目标拓扑或外观替换通过新会话代并提供匹配参考。
+- 写入前绑定拒绝不尝试写入。执行已开始但在 setter 前失败报告 `prepare/not_written`。setter 本身异常报告 `write/unknown`，不猜是否部分写入。setter 返回后，若目标网格、BC 或实际 `control_after` 未取得，报告 `target_readback/written` 和 `outcome=None`。实测都完成后先物化 Outcome，再回调同图 context。后续 context、TD、渲染或 AO 失败分别报告阶段、`written` 及真实 Outcome。具名错误可附已绑定实际 Outcome 的一次 A 票据。失败路径撤销旧计划且无成功发布的 current，调用者用新的显式观察恢复。无重试、回滚或替代图像。
 - `execute` 获得 `Outcome.after` 后直接发布，不调用 `control.observe(after_id)`。下一次显式 `observe` 是反馈后的新查询。它可在同一 Blender 帧重新观察，也可以由调用者先改变帧。其新捕获单列，不计成前一次动作后回读的第二次捕获。
 - VG 仍可按现有实现为相机投影取得自己的 evaluated graph。该获取不重复读取目标网格，不另建目标索引。图像在同一 scene/view layer、稳定帧和相同米/BU 下生成。首版无需修改 VG 的入参。任何新增 camera seam 另由主干审定。
 
@@ -69,9 +79,9 @@ BlenderControl(scene, objects, goal, *, view_layer=None, capture_context=None)
 - `Translate(delta_world_m)` 使用明确世界米位移。当前控制取借用的 `world_from_local[:3,3]`。有限几何假设 moving 的求值形状及世界线性部分不随写入改变，reference 的求值几何在该命令下独立。静态可逆父变换可支持，需真实探针对照写入后矩阵和顶点。接线主验收对平移显式使用 G，已封存的学习 A 收益只对原 shape 主集主张。若 reference 依赖 moving、驱动/约束改变形状或父级使实际有限变换不同，调用者显式使用 `NONE`，仍使用原生回读给真实结果。
 - `SetShapeKey(key_name, value)` 从真实 RNA 取选中 key 与它声明的 `relative_key` 的 authored 坐标，读取 evaluated q，而非把 Basis 或请求目标当当前控制。已知世界米形变基为 `B=(key_co_BU-relative_key_co_BU)*s @ A.T`，仅线性部分乘以差分。有限位移为 `(target-q) B`。要求 relative 模式、活动可写的单个未遮罩 key、当前及目标 q 在支持区间、其他影响和世界线性部分保持不变、求值顶点行与 authored key 对应。固定父级下的旋转和非均匀尺度适用该公式。诊断需含实际相对 key 指向非 Basis 的例子。绝对形态键、vertex-group 掩码、改变行或非线性形变的 modifier、改变结果的驱动及超范围写入在 G/L 合同外。明确 `NONE` 可交给现有控制器执行其支持的真实命令。实际 q 和几何只从回读得出，超范围诊断仅以实际 q 与实测计。
 
-静态 RNA 基可由调用者为明确的 key 预备，加载成本单列。G 的最小计算只需要当前见证三角三行世界位移及局部窄相。L 计算同语义 G 和完整合法特征，复用特征中的 G，不再重复窄相。
+静态 RNA 局部 BU 基由调用者针对明确 moving 对象、key 和其实际 relative_key 预备，并绑定这三个 RNA 身份。缓存有效期内 authored 坐标和 relative_key 定义固定，q 可变。改定义须显式重新预备或新建会话，热路径不扫描或 hash authored 数组。每次使用当前 RNA scale 与 evaluated A 转为世界米。G 的最小计算只需当前见证三角三行位移及局部窄相。L 复用特征内的 G，不重复窄相。
 
-空表面由统一入口发布 `empty_surface` 与空见证，无 PNG、无动作计划和标签。这是会话的明确任务政策。独立 `BlenderControl` 原本允许对空面执行显式命令并产生无有限 delta 的 Outcome，保留该直接调用行为。有限零距保留真实 AO 和自然图像，VG 无搜索 ray、无 V 标签。零距且已经达到 Goal 时不写入。零距目标未达时可明确命令打开间隙。SECTION 只在正间隙生成，非适用时建议保留 AO/Outcome 并返回 `section_requires_positive_gap`，无替代图像。正式接线质量用预定有效 mode；非适用状态另作控制。执行后若成像或发布失败，应让错误携带已经实测的 Outcome，调用者可以区分命令是否已执行，无自动重试。
+图像状态为 `disabled`、`empty_surface`、`section_requires_positive_gap` 或 `rendered`。显式 `image_mode=None` 优先返回 disabled，禁止初始化 VG、prepare、出图及 V 票据。空面 AO 保留空见证，统一入口返回 NO_SURFACE。独立旧控制器的显式空面命令仍可实际写入并产生无有限 delta 的 Outcome。有限零距 NATURAL 有真实图像但无搜索 ray 和 V 票据。已达 Goal 返回 GOAL_REACHED，零距目标未达时可明确开缝。SECTION 在非正间隙保留 AO/Outcome 并返回对应无图状态，不替换为 NATURAL。状态属于公开 wrapper，既有 AO 无图字段仍为 null。
 
 ## 所有权和公开消费
 
