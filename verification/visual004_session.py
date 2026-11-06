@@ -188,12 +188,12 @@ class OwnerBroker:
             save(folder/'PUBLIC_RESPONSE.json',public,replace=True);self._persist()
         return public
 
-def serve(*,asset,blender,workspace,condition,seconds=600,expected_asset_sha256=None):
+def serve(*,asset,blender,workspace,condition,seconds=600,expected_asset_sha256=None,qa_vertex_patch=None):
     started=time.perf_counter_ns();need(type(seconds) in (int,float) and 0<seconds<=600,'broker_seconds')
     deadline=started+int(seconds*1e9);session=None;broker=None
     try:
         session=NativeSession.start(asset=asset,blender=blender,workspace=workspace,deadline_ns=deadline,
-            condition=condition,expected_asset_sha256=expected_asset_sha256,max_calls=128)
+            condition=condition,expected_asset_sha256=expected_asset_sha256,max_calls=128,qa_vertex_patch=qa_vertex_patch)
         broker=OwnerBroker(session,started_ns=started,deadline_ns=deadline)
         with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as server:
             server.bind(('127.0.0.1',0));server.listen(2)

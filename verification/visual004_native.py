@@ -58,7 +58,38 @@ def publish_ready(path,value,*,deadline_ns):
 
 def protected_files_intact(config):
     return (sha(config['asset'])==config['asset_sha256'] and sha(config['asset_copy'])==config['asset_sha256']
-        and all(sha(row['path'])==row['sha256'] for row in config.get('protected_public_images',[])))
+        and all(sha(row['path'])==row['sha256'] for row in config.get('protected_public_images',[]))
+        and ('qa_vertex_patch' not in config
+             or sha(config['qa_vertex_patch']['path'])==config['qa_vertex_patch']['sha256']))
+
+def _load_qa_vertex_patch(path,expected_sha256=None):
+    """Validate the fixed coordinator patch before any vertex setter runs."""
+    raw=Path(path).read_bytes()
+    need(len(raw)<=MAX_CODE,'qa_patch_bytes')
+    digest=hashlib.sha256(raw).hexdigest()
+    need(expected_sha256 is None or digest==expected_sha256,'qa_patch_source_changed')
+    patch=json.loads(raw)
+    need(type(patch) is dict and set(patch)=={'target_name','vertices'},'qa_patch_fields')
+    need(type(patch['target_name']) is str and 0<len(patch['target_name'])<=256,'qa_patch_target')
+    need(type(patch['vertices']) is list and 0<len(patch['vertices'])<=4096,'qa_patch_vertices')
+    indices=set()
+    vertices=[]
+    for row in patch['vertices']:
+        need(type(row) is dict and set(row)=={'index','co'},'qa_patch_vertex_fields')
+        index=row['index']
+        need(type(index) is int and index>=0 and index not in indices,'qa_patch_index')
+        co=row['co']
+        need(type(co) is list and len(co)==3
+             and all(type(value) in (int,float) and abs(value)<=3.4028234663852886e38
+                     and math.isfinite(value) for value in co),'qa_patch_coordinate')
+        # Blender mesh coordinates are float32. Bind readback to the same
+        # representable values.
+        try:normalized=[struct.unpack('f',struct.pack('f',value))[0] for value in co]
+        except (OverflowError,struct.error):raise ValueError('visual004_native_qa_patch_coordinate_range')
+        need(all(math.isfinite(value) for value in normalized),'qa_patch_coordinate_range')
+        indices.add(index)
+        vertices.append(dict(index=index,co=normalized))
+    return dict(target_name=patch['target_name'],vertices=vertices),digest
 
 def png_metadata(raw):
     need(type(raw) is bytes and 33<=len(raw)<=16*1024*1024 and raw[:8]==b'\x89PNG\r\n\x1a\n','PNG_signature_or_size')
@@ -158,7 +189,7 @@ def _read_request(connection,deadline_ns):
         except (ValueError,UnicodeDecodeError):continue
         need(type(request) is dict,'request_object');return request
 
-def _scene_fingerprint(bpy):
+def _scene_state(bpy):
     """Terminal original geometry/identity check, not a source validator/solver."""
     rows=[]
     for obj in sorted(bpy.data.objects,key=lambda x:x.name):
@@ -186,9 +217,34 @@ def _scene_fingerprint(bpy):
         if obj.type=='MESH':row.update(vertices=[list(v.co) for v in obj.data.vertices],edges=[list(edge.vertices) for edge in obj.data.edges],
             polygons=[dict(vertices=list(f.vertices),material_index=f.material_index,use_smooth=f.use_smooth) for f in obj.data.polygons])
         rows.append(row)
-    body=dict(objects=rows,unit_scale=bpy.context.scene.unit_settings.scale_length,
+    return dict(objects=rows,unit_scale=bpy.context.scene.unit_settings.scale_length,
         frame_number=getattr(bpy.context.scene,'frame_current',0),subframe=getattr(bpy.context.scene,'frame_subframe',0))
-    return hashlib.sha256(encoded(body)).hexdigest()
+
+def _scene_fingerprint(bpy):
+    return hashlib.sha256(encoded(_scene_state(bpy))).hexdigest()
+
+def _apply_qa_vertex_patch(bpy,patch):
+    """Apply the preregistered local coordinates and verify the full readback."""
+    before=_scene_state(bpy)
+    targets=[obj for obj in bpy.data.objects if obj.name==patch['target_name']]
+    need(len(targets)==1 and targets[0].type=='MESH','qa_patch_target_mesh')
+    target=targets[0]
+    need(sum(obj.type=='MESH' and obj.data is target.data for obj in bpy.data.objects)==1,'qa_patch_shared_mesh')
+    need(all(row['index']<len(target.data.vertices) for row in patch['vertices']),'qa_patch_index_range')
+    need(any(list(target.data.vertices[row['index']].co)!=row['co'] for row in patch['vertices']),'qa_patch_no_change')
+    expected=json.loads(encoded(before))
+    target_state=next(row for row in expected['objects'] if row['name']==patch['target_name'])
+    for row in patch['vertices']:
+        target_state['vertices'][row['index']]=row['co']
+    for row in patch['vertices']:
+        target.data.vertices[row['index']].co=row['co']
+    target.data.update()
+    bpy.context.view_layer.update()
+    after=_scene_state(bpy)
+    need(after==expected,'qa_patch_readback')
+    return dict(target_name=patch['target_name'],vertices_written=len(patch['vertices']),
+        before_fingerprint=hashlib.sha256(encoded(before)).hexdigest(),
+        after_fingerprint=hashlib.sha256(encoded(after)).hexdigest())
 
 def _scan_pngs(workspace):
     rows={}
@@ -207,7 +263,8 @@ def worker(config_path):
     # default output path so ordinary write_still never targets the source PNG.
     renders_directory=workspace/'renders';renders_directory.mkdir(exist_ok=True)
     bpy.context.scene.render.filepath=str(renders_directory/'default.png')
-    initial=_scene_fingerprint(bpy);audit=workspace/'WORKER_EVENTS.jsonl';renders=[]
+    initial=_scene_fingerprint(bpy);current=initial;qa_advanced=False
+    audit=workspace/'WORKER_EVENTS.jsonl';renders=[]
     def render_event(kind):
         def handler(*_):
             event=dict(event=kind,at_ns=time.perf_counter_ns());renders.append(event);append(audit,event)
@@ -247,32 +304,61 @@ def worker(config_path):
                         if request.get('type')=='close':
                             response=dict(status='closed',pid=os.getpid(),deadline_ns=deadline);connection.sendall(encoded(response));break
                         need(sequence<=config['max_calls'],'call_budget')
-                        need(set(request)=={'type','params'} and request['type']=='execute_code' and type(request['params']) is dict
-                            and set(request['params'])=={'code'},'execute_code_request')
-                        code=request['params']['code'];need(type(code) is str and len(code.encode('utf8'))<=MAX_CODE,'code_bytes')
-                        before=_scan_pngs(workspace);need(_scene_fingerprint(bpy)==initial,'scene_changed_before')
-                        need(protected_files_intact(config),'source_file_changed_before')
-                        call=workspace/('call_'+str(sequence));call.mkdir();(call/'SCRIPT.py').write_text(code,encoding='utf8')
-                        stdout=_LimitedText();stderr=_LimitedText();script_error=None
-                        try:
+                        if request.get('type')=='qa_advance':
+                            event['operation']='qa_advance'
+                            need(set(request)=={'type','params'} and type(request['params']) is dict
+                                and set(request['params'])=={'patch_sha256'},'qa_advance_request')
+                            binding=config.get('qa_vertex_patch')
+                            need(binding is not None,'qa_patch_not_enabled')
+                            need(not qa_advanced,'qa_patch_already_applied')
+                            need(request['params']['patch_sha256']==binding['sha256'],'qa_patch_binding')
+                            need(_scene_fingerprint(bpy)==current,'scene_changed_before')
+                            need(protected_files_intact(config)
+                                and sha(Path(__file__))==config['helper_sha256'],'source_file_changed_before')
+                            check(deadline)
+                            # The public broker never exposes this coordinator
+                            # operation. Any failure after entry poisons the
+                            # chain, including a partial vertex setter failure.
                             execution_entered=True
-                            with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):exec(compile(code,str(call/'SCRIPT.py'),'exec'),namespace)
-                        except BaseException as exc:script_error=dict(type=type(exc).__name__,message=str(exc),traceback=traceback.format_exc())
-                        raw_out=stdout.getvalue();raw_err=stderr.getvalue()
-                        (call/'stdout.txt').write_text(raw_out,encoding='utf8');(call/'stderr.txt').write_text(raw_err,encoding='utf8')
-                        check(deadline)
-                        need(not (workspace/'POISONED.json').exists(),'session_poisoned')
-                        after=_scan_pngs(workspace);changed=[dict(path=path,**meta) for path,meta in after.items() if before.get(path)!=meta]
-                        intact=_scene_fingerprint(bpy)==initial and protected_files_intact(config)
-                        event.update(script_sha256=hashlib.sha256(code.encode('utf8')).hexdigest(),stdout_bytes=len(raw_out.encode('utf8')),
-                            stderr_bytes=len(raw_err.encode('utf8')),script_error=script_error,changed_or_new_PNG_files=changed,
-                            render_events_after=len(renders),terminal_geometry_and_file_checks_passed=intact,
-                            status='completed' if intact and script_error is None else 'script_failed' if intact else 'state_changed',
-                            protection_scope='terminal fingerprint/file hashes plus code audit; no claim to detect reverted transient mutation or sandbox Python')
-                        if not intact:poisoned=True
-                        response=(dict(status='success',result=dict(executed=True,result=raw_out)) if intact and script_error is None else
-                            dict(status='error',error=script_error or dict(type='StateChanged',message='terminal geometry/file protection failed'),
-                                stdout=raw_out,stderr=raw_err,poisoned=poisoned))
+                            patch,_=_load_qa_vertex_patch(binding['path'],binding['sha256'])
+                            outcome=_apply_qa_vertex_patch(bpy,patch)
+                            check(deadline)
+                            need(protected_files_intact(config)
+                                and sha(Path(__file__))==config['helper_sha256'],'source_file_changed_after')
+                            check(deadline)
+                            need(not (workspace/'POISONED.json').exists(),'session_poisoned')
+                            current=outcome['after_fingerprint'];qa_advanced=True
+                            event.update(status='qa_patch_applied',patch_sha256=binding['sha256'],
+                                original_fingerprint=initial,**outcome)
+                            response=dict(status='success',result=dict(stage=1,patch_sha256=binding['sha256'],
+                                original_fingerprint=initial,**outcome))
+                        else:
+                            need(set(request)=={'type','params'} and request['type']=='execute_code' and type(request['params']) is dict
+                                and set(request['params'])=={'code'},'execute_code_request')
+                            code=request['params']['code'];need(type(code) is str and len(code.encode('utf8'))<=MAX_CODE,'code_bytes')
+                            before=_scan_pngs(workspace);need(_scene_fingerprint(bpy)==current,'scene_changed_before')
+                            need(protected_files_intact(config),'source_file_changed_before')
+                            call=workspace/('call_'+str(sequence));call.mkdir();(call/'SCRIPT.py').write_text(code,encoding='utf8')
+                            stdout=_LimitedText();stderr=_LimitedText();script_error=None
+                            try:
+                                execution_entered=True
+                                with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):exec(compile(code,str(call/'SCRIPT.py'),'exec'),namespace)
+                            except BaseException as exc:script_error=dict(type=type(exc).__name__,message=str(exc),traceback=traceback.format_exc())
+                            raw_out=stdout.getvalue();raw_err=stderr.getvalue()
+                            (call/'stdout.txt').write_text(raw_out,encoding='utf8');(call/'stderr.txt').write_text(raw_err,encoding='utf8')
+                            check(deadline)
+                            need(not (workspace/'POISONED.json').exists(),'session_poisoned')
+                            after=_scan_pngs(workspace);changed=[dict(path=path,**meta) for path,meta in after.items() if before.get(path)!=meta]
+                            intact=_scene_fingerprint(bpy)==current and protected_files_intact(config)
+                            event.update(script_sha256=hashlib.sha256(code.encode('utf8')).hexdigest(),stdout_bytes=len(raw_out.encode('utf8')),
+                                stderr_bytes=len(raw_err.encode('utf8')),script_error=script_error,changed_or_new_PNG_files=changed,
+                                render_events_after=len(renders),terminal_geometry_and_file_checks_passed=intact,
+                                status='completed' if intact and script_error is None else 'script_failed' if intact else 'state_changed',
+                                protection_scope='terminal fingerprint/file hashes plus code audit; no claim to detect reverted transient mutation or sandbox Python')
+                            if not intact:poisoned=True
+                            response=(dict(status='success',result=dict(executed=True,result=raw_out)) if intact and script_error is None else
+                                dict(status='error',error=script_error or dict(type='StateChanged',message='terminal geometry/file protection failed'),
+                                    stdout=raw_out,stderr=raw_err,poisoned=poisoned))
                     except BaseException as exc:
                         event.update(status='transport_or_guard_error',error_type=type(exc).__name__,reason=str(exc))
                         response=dict(status='error',error=dict(type=type(exc).__name__,message=str(exc)))
@@ -292,13 +378,16 @@ def worker(config_path):
         except BaseException as exc:
             if original is None:raise
             original.add_note('owned watchdog cleanup failed: '+repr(exc))
-    save(workspace/'WORKER_CLOSED.json',dict(pid=os.getpid(),closed_ns=time.perf_counter_ns(),poisoned=poisoned,
+    closed=dict(pid=os.getpid(),closed_ns=time.perf_counter_ns(),poisoned=poisoned,
         final_geometry_fingerprint=_scene_fingerprint(bpy),initial_geometry_fingerprint=initial,
-        original_deadline_ns=deadline))
+        original_deadline_ns=deadline)
+    if 'qa_vertex_patch' in config:
+        closed.update(accepted_geometry_fingerprint=current,qa_patch_applied=qa_advanced)
+    save(workspace/'WORKER_CLOSED.json',closed)
 
 class NativeSession:
     @classmethod
-    def start(cls,*,blender,asset,workspace,deadline_ns,condition='N',expected_asset_sha256=None,max_calls=64):
+    def start(cls,*,blender,asset,workspace,deadline_ns,condition='N',expected_asset_sha256=None,max_calls=64,qa_vertex_patch=None):
         started=time.perf_counter_ns();check(deadline_ns)
         need(deadline_ns-started<=600*10**9,'maximum_original_window')
         need(condition in ('N','P') and type(max_calls) is int and 1<=max_calls<=128,'session_parameters')
@@ -311,6 +400,10 @@ class NativeSession:
             self.config=dict(schema='visual004-native-session-v1',workspace=str(self.workspace),asset=str(asset),asset_copy=str(copied),
                 asset_sha256=digest,blender=str(blender),blender_sha256=sha(blender),helper_sha256=sha(Path(__file__)),
                 deadline_ns=deadline_ns,condition=condition,max_calls=max_calls,started_ns=started)
+            if qa_vertex_patch is not None:
+                patch_path=Path(qa_vertex_patch).resolve()
+                _,patch_digest=_load_qa_vertex_patch(patch_path)
+                self.config['qa_vertex_patch']=dict(path=str(patch_path),sha256=patch_digest)
             public_image=asset.parent/'initial.png'
             self.config['protected_public_images']=([dict(path=str(public_image),sha256=sha(public_image))] if public_image.is_file() else [])
             save(self.workspace/'CONFIG.json',self.config);check(startup_deadline)
@@ -383,6 +476,49 @@ class NativeSession:
         except (OSError,TimeoutError,ValueError) as exc:
             save(self.workspace/('CLIENT_FAILURE_'+uuid.uuid4().hex+'.json'),dict(type=type(exc).__name__,reason=str(exc),elapsed_ns=time.perf_counter_ns()-started))
             self.abort('client_transport_unknown');raise
+    def qa_advance(self,*,timeout_s=30):
+        """One coordinator-only attempt, outside the public broker tools.
+
+        The persistent attempt file also blocks a reopened caller from
+        retrying after an unconfirmed response. Runtime access remains
+        unrestricted Python under the trial's read-only consumer protocol.
+        """
+        need(not (self.workspace/'POISONED.json').exists(),'session_poisoned')
+        binding=self.config.get('qa_vertex_patch')
+        need(binding is not None,'qa_patch_not_enabled')
+        need(protected_files_intact(self.config)
+            and sha(Path(__file__))==self.config['helper_sha256'],'qa_patch_source_changed')
+        check(self.config['deadline_ns'])
+        started=time.perf_counter_ns()
+        # save uses exclusive creation, serializing separate coordinator
+        # clients without extending the original deadline or RPC budget.
+        save(self.workspace/'QA_ADVANCE_ATTEMPT.json',dict(started_ns=started,
+            patch_sha256=binding['sha256'],original_deadline_ns=self.config['deadline_ns']))
+        response=None
+        try:
+            response=self._exchange(dict(type='qa_advance',params=dict(patch_sha256=binding['sha256'])),timeout_s)
+            need(type(response) is dict and response.get('status')=='success','qa_advance_failed')
+            result=response.get('result')
+            need(type(result) is dict and result.get('stage')==1
+                and result.get('patch_sha256')==binding['sha256'],'qa_advance_response_binding')
+            need(protected_files_intact(self.config)
+                and sha(Path(__file__))==self.config['helper_sha256'],'qa_patch_source_changed')
+            check(self.config['deadline_ns'])
+            need(not (self.workspace/'POISONED.json').exists(),'session_poisoned')
+            receipt=dict(response=response,elapsed_ns_before_receipt_publish=time.perf_counter_ns()-started,
+                original_deadline_ns=self.config['deadline_ns'],protected_files_unchanged=True,
+                scope='coordinator patch RPC and checks; receipt publication is outside this elapsed field')
+            save(self.workspace/'QA_ADVANCE_RECEIPT.json',receipt)
+            check(self.config['deadline_ns'])
+            need(not (self.workspace/'POISONED.json').exists(),'session_poisoned')
+            return receipt
+        except (OSError,TimeoutError,ValueError) as exc:
+            try:
+                save(self.workspace/'QA_ADVANCE_FAILURE.json',dict(response=response,type=type(exc).__name__,
+                    reason=str(exc),elapsed_ns_before_failure_publish=time.perf_counter_ns()-started,
+                    original_deadline_ns=self.config['deadline_ns']))
+            finally:self.abort('qa_advance_failed_or_unknown_no_replay')
+            raise
     def abort(self,reason):
         path=self.workspace/'POISONED.json'
         if not path.exists():save(path,dict(reason=str(reason),at_ns=time.perf_counter_ns(),original_deadline_ns=self.config['deadline_ns']))

@@ -111,6 +111,21 @@ class NeutralTransportTests(unittest.TestCase):
         folder=self.root/'images';folder.mkdir();(folder/'consumer.png').write_bytes(png())
         rows=n._scan_pngs(self.root);self.assertEqual(len(rows),1)
         self.assertEqual(next(iter(rows.values()))['pixels'],64)
+    def test_qa_client_rejects_success_response_after_concurrent_abort(self):
+        session=n.NativeSession();session.workspace=self.root;session.process=None
+        asset=self.root/'asset.blend';asset.write_bytes(b'authored transport fixture')
+        patch_path=self.root/'qa_patch.json';n.save(patch_path,dict(target_name='Object_01',vertices=[dict(index=0,co=[1.,0.,0.])]))
+        binding=dict(path=str(patch_path),sha256=n.sha(patch_path))
+        session.config=dict(asset=str(asset),asset_copy=str(asset),asset_sha256=n.sha(asset),
+            helper_sha256=n.sha(n.__file__),qa_vertex_patch=binding,deadline_ns=time.perf_counter_ns()+10**9)
+        def reply_after_abort(*args):
+            n.save(self.root/'POISONED.json',dict(reason='authored concurrent coordinator abort'))
+            return dict(status='success',result=dict(stage=1,patch_sha256=binding['sha256']))
+        with patch.object(session,'_exchange',side_effect=reply_after_abort):
+            with self.assertRaisesRegex(ValueError,'session_poisoned'):
+                session.qa_advance()
+        self.assertTrue((self.root/'QA_ADVANCE_FAILURE.json').exists())
+        self.assertFalse((self.root/'QA_ADVANCE_RECEIPT.json').exists())
 
 class AuthoredWorkerTests(unittest.TestCase):
     """Actual RPC/exec loop, fake empty bpy, never an actual Blender process."""
@@ -127,6 +142,8 @@ class AuthoredWorkerTests(unittest.TestCase):
         fake=types.ModuleType('bpy');fake.data=types.SimpleNamespace(objects=[])
         fake.context=types.SimpleNamespace(scene=types.SimpleNamespace(unit_settings=types.SimpleNamespace(scale_length=1),render=types.SimpleNamespace(filepath='source/initial.png')))
         fake.app=types.SimpleNamespace(handlers=types.SimpleNamespace(render_pre=[],render_post=[],render_cancel=[]))
+        self.fake=fake
+        self.configure_fake(fake)
         self.patch=patch.dict(sys.modules,bpy=fake);self.patch.start();self.addCleanup(self.patch.stop)
         # Own the listening address before publication, parsing, or session
         # construction can fail. Cleanup must not depend on successful setup.
@@ -149,6 +166,8 @@ class AuthoredWorkerTests(unittest.TestCase):
             n.check(self.deadline);self.worker_finished.wait(.001)
         value=n.load(ready);self.config.update(host=value['host'],port=value['port'],pid=value['pid'])
         n.save(self.root/'SESSION.json',self.config);self.session=n.NativeSession.open(self.root);self.setup_completed=True
+    def configure_fake(self,fake):
+        pass
     def cleanup_worker(self):
         if self.thread is not None and self.thread.is_alive():
             try:
@@ -194,6 +213,162 @@ class AuthoredWorkerTests(unittest.TestCase):
             self.assertEqual(result['status'],'error');self.assertIn('session_poisoned',result['error']['message'])
         self.thread.join(timeout=2);self.assertFalse(self.thread.is_alive())
         self.assertFalse((self.root/'call_1/SCRIPT.py').exists())
+    def test_qa_advance_requires_explicit_session_opt_in(self):
+        result=self.session._exchange(dict(type='qa_advance',params=dict(patch_sha256='0'*64)),1)
+        self.assertEqual(result['status'],'error')
+        self.assertIn('qa_patch_not_enabled',result['error']['message'])
+        self.assertFalse((self.root/'QA_ADVANCE_ATTEMPT.json').exists())
+
+
+class PatchVertex:
+    def __init__(self,co):
+        self._co=list(co)
+        self.reject_setter=False
+    @property
+    def co(self):
+        return self._co
+    @co.setter
+    def co(self,value):
+        if self.reject_setter:
+            raise RuntimeError('authored second vertex setter failure')
+        self._co=list(value)
+
+
+class QAUpdateWorkerTests(unittest.TestCase):
+    """Same real fixture RPC loop with authored mesh objects, no Blender."""
+    setUp=AuthoredWorkerTests.setUp
+    cleanup_worker=AuthoredWorkerTests.cleanup_worker
+
+    def configure_fake(self,fake):
+        self.vertices=[PatchVertex([0.,0.,0.]),PatchVertex([1.,0.,0.])]
+        mesh=types.SimpleNamespace(vertices=self.vertices,edges=[],polygons=[],materials=[],update=lambda:None)
+        self.target=types.SimpleNamespace(name='Object_01',type='MESH',parent=None,data=mesh,
+            matrix_world=[[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.]],
+            hide_render=False,hide_viewport=False,hide_get=lambda:False)
+        fake.data.objects=[self.target]
+        fake.context.view_layer=types.SimpleNamespace(update=lambda:None)
+        self.patch_value=dict(target_name='Object_01',vertices=[dict(index=0,co=[2.,0.,0.]),dict(index=1,co=[3.,0.,0.])])
+        self.patch_path=self.root/'qa_patch.json'
+        n.save(self.patch_path,self.patch_value)
+        self.config.update(max_calls=8,qa_vertex_patch=dict(path=str(self.patch_path),sha256=n.sha(self.patch_path)))
+        n.save(self.root/'CONFIG.json',self.config,replace=True)
+
+    def test_three_states_keep_namespace_process_and_updated_geometry_guard(self):
+        first=self.session.run("cached=17; print(bpy.data.objects[0].data.vertices[0].co[0])")
+        again=self.session.run("print(cached, bpy.data.objects[0].data.vertices[0].co[0])")
+        receipt=self.session.qa_advance()
+        changed=self.session.run("print(cached, bpy.data.objects[0].data.vertices[0].co[0])")
+        self.assertEqual(first['response']['result']['result'],'0.0\n')
+        self.assertEqual(again['response']['result']['result'],'17 0.0\n')
+        self.assertEqual(changed['response']['result']['result'],'17 2.0\n')
+        result=receipt['response']['result']
+        self.assertEqual(result['stage'],1)
+        self.assertEqual(result['vertices_written'],2)
+        self.assertNotEqual(result['before_fingerprint'],result['after_fingerprint'])
+        self.assertEqual(result['original_fingerprint'],n.load(self.root/'READY.json')['initial_fingerprint'])
+        self.assertEqual(receipt['original_deadline_ns'],self.deadline)
+        self.assertTrue(self.thread.is_alive())
+        self.assertEqual(n.load(self.root/'QA_ADVANCE_RECEIPT.json'),receipt)
+
+    def test_reopened_coordinator_and_direct_RPC_cannot_reapply_patch(self):
+        self.session.qa_advance()
+        with self.assertRaises(FileExistsError):
+            n.NativeSession.open(self.root).qa_advance()
+        result=self.session._exchange(dict(type='qa_advance',params=dict(patch_sha256=n.sha(self.patch_path))),1)
+        self.assertEqual(result['status'],'error')
+        self.assertIn('qa_patch_already_applied',result['error']['message'])
+        self.assertEqual([vertex.co for vertex in self.vertices],[[2.,0.,0.],[3.,0.,0.]])
+
+    def test_partial_setter_failure_poisoned_without_replay(self):
+        self.vertices[1].reject_setter=True
+        with self.assertRaisesRegex(ValueError,'qa_advance_failed'):
+            self.session.qa_advance()
+        self.thread.join(timeout=2)
+        self.assertFalse(self.thread.is_alive())
+        self.assertEqual([vertex.co for vertex in self.vertices],[[2.,0.,0.],[1.,0.,0.]])
+        self.assertTrue(n.load(self.root/'WORKER_CLOSED.json')['poisoned'])
+        self.assertFalse(n.load(self.root/'WORKER_CLOSED.json')['qa_patch_applied'])
+        self.assertTrue((self.root/'QA_ADVANCE_ATTEMPT.json').exists())
+        self.assertTrue((self.root/'QA_ADVANCE_FAILURE.json').exists())
+        with self.assertRaisesRegex(ValueError,'session_poisoned'):
+            self.session.qa_advance()
+
+    def test_changed_patch_or_source_is_rejected_before_any_setter(self):
+        self.patch_path.write_text(json.dumps(dict(self.patch_value,target_name='changed')),encoding='utf8')
+        with self.assertRaisesRegex(ValueError,'qa_patch_source_changed'):
+            self.session.qa_advance()
+        self.assertEqual([vertex.co for vertex in self.vertices],[[0.,0.,0.],[1.,0.,0.]])
+        self.assertFalse((self.root/'QA_ADVANCE_ATTEMPT.json').exists())
+
+    def test_changed_original_asset_is_rejected_before_any_setter(self):
+        Path(self.config['asset']).write_bytes(b'authored unexpected source change')
+        with self.assertRaisesRegex(ValueError,'qa_patch_source_changed'):
+            self.session.qa_advance()
+        self.assertEqual([vertex.co for vertex in self.vertices],[[0.,0.,0.],[1.,0.,0.]])
+        self.assertFalse((self.root/'QA_ADVANCE_ATTEMPT.json').exists())
+
+    def test_all_indices_are_validated_before_the_first_setter(self):
+        bad_patch=dict(self.patch_value,vertices=[dict(index=0,co=[2.,0.,0.]),dict(index=99,co=[3.,0.,0.])])
+        with self.assertRaisesRegex(ValueError,'qa_patch_index_range'):
+            n._apply_qa_vertex_patch(self.fake,bad_patch)
+        self.assertEqual([vertex.co for vertex in self.vertices],[[0.,0.,0.],[1.,0.,0.]])
+
+    def test_unexpected_nonvertex_change_during_update_poisoned(self):
+        self.fake.context.view_layer.update=lambda:setattr(self.fake.context.scene.unit_settings,'scale_length',2)
+        with self.assertRaisesRegex(ValueError,'qa_advance_failed'):
+            self.session.qa_advance()
+        self.thread.join(timeout=2)
+        self.assertFalse(self.thread.is_alive())
+        self.assertTrue(n.load(self.root/'WORKER_CLOSED.json')['poisoned'])
+        self.assertFalse(n.load(self.root/'WORKER_CLOSED.json')['qa_patch_applied'])
+
+    def test_concurrent_abort_during_update_cannot_commit_current_fingerprint(self):
+        self.fake.context.view_layer.update=lambda:n.save(self.root/'POISONED.json',dict(reason='authored QA update abort'))
+        with self.assertRaisesRegex(ValueError,'qa_advance_failed'):
+            self.session.qa_advance()
+        self.thread.join(timeout=2)
+        self.assertFalse(self.thread.is_alive())
+        closed=n.load(self.root/'WORKER_CLOSED.json')
+        self.assertTrue(closed['poisoned'])
+        self.assertFalse(closed['qa_patch_applied'])
+        self.assertEqual(closed['accepted_geometry_fingerprint'],closed['initial_geometry_fingerprint'])
+        self.assertTrue((self.root/'QA_ADVANCE_FAILURE.json').exists())
+
+    def test_consumer_mutation_after_advance_still_poisons(self):
+        self.session.qa_advance()
+        result=self.session.run('bpy.data.objects[0].data.vertices[0].co=[9.,0.,0.]')
+        self.assertEqual(result['response']['status'],'error')
+        self.assertTrue(result['response']['poisoned'])
+        self.thread.join(timeout=2)
+        self.assertFalse(self.thread.is_alive())
+
+
+class QAPatchValidationTests(unittest.TestCase):
+    def test_schema_coordinates_and_unique_indices_are_validated_without_setters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'patch.json'
+            valid=dict(target_name='Object_01',vertices=[dict(index=0,co=[.065,0.,0.])])
+            invalid=[dict(valid,extra=True),dict(valid,vertices=[]),
+                dict(valid,vertices=[dict(index=True,co=[0.,0.,0.])]),
+                dict(valid,vertices=[dict(index=0,co=[float('nan'),0.,0.])]),
+                dict(valid,vertices=[dict(index=0,co=[1e300,0.,0.])]),
+                dict(valid,vertices=[valid['vertices'][0],valid['vertices'][0]])]
+            for value in invalid:
+                with self.subTest(value=value):
+                    path.write_text(json.dumps(value),encoding='utf8')
+                    with self.assertRaises(ValueError):n._load_qa_vertex_patch(path)
+            path.write_text(json.dumps(valid),encoding='utf8')
+            patch,digest=n._load_qa_vertex_patch(path)
+            expected=struct.unpack('f',struct.pack('f',.065))[0]
+            self.assertEqual(patch['vertices'][0]['co'],[expected,0.,0.])
+            self.assertEqual(digest,n.sha(path))
+
+    def test_changed_file_hash_is_rejected_before_patch_parse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'patch.json'
+            path.write_text('not JSON',encoding='utf8')
+            with self.assertRaisesRegex(ValueError,'qa_patch_source_changed'):
+                n._load_qa_vertex_patch(path,'0'*64)
 
 class FixtureCleanupTests(unittest.TestCase):
     def test_worker_start_publication_and_socket_errors_stop_owned_watchdog(self):

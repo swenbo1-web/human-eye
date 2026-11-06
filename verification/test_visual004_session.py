@@ -50,6 +50,11 @@ class BrokerTests(unittest.TestCase):
         response=self.broker.handle(dict(bad='request'))
         self.assertFalse(response['ok']);self.assertEqual(self.broker.state['public_calls'],1)
         self.assertEqual(len(self.broker.state['events']),1)
+    def test_public_broker_does_not_expose_coordinator_qa_advance(self):
+        response=self.request('qa_advance',dict(patch_sha256='0'*64))
+        self.assertFalse(response['ok'])
+        self.assertIn('broker_operation',response['error']['message'])
+        self.assertEqual(self.owner.calls,[])
     def test_duplicate_ID_spends_call_but_never_reexecutes(self):
         self.assertTrue(self.request(rid='same')['ok']);again=self.request(rid='same')
         self.assertFalse(again['ok']);self.assertIn('duplicate_request_no_replay',again['error']['message'])

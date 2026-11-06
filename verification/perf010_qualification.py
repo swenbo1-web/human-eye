@@ -66,11 +66,13 @@ def main():
     parser.add_argument('--pin', required=True)
     parser.add_argument('--expected-asset-sha256', required=True)
     parser.add_argument('--seconds', type=float, default=600.)
+    parser.add_argument('--qa-vertex-patch', type=Path)
     args = parser.parse_args()
     if args.condition == 'P': bind_candidate(args.pin)
     from verification.visual004_session import serve
     serve(asset=args.asset, blender=args.blender, workspace=args.workspace, condition=args.condition,
-          seconds=args.seconds, expected_asset_sha256=args.expected_asset_sha256)
+          seconds=args.seconds, expected_asset_sha256=args.expected_asset_sha256,
+          qa_vertex_patch=args.qa_vertex_patch)
 
 
 if __name__ == '__main__': main()
