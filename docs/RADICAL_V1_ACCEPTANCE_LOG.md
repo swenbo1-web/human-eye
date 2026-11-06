@@ -217,3 +217,10 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 2026-11-06。交付1403项产物与13源身份核验一致；seed20261105的24L+3F/G+3R/G，180对公开文件与90对严格评分相同，严格仍87/90，两个实际负反馈为false、next无反馈。主干固定六族B/I全链与14控制后台复跑通过；公开示例另进程8文件字节一致、旧公开消费者通过。两进程源/输入/环境稳定；三seed部署18字段与240行/排序/预测独立核对通过，5项部署测试通过。独立48三角形捕获/refit/BC失败恢复和shape G解析探针通过；无需新算法优化。
 
 仅接受上述阶段产物，完整生产回归和成本待验。旧CF三seed全量回放实际仍为cf_native旧入口，不替代原清单经新生产session/v1；另两seed新24场景真实反馈也须补齐。实施聊天继续限定余项，通过后按c25b638一次正式成本批次；GPU窗口已释放，完成后主动唤醒。新nested剖切法向量化误差仍超原预算，既有carried方向负例、首次示例代号与runtime capture失败全部保留。1606文件分五卷精确归档。见[功能复审](PRODUCTION_FUNCTIONAL_REVIEW.md)、[机器决定](radical_acceptance_production_functional.json)及[证据索引](production_functional_evidence_index.json.gz)。已确认收益的模块关闭，换聊天不重开优化循环。
+
+
+## 主验收019：唯一正式成本 — REWORK_CURRENT_AND_COMPLETE_PRODUCTION_F
+
+2026-11-06。独立重算5184条绝对时序/2592配对、15840实际公开文件、144活动NPZ与更新/next；15个同场景门、9个旧CF成本门及L原收益成立。完整窗口peak最大I−B513429B，RSS/DXGI观察最大值增量2105344B/524288B，均过各自门；18正式进程及资格/补充来源一致。原R失败、三视觉负观察和正式后93项控制的真实先后次序均保留。
+
+整机不接收：216热current点中33点超262144B，最大488751B；576处未知仅_bpy_types.Object，但补分类不能消除数值失败。所有已登记NumPy/public backing相同，普通Python/验证者/GC归因缺失；不得冷起点相减改门。另原V-F生产60×3仍未做，历史F分母不能替代。已事前派固定seed310519前缀0..7的B/I两进程末端snapshot诊断，之后只补180例未计时生产F；不重测已过成本，不重训、不重开模块优化。原生产79f8bcc冻结为候选，原档与用户规格不改。17287证据文件分7卷精确归档，见[正式复审](FORMAL_COST_REVIEW.md)、[限定诊断协议](MANAGED_CURRENT_DIAGNOSTIC_PROTOCOL.md)、[机器决定](radical_acceptance_formal_cost.json)、[证据索引](formal_cost_evidence_index.json.gz)。
