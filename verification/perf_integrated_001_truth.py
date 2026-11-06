@@ -7,15 +7,32 @@ imports the fixture builder, Human Eye, NumPy, or a product scoring function.
 from __future__ import annotations
 
 import argparse
+import copy
 from collections import Counter
+from decimal import Decimal, localcontext
 import hashlib
 import json
 import math
 from pathlib import Path
 
-COORDINATE_TOLERANCE_M = 1e-7
 ANSWER_DISTANCE_TOLERANCE_M = 1e-6
 EPSILON = 1e-12
+ULP_ONE = math.ulp(1.0)
+# All fixed coordinates and matrix entries lie in [-2,2]. A 3D affine
+# component has sum-of-absolute-terms <= 16 and fewer than 128 operations,
+# including rounded ideal constants and the norm calculation. Decimal's
+# correctly rounded 80-digit square root contributes less than 1e-70m.
+# The 8192-ulp allowance additionally covers the permitted affine readback
+# residual, its Euclidean norm and binary64 subtraction/norm roundoff.
+GEOMETRY_ARITHMETIC_BOUND_M = 8192 * ULP_ONE * 16
+AFFINE_READBACK_BOUND_M = 1024 * ULP_ONE * 16
+# Every reference boundary edge is at least .02m. Use .019 as a strict,
+# construction-derived lower bound, independent of the observed deviation.
+# For |coordinate|<=2, dot/length errors are bounded by 256 ulps. Clamped
+# projection is nonexpansive, and its quotient error is <=1024 ulps/L^2.
+# The factor 32768 covers projection, distance norm, caps and minima.
+MIN_REFERENCE_EDGE_M = 0.019
+ORACLE_ARITHMETIC_BOUND_M = 32768 * ULP_ONE / MIN_REFERENCE_EDGE_M ** 2
 ROTATION = [[1 / 3, 2 / 3, -2 / 3, 0],
             [2 / 3, 1 / 3, 2 / 3, 0],
             [2 / 3, -2 / 3, -1 / 3, 0], [0, 0, 0, 1]]
@@ -50,10 +67,16 @@ def construction(case, state):
         witnesses = {"Object_02": [0.0625, 0, 0]} if changed else {}
         return meshes, outer, [], (-0.05, 0.05), {"Object_02": (probe, -0.01, 0.01)}, witnesses
 
-    # An independent trigonometric construction of the same dodecagons.
-    radius = 1 / math.cos(math.pi / 12)
-    outer = [[radius * math.cos((2 * i + 1) * math.pi / 12),
-              radius * math.sin((2 * i + 1) * math.pi / 12)] for i in range(12)]
+    # Decimal's correctly rounded radical avoids an assumed libm trig bound.
+    with localcontext() as context:
+        context.prec = 80
+        root = Decimal(3).sqrt()
+        tangent = float(Decimal(2) - root)
+        diagonal = float(root - Decimal(1))
+    outer = [[1, tangent], [diagonal, diagonal], [tangent, 1],
+             [-tangent, 1], [-diagonal, diagonal], [-1, tangent],
+             [-1, -tangent], [-diagonal, -diagonal], [-tangent, -1],
+             [tangent, -1], [diagonal, -diagonal], [1, -tangent]]
     inner = [[0.6 * x, 0.6 * y] for x, y in outer]
     if changed:
         inner[0][0] = 0.58
@@ -145,7 +168,7 @@ def transformed(points, matrix):
              for axis in range(3)] for point in points]
 
 
-def close_rows(actual, expected, reason, tolerance=COORDINATE_TOLERANCE_M):
+def close_rows(actual, expected, reason, tolerance=AFFINE_READBACK_BOUND_M):
     require(len(actual) == len(expected), reason + " row count")
     require(all(len(a) == len(b) and all(type(x) in (int, float) and math.isfinite(x)
                 and abs(x - y) <= tolerance for x, y in zip(a, b))
@@ -158,18 +181,65 @@ def verify_snapshot(case, state, snapshot, expected):
             and snapshot["unit_scale_m"] == 1, "Snapshot identity/units")
     rows = {row["name"]: row for row in snapshot["objects"]}
     require(len(rows) == len(snapshot["objects"]) and set(rows) == set(expected), "Fixed object set")
+    certificates = {}
     for name, (points, faces, matrix) in expected.items():
         actual = rows[name]
-        close_rows(actual["vertices_local"], points, name + " local vertices")
-        close_rows(actual["matrix_world"], matrix, name + " matrix")
+        for field, reference in (("vertices_local", points), ("matrix_world", matrix),
+                                 ("world_vertices", points)):
+            value = actual[field]
+            require(type(value) is list and len(value) == len(reference)
+                    and all(type(row) is list and len(row) == len(ideal)
+                            and all(type(x) in (int, float) and math.isfinite(x)
+                                    and abs(x) <= 2 for x in row)
+                            for row, ideal in zip(value, reference)),
+                    name + " finite fixed dimensions/domain " + field)
+        require(actual["matrix_world"][3] == [0, 0, 0, 1], name + " affine matrix row")
         require(actual["faces"] == faces, name + " fixed original triangulation")
-        close_rows(actual["world_vertices"], transformed(points, matrix), name + " world vertices")
         close_rows(actual["world_vertices"], transformed(actual["vertices_local"], actual["matrix_world"]),
-                   name + " affine readback", tolerance=1e-12)
+                   name + " affine readback")
         counts = Counter((face[i], face[(i + 1) % 3]) for face in actual["faces"] for i in range(3))
         require(all(value == 1 and counts[(b, a)] == 1 for (a, b), value in counts.items()),
                 name + " closed oriented edge incidence")
-    return rows
+        ideal_world = transformed(points, matrix)
+        deviation = max(math.dist(point, ideal) for point, ideal in
+                        zip(actual["world_vertices"], ideal_world))
+        certificates[name] = dict(observed_max_vertex_error_m=deviation,
+            construction_arithmetic_bound_m=GEOMETRY_ARITHMETIC_BOUND_M,
+            rho_m=deviation + GEOMETRY_ARITHMETIC_BOUND_M,
+            correspondence="same ordered vertices and exact oriented triangle list",
+            boundary_bound="barycentric interpolation gives bidirectional boundary Hausdorff bound")
+    return rows, certificates
+
+
+def boundary_margin(point, polygons, z0, z1):
+    side = min(math.sqrt(point_segment_sq(point[:2], a, b))
+               for polygon in polygons for a, b in edges(polygon))
+    return min(side, point[2] - z0, z1 - point[2])
+
+
+def control_axis_certificate(actual, state):
+    boxes = {}
+    for name, row in actual.items():
+        require(row["matrix_world"] == IDENTITY, "Control actual identity matrix")
+        points = row["vertices_local"]
+        levels = [sorted(set(point[axis] for point in points)) for axis in range(3)]
+        require(all(len(values) == 2 for values in levels)
+                and {tuple(point) for point in points} ==
+                {(x, y, z) for x in levels[0] for y in levels[1] for z in levels[2]},
+                "Control actual Cartesian axis-aligned box")
+        boxes[name] = levels
+    a, b = boxes["Object_01"], boxes["Object_02"]
+    overlap = [min(a[k][1], b[k][1]) - max(a[k][0], b[k][0]) for k in range(3)]
+    require(overlap[1] > 0 and overlap[2] > 0, "Control strict transverse overlap")
+    gap = b[0][0] - a[0][1]
+    if state == "initial":
+        require(gap > 0, "Control separated +X planes")
+    else:
+        require(all(value > 0 for value in overlap), "Control strict actual box overlap")
+    return dict(direction="+X" if state == "initial" else None,
+                exact_identity_and_cartesian_boxes=True, actual_positive_x_gap_m=max(0, gap),
+                actual_x_overlap_m=max(0, -gap), actual_axis_overlaps_m=overlap,
+                scope="actual control parallel planes and transverse overlap")
 
 
 def aabb_overlap(left, right):
@@ -179,10 +249,13 @@ def aabb_overlap(left, right):
 
 def truth_for_state(case, state, snapshot):
     meshes, outer, inner, target_z, probes, witnesses = construction(case, state)
-    actual = verify_snapshot(case, state, snapshot, meshes)
+    actual, certificates = verify_snapshot(case, state, snapshot, meshes)
     target = "Object_01"
     answers = {}
     for name, (polygon, z0, z1) in probes.items():
+        require(all(math.dist(a, b) >= MIN_REFERENCE_EDGE_M
+                    for boundary in [outer, polygon] + ([inner] if inner else [])
+                    for a, b in edges(boundary)), "Fixed reference boundary conditioning")
         planar_overlap, planar_gap = planar_relation(polygon, outer, inner)
         z_overlap = min(target_z[1], z1) - max(target_z[0], z0)
         penetrating = planar_overlap and z_overlap > EPSILON
@@ -190,12 +263,27 @@ def truth_for_state(case, state, snapshot):
         relation = "penetrating" if penetrating else "separated" if gap > EPSILON else "touching"
         row = dict(relation=relation, minimum_gap_m=None if penetrating else gap,
                    world_aabb_overlap=aabb_overlap(actual[target]["world_vertices"], actual[name]["world_vertices"]))
+        error = certificates[target]["rho_m"] + certificates[name]["rho_m"] + ORACLE_ARITHMETIC_BOUND_M
+        require(error < ANSWER_DISTANCE_TOLERANCE_M, name + " exhausted answer error budget")
+        row["distance_error_bound_m"] = error
+        row["oracle_arithmetic_bound_m"] = ORACLE_ARITHMETIC_BOUND_M
+        if not penetrating:
+            require(gap > error, name + " separation interval includes zero")
+            row["distance_interval_m"] = [gap - error, gap + error]
         if penetrating:
             point = witnesses[name]
             require(material_contains(point[:2], outer, inner) and strictly_inside(point[:2], polygon)
                     and max(target_z[0], z0) < point[2] < min(target_z[1], z1), "Strict shared interior witness")
             row["shared_interior_point_assembly_m"] = point
             row["shared_interior_point_world_m"] = transformed([point], IDENTITY if case == "control" else ROTATION)[0]
+            target_margin = boundary_margin(point, [outer] + ([inner] if inner else []), *target_z)
+            probe_margin = boundary_margin(point, [polygon], z0, z1)
+            require(target_margin > certificates[target]["rho_m"] + ORACLE_ARITHMETIC_BOUND_M
+                    and probe_margin > certificates[name]["rho_m"] + ORACLE_ARITHMETIC_BOUND_M,
+                    name + " witness crosses a possible perturbed boundary")
+            row["shared_interior_margins_m"] = dict(target=target_margin, probe=probe_margin)
+            row["certified_witness"] = True
+            row["witness_proof"] = "same-topology vertex homotopy stays farther from witness than boundary displacement"
         answers[name] = row
     expected = ({"Object_02": ("penetrating", None) if state == "changed" else ("separated", 0.01)}
                 if case == "control" else {
@@ -207,31 +295,72 @@ def truth_for_state(case, state, snapshot):
             require(abs(answers[name]["minimum_gap_m"] - gap) < EPSILON, name + " independent gap")
     separated = [name for name, row in answers.items() if row["relation"] == "separated"]
     nearest = min(separated, key=lambda name: answers[name]["minimum_gap_m"]) if separated else None
+    if nearest:
+        require(all(answers[nearest]["distance_interval_m"][1] < answers[name]["distance_interval_m"][0]
+                    for name in separated if name != nearest), "Nearest separation intervals overlap")
     if case == "assembly":
         require(answers["Object_04"]["world_aabb_overlap"] and
                 (state == "changed" or answers["Object_02"]["world_aabb_overlap"]), "Frozen AABB traps")
     return dict(target=target, probes=answers, nearest_separated_probe=nearest,
-                mesh_inputs_verified=True, penetration_metric="strict shared interior, global minimum escape not requested")
+                mesh_inputs_verified=True, object_error_certificates=certificates,
+                direction_certificate=control_axis_certificate(actual, state) if case == "control" else None,
+                answer_rule="abs(answer-d0)+distance_error_bound_m <= 1e-6",
+                penetration_metric="strict shared interior, global minimum escape not requested")
+
+
+def minimal_checks():
+    meshes, *_ = construction("control", "initial")
+    rows = [dict(name=name, vertices_local=points, matrix_world=matrix,
+                 world_vertices=transformed(points, matrix), faces=faces)
+            for name, (points, faces, matrix) in meshes.items()]
+    snapshot = dict(schema="perf-integrated-001-mesh-readback-v1", case="control", state="initial",
+                    unit_scale_m=1, objects=rows)
+    truth_for_state("control", "initial", snapshot)
+    excessive = copy.deepcopy(snapshot)
+    probe = excessive["objects"][1]
+    for point in probe["vertices_local"]:
+        point[0] += .002
+    probe["world_vertices"] = transformed(probe["vertices_local"], probe["matrix_world"])
+    broken = copy.deepcopy(snapshot)
+    broken["objects"][0]["vertices_local"].pop()
+    broken["objects"][0]["world_vertices"].pop()
+    checks = (("excessive_geometry_error", excessive, "exhausted answer error budget"),
+              ("broken_correspondence", broken, "finite fixed dimensions/domain"))
+    for name, value, expected_reason in checks:
+        try:
+            truth_for_state("control", "initial", value)
+        except ValueError as exc:
+            require(expected_reason in str(exc), "Unexpected rejection path " + name)
+            continue
+        raise ValueError("Required certificate rejection missing " + name)
+    return dict(positive=1, excessive_geometry_error_rejected=1, broken_correspondence_rejected=1,
+                product_calls=0, model_answers=0)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--case", required=True, choices=("control", "assembly"))
-    parser.add_argument("--snapshots", required=True, type=Path)
+    parser.add_argument("--case", choices=("control", "assembly"))
+    parser.add_argument("--snapshots", type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    source = json.loads(args.snapshots.read_bytes())
-    initial = truth_for_state(args.case, "initial", source["initial"])
-    changed = truth_for_state(args.case, "changed", source["changed"])
-    result = dict(schema="perf-integrated-001-independent-truth-v1", case=args.case,
+    if args.check:
+        result = minimal_checks()
+    else:
+        require(args.case is not None and args.snapshots is not None, "Case and snapshots required")
+        source = json.loads(args.snapshots.read_bytes())
+        initial = truth_for_state(args.case, "initial", source["initial"])
+        changed = truth_for_state(args.case, "changed", source["changed"])
+        result = dict(schema="perf-integrated-001-independent-truth-v2", case=args.case,
                   states=dict(initial=initial, unchanged=initial, changed=changed),
-                  coordinate_tolerance_m=COORDINATE_TOLERANCE_M,
+                  geometry_arithmetic_bound_m=GEOMETRY_ARITHMETIC_BOUND_M,
+                  oracle_arithmetic_bound_m=ORACLE_ARITHMETIC_BOUND_M,
                   answer_distance_tolerance_m=ANSWER_DISTANCE_TOLERANCE_M,
                   input_snapshot_sha256=hashlib.sha256(args.snapshots.read_bytes()).hexdigest(),
                   truth_source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   product_solver_calls=0, model_answers=0,
-                  method="independent planar boundary predicates/distance plus extrusion intervals and strict interior witnesses")
-    allowed = (Path(__file__).resolve().parents[1] / "verification/fixes/perf_integrated_001").resolve()
+                  method="corresponding-world vertex displacement certificate, fixed planar distances and all-boundary interior margins")
+    allowed = (Path(__file__).resolve().parents[1] / "verification/fixes/perf_integrated_001/run_02").resolve()
     require(args.output.resolve().is_relative_to(allowed), "Truth output outside owned batch")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x", encoding="utf-8") as stream:
