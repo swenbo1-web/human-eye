@@ -224,3 +224,14 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 2026-11-06。独立重算5184条绝对时序/2592配对、15840实际公开文件、144活动NPZ与更新/next；15个同场景门、9个旧CF成本门及L原收益成立。完整窗口peak最大I−B513429B，RSS/DXGI观察最大值增量2105344B/524288B，均过各自门；18正式进程及资格/补充来源一致。原R失败、三视觉负观察和正式后93项控制的真实先后次序均保留。
 
 整机不接收：216热current点中33点超262144B，最大488751B；576处未知仅_bpy_types.Object，但补分类不能消除数值失败。所有已登记NumPy/public backing相同，普通Python/验证者/GC归因缺失；不得冷起点相减改门。另原V-F生产60×3仍未做，历史F分母不能替代。已事前派固定seed310519前缀0..7的B/I两进程末端snapshot诊断，之后只补180例未计时生产F；不重测已过成本，不重训、不重开模块优化。原生产79f8bcc冻结为候选，原档与用户规格不改。17287证据文件分7卷精确归档，见[正式复审](FORMAL_COST_REVIEW.md)、[限定诊断协议](MANAGED_CURRENT_DIAGNOSTIC_PROTOCOL.md)、[机器决定](radical_acceptance_formal_cost.json)、[证据索引](formal_cost_evidence_index.json.gz)。
+
+
+## 主验收020：生产F收口与闭包生命周期修复 — ACCEPT_FIX_PENDING_NATIVE_RECHECK
+
+2026-11-06。原V-F的3seed×60例生产session/v1功能余项关闭：32项身份、581份冻结源、540份内容及5400项活跃状态摘要独立核对，实际零学习，10863射线/1240候选保持。该补齐发生在正式成本之后，不倒写资格时间线、不替换历史F成本分母。
+
+限定两进程诊断41项身份与599源一致；终点差487247B，快照1093位置/65文件统计全量重算。B的gen1 GC落在t4至census间，I在released后才开始；时序支持异步释放，但不能把全部差值或原33个失败定量归于一个对象。实际相机类型与data绑定已确认，末例没有独立清理后审计的边界保留。
+
+主干与独立审查均证明split自循环持有self及数组。唯一生产改动为建树成功后del split，BC由ffc494bf变为76b25ff2；原版5个非空规模生命周期失败保留，修复后30项测试通过，34个查询/重拟合状态和8个构树规模完全等价，独立9正常/6异常边界/42结构数值检查通过。不改搜索、容差或结果，不为split内部人为异常增加运行时防御链。
+
+整机仍未放行，原33个current超门点保持失败。已事前冻结并派发一次9进程复核：3时延+6managed，原3seed/24例、五段1.05、current256KiB/peak1MiB门不变，B/I共用修复依赖。旧CF/OS按旧hash实测范围承接，不声称新hash重测。实施完成主动唤醒后由主干独立验收；不重训、不重开模块优化、不追加到通过。见[审查](SURFACE_INDEX_LIFECYCLE_REVIEW.md)、[复核协议](MANAGED_CURRENT_RECHECK_PROTOCOL.md)、[机器决定](radical_acceptance_surface_lifecycle.json)和[证据索引](surface_lifecycle_evidence_index.json)。

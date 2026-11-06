@@ -101,6 +101,7 @@ class SurfaceIndex:
                 split(start + half, stop, remaining - 1)
 
             split(0, count, depth)
+            del split
 
         self._topology = np.asarray(triangles)[self._order]
         self._starts = np.asarray(starts, dtype=np.intp)
