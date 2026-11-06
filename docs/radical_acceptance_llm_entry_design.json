@@ -1,0 +1,49 @@
+{
+  "decision": "SELECT_MINIMAL_RESIDENT_LLM_ENTRY_DESIGN_AND_DISPATCH_IMPLEMENTATION_PREFLIGHT",
+  "date": "2026-11-06",
+  "engine_base_commit": "c2dcf1d",
+  "engine_production_files_unchanged": 17,
+  "llm_entry_implemented": false,
+  "llm_entry_accepted": false,
+  "native_entry_trials_in_root_design": 0,
+  "new_performance_result": false,
+  "real_llm_visual_use_qualified": false,
+  "architecture": [
+    "byte-preserving stdio relay",
+    "one persistent loopback connection",
+    "Blender main-thread nonblocking pump",
+    "one resident accepted Session",
+    "AO bytes plus one-time base64 for new PNG at final MCP boundary"
+  ],
+  "default_step": "actual prior V if supplied -> local predict_action -> execute/readback -> actual A -> after/Outcome/new image",
+  "no_added_model_confirmation_roundtrip": true,
+  "new_step_feedback_order_differs_from_original_five_segment_benchmark": true,
+  "comparisons": {
+    "B": "Same engine, content, causal order and relay/pump/IPC; reasonable manual thin orchestration",
+    "I": "Candidate typed tool orchestration on the same thin transport",
+    "L": "Same resident new engine/content/order reasonably wrapped through existing Blender MCP execute_code; no artificial old guard or per-call session rebuild",
+    "provisional_targets_before_formal_freeze": {
+      "I_over_B_collection_p95_max": 1.05,
+      "I_vs_L_hot_median_reduction_min": 0.2,
+      "I_over_L_collection_p95_max": 1.0
+    },
+    "byte_reduction_percentage_not_assumed": true,
+    "direct_handler_not_denominator_for_wire_1_05_gate": true
+  },
+  "first_delivery": "Minimal new implementation files + precise API/protocol draft + CPU transport/semantic checks + at most two preregistered independent Blender functional processes (one background, one isolated hidden GUI), <=6 tasks per process; no formal benchmark or paid model API",
+  "not_adopted_from_reviewer_proposals": [
+    "Mandatory prepare/commit confirmation for every explicit command",
+    "Assuming >=30% total wire-byte reduction against a baseline that already sends only new images",
+    "Treating headless tests as live GUI scheduling or real MCP host qualification"
+  ],
+  "reports_sha256": {
+    "contract_review.md": "2cb513785ad9b3fff45caa0ff5d52938906d7942e9ceee391e3fe97a46b695af",
+    "history_review.md": "639f140a25103433e1cd0a0dad5bc61faf14f97638762cb141aa27857a5c4278",
+    "transport_review.md": "b6575ed6b808c9444c245105a62f32375b62fcaf33a4ae98f0c55c864f2dcc18"
+  },
+  "architecture_document": "docs/LLM_ENTRY_ARCHITECTURE.md",
+  "work_order": "docs/LLM_ENTRY_WORK_ORDER.md",
+  "evidence_archive": "docs/llm_entry_design_evidence.zip",
+  "historical_evidence_limits": "Some recent private verification/fixes records absent; report-only timings are labelled; local tokenizer and fixed image estimates are not provider usage",
+  "preserve_user_spec_sha256": "30b921d6a8f24863b6a1be7aaf9e5ad1e580988db2fc55ea161f0300a8cd50ec"
+}

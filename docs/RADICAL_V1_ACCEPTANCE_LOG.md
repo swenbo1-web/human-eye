@@ -246,3 +246,12 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 216 current点、72完整峰窗全部过原门，最大差held/released/reference为−2867/−2020/−952B，peak−18645B；2028census、1014对应owner、576相机绑定和144生命周期行核对。288份新旧hot/reopen证明一致，managed摘要与实际pair5 bytes/NPZ/next交叉绑定，证据层次如实披露。无冷基线扣除、强制GC、快照、删样或门限修改。
 
 主干再次深审共享捕获、前后事实所有权、真实Outcome和票据更新、关闭回调及生产依赖，未发现架构/算法退化；唯一生产差异仍是一行闭包解绑。原33个内存失败、视觉与R负例、控制先后及所有首次失败保留；旧CF/OS按旧hash实测范围承接，未在新hash重测。无需新优化或扩测。见[整机验收](ENGINE_V1_ACCEPTANCE.md)、[机器决定](radical_acceptance_engine_v1.json)及`engine_v1_evidence_index.json.gz`/分卷。当前任务收口，后续只推进有明确需求、真实瓶颈或退化依据的增量。
+
+
+## 主审022：大模型接入 — DESIGN_SELECTED_NOT_IMPLEMENTED
+
+2026-11-06。用户要求极致简化旧接口交换后才能使用。独立审查旧报告、31份传输相关源身份及新会话消费契约，确认重复源码扫描/连接/编译、JSON→Python→JSON→stdout JSON、全量几何与图片多轮编码等路径；缺失的私有原始样本明确只按作者报告，不推算新收益。
+
+选定纯字节stdio relay→单持久TCP→Blender主线程nonblocking pump→常驻Session，默认明确step一请求完成已有图真实V、本地预测/执行与真实A，只交付必要事实和新图，不额外模型确认。新反馈时序须独立同责验证，不套原after图；原17生产文件不变，六模块不重开。B为同传输的合理手工薄编排，L为既有BlenderMCP合理承载同一新引擎，预设I/B集合p95≤1.05、I相对L热中位至少改善20%且p95不增；不预许总bytes/token/费用百分比。精确正式协议待预检冻结。
+
+已派隔离接入实现及CPU/最多两独立Blender进程的有限功能预检，不运行正式收益或付费模型API，不改当前GUI/旧默认注册。模型工具接入尚未实现/验收，完整交付后主动唤醒主干。见[架构](LLM_ENTRY_ARCHITECTURE.md)、[工作单](LLM_ENTRY_WORK_ORDER.md)、[决定](radical_acceptance_llm_entry_design.json)与`llm_entry_design_evidence.zip`；当前阶段不是新入口PASS。
