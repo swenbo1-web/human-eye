@@ -1,0 +1,48 @@
+{
+  "baseline_product_commit": "11c8fc7332e530ead2f8fa30d2a35c7eb14e7d15",
+  "candidate_commit": "f87b7a6f7330f44b378145dbda9e93b6aeaebf29",
+  "candidate_source_sha256": "2ee2f318d63b3545cb2aea56a0d692da1974a53dd6ace6b08fedaed4b1d13567",
+  "input_sha256": "7026df331441f382dfd78b71e6460074994431f9c1c75bd14840cd7ef921200a",
+  "candidate_geometry_sha256": "81328d11e1cfcc2b634fbdf3937c4d93f1360488a4960df42e14412b8d913b33",
+  "sequence_sha256": "1e1056963aaa9320ca4221354447a43c87c4ec16bc463d29bbb277f9b7a269a5",
+  "preregistered_attribution_commit": "399c24d",
+  "arms": [
+    "baseline",
+    "candidate"
+  ],
+  "single_sequence": true,
+  "blocks": 5,
+  "repeats": 3,
+  "entries": [
+    "measure_pair_geometry",
+    "task_result"
+  ],
+  "modes": [
+    "cold",
+    "pose_miss",
+    "geometry_miss",
+    "hot"
+  ],
+  "order": "case -> block -> mode -> entry -> repeat -> alternating arm order by block parity",
+  "warmup": "none except explicit original-pair preparation for miss/hot modes",
+  "qualification_decision": "30v/56f scalar median 1.8148ms / full 3.3585ms = 54.0%; eligible",
+  "candidate": "AABB row/column envelopes inside original 64 blocks, original leaves and witness phases",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "executable": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+    "numpy": "2.3.5",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "threads": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "miss_fixture_correction_before_formal": {
+    "reason": "literal 1um translation/1.0001 scaling can round away or scale the world origin at 1e12m",
+    "pose": "focal z translation max(1um,2*spacing(max_abs_focal_vertex))",
+    "geometry": "scale focal z offsets from minimum z by 1+max(0.0001,4*spacing(max_abs_focal_vertex)/height)",
+    "proof": "assert focal represented vertex arrays differ before every miss timing",
+    "thresholds_and_cases": "unchanged from initial inputs.json"
+  }
+}
