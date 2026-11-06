@@ -255,3 +255,11 @@ B/B全部93对186臂重算一致，下一查询p95比1.076810超过1.05，原因
 选定纯字节stdio relay→单持久TCP→Blender主线程nonblocking pump→常驻Session，默认明确step一请求完成已有图真实V、本地预测/执行与真实A，只交付必要事实和新图，不额外模型确认。新反馈时序须独立同责验证，不套原after图；原17生产文件不变，六模块不重开。B为同传输的合理手工薄编排，L为既有BlenderMCP合理承载同一新引擎，预设I/B集合p95≤1.05、I相对L热中位至少改善20%且p95不增；不预许总bytes/token/费用百分比。精确正式协议待预检冻结。
 
 已派隔离接入实现及CPU/最多两独立Blender进程的有限功能预检，不运行正式收益或付费模型API，不改当前GUI/旧默认注册。模型工具接入尚未实现/验收，完整交付后主动唤醒主干。见[架构](LLM_ENTRY_ARCHITECTURE.md)、[工作单](LLM_ENTRY_WORK_ORDER.md)、[决定](radical_acceptance_llm_entry_design.json)与`llm_entry_design_evidence.zip`；当前阶段不是新入口PASS。
+
+## 主审023：任务级接入复审 — SELECT_TASK_VALUE_DESIGN_NOT_PRODUCT_ACCEPTANCE
+
+2026-11-06。依据用户再次强调复杂三维任务、多轮数据与无用输出，复核旧模型失败、合理native持平和当前逐动作候选。保留常驻relay/pump，改用run/inspect、按任务选择依赖、最小真实结果；首批E1直接复用BlenderControl/RB/BC解析缩小表面间隙，按需VG终态图，不运行无关TD/fullAO/CF或强制模型评分。主干最近点解析证明经独立审查，32个CPU状态与独立凸包oracle最大误差4.44e-16m；非Blender/模型验收。
+
+正式任务主目标改为质量不退化、完整均值至少减半、75%配对更快、各族/p95不劣；token/轮次目标与公平native能力明确。原20%桥与大微基准仅在实际瓶颈时归因，无正式入口旧成绩因改门转PASS。E0＋E1继续当前实施，E2 shape和困难小模型后置；独立报告的广域候选任务集未全采纳。不重开已验收六模块或重复优化链。
+
+根侧架构、工单、README、PROGRESS与竞争流程同步，已派修订2。作者自测完整回报主动唤醒，主干再检查流程/算法/架构与退化，收益达标再推进。当前只有设计选择，真实接入和模型收益仍未验。见[复审](LLM_TASK_VALUE_REVIEW.md)、[机器决定](radical_acceptance_llm_task_design.json)、`llm_task_design_evidence.zip`；022及其归档保持历史原状。

@@ -1,54 +1,53 @@
-# 大模型接入实施：极简常驻路径
+# 大模型接入实施：E0常驻通道＋E1解析间隙任务
 
-2026-11-06，本端`codex/aggressive-v1`。用户已授权自动分模块推进，实施自测完整交付后主动唤醒主干。此为新接入模块，不重开已验收六模块，不与另一竞争端合并。
+2026-11-06，修订2，`codex/aggressive-v1`。依据[任务架构](LLM_ENTRY_ARCHITECTURE.md)推进。保留当前relay/pump成果，不重做已验收六模块，两端独立竞争。实施完整自测后主动唤醒主干，不让主干轮询等聊天。
 
-## 已完成和当前阶段
+## 当前阶段与文件所有权
 
-引擎采用c2dcf1d已验收的17个生产源字节（BC为76b25），参考[整体验收](ENGINE_V1_ACCEPTANCE.md)。根侧已完成旧报告/旧传输/新契约三路审查，选定[极简接入架构](LLM_ENTRY_ARCHITECTURE.md)。没有新入口收益、模型可用性或宿主部署PASS。
+已有候选是open/step/close＋完整AO转发，尚未验收。当前在同一未完成接入阶段改为任务入口，保留修订前源快照和运行记录，不等包装验收后再重启一次优化。代码存在不等于真实宿主或任务收益PASS。
 
-第一阶段交付可执行的最小接入候选、精确工具/交换合同与有限功能预检，主干随后审查并冻结正式收益实验。不要只写建议，也不要未经冻结跑正式性能/模型评估或把预检数据宣传成收益。
+作者可新增/修改：
 
-## 实现范围
+- `human_eye_llm_stdio.py`、`human_eye_fast/llm_entry.py`、`human_eye_fast/blender_llm_bridge.py`、`examples/blender_llm_entry.py`。
+- 新`human_eye_fast/local_tasks.py`、`verification/test_local_tasks.py`、`verification/llm_task_reference.py`，用于E1及其独立任务核对/公平实验草案。
+- 原`verification/test_llm_entry.py`、`verification/test_llm_transport.py`、`verification/llm_entry_fixtures.py`、`verification/llm_entry_reference.py`。
+- `docs/LLM_ENTRY_API_DRAFT.md`、`docs/LLM_ENTRY_PROTOCOL_DRAFT.md`、`docs/LLM_TASK_PROTOCOL_DRAFT.md`。
+- `artifacts/llm_entry/preflight_001/`，修订2用独立子目录，旧失败/输入/源身份不覆盖。
 
-允许新增以下文件，不改已验收内核/旧plugin/默认配置：
+不改17个已验收生产源、旧plugin、用户规格、当前GUI/默认注册，不stage/commit/push。打包/pyproject、README/进度/根报告由主干负责。额外seam需具体差异和原因，不能复制Session或改其私有状态。
 
-- `human_eye_llm_stdio.py`：标准库纯字节全双工relay，不import旧plugin或engine，不处理JSON。
-- `human_eye_fast/llm_entry.py`：实际工具协议、最小session/ticket编排、一次最终内容封装。
-- `human_eye_fast/blender_llm_bridge.py`：显式start/stop、主线程nonblocking socket与timer、当前连接/缓冲生命周期。
-- `examples/blender_llm_entry.py`：显式配置绑定、启动/关闭说明或示例，不做全仓扫描/网络安装。
-- `verification/test_llm_entry.py`、`verification/test_llm_transport.py`：真正有意义的语义/边界验证。
-- `verification/llm_entry_fixtures.py`、`verification/llm_entry_reference.py`：精确的新交互场景与同责薄B/现有桥L；复用原积分夹具，不复制几何内核。
-- `docs/LLM_ENTRY_API_DRAFT.md`、`docs/LLM_ENTRY_PROTOCOL_DRAFT.md`：把下列未定项写成可执行合同。
-- `artifacts/llm_entry/preflight_001/`：初始/修改后的源身份、全部实际输出、失败记录、运行命令和环境。
+## 本批必须完成
 
-确有需要的额外辅助脚本放该artifact目录。若无法不改已验收模块实现，先给主干精确seam/diff及理由，不自己扩大。`pyproject.toml`、README、Git、根侧架构/工作单/报告及用户`docs/RADICAL_V1_SPEC_REVIEW.md`由主干独占；不要stage/commit/push、切分支或改其他聊天成果。
+1. 复用纯bytes常驻relay和主线程nonblocking pump，不重新设计已解决的传输部分。
+2. 默认目录只给结构化run及按需inspect。run可惰性建立明确绑定并直接执行，不要求模型先open/observe/预测再执行。宿主负责close；目录/绑定成本公开。细粒度开发接口不必全公开。
+3. E1仅可信独立刚体对象对的close_gap：全局BC测d与最近点a/b，目标g满足0≤g≤d且d>0，用`(d-g)*(b-a)/d`求世界米平移，再public BlenderControl真实执行/全局回读。达标用实际误差判定，不隐藏候选搜索、强制CF/G预测、重试或回滚。
+4. 纯数值任务跳过TD、全AO和图像。终态图按需复用同一bridge/readback与VGRenderer，正确捕获context/单位/对象，不创建第二Session重测。首批F视图，zero gap不用SECTION；renderer/control按生命周期释放。E1与完整Session不能并存独立current交替写同对象。
+5. 默认结果是目标、实测误差/达标、对象/单位、实际控制变化。失败保留真实write_status/Outcome与必要定位；无整包before/after、全矩阵、全Top-K、训练状态、原mesh或全schema。不能只发done，或让正常任务必补第二轮才能理解结果。
+6. V反馈可随下一业务请求，不为评分增加回合；没看图不贴标签。解析任务不为收集A强制L推理。shape求解和小模型均后置，本批不扩展通用规划。
 
-## 必须落实的简化
+## 有限功能预检
 
-外部只传少量操作参数/变更声明与必要结果，mesh/索引/模型全部留在Blender。常驻会话、持久TCP、纯字节relay、Blender单次parse、末端PNG单次base64。热路径不经旧execute_code、源哈希、源码compile、router进程、文件IPC或图片落盘。
+先保存源身份、合同、场景/命令/环境和已知限制。CPU重点是解析动作、公开结果、一次执行、真实失败状态和必要收发/EOF。主干32状态独立oracle设计检查可承接，不再穷举BC边界。
 
-不得无条件新增prepare/commit模型确认往返。明确step按已有图真实V→本地预测→执行/回读→真实A→after返回；after的V留到实际看过后，next按需。预测比较可独立请求。此新反馈时序有真实行为差别，B/I必须同序，不能直接借旧after图标签。
+本阶段最多两个独立原生进程（background＋隐藏factory GUI），已运行的计入，不因修订/聊天重置；串行，不操作用户Blender。若额度已用，准确回传已完成和新主线尚缺项，由主干确定必要增量，不盲重跑。每进程最多6个组合案例，重点覆盖：
 
-AO原bytes尽可能原样放入文本；必要MCP文本转义如实计费。不重复同时返回完整TextContent和structuredContent，不为“零copy”宣传而手写危险的任意JSON拼接或第二套事实生成器。before图不重复发送时，明确跨消息引用/新上下文重新取得/缓存责任；没证明消费者可恢复就不能删。
+- 复杂非凸/多面对象解析缩隙，独立RNA/距离核对，正常一次执行。
+- 非单位/父变换世界平移，reference与未请求对象不变；输入满足可信刚体独立前提，不新增全依赖扫描。
+- 数值模式无TD/fullAO/PNG；按需图只生成终态图，实际协议内容能解码且绑定终态/模式。
+- 当前结果inspect、已达目标不写入、一次实际执行错误或close/EOF组合，防止重复动作/假成功。
 
-单client串行episode、明确对象/目标/参考/部署来源。NONE/dirty等由明确变更合同负责，目标拓扑变化仍按原API新建session；不加全场景扫描弥补并发编辑。错误输出如实携带既有write_status/Outcome，无自动重试、回滚或旧版fallback。
+不为empty面、任意畸形输入、并发、多版本组合扩测。保留partial send/通知等会破坏真实主线的基本检查。headless循环不是GUI调度证明，mock不是宿主收图证明。当前不跑正式模型批次、付费API或凭证搜索，不修改宿主默认注册。
 
-## 第一阶段有限预检
+## 交付可执行的任务收益协议
 
-1. **先登记**：保存代码/输入/命令/设备及本阶段案例清单，明确协议版本profile、候选工具schema、反馈/图片/pending票据所有权、旧桥L与最薄B的实际职责。协议版本按实际客户端能力确认；模拟客户端只证明该profile实现，不证明当前宿主已支持。
-2. **CPU语义及真实管道/socket**：验证分片/合包/UTF8跨包、partial send、通知无返回、双向原bytes一致、EOF/close；stub验证调用次序和实际A/真实V绑定、错误已写状态、公开图像/观察引用不丢失。主线程pump不能使用sendall；不在Blender内启动线程。无需为了测试低风险文档写大量镜像单测。
-3. **最多两个独立Blender功能进程**：一个后台进程验证同handler及原新API对接；一个独立factory-startup窗口进程验证真实GUI事件循环/GPU/主线程dispatch，窗口隐藏且不操作用户现有GUI。两进程串行，各最多6个预登记功能任务，覆盖NATURAL Translate、SECTION relative shape（非单位/父变换）、真实V/A和after新图、显式predict-only/observe、无模型F/NONE及空面/已达目标、关闭/EOF。可组合控制，精确映射到案例。保留运行过程所见时序，但不做5+31正式计量、不比较收益、不挑配置试到更快。
-4. 图像只通过新协议的实际内容解码核对源PNG/绑定，独立读取真实RNA/Outcome；不能只引用私有probe或只验证文件存在。若新时序需要像素标签，来自本次实际图的冻结独立评分，缺标签保持unknown。首轮不是正式模型消费。
-5. GUI预检不能由background工作循环冒充。如果当前机器无法在独立隐藏进程提供必要GPU/event loop，保留失败并回传具体阻塞；不要改用户GUI/旧addon/宿主配置，不自动加进程重试。失败涉及计量/输入/范围时按既有工作流先回报，未失败的独立CPU工作可继续。
+E1草案是三类复杂任务各4episode，另2简单控制/臂。列出初态/目标/视觉需求/独立oracle、native通用helper、模型与计量边界；允许native脚本、批处理、常驻、缓存，不给本端私有定位。原predict→act→read→observe功能覆盖序列不能充当低回合任务流程。
 
-## 正式验收草案必须精确到可执行
+事前主门：限定质量不退化，复杂任务完整均值至少快2倍，至少75%配对更快，各族与p95不劣。全部可见文字token目标少50%，native多轮子集串行决策往返中位少50%；native已一轮就按一轮比，缺usage不伪造。schema/目录/首次加载/模型等待/图片/补查/失败全计。精确协议由主干在正式运行前冻结，不换题调门通过。
 
-把根侧架构里的1往返/0整mesh等结构门、I/B≤1.05、同责现有桥L的≥20%热调用中位改善目标，落实到固定场景、输入、图像/反馈、新旧语义及计时边界。若比较无法公平成立，应在正式成绩之前说明；不能用旧不同能力接口、额外防御链、弱化的B或省next流程制造收益。
+旧桥20%和同wire B/I微基准降为有实际瓶颈时的归因实验，不先跑大量局部计时挤掉任务价值验证。实现/脚本功能、实际宿主接入、真实模型任务收益分列状态；E1收益验收前不推进E2。
 
-至少分engine-direct、direct-handler和wire-entry；固定3进程、5预热/31配对原则、创建/执行交错、真实timer等待/idle CPU/完整buffer峰、原始bytes/codec/RPC计数、冷启动与schema分账。给出有依据的资源/空闲CPU不退化门及可验证计量方法。终端MCP客户端实际可见图片和真实模型闭环另外列资格，计量脚本成功不等于产品可用。未知provider token/费用标未测，不调用付费模型API、不寻找或复制凭证。
+## 回传与独立验收
 
-I/B的1.05门比较同一relay/pump/IPC上的候选与合理手工薄编排，二者最终内容和职责相同；engine-direct/direct-handler只作独立绝对成本分账，不作为带GUI调度与传输的I的1.05分母。L是通过原addon合理承载同一新会话/同一MCP结果的薄包装，不是旧全场景产品，也不故意每call重建会话或加旧guard。
+完整预检交付后冻结源和证据，主动一次消息到主干host=`local`、thread=`01a1a993-669e-7632-98c2-a75754546eef`，给文件/摘要、所有运行/失败、精确协议与未测资格。用户已明确授权回报；具体阻塞可提前通知，独立工作继续。
 
-## 回传与后续
-
-完整交付后停止改写源和原件，主动一次发消息到主干host=`local`、thread=`01a1a993-669e-7632-98c2-a75754546eef`，包括精确文件/源摘要、命令、全部成功/失败和未运行项；该发送由用户先前明确授权。主干不轮询等待。根侧复审第一阶段后再冻结正式批次和必要优化对比，不自动开启第二轮寻优。不要触碰当前大模型宿主MCP注册，真正部署作为后续具体可复核阶段执行。
+主干至少一次独立核对流程/结果，再深审架构算法和相对实施达标版的退化；达标推进下一模块，有退化撤回主干候选，保留实施达标版。已确认优化不因更换执行者重做。本次是未完成接入阶段的设计纠偏，不是已验收模块的重复优化。

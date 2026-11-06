@@ -1,6 +1,6 @@
 # Human Eye · 三维空间感知引擎
 
-大模型专用接入层现已另立实施阶段，尚未完成工具部署或真实模型验收。按[极简接入架构](docs/LLM_ENTRY_ARCHITECTURE.md)消除旧接口重复交换，复用上述已验收引擎；旧MCP/Hook不会被当作新版入口。
+大模型接入正在实现[任务级架构](docs/LLM_ENTRY_ARCHITECTURE.md)：常驻通道＋本地解析间隙任务＋最小结果，减少模型往返、无用计算和输出。主要验收改为质量不退化下复杂任务完整耗时至少减半，当前仅是事前目标，真实宿主接入与模型收益尚未通过。见[第二次设计复审](docs/LLM_TASK_VALUE_REVIEW.md)；旧MCP/Hook不是新版入口。
 
 后续按 [六模块竞争推进与收益验收](docs/RADICAL_V1_COMPETITION_WORKFLOW.md) 执行：两端独立实现整引擎，由主对话派工、独立验收，达标后推进。整体功能架构见 [Radical V1 架构](docs/RADICAL_V1_INTEGRATION_PLAN.md)：E1 人眼主动感知、E2 小脑记忆与先验、E3 几何与动作执行。最新版附件的算法审查及六个复现案例见 [规格深度分析](docs/RADICAL_V1_SPEC_REVIEW.md)。当前 human_eye_fast 已包含 E3 数值与明确动作回读、E1 主动视觉及 AO 联合输出，CF视角与动作学习已验收，S职责采用精确TD展示；统一生产会话及当前冻结范围整机验收已完成，见[第一版整机验收](docs/ENGINE_V1_ACCEPTANCE.md)。
 

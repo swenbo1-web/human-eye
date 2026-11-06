@@ -1,0 +1,64 @@
+{
+  "decision": "SELECT_TASK_VALUE_DESIGN_NOT_PRODUCT_ACCEPTANCE",
+  "date": "2026-11-06",
+  "design_revision": 2,
+  "supersedes_design": "37c672c: task orchestration and primary acceptance; keeps resident transport",
+  "historical_design": "docs/radical_acceptance_llm_entry_design.json",
+  "engine_sources_unchanged": 17,
+  "production_engine_commit": "4372bfc97b9c61177dcc3b0bbca7b885457950a1",
+  "llm_entry_candidate_in_progress": true,
+  "llm_entry_accepted": false,
+  "real_host_qualified": false,
+  "real_llm_task_value_qualified": false,
+  "new_performance_result": false,
+  "adopted": [
+    "goal-level run/inspect",
+    "public BlenderControl typed readback for close_gap",
+    "global-witness closed-form gap contraction",
+    "task-specific minimal output",
+    "no TD/fullAO/CF/image when the numerical task does not need them",
+    "one optional final image in the same run",
+    "no mandatory feedback round",
+    "reuse byte relay and persistent main-thread pump"
+  ],
+  "analytic_formula": "delta = (d-g)*(b-a)/d for d>0, 0<=g<=d; independent rigid translation and fixed reference",
+  "analytic_check": {
+    "states": 32,
+    "maximum_error_m": 4.440892098500626e-16,
+    "oracle": "independent exhaustive SVD convex-hull distances",
+    "does_not_qualify": [
+      "Blender evaluated rigid behavior",
+      "GUI/MCP delivery",
+      "LLM task benefit"
+    ]
+  },
+  "module_order": [
+    "E0 resident transport in parallel with E1",
+    "E1 analytic close_gap and decision output",
+    "E2 single relative shape-key task after E1 acceptance",
+    "E3 small-model residual tasks based on evidence"
+  ],
+  "provisional_formal_task_gate": {
+    "complex_episodes_per_arm": 12,
+    "simple_controls_per_arm": 2,
+    "quality": "all declared E1 tasks meet actual goal/state requirements; no native-success/candidate-failure pair",
+    "mean_complete_time_ratio_max": 0.5,
+    "faster_pair_fraction_min": 0.75,
+    "per_family_mean_ratio_max": 1.0,
+    "complete_task_p95_ratio_max": 1.0,
+    "visible_text_token_reduction_target": 0.5,
+    "multi_round_native_subset_decision_round_reduction_target": 0.5,
+    "unavailable_provider_usage": "unknown; token/cost gate unqualified, never inferred from bytes or fixed image tokens",
+    "failure_cost": "preregistered task deadline, with actual duration retained",
+    "native": "same model and scene; scripts, generic helpers, batching, cache, resident execution and analytic formula allowed",
+    "must_freeze_exact_protocol_before_formal_results": true
+  },
+  "former_bridge_microbenchmarks": "secondary attribution only when an observed bottleneck justifies them; no result reclassified",
+  "user_spec_sha256": "30b921d6a8f24863b6a1be7aaf9e5ad1e580988db2fc55ea161f0300a8cd50ec",
+  "review": "docs/LLM_TASK_VALUE_REVIEW.md",
+  "architecture": "docs/LLM_ENTRY_ARCHITECTURE.md",
+  "work_order": "docs/LLM_ENTRY_WORK_ORDER.md",
+  "evidence_archive": "docs/llm_task_design_evidence.zip",
+  "implementation_chat": "01a1abad-9d70-7260-8536-1fcd0dc7ae14",
+  "workflow": "author completes self-tests and wakes root; root independently reviews process, architecture, algorithm and regression"
+}
