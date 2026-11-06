@@ -180,14 +180,11 @@ def _point_triangle_min_sq(points, triangles):
     offset = points[:, None, :] - a[None, :, :]
     normal_dot = np.einsum("ijk,jk->ij", offset, normal)
     projection = offset - (normal_dot / normal_sq[None, :])[:, :, None] * normal[None, :, :]
-    ab_sq = np.einsum("ij,ij->i", ab, ab)
-    ac_sq = np.einsum("ij,ij->i", ac, ac)
-    abac = np.einsum("ij,ij->i", ab, ac)
-    dot_ab = np.einsum("ijk,jk->ij", projection, ab)
-    dot_ac = np.einsum("ijk,jk->ij", projection, ac)
-    # |ab x ac|^2 avoids subtracting nearly equal squared dot products.
-    u = (dot_ab * ac_sq[None, :] - dot_ac * abac[None, :]) / normal_sq[None, :]
-    v = (dot_ac * ab_sq[None, :] - dot_ab * abac[None, :]) / normal_sq[None, :]
+    # Cross-product duals avoid subtracting nearly equal Gram numerators.
+    # Keep the projection so a distant normal component is removed first.
+    dual_u, dual_v = np.cross(ac, normal), np.cross(normal, ab)
+    u = np.einsum("ijk,jk->ij", projection, dual_u) / normal_sq[None, :]
+    v = np.einsum("ijk,jk->ij", projection, dual_v) / normal_sq[None, :]
     inside = (u >= 0) & (v >= 0) & (u + v <= 1)
     best = np.where(inside, normal_dot * normal_dot / normal_sq[None, :], np.inf)
     for left, right in ((a, b), (b, c), (c, a)):
@@ -298,11 +295,9 @@ def _surface_distance_with_witness(a, b):
                 offsets = points[:, None, :] - p[None, :, :]
                 signed = np.einsum('ijk,jk->ij', offsets, normal)
                 projected = offsets - (signed / norm_sq[None, :])[:, :, None] * normal[None, :, :]
-                ab_sq, ac_sq = np.einsum('ij,ij->i', ab, ab), np.einsum('ij,ij->i', ac, ac)
-                abac = np.einsum('ij,ij->i', ab, ac)
-                dab, dac = np.einsum('ijk,jk->ij', projected, ab), np.einsum('ijk,jk->ij', projected, ac)
-                u = (dab * ac_sq[None, :] - dac * abac[None, :]) / norm_sq[None, :]
-                v = (dac * ab_sq[None, :] - dab * abac[None, :]) / norm_sq[None, :]
+                dual_u, dual_v = np.cross(ac, normal), np.cross(normal, ab)
+                u = np.einsum('ijk,jk->ij', projected, dual_u) / norm_sq[None, :]
+                v = np.einsum('ijk,jk->ij', projected, dual_v) / norm_sq[None, :]
                 inside = (u >= 0) & (v >= 0) & (u + v <= 1)
                 squared = np.where(inside, signed * signed / norm_sq[None, :], np.inf)
                 on_face = p[None, :, :] + projected
