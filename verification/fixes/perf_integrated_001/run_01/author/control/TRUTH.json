@@ -1,0 +1,62 @@
+{
+  "schema": "perf-integrated-001-independent-truth-v1",
+  "case": "control",
+  "states": {
+    "initial": {
+      "target": "Object_01",
+      "probes": {
+        "Object_02": {
+          "relation": "separated",
+          "minimum_gap_m": 0.009999999999999995,
+          "world_aabb_overlap": false
+        }
+      },
+      "nearest_separated_probe": "Object_02",
+      "mesh_inputs_verified": true,
+      "penetration_metric": "strict shared interior, global minimum escape not requested"
+    },
+    "unchanged": {
+      "target": "Object_01",
+      "probes": {
+        "Object_02": {
+          "relation": "separated",
+          "minimum_gap_m": 0.009999999999999995,
+          "world_aabb_overlap": false
+        }
+      },
+      "nearest_separated_probe": "Object_02",
+      "mesh_inputs_verified": true,
+      "penetration_metric": "strict shared interior, global minimum escape not requested"
+    },
+    "changed": {
+      "target": "Object_01",
+      "probes": {
+        "Object_02": {
+          "relation": "penetrating",
+          "minimum_gap_m": null,
+          "world_aabb_overlap": true,
+          "shared_interior_point_assembly_m": [
+            0.0625,
+            0,
+            0
+          ],
+          "shared_interior_point_world_m": [
+            0.0625,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "nearest_separated_probe": null,
+      "mesh_inputs_verified": true,
+      "penetration_metric": "strict shared interior, global minimum escape not requested"
+    }
+  },
+  "coordinate_tolerance_m": 1e-07,
+  "answer_distance_tolerance_m": 1e-06,
+  "input_snapshot_sha256": "554c13bd792db3e4ec01194c4fa7f3d82c47652c68a8aace59852543aee23b2a",
+  "truth_source_sha256": "43ed83964010d3c1f0469a97718143fcb642333a1a08c08b09aa65960e25e7be",
+  "product_solver_calls": 0,
+  "model_answers": 0,
+  "method": "independent planar boundary predicates/distance plus extrusion intervals and strict interior witnesses"
+}
