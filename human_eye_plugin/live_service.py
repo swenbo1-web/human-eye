@@ -1241,7 +1241,8 @@ class LiveSpatialService:
             runtime.import_state(state)
             result['binding']['source_sha256'] = self._identity['source_sha256']
             if source_check is not None and source_check['status'] == 'loaded_generation':
-                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked')
+                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
+                    source_check_scope=source_check['source_check_scope'])
             self._save(value, runtime, _observation_baseline=observation_baseline)
             self._check_request_budget('after_task_state_write')
         self.record_event('observe', session_id=session_id, status=result['status'],

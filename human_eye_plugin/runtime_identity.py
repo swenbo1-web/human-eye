@@ -17,7 +17,7 @@ from types import MappingProxyType
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v21-perf010-o4-native-source-origins-20261106"
+IMPLEMENTATION_REVISION = "v21-perf020-o2-bound-task-generation-20261106"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 
@@ -207,7 +207,7 @@ def check_source_drift() -> dict:
 
 
 def check_task_source() -> dict:
-    """Validate the bound execution generation for explicit readonly tasks.
+    """Check bound object identity for explicit readonly tasks.
 
     Disk diagnosis, new lazy execution and writes retain their original checks.
     Ordinary SDK imports have no execution-generation claim and compare disk.
@@ -218,6 +218,7 @@ def check_task_source() -> dict:
         return check_source_drift()
     result = {'compatible': False, 'check_complete': False, 'status': 'unavailable',
               'loaded_build_id': _SOURCE_IDENTITY['build_id'], 'disk_build_id': None,
+              'source_check_scope': 'bound_generation_identity',
               'disk_status': 'disk_not_checked', 'reasons': ['runtime_executed_source_unverified']}
     try:
         if _TASK_SOURCE_GENERATION is None:
@@ -235,8 +236,6 @@ def check_task_source() -> dict:
         if (getattr(current_verify, '__self__', None) is not guard
                 or getattr(current_verify, '__func__', None) is not verify.__func__):
             raise ValueError('runtime_source_verifier_changed')
-        if verify() is not True:
-            raise ValueError('runtime_executed_source_unverified')
     except (AttributeError, OSError, TypeError, ValueError) as exc:
         result['error'] = type(exc).__name__ + ': ' + str(exc)
         return result
