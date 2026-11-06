@@ -416,10 +416,7 @@ class BlenderMCPHost:
         limit = 8192 if command == 'capture_task' else 4096
         if len(request.encode('utf8')) > limit:
             raise ValueError('Native observation request exceeds ' + str(limit) + ' bytes')
-        return '\n'.join([
-            'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
-            '_request = _json.loads('+repr(request)+')',
-            'try:',
+        loader = [
             '    from pathlib import Path as _Path',
             '    _source = _Path('+repr(str(self.source))+')',
             "    if _source.resolve()!=_source: raise ValueError('Readonly host source escaped its fixed root')",
@@ -431,7 +428,30 @@ class BlenderMCPHost:
             '    _module = _iu.module_from_spec(_spec)',
             "    exec(compile(_source_bytes,str(_source),'exec',dont_inherit=True),_module.__dict__)",
             '    _module._READONLY_LOADED_HOST_SHA256 = _source_sha',
-            '    _host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)',
+        ]
+        if command == 'capture_task':
+            loader = [
+                "    _namespace = getattr(getattr(bpy,'app',None),'driver_namespace',None)",
+                '    _generation = '+repr((str(self.source), self._readonly_host_source_sha256)),
+                "    _cached = _namespace.get('_human_eye_task_host_code_v1') if isinstance(_namespace,dict) else None",
+                "    if (type(_cached) is tuple and len(_cached)==3 and _cached[:2]==_generation",
+                "            and isinstance(_cached[2],type)):",
+                '        _Host = _cached[2]',
+                '    else:',
+                *['    ' + line for line in loader],
+                '        _Host = _module.BlenderSceneHost',
+                "        if not isinstance(_Host,type): raise TypeError('Readonly task host class is unavailable')",
+                '        if isinstance(_namespace,dict):',
+                "            _namespace['_human_eye_task_host_code_v1'] = (*_generation,_Host)",
+                '    _host = _Host(bpy_module=bpy, execution_metadata=True, identity_metadata=True)',
+            ]
+        else:
+            loader.append('    _host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)')
+        return '\n'.join([
+            'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
+            '_request = _json.loads('+repr(request)+')',
+            'try:',
+            *loader,
             "    _supported = getattr(_host,'native_observation_protocol',None)=="+repr(NATIVE_OBSERVATION_PROTOCOL),
             "    if _request['command'] in ('capture','capture_evidence'):",
             "        if _request['params']: raise ValueError('Capture accepts no arguments')",
