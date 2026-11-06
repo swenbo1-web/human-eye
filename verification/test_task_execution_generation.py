@@ -3,6 +3,8 @@
 The small source trees exercise loader and identity semantics. They do not
 qualify an installed release or replace the complete controlled-entry replay.
 Service tests use explicit unit-test source responses to check routing only.
+Readonly task checks cover bound object identity. Global module-origin audit
+belongs to explicit full diagnostics and actual guarded execution.
 """
 
 import hashlib
@@ -81,6 +83,7 @@ class TaskExecutionGenerationTests(unittest.TestCase):
                     assert result['check_complete'] is True, result
                     assert result['status'] == 'loaded_generation', result
                     assert result['disk_status'] == 'disk_not_checked', result
+                    assert result['source_check_scope'] == 'bound_generation_identity', result
                     assert result['loaded_build_id'] == loaded_build, result
                     assert result['disk_build_id'] is None, result
                     return result
@@ -92,6 +95,7 @@ class TaskExecutionGenerationTests(unittest.TestCase):
                     assert result['compatible'] is False, result
                     assert result['check_complete'] is False, result
                     assert result['status'] == 'unavailable', result
+                    assert result['source_check_scope'] == 'bound_generation_identity', result
                     assert result['reasons'] == ['runtime_executed_source_unverified'], result
                     return result
             """),
@@ -103,7 +107,7 @@ class TaskExecutionGenerationTests(unittest.TestCase):
         self.assertNotIn(b"UNVERIFIED_PYC_EXECUTED", result.stderr)
         return result
 
-    def test_original_verify_loaded_runs_each_time_without_disk_source_reads(self):
+    def test_task_checks_bound_identity_without_global_audit_or_disk_reads(self):
         self.child("""
             original_code = type(guard).verify_loaded.__code__
             calls = []
@@ -112,12 +116,13 @@ class TaskExecutionGenerationTests(unittest.TestCase):
                     calls.append(frame.f_code)
             sys.setprofile(profile)
             try:
-                with patch.object(Path, 'read_bytes', side_effect=AssertionError('warm disk scan')):
+                with patch.object(Path, 'read_bytes', side_effect=AssertionError('warm disk scan')), \
+                     patch.object(helper, '_resolve_source_origin', side_effect=AssertionError('task global origin scan')):
                     generation()
                     generation()
             finally:
                 sys.setprofile(None)
-            assert len(calls) == 2, len(calls)
+            assert len(calls) == 0, len(calls)
         """)
 
     def test_loaded_source_edit_keeps_old_execution_and_explicit_diagnosis_detects_it(self):
@@ -217,11 +222,13 @@ class TaskExecutionGenerationTests(unittest.TestCase):
             with patch.object(Path, 'read_bytes', reading):
                 result = identity.check_task_source()
             assert result['compatible'] is True and result['status'] == 'unchanged', result
+            assert 'source_check_scope' not in result, result
             assert set(reads) == {row['path'] for row in manifest}
             assert len(reads) == len(manifest)
             (root / 'human_eye_plugin/direct.py').write_bytes(b"VALUE='changed'\\n")
             result = identity.check_task_source()
             assert result['compatible'] is False and result['status'] == 'changed', result
+            assert 'source_check_scope' not in result, result
             assert result['changed_files'] == ['human_eye_plugin/direct.py'], result
         """, install_guard=False)
 
@@ -256,16 +263,19 @@ class TaskExecutionGenerationTests(unittest.TestCase):
             assert 'verified_source_preloaded_module:human_eye_plugin.runtime_identity' in result.get('error', ''), result
         """)
 
-    def test_alias_without_execution_witness_is_rejected(self):
+    def test_unwitnessed_external_alias_is_audited_only_by_explicit_full_check(self):
         self.child("""
             module = types.ModuleType('_task_unverified_alias')
             module.__file__ = str(root / 'human_eye_plugin/direct.py')
             sys.modules[module.__name__] = module
-            result = unverified()
+            generation()
+            result = identity.check_source_drift()
+            assert result['compatible'] is False and result['status'] == 'unavailable', result
+            assert result['reasons'] == ['runtime_executed_source_unverified'], result
             assert 'verified_source_preloaded_module:_task_unverified_alias' in result.get('error', ''), result
         """)
 
-    def test_allowed_namespace_keeps_existing_nonexecuting_semantics(self):
+    def test_namespace_mutation_is_outside_task_scope_and_explicit_audit_rejects_it(self):
         self.child("""
             namespace = types.ModuleType('human_eye_plugin')
             namespace.__path__ = [str(root / 'human_eye_plugin')]
@@ -273,7 +283,13 @@ class TaskExecutionGenerationTests(unittest.TestCase):
             sys.modules[namespace.__name__] = namespace
             generation()
             namespace.__file__ = []
-            unverified()
+            generation()
+            try:
+                guard.verify_loaded()
+            except TypeError:
+                pass
+            else:
+                raise AssertionError('explicit audit accepted malformed namespace origin')
         """)
 
     def test_guard_manifest_mismatch_at_initial_binding_is_rejected(self):
@@ -364,6 +380,7 @@ class TaskExecutionGenerationRoutingTests(unittest.TestCase):
         self.query = {"mode": "task", "objects": [{"name": "part"}], "requested_facts": ["aabb"]}
         self.generation = {"compatible": True, "check_complete": True,
             "status": "loaded_generation", "disk_status": "disk_not_checked", "reasons": [],
+            "source_check_scope": "bound_generation_identity",
             "loaded_build_id": self.service.describe_runtime()["build_id"], "disk_build_id": None}
 
     def test_only_task_uses_loaded_generation_and_preserves_fresh_scene(self):
@@ -377,6 +394,8 @@ class TaskExecutionGenerationRoutingTests(unittest.TestCase):
         self.assertEqual(self.host.captures, 2)
         self.assertEqual(first["binding"]["source_status"], "loaded_generation")
         self.assertEqual(first["binding"]["disk_status"], "disk_not_checked")
+        self.assertEqual(first["binding"]["source_check_scope"], "bound_generation_identity")
+        self.assertEqual(second["binding"]["source_check_scope"], "bound_generation_identity")
         self.assertEqual(second["binding"]["objects"][0]["object_id"], "replacement")
         self.assertNotEqual(first["binding"]["scene_fingerprint"], second["binding"]["scene_fingerprint"])
         self.assertEqual(second["binding"]["scene_revision"], "new-scene")
@@ -428,6 +447,7 @@ class TaskExecutionGenerationRoutingTests(unittest.TestCase):
         self.assertEqual(result["status"], "observed")
         self.assertNotIn("source_status", result["binding"])
         self.assertNotIn("disk_status", result["binding"])
+        self.assertNotIn("source_check_scope", result["binding"])
         self.assertFalse(result["execution_authority"])
 
 
