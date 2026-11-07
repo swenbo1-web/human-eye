@@ -1,0 +1,24 @@
+{
+  "arm": "candidate",
+  "status": "failed",
+  "error": {
+    "type": "HostRemoteError",
+    "message": "BlenderHostError: acquisition_static_triangle_source_required:blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\owned_driver.py\", line 60, in record_arm\n    try: payload = reader(host)\n                   ^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\owned_driver.py\", line 249, in reader\n    return host.capture_scene() if arm == 'full' else host.capture_nearest_candidates(focal,arm_deadline,8*1024*1024)\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_mcp_host.py\", line 234, in capture_nearest_candidates\n    result = self._request('capture_nearest_candidates', {'focal_id': focal_id,\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_mcp_host.py\", line 572, in _request\n    raise HostRemoteError(error)\nhuman_eye_plugin.blender_process.HostRemoteError: BlenderHostError: acquisition_static_triangle_source_required:blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e\n"
+  },
+  "phase_ns": {
+    "connector_source_read_and_bind": 487000,
+    "capture": 30079800,
+    "result_serialization": 15000,
+    "raw_persistence": 281100
+  },
+  "transport": {
+    "rpc_attempts": 1,
+    "send_attempted_bytes": 3737,
+    "sendall_completed_bytes": 3737,
+    "received_bytes": 362
+  },
+  "elapsed_before_serialization_ns": 31274500,
+  "raw_bytes": 36,
+  "whole_arm_before_receipt_ns": 31572200
+}

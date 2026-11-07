@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+    "-I",
+    "-B",
+    "-c",
+    "import hashlib,json,sys,types\nfrom pathlib import Path\n_path=Path('C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\m4-single-pass-acquisition\\\\hefe\\\\verification\\\\m4_capture_qa_001\\\\entry_preflight_01\\\\FROZEN_PLAN.json')\n_raw=_path.read_bytes()\nassert hashlib.sha256(_raw).hexdigest()=='fe8374716410a68faf962587b1be898389eadbc42b4e14b4aa9d300e5c0964e8'\n_plan=json.loads(_raw)\nfor _row in _plan[\"qa_sources\"]: assert hashlib.sha256(Path(_row[\"path\"]).read_bytes()).hexdigest()==_row[\"sha256\"]\n_root=Path(_plan[\"root\"])\n_name=\"human_eye_plugin/verified_source_loader.py\"\n_pin=next(r[\"sha256\"] for r in _plan[\"product_manifest\"] if r[\"path\"]==_name)\n_helper_path=_root/_name\n_blob=_helper_path.read_bytes()\nassert hashlib.sha256(_blob).hexdigest()==_pin\n_helper=types.ModuleType(\"_m4_verified_bootstrap\");_helper.__file__=str(_helper_path)\nsys.modules[_helper.__name__]=_helper\nexec(compile(_blob,str(_helper_path),\"exec\",dont_inherit=True),_helper.__dict__)\nVERIFIED_GUARD=_helper.install(_root,_plan[\"product_manifest\"],bootstrap_module=_helper)\n_driver=Path(_plan[\"driver\"]);_driver_blob=_driver.read_bytes()\nassert hashlib.sha256(_driver_blob).hexdigest()==next(r[\"sha256\"] for r in _plan[\"qa_sources\"] if r[\"path\"]==str(_driver))\nsys.argv=[\"pinned-owned-QA\",str(_path)]\nexec(compile(_driver_blob,str(_driver),\"exec\",dont_inherit=True),globals())"
+  ],
+  "cwd": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe",
+  "start_utc": "2026-11-07T11:08:58.276939+00:00"
+}

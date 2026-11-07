@@ -1,0 +1,98 @@
+{
+  "case": "unsupported_modifier",
+  "arms": {
+    "full": {
+      "arm": "full",
+      "status": "returned",
+      "error": null,
+      "phase_ns": {
+        "connector_source_read_and_bind": 692300,
+        "capture": 31706000,
+        "M3": 2160400,
+        "result_serialization": 291800,
+        "raw_persistence": 358000
+      },
+      "transport": {
+        "rpc_attempts": 1,
+        "send_attempted_bytes": 3564,
+        "sendall_completed_bytes": 3564,
+        "received_bytes": 3817
+      },
+      "elapsed_before_serialization_ns": 34563500,
+      "raw_bytes": 12853,
+      "whole_arm_before_receipt_ns": 35215000
+    },
+    "candidate": {
+      "arm": "candidate",
+      "status": "failed",
+      "error": {
+        "type": "HostRemoteError",
+        "message": "BlenderHostError: acquisition_static_triangle_source_required:blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\owned_driver.py\", line 60, in record_arm\n    try: payload = reader(host)\n                   ^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\owned_driver.py\", line 249, in reader\n    return host.capture_scene() if arm == 'full' else host.capture_nearest_candidates(focal,arm_deadline,8*1024*1024)\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_mcp_host.py\", line 234, in capture_nearest_candidates\n    result = self._request('capture_nearest_candidates', {'focal_id': focal_id,\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_mcp_host.py\", line 572, in _request\n    raise HostRemoteError(error)\nhuman_eye_plugin.blender_process.HostRemoteError: BlenderHostError: acquisition_static_triangle_source_required:blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e\n"
+      },
+      "phase_ns": {
+        "connector_source_read_and_bind": 487000,
+        "capture": 30079800,
+        "result_serialization": 15000,
+        "raw_persistence": 281100
+      },
+      "transport": {
+        "rpc_attempts": 1,
+        "send_attempted_bytes": 3737,
+        "sendall_completed_bytes": 3737,
+        "received_bytes": 362
+      },
+      "elapsed_before_serialization_ns": 31274500,
+      "raw_bytes": 36,
+      "whole_arm_before_receipt_ns": 31572200,
+      "classification": "expected_source_refusal"
+    }
+  },
+  "primary_error": null,
+  "cleanup": {
+    "error": null,
+    "receipt": {
+      "schema": "visual004-native-close-v1",
+      "pid": 14916,
+      "response": {
+        "deadline_ns": 158798671992500,
+        "pid": 14916,
+        "status": "closed"
+      },
+      "error": null,
+      "original_deadline_ns": 158798671992500,
+      "elapsed_ns": 146444900,
+      "source_file_unchanged": true,
+      "protected_files_unchanged": true,
+      "exit_code": 0,
+      "process_reaped": true,
+      "scope": "only launcher-owned Popen can attest wait/reap; reopened controller only requests closure"
+    },
+    "elapsed_ns": 158436700,
+    "transport": {
+      "rpc_attempts": 1,
+      "send_attempted_bytes": 17,
+      "sendall_completed_bytes": 17,
+      "received_bytes": 62
+    },
+    "process_reaped": true
+  },
+  "startup_ns": 1787136600,
+  "READY": {
+    "deadline_ns": 158798671992500,
+    "helper_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+    "host": "127.0.0.1",
+    "initial_fingerprint": "3dfe44143ad884d90d020697dec1f7be8aac957b61fd74838b6cb734cda1e394",
+    "pid": 14916,
+    "port": 63765
+  },
+  "classification": "expected_source_refusal",
+  "worker_closed": {
+    "closed_ns": 158620576601400,
+    "final_geometry_fingerprint": "3dfe44143ad884d90d020697dec1f7be8aac957b61fd74838b6cb734cda1e394",
+    "initial_geometry_fingerprint": "3dfe44143ad884d90d020697dec1f7be8aac957b61fd74838b6cb734cda1e394",
+    "original_deadline_ns": 158798671992500,
+    "pid": 14916,
+    "poisoned": false
+  }
+}
