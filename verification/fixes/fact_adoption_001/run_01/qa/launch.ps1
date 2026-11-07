@@ -1,11 +1,12 @@
 param([ValidateSet('S','G')][string]$Case,[ValidateSet('P','N')][string]$Condition,[int]$FutureChains)
+$ErrorActionPreference='Stop'
 $root=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $window=Get-Content -Raw -LiteralPath (Join-Path $root 'WINDOW.json') | ConvertFrom-Json
 $now=[DateTimeOffset]::UtcNow
 $remaining=([DateTimeOffset]$window.deadline_utc-$now).TotalSeconds
 $required=600*(1+$FutureChains)+300
 if($remaining -lt $required -or $now -ge [DateTimeOffset]$window.stop_new_experiments_utc){throw 'Full current/future chain budgets plus seal reserve unavailable'}
-$python=(Resolve-Path -LiteralPath (Join-Path $root '../../../task_contract_001/engineering_r1/venv/Scripts/python.exe')).Path
+$python=(Resolve-Path -LiteralPath (Join-Path $root '../../task_contract_001/engineering_r1/venv/Scripts/python.exe')).Path
 $started=$now.ToUnixTimeMilliseconds()/1000
 $arguments=@('-I','-B',(Join-Path $root 'qa/chain_owner.py'),'--root',$root,'--reuse-root',$root,'--case',$Case,'--condition',$Condition,'--deadline-unix',$window.deadline_unix.ToString([Globalization.CultureInfo]::InvariantCulture),'--started-unix',$started.ToString([Globalization.CultureInfo]::InvariantCulture))
 $stem=Join-Path $root ('owner_'+$Case+'_'+$Condition)
