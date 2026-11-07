@@ -11,7 +11,7 @@ import sys
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
 from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
-from .surface_proximity import MAX_FACES, MAX_TRIANGLE_PAIRS, measure_surface_proximity
+from .surface_proximity import MAX_FACES, MAX_TRIANGLE_PAIRS, measure_surface_proximity, _rank_surface_results
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
@@ -198,6 +198,117 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version)
     return result
+
+
+def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None):
+    """Internal same-capture nearest summary; never a history/action entry."""
+    from .auto_router import _validated_scene
+    from .runtime_identity import runtime_identity
+    checkpoint('surface_nearest_binding')
+    identity = runtime_identity()
+    host_sha = next(row['sha256'] for row in identity['source_files']
+                    if row['path'] == 'human_eye_plugin/blender_host.py')
+    if (type(packet) is not dict or packet.get('protocol') != 'single-read-surface-candidates-v1'
+            or packet.get('result_kind') != 'acquisition_only_not_nearest_result'
+            or packet.get('scope') != 'independent_static_triangle_meshes_current_evaluated_surfaces'
+            or packet.get('M3_qualification_performed') is not False
+            or packet.get('execution_authority') is not False):
+        raise ValueError('Invalid nearest acquisition contract')
+    binding, coverage = packet.get('binding'), packet.get('coverage')
+    if (type(binding) is not dict or binding.get('host_source_sha256') != host_sha
+            or binding.get('unit') != 'm' or binding.get('coordinate_frame') != 'world'
+            or binding.get('same_main_thread_read') is not True
+            or not finite_metric(binding.get('scale_length')) or binding['scale_length'] <= 0
+            or type(binding.get('frame')) is not int
+            or type(binding.get('directory_sha256')) is not str
+            or len(binding['directory_sha256']) != 64
+            or any(c not in '0123456789abcdef' for c in binding['directory_sha256'])
+            or type(coverage) is not list or len(coverage) < 2):
+        raise ValueError('Invalid nearest source binding')
+    directory = {}
+    for row in coverage:
+        checkpoint('surface_nearest_directory')
+        if (type(row) is not dict or type(row.get('object_id')) is not str
+                or not row['object_id'] or row['object_id'] in directory):
+            raise ValueError('Invalid nearest directory IDs')
+        directory[row['object_id']] = row
+    full = binding.get('host_identity')
+    if (type(full) is not dict or full.get('schema_version') != '1.0'
+            or full.get('capture_scope') != 'complete_scene_meshes'
+            or type(full.get('document_epoch')) is not str or not full['document_epoch']
+            or type(full.get('object_instances')) is not dict
+            or set(full['object_instances']) != set(directory)
+            or any(type(v) is not str or not v for v in full['object_instances'].values())
+            or len(set(full['object_instances'].values())) != len(directory)):
+        raise ValueError('Nearest directory differs from instance binding')
+    focal, seed, upper = packet.get('focal_id'), packet.get('upper_seed_id'), packet.get('witness_upper_bound_m')
+    if (type(focal) is not str or focal not in directory
+            or (seed is not None and type(seed) is not str) or (upper is None and seed is not None)
+            or (upper is not None and (not finite_metric(upper) or upper < 0
+                or seed not in directory or seed == focal
+                or directory[focal].get('witness') is None or directory[seed].get('witness') is None))):
+        raise ValueError('Invalid nearest focal/upper seed')
+    retained, excluded = set(), []
+    for oid, row in directory.items():
+        if row.get('disposition') == 'retained':
+            retained.add(oid)
+        elif row.get('disposition') == 'excluded_strict_bound':
+            lower = row.get('lower_bound_m')
+            if (oid in (focal, seed) or upper is None or not finite_metric(lower)
+                    or not lower > upper or row.get('bounds_status') != 'enclosed'
+                    or row.get('bounds_world_m') is None or row.get('witness') is None
+                    or directory[focal].get('bounds_status') != 'enclosed'
+                    or directory[focal].get('bounds_world_m') is None):
+                raise ValueError('Invalid nearest strict-bound exclusion')
+            excluded.append({'object_id': oid, 'status': 'not_evaluated_pruned',
+                             'reason': 'strict_current_bound'})
+        else:
+            raise ValueError('Invalid nearest directory disposition')
+    scene, meshes, fingerprint = _validated_scene(packet.get('capture'),
+        _surface_nearest_capture=True, _annotate_scene=False)
+    current = scene['host_identity']
+    by_id = {mesh.object_id: mesh for mesh in meshes}
+    if (scene['source'] != 'blender' or set(by_id) != retained or focal not in retained
+            or (seed is not None and seed not in retained)
+            or current['document_epoch'] != full['document_epoch']
+            or any(token != full['object_instances'][oid] for oid, token in current['object_instances'].items())):
+        raise ValueError('Nearest retained capture/source does not match directory')
+    metrics = {} if diagnostics is None else diagnostics
+    metrics.update(pair_calls=0, kernel_calls=0, cache_hits=0, exact_rank_calls=0, pairs={})
+    measurements = {}
+    for oid in sorted(retained - {focal}):
+        checkpoint('before_surface_nearest_pair')
+        work = {}
+        measurements[oid] = _surface_pair_measurement(by_id[focal], by_id[oid], cache,
+            checkpoint, source=scene['source'], diagnostics=work, retain_exact_rank=True)
+        metrics['pair_calls'] += 1
+        metrics['kernel_calls'] += work['surface_pair_count']
+        metrics['cache_hits'] += int(work['surface_pair_cache_hit'])
+        metrics['pairs'][oid] = work
+        checkpoint('after_surface_nearest_pair')
+    metrics['exact_rank_calls'] = 1
+    ranked = _rank_surface_results(measurements, checkpoint)
+    groups, unresolved = ranked['ordered_object_id_groups'], ranked['unresolved']
+    best = groups[0] if groups else []
+    distance = measurements[best[0]]['distance_m'] if best else None
+    complete = bool(best) and not unresolved
+    notes = {}
+    for oid in (item for group in groups for item in group):
+        result = measurements[oid]
+        if result['witness_status'] == 'unknown' or result['direction_status'] == 'unknown':
+            notes[oid] = {key: result[key] for key in ('witness_status', 'witness_reason',
+                'direction_status', 'direction_reason') if key in result}
+    checkpoint('surface_nearest_complete')
+    return dict(result_kind='surface_nearest', status='complete' if complete else 'partial' if best else 'unknown',
+        scope='surface_nearest_candidates', focal_id=focal, nearest_ids=best if complete else None,
+        best_known_ids=best, distance_m=distance if complete else None, best_known_distance_m=distance,
+        unit='m', coverage={'targets_excluding_focal': len(directory)-1,
+            'distance_valid': sum(len(group) for group in groups), 'strictly_excluded': len(excluded),
+            'unresolved': len(unresolved)}, unresolved=unresolved, excluded=sorted(excluded, key=lambda row: row['object_id']),
+        measurement_notes=notes, binding={'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
+            'document_epoch': full['document_epoch'], 'directory_sha256': binding.get('directory_sha256'),
+            'host_source_sha256': host_sha, 'runtime_source_sha256': identity['source_sha256']},
+        execution_authority=False)
 
 
 def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnostics=None):

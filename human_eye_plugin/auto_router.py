@@ -264,7 +264,7 @@ def _validate_raw_indices(raw, width, vertex_count, field):
 
 @_trace_stage("scene.validate")
 def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True,
-                     _task_capture=False) -> tuple:
+                     _task_capture=False, _surface_nearest_capture=False) -> tuple:
     if not isinstance(scene, dict):
         raise ValueError("scene must be an object")
     if scene.get("unit") != "m" or scene.get("coordinate_frame") != "world":
@@ -272,7 +272,10 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
     revision = scene.get("revision")
     if not isinstance(revision, str) or not revision.strip():
         raise ValueError("scene requires a nonempty revision string")
-    scope = 'selected_objects' if _task_capture else 'complete_scene_meshes'
+    if _task_capture and _surface_nearest_capture:
+        raise ValueError('Observation entries must have one capture scope')
+    scope = ('surface_nearest_candidates' if _surface_nearest_capture else
+             'selected_objects' if _task_capture else 'complete_scene_meshes')
     if scene.get('capture_scope', 'complete_scene_meshes') != scope:
         raise ValueError('Scene capture_scope does not match this observation entry')
     items = scene.get("meshes")
@@ -404,6 +407,10 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
             raise ValueError('Selected geometry coverage or pair reason does not match bindings')
         normalized['capture_scope'] = scope
         normalized['task_selection'] = copy.deepcopy(selection)
+    if _surface_nearest_capture:
+        if 'host_identity' not in normalized:
+            raise ValueError('Nearest candidate capture requires host_identity')
+        normalized['capture_scope'] = scope
     # Includes identity, topology, pivots, frames and their provenance; stable
     # across processes, unlike the core's in-process cache tokens.
     with _trace_span("scene.hash"):
