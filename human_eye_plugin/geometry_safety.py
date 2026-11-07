@@ -249,7 +249,7 @@ def _surface_distance(a, b):
     return math.sqrt(max(0.0, minimum))
 
 
-def _surface_distance_with_witness(a, b):
+def _surface_distance_with_witness(a, b, *, preserve_distance_on_precision=False):
     """Nearest original-surface feature pair, never a decomposition seam."""
     original_a, original_b = a, b
     origin = np.asarray(a.vertices[a.faces[0, 0]], dtype=float).copy()
@@ -347,6 +347,8 @@ def _surface_distance_with_witness(a, b):
     reported_distance = float(np.linalg.norm(world[0] - world[1]))
     if (not math.isfinite(reported_distance)
             or abs(reported_distance - distance) > COLLISION_TOLERANCE_M):
+        if preserve_distance_on_precision:
+            return distance, None, None
         raise ValueError('original_surface_witness_precision_exceeded')
     # The exported world coordinates must also remain on each original
     # surface within the unchanged 1e-9m bound. Never silently snap them.
@@ -356,12 +358,15 @@ def _surface_distance_with_witness(a, b):
             triangles = original.vertices[original.faces[face:face + _CHUNK]]
             minimum = min(minimum, _point_triangle_min_sq(point[None, :], triangles))
         if not math.isfinite(minimum) or minimum > COLLISION_TOLERANCE_M ** 2:
+            if preserve_distance_on_precision:
+                return distance, None, None
             raise ValueError('original_surface_witness_precision_exceeded')
     return distance, world[0].tolist(), world[1].tolist()
 
 
 def measure_pair_geometry(focal, reference, *, collision_tolerance_m=COLLISION_TOLERANCE_M,
-                          need_clearance=False):
+                          need_clearance=False, need_witness=False,
+                          need_relation_evidence=False):
     """Return unknown as a dictionary; invalid options raise ValueError.
 
     ``signed_clearance_m`` is populated only when requested. It is unrounded
@@ -369,12 +374,18 @@ def measure_pair_geometry(focal, reference, *, collision_tolerance_m=COLLISION_T
     negative value is a certified separating translation, not a globally
     minimal penetration depth. The collision classification always uses the
     declared tolerance; display flush tolerances are never consulted.
+    A requested witness implies clearance. Only a zero-tolerance nonoverlap
+    permits original nearest-surface points. Publication precision failure
+    leaves the requested witness unknown while retaining the local scalar.
     """
     if (isinstance(collision_tolerance_m, bool) or not isinstance(collision_tolerance_m, (int, float))
             or not math.isfinite(collision_tolerance_m) or not 0 <= collision_tolerance_m <= 1e-8):
         raise ValueError("collision_tolerance_m must be finite and within 0..1e-8 metres")
     if type(need_clearance) is not bool:
         raise ValueError("need_clearance must be a boolean")
+    if type(need_witness) is not bool or type(need_relation_evidence) is not bool:
+        raise ValueError("Evidence options must be booleans")
+    need_clearance = need_clearance or need_witness
     budget = work_budget_status([focal, reference])
     result = {"measurement_valid": False, "is_penetrating": None,
               "penetration_depth_m": None, "signed_clearance_m": None,
@@ -407,29 +418,62 @@ def measure_pair_geometry(focal, reference, *, collision_tolerance_m=COLLISION_T
                     result['clearance_method'] = 'certified_separating_translation_not_minimum_depth'
                     result.update(point_a_world=None, point_b_world=None,
                                   witness_scope='no_surface_witness_for_escape_metric')
+                    if need_witness:
+                        result['witness_reason'] = 'no_surface_witness_for_escape_metric'
                 else:
                     with np.errstate(over='raise', invalid='raise', divide='raise'):
-                        clearance, point_a, point_b = _surface_distance_with_witness(focal, reference)
+                        clearance, point_a, point_b = _surface_distance_with_witness(
+                            focal, reference, preserve_distance_on_precision=need_witness)
                     result.update(signed_clearance_m=clearance, point_a_world=point_a, point_b_world=point_b,
                                   clearance_method='unrounded_all_original_surface_features',
                                   witness_scope='nearest_original_surface_points_not_internal_cell_boundaries')
+                    if point_a is None:
+                        result.update(witness_scope='original_surface_witness_unavailable',
+                                      witness_reason='original_surface_witness_precision_exceeded')
             return result
         penetrating, depth, _, method = measured
         if not math.isfinite(depth) or depth < 0:
             raise ValueError("Nonfinite penetration metric")
         result.update(measurement_valid=True, is_penetrating=bool(penetrating),
                       penetration_depth_m=float(depth), measurement_method=method)
+        zero = None
         if need_clearance:
             with np.errstate(over="raise", invalid="raise", divide="raise"):
                 zero = (measured if collision_tolerance_m == 0 else paired[1]
                         if paired is not None else _certified_solid_collision(focal, reference, 0.0))
                 if zero is None:
                     raise ValueError("Cannot certify zero-tolerance solid")
-                clearance = -float(zero[1]) if zero[0] else _surface_distance(focal, reference)
+                if zero[0]:
+                    clearance = -float(zero[1])
+                    if need_witness:
+                        result.update(point_a_world=None, point_b_world=None,
+                                      witness_scope='no_surface_witness_for_escape_metric',
+                                      witness_reason='no_surface_witness_for_escape_metric')
+                elif need_witness:
+                    clearance, point_a, point_b = _surface_distance_with_witness(
+                        focal, reference, preserve_distance_on_precision=True)
+                    result.update(point_a_world=point_a, point_b_world=point_b,
+                                  witness_scope='nearest_original_surface_points_not_internal_cell_boundaries')
+                    if point_a is None:
+                        result.update(witness_scope='original_surface_witness_unavailable',
+                                      witness_reason='original_surface_witness_precision_exceeded')
+                else:
+                    clearance = _surface_distance(focal, reference)
             if not math.isfinite(clearance):
                 raise ValueError("Nonfinite clearance")
             result["signed_clearance_m"] = clearance
             result["clearance_method"] = "unrounded_all_surface_features_or_certified_escape"
+        evidence_metric = zero if zero is not None else measured
+        if need_relation_evidence and evidence_metric[0] and evidence_metric[3] == 'convex_sat':
+            result['relation_evidence'] = {
+                'method': evidence_metric[3],
+                'classification_tolerance_m': float(collision_tolerance_m),
+                'zero_tolerance_is_penetrating': True,
+                'escape_vector_a_world_m': evidence_metric[2].tolist(),
+                'escape_distance_m': float(evidence_metric[1]),
+                'escape_scope': 'single_convex_sat_separating_translation_of_A_not_nearest_direction_or_global_minimum',
+                'world_apply_verified': False,
+            }
         return result
     except (ValueError, IndexError, TypeError, FloatingPointError, OverflowError) as exc:
         result.update(measurement_valid=False, is_penetrating=None, penetration_depth_m=None,

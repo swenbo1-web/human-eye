@@ -132,14 +132,18 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
             strict = {}
             if requested_pair.intersection({'surface_clearance', 'solid_relation', 'nearest_witness'}):
                 need_clearance = bool(requested_pair.intersection({'surface_clearance', 'nearest_witness'}))
+                need_witness = 'nearest_witness' in requested_pair
+                need_relation_evidence = 'solid_relation' in requested_pair
                 checkpoint('before_task_pair_measurement')
                 def compute():
                     metrics['exact_pair_count'] += 1
-                    return measure_pair_geometry(left, right, need_clearance=need_clearance)
+                    return measure_pair_geometry(left, right, need_clearance=need_clearance,
+                        need_witness=need_witness, need_relation_evidence=need_relation_evidence)
                 strict, metrics['pair_cache_hit'] = cache.pair_measurement(left, right, compute,
-                    parameters={'need_clearance': need_clearance, 'source': scene['source'],
+                    parameters={'need_clearance': need_clearance, 'need_witness': need_witness,
+                        'need_relation_evidence': need_relation_evidence, 'source': scene['source'],
                         'unit': 'm', 'coordinate_frame': 'world', 'collision_tolerance_m': COLLISION_TOLERANCE_M},
-                    algorithm_version='task-query-existing-strict-kernel-v1')
+                    algorithm_version='task-query-demanded-strict-evidence-v2')
                 checkpoint('after_task_pair_measurement')
             unknown = strict.get('reason', 'strict_measurement_unavailable')
             valid = strict.get('measurement_valid') is True
@@ -156,22 +160,29 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                     tolerance_m=COLLISION_TOLERANCE_M,
                     semantics='certified_solid_overlap_at_tolerance_not_physical_contact') if valid
                     else _fact(reason=unknown))
+                if valid and 'relation_evidence' in strict:
+                    facts['solid_relation']['evidence'] = strict['relation_evidence']
             if 'nearest_witness' in requested_pair:
                 # Only the strict kernel's original-surface witness is eligible.
-                # Convex scalar-only and display-probe points are never promoted.
+                # Display-probe points are never promoted to strict evidence.
                 points = [strict.get('point_a_world'), strict.get('point_b_world')]
                 if (valid and strict.get('witness_scope') == 'nearest_original_surface_points_not_internal_cell_boundaries'
                         and all(type(p) is list and len(p) == 3 and all(type(v) in (int, float)
                             and math.isfinite(v) for v in p) for p in points)):
                     delta = [b - a for a, b in zip(*points)]
                     length = math.hypot(*delta)
+                    distance = strict.get('signed_clearance_m')
+                    direction_defined = (type(distance) in (int, float) and distance > 0
+                        and math.isfinite(length) and length > 0)
                     facts['nearest_witness'] = _fact({'a': points[0], 'b': points[1],
-                        'direction_a_to_b': [v / length for v in delta] if length > 0 else None},
+                        'direction_a_to_b': [v / length for v in delta] if direction_defined else None},
                         semantics='strict_nearest_original_surface_points',
-                        direction_status='measured' if length > 0 else 'unknown',
-                        **({} if length > 0 else {'direction_reason': 'undefined_zero_distance'}))
+                        direction_status='measured' if direction_defined else 'unknown',
+                        **({} if direction_defined else {'direction_reason':
+                            'undefined_zero_distance' if distance == 0 else 'world_direction_unavailable'}))
                 else:
-                    facts['nearest_witness'] = _fact(reason=unknown if not valid else 'strict_nearest_witness_unavailable')
+                    facts['nearest_witness'] = _fact(reason=unknown if not valid else
+                        strict.get('witness_reason', 'strict_nearest_witness_unavailable'))
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
     for key in ('center_delta', 'axis_gap'):

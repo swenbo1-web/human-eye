@@ -69,8 +69,10 @@ class TaskQueryTests(unittest.TestCase):
         np.testing.assert_allclose(result['facts']['axis_gap']['value'], [0,0,.1], atol=1e-14)
         self.assertAlmostEqual(result['facts']['surface_clearance']['value'], .1, places=14)
         self.assertEqual(result['facts']['solid_relation']['value'], 'not_penetrating')
-        self.assertEqual(result['facts']['nearest_witness']['status'], 'unknown')
-        self.assertEqual(result['facts']['nearest_witness']['reason'], 'strict_nearest_witness_unavailable')
+        witness = result['facts']['nearest_witness']
+        self.assertEqual(witness['status'], 'measured')
+        self.assertAlmostEqual(math.dist(witness['value']['a'], witness['value']['b']), .1, places=14)
+        np.testing.assert_allclose(witness['value']['direction_a_to_b'], [0,0,-1], atol=1e-14)
         self.assertEqual(self.work()['exact_pair_count'], 1)
 
     def test_only_one_pair_and_warm_cache_reuses_current_geometry(self):
@@ -131,12 +133,16 @@ class TaskQueryTests(unittest.TestCase):
             result = self.pair(['surface_clearance','solid_relation','nearest_witness'])
             clearance = result['facts']['surface_clearance']
             self.assertAlmostEqual(clearance['value'], expected, places=14)
-            self.assertEqual(result['facts']['nearest_witness']['status'], 'unknown')
             if expected < 0:
+                self.assertEqual(result['facts']['nearest_witness']['status'], 'unknown')
                 self.assertEqual(clearance['kind'], 'certified_penetration')
                 self.assertIn('not_global_minimum', clearance['semantics'])
             else:
                 self.assertEqual(result['facts']['solid_relation']['value'], 'not_penetrating')
+                witness = result['facts']['nearest_witness']
+                self.assertEqual(witness['status'], 'measured')
+                self.assertIsNone(witness['value']['direction_a_to_b'])
+                self.assertEqual(witness['direction_reason'], 'undefined_zero_distance')
 
     def test_strict_orthogonal_witness_keeps_independent_distance_and_direction(self):
         from verification.test_complex_scene_quality import fixture
