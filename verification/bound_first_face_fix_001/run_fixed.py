@@ -32,7 +32,11 @@ def execute_module(name,ref,path):
 
 
 def suite_run(names,name):
-    stream=io.StringIO();suite=unittest.defaultTestLoader.loadTestsFromNames(names)
+    stream=io.StringIO();suite=unittest.TestSuite()
+    for target in names:
+        loaded=sys.modules.get(target)
+        suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(loaded) if loaded is not None
+                       else unittest.defaultTestLoader.loadTestsFromName(target))
     result=unittest.TextTestRunner(stream=stream,verbosity=2).run(suite)
     (OUT/(name+'.txt')).write_bytes(stream.getvalue().encode())
     return dict(tests=result.testsRun,failures=len(result.failures),errors=len(result.errors),
@@ -40,9 +44,10 @@ def suite_run(names,name):
 
 
 def main():
-    ref=sys.argv[1];assert len(ref)==40
+    ref=sys.argv[1];verification_ref=sys.argv[2] if len(sys.argv)>2 else ref
+    assert len(ref)==len(verification_ref)==40
     assert git_blob(ref,HOST)==(ROOT/HOST).read_bytes()
-    assert git_blob(ref,'verification/bound_first_face_fix_001/run_fixed.py')==Path(__file__).read_bytes()
+    assert git_blob(verification_ref,'verification/bound_first_face_fix_001/run_fixed.py')==Path(__file__).read_bytes()
     old,old_record=execute_module('_first_face_prior',BASE,HOST)
     candidate,candidate_record=execute_module('_first_face_candidate',ref,HOST)
     candidate._FIRST_FACE_FIXED_GIT=True
@@ -55,13 +60,13 @@ def main():
     sys.modules['human_eye_plugin.blender_host']=candidate
     import verification.test_m4_capture_001 as m4
     assert m4.m is candidate and fixtures.host_fixture()[0].__class__ is candidate.BlenderSceneHost
-    _,directed_record=execute_module('verification.bound_source_fix_001.test_source_validation',ref,
+    _,directed_record=execute_module('verification.bound_source_fix_001.test_source_validation',verification_ref,
                                      'verification/bound_source_fix_001/test_source_validation.py')
-    _,first_record=execute_module('verification.bound_first_face_fix_001.test_first_face',ref,
+    _,first_record=execute_module('verification.bound_first_face_fix_001.test_first_face',verification_ref,
                                   'verification/bound_first_face_fix_001/test_first_face.py')
     assert candidate._acquisition_witness.__code__.co_filename==candidate_record['code_filename']
     assert candidate.BlenderSceneHost.capture_nearest_candidates.__code__.co_filename==candidate_record['code_filename']
-    identity=dict(candidate_commit=ref,baseline_commit=BASE,executed=[old_record,candidate_record,directed_record,first_record],
+    identity=dict(candidate_commit=ref,verification_commit=verification_ref,baseline_commit=BASE,executed=[old_record,candidate_record,directed_record,first_record],
                   target_witness_and_capture_class_bound_to_fixed_git=True,
                   fixture_class_is_fixed_git_candidate=True,blender_sessions=0,real_RPC=0,performance_samples=0)
     save('EXECUTION_IDENTITY.json',identity)
@@ -92,15 +97,23 @@ def main():
     validator=candidate._acquisition_validate_triangles
     def witness_adapter(data,*args):return witness(adapt(data),*args)
     def validator_adapter(data,**kwargs):return validator(adapt(data),**kwargs)
-    with patch.object(m4.TriangleObject,'__init__',initialize), \
-            patch.object(candidate,'_acquisition_witness',side_effect=witness_adapter), \
-            patch.object(candidate,'_acquisition_validate_triangles',side_effect=validator_adapter):
-        legacy=suite_run(['verification.test_m4_capture_001','verification.m4_capture_opt_001.test_nine_pairs'],'LEGACY_RNA_ADAPTED')
+    if '--focused-retry' in sys.argv:
+        initial_results=json.loads((OUT/'RESULTS_INITIAL.json').read_bytes())
+        initial_identity=json.loads((OUT/'EXECUTION_IDENTITY_INITIAL.json').read_bytes())
+        assert initial_identity['candidate_commit']==ref
+        assert initial_results['legacy_RNA_adapted']['successful']
+        legacy=initial_results['legacy_RNA_adapted']
+    else:
+        with patch.object(m4.TriangleObject,'__init__',initialize), \
+                patch.object(candidate,'_acquisition_witness',side_effect=witness_adapter), \
+                patch.object(candidate,'_acquisition_validate_triangles',side_effect=validator_adapter):
+            legacy=suite_run(['verification.test_m4_capture_001','verification.m4_capture_opt_001.test_nine_pairs'],'LEGACY_RNA_ADAPTED')
     assert candidate._acquisition_witness is witness and candidate._acquisition_validate_triangles is validator
     assert candidate._acquisition_witness.__code__.co_filename==candidate_record['code_filename']
     summary=dict(first_face=first,prior_directed=previous,legacy_RNA_adapted=legacy,
                  adapter_used_only_in_legacy_group=True,original_history_unchanged=True,
-                 target_execution_identity='EXECUTION_IDENTITY.json',blender_sessions=0,real_RPC=0)
+                 target_execution_identity='EXECUTION_IDENTITY.json',legacy_pass_preserved_without_rerun='--focused-retry' in sys.argv,
+                 blender_sessions=0,real_RPC=0)
     save('RESULTS.json',summary);print(json.dumps(summary,indent=2))
     if not all(row['successful'] for row in (first,previous,legacy)):raise SystemExit(1)
 
