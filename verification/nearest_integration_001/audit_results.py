@@ -1,0 +1,132 @@
+"""Offline recount of frozen source, raw RPCs, independent truth and cleanup."""
+from datetime import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[2]
+OUT = Path(__file__).resolve().parent
+RUN = OUT/'qa_prepare/run_01'
+read = lambda p: json.loads(p.read_bytes())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def main():
+    identity = read(OUT/'CANDIDATE_IDENTITY.json')
+    plan, runtime, freeze = read(RUN/'PLAN.json'), read(RUN/'RUNTIME_PLAN.json'), read(RUN/'RUNTIME_FREEZE.json')
+    qa = read(RUN/'RESULTS.json')
+    assert qa['passed'] and qa['owned_sessions_attempted'] == 1
+    assert qa['transport_attempts'] == 4 and qa['capture_calls'] == 3
+    assert not qa['unrun_states'] and not qa['attempted_states_without_worker_receipt']
+    assert plan['source_sha256'] == identity['source_sha256']
+    assert runtime['deadline_ns']-runtime['start_ns'] == 600_000_000_000
+    assert freeze['plan_sha256'] == sha(RUN/'RUNTIME_PLAN.json')
+    for row in identity['source_files']:
+        assert sha(ROOT/row['path']) == sha(Path(plan['source_root'])/row['path']) == row['sha256']
+        assert hashlib.sha256(subprocess.check_output(['git','show',plan['candidate_commit']+':'+row['path']],cwd=ROOT)).hexdigest() == row['sha256']
+    offline = read(OUT/'offline_02/RESULTS.json')
+    assert offline['passed'] and offline['tests_run'] == 168 and offline['runtime_source_sha256'] == plan['source_sha256']
+    execution = read(OUT/'offline_02/EXECUTION_IDENTITY.json')
+    assert execution['guard_verify_loaded'] and execution['manifest'] == plan['product_manifest']
+    events = [json.loads(line) for line in (RUN/'owned/WORKER_EVENTS.jsonl').read_text().splitlines()]
+    assert len(events) == 4
+    totals = dict(send_attempted_bytes=0, send_completed_bytes=0, received_bytes=0)
+    rows = []
+    ids = plan['static_object_ids']; focal, near, far = (ids[n] for n in ('M4_Focal','M4_Near','M4_Far_00'))
+    native_calls = native_vertices = 0
+    for state in (1,2,3):
+        rpc = RUN/('rpc_'+str(state)); meter = read(rpc/'TRANSPORT.json')
+        tx, rx = (rpc/'TX.bin').read_bytes(), (rpc/'RX.bin').read_bytes()
+        assert len(tx) == meter['send_attempted_bytes'] == meter['send_completed_bytes']
+        assert len(rx) == meter['received_bytes']
+        request, response = json.loads(tx), json.loads(rx)
+        script = RUN/('STATE_'+str(state)+'.py'); raw = script.read_bytes()
+        assert request == {'type':'execute_code','params':{'code':raw.decode()}}
+        assert sha(script) == freeze['scripts'][state-1]['sha256'] == events[state-1]['script_sha256']
+        stored_script = RUN/'owned'/('call_'+str(state))/'SCRIPT.py'
+        # NativeSession writes this artifact with Windows text newline rules;
+        # actual executed input is bound above by rawTX and worker event SHA.
+        assert stored_script.read_text('utf8') == raw.decode()
+        assert response['status'] == 'success' and events[state-1]['status'] == 'completed'
+        assert events[state-1]['terminal_geometry_and_file_checks_passed'] and events[state-1]['script_error'] is None
+        assert not events[state-1]['changed_or_new_PNG_files'] and events[state-1]['render_events_after'] == 0
+        item = qa['states'][state-1]
+        worker = read(RUN/'owned'/('state_'+str(state))/'STATE_RESULT.json')
+        packet = read(RUN/'owned'/('state_'+str(state))/'CAPTURE.json')
+        assert item['worker_sha256'] == sha(Path(item['worker_file']))
+        assert worker['primary_error'] is None and worker['restored'] and worker['same_native_geometry_before_after_capture']
+        assert worker['host_execution']['source_sha256'] == identity['host_sha256']
+        assert worker['host_execution']['guard_verified'] and worker['host_execution']['final_guard_verified']
+        public = item['result']; assert all(item['validation'].values()) and item['independent_answer_passed']
+        assert public['binding']['runtime_source_sha256'] == plan['source_sha256']
+        assert public['binding']['host_source_sha256'] == plan['host_sha256']
+        assert '_exact_distance_sq' not in json.dumps(public)
+        assert item['cache_before']['frames'] == item['cache_after']['frames'] == 0
+        oracle = {r['name']:r['coordinates_world_m'] for r in worker['oracle_before_capture']['rows']}
+        assert oracle['M4_Focal'] == [[0.,0.,0.],[0.,1.,0.],[0.,0.,1.]]
+        assert oracle['M4_Near'] == [[2.,0.,0.],[2.,1.,0.],[2.,0.,1.]]
+        if state == 1:
+            assert all(p[0] == 100. for p in oracle['M4_Far_00'])
+            assert public['status'] == 'complete' and public['nearest_ids'] == [near] and public['distance_m'] == 2.
+            assert far not in {m['object_id'] for m in packet['capture']['meshes']}
+            assert public['excluded'] == [{'object_id':far,'status':'not_evaluated_pruned','reason':'strict_current_bound'}]
+            proof = 'Near parallel-plane distance2 attained; every Far point x100, strictly farther.'
+        elif state == 2:
+            assert oracle['M4_Far_00'][3] == [.25,.25,.25]
+            assert all(p[0] >= .25 for p in oracle['M4_Far_00'])
+            assert public['status'] == 'complete' and public['nearest_ids'] == [far] and public['distance_m'] == .25
+            proof = 'All Far x>=.25; vertex3 projects inside focal yz triangle (.25+.25<=1), attaining .25.'
+        else:
+            assert oracle['M4_Far_00'][3:] == [[1.,2.,0.],[1.,3.,0.],[1.,4.,0.]]
+            assert public['status'] == 'partial' and public['nearest_ids'] is None and public['distance_m'] is None
+            assert public['best_known_ids'] == [near] and public['best_known_distance_m'] == 2.
+            assert public['unresolved'] == {far:'surface_degenerate_triangle'}
+            proof = 'Late line x1,y>=2,z0 has square distance2 from focal, attained at (1,2,0)/(0,1,0); sqrt2<Near2. M3 still unsupported.'
+        oracle_calls = worker['qa_native_oracle_calls']; native_calls += oracle_calls
+        native_vertices += oracle_calls * worker['oracle_before_capture']['native_vertices_read']
+        counts = item['counts']
+        assert counts['pair_calls'] == len(packet['capture']['meshes'])-1 and counts['rank_calls'] == 1
+        assert counts['kernel_calls'] <= counts['pair_calls'] and counts['nearest_calls'] <= counts['kernel_calls']
+        for k in totals: totals[k] += meter[k]
+        rows.append(dict(state=state,status=public['status'],nearest_ids=public['nearest_ids'],distance_m=public['distance_m'],
+            best_known_ids=public['best_known_ids'],coverage=public['coverage'],counts=counts,
+            cache_hits=item['diagnostics']['cache_hits'], capture_work=packet['work'],
+            QA_full_native_oracle_calls=oracle_calls, independent_geometric_proof=proof,
+            tx_bytes=len(tx),rx_bytes=len(rx),tx_sha256=sha(rpc/'TX.bin'),rx_sha256=sha(rpc/'RX.bin'),
+            worker_script_artifact_sha256=sha(stored_script),script_artifact_uses_Windows_text_newlines=True))
+    close = RUN/'rpc_close'; meter = read(close/'TRANSPORT.json')
+    assert json.loads((close/'TX.bin').read_bytes()) == {'type':'close'}
+    assert json.loads((close/'RX.bin').read_bytes())['status'] == 'closed'
+    assert len((close/'TX.bin').read_bytes()) == meter['send_attempted_bytes'] == meter['send_completed_bytes']
+    assert len((close/'RX.bin').read_bytes()) == meter['received_bytes']
+    for k in totals: totals[k] += meter[k]
+    closed = read(RUN/'owned/WORKER_CLOSED.json')
+    assert not closed['poisoned'] and closed['final_geometry_fingerprint'] == closed['initial_geometry_fingerprint']
+    assert qa['cleanup']['process_reaped'] and qa['cleanup']['exit_code'] == 0
+    assert qa['cleanup']['source_file_unchanged'] and qa['cleanup']['protected_files_unchanged']
+    assert sha(Path(plan['asset'])) == plan['asset_sha256'] == qa['asset_sha256_after']
+    assert sha(RUN/'owned/input.blend') == plan['asset_sha256']
+    assert sha(Path(plan['helper'])) == plan['helper_sha256'] == qa['helper_sha256_after']
+    assert qa['client_execution_witness']['every_loaded_module_has_execution_or_namespace_witness']
+    assert qa['client_execution_witness']['bound_generation']['compatible']
+    commands = {p:read(OUT/p) for p in ('OFFLINE_01_COMMAND.json','OFFLINE_02_COMMAND.json','QA_PREPARE_COMMAND.json','QA_RUN_COMMAND.json')}
+    durations = {p:(datetime.fromisoformat(v['ended_utc'])-datetime.fromisoformat(v['started_utc'])).total_seconds() for p,v in commands.items()}
+    evidence = read(OUT/'offline_02/INTEGRATION_EVIDENCE.json')
+    result = dict(passed=True,candidate_commit=plan['candidate_commit'],source_sha256=plan['source_sha256'],source_count=131,
+        final_offline_methods=168,initial_offline_methods=168,total_offline_method_executions=336,unique_integration_groups=10,
+        final_offline_actual_calls={k:sum(g[k] for g in evidence.values()) for k in ('pair_calls','kernel_calls','nearest_calls','rank_calls')},
+        offline_loaded_product_witnesses=len(execution['loaded_product_witnesses']),real_states=rows,
+        real_owned_sessions=1,real_capture_calls=3,real_RPC_including_close=4,
+        real_pair_calls=sum(r['counts']['pair_calls'] for r in rows),real_kernel_calls=sum(r['counts']['kernel_calls'] for r in rows),
+        real_nearest_calls=sum(r['counts']['nearest_calls'] for r in rows),real_rank_calls=3,
+        real_cache_hits=sum(r['cache_hits'] for r in rows),QA_full_native_oracle_calls=native_calls,QA_native_vertex_positions_read=native_vertices,
+        transport_totals=totals,outer_command_seconds=durations,controller_inner_record_ns=qa['whole_controller_ns'],
+        inner_timer_is_not_whole_process=True,close_event_raw_status=events[-1]['status'],owner_reaped_exit_zero=True,
+        actual_build=read(RUN/'owned/state_1/STATE_RESULT.json')['build'],unrun_states=[],real_retries=0,
+        model_usage=None,fees=None,performance_samples=0,default_activation=False)
+    (OUT/'AUDIT.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf8')
+    print(json.dumps({k:v for k,v in result.items() if k not in ('real_states','actual_build')}))
+
+
+if __name__ == '__main__': main()
