@@ -39,7 +39,7 @@ PROTOCOL_VERSION = "1.0"
 _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
-_OBSERVATION_COMMANDS=frozenset({'capture_task','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+_OBSERVATION_COMMANDS=frozenset({'capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -217,6 +217,31 @@ class BlenderMCPHost:
 
     def capture_task_scene(self, selectors) -> dict[str, Any]:
         return self._request('capture_task', {'selectors': selectors})
+
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
+        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+            raise ValueError('acquisition_focal_id')
+        now_ns = time.perf_counter_ns()
+        if type(deadline_ns) is not int or now_ns >= deadline_ns:
+            raise ValueError('acquisition_deadline_exceeded')
+        # The host cannot outlive this connector's shorter transport allowance.
+        # Min preserves an earlier parent deadline and starts before encoding.
+        deadline_ns = min(deadline_ns, now_ns + int(self.timeout_s * 1_000_000_000))
+        if deadline_ns <= now_ns:
+            raise ValueError('acquisition_deadline_exceeded')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+            raise ValueError('acquisition_document_budget')
+        result = self._request('capture_nearest_candidates', {'focal_id': focal_id,
+            'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes})
+        if time.perf_counter_ns() >= deadline_ns:
+            raise ValueError('acquisition_deadline_exceeded')
+        binding = result.get('binding')
+        if (type(binding) is not dict or result.get('protocol') != 'single-read-surface-candidates-v1'
+                or result.get('focal_id') != focal_id or result.get('execution_authority') is not False
+                or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
+            raise ValueError('acquisition_response_binding')
+        self._record_observation_document(binding)
+        return result
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
@@ -406,7 +431,8 @@ class BlenderMCPHost:
 
     def _observation_code(self, command, params, request_id):
         """Separate constant read-only template; legacy template bytes are kept."""
-        required={'capture':set(),'capture_evidence':set(),'capture_task':{'selectors'},'native_observation_capabilities':set(),
+        required={'capture':set(),'capture_evidence':set(),'capture_task':{'selectors'},
+            'capture_nearest_candidates':{'focal_id','deadline_ns','max_response_bytes'},'native_observation_capabilities':set(),
             'observe_readonly_native':{'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'},
             'last_readonly_native_audit':{'request_id'}}
         if command not in required or type(params) is not dict or set(params)!=required[command]:
@@ -438,6 +464,8 @@ class BlenderMCPHost:
             "        _result = _host.capture_scene() if _request['command']=='capture' else _host.capture_evidence()",
             "    elif _request['command']=='capture_task':",
             "        _result = _host.capture_task_scene(_request['params']['selectors'])",
+            "    elif _request['command']=='capture_nearest_candidates':",
+            "        _result = _host.capture_nearest_candidates(**_request['params'])",
             "    elif _request['command']=='native_observation_capabilities':",
             "        if _request['params']: raise ValueError('Capabilities accepts no arguments')",
             "        _result = _host.native_observation_capabilities() if _supported else {'supported':False}",

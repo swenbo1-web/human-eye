@@ -205,6 +205,93 @@ def _same_rna(left, right):
     return False
 
 
+def _acquisition_bounds(corners, matrix, scale):
+    """Outward binary64 affine interval; unknown never excludes geometry.
+
+    The local box must be Blender's evaluated box for the restricted static
+    triangle mesh, not a model-supplied estimate. Every product/add/scale is
+    widened, covering both exact affine coordinates and _capture's operation
+    sequence. This proves arithmetic enclosure, not the Blender API premise.
+    """
+    try:
+        if len(corners) != 8:
+            return None
+        points = [tuple(float(p[k]) for k in range(3)) for p in corners]
+        if any(not math.isfinite(v) for p in points for v in p) or all(p == (-1., -1., -1.) for p in points):
+            return None
+        low = [min(p[k] for p in points) for k in range(3)]
+        high = [max(p[k] for p in points) for k in range(3)]
+        expected = {(x, y, z) for x in (low[0], high[0]) for y in (low[1], high[1]) for z in (low[2], high[2])}
+        if set(points) != expected:
+            return None
+        lower, upper = [], []
+        for r in range(3):
+            lo = hi = 0.
+            for c in range(3):
+                products = matrix[r][c] * low[c], matrix[r][c] * high[c]
+                lo = math.nextafter(lo + math.nextafter(min(products), -math.inf), -math.inf)
+                hi = math.nextafter(hi + math.nextafter(max(products), math.inf), math.inf)
+            lo = math.nextafter(math.nextafter(lo + matrix[r][3], -math.inf) * scale, -math.inf)
+            hi = math.nextafter(math.nextafter(hi + matrix[r][3], math.inf) * scale, math.inf)
+            if not math.isfinite(lo) or not math.isfinite(hi):
+                return None
+            lower.append(lo)
+            upper.append(hi)
+        return [lower, upper]
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def _acquisition_lower(left, right):
+    if left is None or right is None:
+        return 0.
+    gap = max(0., *(math.nextafter(left[0][k] - right[1][k], -math.inf) for k in range(3)),
+                   *(math.nextafter(right[0][k] - left[1][k], -math.inf) for k in range(3)))
+    return gap if math.isfinite(gap) else 0.
+
+
+def _acquisition_upper(left, right):
+    """L1 distance upper bound between actual captured triangle vertices."""
+    if left is None or right is None:
+        return math.inf
+    total = 0.
+    for a, b in zip(left, right):
+        if a != b:
+            delta = math.nextafter(abs(a - b), math.inf)
+            total = math.nextafter(total + delta, math.inf)
+    return total
+
+
+def _acquisition_witness(data, matrix, scale):
+    """Read three vertices of one real triangle; never sample vertex zero alone."""
+    from fractions import Fraction
+    try:
+        face = list(data.polygons[0].vertices)
+        if (len(face) != 3 or any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face)):
+            return None
+        points = []
+        for index in face:
+            point = [float(data.vertices[index].co[k]) for k in range(3)]
+            world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale for r in range(3)]
+            if any(not math.isfinite(v) for v in world):
+                return None
+            points.append(world)
+        edges = [[Fraction.from_float(points[j][k]) - Fraction.from_float(points[0][k])
+                  for k in range(3)] for j in (1, 2)]
+        if not any(edges[0][i] * edges[1][j] != edges[0][j] * edges[1][i] for i, j in ((0, 1), (0, 2), (1, 2))):
+            return None
+        return {'point_world_m': points[0], 'triangle_vertex_indices': face, 'triangle_world_m': points}
+    except (AttributeError, TypeError, ValueError, IndexError, OverflowError, RuntimeError):
+        return None
+
+
+def _acquisition_vertices(vertices, checkpoint):
+    for index, vertex in enumerate(vertices):
+        if index % 128 == 0:
+            checkpoint()
+        yield vertex
+
+
 def _vector(value, name):
     if (not isinstance(value, (list, tuple)) or len(value) != 3
             or any(isinstance(x, (bool, str)) or not isinstance(x, (int, float))
@@ -466,16 +553,21 @@ class BlenderSceneHost:
         return objects, {'selectors': [dict(selector) for selector in selectors], 'bindings': bindings,
                          'pair_reason': pair_reason, 'candidate_count': len(candidates)}
 
-    def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None):
+    def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None,
+                 _acquisition_context=None):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
             raise BlenderHostError("_read_only_native must be boolean")
         if _native_evidence and not (self.execution_metadata and self.identity_metadata):
             raise BlenderHostError("Native evidence requires explicit execution and identity metadata")
-        graph, scale = self._depsgraph(), self._scale()
+        graph, scale = (self._depsgraph(), self._scale()) if _acquisition_context is None else _acquisition_context[:2]
         task_selection = None
-        if _task_selectors is None:
+        if _acquisition_context is not None:
+            if _native_evidence or _task_selectors is not None:
+                raise BlenderHostError('Acquisition context cannot supply legacy evidence')
+            objects = _acquisition_context[2]
+        elif _task_selectors is None:
             objects = self._objects(graph)
         else:
             objects, task_selection = self._task_objects(_task_selectors)
@@ -495,7 +587,9 @@ class BlenderSceneHost:
         active = getattr(getattr(self.view_layer, "objects", None), "active", None)
         meshes, vertex_count, face_count = [], 0, 0
         for ordinal, obj in enumerate(objects, 1):
-            evaluated = obj.evaluated_get(graph)
+            if _acquisition_context is not None:
+                _acquisition_context[4]()
+            evaluated = obj.evaluated_get(graph) if _acquisition_context is None else _acquisition_context[3][self.object_id(obj)]
             if not bool(getattr(evaluated, "is_evaluated", True)):
                 raise BlenderHostError("Mesh is not evaluated in the current view layer: " + obj.name)
             matrix = _matrix(evaluated.matrix_world)
@@ -512,7 +606,9 @@ class BlenderSceneHost:
                     raise BlenderHostError("Scene geometry budget exceeded")
                 vertices = []
                 evaluated_local = [] if _native_evidence else None
-                for vertex in temporary.vertices:
+                vertex_source = (temporary.vertices if _acquisition_context is None else
+                                 _acquisition_vertices(temporary.vertices, _acquisition_context[4]))
+                for vertex in vertex_source:
                     point = [float(vertex.co[i]) for i in range(3)]
                     if _native_evidence:
                         evaluated_local.append(point)
@@ -586,10 +682,13 @@ class BlenderSceneHost:
             scene['capture_scope'] = 'selected_objects'
             scene['task_selection'] = task_selection
             scene['host_identity'] = task_identity
+        elif _acquisition_context is not None:
+            scene['capture_scope'] = 'surface_nearest_candidates'
+            scene['execution_authority'] = False
         elif self.execution_metadata:
             scene["host_execution"] = self._execution_status(objects)
         if task_selection is None and self.identity_metadata:
-            identity = self._identity_metadata(objects)
+            identity = self._identity_metadata(objects, capture_scope='surface_nearest_candidates') if _acquisition_context is not None else self._identity_metadata(objects)
             if identity is not None:
                 scene['host_identity'] = identity
         # Guard changes must invalidate approvals even if displayed geometry did
@@ -777,6 +876,147 @@ class BlenderSceneHost:
         self._main_thread()
         with self._lock:
             return self._capture()
+
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
+        """Internal unsigned-surface acquisition, one synchronous host window.
+
+        Restricted to independent static triangle meshes. API-derived bounds
+        only choose acquisition; the returned packet is not a nearest result,
+        solid certificate, legacy complete-scene capture or action authority.
+        """
+        self._main_thread()
+        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+            raise BlenderHostError('acquisition_focal_id')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('acquisition_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('acquisition_document_budget')
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('acquisition_deadline_exceeded')
+        checkpoint()
+        with self._lock:
+            graph, scale = self._depsgraph(), self._scale()
+            checkpoint()
+            objects = self._objects(graph)
+            ids = [self.object_id(obj) for obj in objects]
+            if len(set(ids)) != len(ids) or focal_id not in ids or len(ids) < 2:
+                raise BlenderHostError('acquisition_object_coverage')
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('acquisition_source_identity_unavailable')
+            frame = int(getattr(self.scene, 'frame_current', 0))
+            evaluated_by_id, frozen, rows = {}, {}, {}
+            source_vertices = source_faces = 0
+
+            def read_directory(obj):
+                nonlocal source_vertices, source_faces
+                checkpoint()
+                oid = self.object_id(obj)
+                guards = self._guard_description(obj)
+                if (guards['parent'] is not None or guards['children'] or guards['constraints']
+                        or guards['modifiers'] or guards['animation'] or guards['data_animation']
+                        or guards['rigid_body'] or guards['rigid_body_constraint'] or guards['shape_keys']
+                        or guards['linked'] or guards['edit_mode']
+                        or getattr(getattr(obj, 'data', None), 'library', None) is not None):
+                    raise BlenderHostError('acquisition_static_triangle_source_required:' + oid)
+                evaluated = obj.evaluated_get(graph)
+                if getattr(evaluated, 'is_evaluated', False) is not True:
+                    raise BlenderHostError('acquisition_evaluation_unavailable:' + oid)
+                data = getattr(evaluated, 'data', None)
+                if (data is None or not hasattr(data, 'vertices') or not hasattr(data, 'polygons')
+                        or not hasattr(data, 'loops') or len(data.vertices) < 3 or not len(data.polygons)
+                        or len(data.loops) != 3 * len(data.polygons)):
+                    raise BlenderHostError('acquisition_triangle_data_required:' + oid)
+                source_vertices += len(data.vertices)
+                source_faces += len(data.polygons)
+                if source_vertices > 500_000 or source_faces > 1_000_000:
+                    raise BlenderHostError('acquisition_scene_geometry_budget')
+                matrix = _matrix(evaluated.matrix_world)
+                evaluated_by_id[oid] = evaluated
+                frozen[oid] = (guards, matrix, len(data.vertices), len(data.polygons))
+                try:
+                    corners = evaluated.bound_box
+                except (AttributeError, RuntimeError):
+                    corners = ()
+                row = {'object_id': oid, 'bounds_world_m': _acquisition_bounds(corners, matrix, scale),
+                       'witness': _acquisition_witness(data, matrix, scale)}
+                if row['bounds_world_m'] is not None and row['witness'] is not None:
+                    lo, hi = row['bounds_world_m']
+                    if any(not lo[k] <= point[k] <= hi[k] for point in row['witness']['triangle_world_m'] for k in range(3)):
+                        row['bounds_world_m'] = None
+                checkpoint()
+                return row
+
+            focal_obj = objects[ids.index(focal_id)]
+            rows[focal_id] = read_directory(focal_obj)
+            focal_point = (rows[focal_id]['witness'] or {}).get('point_world_m')
+            upper, seed = math.inf, None
+            for obj, oid in zip(objects, ids):
+                if oid != focal_id:
+                    rows[oid] = read_directory(obj)
+                    value = _acquisition_upper(focal_point, (rows[oid]['witness'] or {}).get('point_world_m'))
+                    if value < upper:
+                        upper, seed = value, oid
+            selected, coverage = [], []
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                row = rows[oid]
+                lower = _acquisition_lower(rows[focal_id]['bounds_world_m'], row['bounds_world_m'])
+                excluded = oid != focal_id and oid != seed and row['witness'] is not None and lower > upper
+                row.update(lower_bound_m=lower, disposition='excluded_strict_bound' if excluded else 'retained',
+                           bounds_status='enclosed' if row['bounds_world_m'] is not None else 'unknown')
+                coverage.append(row)
+                if not excluded:
+                    selected.append(obj)
+            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint))
+            checkpoint()
+            # The witness defining U must survive the actual selected capture.
+            captured = {mesh['object_id']: mesh for mesh in scene['meshes']}
+            for oid in (focal_id, seed):
+                witness = rows[oid]['witness'] if oid is not None else None
+                if witness is not None:
+                    mesh = captured[oid]
+                    indices = witness['triangle_vertex_indices']
+                    if (not any(sorted(face) == sorted(indices) for face in mesh['faces'])
+                            or [mesh['vertices'][i] for i in indices] != witness['triangle_world_m']):
+                        raise BlenderHostError('acquisition_witness_capture_mismatch')
+            # No second dependency-graph update; reject observable mutations in
+            # this synchronous main-thread read, never describe edit history.
+            if (self._objects(graph) != objects or self._scale() != scale
+                    or int(getattr(self.scene, 'frame_current', 0)) != frame
+                    or self._identity_metadata(objects) != identity):
+                raise BlenderHostError('acquisition_source_changed')
+            for obj, oid in zip(objects, ids):
+                old = frozen[oid]
+                evaluated = evaluated_by_id[oid]
+                if (self._guard_description(obj) != old[0] or _matrix(evaluated.matrix_world) != old[1]
+                        or len(evaluated.data.vertices) != old[2] or len(evaluated.data.polygons) != old[3]):
+                    raise BlenderHostError('acquisition_source_changed')
+            packet = {'protocol': 'single-read-surface-candidates-v1', 'capture': scene,
+                'focal_id': focal_id, 'coverage': coverage,
+                'scope': 'independent_static_triangle_meshes_current_evaluated_surfaces',
+                'bound_method': 'outward_evaluated_local_box_affine_linf',
+                'upper_method': 'outward_L1_real_triangle_vertex_pair',
+                'M3_qualification_performed': False,
+                'witness_upper_bound_m': upper if math.isfinite(upper) else None, 'upper_seed_id': seed,
+                'unresolved_bounds_ids': [row['object_id'] for row in coverage if row['bounds_status'] == 'unknown'],
+                'unresolved_witness_ids': [row['object_id'] for row in coverage if row['witness'] is None],
+                'binding': {'host_source_sha256': source_sha, 'host_identity': identity, 'frame': frame,
+                            'scale_length': scale, 'coordinate_frame': 'world', 'unit': 'm',
+                            'same_main_thread_read': True, 'external_edit_history_proven': False},
+                'work': {'directory_objects': len(objects), 'source_vertices': source_vertices,
+                         'source_faces': source_faces, 'expanded_objects': len(selected),
+                         'expanded_vertices': sum(len(m['vertices']) for m in scene['meshes']),
+                         'expanded_faces': sum(len(m['faces']) for m in scene['meshes'])},
+                'result_kind': 'acquisition_only_not_nearest_result', 'execution_authority': False}
+            packet['binding']['directory_sha256'] = _digest(coverage)
+            checkpoint()
+            if len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
+                raise BlenderHostError('acquisition_document_budget_exceeded')
+            checkpoint()
+            return packet
 
     def capture_task_scene(self, selectors):
         """Read only the uniquely bound targets in one synchronous observation."""
