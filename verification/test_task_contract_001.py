@@ -12,7 +12,7 @@ from human_eye_plugin import live_spatial_mcp as mcp
 from human_eye_plugin.live_service import LiveSpatialService
 from verification import test_task_complete_001 as previous
 from verification.perf030_002_cases import closed_counterexample
-from verification.test_concave_geometry import box, changed, ring
+from verification.test_concave_geometry import box, changed, entity, ring
 from verification.test_selected_task_query import SelectedHost
 from verification.test_task_complete_001 import (
     changed_control_target, control_pair,
@@ -21,6 +21,17 @@ from verification.test_task_complete_001 import (
 
 
 LEGACY_FACTS = ['surface_clearance', 'solid_relation', 'nearest_witness']
+
+
+def tolerance_suppressed_component_pair():
+    """Two disjoint unit boxes with one exactly represented tiny overlap."""
+    overlap = 2.0 ** -32
+    left = box((1 - overlap, 0, 0), (1, 1, 1), 'a')
+    first = box((0, 0, 0), (1, 1, 1), 'first')
+    second = box((0, 3, 0), (1, 1, 1), 'second')
+    right = entity('b', np.vstack([first.vertices, second.vertices]),
+                   np.vstack([first.faces, second.faces + len(first.vertices)]))
+    return left, right
 
 
 class PairRelationContractTests(unittest.TestCase):
@@ -212,7 +223,7 @@ class PairRelationContractTests(unittest.TestCase):
         result = self.observe(order=('a', 'ring'))
         value = self.assert_relation(result, 'penetrating')
         evidence = value['evidence']
-        self.assertEqual(evidence['method'], 'exact_orthogonal_cell_union_escape')
+        self.assertEqual(evidence['method'], 'certified_separating_translation_not_minimum_depth')
         self.assertGreater(evidence['escape_distance_m'], 0)
         self.assertNotIn('convex_sat', json.dumps(evidence))
         self.assertNotIn('surface_gap_m', value)
@@ -230,10 +241,32 @@ class PairRelationContractTests(unittest.TestCase):
         self.set_pair(box((1.5, .25, -.25), (.2, .2, .2), 'a'), right)
         value = self.assert_relation(self.observe(), 'penetrating')
         evidence = value['evidence']
-        self.assertEqual(evidence['method'], 'convex_components_escape')
+        self.assertEqual(evidence['method'], 'unrounded_all_surface_features_or_certified_escape')
         self.assertGreater(evidence['escape_distance_m'], 0)
         self.assertFalse(evidence['world_apply_verified'])
         self.assertNotIn('surface_gap_m', value)
+
+    def test_tolerance_suppressed_component_overlap_uses_clearance_evidence_method(self):
+        left, right = tolerance_suppressed_component_pair()
+        overlap = 2.0 ** -32
+        strict = geometry.measure_pair_geometry(left, right, need_clearance=True,
+            need_witness=True, need_relation_evidence=True)
+        self.assertTrue(strict['measurement_valid'])
+        self.assertFalse(strict['is_penetrating'])
+        self.assertEqual(strict['measurement_method'], 'convex_components_sat')
+        self.assertEqual(strict['signed_clearance_m'], -overlap)
+        self.set_pair(left, right)
+        result = self.observe(['pair_relation', 'solid_relation', 'surface_clearance'])
+        value = self.assert_relation(result, 'penetrating')
+        self.assertEqual(result['facts']['solid_relation']['value'], 'not_penetrating')
+        self.assertEqual(result['facts']['surface_clearance']['value'], -overlap)
+        evidence = value['evidence']
+        self.assertEqual(evidence['method'], strict['clearance_method'])
+        self.assertNotEqual(evidence['method'], strict['measurement_method'])
+        self.assertEqual(evidence['escape_distance_m'], overlap)
+        self.assertEqual(evidence['escape_scope'],
+                         'certified_separating_translation_not_global_minimum')
+        self.assertNotIn('escape_vector_a_world_m', evidence)
 
     def test_incomplete_penetration_evidence_does_not_promote_fact_to_complete(self):
         strict = {'measurement_valid': True, 'is_penetrating': True,

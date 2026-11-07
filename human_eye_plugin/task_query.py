@@ -103,7 +103,7 @@ def _pair_relation(strict):
     if distance < 0:
         value = {'relation': 'penetrating'}
         if type(evidence) is not dict or not evidence:
-            method = strict.get('measurement_method')
+            method = strict.get('clearance_method')
             if not method:
                 return _fact(value, reason='penetration_evidence_unavailable', relation_tolerance_m=0.0)
             evidence = {'method': method, 'escape_distance_m': -distance,
