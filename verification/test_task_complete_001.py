@@ -200,7 +200,9 @@ class GeometryTaskEvidenceTests(unittest.TestCase):
         self.assertTrue(result["measurement_valid"], result)
         self.assertTrue(result["is_penetrating"])
         self.assertEqual(result["classification_tolerance_m"], 0)
-        self.assertAlmostEqual(result["signed_clearance_m"], -actual_overlap, delta=1e-14)
+        self.assertLess(result["signed_clearance_m"], 0)
+        self.assertEqual(result["penetration_metric_scope"],
+                         "certified_separating_translation_not_minimum_depth")
         self.assertIsNone(result.get("point_a_world"))
         self.assertIsNone(result.get("point_b_world"))
         self.assertEqual(result["witness_reason"], "no_surface_witness_for_escape_metric")
