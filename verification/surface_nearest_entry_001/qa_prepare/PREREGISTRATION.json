@@ -1,0 +1,256 @@
+{
+  "task": "SURFACE-NEAREST-ENTRY-001",
+  "registered_utc": "2026-11-07T16:05:20.179531+00:00",
+  "asset": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\run_01\\assets\\far_second_degenerate.blend",
+  "asset_sha256": "9a7671bb202720b09311f313363bc0e5267017f2af155a9167fff4cf2d96d1b6",
+  "asset_recipe": {
+    "case": "far_second_degenerate",
+    "scale_length": 1.0,
+    "objects": [
+      {
+        "name": "M4_Focal",
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "vertices": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "faces": [
+          [
+            0,
+            1,
+            2
+          ]
+        ]
+      },
+      {
+        "name": "M4_Near",
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            2.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "vertices": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "faces": [
+          [
+            0,
+            1,
+            2
+          ]
+        ]
+      },
+      {
+        "name": "M4_Far_00",
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "vertices": [
+          [
+            100.0,
+            0.0,
+            0.0
+          ],
+          [
+            100.0,
+            1.0,
+            0.0
+          ],
+          [
+            100.0,
+            0.0,
+            1.0
+          ],
+          [
+            100.0,
+            2.0,
+            0.0
+          ],
+          [
+            100.0,
+            3.0,
+            0.0
+          ],
+          [
+            100.0,
+            4.0,
+            0.0
+          ]
+        ],
+        "faces": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            3,
+            4,
+            5
+          ]
+        ]
+      }
+    ]
+  },
+  "object_ids": {
+    "M4_Near": "blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f",
+    "M4_Focal": "blender:e6734ab318ec55bba83f2b582c44f2469b8634c63aa4d4fa7ec74ea7dcaad75d",
+    "M4_Far_00": "blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d"
+  },
+  "static_asset_manifest_sha256": "ce8d8a7d502ccebbaf2fd43376461b2e3c716ed39ff98c9ab8197f0edc94f002",
+  "old_full_RAW_sha256": "335ebcb36f3fdda4465ea337fd5ba9e6940dc16d592985a34c080d863553b9ac",
+  "static_recipe_world_vertices_match_old_full_RAW": true,
+  "states": [
+    {
+      "state": 1,
+      "mutation": "none",
+      "expected_status": "complete",
+      "nearest_name": "M4_Near",
+      "distance_m": 2.0,
+      "proof": "focal x=0; Near x=2 with identical yz triangle; Far all x=100; bound excludes Far even though later face is degenerate"
+    },
+    {
+      "state": 2,
+      "mutation": "Far vertex3=(.25,.25,.25), other old data unchanged",
+      "expected_status": "complete",
+      "nearest_name": "M4_Far_00",
+      "distance_m": 0.25,
+      "proof": "all Far vertices x>=.25; vertex3 projected to (0,.25,.25) lies inside focal y+z<=1 triangle; distance .25 attained"
+    },
+    {
+      "state": 3,
+      "mutation": "Far vertices3,4,5 x=1; old y=2,3,4 and z=0 unchanged",
+      "expected_status": "partial",
+      "nearest_ids": null,
+      "best_known_name": "M4_Near",
+      "best_known_distance_m": 2.0,
+      "unresolved_name": "M4_Far_00",
+      "unresolved_reason": "surface_degenerate_triangle",
+      "proof": "Far retained by lower bound <=1; later points collinear. Actual underlying closest pair (0,1,0)/(1,2,0) gives squared2<4, so calling Near globally nearest would be wrong"
+    }
+  ],
+  "max_NativeSessions": 1,
+  "max_close_RPC": 1,
+  "worker_original_seconds": 600,
+  "cleanup_reserve_seconds": 60,
+  "real_retries": 0,
+  "original_asset_write": false,
+  "Blender_or_product_executions_during_registration": 0,
+  "max_setup_RPC": 3,
+  "max_product_capture_RPC": 3,
+  "max_restore_RPC": 3,
+  "total_RPC_max": 10,
+  "allowed_RPC_cap": 12,
+  "max_stdio_processes": 1,
+  "stdio_calls": [
+    "initialize",
+    "notifications/initialized",
+    "tools/list",
+    "tools/call bad include_image=true",
+    "ping",
+    "tools/call state1",
+    "tools/call state2",
+    "tools/call state3"
+  ],
+  "fixture_policy": "one-shot sys.setprofile on exact original host capture filename/name; mutate call, restore return/unwind; controller finally disarm restore",
+  "packet_source": "actual unmodified production connector socket response only",
+  "source_policy": "131 exact committed source bytes; source-matched offline success; original verified_source_loader; frozen project_root",
+  "oracle_use": "private QA only, never input to product; scan/profile costs included",
+  "outer_wall_measurement": "launch.py sole controller subprocess includes controller interpreter startup/imports"
+}
