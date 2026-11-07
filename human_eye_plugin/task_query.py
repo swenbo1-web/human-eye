@@ -173,6 +173,33 @@ def bind_objects(scene, selectors):
     return bound, rows, None
 
 
+def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
+                              diagnostics, retain_exact_rank=False):
+    """Internal opt-in rank results use a distinct, fully serialized cache key."""
+    diagnostics['surface_pair_count'] = 0
+    diagnostics['surface_pair_cache_hit'] = False
+    surface_work = {}
+    diagnostics['surface_work'] = surface_work
+    def compute_surface():
+        diagnostics['surface_pair_count'] += 1
+        options = {'retain_exact_rank': True} if retain_exact_rank else {}
+        return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
+    face_counts = len(left.faces), len(right.faces)
+    if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
+            or any(len(mesh.vertices) > 3 * count
+                   for mesh, count in zip((left, right), face_counts))):
+        return compute_surface()
+    parameters = {'source': source, 'unit': 'm', 'coordinate_frame': 'world',
+                  'world_witness_tolerance_m': COLLISION_TOLERANCE_M}
+    version = 'task-surface-proximity-exact-aabb-v2'
+    if retain_exact_rank:
+        parameters['retain_exact_rank'] = True
+        version = 'task-surface-proximity-exact-world-rank-v1'
+    result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
+        left, right, compute_surface, parameters=parameters, algorithm_version=version)
+    return result
+
+
 def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnostics=None):
     """Build only selected fields; cache and solver are the existing instances."""
     bound, bindings, pair_reason = bind_objects(scene, query['objects'])
@@ -252,26 +279,9 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
             if 'pair_relation' in requested_pair:
                 facts['pair_relation'] = _pair_relation(strict)
             if 'surface_proximity' in requested_pair:
-                metrics['surface_pair_count'] = 0
-                metrics['surface_pair_cache_hit'] = False
-                surface_work = {}
-                metrics['surface_work'] = surface_work
                 checkpoint('before_surface_pair_measurement')
-                def compute_surface():
-                    metrics['surface_pair_count'] += 1
-                    return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work)
-                # Bound full-mesh key materialization, including unused vertices.
-                face_counts = len(left.faces), len(right.faces)
-                if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
-                        or any(len(mesh.vertices) > 3 * count
-                               for mesh, count in zip((left, right), face_counts))):
-                    surface = compute_surface()
-                else:
-                    surface, metrics['surface_pair_cache_hit'] = cache.pair_measurement(
-                        left, right, compute_surface,
-                        parameters={'source': scene['source'], 'unit': 'm', 'coordinate_frame': 'world',
-                                    'world_witness_tolerance_m': COLLISION_TOLERANCE_M},
-                        algorithm_version='task-surface-proximity-exact-aabb-v2')
+                surface = _surface_pair_measurement(left, right, cache, checkpoint,
+                    source=scene['source'], diagnostics=metrics)
                 checkpoint('after_surface_pair_measurement')
                 facts['surface_proximity'] = _surface_proximity_fact(surface)
     # Numerical overflow must not turn the otherwise known fields into a JSON

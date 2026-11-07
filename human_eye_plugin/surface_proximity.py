@@ -6,6 +6,7 @@ checked arithmetic. This module has no solid qualification or action callers.
 from collections import Counter
 from decimal import Decimal, localcontext
 from fractions import Fraction
+from functools import cmp_to_key
 import math
 from numbers import Integral
 
@@ -396,7 +397,69 @@ def _publish_points(points, origin, factor, distance):
     return [list(point) for point in rounded]
 
 
-def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None):
+def _exact_distance_key(numerator, denominator, factor):
+    """Private world square = odd numerator / odd denominator * 2**exponent."""
+    if numerator == 0:
+        return [0, 1, 0]
+    n_shift = (numerator & -numerator).bit_length() - 1
+    d_shift = (denominator & -denominator).bit_length() - 1
+    return [numerator >> n_shift, denominator >> d_shift,
+            n_shift - d_shift - 2 * (factor.bit_length() - 1)]
+
+
+def _compare_distance_keys(left, right, checkpoint):
+    checkpoint('surface_proximity_rank_compare')
+    a, b, ae = left
+    c, d, ce = right
+    if a == 0 or c == 0:
+        return (a > 0) - (c > 0)
+    common_n, common_d = math.gcd(a, c), math.gcd(b, d)
+    lhs = (a // common_n) * (d // common_d)
+    rhs = (c // common_n) * (b // common_d)
+    leading = lhs.bit_length() + ae - rhs.bit_length() - ce
+    if leading:
+        return 1 if leading > 0 else -1
+    # Equal leading exponents bound the aligned products by the original
+    # <=2*MAX_BITS cross-product width, without expanding either factor².
+    shift = ae - ce
+    if shift >= 0:
+        lhs <<= shift
+    else:
+        rhs <<= -shift
+    return (lhs > rhs) - (lhs < rhs)
+
+
+def _rank_surface_results(results_by_id, checkpoint):
+    """Rank provided kernel results only; no scene coverage or host assertion."""
+    known, unresolved = {}, {}
+    for identity, result in sorted(results_by_id.items()):
+        checkpoint('surface_proximity_rank_candidate')
+        if result.get('measurement_valid') is not True:
+            unresolved[identity] = result.get('reason') or 'surface_measurement_unavailable'
+            continue
+        key = result.get('_exact_distance_sq')
+        if (type(key) not in (list, tuple) or len(key) != 3
+                or any(type(value) is not int for value in key)
+                or key[0] < 0 or key[1] <= 0
+                or key[0].bit_length() > MAX_BITS or key[1].bit_length() > MAX_BITS):
+            unresolved[identity] = 'surface_exact_rank_key_unavailable'
+            continue
+        known[identity] = key
+    identities = sorted(known, key=cmp_to_key(
+        lambda a, b: _compare_distance_keys(known[a], known[b], checkpoint)))
+    groups = []
+    for identity in identities:
+        if groups and _compare_distance_keys(known[groups[-1][0]], known[identity], checkpoint) == 0:
+            groups[-1].append(identity)
+        else:
+            groups.append([identity])
+    checkpoint('surface_proximity_rank_complete')
+    return dict(status='partial' if unresolved and known else 'unknown' if not known else 'ranked',
+                ordered_object_id_groups=groups, unresolved=unresolved,
+                scope='provided_kernel_results_only')
+
+
+def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
@@ -421,6 +484,9 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None):
         context.prec = 80
         local_distance = (Decimal(numerator) / Decimal(denominator)).sqrt()
         result.update(measurement_valid=True, distance_m=distance)
+        if retain_exact_rank:
+            checkpoint('surface_proximity_exact_rank_key')
+            result['_exact_distance_sq'] = _exact_distance_key(numerator, denominator, factor)
         if numerator == 0:
             result.update(direction_status='not_applicable', direction_reason='undefined_zero_distance')
         try:
