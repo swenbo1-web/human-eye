@@ -1,0 +1,182 @@
+"""Two owned workers; real production subprocess stdin/stdout, three tool calls."""
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+from pathlib import Path
+import queue
+import subprocess
+import sys
+import sysconfig
+import threading
+import time
+
+from verification.visual004_native import NativeSession
+
+ROOT=Path(__file__).resolve().parent
+REPO=ROOT.parents[3]
+AUTHOR=REPO/'verification/fixes/evidence_consume_001/run_01/author'
+IDENTITY=REPO/'verification/fixes/surface_facts_001/engineering_b/INSTALLED_IDENTITY.json'
+PIN='fb5a4485c935512c1521b160c55e6034a30ae8177e2662b6a132fec5d85a4509'
+END=datetime.fromisoformat('2026-11-07T10:01:37+00:00')
+
+def utc():return datetime.now(timezone.utc).isoformat()
+def save(path,value):path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n',encoding='utf8')
+def read(path):return json.loads(path.read_text('utf8'))
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+def require(value,message):
+    if not value:raise ValueError(message)
+def worker_events(folder):
+    path=folder/'WORKER_EVENTS.jsonl'
+    return [json.loads(line) for line in path.read_text('utf8').splitlines()] if path.exists() else []
+def payload(response):
+    require(not response.get('error'),'No JSON-RPC transport error')
+    result=response['result']
+    require(all(item['type']=='text' for item in result['content']),'Text only, no image')
+    require(len(result['content'])==1,'One text result')
+    return result,json.loads(result['content'][0]['text'])
+
+def run(case):
+    folder=ROOT/case;folder.mkdir(exist_ok=False)
+    session=None;process=None;timer=None;frames=[];received=[];record=dict(case=case,started_utc=utc(),passed=False,
+        tools_call_attempts=0,successful_geometry_observations=0,expected_rejections=0,forced_cleanup=[])
+    start=time.perf_counter_ns();inbox=queue.Queue();thread=None
+    def stop():
+        if process is not None and process.poll() is None:
+            process.kill();record['forced_cleanup'].append('owned stdio process killed')
+        if session is not None and session.process.poll() is None:
+            session.abort('QA outer deadline');record['forced_cleanup'].append('owned worker aborted')
+    try:
+        remaining=(END-datetime.now(timezone.utc)).total_seconds()
+        require(remaining>300,'Deadline leaves seal reserve')
+        deadline=time.perf_counter_ns()+int(min(180,remaining-120)*1e9)
+        session=NativeSession.start(blender=Path('D:/Tools/blender5.2/blender.exe'),
+            asset=AUTHOR/case/'scene.blend',workspace=folder/'worker',deadline_ns=deadline,
+            condition='P',expected_asset_sha256=sha(AUTHOR/case/'scene.blend'),max_calls=64)
+        record['worker_pid']=session.process.pid
+        timer=threading.Timer(max(.001,(deadline-time.perf_counter_ns())/1e9),stop);timer.daemon=True;timer.start()
+        config=dict(schema_version='1.0',enabled=True,observe_on_prompt=False,
+            project_root=sysconfig.get_path('purelib'),state_file=str(folder/'state.json'),audit_file=str(folder/'audit.jsonl'),
+            expected_identity=dict(source_sha256=PIN,mode='live'),request_budget_s=20.,native_visual_timeout_s=10.,
+            blender=dict(host=session.host,port=session.port,timeout_s=20.))
+        save(folder/'CONFIG.json',config)
+        command=[sys.executable,'-I','-B',str(ROOT/'launch_verified.py'),'--identity',str(IDENTITY),
+            '--config',str(folder/'CONFIG.json'),'--evidence',str(folder)]
+        record.update(command=command,stdio_start_utc=utc(),worker_address=dict(host=session.host,port=session.port),
+            original_worker_deadline_ns=deadline,asset_sha256=session.config['asset_sha256'])
+        stderr=(folder/'stdio.stderr.bin').open('wb')
+        process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=stderr,
+            cwd=folder,creationflags=subprocess.CREATE_NO_WINDOW,bufsize=0)
+        record['stdio_pid']=process.pid
+        def reader():
+            while True:
+                raw=process.stdout.readline()
+                if not raw:break
+                inbox.put((utc(),time.perf_counter_ns(),raw))
+            inbox.put(None)
+        thread=threading.Thread(target=reader,daemon=True);thread.start()
+        def exchange(message,reply=True):
+            number=len(frames)+1;raw=(json.dumps(message,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf8')
+            tx=utc();begun=time.perf_counter_ns()
+            (folder/('%02d.tx.bin'%number)).write_bytes(raw)
+            process.stdin.write(raw);process.stdin.flush()
+            row=dict(sequence=number,method=message['method'],request_id=message.get('id'),sent_utc=tx,
+                sent_ns=begun,tx_bytes=len(raw),tx_sha256=hashlib.sha256(raw).hexdigest())
+            frames.append(row)
+            if not reply:return None
+            item=inbox.get(timeout=min(25,max(.1,(deadline-time.perf_counter_ns())/1e9)))
+            require(item is not None,'Unexpected stdio EOF')
+            stamp,finished,answer=item;received.append(answer)
+            (folder/('%02d.rx.bin'%number)).write_bytes(answer)
+            response=json.loads(answer)
+            row.update(received_utc=stamp,received_ns=finished,roundtrip_ns=finished-begun,
+                rx_bytes=len(answer),rx_sha256=hashlib.sha256(answer).hexdigest())
+            require(response.get('id')==message.get('id'),'Same request ID; initialized notification has no response')
+            return response
+        init=exchange(dict(jsonrpc='2.0',id=case+'-init',method='initialize',params=dict(
+            protocolVersion='2025-03-26',capabilities={},clientInfo=dict(name='isolated-entry-qa',version='1'))))
+        ident=init['result']['_meta']['human_eye']
+        require(ident['source_sha256']==PIN and ident['source_file_count']==131 and ident['production_mode'] is True,'Actual production identity')
+        exchange(dict(jsonrpc='2.0',method='notifications/initialized',params={}),reply=False)
+        listing=exchange(dict(jsonrpc='2.0',id=case+'-list',method='tools/list',params={}))
+        tool=next(item for item in listing['result']['tools'] if item['name']=='human_eye_scene_observe')
+        props=tool['inputSchema']['properties'];query=props['query']['properties']
+        require('include_image' in props and 'include_image' not in query,'Image argument is outer only')
+        require({'mode','objects','requested_facts'}<=query.keys() and 'task' in query['mode']['enum'],'Actual task schema')
+        require('surface_proximity' in query['requested_facts']['items']['enum'],'Actual new surface fact in registered tools/list')
+        require(len(tool['description'].encode('utf8'))==1214,'Unchanged accepted description')
+        save(folder/'ACTUAL_OBSERVE_TOOL.json',tool)
+        request=dict(mode='task',objects=[dict(name='Object_01'),dict(name='Object_02')],
+            requested_facts=['surface_proximity'] if case=='S' else ['surface_proximity','solid_relation'])
+        if case=='S':
+            before=len(worker_events(session.workspace));bad=dict(request,include_image=False)
+            record['tools_call_attempts']+=1
+            response=exchange(dict(jsonrpc='2.0',id='S-reject',method='tools/call',params=dict(
+                name='human_eye_scene_observe',arguments=dict(include_image=False,query=bad))))
+            result,value=payload(response)
+            require(result['isError'] and 'requires only mode, objects and requested_facts' in value.get('error',''),'Nested image parameter rejected')
+            require(len(worker_events(session.workspace))==before,'Rejected input never entered geometry worker')
+            record['expected_rejections']=1
+            require(exchange(dict(jsonrpc='2.0',id='S-ping',method='ping',params={}))['result']=={},'Same connection remains alive')
+        before=len(worker_events(session.workspace));record['tools_call_attempts']+=1
+        response=exchange(dict(jsonrpc='2.0',id=case+'-observe',method='tools/call',params=dict(
+            name='human_eye_scene_observe',arguments=dict(include_image=False,query=request))))
+        result,value=payload(response);truth=read(AUTHOR/case/'TRUTH.json')['expected']
+        require(not result['isError'] and value['status']==('observed' if case=='S' else 'partial'),'Correct complete/mixed response')
+        fact=value['facts']['surface_proximity'];v=fact['value'];w=v['nearest_witness']
+        require(fact['status']=='measured' and abs(v['distance_m']-truth['distance_m'])<=1e-12,'Independent distance')
+        require([t['boundary_edge_count'] for t in v['topology']]==truth['boundary_edges'],'Boundary count')
+        require([t['nonmanifold_edge_count'] for t in v['topology']]==truth['nonmanifold_edges'],'Nonmanifold>2 count')
+        require(fact['witness_status']=='measured' and abs(math.dist(w['a'],w['b'])-v['distance_m'])<=1e-9,'Original witness distance')
+        if case=='S':
+            require(fact['direction_status']=='measured' and all(abs(a-b)<1e-12 for a,b in zip(w['direction_a_to_b'],truth['direction_a_to_b'])),'Ordered direction')
+        else:
+            require(v['distance_m']==0 and fact['direction_status']=='not_applicable' and w['direction_a_to_b'] is None,'Zero direction not applicable')
+            solid=value['facts']['solid_relation']
+            require(solid['status']=='unknown' and solid['reason']=='unsupported_solid_geometry','Known/unknown retained')
+        require(value['binding']['runtime_source_sha256']==PIN and value['binding']['source']=='blender'
+            and value['binding']['capture_scope']=='selected_objects' and value.get('trace_id'),'Current source and trace')
+        require(len(worker_events(session.workspace))==before+1,'One actual selected worker capture')
+        record.update(successful_geometry_observations=1,payload=value,passed=True)
+    except BaseException as exc:
+        record['error']=dict(type=type(exc).__name__,message=str(exc))
+    finally:
+        if process is not None:
+            try:
+                process.stdin.close();record['stdin_closed_utc']=utc();process.wait(timeout=10)
+            except BaseException as exc:
+                record['stdio_close_error']=str(exc);stop();process.wait(timeout=5)
+            if thread is not None:thread.join(timeout=5)
+            record['stdio_exit_code']=process.returncode;record['stdout_reader_joined']=not thread.is_alive()
+            (folder/'stdio.stdout.bin').write_bytes(b''.join(received))
+            stderr.close()
+        if session is not None:
+            record['worker_close']=session.close()
+            record['worker_events']=worker_events(session.workspace)
+        if timer is not None:timer.cancel();timer.join(timeout=5)
+        record.update(ended_utc=utc(),startup_to_reap_ns=time.perf_counter_ns()-start,frames=frames)
+        if record['passed']:
+            boot=read(folder/'BOOTSTRAP_EXIT.json')
+            require(boot['every_loaded_engine_module_has_existing_guard_execution_witness'] and boot['task_source_check']['compatible'],'Actual same-byte bound engine execution')
+            close=record['worker_close']
+            record['passed']=bool(record['stdio_exit_code']==0 and record['stdout_reader_joined']
+                and close['exit_code']==0 and close['process_reaped'] and close['source_file_unchanged']
+                and close['protected_files_unchanged'] and not record['forced_cleanup'])
+        save(folder/'RESULT.json',record)
+    return record
+
+cases=('S','G') if len(sys.argv)==1 else tuple(sys.argv[1:])
+require(cases in (('S','G'),('G',)),'Only original sequence or remaining G continuation')
+results=[]
+for case in cases:
+    row=run(case);results.append(row)
+    if not row['passed']:break
+summary=dict(passed=len(results)==len(cases) and all(row['passed'] for row in results),sessions=results,
+    expected_geometry_tool_calls=3,actual_geometry_tool_calls=sum(row['tools_call_attempts'] for row in results),
+    successful_geometry_observations=sum(row['successful_geometry_observations'] for row in results),
+    expected_rejections=sum(row['expected_rejections'] for row in results),
+    accounting='Direct stdio to production service and owned worker, no broker public-call ledger',
+    new_model_consumers=0,images=0,API_calls=0,product_installs=0)
+save(ROOT/('RESULT.json' if cases==('S','G') else 'CONTINUATION_RESULT.json'),summary)
+print(json.dumps({key:value for key,value in summary.items() if key!='sessions'}))
+raise SystemExit(0 if summary['passed'] else 1)

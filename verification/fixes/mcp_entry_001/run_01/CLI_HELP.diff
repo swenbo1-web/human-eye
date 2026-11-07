@@ -1,0 +1,16 @@
+diff --git a/verification/perf000_scene_tool.py b/verification/perf000_scene_tool.py
+index 5ee892b..72ac61e 100644
+--- a/verification/perf000_scene_tool.py
++++ b/verification/perf000_scene_tool.py
+@@ -80,7 +80,10 @@ def main(argv=None):
+     for command in (ordinary,product):
+         command.add_argument('--workspace',type=Path,required=True);command.add_argument('--image',action='store_true')
+     code=ordinary.add_mutually_exclusive_group(required=True);code.add_argument('--code');code.add_argument('--script',type=Path)
+-    product.add_argument('--focal');product.add_argument('--reference');product.add_argument('--query-literal')
++    product.add_argument('--focal');product.add_argument('--reference');product.add_argument('--query-literal', help=(
++        "Python dict literal. For mode='task', include only mode, objects and requested_facts. "
++        "The text CLI automatically sets include_image=false outside query; do not put it inside task query. "
++        "Legacy query modes remain supported."))
+     product.add_argument('--instruction');product.add_argument('--detail',choices=('full','brief'))
+     args=parser.parse_args(argv)
+     try:
