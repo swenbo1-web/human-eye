@@ -1,6 +1,6 @@
-"""Finite read queries: explicit selectors, structured facts, existing kernels.
+"""Finite read queries: explicit selectors, structured facts, bounded kernels.
 
-No prompt parsing, scene reconstruction, action token or new geometry solver.
+No prompt parsing, scene reconstruction or action token.
 Selectors bind only against this call's validated capture. Pair order is A to B.
 """
 from __future__ import annotations
@@ -9,12 +9,13 @@ import math
 import sys
 
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
-from .measurement_presentation import valid_unrounded_measurement
+from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
+from .surface_proximity import MAX_FACES, MAX_TRIANGLE_PAIRS, measure_surface_proximity
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
-         'solid_relation', 'nearest_witness', 'pair_relation')
+         'solid_relation', 'nearest_witness', 'pair_relation', 'surface_proximity')
 PAIR_FACTS = frozenset(FACTS) - {'aabb'}
 SELECTOR_SCHEMA = {
     'type': 'object', 'properties': {'id': {'type': 'string', 'minLength': 1, 'maxLength': 256},
@@ -125,6 +126,30 @@ def _pair_relation(strict):
     return _fact(value, relation_tolerance_m=0.0)
 
 
+def _surface_proximity_fact(measured):
+    metadata = {'semantics': 'current_evaluated_triangle_surfaces_world_metres',
+                'method': measured.get('method', 'exact_triangle_surface_features')}
+    topology = measured.get('topology')
+    distance = measured.get('distance_m')
+    if measured.get('measurement_valid') is not True or not finite_metric(distance) or distance < 0:
+        value = {'topology': topology} if topology is not None else None
+        return _fact(value, reason=measured.get('reason') or 'surface_measurement_unavailable', **metadata)
+    value = {'distance_m': distance,
+        'nearest_witness': {'a': measured.get('point_a_world'), 'b': measured.get('point_b_world'),
+                            'direction_a_to_b': measured.get('direction_a_to_b')},
+        'topology': topology}
+    metadata.update(witness_status=measured['witness_status'], direction_status=measured['direction_status'])
+    for field in ('witness_reason', 'direction_reason'):
+        if measured.get(field):
+            metadata[field] = measured[field]
+    reason = None
+    if measured['witness_status'] != 'measured':
+        reason = measured.get('witness_reason') or 'surface_witness_unavailable'
+    elif measured['direction_status'] == 'unknown':
+        reason = measured.get('direction_reason') or 'surface_direction_unavailable'
+    return _fact(value, reason=reason, **metadata)
+
+
 def bind_objects(scene, selectors):
     """Never interpret a name as an ID, choose an active object or break ties."""
     if scene.get('capture_scope') == 'selected_objects':
@@ -226,6 +251,29 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 facts['nearest_witness'] = _nearest_witness(strict)
             if 'pair_relation' in requested_pair:
                 facts['pair_relation'] = _pair_relation(strict)
+            if 'surface_proximity' in requested_pair:
+                metrics['surface_pair_count'] = 0
+                metrics['surface_pair_cache_hit'] = False
+                surface_work = {}
+                metrics['surface_work'] = surface_work
+                checkpoint('before_surface_pair_measurement')
+                def compute_surface():
+                    metrics['surface_pair_count'] += 1
+                    return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work)
+                # Bound full-mesh key materialization, including unused vertices.
+                face_counts = len(left.faces), len(right.faces)
+                if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
+                        or any(len(mesh.vertices) > 3 * count
+                               for mesh, count in zip((left, right), face_counts))):
+                    surface = compute_surface()
+                else:
+                    surface, metrics['surface_pair_cache_hit'] = cache.pair_measurement(
+                        left, right, compute_surface,
+                        parameters={'source': scene['source'], 'unit': 'm', 'coordinate_frame': 'world',
+                                    'world_witness_tolerance_m': COLLISION_TOLERANCE_M},
+                        algorithm_version='task-surface-proximity-exact-v1')
+                checkpoint('after_surface_pair_measurement')
+                facts['surface_proximity'] = _surface_proximity_fact(surface)
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
     for key in ('center_delta', 'axis_gap'):

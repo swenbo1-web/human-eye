@@ -1248,7 +1248,8 @@ class LiveSpatialService:
             self._save(value, runtime, _observation_baseline=observation_baseline)
             self._check_request_budget('after_task_state_write')
         self.record_event('observe', session_id=session_id, status=result['status'],
-            scene_revision=scene['revision'], engine_invoked=work['exact_pair_count'] > 0, task_work=work)
+            scene_revision=scene['revision'],
+            engine_invoked=work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0, task_work=work)
         self._check_request_budget('before_task_result')
         return result
 

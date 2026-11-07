@@ -129,7 +129,10 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "and undefined direction; or penetration with certified escape evidence. Escape is a translation "
             "of A, not surface distance, nearest direction or minimum depth. Requested unknowns remain partial. "
             "binding.runtime_source_sha256 identifies code; scene_revision/fingerprint identify the current "
-            "capture including source and revision. trace_id supports diagnostics. Goals evaluate caller criteria. Other observation "
+            "capture including source and revision. trace_id supports diagnostics. "
+            "surface_proximity independently measures nonnegative triangle-surface distance, original points, "
+            "positive-distance A-to-B direction and boundary/nonmanifold edge counts. Zero-distance direction "
+            "is not applicable. Edge counts alone do not certify a solid. Goals evaluate caller criteria. Other observation "
             "modes retain images and returned object IDs; scene changes expire observations. "
             "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images."
         ),
