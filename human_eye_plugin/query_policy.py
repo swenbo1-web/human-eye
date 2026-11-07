@@ -45,6 +45,10 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode') == 'surface_nearest':
+        if set(query) != {'mode'}:
+            raise ValueError('surface_nearest query accepts only mode')
+        return {'mode': 'surface_nearest'}
     if type(query) is dict and query.get('mode') == 'task':
         from .task_query import validate_task_query
         return validate_task_query(query)

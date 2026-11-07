@@ -17,7 +17,7 @@ from types import MappingProxyType
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v23-same-capture-surface-nearest-20261107"
+IMPLEMENTATION_REVISION = "v24-surface-nearest-observe-20261107"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 

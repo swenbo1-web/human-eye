@@ -58,7 +58,7 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Observation precision request; never an execution permission. nearest requires complete exact nonpenetrating order; top1 may exclude supported distant objects by strict outward bounds and reports equal-distance ties. Unknown or budget-limited proofs return no nearest result.",
     "properties": {
-        "mode": {"type": "string", "enum": ["task", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "task only: exact name or id selectors bound to one fresh capture. Pair facts use exactly two objects ordered A to B."},
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
@@ -84,6 +84,8 @@ _QUERY_SCHEMA = {
         "visual_diagnostic": {"type": "string", "enum": ["contact_section"],
             "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."},
     },
+    "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
+               "then": {"maxProperties": 1}}],
     "additionalProperties": False,
 }
 _GOAL_SCHEMA = {
@@ -134,7 +136,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "positive-distance A-to-B direction and boundary/nonmanifold edge counts. Zero-distance direction "
             "is not applicable. Edge counts alone do not certify a solid. Goals evaluate caller criteria. Other observation "
             "modes retain images and returned object IDs; scene changes expire observations. "
-            "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images."
+            "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images. "
+            "surface_nearest returns current global triangle-surface nearest objects when complete, or best-known objects when partial; use a known ID, for example "
+            "{\"session_id\":\"read-1\",\"focal_id\":\"<known-id>\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\"}}."
         ),
         "inputSchema": {
             "type": "object",
@@ -280,6 +284,11 @@ def _validate_arguments(name: str, arguments: Any) -> None:
     if name == 'human_eye_scene_observe':
         if 'include_image' in arguments and type(arguments['include_image']) is not bool:
             raise ValueError('include_image must be boolean')
+        if validate_query(arguments.get('query'))['mode'] == 'surface_nearest':
+            if (not arguments.get('session_id') or not arguments.get('focal_id')
+                    or arguments.get('include_image', True)
+                    or any(arguments.get(key) is not None for key in ('goal', 'reference_id', 'scene_delta'))):
+                raise ValueError('surface_nearest requires session_id, focal_id, include_image=false and no reference, goal or scene_delta')
         if (validate_query(arguments.get('query')).get('alignment_evidence') is False
                 and arguments.get('include_image', True)):
             raise ValueError('alignment_evidence=false requires include_image=false')
@@ -468,7 +477,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
-    if value.get('result_kind') == 'task_query':
+    if value.get('result_kind') in ('task_query', 'surface_nearest'):
         # Already selected structured facts. No full diagnostic, alias pass,
         # copy, model message, nested context JSON or second encoding.
         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
@@ -634,6 +643,8 @@ class LiveSpatialMCPServer:
                 **delta_kwargs,
             )
             is_error = value.get("status") not in {"observed", "overview", "partial"}
+            if value.get('result_kind') == 'surface_nearest':
+                is_error = value.get('status') not in {'complete', 'partial'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == "human_eye_transform":
             value = self.service.transform(session_id, args["action"], **goal_kwargs, **context_kwargs)
@@ -651,7 +662,7 @@ class LiveSpatialMCPServer:
                 segment_brief=(name == 'human_eye_clearance_segment'),
                 compact_support_planes=(name == 'human_eye_scene_observe'
                     and 'support_plane_discovery' in args.get('query', {})))
-        if value.get('result_kind') == 'task_query':
+        if value.get('result_kind') in ('task_query', 'surface_nearest'):
             self.service._check_request_budget('before_task_publication')
         return result
 

@@ -210,7 +210,7 @@ def _request(operation):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
                     self._remember_execution_result(result)
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -231,7 +231,7 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            if result.get('schema_version') == 'task-query-v3':
+                            if result.get('schema_version') == 'task-query-v3' or result.get('result_kind') == 'surface_nearest':
                                 result['trace_id'] = trace.trace_id
                             else:
                                 result['request_trace'] = {'trace_id': trace.trace_id,
@@ -1019,6 +1019,12 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'surface_nearest':
+            if (include_image or type(focal_id) is not str or not focal_id.strip()
+                    or len(focal_id.encode('utf8')) > 256 or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('surface_nearest requires an explicit focal_id, include_image=false and no reference, goal or scene_delta')
+            return self._observe_surface_nearest(session_id, focal_id)
         if query['mode'] == 'task':
             if (include_image or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1207,6 +1213,59 @@ class LiveSpatialService:
                             'execution_authority': False}
         self.record_event("observe", session_id=session_id, status=status,
             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
+        return result
+
+    def _observe_surface_nearest(self, session_id, focal_id):
+        """One current candidate capture through the existing read-only boundary."""
+        from .task_query import surface_nearest_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        rejected, source_check = self._check_identity(readonly_task=True)
+        if rejected is not None:
+            return rejected
+        with self._locked() as (value, runtime), self._observation_scope():
+            if value.get('inflight') or runtime.status['quarantined']:
+                return {'status': 'host_quarantined', 'session_id': session_id, 'routing': None}
+            observation_baseline = ({key: old if key == 'runtime' else copy.deepcopy(old)
+                for key, old in value.items()} if type(value.get('runtime')) is dict else None)
+            # Sample the destination clock first so conversion cannot extend an
+            # earlier parent deadline. The connector also caps its own timeout.
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', 10.)
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
+            self._check_request_budget('after_host_capture')
+            if captured.get('focal_id') != focal_id:
+                raise ValueError('surface_nearest capture focal_id mismatch')
+            with span('observation.surface_nearest'):
+                work = {}
+                result = surface_nearest_result(captured, runtime.router.scene_cache,
+                    self._check_request_budget, diagnostics=work)
+            names = {item['object_id']: item['name'] for item in captured['capture']['meshes']}
+            def named(oid):
+                return {'id': oid, 'name': names[oid]}
+            result['focal'] = named(result.pop('focal_id'))
+            nearest = result.pop('nearest_ids')
+            result['nearest_objects'] = None if nearest is None else [named(oid) for oid in nearest]
+            result['best_known_objects'] = [named(oid) for oid in result.pop('best_known_ids')]
+            result['unresolved'] = [dict(named(oid), reason=reason)
+                for oid, reason in sorted(result['unresolved'].items())]
+            result.pop('excluded')
+            state = runtime.export_state()
+            state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
+            runtime.import_state(state)
+            result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
+            if source_check is not None and source_check['status'] == 'loaded_generation':
+                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
+                    source_check_scope=source_check['source_check_scope'])
+            self._save(value, runtime, _observation_baseline=observation_baseline)
+            self._check_request_budget('after_surface_nearest_state_write')
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=result['binding']['scene_revision'],
+            engine_invoked=work['kernel_calls'] > 0, task_work=work)
+        self._check_request_budget('before_surface_nearest_result')
         return result
 
     def _observe_task(self, session_id, query):
