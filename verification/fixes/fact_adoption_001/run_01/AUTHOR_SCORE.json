@@ -1,0 +1,120 @@
+{
+  "task": "FACT-ADOPTION-001",
+  "role": "author-side offline review; coordinator independent review pending",
+  "review_order": "Independent internal read-only helper read truth, frozen task/rubric, public finals and PUBLIC_RESPONSE originals before author cost or score.",
+  "geometry_pass_count": 6,
+  "full_answer_pass_count": 5,
+  "partial_count": 1,
+  "unfinished_count": 0,
+  "answers": [
+    {
+      "id": "S_P_initial",
+      "geometry": "pass",
+      "full_answer": "pass",
+      "basis": "Exact positive plane gap, ordered direction, valid nearest corner pair, current native topology and support-plane proof match public evidence.",
+      "evidence": [
+        "runs/S/P/broker_calls/1/PUBLIC_RESPONSE.json",
+        "runs/S/P/broker_calls/2/PUBLIC_RESPONSE.json"
+      ]
+    },
+    {
+      "id": "S_P_changed",
+      "geometry": "pass",
+      "full_answer": "pass",
+      "basis": "Updated SAT and current native mesh support strict overlap, common interior point and projection intervals.",
+      "evidence": [
+        "runs/S/P/broker_calls/3/PUBLIC_RESPONSE.json",
+        "runs/S/P/broker_calls/4/PUBLIC_RESPONSE.json"
+      ]
+    },
+    {
+      "id": "S_N_initial",
+      "geometry": "pass",
+      "full_answer": "pass",
+      "basis": "Current evaluated vertices, projection gap, direction and original-face witnesses establish the global minimum.",
+      "evidence": [
+        "runs/S/N/broker_calls/1/PUBLIC_RESPONSE.json",
+        "runs/S/N/broker_calls/2/PUBLIC_RESPONSE.json"
+      ]
+    },
+    {
+      "id": "S_N_changed",
+      "geometry": "pass",
+      "full_answer": "pass",
+      "basis": "Reread changed geometry, common interior point and all outward face-plane distances establish strict positive-volume overlap.",
+      "evidence": [
+        "runs/S/N/broker_calls/3/PUBLIC_RESPONSE.json",
+        "runs/S/N/broker_calls/4/PUBLIC_RESPONSE.json"
+      ]
+    },
+    {
+      "id": "G_N_initial",
+      "geometry": "pass",
+      "full_answer": "pass",
+      "basis": "Plane gap sqrt(3)/64, ordered normal, valid surface pair, all triangle-pair distances and four boundary edges per mesh support the surface result and open-solid limitation.",
+      "evidence": [
+        "runs/G/N/broker_calls/1/PUBLIC_RESPONSE.json",
+        "runs/G/N/broker_calls/2/PUBLIC_RESPONSE.json"
+      ]
+    },
+    {
+      "id": "G_P_initial",
+      "geometry": "pass",
+      "full_answer": "partial",
+      "basis": "Geometry, precision, units and open-solid limits are supported. The phrase 'three requests' is imprecise. Actual evidence is one observe requesting three fact fields, all unknown.",
+      "actual_observe_calls": 1,
+      "requested_facts": [
+        "pair_relation",
+        "solid_relation",
+        "nearest_witness"
+      ],
+      "wording_note": "Conservative partial grade for the extra tool-request statement. Coordinator may assess the wording independently. Original final remains verbatim.",
+      "evidence": [
+        "runs/G/P/broker_calls/1/PUBLIC_RESPONSE.json",
+        "runs/G/P/broker_calls/2/PUBLIC_RESPONSE.json",
+        "runs/G/P/broker_calls/3/PUBLIC_RESPONSE.json",
+        "runs/G/P/broker_calls/4/PUBLIC_RESPONSE.json"
+      ]
+    }
+  ],
+  "adoption": {
+    "S": {
+      "sufficient_current_observe_states": 2,
+      "states_answered_without_additional_native": 0,
+      "extra_native_readbacks_after_complete_pair_relation": 2,
+      "actual_orders": {
+        "initial": [
+          "observe",
+          "native_run"
+        ],
+        "changed": [
+          "observe",
+          "native_run"
+        ]
+      },
+      "extra_work": "Both native scripts reread current evaluated vertices/triangles. Public answers add support-plane or shared-interior reasoning from those data.",
+      "motivation": "unmeasured",
+      "zero_extra_native_target_met": false
+    },
+    "G": {
+      "actual_order": [
+        "observe",
+        "native_run",
+        "native_run",
+        "native_run"
+      ],
+      "observe_partial": true,
+      "unknown_reason": "unsupported_solid_geometry",
+      "unknown_fact_count": 3,
+      "followup": "Native supplied current mesh/topology, open boundaries and surface plane/distance/direction witnesses.",
+      "geometry_supplementation": "effective",
+      "full_answer_wording": "partial"
+    }
+  },
+  "update_currency": {
+    "S_P": "current",
+    "S_N": "current",
+    "runtime_hash_used_as_mesh_identity": false
+  },
+  "cost_and_quality_rule": "Observe adoption, full completion and cost are separate observed outcomes. This one fixed sample does not establish causal overall superiority."
+}
