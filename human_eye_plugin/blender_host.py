@@ -266,8 +266,13 @@ def _acquisition_witness(data, matrix, scale):
     """Read three vertices of one real triangle; never sample vertex zero alone."""
     from fractions import Fraction
     try:
-        face = list(data.polygons[0].vertices)
-        if (len(face) != 3 or any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face)):
+        polygon = data.polygons[0]
+        start, total = polygon.loop_start, polygon.loop_total
+        if (type(start) is not int or type(total) is not int or total != 3
+                or start < 0 or start + 3 > len(data.loops)):
+            return None
+        face = [data.loops[start + offset].vertex_index for offset in range(3)]
+        if any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face):
             return None
         points = []
         for index in face:
@@ -283,6 +288,52 @@ def _acquisition_witness(data, matrix, scale):
         return {'point_world_m': points[0], 'triangle_vertex_indices': face, 'triangle_world_m': points}
     except (AttributeError, TypeError, ValueError, IndexError, OverflowError, RuntimeError):
         return None
+
+
+def _acquisition_validate_triangles(data, *, check_coordinates, checkpoint, object_id):
+    """Validate references before exclusion or native triangle expansion.
+
+    The directory already bounds scene counts. Excluded meshes also need
+    finite referenced coordinates; retained meshes reuse capture's coordinate
+    checks. No mesh edits, geometric qualification or bounds recalculation.
+    """
+    checkpoint()
+    vertices, polygons, loops = data.vertices, data.polygons, data.loops
+    vertex_count, loop_count = len(vertices), len(loops)
+    seen = bytearray(vertex_count) if check_coordinates else None
+    for ordinal, polygon in enumerate(polygons):
+        if ordinal % 256 == 0:
+            checkpoint()
+        try:
+            start, total = polygon.loop_start, polygon.loop_total
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+        if (type(start) is not int or type(total) is not int or total != 3
+                or start < 0 or start + total > loop_count):
+            raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id)
+        for offset in range(3):
+            try:
+                index = loops[start + offset].vertex_index
+            except (AttributeError, IndexError, TypeError, ValueError) as exc:
+                raise BlenderHostError('acquisition_invalid_triangle_indices:' + object_id) from exc
+            if type(index) is not int or not 0 <= index < vertex_count:
+                raise BlenderHostError('acquisition_invalid_triangle_indices:' + object_id)
+            if seen is not None:
+                seen[index] = 1
+    if seen is not None:
+        # Complete index validation above precedes any coordinate dereference.
+        for index, referenced in enumerate(seen):
+            if index % 256 == 0:
+                checkpoint()
+            if referenced:
+                try:
+                    coordinate = vertices[index].co
+                    finite = all(math.isfinite(float(coordinate[k])) for k in range(3))
+                except (AttributeError, IndexError, TypeError, ValueError, OverflowError) as exc:
+                    raise BlenderHostError('acquisition_nonfinite_referenced_vertex:' + object_id) from exc
+                if not finite:
+                    raise BlenderHostError('acquisition_nonfinite_referenced_vertex:' + object_id)
+    checkpoint()
 
 
 def _acquisition_vertices(vertices, checkpoint):
@@ -983,6 +1034,8 @@ class BlenderSceneHost:
                 row = rows[oid]
                 lower = _acquisition_lower(rows[focal_id]['bounds_world_m'], row['bounds_world_m'])
                 excluded = oid != focal_id and oid != seed and row['witness'] is not None and lower > upper
+                _acquisition_validate_triangles(evaluated_by_id[oid].data,
+                    check_coordinates=excluded, checkpoint=checkpoint, object_id=oid)
                 row.update(lower_bound_m=lower, disposition='excluded_strict_bound' if excluded else 'retained',
                            bounds_status='enclosed' if row['bounds_world_m'] is not None else 'unknown')
                 coverage.append(row)

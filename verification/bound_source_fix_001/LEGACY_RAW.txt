@@ -1,0 +1,529 @@
+test_01_far_pruning (verification.test_m4_capture_001.M4Capture001.test_01_far_pruning) ... ERROR
+test_02_all_overlap (verification.test_m4_capture_001.M4Capture001.test_02_all_overlap) ... ERROR
+test_03_ties_and_strict_equality (verification.test_m4_capture_001.M4Capture001.test_03_ties_and_strict_equality) ... ERROR
+test_04_zero (verification.test_m4_capture_001.M4Capture001.test_04_zero) ... ERROR
+test_05_rotated_nonuniform (verification.test_m4_capture_001.M4Capture001.test_05_rotated_nonuniform) ... ERROR
+test_06_numeric_oracle (verification.test_m4_capture_001.M4Capture001.test_06_numeric_oracle) ... ok
+test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) ... 
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[]) ... ERROR
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=None) ... ERROR
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0)]) ... ERROR
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0)]) ... ERROR
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]) ... ERROR
+  test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)]) ... ERROR
+test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) ... ERROR
+test_08_real_triangle_witness (verification.test_m4_capture_001.M4Capture001.test_08_real_triangle_witness) ... ERROR
+test_09_reject_unsupported (verification.test_m4_capture_001.M4Capture001.test_09_reject_unsupported) ... ok
+test_10_legacy_and_transport (verification.test_m4_capture_001.M4Capture001.test_10_legacy_and_transport) ... FAIL
+test_11_same_read_coverage (verification.test_m4_capture_001.M4Capture001.test_11_same_read_coverage) ... ERROR
+test_12_cumulative_budgets (verification.test_m4_capture_001.M4Capture001.test_12_cumulative_budgets) ... FAIL
+test_extreme_nonfinite_upper_is_unknown (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_extreme_nonfinite_upper_is_unknown) ... ERROR
+test_loose_and_all_cyclic_orders (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_loose_and_all_cyclic_orders) ... ERROR
+test_missing_or_degenerate_witness (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_missing_or_degenerate_witness) ... ERROR
+test_subset_with_bad_bounds (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_subset_with_bad_bounds) ... ERROR
+test_zero_tie_and_no_extra_reads (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_zero_tie_and_no_extra_reads) ... ERROR
+
+======================================================================
+ERROR: test_01_far_pruning (verification.test_m4_capture_001.M4Capture001.test_01_far_pruning)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 77, in test_01_far_pruning
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_02_all_overlap (verification.test_m4_capture_001.M4Capture001.test_02_all_overlap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 93, in test_02_all_overlap
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_03_ties_and_strict_equality (verification.test_m4_capture_001.M4Capture001.test_03_ties_and_strict_equality)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 100, in test_03_ties_and_strict_equality
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_04_zero (verification.test_m4_capture_001.M4Capture001.test_04_zero)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 110, in test_04_zero
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_05_rotated_nonuniform (verification.test_m4_capture_001.M4Capture001.test_05_rotated_nonuniform)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 123, in test_05_rotated_nonuniform
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0), (-1.0, -1.0, -1.0)])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0), (inf, 0.0, 0.0)])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds) (box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 156, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_07_invalid_bounds (verification.test_m4_capture_001.M4Capture001.test_07_invalid_bounds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 164, in test_07_invalid_bounds
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_08_real_triangle_witness (verification.test_m4_capture_001.M4Capture001.test_08_real_triangle_witness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 174, in test_08_real_triangle_witness
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_11_same_read_coverage (verification.test_m4_capture_001.M4Capture001.test_11_same_read_coverage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 231, in test_11_same_read_coverage
+    packet = capture(host)
+             ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_extreme_nonfinite_upper_is_unknown (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_extreme_nonfinite_upper_is_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 86, in test_extreme_nonfinite_upper_is_unknown
+    a,b=both(host);assert_pair(self,a,b)
+        ^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 22, in both
+    return before, capture(host)
+                   ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_loose_and_all_cyclic_orders (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_loose_and_all_cyclic_orders)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 58, in test_loose_and_all_cyclic_orders
+    a,b=both(host);assert_pair(self,a,b)
+        ^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 22, in both
+    return before, capture(host)
+                   ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_missing_or_degenerate_witness (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_missing_or_degenerate_witness)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 80, in test_missing_or_degenerate_witness
+    a,b=both(host);assert_pair(self,a,b)
+        ^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 22, in both
+    return before, capture(host)
+                   ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_subset_with_bad_bounds (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_subset_with_bad_bounds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 94, in test_subset_with_bad_bounds
+    a,b=both(host);assert_pair(self,a,b)
+        ^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 22, in both
+    return before, capture(host)
+                   ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+ERROR: test_zero_tie_and_no_extra_reads (verification.m4_capture_opt_001.test_nine_pairs.NinePairGates.test_zero_tie_and_no_extra_reads)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 71, in test_zero_tie_and_no_extra_reads
+    a,b=both(host);assert_pair(self,a,b)
+        ^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_capture_opt_001\test_nine_pairs.py", line 22, in both
+    return before, capture(host)
+                   ^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 59, in capture
+    return host.capture_nearest_candidates(host.object_id(host.scene.objects[0]),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 1032, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 305, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+FAIL: test_10_legacy_and_transport (verification.test_m4_capture_001.M4Capture001.test_10_legacy_and_transport)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 218, in test_10_legacy_and_transport
+    self.assertNotIn('error', response, response)
+AssertionError: 'error' unexpectedly found in {'protocol_version': '1.0', 'id': 'fixed-request', 'error': {'type': 'BlenderHostError', 'message': 'acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5', 'mutation_uncertain': False}} : {'protocol_version': '1.0', 'id': 'fixed-request', 'error': {'type': 'BlenderHostError', 'message': 'acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5', 'mutation_uncertain': False}}
+
+======================================================================
+FAIL: test_12_cumulative_budgets (verification.test_m4_capture_001.M4Capture001.test_12_cumulative_budgets)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_host.py", line 303, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+blender_host_contract_test_module.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\test_m4_capture_001.py", line 258, in test_12_cumulative_budgets
+    with self.assertRaisesRegex(m.BlenderHostError, 'document_budget_exceeded'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "document_budget_exceeded" does not match "acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5"
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.036s
+
+FAILED (failures=2, errors=19)
