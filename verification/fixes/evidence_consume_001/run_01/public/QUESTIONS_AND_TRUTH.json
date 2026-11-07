@@ -1,0 +1,221 @@
+{
+  "schema": "unlabeled-questions-truth-v1",
+  "questions": [
+    {
+      "answer_id": "A01",
+      "question": "当前 Object_01 与 Object_02 的三角表面最小距离是多少米？给出从前者到后者的单位方向，以及两者各自的边界边数和非流形边数。说明实际采用的证据及其来源。",
+      "truth_id": "T1"
+    },
+    {
+      "answer_id": "A02",
+      "question": "当前 Object_01 与 Object_02 的三角表面最小距离是多少米？给出从前者到后者的单位方向，以及两者各自的边界边数和非流形边数。说明实际采用的证据及其来源。",
+      "truth_id": "T1"
+    },
+    {
+      "answer_id": "A03",
+      "question": "报告当前两对象的最小表面距离、最近点方向，以及实体穿插状态。区分有数值答案、不适用和当前无法判定的项目，并说明原因。给出简短可核查依据，说明依据来自什么当前几何。",
+      "truth_id": "T2"
+    },
+    {
+      "answer_id": "A04",
+      "question": "当前 Object_01 与 Object_02 的三角表面最小距离是多少米？给出从前者到后者的单位方向，以及两者各自的边界边数和非流形边数。给出简短可核查依据，说明依据来自什么当前几何。",
+      "truth_id": "T1"
+    },
+    {
+      "answer_id": "A05",
+      "question": "当前 Object_01 与 Object_02 的三角表面最小距离是多少米？给出从前者到后者的单位方向，以及两者各自的边界边数和非流形边数。给出简短可核查依据，说明依据来自什么当前几何。",
+      "truth_id": "T1"
+    },
+    {
+      "answer_id": "A06",
+      "question": "报告当前两对象的最小表面距离、最近点方向，以及实体穿插状态。区分有数值答案、不适用和当前无法判定的项目，并说明原因。给出简短可核查依据，说明依据来自什么当前几何。",
+      "truth_id": "T2"
+    },
+    {
+      "answer_id": "A07",
+      "question": "报告当前两对象的最小表面距离、最近点方向，以及实体穿插状态。区分有数值答案、不适用和当前无法判定的项目，并说明原因。说明实际采用的证据及其来源。",
+      "truth_id": "T2"
+    },
+    {
+      "answer_id": "A08",
+      "question": "报告当前两对象的最小表面距离、最近点方向，以及实体穿插状态。区分有数值答案、不适用和当前无法判定的项目，并说明原因。说明实际采用的证据及其来源。",
+      "truth_id": "T2"
+    }
+  ],
+  "truths": [
+    {
+      "truth_id": "T1",
+      "coordinate_unit": "m",
+      "coordinate_frame": "world",
+      "vertices_per_mesh": 12,
+      "triangles_per_mesh": 12,
+      "construction": {
+        "n": [
+          2,
+          -1,
+          2
+        ],
+        "u": [
+          1,
+          2,
+          0
+        ],
+        "v": [
+          -4,
+          2,
+          5
+        ],
+        "core_A": "(i*u+j*v)/32 for i<=2",
+        "fold_A": "(3*u+j*v)/32-n/64 for i=3",
+        "core_B": "(i*u+j*v)/32+n/32 for i<=2",
+        "fold_B": "(3*u+j*v)/32+n/32+n/64 for i=3"
+      },
+      "expected": {
+        "objects": [
+          "Object_01",
+          "Object_02"
+        ],
+        "distance_m": 0.09375,
+        "exact_squared_distance": "9/1024",
+        "direction_a_to_b": [
+          0.6666666666666666,
+          -0.3333333333333333,
+          0.6666666666666666
+        ],
+        "boundary_edges": [
+          10,
+          10
+        ],
+        "nonmanifold_edges": [
+          0,
+          0
+        ]
+      },
+      "exact_answer": {
+        "distance_m": "3/32",
+        "direction_a_to_b": [
+          "2/3",
+          "-1/3",
+          "2/3"
+        ],
+        "witness_a": [
+          0,
+          0,
+          0
+        ],
+        "witness_b": [
+          0.0625,
+          -0.03125,
+          0.0625
+        ],
+        "witnesses_unique": false
+      },
+      "proof": {
+        "orthogonal_dot_products": {
+          "n_dot_u": 0,
+          "n_dot_v": 0,
+          "u_dot_v": 0
+        },
+        "normal_squared": 9,
+        "normal_length": 3,
+        "A_support": "n dot x <= 0 on every vertex, hence every triangle",
+        "B_support": "n dot x >= 9/32 on every vertex, hence every triangle",
+        "plane_gap_lower_bound_m": "(9/32)/3 = 3/32",
+        "attainment": "Core vertex (i,j)=(0,0) gives A=(0,0,0) and B=n/32; the displacement has length 3/32 and direction n/3.",
+        "topology": "Rectangular 4x3 grid perimeter has 2*(3+2)=10 edges with one incident triangle; all other edges have incidence two.",
+        "world_aabb_overlap": true,
+        "world_aabb_A": {
+          "min": [
+            -0.25,
+            0,
+            -0.03125
+          ],
+          "max": [
+            0.0625,
+            0.328125,
+            0.3125
+          ]
+        },
+        "world_aabb_B": {
+          "min": [
+            -0.1875,
+            -0.03125,
+            0.0625
+          ],
+          "max": [
+            0.1875,
+            0.265625,
+            0.40625
+          ]
+        },
+        "aabb_overlap_is_not_surface_distance_evidence": true
+      },
+      "source": "independent frozen assignment construction, not product outputs",
+      "original_truth_sha256": "25ffa1ca502615b7309b601ad89f5996ea1722bac48c944468b7a97118962c07"
+    },
+    {
+      "truth_id": "T2",
+      "coordinate_unit": "m",
+      "coordinate_frame": "world",
+      "vertices_per_mesh": 25,
+      "triangles_per_mesh": 32,
+      "construction": {
+        "A": "(s,s,t)/16",
+        "B": "(s+t,s-t,0)/16"
+      },
+      "expected": {
+        "objects": [
+          "Object_01",
+          "Object_02"
+        ],
+        "distance_m": 0,
+        "exact_squared_distance": "0",
+        "direction_a_to_b": null,
+        "boundary_edges": [
+          16,
+          16
+        ],
+        "nonmanifold_edges": [
+          0,
+          0
+        ]
+      },
+      "exact_answer": {
+        "distance_m": "0",
+        "nearest_direction_status": "not_applicable",
+        "direction_reason": "A zero-length closest-point displacement has no unit direction.",
+        "witness_a": [
+          0,
+          0,
+          0
+        ],
+        "witness_b": [
+          0,
+          0,
+          0
+        ],
+        "solid_relation_status": "unknown",
+        "solid_relation_reason": "Both are open triangle surfaces; surface intersection does not certify a closed-solid penetration or non-penetration result."
+      },
+      "proof": {
+        "A_plane": "x=y",
+        "B_plane": "z=0",
+        "intersection": "Their represented surface sets intersect along x=y,z=0 for the shared s-domain, including the origin.",
+        "attainment": "The origin is original vertex index 12 of both meshes; nonnegative Euclidean distance therefore attains zero.",
+        "topology": "Rectangular 5x5 grid perimeter has 2*(4+4)=16 edges with one incident triangle; all other edges have incidence two.",
+        "boundary_implies_open_surface": true,
+        "zero_boundary_would_not_alone_certify_solid": true
+      },
+      "source": "independent frozen assignment construction, not product outputs",
+      "original_truth_sha256": "ac82eab17337d442180272b3483b89a06a0017f6e5df507acd50b4d899d9de55"
+    }
+  ],
+  "rubric": {
+    "distance_tolerance_m": 1e-06,
+    "direction_component_tolerance": 1e-06,
+    "nonmanifold_edge_definition": "triangle edge incidence strictly greater than two; boundary incidence one separately",
+    "solid": "surface intersection alone cannot establish a closed-solid penetration or nonpenetration result",
+    "evidence": "valid current fact references or native proof accepted; independent recomputation not required"
+  },
+  "masking": "No N/P/wording condition labels in package headers. Exact question wording and answer bodies may reveal condition; not fully blind."
+}

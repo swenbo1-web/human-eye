@@ -1,0 +1,7 @@
+Object_01 → Object_02 的最小表面距离为 **0 m**。最近点见证在两对象上均为世界坐标 **(-0.0625, -0.0625, 0) m**。
+
+最近点方向**不适用**：距离为零、两见证点重合，无法定义单位方向，返回值为 `null`。
+
+实体穿插状态**当前无法判定**：`pair_relation` 返回 `unknown`，原因为 `unsupported_solid_geometry`。两对象各有16条边界边、0条非流形边；这些计数不能单独证明其构成实体。表面零距离也不能独立确认实体接触或穿插。
+
+实际依据为当前 Blender 求值后三角表面的 `surface_proximity` 测量，方法为 `exact_binary64_triangle_surface_features_v2`，以及同次捕获的 `pair_relation`。来源为 `blender`，追踪号为 `19b095b1a6e746c48e5402c40191db92`。

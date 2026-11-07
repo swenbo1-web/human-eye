@@ -1,0 +1,499 @@
+"""Offline public-protocol costs and numeric-only Codex usage audit.
+
+Never imports the product, starts a model/worker, calls an API, or exports
+reasoning/developer/system/agent-message bodies. Exact session metadata is
+used only for deterministic thread binding. Missing measurements remain null.
+"""
+import argparse
+from collections import Counter
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import time
+
+FIELDS = ('input_tokens', 'cached_input_tokens', 'output_tokens',
+          'reasoning_output_tokens', 'total_tokens')
+AUX = ('/root/evidence_fixtures', '/root/evidence_adapter', '/root/evidence_review')
+PARENT = '01a1afc7-b09d-7272-be04-53b3e76ee71c'
+ROOT_TURN = '01a1b4e2-2a3b-7f61-9607-1b6d9e6e80ee'
+TOOL_FIELDS = {
+    'function_call': ('id', 'call_id', 'name', 'arguments'),
+    'custom_tool_call': ('id', 'call_id', 'name', 'input'),
+    'function_call_output': ('id', 'call_id', 'output'),
+    'custom_tool_call_output': ('id', 'call_id', 'output'),
+}
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
+
+
+def write(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf8')
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def instant(value):
+    if not value:
+        return None
+    return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+
+
+def seconds(start, end):
+    a, b = instant(start), instant(end)
+    return None if a is None or b is None else (b-a).total_seconds()
+
+
+def counters(value):
+    if not isinstance(value, dict) or any(type(value.get(k)) is not int for k in FIELDS):
+        return None
+    result = {k: value[k] for k in FIELDS}
+    if type(value.get('cache_write_input_tokens')) is int:
+        result['cache_write_input_tokens'] = value['cache_write_input_tokens']
+    return result
+
+
+def protected(value):
+    return isinstance(value, str) and value.startswith('gAAAAA') and len(value) > 80
+
+
+def public_field(value):
+    if protected(value):
+        return dict(protected_representation=True, utf8_bytes=len(value.encode('utf8')),
+                    sha256=hashlib.sha256(value.encode('utf8')).hexdigest(), body_not_exported=True)
+    if isinstance(value, dict):
+        return {key: public_field(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [public_field(item) for item in value]
+    return value
+
+
+def delta(a, b):
+    return {k: a[k]-b[k] for k in FIELDS}
+
+
+def meta(path):
+    # Current rollouts start with session_meta. A small bounded fallback also
+    # tolerates bookkeeping before it, without retaining any other body.
+    try:
+        with path.open(encoding='utf8') as stream:
+            for _ in range(10):
+                line = stream.readline()
+                if not line:
+                    break
+                item = json.loads(line)
+                if item.get('type') != 'session_meta':
+                    continue
+                payload = item['payload']
+                origin = payload.get('source')
+                origin = origin if isinstance(origin, dict) else {}
+                subagent = origin.get('subagent')
+                subagent = subagent if isinstance(subagent, dict) else {}
+                spawn = subagent.get('thread_spawn') or {}
+                return dict(path=path, thread_id=payload.get('id') or payload.get('session_id'),
+                    parent_thread_id=spawn.get('parent_thread_id') or payload.get('parent_thread_id'),
+                    agent_path=payload.get('agent_path') or spawn.get('agent_path'),
+                    created_utc=item.get('timestamp'), provider_alias=payload.get('model_provider'))
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def locate(all_meta, binding, parent):
+    matches = [row for row in all_meta if row['parent_thread_id'] == parent
+               and row['agent_path'] == binding.get('agent_path')]
+    if binding.get('thread_id'):
+        matches = [row for row in matches if row['thread_id'] == binding['thread_id']]
+    return matches
+
+
+def audit_rollout(source, binding, *, turn_filter=None, public=False, dispatches=None):
+    turns, events, previous, current = {}, [], None, None
+    source_path = source['path']
+    prefix_hash, prefix_bytes = hashlib.sha256(), 0
+    dispatch_visibility, dispatch_hashes = [], []
+    with source_path.open('rb') as stream:
+        for line_number, line in enumerate(stream, 1):
+            prefix_hash.update(line)
+            prefix_bytes += len(line)
+            try:
+                item = json.loads(line)
+            except ValueError:
+                continue  # A live partial final line is never counted.
+            kind, payload, stamp = item.get('type'), item.get('payload', {}), item.get('timestamp')
+            if kind == 'turn_context':
+                current = payload.get('turn_id', current)
+                if current not in turns:
+                    turns[current] = dict(turn_id=current, contexts=[], token_events=[],
+                        verified_delta_total=Counter(), baseline_cumulative=previous,
+                        issues=[], task_started_utc=None, task_complete_utc=None)
+                settings = (payload.get('collaboration_mode') or {}).get('settings') or {}
+                turns[current]['contexts'].append(dict(timestamp=stamp, model=payload.get('model'),
+                    effort=payload.get('effort') or payload.get('reasoning_effort'),
+                    collaboration_model=settings.get('model'), collaboration_effort=settings.get('reasoning_effort')))
+            elif kind == 'event_msg':
+                event_type = payload.get('type')
+                if event_type == 'task_started':
+                    current = payload.get('turn_id', current)
+                    turns.setdefault(current, dict(turn_id=current, contexts=[], token_events=[],
+                        verified_delta_total=Counter(), baseline_cumulative=previous,
+                        issues=[], task_started_utc=None, task_complete_utc=None))
+                    turns[current]['task_started_utc'] = stamp
+                elif event_type == 'task_complete':
+                    target = payload.get('turn_id', current)
+                    if target not in turns:
+                        continue
+                    turns[target].update(task_complete_utc=stamp, reported_duration_ms=payload.get('duration_ms'))
+                    if public and (turn_filter is None or target == turn_filter):
+                        message = payload.get('last_agent_message')
+                        if isinstance(message, str) and not protected(message):
+                            events.append(dict(timestamp=stamp, kind='public_final_answer', turn_id=target,
+                                               text=message, source_line=line_number))
+                elif event_type == 'token_count':
+                    info = payload.get('info') or {}
+                    cumulative, last = counters(info.get('total_token_usage')), counters(info.get('last_token_usage'))
+                    if current not in turns:
+                        if cumulative is not None:
+                            previous = cumulative
+                        continue
+                    row = dict(timestamp=stamp, reported_cumulative=cumulative, reported_last_usage=last,
+                        source_line=line_number, verified_delta=None, issues=[])
+                    if cumulative is None or last is None:
+                        row['issues'].append('Usage fields missing')
+                    else:
+                        if previous is None:
+                            candidate = {k: cumulative[k] for k in FIELDS}
+                            row['delta_basis'] = 'First exact-session cumulative equals last usage'
+                        else:
+                            candidate = delta(cumulative, previous)
+                            row['delta_basis'] = 'Difference of consecutive exact-session cumulative counters'
+                        if previous is not None and all(v == 0 for v in candidate.values()):
+                            row['duplicate_cumulative_snapshot'] = True
+                            row['verified_delta'] = {k: 0 for k in FIELDS}
+                        elif any(v < 0 for v in candidate.values()):
+                            row['issues'].append('Counter decreased/reset; interval cannot be fully attributed')
+                        elif candidate != {k: last[k] for k in FIELDS}:
+                            row['issues'].append('Cumulative difference does not equal reported last usage')
+                        else:
+                            row['verified_delta'] = candidate
+                        if cumulative['cached_input_tokens'] > cumulative['input_tokens']:
+                            row['issues'].append('Cached input is not a valid input subset')
+                        if cumulative['reasoning_output_tokens'] > cumulative['output_tokens']:
+                            row['issues'].append('Reasoning output is not a valid output subset')
+                        if cumulative['total_tokens'] != cumulative['input_tokens'] + cumulative['output_tokens']:
+                            row['issues'].append('Total token counter differs from input plus output')
+                    turns[current]['token_events'].append(row)
+                    if row['verified_delta'] is not None and not row['issues']:
+                        turns[current]['verified_delta_total'].update(row['verified_delta'])
+                    turns[current]['issues'].extend(row['issues'])
+                    if cumulative is not None:
+                        previous = cumulative
+            elif kind == 'response_item':
+                if public and payload.get('type') == 'agent_message' and payload.get('author') == '/root':
+                    for part in payload.get('content', []):
+                        visible = dict(source_line=line_number, type=part.get('type'))
+                        if part.get('type') == 'input_text':
+                            raw = part.get('text', '').encode('utf8')
+                            visible.update(utf8_bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest(),
+                                exact_frozen_prompt_hash_match=hashlib.sha256(raw).hexdigest() == binding.get('prompt_sha256'))
+                        else:
+                            visible['body_not_exported'] = True
+                        dispatch_visibility.append(visible)
+                if dispatches is not None and (turn_filter is None or current == turn_filter):
+                    if payload.get('type') in ('function_call', 'custom_tool_call') and str(payload.get('name', '')).endswith('spawn_agent'):
+                        arguments = payload.get('arguments', payload.get('input'))
+                        try:
+                            arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
+                        except ValueError:
+                            arguments = None
+                        if isinstance(arguments, dict) and isinstance(arguments.get('message'), str):
+                            task = arguments.get('task_name')
+                            target = [row for row in dispatches if (row.get('agent_path') or '').split('/')[-1] == task]
+                            if len(target) == 1:
+                                message_sha = hashlib.sha256(arguments['message'].encode('utf8')).hexdigest()
+                                opaque = protected(arguments['message'])
+                                dispatch_hashes.append(dict(answer_id=target[0]['answer_id'], source_line=line_number,
+                                    timestamp=stamp, call_id=payload.get('call_id'), task_name=task,
+                                    fork_turns=arguments.get('fork_turns'), requested_model=arguments.get('model'),
+                                    requested_effort=arguments.get('reasoning_effort'), message_utf8_bytes=len(arguments['message'].encode('utf8')),
+                                    stored_argument_sha256=message_sha, frozen_prompt_sha256=target[0].get('prompt_sha256'),
+                                    stored_argument_representation='protected_ciphertext' if opaque else 'public_plaintext',
+                                    public_request_exactly_matches_frozen_prompt=None if opaque else message_sha == target[0].get('prompt_sha256'),
+                                    scope='Parent spawn metadata only; protected message bodies are not exported or decrypted, and ciphertext hash mismatch is not a prompt-text difference'))
+                if public and payload.get('type') in TOOL_FIELDS and (turn_filter is None or current == turn_filter):
+                    # Only public tool call/output fields; no internal metadata,
+                    # protected agent_message, role messages, or reasoning items.
+                    exported = {key: public_field(payload[key]) for key in TOOL_FIELDS[payload['type']] if key in payload}
+                    events.append(dict(timestamp=stamp, kind=payload['type'], turn_id=current,
+                                       source_line=line_number, public_fields=exported))
+                if public and payload.get('type') == 'message' and payload.get('role') == 'assistant' and payload.get('phase') in ('final_answer', 'final'):
+                    parts = [part.get('text', '') for part in payload.get('content', []) if part.get('type') == 'output_text']
+                    if parts and not any(protected(part) for part in parts):
+                        events.append(dict(timestamp=stamp, kind='public_final_response_item', turn_id=current,
+                                           source_line=line_number, text=''.join(parts)))
+    selected = [row for key, row in turns.items() if turn_filter is None or key == turn_filter]
+    aggregate = Counter()
+    for turn in selected:
+        turn['verified_delta_total'] = dict(turn['verified_delta_total'])
+        turn['usage_complete_from_observed_counters'] = bool(turn['token_events']) and not turn['issues']
+        turn['interval_complete'] = turn['task_complete_utc'] is not None
+        aggregate.update(turn['verified_delta_total'])
+    completed = [row for row in selected if row['task_complete_utc']]
+    answer_end = completed[-1]['task_complete_utc'] if len(completed) == 1 else None
+    duration = seconds(binding.get('dispatch_utc'), answer_end)
+    response_finals = [event for event in events if event['kind'] == 'public_final_response_item']
+    final_stamp = response_finals[0]['timestamp'] if len(response_finals) == 1 else None
+    final_duration = seconds(binding.get('dispatch_utc'), final_stamp)
+    return dict(agent_path=source['agent_path'], thread_id=source['thread_id'], parent_thread_id=source['parent_thread_id'],
+        source_rollout=str(source_path), source_read_prefix_sha256=prefix_hash.hexdigest(), source_read_prefix_bytes=prefix_bytes,
+        provider_alias=source['provider_alias'], dispatch_visibility=dispatch_visibility, public_parent_dispatch_hashes=dispatch_hashes,
+        turns=selected, verified_token_deltas=dict(aggregate), completed_turn_count=len(completed),
+        usage_complete_from_observed_counters=bool(selected) and all(row['usage_complete_from_observed_counters'] for row in selected),
+        interval_complete=bool(selected) and all(row['interval_complete'] for row in selected),
+        public_final_response_utc=final_stamp, dispatch_to_public_final_seconds=final_duration,
+        dispatch_to_task_complete_seconds=duration,
+        within_answer_budget=None if final_duration is None else final_duration <= binding.get('answer_timeout_sec', 150),
+        task_complete_within_answer_budget=None if duration is None else duration <= binding.get('answer_timeout_sec', 150),
+        public_final_lateness_seconds=seconds(binding.get('answer_deadline_utc'), final_stamp),
+        root_collection_delay_seconds=seconds(answer_end, binding.get('final_saved_utc')),
+        public_host_tool_call_count=sum(event['kind'] in ('function_call', 'custom_tool_call') for event in events),
+        provider_request_count=None, fee=None, exact_backend_verified=False, pro_identity_verified=False), events
+
+
+def normal(text):
+    return text.replace('\r\n', '\n').replace('\r', '\n')
+
+
+def expected_stdout(reply):
+    result = reply.get('result') or {}
+    if not reply.get('ok'):
+        return ''
+    if reply.get('operation') == 'native_run':
+        return result.get('stdout', '')
+    return ''.join(text + ('' if text.endswith('\n') else '\n') for text in result.get('mcp_text', []))
+
+
+def expected_stderr(reply):
+    error_line = lambda value: json.dumps(value, ensure_ascii=False, allow_nan=False) + '\n'
+    if not reply.get('ok'):
+        return error_line(reply.get('error', reply))
+    result = reply.get('result') or {}
+    if reply.get('operation') == 'native_run':
+        return result.get('stderr', '') + (error_line(result['script_error']) if result.get('script_error') is not None else '')
+    return error_line(result['rpc_error']) if result.get('rpc_error') is not None else ''
+
+
+def protocol_cost(root, binding):
+    chain_id = '_'.join(str(binding[key]) for key in ('case', 'condition', 'wording'))
+    workspace = Path(binding.get('workspace') or root/'runs'/chain_id)
+    chain = Path(binding.get('chain_folder') or root/'chains'/chain_id)
+    workspace = workspace if workspace.is_absolute() else root/workspace
+    chain = chain if chain.is_absolute() else root/chain
+    assert workspace.resolve().is_relative_to(root) and chain.resolve().is_relative_to(root)
+    if not workspace.exists():
+        return dict(status='not_started_or_unavailable', planned_chain=chain_id, calls=[])
+    state = read(workspace/'BROKER_STATE.json') if (workspace/'BROKER_STATE.json').exists() else {}
+    final = read(chain/'FINAL.json') if (chain/'FINAL.json').exists() else None
+    worker = [json.loads(line) for line in (workspace/'WORKER_EVENTS.jsonl').read_text('utf8').splitlines()] if (workspace/'WORKER_EVENTS.jsonl').exists() else []
+    processes = []
+    for path in workspace.glob('cli_process_calls/*/PROCESS.json'):
+        record = read(path)
+        stdout, stderr = path.with_name('stdout.bin'), path.with_name('stderr.bin')
+        record.update(source=str(path.relative_to(root)), stdout_sha256=sha(stdout), stderr_sha256=sha(stderr),
+                      _stdout=normal(stdout.read_bytes().decode('utf8', errors='replace')),
+                      _stderr=normal(stderr.read_bytes().decode('utf8', errors='replace')), _matched=False)
+        assert record['stdout_bytes'] == stdout.stat().st_size and record['stderr_bytes'] == stderr.stat().st_size
+        processes.append(record)
+    processes.sort(key=lambda row: row['started_utc'])
+    calls = []
+    for folder in sorted(workspace.glob('broker_calls/*'), key=lambda path: int(path.name)):
+        if not (folder/'REQUEST.json').exists():
+            continue
+        request = read(folder/'REQUEST.json')
+        sequence = int(folder.name)
+        event = next((event for event in state.get('events', []) if event['sequence'] == sequence), {})
+        reply_path = folder/'PUBLIC_RESPONSE.json'
+        reply = read(reply_path) if reply_path.exists() else {}
+        row = dict(sequence=sequence, operation=request.get('operation'), request_id=request.get('request_id'),
+            consumer_public_call=event.get('public_call_reserved'), request_file_bytes=(folder/'REQUEST.json').stat().st_size,
+            serialized_argument_utf8_bytes=len(json.dumps(request.get('args', {}), sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()),
+            native_code_utf8_bytes=len(request.get('args', {}).get('code', '').encode('utf8')),
+            source=str(folder.relative_to(root)), broker_event=event, public_reply_ok=reply.get('ok'),
+            operation_succeeded=reply.get('operation_succeeded'), cli_process=None)
+        if event.get('public_call_reserved'):
+            operation = 'native' if request.get('operation') == 'native_run' else request.get('operation')
+            candidates = [process for process in processes if not process['_matched'] and operation in process['argv']
+                          and process['_stdout'] == normal(expected_stdout(reply))
+                          and process['_stderr'] == normal(expected_stderr(reply))
+                          and process['exit_code'] == int(not reply.get('ok') or not reply.get('operation_succeeded', False))]
+            if candidates:
+                selected = candidates[0]
+                selected['_matched'] = True
+                row['cli_process'] = {key: value for key, value in selected.items() if not key.startswith('_')}
+                row['cli_matching_basis'] = 'Operation, exact decoded stdout/stderr with platform newline normalization and exit status; identical deliveries resolved by process start order'
+                row['cli_matching_candidate_count'] = len(candidates)
+                if '--query-literal' in selected['argv']:
+                    row['query_literal_utf8_bytes'] = len(selected['argv'][selected['argv'].index('--query-literal')+1].encode('utf8'))
+        own_worker = [item for item in worker if event.get('started_ns', 0) <= item.get('started_ns', -1)
+                      <= event.get('finished_ns', -2)]
+        row.update(worker_rpc_count=len(own_worker), worker_sequences=[item['sequence'] for item in own_worker],
+                   worker_elapsed_ns=sum(item.get('elapsed_ns', 0) for item in own_worker),
+                   worker_private_stdout_bytes=sum(item.get('stdout_bytes', 0) for item in own_worker))
+        thin = workspace/'perf000_calls'/str(request.get('request_id'))/'AUDIT.json'
+        if thin.exists():
+            row['thin_audit'] = read(thin)
+        if request.get('operation') == 'observe':
+            texts = reply.get('result', {}).get('mcp_text', [])
+            row['requested_query'] = request.get('args', {}).get('arguments', {}).get('query')
+            if len(texts) == 1:
+                try:
+                    payload = json.loads(texts[0])
+                except ValueError:
+                    payload = {}
+                row['product_status'] = payload.get('status')
+                row['binding'] = payload.get('binding')
+                row['fact_statuses'] = {name: value.get('status') for name, value in payload.get('facts', {}).items() if isinstance(value, dict)}
+                trace = payload.get('trace_id')
+                for path in workspace.glob('product_calls/*/MCP_RESPONSE.json'):
+                    if trace and trace in path.read_text('utf8'):
+                        row['product_cost'] = read(path.with_name('COST.json'))
+                        row['product_cost_source'] = str(path.with_name('COST.json').relative_to(root))
+        calls.append(row)
+    consumer = [row for row in calls if row['consumer_public_call']]
+    operator = [row for row in calls if not row['consumer_public_call']]
+    summary = dict(public_calls=len(consumer), public_operations=dict(Counter(row['operation'] for row in consumer)),
+        broker_public_data_bytes=sum(row['broker_event'].get('public_data_bytes', 0) for row in consumer),
+        broker_public_control_bytes=sum(row['broker_event'].get('public_control_bytes', 0) for row in consumer),
+        broker_public_wire_bytes=sum(row['broker_event'].get('public_wire_bytes', 0) for row in consumer),
+        cli_process_count=len(processes), cli_stdout_bytes=sum(row['stdout_bytes'] for row in processes),
+        cli_failed_attempts=sum(row['exit_code'] != 0 for row in processes),
+        broker_accepted_consumer_calls=len(consumer),
+        cli_stderr_bytes=sum(row['stderr_bytes'] for row in processes),
+        cli_process_wall_ns=sum(row['cli_process_wall_ns'] for row in processes),
+        worker_total_rpc_count=len(worker), consumer_attributed_worker_rpc_count=sum(row['worker_rpc_count'] for row in consumer),
+        operator_attributed_worker_rpc_count=sum(row['worker_rpc_count'] for row in operator),
+        all_request_file_bytes=sum(row['request_file_bytes'] for row in calls),
+        consumer_native_code_utf8_bytes=sum(row['native_code_utf8_bytes'] for row in consumer),
+        unmatched_cli_processes=[row['source'] for row in processes if not row['_matched']])
+    return dict(planned_chain=chain_id, workspace=str(workspace), status='closed' if final else 'partial', summary=summary,
+        chain_wall_seconds=None if final is None else final.get('launch_to_reap_seconds'),
+        owner_final=final, broker_final_counters={key: state.get(key) for key in
+            ('public_calls','public_data_bytes','public_control_bytes','public_text_bytes','full_result_bytes_generated','closed')},
+        calls=calls)
+
+
+def main():
+    audit_started_ns = time.perf_counter_ns()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', required=True, type=Path)
+    parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--sessions-root', type=Path, default=Path('C:/Users/Administrator/.codex/sessions'))
+    parser.add_argument('--session-day', default='2026/11/07')
+    parser.add_argument('--parent-thread-id', default=PARENT)
+    parser.add_argument('--root-turn-id', default=ROOT_TURN)
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--export-finals', action='store_true', help='At final audit only, verify/write exact response_item finals into private and public answer paths')
+    args = parser.parse_args()
+    root = args.root.resolve()
+    manifest_path = (args.manifest or root/'dispatch/BINDINGS.json').resolve()
+    output = (args.output or root/'audit').resolve()
+    assert output.is_relative_to(root)
+    data = read(manifest_path)
+    bindings = data['bindings']
+    assert len(bindings) <= 8 and len({row['answer_id'] for row in bindings}) == len(bindings)
+    available = [row for path in (args.sessions_root/args.session_day).glob('*.jsonl') if (row := meta(path))]
+    models, protocol, issues = [], [], []
+    prompt_records = []
+    description_path = root/'prompts/OBSERVE_DESCRIPTION.txt'
+    description = description_path.read_bytes() if description_path.exists() else None
+    for binding in bindings:
+        if binding.get('prompt_path'):
+            prompt = Path(binding['prompt_path'])
+            prompt = prompt if prompt.is_absolute() else root/prompt
+            assert prompt.resolve().is_relative_to(root)
+            raw_prompt = prompt.read_bytes()
+            prompt_records.append(dict(answer_id=binding['answer_id'], source=str(prompt.relative_to(root)),
+                utf8_bytes=len(raw_prompt), sha256=hashlib.sha256(raw_prompt).hexdigest(),
+                frozen_binding_hash_match=hashlib.sha256(raw_prompt).hexdigest() == binding.get('prompt_sha256'),
+                description_utf8_bytes=None if description is None else len(description),
+                exact_description_insertions=None if not description else raw_prompt.count(description)))
+        matches = locate(available, binding, args.parent_thread_id)
+        row = dict(binding=binding, metadata_match_count=len(matches), status='not_bound', model_usage=None)
+        if len(matches) == 1:
+            row['model_usage'], public = audit_rollout(matches[0], binding, public=True)
+            row['status'] = 'complete' if row['model_usage']['interval_complete'] else 'partial'
+            write(output/'public_host_events'/(binding['answer_id']+'.json'), dict(answer_id=binding['answer_id'], events=public,
+                scope='Public final answer and public tool call/output fields only; no protected dispatch/message/reasoning bodies'))
+            finals = [event for event in public if event['kind'] == 'public_final_response_item']
+            row['public_final_response_count'] = len(finals)
+            if len(finals) == 1:
+                raw_final = finals[0]['text'].encode('utf8')
+                row['public_final_sha256'] = hashlib.sha256(raw_final).hexdigest()
+                if args.export_finals:
+                    chain_id = '_'.join(binding[key] for key in ('case', 'condition', 'wording'))
+                    for destination in (root/'answers_private'/(chain_id+'.txt'), root/'public/answers'/(binding['answer_id']+'.txt')):
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        late_public = destination.parent == root/'public/answers' and row['model_usage']['within_answer_budget'] is False
+                        packet_bytes = ('【晚于期限的公开回答，未计期限内完成】\n\n'.encode('utf8') + raw_final) if late_public else raw_final
+                        if destination.exists() and destination.read_bytes() not in (raw_final, packet_bytes):
+                            issues.append(dict(answer_id=binding['answer_id'], issue='Previously collected final differs from exact public response_item; existing file preserved', path=str(destination.relative_to(root))))
+                            write(output/'final_collection_mismatches'/(binding['answer_id']+'.json'), dict(
+                                existing_sha256=sha(destination), exact_public_final_sha256=row['public_final_sha256'],
+                                exact_public_text=finals[0]['text']))
+                        else:
+                            destination.write_bytes(packet_bytes)
+        elif binding.get('agent_path'):
+            issues.append(dict(answer_id=binding['answer_id'], issue='No unique exact parent+agent_path+optional thread_id metadata match'))
+        models.append(row)
+        protocol.append(dict(binding=binding, costs=protocol_cost(root, binding)))
+    auxiliary = []
+    for path in AUX:
+        matches = locate(available, {'agent_path': path}, args.parent_thread_id)
+        if len(matches) == 1:
+            usage, _ = audit_rollout(matches[0], {}, public=False)
+            auxiliary.append(dict(agent_path=path, usage=usage, scope='preparation/audit usage only; separate from eight consumers'))
+        else:
+            auxiliary.append(dict(agent_path=path, usage=None, metadata_match_count=len(matches)))
+    root_candidates = [row for path in args.sessions_root.rglob('*-'+args.parent_thread_id+'.jsonl') if (row := meta(path))]
+    if len(root_candidates) == 1:
+        usage, _ = audit_rollout(root_candidates[0], {}, turn_filter=args.root_turn_id, public=False, dispatches=bindings)
+        auxiliary.append(dict(agent_path='/root', usage=usage, scope='partial_root as of this read; not final complete-turn usage'))
+    else:
+        auxiliary.append(dict(agent_path='/root', usage=None, metadata_match_count=len(root_candidates)))
+    stamp = datetime.now(timezone.utc).isoformat()
+    write(output/'MODEL_USAGE.json', dict(read_utc=stamp, manifest_sha256=sha(manifest_path), consumers=models,
+        preparation_and_audit_usage=auxiliary, issues=issues,
+        privacy_scope='Exact session metadata, outer model/effort, task timestamps and numeric token_count whitelist. No hidden reasoning, protected dispatch or developer/system bodies.',
+        accounting='Cached input and reasoning output are subsets. Verified consecutive deltas are summed once; not added again to cumulative counters.',
+        provider_request_count=None, fee=None, exact_backend_verified=False, pro_identity_verified=False))
+    pairs = []
+    for case in ('S','G'):
+        for wording in ('W1','W2'):
+            members = {row['binding']['condition']: row for row in protocol
+                       if row['binding']['case'] == case and row['binding']['wording'] == wording}
+            pairs.append(dict(case=case, wording=wording, N=members.get('N'), P=members.get('P'),
+                scope='Same core question and same wording, one answer per condition; no population-level inference'))
+    write(output/'COSTS.json', dict(read_utc=stamp, chains=protocol, same_wording_pairs=pairs,
+        prompt_records=prompt_records,
+        description_scope='Exact occurrences in frozen dispatched prompt files only; provider retransmissions/cache frequency and protected recipient-message plaintext unmeasured',
+        preparation_process_records={path.name: read(path) for path in root.glob('*.process.json')},
+        qualification_record=read(root/'QUALIFICATION.json') if (root/'QUALIFICATION.json').exists() else None,
+        audit_generation_elapsed_ns_before_final_publication=time.perf_counter_ns()-audit_started_ns,
+        boundaries=dict(cli='Actual PROCESS/stdout.bin/stderr.bin; process creation through reap, excludes QA wrapper publication',
+            public='Broker reserved consumer calls; operator close separate; host tool calls are not provider requests',
+            worker='Actual worker RPCs attributed by monotone broker intervals; product capture included, not a separate public call',
+            bytes='Code/arguments/request are overlapping representations; do not add them',
+            timing='CLI, thin helper, broker, service, worker and chain wall are nested; do not sum layers',
+            model='MODEL_USAGE numeric cumulative anchors only. Model-consumed tool bytes, provider count and fees unmeasured',
+            preparation='Root process records and two qualification records are retained separately; included in whole task time, not added to nested consumer costs'),
+        provider_request_count=None, fee=None, model_consumed_tool_bytes=None))
+    print(json.dumps(dict(bindings=len(bindings), unique_model_matches=sum(row['metadata_match_count']==1 for row in models),
+        output=str(output), issues=len(issues))))
+
+
+if __name__ == '__main__':
+    main()

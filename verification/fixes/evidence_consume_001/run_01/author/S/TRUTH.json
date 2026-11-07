@@ -1,0 +1,122 @@
+{
+  "schema": "evidence-consume-independent-truth-v1",
+  "fixture": "S",
+  "coordinate_unit": "m",
+  "coordinate_frame": "world",
+  "product_solver_calls": 0,
+  "question": "当前 Object_01 与 Object_02 的三角表面最小距离是多少米？给出从前者到后者的单位方向，以及两者各自的边界边数和非流形边数。",
+  "vertices_per_mesh": 12,
+  "triangles_per_mesh": 12,
+  "grid_shape": [
+    4,
+    3
+  ],
+  "grid_order": "i outer, j inner; index=i*3+j",
+  "triangulation": "Each cell (a,b,c),(a,c,d); common low-low/high-high diagonal",
+  "construction": {
+    "n": [
+      2,
+      -1,
+      2
+    ],
+    "u": [
+      1,
+      2,
+      0
+    ],
+    "v": [
+      -4,
+      2,
+      5
+    ],
+    "core_A": "(i*u+j*v)/32 for i<=2",
+    "fold_A": "(3*u+j*v)/32-n/64 for i=3",
+    "core_B": "(i*u+j*v)/32+n/32 for i<=2",
+    "fold_B": "(3*u+j*v)/32+n/32+n/64 for i=3"
+  },
+  "expected_task_status": "observed",
+  "expected_surface_status": "measured",
+  "expected": {
+    "objects": [
+      "Object_01",
+      "Object_02"
+    ],
+    "distance_m": 0.09375,
+    "exact_squared_distance": "9/1024",
+    "direction_a_to_b": [
+      0.6666666666666666,
+      -0.3333333333333333,
+      0.6666666666666666
+    ],
+    "boundary_edges": [
+      10,
+      10
+    ],
+    "nonmanifold_edges": [
+      0,
+      0
+    ]
+  },
+  "exact_answer": {
+    "distance_m": "3/32",
+    "direction_a_to_b": [
+      "2/3",
+      "-1/3",
+      "2/3"
+    ],
+    "witness_a": [
+      0,
+      0,
+      0
+    ],
+    "witness_b": [
+      0.0625,
+      -0.03125,
+      0.0625
+    ],
+    "witnesses_unique": false
+  },
+  "proof": {
+    "orthogonal_dot_products": {
+      "n_dot_u": 0,
+      "n_dot_v": 0,
+      "u_dot_v": 0
+    },
+    "normal_squared": 9,
+    "normal_length": 3,
+    "A_support": "n dot x <= 0 on every vertex, hence every triangle",
+    "B_support": "n dot x >= 9/32 on every vertex, hence every triangle",
+    "plane_gap_lower_bound_m": "(9/32)/3 = 3/32",
+    "attainment": "Core vertex (i,j)=(0,0) gives A=(0,0,0) and B=n/32; the displacement has length 3/32 and direction n/3.",
+    "topology": "Rectangular 4x3 grid perimeter has 2*(3+2)=10 edges with one incident triangle; all other edges have incidence two.",
+    "world_aabb_overlap": true,
+    "world_aabb_A": {
+      "min": [
+        -0.25,
+        0,
+        -0.03125
+      ],
+      "max": [
+        0.0625,
+        0.328125,
+        0.3125
+      ]
+    },
+    "world_aabb_B": {
+      "min": [
+        -0.1875,
+        -0.03125,
+        0.0625
+      ],
+      "max": [
+        0.1875,
+        0.265625,
+        0.40625
+      ]
+    },
+    "aabb_overlap_is_not_surface_distance_evidence": true
+  },
+  "coordinates_dyadic_exact_in_binary32": true,
+  "actual_binary32_verification": "pending build and qualification readbacks; frozen truth does not claim those observations"
+}
+

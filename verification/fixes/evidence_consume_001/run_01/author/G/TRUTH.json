@@ -1,0 +1,69 @@
+{
+  "schema": "evidence-consume-independent-truth-v1",
+  "fixture": "G",
+  "coordinate_unit": "m",
+  "coordinate_frame": "world",
+  "product_solver_calls": 0,
+  "question": "报告当前两对象的最小表面距离、最近点方向，以及实体穿插状态。区分有数值答案、不适用和当前无法判定的项目，并说明原因。",
+  "vertices_per_mesh": 25,
+  "triangles_per_mesh": 32,
+  "grid_shape": [
+    5,
+    5
+  ],
+  "grid_order": "s outer, t inner; s,t=-2,-1,0,1,2; index=(s+2)*5+(t+2)",
+  "triangulation": "Each cell (a,b,c),(a,c,d); common low-low/high-high diagonal",
+  "construction": {
+    "A": "(s,s,t)/16",
+    "B": "(s+t,s-t,0)/16"
+  },
+  "expected_task_status": "partial",
+  "expected_surface_status": "measured",
+  "expected_solid_status": "unknown",
+  "expected": {
+    "objects": [
+      "Object_01",
+      "Object_02"
+    ],
+    "distance_m": 0,
+    "exact_squared_distance": "0",
+    "direction_a_to_b": null,
+    "boundary_edges": [
+      16,
+      16
+    ],
+    "nonmanifold_edges": [
+      0,
+      0
+    ]
+  },
+  "exact_answer": {
+    "distance_m": "0",
+    "nearest_direction_status": "not_applicable",
+    "direction_reason": "A zero-length closest-point displacement has no unit direction.",
+    "witness_a": [
+      0,
+      0,
+      0
+    ],
+    "witness_b": [
+      0,
+      0,
+      0
+    ],
+    "solid_relation_status": "unknown",
+    "solid_relation_reason": "Both are open triangle surfaces; surface intersection does not certify a closed-solid penetration or non-penetration result."
+  },
+  "proof": {
+    "A_plane": "x=y",
+    "B_plane": "z=0",
+    "intersection": "Their represented surface sets intersect along x=y,z=0 for the shared s-domain, including the origin.",
+    "attainment": "The origin is original vertex index 12 of both meshes; nonnegative Euclidean distance therefore attains zero.",
+    "topology": "Rectangular 5x5 grid perimeter has 2*(4+4)=16 edges with one incident triangle; all other edges have incidence two.",
+    "boundary_implies_open_surface": true,
+    "zero_boundary_would_not_alone_certify_solid": true
+  },
+  "coordinates_dyadic_exact_in_binary32": true,
+  "actual_binary32_verification": "pending build and qualification readbacks; frozen truth does not claim those observations"
+}
+
