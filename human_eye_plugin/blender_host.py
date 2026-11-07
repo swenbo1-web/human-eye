@@ -266,8 +266,13 @@ def _acquisition_witness(data, matrix, scale):
     """Read three vertices of one real triangle; never sample vertex zero alone."""
     from fractions import Fraction
     try:
-        face = list(data.polygons[0].vertices)
-        if (len(face) != 3 or any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face)):
+        polygon = data.polygons[0]
+        start, total = polygon.loop_start, polygon.loop_total
+        if (type(start) is not int or type(total) is not int or total != 3
+                or start < 0 or start + 3 > len(data.loops)):
+            return None
+        face = [data.loops[start + offset].vertex_index for offset in range(3)]
+        if any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face):
             return None
         points = []
         for index in face:
