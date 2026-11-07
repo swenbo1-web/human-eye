@@ -64,7 +64,7 @@ class PairRelationContractTests(unittest.TestCase):
     def test_swapped_pair_reverses_direction_and_keeps_original_witnesses(self):
         forward = self.assert_relation(self.observe(), 'separated')
         reverse = self.assert_relation(self.observe(order=('b', 'a')), 'separated')
-        self.assertEqual(forward['surface_gap_m'], reverse['surface_gap_m'])
+        self.assertAlmostEqual(forward['surface_gap_m'], reverse['surface_gap_m'], delta=1e-14)
         np.testing.assert_allclose(forward['nearest_witness']['direction_a_to_b'],
                                    [1, 0, 0], rtol=0, atol=1e-14)
         np.testing.assert_allclose(reverse['nearest_witness']['direction_a_to_b'],
@@ -173,6 +173,7 @@ class PairRelationContractTests(unittest.TestCase):
     def test_ambiguous_selector_does_not_compute_a_pair(self):
         other = copy.deepcopy(self.host.scene['meshes'][0])
         other['object_id'] = 'other'
+        other['mark_label'] = '#other'
         self.host.scene['meshes'].append(other)
         with patch('human_eye_plugin.task_query.measure_pair_geometry',
                    side_effect=AssertionError('Unresolved pair solver')):

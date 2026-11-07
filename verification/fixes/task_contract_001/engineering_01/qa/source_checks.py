@@ -13,14 +13,14 @@ MODULES = ["test_task_query", "test_selected_task_query", "test_task_complete_00
            "test_task_noop_persist", "test_task_contract_001"]
 started = time.perf_counter_ns()
 parser = argparse.ArgumentParser()
-parser.add_argument('--method')
+parser.add_argument('--method', action='append')
 parser.add_argument('--result', type=Path, default=OUTPUT / 'UNIT_RESULT.json')
 args = parser.parse_args()
 from human_eye_plugin import runtime_identity
 
 identity = runtime_identity.runtime_identity()
 assert Path(runtime_identity.__file__).resolve().is_relative_to(ROOT)
-names = [args.method] if args.method else ["verification." + name for name in MODULES]
+names = args.method or ["verification." + name for name in MODULES]
 suite = unittest.defaultTestLoader.loadTestsFromNames(names)
 
 
