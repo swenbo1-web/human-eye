@@ -271,7 +271,7 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                         left, right, compute_surface,
                         parameters={'source': scene['source'], 'unit': 'm', 'coordinate_frame': 'world',
                                     'world_witness_tolerance_m': COLLISION_TOLERANCE_M},
-                        algorithm_version='task-surface-proximity-exact-v1')
+                        algorithm_version='task-surface-proximity-exact-aabb-v2')
                 checkpoint('after_surface_pair_measurement')
                 facts['surface_proximity'] = _surface_proximity_fact(surface)
     # Numerical overflow must not turn the otherwise known fields into a JSON

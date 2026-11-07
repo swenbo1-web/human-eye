@@ -14,7 +14,7 @@ MAX_FACES = 4096
 MAX_TRIANGLE_PAIRS = 16384
 MAX_BITS = 4096
 _MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
-METHOD = 'exact_binary64_triangle_surface_features_v1'
+METHOD = 'exact_binary64_triangle_surface_features_v2'
 _PUBLICATION_TOLERANCE = Fraction.from_float(1e-9)
 
 
@@ -133,7 +133,8 @@ class _Work:
         self.counts = diagnostics if diagnostics is not None else {}
         self.counts.update(validated_faces=0, referenced_vertices=0, triangle_pairs=0,
                            intersection_tests=0, point_face_tests=0,
-                           point_edge_tests=0, edge_edge_tests=0, predicate_steps=0)
+                           point_edge_tests=0, edge_edge_tests=0, predicate_steps=0,
+                           aabb_bound_tests=0, aabb_pruned_pairs=0)
 
     def tick(self, kind, amount=1):
         self.checkpoint('surface_proximity_' + kind)
@@ -200,7 +201,9 @@ def _integer_frame(records, budget):
                 start, end = points[i], points[(i + 1) % 3]
                 delta = _sub(end, start)
                 edges.append((start, end, delta, _dot(delta, delta)))
-            triangles.append((points, normal, squared, edges))
+            bounds = tuple((min(point[k] for point in points),
+                            max(point[k] for point in points)) for k in range(3))
+            triangles.append((points, normal, squared, edges, bounds))
         prepared.append(triangles)
     return origin, factor, prepared
 
@@ -220,7 +223,7 @@ def _closer(numerator, denominator, best):
 
 
 def _point_faces(point, triangle, reverse, best, budget):
-    points, normal, squared, _ = triangle
+    points, normal, squared, _, _ = triangle
     budget.tick('point_face_tests')
     q = _sub(point, points[0])
     u = _dot(_cross(_sub(points[2], points[0]), normal), q)
@@ -267,12 +270,31 @@ def _edge_edges(left, right, best, budget):
     return (*distance, ('edges', a, b, u, v, s, t, determinant)) if distance else best
 
 
+def _aabb_exceeds_best(left, right, best):
+    # The integer squared lower bound exceeds n/d iff it exceeds floor(n/d).
+    # Subtract each squared gap from that floor instead of forming L2*d. A gap
+    # difference needs at most 4097 scratch bits; only a gap whose square fits
+    # the remaining <=4096-bit integer is ever squared. Equality never prunes.
+    remaining = best[0] // best[1]
+    for (left_min, left_max), (right_min, right_max) in zip(left, right):
+        gap = max(left_min - right_max, right_min - left_max, 0)
+        if gap > math.isqrt(remaining):
+            return True
+        remaining -= gap * gap
+    return False
+
+
 def _nearest(prepared, budget):
     best = None
     for left in prepared[0]:
         for right in prepared[1]:
             budget.checkpoint('surface_proximity_pair')
             budget.counts['triangle_pairs'] += 1
+            if best is not None:
+                budget.counts['aabb_bound_tests'] += 1
+                if _aabb_exceeds_best(left[4], right[4], best):
+                    budget.counts['aabb_pruned_pairs'] += 1
+                    continue
             budget.tick('intersection_tests')
             contact = _intersection(left[0], right[0], left[1], right[1], budget)
             if contact:

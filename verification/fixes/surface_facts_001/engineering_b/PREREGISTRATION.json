@@ -1,0 +1,59 @@
+{
+  "registered_utc": "2026-11-07T06:44:39.9229090+00:00",
+  "order": [
+    "A",
+    "B",
+    "B",
+    "A",
+    "B",
+    "A",
+    "A",
+    "B"
+  ],
+  "categories": [
+    "edge_crossing_cold",
+    "closed_separated_cold",
+    "closed_separated_hot"
+  ],
+  "paired_session_indices": [
+    [
+      1,
+      2
+    ],
+    [
+      4,
+      3
+    ],
+    [
+      6,
+      5
+    ],
+    [
+      7,
+      8
+    ]
+  ],
+  "samples_per_version_per_category": 4,
+  "fixed_asset": "engineering_a/author/control/scene.blend",
+  "fixed_asset_sha256": "4e62bdd23a4a3c27185be864ce25d7eab4a97e0eb723bc63bfa4c348e1d26a17",
+  "truth_sha256": "275f9e5ae73389fd8f5982596ef0d191ad70317d23d254c5e5d0e9f18a429a73",
+  "quality": "all targeted and installed returns correct; exact geometry witnesses unchanged vs A; source/binding/cache/deadline preserved",
+  "algorithm": {
+    "closed_cold_actual_narrow_pair_reduction_min": 0.25,
+    "expected_A_pairs": 144,
+    "maximum_B_narrow_pairs": 108,
+    "edge_narrow_work_may_not_increase": true,
+    "hot_new_geometry_work": 0
+  },
+  "adoption": {
+    "primary": "full CLI process wall",
+    "closed_cold_median_improvement": ">= max(5000000ns, 0.05*A_median_ns)",
+    "paired_closed_cold_samples_improved_min": 3,
+    "paired_samples": 4,
+    "edge_cold_median_regression": "<= max(5000000ns, 0.05*A_median_ns)",
+    "closed_hot_median_regression": "<= max(5000000ns, 0.05*A_median_ns)"
+  },
+  "no_optional_stopping_or_sample_increase": true,
+  "timers": "full batch/session wall includes preparation/startup/qualification/audit/cleanup; CLI process wall separately; nested helper/service not summed",
+  "rejection": "if any gate fails recommend retaining A; no B2, threshold adjustment or consumer run"
+}
