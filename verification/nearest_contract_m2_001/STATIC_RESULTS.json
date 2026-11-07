@@ -1,0 +1,55 @@
+{
+  "scope": "stdlib logical examples only; no product import or Blender execution",
+  "example_count": 4,
+  "examples": [
+    {
+      "id": "later_nonfinite_reference",
+      "directory_facts": {
+        "vertex_count": 6,
+        "face_count": 2,
+        "loop_count": 6,
+        "three_loops_per_face_total": true,
+        "finite_box": true,
+        "first_triangle_finite_nondegenerate_inside": true
+      },
+      "conclusion": "finite first-face and box facts do not imply a finite entire triangle surface",
+      "actual_blender_nan_bound_behavior": "not_tested"
+    },
+    {
+      "id": "same_counts_hypothetical_stale_box",
+      "directory_facts": {
+        "vertex_count": 6,
+        "face_count": 2,
+        "loop_count": 6,
+        "three_loops_per_face_total": true,
+        "finite_box": true,
+        "first_triangle_finite_nondegenerate_inside": true
+      },
+      "frozen_directory_facts_equal": true,
+      "surface_vertex_outside_old_box": true,
+      "conclusion": "counts and first witness cannot independently detect all changed content",
+      "actual_blender_cache_staleness": "not_demonstrated"
+    },
+    {
+      "id": "bounded_degenerate_face_and_isolated_finite_vertex",
+      "all_triangle_vertices_enclosed": true,
+      "second_face_degenerate": true,
+      "isolated_vertex_is_not_surface_witness": true,
+      "conclusion": "metric rejection of degeneration does not imply enclosure failure; isolated finite vertices may loosen bounds"
+    },
+    {
+      "id": "later_invalid_index",
+      "directory_facts": {
+        "vertex_count": 6,
+        "face_count": 2,
+        "loop_count": 6,
+        "three_loops_per_face_total": true,
+        "finite_box": true,
+        "first_triangle_finite_nondegenerate_inside": true
+      },
+      "conclusion": "counts and a valid first triangle do not define the whole surface without the topology validity premise",
+      "actual_bpy_acceptance_of_invalid_mesh": "not_tested"
+    }
+  ],
+  "all_assertions_passed": true
+}
