@@ -1,0 +1,23 @@
+diff --git a/verification/fixes/perf_integrated_001/run_02/qa/chain_owner.py b/verification/fixes/task_complete_001/consumer_01/qa/chain_owner.py
+index e0eb11f..9d0bee7 100644
+--- a/verification/fixes/perf_integrated_001/run_02/qa/chain_owner.py
++++ b/verification/fixes/task_complete_001/consumer_01/qa/chain_owner.py
+@@ -35,14 +35,16 @@ def main():
+     author = args.reuse_root / "author" / args.case
+     started = args.started_unix
+     deadline = min(started + 600, args.deadline_unix)
+-    seconds = int(deadline - started)
++    if args.deadline_unix - started < 600:
++        raise ValueError('Full equal 600 second chain budget required')
++    seconds = 600
+     if seconds <= 0:
+         raise ValueError("No remaining chain budget")
+     launcher = Path(sysconfig.get_path("purelib")) / "verification/perf010_qualification.py"
+     command = [sys.executable, "-I", "-B", str(launcher), "--asset", str(author / "scene.blend"),
+                "--workspace", str(workspace), "--blender", "D:/Tools/blender5.2/blender.exe",
+                "--condition", args.condition, "--pin",
+-               "20fe8507cf3f802bd9471d2e8f7d00470f6013a6236f40e82258bd6aa6e7c5a0",
++               "b0b4e1d3fa96a0b9c9676863fc7565215f82557a2936f247a5a4abd5b911103a",
+                "--expected-asset-sha256", native.sha(author / "scene.blend"),
+                "--seconds", str(seconds), "--qa-vertex-patch", str(author / "qa_patch.json")]
+     record = dict(owner_entered_utc=now(), started_unix=started, deadline_unix=deadline,

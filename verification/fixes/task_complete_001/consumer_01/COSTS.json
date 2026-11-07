@@ -1,0 +1,865 @@
+{
+  "task": "TASK-COMPLETE-001-CONSUMER-01",
+  "generated_utc": "2026-11-07T02:17:50.704710+00:00",
+  "source_paths_relative_to": "verification/fixes/task_complete_001/consumer_01",
+  "units": {
+    "durations": "nanoseconds unless a field ends in seconds",
+    "bytes": "UTF-8"
+  },
+  "measurement_scope": {
+    "pure_cli_process_wall_ns": "unknown",
+    "pure_cli_process_wall_reason": "No per-invocation CLI process start-to-exit timer or OUTPUT capture is retained in consumer_01. Engineering measurements are excluded.",
+    "thin_wrapper_elapsed_ns": "perf000_calls/<request_id>/AUDIT.json.elapsed_ns covers _request through reply persistence and audit construction. CLI startup/import/argument parsing/script-file read, audit persistence, final deadline check and stdout delivery extend outside this interval.",
+    "response_text_utf8_bytes": "UTF-8 bytes of native stdout or MCP text before the CLI-added LF.",
+    "broker_bytes": "BROKER_STATE.events fields record public serialized data/control/wire and private full-result bytes. They measure the broker-client boundary, with no host-model consumption attestation.",
+    "worker_rpc_elapsed_ns": "Direct native calls use broker FULL_RESULT.result.native.elapsed_ns. Product capture RPC has no separate transport elapsed field, so it is unknown and its inclusive host.capture trace span is recorded separately.",
+    "worker_elapsed_ns": "WORKER_EVENTS.elapsed_ns includes script/operation execution and terminal checks.",
+    "aggregation": "Only sibling calls within each named scope are summed. Wrapper, broker, product, trace, RPC, worker, QA receipt and chain wall timings are nested or overlapping and are never added together.",
+    "missing_raw_audit": "broker_audit.jsonl is absent in both runs. BROKER_STATE.json.events and broker_calls originals provide the retained broker audit.",
+    "model_usage": "Handled independently and excluded from this artifact.",
+    "cli_stdout_text_utf8_bytes": "Computed from REPLY.result.stdout for native, or each REPLY.result.mcp_text plus one LF when the text has no final LF, following perf000_scene_tool._deliver. This is the reconstructed logical CLI text payload. Raw process stdout bytes, including any platform newline translation, and host tool wrapper delivery bytes are unknown because no raw OUTPUT capture is retained.",
+    "cli_process_stdout_raw_bytes": "unknown",
+    "cli_process_stdout_raw_bytes_reason": "No per-invocation raw CLI stdout capture is retained. Worker stdout.txt is a different stream and adds Windows CR bytes when persisted."
+  },
+  "chains": {
+    "N": {
+      "summary": {
+        "consumer_native_run_count": 6,
+        "consumer_observe_count": 0,
+        "consumer_public_call_count": 6,
+        "transport_or_script_failure_count": 0,
+        "automatic_retries": 0,
+        "product_partial_count": 0,
+        "pure_cli_process_wall_ns": "unknown",
+        "thin_wrapper_elapsed_ns": 473664500,
+        "broker_elapsed_ns": 285840500,
+        "worker_rpc_count": 6,
+        "worker_rpc_elapsed_ns_known_subtotal": 141751400,
+        "worker_rpc_elapsed_ns_known_call_count": 6,
+        "worker_rpc_elapsed_ns_all": 141751400,
+        "worker_elapsed_ns": 119293500,
+        "worker_stdout_utf8_bytes": 12727,
+        "response_text_utf8_bytes": 12727,
+        "cli_stderr_utf8_bytes": 0,
+        "broker_public_data_bytes": 13537,
+        "broker_public_control_bytes": 1500,
+        "broker_public_wire_bytes": 15037,
+        "broker_full_result_bytes": 16225,
+        "actual_image_delivery_count": 0,
+        "image_ledger": {
+          "constructions": [],
+          "limits": {
+            "max_images": 8,
+            "max_single_pixels": 1048576,
+            "max_total_pixels": 2359296
+          },
+          "reservations": [],
+          "reserved_images": 0,
+          "reserved_pixels": 0,
+          "schema": "visual004-image-ledger-v1"
+        },
+        "image_ledger_source": "runs/control/N/images/LEDGER.json",
+        "cli_stdout_text_utf8_bytes": 12727,
+        "cli_process_stdout_raw_bytes": "unknown"
+      },
+      "calls": [
+        {
+          "sequence": 1,
+          "phase": "initial",
+          "operation": "native_run",
+          "request_id": "perf000-4e4bfe9691e641829381ee4d12b3effe",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 75257300,
+          "broker_elapsed_ns": 46977000,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 22997700,
+          "worker_sequence": 1,
+          "worker_elapsed_ns": 16046400,
+          "worker_stdout_utf8_bytes": 1921,
+          "response_text_utf8_bytes": 1921,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 2033,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 2283,
+          "broker_full_result_bytes": 2481,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-4e4bfe9691e641829381ee4d12b3effe/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-4e4bfe9691e641829381ee4d12b3effe/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/1/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=1]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=1",
+            "worker_stdout_file": "runs/control/N/call_1/stdout.txt"
+          },
+          "stdout_file_bytes": 1922,
+          "cli_stdout_text_utf8_bytes": 1921
+        },
+        {
+          "sequence": 2,
+          "phase": "initial",
+          "operation": "native_run",
+          "request_id": "perf000-c36e70ed82854634b90e1ce8439a4da9",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 88045900,
+          "broker_elapsed_ns": 48334200,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 25204200,
+          "worker_sequence": 2,
+          "worker_elapsed_ns": 21632200,
+          "worker_stdout_utf8_bytes": 1236,
+          "response_text_utf8_bytes": 1236,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 1328,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 1578,
+          "broker_full_result_bytes": 1776,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-c36e70ed82854634b90e1ce8439a4da9/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-c36e70ed82854634b90e1ce8439a4da9/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/2/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=2]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=2",
+            "worker_stdout_file": "runs/control/N/call_2/stdout.txt"
+          },
+          "stdout_file_bytes": 1237,
+          "cli_stdout_text_utf8_bytes": 1236
+        },
+        {
+          "sequence": 3,
+          "phase": "unchanged_current",
+          "operation": "native_run",
+          "request_id": "perf000-6189abddb31d409a804df7ae648be670",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 79584900,
+          "broker_elapsed_ns": 43797100,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 20896600,
+          "worker_sequence": 3,
+          "worker_elapsed_ns": 18246500,
+          "worker_stdout_utf8_bytes": 1921,
+          "response_text_utf8_bytes": 1921,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 2033,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 2283,
+          "broker_full_result_bytes": 2481,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-6189abddb31d409a804df7ae648be670/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-6189abddb31d409a804df7ae648be670/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/3/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=3]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=3",
+            "worker_stdout_file": "runs/control/N/call_3/stdout.txt"
+          },
+          "stdout_file_bytes": 1922,
+          "cli_stdout_text_utf8_bytes": 1921
+        },
+        {
+          "sequence": 4,
+          "phase": "unchanged_current",
+          "operation": "native_run",
+          "request_id": "perf000-a5315c1943c147f4b7c0f9b45d92e647",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 78947600,
+          "broker_elapsed_ns": 51069000,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 27634500,
+          "worker_sequence": 4,
+          "worker_elapsed_ns": 24645100,
+          "worker_stdout_utf8_bytes": 1008,
+          "response_text_utf8_bytes": 1008,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 1114,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 1364,
+          "broker_full_result_bytes": 1562,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-a5315c1943c147f4b7c0f9b45d92e647/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-a5315c1943c147f4b7c0f9b45d92e647/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/4/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=4]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=4",
+            "worker_stdout_file": "runs/control/N/call_4/stdout.txt"
+          },
+          "stdout_file_bytes": 1009,
+          "cli_stdout_text_utf8_bytes": 1008
+        },
+        {
+          "sequence": 5,
+          "phase": "changed_current",
+          "operation": "native_run",
+          "request_id": "perf000-036aef24cac446c09d11c0f820d32e4a",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 67541900,
+          "broker_elapsed_ns": 39647800,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 15656000,
+          "worker_sequence": 6,
+          "worker_elapsed_ns": 12760900,
+          "worker_stdout_utf8_bytes": 1920,
+          "response_text_utf8_bytes": 1920,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 2032,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 2282,
+          "broker_full_result_bytes": 2480,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-036aef24cac446c09d11c0f820d32e4a/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-036aef24cac446c09d11c0f820d32e4a/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/5/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=5]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=6",
+            "worker_stdout_file": "runs/control/N/call_6/stdout.txt"
+          },
+          "stdout_file_bytes": 1921,
+          "cli_stdout_text_utf8_bytes": 1920
+        },
+        {
+          "sequence": 6,
+          "phase": "changed_current",
+          "operation": "native_run",
+          "request_id": "perf000-d2f7befb63f74479b7005a3cb154c907",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 84286900,
+          "broker_elapsed_ns": 56015400,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 29362400,
+          "worker_sequence": 7,
+          "worker_elapsed_ns": 25962400,
+          "worker_stdout_utf8_bytes": 4721,
+          "response_text_utf8_bytes": 4721,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 4997,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 5247,
+          "broker_full_result_bytes": 5445,
+          "sources": {
+            "wrapper_audit": "runs/control/N/perf000_calls/perf000-d2f7befb63f74479b7005a3cb154c907/AUDIT.json",
+            "reply_payload": "runs/control/N/perf000_calls/perf000-d2f7befb63f74479b7005a3cb154c907/REPLY.json",
+            "broker_full_result": "runs/control/N/broker_calls/6/FULL_RESULT.json",
+            "broker_accounting": "runs/control/N/BROKER_STATE.json#events[sequence=6]",
+            "worker_event": "runs/control/N/WORKER_EVENTS.jsonl#sequence=7",
+            "worker_stdout_file": "runs/control/N/call_7/stdout.txt"
+          },
+          "stdout_file_bytes": 4722,
+          "cli_stdout_text_utf8_bytes": 4721
+        }
+      ],
+      "product_observations": [],
+      "operator_costs": {
+        "qa_advance_count": 1,
+        "qa_worker_rpc_count": 1,
+        "qa_coordinator_rpc_and_checks_elapsed_ns": 29422600,
+        "qa_worker_sequence": 5,
+        "qa_worker_elapsed_ns": 14665300,
+        "qa_worker_rpc_transport_elapsed_ns": "unknown",
+        "qa_worker_rpc_transport_unknown_reason": "No separate _exchange transport timer is retained. Receipt includes RPC plus coordinator checks and excludes receipt publication.",
+        "qa_vertices_written": 4,
+        "qa_public_consumer_call_reserved": false,
+        "close_count": 1,
+        "close_worker_rpc_count": 1,
+        "close_broker_elapsed_ns": 173380700,
+        "close_native_owner_elapsed_ns": 137822500,
+        "close_worker_sequence": 8,
+        "close_worker_elapsed_ns": 19036900,
+        "close_worker_event_status_raw": "unknown",
+        "close_public_wire_bytes": 612,
+        "close_full_result_bytes": 612,
+        "worker_rpc_count_including_consumer_qa_close": 8,
+        "chain_status": "closed",
+        "startup_seconds": 1.1808130741119385,
+        "chain_launch_to_reap_seconds": 303.74210810661316,
+        "chain_wall_scope": "Launch through process reaping, including model/operator waiting and nested operations.",
+        "worker_exit_code": 0,
+        "launcher_exit_code": 0,
+        "forced_cleanup": [],
+        "sources": [
+          "runs/control/N/QA_ADVANCE_ATTEMPT.json",
+          "runs/control/N/QA_ADVANCE_RECEIPT.json",
+          "runs/control/N/WORKER_EVENTS.jsonl",
+          "runs/control/N/BROKER_STATE.json",
+          "chains/control_N/FINAL.json"
+        ]
+      }
+    },
+    "P": {
+      "summary": {
+        "consumer_native_run_count": 2,
+        "consumer_observe_count": 3,
+        "consumer_public_call_count": 5,
+        "transport_or_script_failure_count": 0,
+        "automatic_retries": 0,
+        "product_partial_count": 1,
+        "pure_cli_process_wall_ns": "unknown",
+        "thin_wrapper_elapsed_ns": 719873900,
+        "broker_elapsed_ns": 559922200,
+        "worker_rpc_count": 5,
+        "worker_rpc_elapsed_ns_known_subtotal": 19656100,
+        "worker_rpc_elapsed_ns_known_call_count": 2,
+        "worker_rpc_elapsed_ns_all": "unknown",
+        "worker_elapsed_ns": 79013800,
+        "worker_stdout_utf8_bytes": 13639,
+        "response_text_utf8_bytes": 8697,
+        "cli_stderr_utf8_bytes": 0,
+        "broker_public_data_bytes": 9522,
+        "broker_public_control_bytes": 1241,
+        "broker_public_wire_bytes": 10763,
+        "broker_full_result_bytes": 16914,
+        "actual_image_delivery_count": 0,
+        "image_ledger": {
+          "constructions": [],
+          "limits": {
+            "max_images": 8,
+            "max_single_pixels": 1048576,
+            "max_total_pixels": 2359296
+          },
+          "reservations": [],
+          "reserved_images": 0,
+          "reserved_pixels": 0,
+          "schema": "visual004-image-ledger-v1"
+        },
+        "image_ledger_source": "runs/control/P/images/LEDGER.json",
+        "product_elapsed_ns": 393559500,
+        "product_request_trace_duration_ns": 156012100,
+        "host_capture_count": 3,
+        "host_capture_span_ns": 78838400,
+        "task_facts_span_ns": 27881900,
+        "task_work_exact_pair_count": 2,
+        "pair_cache_hit_count": 1,
+        "scene_capture_elided_on_pair_cache_hit": false,
+        "cli_stdout_text_utf8_bytes": 8700,
+        "cli_process_stdout_raw_bytes": "unknown"
+      },
+      "calls": [
+        {
+          "sequence": 1,
+          "phase": "initial",
+          "operation": "observe",
+          "request_id": "perf000-b26877e7e3144352af4713e90a542469",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 310334600,
+          "broker_elapsed_ns": 277176900,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": "unknown",
+          "worker_sequence": 1,
+          "worker_elapsed_ns": 22732700,
+          "worker_stdout_utf8_bytes": 3181,
+          "response_text_utf8_bytes": 1480,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 1685,
+          "broker_public_control_bytes": 247,
+          "broker_public_wire_bytes": 1932,
+          "broker_full_result_bytes": 3797,
+          "sources": {
+            "wrapper_audit": "runs/control/P/perf000_calls/perf000-b26877e7e3144352af4713e90a542469/AUDIT.json",
+            "reply_payload": "runs/control/P/perf000_calls/perf000-b26877e7e3144352af4713e90a542469/REPLY.json",
+            "broker_full_result": "runs/control/P/broker_calls/1/FULL_RESULT.json",
+            "broker_accounting": "runs/control/P/BROKER_STATE.json#events[sequence=1]",
+            "worker_event": "runs/control/P/WORKER_EVENTS.jsonl#sequence=1",
+            "worker_stdout_file": "runs/control/P/call_1/stdout.txt"
+          },
+          "product_request_id": "b4ac9542165e4ca68d4915b8cf0feea6",
+          "cli_stdout_text_utf8_bytes": 1481
+        },
+        {
+          "sequence": 2,
+          "phase": "unchanged_current",
+          "operation": "observe",
+          "request_id": "perf000-850b12ba00bc403ba95489452e315a4a",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 135153900,
+          "broker_elapsed_ns": 105497900,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": "unknown",
+          "worker_sequence": 2,
+          "worker_elapsed_ns": 20544500,
+          "worker_stdout_utf8_bytes": 3181,
+          "response_text_utf8_bytes": 1480,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 1685,
+          "broker_public_control_bytes": 247,
+          "broker_public_wire_bytes": 1932,
+          "broker_full_result_bytes": 3797,
+          "sources": {
+            "wrapper_audit": "runs/control/P/perf000_calls/perf000-850b12ba00bc403ba95489452e315a4a/AUDIT.json",
+            "reply_payload": "runs/control/P/perf000_calls/perf000-850b12ba00bc403ba95489452e315a4a/REPLY.json",
+            "broker_full_result": "runs/control/P/broker_calls/2/FULL_RESULT.json",
+            "broker_accounting": "runs/control/P/BROKER_STATE.json#events[sequence=2]",
+            "worker_event": "runs/control/P/WORKER_EVENTS.jsonl#sequence=2",
+            "worker_stdout_file": "runs/control/P/call_2/stdout.txt"
+          },
+          "product_request_id": "8e91352eec2a400c9f0d0be75e953648",
+          "cli_stdout_text_utf8_bytes": 1481
+        },
+        {
+          "sequence": 3,
+          "phase": "unchanged_current",
+          "operation": "native_run",
+          "request_id": "perf000-d4b3efeacaf34f6fa8217e4978c813e9",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 74276400,
+          "broker_elapsed_ns": 34410300,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 10524900,
+          "worker_sequence": 3,
+          "worker_elapsed_ns": 6085500,
+          "worker_stdout_utf8_bytes": 2048,
+          "response_text_utf8_bytes": 2048,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 2148,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 2398,
+          "broker_full_result_bytes": 2596,
+          "sources": {
+            "wrapper_audit": "runs/control/P/perf000_calls/perf000-d4b3efeacaf34f6fa8217e4978c813e9/AUDIT.json",
+            "reply_payload": "runs/control/P/perf000_calls/perf000-d4b3efeacaf34f6fa8217e4978c813e9/REPLY.json",
+            "broker_full_result": "runs/control/P/broker_calls/3/FULL_RESULT.json",
+            "broker_accounting": "runs/control/P/BROKER_STATE.json#events[sequence=3]",
+            "worker_event": "runs/control/P/WORKER_EVENTS.jsonl#sequence=3",
+            "worker_stdout_file": "runs/control/P/call_3/stdout.txt"
+          },
+          "stdout_file_bytes": 2049,
+          "cli_stdout_text_utf8_bytes": 2048
+        },
+        {
+          "sequence": 4,
+          "phase": "changed_current",
+          "operation": "native_run",
+          "request_id": "perf000-fbf33dfd23ff41d0aed98b5c844007f6",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 58429100,
+          "broker_elapsed_ns": 31797300,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": 9131200,
+          "worker_sequence": 5,
+          "worker_elapsed_ns": 6178800,
+          "worker_stdout_utf8_bytes": 2048,
+          "response_text_utf8_bytes": 2048,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 2148,
+          "broker_public_control_bytes": 250,
+          "broker_public_wire_bytes": 2398,
+          "broker_full_result_bytes": 2595,
+          "sources": {
+            "wrapper_audit": "runs/control/P/perf000_calls/perf000-fbf33dfd23ff41d0aed98b5c844007f6/AUDIT.json",
+            "reply_payload": "runs/control/P/perf000_calls/perf000-fbf33dfd23ff41d0aed98b5c844007f6/REPLY.json",
+            "broker_full_result": "runs/control/P/broker_calls/4/FULL_RESULT.json",
+            "broker_accounting": "runs/control/P/BROKER_STATE.json#events[sequence=4]",
+            "worker_event": "runs/control/P/WORKER_EVENTS.jsonl#sequence=5",
+            "worker_stdout_file": "runs/control/P/call_5/stdout.txt"
+          },
+          "stdout_file_bytes": 2049,
+          "cli_stdout_text_utf8_bytes": 2048
+        },
+        {
+          "sequence": 5,
+          "phase": "changed_current",
+          "operation": "observe",
+          "request_id": "perf000-a8b1539465e542b48860780757c07d67",
+          "ok": true,
+          "operation_succeeded": true,
+          "audit_error": null,
+          "automatic_retries": 0,
+          "thin_wrapper_elapsed_ns": 141679900,
+          "broker_elapsed_ns": 111039800,
+          "worker_rpc_count": 1,
+          "worker_rpc_elapsed_ns": "unknown",
+          "worker_sequence": 6,
+          "worker_elapsed_ns": 23472300,
+          "worker_stdout_utf8_bytes": 3181,
+          "response_text_utf8_bytes": 1641,
+          "cli_stderr_utf8_bytes": 0,
+          "broker_public_data_bytes": 1856,
+          "broker_public_control_bytes": 247,
+          "broker_public_wire_bytes": 2103,
+          "broker_full_result_bytes": 4129,
+          "sources": {
+            "wrapper_audit": "runs/control/P/perf000_calls/perf000-a8b1539465e542b48860780757c07d67/AUDIT.json",
+            "reply_payload": "runs/control/P/perf000_calls/perf000-a8b1539465e542b48860780757c07d67/REPLY.json",
+            "broker_full_result": "runs/control/P/broker_calls/5/FULL_RESULT.json",
+            "broker_accounting": "runs/control/P/BROKER_STATE.json#events[sequence=5]",
+            "worker_event": "runs/control/P/WORKER_EVENTS.jsonl#sequence=6",
+            "worker_stdout_file": "runs/control/P/call_6/stdout.txt"
+          },
+          "product_request_id": "2671b91c17ce4f84ae993dabbf14c014",
+          "cli_stdout_text_utf8_bytes": 1642
+        }
+      ],
+      "product_observations": [
+        {
+          "phase": "initial",
+          "broker_sequence": 1,
+          "product_request_id": "b4ac9542165e4ca68d4915b8cf0feea6",
+          "product_elapsed_ns": 246174400,
+          "product_error": null,
+          "request_trace_duration_ns": 73579200,
+          "host_capture_span_ns": 28299300,
+          "task_facts_span_ns": 26292300,
+          "status": "observed",
+          "engine_invoked": true,
+          "task_work": {
+            "exact_pair_count": 1,
+            "pair_cache_hit": false
+          },
+          "scene_fingerprint": "1174248deca7a76e2c56ee55b749825d4b78826ebf80a65d7d75d05779e70cc5",
+          "scene_revision": "blender:fa764183d656ce825415a001df40518f8e4737833a2a2ee7494105e63678d043",
+          "capture_scope": "selected_objects",
+          "candidate_count": 2,
+          "selected_object_names": [
+            "Object_01",
+            "Object_02"
+          ],
+          "object_count": 2,
+          "vertex_count": 16,
+          "face_count": 24,
+          "underlying_worker_calls": [
+            "call_1"
+          ],
+          "facts": {
+            "nearest_witness": {
+              "direction_status": "measured",
+              "semantics": "strict_nearest_original_surface_points",
+              "status": "measured",
+              "value": {
+                "a": [
+                  0.05000000074505806,
+                  -0.009999999776482582,
+                  -0.009999999776482582
+                ],
+                "b": [
+                  0.05999999865889549,
+                  -0.009999999776482582,
+                  -0.009999999776482582
+                ],
+                "direction_a_to_b": [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "solid_relation": {
+              "semantics": "certified_solid_overlap_at_tolerance_not_physical_contact",
+              "status": "measured",
+              "tolerance_m": 1e-09,
+              "value": "not_penetrating"
+            },
+            "surface_clearance": {
+              "kind": "exact",
+              "method": "unrounded_all_surface_features_or_certified_escape",
+              "semantics": "represented_mesh_surface_clearance",
+              "status": "measured",
+              "value": 0.009999997913837433
+            }
+          },
+          "nearest_direction_state": "measured",
+          "nearest_direction_unknown_reason": null,
+          "coordinator_process_id": 31756,
+          "persistent_service_instance_id": 2110364232608,
+          "persistent_host_instance_id": 2110364223056,
+          "mcp_content_image_blocks": 0,
+          "public_images_registered": 0,
+          "all_render_attempt_images_constructed": "unknown",
+          "all_render_attempt_images_unknown_reason": "COST.json retains null. Its native_private_evidence_scope explicitly allows incomplete raw PNG fields; the retained worker events and image ledger separately show zero render events and constructions.",
+          "sources": {
+            "cost": "runs/control/P/product_calls/b4ac9542165e4ca68d4915b8cf0feea6/COST.json",
+            "facts": "runs/control/P/product_calls/b4ac9542165e4ca68d4915b8cf0feea6/RESPONSE_WITH_IMAGE_REFS.json#actual_product_metadata",
+            "mcp_original": "runs/control/P/product_calls/b4ac9542165e4ca68d4915b8cf0feea6/MCP_RESPONSE.json",
+            "capture_original": "runs/control/P/call_1/stdout.txt",
+            "capture_command": "runs/control/P/call_1/SCRIPT.py",
+            "task_work_and_trace": "runs/control/P/product_audit.jsonl#trace_id=c3fdbc76243445cfb51ddb1250d3ad51"
+          }
+        },
+        {
+          "phase": "unchanged_current",
+          "broker_sequence": 2,
+          "product_request_id": "8e91352eec2a400c9f0d0be75e953648",
+          "product_elapsed_ns": 71279600,
+          "product_error": null,
+          "request_trace_duration_ns": 40100100,
+          "host_capture_span_ns": 23838500,
+          "task_facts_span_ns": 123200,
+          "status": "observed",
+          "engine_invoked": false,
+          "task_work": {
+            "exact_pair_count": 0,
+            "pair_cache_hit": true
+          },
+          "scene_fingerprint": "1174248deca7a76e2c56ee55b749825d4b78826ebf80a65d7d75d05779e70cc5",
+          "scene_revision": "blender:fa764183d656ce825415a001df40518f8e4737833a2a2ee7494105e63678d043",
+          "capture_scope": "selected_objects",
+          "candidate_count": 2,
+          "selected_object_names": [
+            "Object_01",
+            "Object_02"
+          ],
+          "object_count": 2,
+          "vertex_count": 16,
+          "face_count": 24,
+          "underlying_worker_calls": [
+            "call_2"
+          ],
+          "facts": {
+            "nearest_witness": {
+              "direction_status": "measured",
+              "semantics": "strict_nearest_original_surface_points",
+              "status": "measured",
+              "value": {
+                "a": [
+                  0.05000000074505806,
+                  -0.009999999776482582,
+                  -0.009999999776482582
+                ],
+                "b": [
+                  0.05999999865889549,
+                  -0.009999999776482582,
+                  -0.009999999776482582
+                ],
+                "direction_a_to_b": [
+                  1.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            },
+            "solid_relation": {
+              "semantics": "certified_solid_overlap_at_tolerance_not_physical_contact",
+              "status": "measured",
+              "tolerance_m": 1e-09,
+              "value": "not_penetrating"
+            },
+            "surface_clearance": {
+              "kind": "exact",
+              "method": "unrounded_all_surface_features_or_certified_escape",
+              "semantics": "represented_mesh_surface_clearance",
+              "status": "measured",
+              "value": 0.009999997913837433
+            }
+          },
+          "nearest_direction_state": "measured",
+          "nearest_direction_unknown_reason": null,
+          "coordinator_process_id": 31756,
+          "persistent_service_instance_id": 2110364232608,
+          "persistent_host_instance_id": 2110364223056,
+          "mcp_content_image_blocks": 0,
+          "public_images_registered": 0,
+          "all_render_attempt_images_constructed": "unknown",
+          "all_render_attempt_images_unknown_reason": "COST.json retains null. Its native_private_evidence_scope explicitly allows incomplete raw PNG fields; the retained worker events and image ledger separately show zero render events and constructions.",
+          "sources": {
+            "cost": "runs/control/P/product_calls/8e91352eec2a400c9f0d0be75e953648/COST.json",
+            "facts": "runs/control/P/product_calls/8e91352eec2a400c9f0d0be75e953648/RESPONSE_WITH_IMAGE_REFS.json#actual_product_metadata",
+            "mcp_original": "runs/control/P/product_calls/8e91352eec2a400c9f0d0be75e953648/MCP_RESPONSE.json",
+            "capture_original": "runs/control/P/call_2/stdout.txt",
+            "capture_command": "runs/control/P/call_2/SCRIPT.py",
+            "task_work_and_trace": "runs/control/P/product_audit.jsonl#trace_id=f4105a72c0e245fe98b8244ebc9675b0"
+          }
+        },
+        {
+          "phase": "changed_current",
+          "broker_sequence": 5,
+          "product_request_id": "2671b91c17ce4f84ae993dabbf14c014",
+          "product_elapsed_ns": 76105500,
+          "product_error": null,
+          "request_trace_duration_ns": 42332800,
+          "host_capture_span_ns": 26700600,
+          "task_facts_span_ns": 1466400,
+          "status": "partial",
+          "engine_invoked": true,
+          "task_work": {
+            "exact_pair_count": 1,
+            "pair_cache_hit": false
+          },
+          "scene_fingerprint": "0c912977679800a69064af409d645b075b4e085ea56af9da297feb7b36d868d1",
+          "scene_revision": "blender:b6cbe7fbddbb38fbc7137688bdef88e76c09df05561c5c2353ab8439e9ccc885",
+          "capture_scope": "selected_objects",
+          "candidate_count": 2,
+          "selected_object_names": [
+            "Object_01",
+            "Object_02"
+          ],
+          "object_count": 2,
+          "vertex_count": 16,
+          "face_count": 24,
+          "underlying_worker_calls": [
+            "call_6"
+          ],
+          "facts": {
+            "nearest_witness": {
+              "reason": "no_surface_witness_for_escape_metric",
+              "status": "unknown",
+              "value": null
+            },
+            "solid_relation": {
+              "evidence": {
+                "classification_tolerance_m": 1e-09,
+                "escape_distance_m": 0.004999998956918716,
+                "escape_scope": "single_convex_sat_separating_translation_of_A_not_nearest_direction_or_global_minimum",
+                "escape_vector_a_world_m": [
+                  -0.004999998956918716,
+                  0.0,
+                  0.0
+                ],
+                "method": "convex_sat",
+                "world_apply_verified": false,
+                "zero_tolerance_is_penetrating": true
+              },
+              "semantics": "certified_solid_overlap_at_tolerance_not_physical_contact",
+              "status": "measured",
+              "tolerance_m": 1e-09,
+              "value": "penetrating"
+            },
+            "surface_clearance": {
+              "kind": "certified_penetration",
+              "method": "unrounded_all_surface_features_or_certified_escape",
+              "semantics": "certified_separating_translation_not_global_minimum",
+              "status": "measured",
+              "value": -0.004999998956918716
+            }
+          },
+          "nearest_direction_state": "unknown",
+          "nearest_direction_unknown_reason": "no_surface_witness_for_escape_metric",
+          "coordinator_process_id": 31756,
+          "persistent_service_instance_id": 2110364232608,
+          "persistent_host_instance_id": 2110364223056,
+          "mcp_content_image_blocks": 0,
+          "public_images_registered": 0,
+          "all_render_attempt_images_constructed": "unknown",
+          "all_render_attempt_images_unknown_reason": "COST.json retains null. Its native_private_evidence_scope explicitly allows incomplete raw PNG fields; the retained worker events and image ledger separately show zero render events and constructions.",
+          "sources": {
+            "cost": "runs/control/P/product_calls/2671b91c17ce4f84ae993dabbf14c014/COST.json",
+            "facts": "runs/control/P/product_calls/2671b91c17ce4f84ae993dabbf14c014/RESPONSE_WITH_IMAGE_REFS.json#actual_product_metadata",
+            "mcp_original": "runs/control/P/product_calls/2671b91c17ce4f84ae993dabbf14c014/MCP_RESPONSE.json",
+            "capture_original": "runs/control/P/call_6/stdout.txt",
+            "capture_command": "runs/control/P/call_6/SCRIPT.py",
+            "task_work_and_trace": "runs/control/P/product_audit.jsonl#trace_id=832f9abac7c04d449be628259b79ce06"
+          }
+        }
+      ],
+      "operator_costs": {
+        "qa_advance_count": 1,
+        "qa_worker_rpc_count": 1,
+        "qa_coordinator_rpc_and_checks_elapsed_ns": 16647900,
+        "qa_worker_sequence": 4,
+        "qa_worker_elapsed_ns": 3626400,
+        "qa_worker_rpc_transport_elapsed_ns": "unknown",
+        "qa_worker_rpc_transport_unknown_reason": "No separate _exchange transport timer is retained. Receipt includes RPC plus coordinator checks and excludes receipt publication.",
+        "qa_vertices_written": 4,
+        "qa_public_consumer_call_reserved": false,
+        "close_count": 1,
+        "close_worker_rpc_count": 1,
+        "close_broker_elapsed_ns": 175922700,
+        "close_native_owner_elapsed_ns": 134733700,
+        "close_worker_sequence": 7,
+        "close_worker_elapsed_ns": 13403400,
+        "close_worker_event_status_raw": "unknown",
+        "close_public_wire_bytes": 610,
+        "close_full_result_bytes": 610,
+        "worker_rpc_count_including_consumer_qa_close": 7,
+        "chain_status": "closed",
+        "startup_seconds": 1.5668118000030518,
+        "chain_launch_to_reap_seconds": 318.6603534221649,
+        "chain_wall_scope": "Launch through process reaping, including model/operator waiting and nested operations.",
+        "worker_exit_code": 0,
+        "launcher_exit_code": 0,
+        "forced_cleanup": [],
+        "sources": [
+          "runs/control/P/QA_ADVANCE_ATTEMPT.json",
+          "runs/control/P/QA_ADVANCE_RECEIPT.json",
+          "runs/control/P/WORKER_EVENTS.jsonl",
+          "runs/control/P/BROKER_STATE.json",
+          "chains/control_P/FINAL.json"
+        ]
+      }
+    }
+  },
+  "comparison": {
+    "N_native_run_count": 6,
+    "P_native_run_count": 2,
+    "P_observe_count": 3,
+    "P_supplemental_native_phases": [
+      "unchanged_current",
+      "changed_current"
+    ],
+    "P_no_additional_native_goal_met": false,
+    "changed_current_unknown_reason": "Third product reply is partial. nearest_witness.value is null with reason no_surface_witness_for_escape_metric, and no nearest direction is supplied. The -0.004999998956918716 m clearance is a certified separating translation. escape_vector_a_world_m carries the explicit scope single_convex_sat_separating_translation_of_A_not_nearest_direction_or_global_minimum.",
+    "interpretation_source": "runs/control/P/product_calls/2671b91c17ce4f84ae993dabbf14c014/RESPONSE_WITH_IMAGE_REFS.json#actual_product_metadata.facts",
+    "model_usage": "separate independent report"
+  },
+  "identity_and_startup_reads": {
+    "root_local_broker_ready_file_observation_count": 2,
+    "root_file_observation_count_basis": "Root operator report for this run. Files retain readiness contents, with no file-access counter.",
+    "root_readiness_sources": [
+      "runs/control/N/BROKER_READY.json",
+      "runs/control/P/BROKER_READY.json"
+    ],
+    "additional_root_product_or_native_geometry_health_calls": 0,
+    "additional_health_calls_basis": "Root operator report, consistent with closed BROKER_STATE events containing exactly the consumer wrapper calls and one owner close per chain.",
+    "owner_ready_load_count_inferred": {
+      "N": 1,
+      "P": 1
+    },
+    "owner_ready_load_basis": "qa/chain_owner.py loads the local ready file once after waiting for its existence. Both chain FINAL files retain the resulting ready object.",
+    "P_pre_serve_binding": {
+      "observed_invocation_count": "unknown",
+      "inferred_bind_candidate_invocation_count": 1,
+      "inferred_direct_runtime_identity_calls_in_binding": 1,
+      "inferred_direct_check_source_drift_calls_in_binding": 1,
+      "basis": "Frozen perf010_qualification.main calls bind_candidate once for condition P before serve. P FINAL argv selects this launcher and condition, and BROKER_READY proves serve was reached. No standalone startup identity event or timer is retained. These inference counts cover direct calls in the binding function only.",
+      "elapsed_ns": "unknown",
+      "already_inside_startup_seconds": true,
+      "extra_worker_geometry_rpc_count": 0,
+      "sources": [
+        "../engineering_01/venv/Lib/site-packages/verification/perf010_qualification.py",
+        "chains/control_P/FINAL.json",
+        "runs/control/P/BROKER_READY.json"
+      ]
+    },
+    "P_logged_per_observe_internal_identity_checks": {
+      "runtime.source_check_count": 3,
+      "runtime.source_check_duration_ns": [
+        8081400,
+        7445900,
+        8268100
+      ],
+      "runtime.host_source_check_count": 3,
+      "runtime.host_source_check_duration_ns": [
+        119900,
+        121800,
+        118000
+      ],
+      "scope": "Instrumented nested spans in the three existing observe traces. No additional public or worker call is attributed to these spans, and their durations are already inside recorded observe timing.",
+      "source": "runs/control/P/product_audit.jsonl#event=request_trace"
+    },
+    "all_internal_identity_function_call_count": "unknown",
+    "all_internal_identity_function_call_count_reason": "Raw logs contain named spans and successful startup state, without a counter for every nested identity function invocation."
+  }
+}

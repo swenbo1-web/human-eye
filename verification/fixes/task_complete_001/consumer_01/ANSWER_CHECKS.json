@@ -1,0 +1,119 @@
+{
+  "schema": "task-complete-consumer-root-answer-check-v1",
+  "checked_utc": "2026-11-07T02:16:05.5602504+00:00",
+  "method": "Offline comparison of six captured public finals, actual raw current-geometry responses, and the reused independent control truth. No new scene calls.",
+  "truth": "verification/fixes/perf_integrated_001/run_02/author/control/TRUTH.json",
+  "scoring_authority": "main coordinator independent review pending",
+  "tolerance_m": 1E-06,
+  "checks": [
+    {
+      "condition": "N",
+      "stage": "initial",
+      "relation": "separated",
+      "reported_gap_m": 0.01,
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance_direction_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/N/broker_calls/1/PUBLIC_RESPONSE.json",
+        "runs/control/N/broker_calls/2/PUBLIC_RESPONSE.json"
+      ],
+      "note": "Current evaluated vertices and face coverage attain the positive X interval gap."
+    },
+    {
+      "condition": "N",
+      "stage": "unchanged_current",
+      "relation": "separated",
+      "reported_gap_m": 0.01,
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance_direction_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/N/broker_calls/3/PUBLIC_RESPONSE.json",
+        "runs/control/N/broker_calls/4/PUBLIC_RESPONSE.json"
+      ],
+      "note": "Reread current raw/evaluated vertices, triangles, transforms and modifiers match prior state. Distance proof remains applicable."
+    },
+    {
+      "condition": "N",
+      "stage": "changed_current",
+      "relation": "penetrating",
+      "reported_surface_distance_m": 0,
+      "reported_x_overlap_m": 0.005,
+      "relation_and_evidence_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/N/broker_calls/5/PUBLIC_RESPONSE.json",
+        "runs/control/N/broker_calls/6/PUBLIC_RESPONSE.json"
+      ],
+      "note": "Four changed target vertices, strict shared-interior point with negative face-plane distances, and an actual surface intersection support penetration and zero surface distance."
+    },
+    {
+      "condition": "P",
+      "stage": "initial",
+      "relation": "separated",
+      "reported_gap_m": 0.01,
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance_direction_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/P/broker_calls/1/PUBLIC_RESPONSE.json"
+      ],
+      "note": "Observe returned exact positive surface clearance, ordered nearest points and A-to-B direction."
+    },
+    {
+      "condition": "P",
+      "stage": "unchanged_current",
+      "relation": "separated",
+      "reported_gap_m": 0.01,
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance_direction_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/P/broker_calls/2/PUBLIC_RESPONSE.json",
+        "runs/control/P/broker_calls/3/PUBLIC_RESPONSE.json"
+      ],
+      "additional_native_calls": 1,
+      "note": "Observe current revision/fingerprint and exact facts agree. Consumer additionally reread evaluated native geometry."
+    },
+    {
+      "condition": "P",
+      "stage": "changed_current",
+      "relation": "penetrating",
+      "reported_surface_distance_m": 0,
+      "reported_x_overlap_m": 0.005,
+      "relation_and_evidence_consistent": true,
+      "current_geometry_supported": true,
+      "evidence": [
+        "runs/control/P/broker_calls/4/PUBLIC_RESPONSE.json",
+        "runs/control/P/broker_calls/5/PUBLIC_RESPONSE.json"
+      ],
+      "additional_native_calls": 1,
+      "unknown_reason": "no_surface_witness_for_escape_metric",
+      "unknown_handled": true,
+      "note": "Consumer identified absent nearest witness and undefined zero-distance direction. Current native box geometry supports the shared interior and actual surface crossing. SAT escape was described as Object_01 separation translation."
+    }
+  ],
+  "product_only_target": {
+    "met": false,
+    "observe_calls": 3,
+    "additional_native_calls": 2,
+    "reason": "Consumer chose native current-geometry checks in unchanged_current and changed_current."
+  }
+}
