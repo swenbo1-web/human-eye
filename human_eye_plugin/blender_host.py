@@ -951,14 +951,32 @@ class BlenderSceneHost:
 
             focal_obj = objects[ids.index(focal_id)]
             rows[focal_id] = read_directory(focal_obj)
-            focal_point = (rows[focal_id]['witness'] or {}).get('point_world_m')
-            upper, seed = math.inf, None
+            focal_witness = rows[focal_id]['witness']
+            upper, seed, focal_index, seed_index = math.inf, None, 0, 0
             for obj, oid in zip(objects, ids):
                 if oid != focal_id:
                     rows[oid] = read_directory(obj)
-                    value = _acquisition_upper(focal_point, (rows[oid]['witness'] or {}).get('point_world_m'))
-                    if value < upper:
-                        upper, seed = value, oid
+                    witness = rows[oid]['witness']
+                    if focal_witness is not None and witness is not None and upper != 0.:
+                        for fi, point_a in enumerate(focal_witness['triangle_world_m']):
+                            for si, point_b in enumerate(witness['triangle_world_m']):
+                                value = _acquisition_upper(point_a, point_b)
+                                if value < upper:
+                                    upper, seed, focal_index, seed_index = value, oid, fi, si
+                                if upper == 0.:
+                                    break
+                            if upper == 0.:
+                                break
+            # Search uses the original triangle ordering throughout. Cyclic
+            # rotation preserves orientation and the existing first-point
+            # witness schema, including the capture readback and digest.
+            if seed is not None:
+                for oid, offset in ((focal_id, focal_index), (seed, seed_index)):
+                    witness = rows[oid]['witness']
+                    for field in ('triangle_world_m', 'triangle_vertex_indices'):
+                        values = witness[field]
+                        witness[field] = values[offset:] + values[:offset]
+                    witness['point_world_m'] = witness['triangle_world_m'][0]
             selected, coverage = [], []
             for obj, oid in zip(objects, ids):
                 checkpoint()
