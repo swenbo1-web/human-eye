@@ -231,7 +231,7 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            if result.get('schema_version') == 'task-query-v2':
+                            if result.get('schema_version') == 'task-query-v3':
                                 result['trace_id'] = trace.trace_id
                             else:
                                 result['request_trace'] = {'trace_id': trace.trace_id,
@@ -1241,7 +1241,7 @@ class LiveSpatialService:
             state = runtime.export_state()
             state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
             runtime.import_state(state)
-            result['binding']['source_sha256'] = self._identity['source_sha256']
+            result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
             if source_check is not None and source_check['status'] == 'loaded_generation':
                 result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
                     source_check_scope=source_check['source_check_scope'])

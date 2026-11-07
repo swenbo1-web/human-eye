@@ -46,7 +46,7 @@ class TaskNoopPersistenceTests(unittest.TestCase):
         self.assertEqual(writes.call_count, 0)
         self.assertEqual(first['facts'], second['facts'])
         self.assertEqual(first['binding'], second['binding'])
-        self.assertEqual(first['schema_version'], 'task-query-v2')
+        self.assertEqual(first['schema_version'], 'task-query-v3')
         self.assertEqual(self.state_path.read_bytes(), before)
         self.assertEqual((self.host.captures, self.host.calls), (2, 0))
         self.assertFalse(fields['connector_state_write_attempted'])

@@ -9,11 +9,12 @@ import math
 import sys
 
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
+from .measurement_presentation import valid_unrounded_measurement
 from .query_policy import measurement_contract
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
-         'solid_relation', 'nearest_witness')
+         'solid_relation', 'nearest_witness', 'pair_relation')
 PAIR_FACTS = frozenset(FACTS) - {'aabb'}
 SELECTOR_SCHEMA = {
     'type': 'object', 'properties': {'id': {'type': 'string', 'minLength': 1, 'maxLength': 256},
@@ -63,6 +64,65 @@ def validate_task_query(query):
 def _fact(value=None, *, reason=None, **metadata):
     return {'status': 'unknown' if reason else 'measured', 'value': value,
             **({'reason': reason} if reason else {}), **metadata}
+
+
+def _nearest_witness(strict):
+    # Only the strict kernel's original-surface witness is eligible.
+    points = [strict.get('point_a_world'), strict.get('point_b_world')]
+    if (strict.get('measurement_valid') is True
+            and strict.get('witness_scope') == 'nearest_original_surface_points_not_internal_cell_boundaries'
+            and all(type(p) is list and len(p) == 3 and all(type(v) in (int, float)
+                and math.isfinite(v) for v in p) for p in points)):
+        delta = [b - a for a, b in zip(*points)]
+        length = math.hypot(*delta)
+        distance = strict.get('signed_clearance_m')
+        direction_defined = (type(distance) in (int, float) and distance > 0
+            and math.isfinite(length) and length > 0)
+        return _fact({'a': points[0], 'b': points[1],
+            'direction_a_to_b': [v / length for v in delta] if direction_defined else None},
+            semantics='strict_nearest_original_surface_points',
+            direction_status='measured' if direction_defined else 'unknown',
+            **({} if direction_defined else {'direction_reason':
+                'undefined_zero_distance' if distance == 0 else 'world_direction_unavailable'}))
+    return _fact(reason=strict.get('reason', 'strict_measurement_unavailable')
+        if strict.get('measurement_valid') is not True else
+        strict.get('witness_reason', 'strict_nearest_witness_unavailable'))
+
+
+def _pair_relation(strict):
+    """Project one strict measurement into the evidence needed by this fact."""
+    distance = strict.get('signed_clearance_m')
+    if not valid_unrounded_measurement(strict):
+        reason = ('strict_measurement_conflict' if strict.get('measurement_valid') is True
+                  else strict.get('reason', 'strict_measurement_unavailable'))
+        return _fact(reason=reason)
+    evidence = strict.get('relation_evidence')
+    if (distance >= 0 and type(evidence) is dict
+            and evidence.get('zero_tolerance_is_penetrating') is True):
+        return _fact(reason='strict_relation_conflict')
+    if distance < 0:
+        value = {'relation': 'penetrating'}
+        if type(evidence) is not dict or not evidence:
+            method = strict.get('measurement_method')
+            if not method:
+                return _fact(value, reason='penetration_evidence_unavailable', relation_tolerance_m=0.0)
+            evidence = {'method': method, 'escape_distance_m': -distance,
+                'escape_scope': strict.get('penetration_metric_scope',
+                    'certified_separating_translation_not_global_minimum'),
+                'world_apply_verified': False}
+            if 'escape_vector_world_m' in strict:
+                evidence['escape_vector_a_world_m'] = strict['escape_vector_world_m']
+        value['evidence'] = evidence
+    else:
+        value = {'relation': 'separated' if distance > 0 else 'touching', 'surface_gap_m': distance}
+        if distance > 0:
+            witness = _nearest_witness(strict)
+            if witness['status'] == 'unknown':
+                return _fact(value, reason=witness['reason'], relation_tolerance_m=0.0)
+            value['nearest_witness'] = witness['value']
+            if witness['direction_status'] != 'measured':
+                return _fact(value, reason=witness['direction_reason'], relation_tolerance_m=0.0)
+    return _fact(value, relation_tolerance_m=0.0)
 
 
 def bind_objects(scene, selectors):
@@ -130,10 +190,10 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                         zip(left.bbox_min, left.bbox_max, right.bbox_min, right.bbox_max)]
                 facts['axis_gap'] = _fact(gaps, semantics='unsigned_world_AABB_interval_gaps_XYZ_not_surface_distance')
             strict = {}
-            if requested_pair.intersection({'surface_clearance', 'solid_relation', 'nearest_witness'}):
-                need_clearance = bool(requested_pair.intersection({'surface_clearance', 'nearest_witness'}))
-                need_witness = 'nearest_witness' in requested_pair
-                need_relation_evidence = 'solid_relation' in requested_pair
+            if requested_pair.intersection({'surface_clearance', 'solid_relation', 'nearest_witness', 'pair_relation'}):
+                need_clearance = bool(requested_pair.intersection({'surface_clearance', 'nearest_witness', 'pair_relation'}))
+                need_witness = bool(requested_pair.intersection({'nearest_witness', 'pair_relation'}))
+                need_relation_evidence = bool(requested_pair.intersection({'solid_relation', 'pair_relation'}))
                 checkpoint('before_task_pair_measurement')
                 def compute():
                     metrics['exact_pair_count'] += 1
@@ -163,26 +223,9 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 if valid and 'relation_evidence' in strict:
                     facts['solid_relation']['evidence'] = strict['relation_evidence']
             if 'nearest_witness' in requested_pair:
-                # Only the strict kernel's original-surface witness is eligible.
-                # Display-probe points are never promoted to strict evidence.
-                points = [strict.get('point_a_world'), strict.get('point_b_world')]
-                if (valid and strict.get('witness_scope') == 'nearest_original_surface_points_not_internal_cell_boundaries'
-                        and all(type(p) is list and len(p) == 3 and all(type(v) in (int, float)
-                            and math.isfinite(v) for v in p) for p in points)):
-                    delta = [b - a for a, b in zip(*points)]
-                    length = math.hypot(*delta)
-                    distance = strict.get('signed_clearance_m')
-                    direction_defined = (type(distance) in (int, float) and distance > 0
-                        and math.isfinite(length) and length > 0)
-                    facts['nearest_witness'] = _fact({'a': points[0], 'b': points[1],
-                        'direction_a_to_b': [v / length for v in delta] if direction_defined else None},
-                        semantics='strict_nearest_original_surface_points',
-                        direction_status='measured' if direction_defined else 'unknown',
-                        **({} if direction_defined else {'direction_reason':
-                            'undefined_zero_distance' if distance == 0 else 'world_direction_unavailable'}))
-                else:
-                    facts['nearest_witness'] = _fact(reason=unknown if not valid else
-                        strict.get('witness_reason', 'strict_nearest_witness_unavailable'))
+                facts['nearest_witness'] = _nearest_witness(strict)
+            if 'pair_relation' in requested_pair:
+                facts['pair_relation'] = _pair_relation(strict)
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
     for key in ('center_delta', 'axis_gap'):
@@ -196,7 +239,7 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
     if scene.get('capture_scope') == 'selected_objects':
         binding.update(capture_scope='selected_objects',
             candidate_count=scene['task_selection']['candidate_count'], selected_count=len(meshes))
-    return {'result_kind': 'task_query', 'schema_version': 'task-query-v2',
+    return {'result_kind': 'task_query', 'schema_version': 'task-query-v3',
         'status': 'observed' if complete else 'partial',
         'binding': binding,
         'unit': 'm', 'coordinate_frame': 'world', 'pair_order': 'A_to_B',

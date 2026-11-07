@@ -124,8 +124,12 @@ LIVE_MCP_TOOLS_SCHEMA = [
         "description": (
             "Read fresh Blender facts or images. For named/ID text facts use query.mode='task', "
             "objects, requested_facts and include_image=false. aabb accepts 1..4 objects; pair facts "
-            "take two in A-to-B order. task-query-v2 returns measured values and field-specific unknown "
-            "reasons with a trace_id for diagnostics. Goals evaluate caller criteria. Other observation "
+            "take two in A-to-B order. task-query-v3 pair_relation returns zero-tolerance separation "
+            "with surface gap, original points and A-to-B direction; computed surface touching with zero gap "
+            "and undefined direction; or penetration with certified escape evidence. Escape is a translation "
+            "of A, not surface distance, nearest direction or minimum depth. Requested unknowns remain partial. "
+            "binding.runtime_source_sha256 identifies code; scene_revision/fingerprint identify the current "
+            "capture including source and revision. trace_id supports diagnostics. Goals evaluate caller criteria. Other observation "
             "modes retain images and returned object IDs; scene changes expire observations. "
             "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images."
         ),

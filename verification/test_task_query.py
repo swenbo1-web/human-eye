@@ -216,9 +216,9 @@ class TaskQueryTests(unittest.TestCase):
         self.assertEqual(json.loads(encoded)['binding']['objects'][0]['name'], 'x'*5000)
         self.assertGreater(len(encoded.encode('utf8')), 2048)
 
-    def test_v2_keeps_trace_link_and_audited_work_without_wrapper_construction(self):
+    def test_v3_keeps_trace_link_and_audited_work_without_wrapper_construction(self):
         result = self.pair(['surface_clearance'])
-        self.assertEqual(result['schema_version'], 'task-query-v2')
+        self.assertEqual(result['schema_version'], 'task-query-v3')
         self.assertNotIn('work', result)
         self.assertNotIn('request_trace', result)
         self.assertEqual(set(result['binding']['objects'][0]), {'object_id', 'name'})
