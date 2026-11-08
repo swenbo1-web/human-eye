@@ -1,0 +1,62 @@
+{
+  "baseline_HEAD": "35f6d31ae779af823168c9242c2a0c1205592f78",
+  "source_sha256": "82dbf9b3a68e0c21d085ac8289ca0e504da567b4cce7300ce697d602c2e4f0c6",
+  "source_count": 131,
+  "changed_existing_kernel_functions": [
+    "_integer_frame",
+    "_nearest",
+    "_witness"
+  ],
+  "added_kernel_functions": [
+    "_segment_face_contact"
+  ],
+  "unchanged_existing_kernel_functions": [
+    "_DomainError",
+    "_Work",
+    "_aabb_exceeds_best",
+    "_add",
+    "_admit",
+    "_bounded",
+    "_clip_coplanar",
+    "_closer",
+    "_compare_distance_keys",
+    "_cross",
+    "_dot",
+    "_edge_edges",
+    "_exact_distance_key",
+    "_fraction",
+    "_intersection",
+    "_mul",
+    "_normal",
+    "_orient",
+    "_plane_slice",
+    "_point_edges",
+    "_point_faces",
+    "_publish_points",
+    "_rank_surface_results",
+    "_ratio",
+    "_rounded_distance",
+    "_scratch",
+    "_sub",
+    "measure_surface_proximity"
+  ],
+  "unchanged_limits": {
+    "MAX_FACES": 4096,
+    "MAX_TRIANGLE_PAIRS": 16384,
+    "MAX_BITS": 4096
+  },
+  "ordinary_feature_counts": {
+    "validated_faces": 2,
+    "referenced_vertices": 6,
+    "triangle_pairs": 1,
+    "intersection_tests": 1,
+    "point_face_tests": 6,
+    "point_edge_tests": 18,
+    "edge_edge_tests": 9,
+    "predicate_steps": 0,
+    "aabb_bound_tests": 0,
+    "aabb_pruned_pairs": 0
+  },
+  "static_allocation_scope": "Same one 5-tuple per original face. Ordinary face retains 3 points/3 edges; degenerate point/segment retains 1/2 points and 0/1 edges. No new layer/cache. New homogeneous temporaries only for segment-face crossing; heap bytes/CPU cycles unmeasured.",
+  "independent_review": "degenerate_review read-only product+Fraction oracle PASS; no extra executions"
+}

@@ -1,0 +1,126 @@
+diff --git a/human_eye_plugin/surface_proximity.py b/human_eye_plugin/surface_proximity.py
+index 21119f4..ca0e964 100644
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -15,7 +15,7 @@ MAX_FACES = 4096
+ MAX_TRIANGLE_PAIRS = 16384
+ MAX_BITS = 4096
+ _MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
+-METHOD = 'exact_binary64_triangle_surface_features_v2'
++METHOD = 'exact_binary64_triangle_surface_hulls_v3'
+ _PUBLICATION_TOLERANCE = Fraction.from_float(1e-9)
+ 
+ 
+@@ -195,11 +195,14 @@ def _integer_frame(records, budget):
+             points = tuple(integers[index] for index in face)
+             normal = _normal(points)
+             if not any(normal):
+-                raise _DomainError('surface_degenerate_triangle')
++                # A collinear triple's lexicographic extremes are its closed
++                # hull endpoints, regardless of vertex order or duplicates.
++                start, end = min(points), max(points)
++                points = (start,) if start == end else (start, end)
+             squared = _dot(normal, normal)
+             edges = []
+-            for i in range(3):
+-                start, end = points[i], points[(i + 1) % 3]
++            for i in range(3 if squared else len(points) - 1):
++                start, end = points[i], points[(i + 1) % len(points)]
+                 delta = _sub(end, start)
+                 edges.append((start, end, delta, _dot(delta, delta)))
+             bounds = tuple((min(point[k] for point in points),
+@@ -271,6 +274,30 @@ def _edge_edges(left, right, best, budget):
+     return (*distance, ('edges', a, b, u, v, s, t, determinant)) if distance else best
+ 
+ 
++def _segment_face_contact(segment, triangle):
++    """Prove an interior plane crossing before constructing its witness."""
++    if len(segment[0]) != 2:
++        return None
++    start, end = segment[0]
++    points, normal, squared, _, _ = triangle
++    da = _dot(normal, _sub(start, points[0]))
++    db = _dot(normal, _sub(end, points[0]))
++    if not (da < 0 < db or db < 0 < da):
++        # Endpoint and coplanar contacts use the existing closed features.
++        return None
++    denominator = _bounded(da - db)
++    numerator = da
++    if denominator < 0:
++        numerator, denominator = -numerator, -denominator
++    delta = segment[3][0][2]
++    scaled = _add(_mul(_sub(start, points[0]), denominator), _mul(delta, numerator))
++    u = _dot(_cross(_sub(points[2], points[0]), normal), scaled)
++    v = _dot(_cross(normal, _sub(points[1], points[0])), scaled)
++    if u < 0 or v < 0 or _bounded(u + v) > _bounded(squared * denominator):
++        return None
++    return ('segment_face', start, delta, numerator, denominator)
++
++
+ def _aabb_exceeds_best(left, right, best):
+     # The integer squared lower bound exceeds n/d iff it exceeds floor(n/d).
+     # Subtract each squared gap from that floor instead of forming L2*d. A gap
+@@ -297,15 +324,28 @@ def _nearest(prepared, budget):
+                     budget.counts['aabb_pruned_pairs'] += 1
+                     continue
+             budget.tick('intersection_tests')
+-            contact = _intersection(left[0], right[0], left[1], right[1], budget)
+-            if contact:
+-                return 0, 1, ('contact', contact[0])
++            if left[2] and right[2]:
++                contact = _intersection(left[0], right[0], left[1], right[1], budget)
++                if contact:
++                    return 0, 1, ('contact', contact[0])
++            elif left[2] or right[2]:
++                contact = (_segment_face_contact(right, left) if left[2]
++                           else _segment_face_contact(left, right))
++                if contact:
++                    return 0, 1, contact
++            elif len(left[0]) == len(right[0]) == 1:
++                delta = _sub(right[0][0], left[0][0])
++                distance = _closer(_dot(delta, delta), 1, best)
++                if distance:
++                    best = (*distance, ('points', left[0][0], right[0][0]))
+             for point in left[0]:
+-                best = _point_faces(point, right, False, best, budget)
++                if right[2]:
++                    best = _point_faces(point, right, False, best, budget)
+                 for edge in right[3]:
+                     best = _point_edges(point, edge, False, best, budget)
+             for point in right[0]:
+-                best = _point_faces(point, left, True, best, budget)
++                if left[2]:
++                    best = _point_faces(point, left, True, best, budget)
+                 for edge in left[3]:
+                     best = _point_edges(point, edge, True, best, budget)
+             for edge_a in left[3]:
+@@ -320,6 +360,12 @@ def _witness(descriptor):
+     kind, *values = descriptor
+     if kind == 'contact':
+         return values[0], values[0]
++    if kind == 'points':
++        return values[0], values[1]
++    if kind == 'segment_face':
++        start, delta, numerator, denominator = values
++        point = _add(start, _mul(delta, _fraction(numerator, denominator)))
++        return point, point
+     if kind == 'edges':
+         a, b, u, v, s, t, denominator = values
+         return _add(a, _mul(u, _fraction(s, denominator))), _add(b, _mul(v, _fraction(t, denominator)))
+diff --git a/human_eye_plugin/task_query.py b/human_eye_plugin/task_query.py
+index 357d2db..d740f86 100644
+--- a/human_eye_plugin/task_query.py
++++ b/human_eye_plugin/task_query.py
+@@ -196,10 +196,10 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
+         return compute_surface()
+     parameters = {'source': source, 'unit': 'm', 'coordinate_frame': 'world',
+                   'world_witness_tolerance_m': COLLISION_TOLERANCE_M}
+-    version = 'task-surface-proximity-exact-aabb-v2'
++    version = 'task-surface-proximity-exact-aabb-v3'
+     if retain_exact_rank:
+         parameters['retain_exact_rank'] = True
+-        version = 'task-surface-proximity-exact-world-rank-v1'
++        version = 'task-surface-proximity-exact-world-rank-v2'
+     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
+         left, right, compute_surface, parameters=parameters, algorithm_version=version)
+     return result
