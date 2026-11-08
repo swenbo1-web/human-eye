@@ -1,0 +1,14 @@
+--- 34e5aa1/bridge.py
++++ final/bridge.py
+@@ -291,8 +291,9 @@
+         except BaseException:
+             self.stderr.close()
+             raise
+-        (audit/'HE_CHILD_STARTED.json').write_bytes(encoded(dict(pid=self.process.pid, started_ns=time.perf_counter_ns())))
+-        try: self.incoming = reader(self.process.stdout)
++        try:
++            (audit/'HE_CHILD_STARTED.json').write_bytes(encoded(dict(pid=self.process.pid, started_ns=time.perf_counter_ns())))
++            self.incoming = reader(self.process.stdout)
+         except BaseException:
+             self.close()
+             raise
