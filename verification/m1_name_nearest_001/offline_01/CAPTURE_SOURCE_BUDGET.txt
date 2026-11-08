@@ -1,0 +1,46 @@
+test_11_same_read_coverage (_m1_existing_capture_checks.M4Capture001.test_11_same_read_coverage) ... ERROR
+test_12_cumulative_budgets (_m1_existing_capture_checks.M4Capture001.test_12_cumulative_budgets) ... FAIL
+
+======================================================================
+ERROR: test_11_same_read_coverage (_m1_existing_capture_checks.M4Capture001.test_11_same_read_coverage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\blender_host.py", line 308, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "verified-test:28078a2f755f2c94d6ef0d974ed586b8d6b71f20cc5d8568527e7b80b4a22e4b:verification/test_m4_capture_001.py", line 231, in test_11_same_read_coverage
+  File "verified-test:28078a2f755f2c94d6ef0d974ed586b8d6b71f20cc5d8568527e7b80b4a22e4b:verification/test_m4_capture_001.py", line 59, in capture
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\blender_host.py", line 1054, in capture_nearest_candidates
+    _acquisition_validate_triangles(evaluated_by_id[oid].data,
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\blender_host.py", line 310, in _acquisition_validate_triangles
+    raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+human_eye_plugin.blender_host.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+======================================================================
+FAIL: test_12_cumulative_budgets (_m1_existing_capture_checks.M4Capture001.test_12_cumulative_budgets)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\blender_host.py", line 308, in _acquisition_validate_triangles
+    start, total = polygon.loop_start, polygon.loop_total
+                   ^^^^^^^^^^^^^^^^^^
+AttributeError: 'types.SimpleNamespace' object has no attribute 'loop_start'
+
+The above exception was the direct cause of the following exception:
+
+human_eye_plugin.blender_host.BlenderHostError: acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "verified-test:28078a2f755f2c94d6ef0d974ed586b8d6b71f20cc5d8568527e7b80b4a22e4b:verification/test_m4_capture_001.py", line 258, in test_12_cumulative_budgets
+AssertionError: "document_budget_exceeded" does not match "acquisition_invalid_triangle_structure:blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5"
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+FAILED (failures=1, errors=1)

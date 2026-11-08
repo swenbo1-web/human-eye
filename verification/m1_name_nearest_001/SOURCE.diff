@@ -1,0 +1,608 @@
+diff --git a/human_eye_plugin/blender_host.py b/human_eye_plugin/blender_host.py
+index c02ada9..9d27d76 100644
+--- a/human_eye_plugin/blender_host.py
++++ b/human_eye_plugin/blender_host.py
+@@ -928,7 +928,7 @@ class BlenderSceneHost:
+         with self._lock:
+             return self._capture()
+ 
+-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
++    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+         """Internal unsigned-surface acquisition, one synchronous host window.
+ 
+         Restricted to independent static triangle meshes. API-derived bounds
+@@ -936,8 +936,17 @@ class BlenderSceneHost:
+         solid certificate, legacy complete-scene capture or action authority.
+         """
+         self._main_thread()
+-        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+-            raise BlenderHostError('acquisition_focal_id')
++        if selector is None:
++            if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
++                raise BlenderHostError('acquisition_focal_id')
++        else:
++            if focal_id is not None:
++                raise BlenderHostError('acquisition_focal_selector_conflict')
++            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
++                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
++                           for value in selector.values())):
++                raise BlenderHostError('acquisition_selector')
++            selector_key, selector_value = next(iter(selector.items()))
+         if type(deadline_ns) is not int or deadline_ns <= 0:
+             raise BlenderHostError('acquisition_deadline')
+         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+@@ -951,6 +960,14 @@ class BlenderSceneHost:
+             checkpoint()
+             objects = self._objects(graph)
+             ids = [self.object_id(obj) for obj in objects]
++            if selector is not None:
++                matches = [oid for obj, oid in zip(objects, ids)
++                           if (oid if selector_key == 'id' else obj.name) == selector_value]
++                if not matches:
++                    raise BlenderHostError('acquisition_selector_not_found')
++                if len(matches) != 1:
++                    raise BlenderHostError('acquisition_selector_ambiguous')
++                focal_id = matches[0]
+             if len(set(ids)) != len(ids) or focal_id not in ids or len(ids) < 2:
+                 raise BlenderHostError('acquisition_object_coverage')
+             identity = self._identity_metadata(objects)
+diff --git a/human_eye_plugin/blender_mcp_host.py b/human_eye_plugin/blender_mcp_host.py
+index ee56763..a7bf85f 100644
+--- a/human_eye_plugin/blender_mcp_host.py
++++ b/human_eye_plugin/blender_mcp_host.py
+@@ -218,9 +218,18 @@ class BlenderMCPHost:
+     def capture_task_scene(self, selectors) -> dict[str, Any]:
+         return self._request('capture_task', {'selectors': selectors})
+ 
+-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
+-        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+-            raise ValueError('acquisition_focal_id')
++    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
++        if selector is None:
++            if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
++                raise ValueError('acquisition_focal_id')
++        else:
++            if focal_id is not None:
++                raise ValueError('acquisition_focal_selector_conflict')
++            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
++                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
++                           for value in selector.values())):
++                raise ValueError('acquisition_selector')
++            selector = dict(selector)
+         now_ns = time.perf_counter_ns()
+         if type(deadline_ns) is not int or now_ns >= deadline_ns:
+             raise ValueError('acquisition_deadline_exceeded')
+@@ -231,15 +240,32 @@ class BlenderMCPHost:
+             raise ValueError('acquisition_deadline_exceeded')
+         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+             raise ValueError('acquisition_document_budget')
+-        result = self._request('capture_nearest_candidates', {'focal_id': focal_id,
+-            'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes})
++        params = {'focal_id': focal_id, 'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes}
++        if selector is not None:
++            params['selector'] = selector
++        result = self._request('capture_nearest_candidates', params)
+         if time.perf_counter_ns() >= deadline_ns:
+             raise ValueError('acquisition_deadline_exceeded')
+         binding = result.get('binding')
+         if (type(binding) is not dict or result.get('protocol') != 'single-read-surface-candidates-v1'
+-                or result.get('focal_id') != focal_id or result.get('execution_authority') is not False
++                or result.get('execution_authority') is not False
+                 or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
+             raise ValueError('acquisition_response_binding')
++        if selector is None:
++            if result.get('focal_id') != focal_id:
++                raise ValueError('acquisition_response_binding')
++        else:
++            capture = result.get('capture')
++            meshes = capture.get('meshes') if type(capture) is dict else None
++            if type(meshes) is not list or any(type(mesh) is not dict for mesh in meshes):
++                raise ValueError('acquisition_response_binding')
++            key, value = next(iter(selector.items()))
++            field = 'object_id' if key == 'id' else 'name'
++            matches = [mesh.get('object_id') for mesh in meshes if mesh.get(field) == value]
++            if (len(matches) != 1 or type(matches[0]) is not str or not matches[0]
++                    or len(matches[0].encode('utf8')) > 256
++                    or result.get('focal_id') != matches[0]):
++                raise ValueError('acquisition_response_binding')
+         self._record_observation_document(binding)
+         return result
+ 
+@@ -435,6 +461,8 @@ class BlenderMCPHost:
+             'capture_nearest_candidates':{'focal_id','deadline_ns','max_response_bytes'},'native_observation_capabilities':set(),
+             'observe_readonly_native':{'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'},
+             'last_readonly_native_audit':{'request_id'}}
++        if command == 'capture_nearest_candidates' and type(params) is dict and 'selector' in params:
++            required[command] = required[command] | {'selector'}
+         if command not in required or type(params) is not dict or set(params)!=required[command]:
+             raise ValueError('Invalid fixed native observation command')
+         request=json.dumps({'id':request_id,'command':command,'params':params},
+diff --git a/human_eye_plugin/live_service.py b/human_eye_plugin/live_service.py
+index 65ec39b..b15b14a 100644
+--- a/human_eye_plugin/live_service.py
++++ b/human_eye_plugin/live_service.py
+@@ -1020,11 +1020,14 @@ class LiveSpatialService:
+             raise ValueError("include_image must be boolean")
+         query = validate_query(query)
+         if query['mode'] == 'surface_nearest':
+-            if (include_image or type(focal_id) is not str or not focal_id.strip()
+-                    or len(focal_id.encode('utf8')) > 256 or reference_id is not None
++            selector = query['objects'][0] if 'objects' in query else None
++            if selector is not None and focal_id is not None:
++                raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
++            if (include_image or (selector is None and (type(focal_id) is not str or not focal_id.strip()
++                    or len(focal_id.encode('utf8')) > 256)) or reference_id is not None
+                     or goal is not None or scene_delta is not None):
+-                raise ValueError('surface_nearest requires an explicit focal_id, include_image=false and no reference, goal or scene_delta')
+-            return self._observe_surface_nearest(session_id, focal_id)
++                raise ValueError('surface_nearest requires one target, include_image=false and no reference, goal or scene_delta')
++            return self._observe_surface_nearest(session_id, focal_id, selector=selector)
+         if query['mode'] == 'task':
+             if (include_image or focal_id is not None or reference_id is not None
+                     or goal is not None or scene_delta is not None):
+@@ -1215,7 +1218,7 @@ class LiveSpatialService:
+             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
+         return result
+ 
+-    def _observe_surface_nearest(self, session_id, focal_id):
++    def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
+         """One current candidate capture through the existing read-only boundary."""
+         from .task_query import surface_nearest_result
+         if not self.config.get('enabled', True):
+@@ -1235,9 +1238,22 @@ class LiveSpatialService:
+             timeout = getattr(self.host, 'timeout_s', 10.)
+             deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+             with span('host.capture', kind='host'):
+-                captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
++                if selector is None:
++                    captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
++                else:
++                    captured = self.host.capture_nearest_candidates(None, deadline, 64 * 1024 * 1024, selector=selector)
+             self._check_request_budget('after_host_capture')
+-            if captured.get('focal_id') != focal_id:
++            if selector is not None:
++                field = 'object_id' if 'id' in selector else 'name'
++                selected = selector.get('id', selector.get('name'))
++                capture = captured.get('capture')
++                if type(capture) is not dict or type(capture.get('meshes')) is not list:
++                    raise ValueError('surface_nearest capture selector mismatch')
++                matches = [item.get('object_id') for item in capture['meshes'] if type(item) is dict and item.get(field) == selected]
++                if (len(matches) != 1 or type(matches[0]) is not str or not matches[0]
++                        or len(matches[0].encode('utf8')) > 256 or captured.get('focal_id') != matches[0]):
++                    raise ValueError('surface_nearest capture selector mismatch')
++            elif captured.get('focal_id') != focal_id:
+                 raise ValueError('surface_nearest capture focal_id mismatch')
+             with span('observation.surface_nearest'):
+                 work = {}
+diff --git a/human_eye_plugin/live_spatial_mcp.py b/human_eye_plugin/live_spatial_mcp.py
+index fc54325..3f87bd3 100644
+--- a/human_eye_plugin/live_spatial_mcp.py
++++ b/human_eye_plugin/live_spatial_mcp.py
+@@ -60,7 +60,7 @@ _QUERY_SCHEMA = {
+     "properties": {
+         "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
+-            "description": "task only: exact name or id selectors bound to one fresh capture. Pair facts use exactly two objects ordered A to B."},
++            "description": "Exact name or id selectors bound to one fresh capture. task uses 1..4 (pair facts two ordered A to B); surface_nearest uses exactly one, without top-level focal_id."},
+         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
+             "minItems": 1, "uniqueItems": True},
+         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
+@@ -85,7 +85,7 @@ _QUERY_SCHEMA = {
+             "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."},
+     },
+     "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
+-               "then": {"maxProperties": 1}}],
++               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}}],
+     "additionalProperties": False,
+ }
+ _GOAL_SCHEMA = {
+@@ -124,10 +124,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
+     {
+         "name": "human_eye_scene_observe",
+         "description": (
+-            "Read fresh Blender facts/images. Name to ID: "
+-            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"<object-name>\"}],\"requested_facts\":[\"aabb\"]}}. "
+-            "If resolved, use binding.objects[0].object_id as focal_id: "
+-            "{\"session_id\":\"read-1\",\"focal_id\":\"<object-id>\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\"}}. "
++            "Read fresh Blender facts/images. Nearest surfaces by exact name in one request: "
++            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"<object-name>\"}]}}. "
++            "Use exactly one name/id selector, without focal_id. Legacy known-ID requests use focal_id and query with only mode. "
+             "identity/object_identity are not facts. "
+             "surface_nearest returns current global triangle-surface nearest objects if complete, best-known if partial. "
+             "aabb takes 1..4 name/id selectors; pair facts take two ordered A to B. "
+@@ -153,6 +152,16 @@ LIVE_MCP_TOOLS_SCHEMA = [
+                 "include_image": {"type": "boolean", "default": True,
+                     "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
+             },
++            "allOf": [{
++                "if": {"required": ["query"], "properties": {"query": {
++                    "required": ["mode"], "properties": {"mode": {"const": "surface_nearest"}}}}},
++                "then": {"required": ["session_id", "include_image"],
++                         "properties": {"include_image": {"const": False}},
++                         "oneOf": [
++                             {"required": ["focal_id"], "properties": {"query": {"not": {"required": ["objects"]}}}},
++                             {"not": {"required": ["focal_id"]}, "properties": {"query": {"required": ["objects"]}}},
++                         ]},
++            }],
+             "additionalProperties": False,
+         },
+     },
+@@ -286,10 +295,13 @@ def _validate_arguments(name: str, arguments: Any) -> None:
+         if 'include_image' in arguments and type(arguments['include_image']) is not bool:
+             raise ValueError('include_image must be boolean')
+         if validate_query(arguments.get('query'))['mode'] == 'surface_nearest':
+-            if (not arguments.get('session_id') or not arguments.get('focal_id')
++            selected_query = validate_query(arguments.get('query'))
++            if 'objects' in selected_query and 'focal_id' in arguments:
++                raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
++            if (not arguments.get('session_id') or ('objects' not in selected_query and not arguments.get('focal_id'))
+                     or arguments.get('include_image', True)
+                     or any(arguments.get(key) is not None for key in ('goal', 'reference_id', 'scene_delta'))):
+-                raise ValueError('surface_nearest requires session_id, focal_id, include_image=false and no reference, goal or scene_delta')
++                raise ValueError('surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta')
+         if (validate_query(arguments.get('query')).get('alignment_evidence') is False
+                 and arguments.get('include_image', True)):
+             raise ValueError('alignment_evidence=false requires include_image=false')
+diff --git a/human_eye_plugin/query_policy.py b/human_eye_plugin/query_policy.py
+index 0082d53..83375b0 100644
+--- a/human_eye_plugin/query_policy.py
++++ b/human_eye_plugin/query_policy.py
+@@ -46,9 +46,12 @@ def validate_query(query, *, object_ids=None, focal_id=None):
+     normalized by full ID; they do not consume exact-pair work slots.
+     """
+     if type(query) is dict and query.get('mode') == 'surface_nearest':
+-        if set(query) != {'mode'}:
+-            raise ValueError('surface_nearest query accepts only mode')
+-        return {'mode': 'surface_nearest'}
++        if set(query) == {'mode'}:
++            return {'mode': 'surface_nearest'}
++        if set(query) != {'mode', 'objects'} or type(query['objects']) is not list or len(query['objects']) != 1:
++            raise ValueError('surface_nearest query accepts only mode and optionally one object selector')
++        from .task_query import validate_object_selector
++        return {'mode': 'surface_nearest', 'objects': [validate_object_selector(query['objects'][0])]}
+     if type(query) is dict and query.get('mode') == 'task':
+         from .task_query import validate_task_query
+         return validate_task_query(query)
+diff --git a/human_eye_plugin/task_query.py b/human_eye_plugin/task_query.py
+index aa149f1..357d2db 100644
+--- a/human_eye_plugin/task_query.py
++++ b/human_eye_plugin/task_query.py
+@@ -43,6 +43,14 @@ def _aabb_center_delta_component(a0, a1, b0, b1):
+     return None if exact and rounded == 0 else rounded
+ 
+ 
++def validate_object_selector(selector):
++    if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
++            or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
++                   for value in selector.values())):
++        raise ValueError('task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes')
++    return dict(selector)
++
++
+ def validate_task_query(query):
+     if type(query) is not dict or set(query) != {'mode', 'objects', 'requested_facts'}:
+         raise ValueError('task query requires only mode, objects and requested_facts')
+@@ -50,10 +58,7 @@ def validate_task_query(query):
+     if type(selectors) is not list or not 1 <= len(selectors) <= 4:
+         raise ValueError('task objects must contain 1..4 explicit selectors')
+     for selector in selectors:
+-        if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+-                or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+-                       for value in selector.values())):
+-            raise ValueError('task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes')
++        validate_object_selector(selector)
+     if (type(facts) is not list or not facts or any(type(f) is not str or f not in FACTS for f in facts)
+             or len(facts) != len(set(facts))):
+         raise ValueError('task requested_facts must be a nonempty unique finite fact list')
+diff --git a/verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py b/verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py
+index 861037c..d35d5b1 100644
+--- a/verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py
++++ b/verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py
+@@ -1,4 +1,4 @@
+-"""Twelve preregistered offline entry groups; fake bpy is not Blender evidence.
++"""Existing offline entry groups and directed selector cases; not Blender evidence.
+ 
+ The controlled parent runner binds test_blender_host_contracts._module and its
+ BlenderSceneHost/BlenderHostError aliases to the verified current host module
+@@ -18,7 +18,7 @@ from human_eye_plugin.live_service import LiveSpatialService, RequestBudgetError
+ from human_eye_plugin.live_spatial_mcp import LiveSpatialMCPServer, _tool_result, _validate_arguments
+ from human_eye_plugin.query_policy import validate_query
+ from verification import test_m4_capture_001 as capture_fixture
+-from verification.bound_source_fix_001.test_source_validation import source_fixture, second_face
++from verification.bound_source_fix_001.test_source_validation import source_fixture, second_face, enrich_data
+ from verification.test_live_service import SelfLockingHost
+ 
+ 
+@@ -52,11 +52,24 @@ class ActualCandidateHost:
+     def transaction(self):
+         return self.backend.transaction()
+ 
+-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
+-        self.candidate_calls.append({'focal_id': focal_id, 'deadline_ns': deadline_ns,
+-            'max_response_bytes': max_response_bytes, 'started_ns': time.perf_counter_ns()})
+-        self.last_packet = self.backend.capture_nearest_candidates(
+-            focal_id, deadline_ns, max_response_bytes)
++    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
++        call = {'focal_id': focal_id, 'deadline_ns': deadline_ns,
++            'max_response_bytes': max_response_bytes, 'started_ns': time.perf_counter_ns(),
++            'selector': None if selector is None else dict(selector)}
++        self.candidate_calls.append(call)
++        mesh_before = [obj.mesh_calls for obj in self.objects]
++        evaluated_before = [obj.eval_calls for obj in self.objects]
++        # Count real host traversals, including the existing final coherence
++        # check. This spy does not supply a directory or a nearest result.
++        with patch.object(self.backend, '_objects', wraps=self.backend._objects) as directory:
++            try:
++                kwargs = {} if selector is None else {'selector': selector}
++                self.last_packet = self.backend.capture_nearest_candidates(
++                    focal_id, deadline_ns, max_response_bytes, **kwargs)
++            finally:
++                call['object_directory_traversals'] = directory.call_count
++                call['mesh_expansions'] = [obj.mesh_calls-old for obj, old in zip(self.objects, mesh_before)]
++                call['evaluated_reads'] = [obj.eval_calls-old for obj, old in zip(self.objects, evaluated_before)]
+         if self.after_capture is not None:
+             self.after_capture()
+         return self.last_packet
+@@ -111,6 +124,23 @@ class SurfaceNearestEntryTests(unittest.TestCase):
+     def observe(self, **changes):
+         return self.service.observe(**self.args(**changes))
+ 
++    def selector_args(self, selector, **changes):
++        return {'session_id': 'entry-read', 'include_image': False,
++            'query': {**MODE, 'objects': [selector]}, **changes}
++
++    def observe_selector(self, selector, **changes):
++        return self.service.observe(**self.selector_args(selector, **changes))
++
++    def public_selector(self, selector, **changes):
++        response = self.server._call_tool(TOOL, self.selector_args(selector, **changes))
++        return json.loads(response['content'][0]['text'])
++
++    def assert_same_nearest(self, actual, expected):
++        for key in ('result_kind', 'status', 'scope', 'focal', 'nearest_objects',
++                'best_known_objects', 'distance_m', 'best_known_distance_m',
++                'unit', 'coverage', 'unresolved', 'execution_authority'):
++            self.assertEqual(actual[key], expected[key], key)
++
+     def audit_work(self):
+         events = [json.loads(line) for line in self.service.audit_path.read_text(
+             encoding='utf8').splitlines()]
+@@ -125,8 +155,18 @@ class SurfaceNearestEntryTests(unittest.TestCase):
+     def test_01_explicit_mode_schema_and_mode_only_query(self):
+         self.assertEqual(validate_query(MODE), MODE)
+         self.assertIn('surface_nearest', live_spatial_mcp._QUERY_SCHEMA['properties']['mode']['enum'])
++        self.assertEqual(live_spatial_mcp._QUERY_SCHEMA['properties']['objects']['items'],
++            task_query.SELECTOR_SCHEMA)
++        nearest_schema = live_spatial_mcp._QUERY_SCHEMA['allOf'][0]['then']
++        self.assertEqual(set(nearest_schema['properties']), {'mode', 'objects'})
++        self.assertEqual(nearest_schema['properties']['objects']['maxItems'], 1)
++        self.assertFalse(nearest_schema['additionalProperties'])
+         _validate_arguments(TOOL, self.args())
+-        for extra in ({'objects': [{'name': 'O0'}]}, {'object_ids': ['x']},
++        for selector in ({'name': 'O0'}, {'id': self.host.focal_id}):
++            query = {**MODE, 'objects': [selector]}
++            self.assertEqual(validate_query(query), query)
++            _validate_arguments(TOOL, self.selector_args(selector))
++        for extra in ({'object_ids': ['x']},
+                 {'max_exact_pairs': 1}, {'alignment_evidence': False},
+                 {'native_visual': {'mode': 'projection'}}, {'focal_id': 'x'},
+                 {'packet': {}}, {'mode_alias': 'nearest'}):
+@@ -334,6 +374,218 @@ class SurfaceNearestEntryTests(unittest.TestCase):
+         self.assertEqual(validate_query(None), {'mode': 'overview', 'max_exact_pairs': 255})
+         self.assert_only_candidate_capture(0)
+ 
++    def test_13_name_id_selector_and_legacy_match_ties_partial_and_unknown(self):
++        observations = {}
++        for variant, xs in (('ties', (0., 2., 2., 100.)),
++                ('partial', (0., 2., 100.)), ('unknown', (0., 100.))):
++            with self.subTest(variant=variant):
++                self.use_host(ActualCandidateHost(xs))
++                if variant != 'ties':
++                    add_retained_degenerate_face(self.host.objects[-1])
++                legacy = self.observe()
++                by_id = self.public_selector({'id': self.host.focal_id})
++                by_name = self.public_selector({'name': self.host.objects[0].name})
++                self.assert_same_nearest(by_id, legacy)
++                self.assert_same_nearest(by_name, legacy)
++                self.assert_only_candidate_capture(3)
++                self.assertEqual([call['object_directory_traversals']
++                    for call in self.host.candidate_calls], [2, 2, 2])
++                observations[variant] = {'status': legacy['status'],
++                    'nearest_objects': legacy['nearest_objects'],
++                    'best_known_objects': legacy['best_known_objects'],
++                    'coverage': legacy['coverage'], 'host_calls': 3,
++                    'directory_traversals_per_call': [2, 2, 2]}
++        EVIDENCE['selector_equivalence'] = observations
++
++    def test_14_selector_reuses_one_acquisition_and_keeps_coherence_check(self):
++        legacy = self.observe()
++        by_name = self.public_selector({'name': self.host.objects[0].name})
++        by_id = self.public_selector({'id': self.host.focal_id})
++        self.assert_same_nearest(by_name, legacy)
++        self.assert_same_nearest(by_id, legacy)
++        self.assert_only_candidate_capture(3)
++        for call in self.host.candidate_calls:
++            # The old method has one directory acquisition and a second
++            # traversal for coherence. New selectors must not add another.
++            self.assertEqual(call['object_directory_traversals'], 2)
++            self.assertEqual(call['evaluated_reads'], [1, 1, 1])
++            self.assertEqual(call['mesh_expansions'], [1, 1, 0])
++        self.assertIsNone(self.host.candidate_calls[0]['selector'])
++        self.assertIsNone(self.host.candidate_calls[1]['focal_id'])
++        self.assertEqual(self.host.candidate_calls[1]['selector'], {'name': 'O0'})
++        self.assertIsNone(self.host.candidate_calls[2]['focal_id'])
++        self.assertEqual(self.host.last_packet['work']['directory_objects'], 3)
++        EVIDENCE['selector_capture_work'] = {'host_calls': self.host.candidate_calls,
++            'front_task_captures': self.host.selected_calls,
++            'front_full_scene_captures': self.host.scene_calls,
++            'front_directory_calls': self.host.name_calls,
++            'coherence_traversals_preserved': True}
++
++    def test_15_missing_and_nonexact_names_do_not_use_global_data_or_poison_reads(self):
++        orphan = capture_fixture.TriangleObject('OnlyGlobal', 0., uid=909)
++        self.host.backend.bpy.data = capture_fixture.NS(objects=[orphan])
++        for selector in ({'name': 'missing'}, {'name': 'o0'}, {'name': ' O0'},
++                {'name': 'O0 '}, {'name': 'OnlyGlobal'}, {'id': 'missing-current-id'}):
++            with self.subTest(selector=selector):
++                before = len(self.host.candidate_calls)
++                with self.assertRaisesRegex(capture_fixture.m.BlenderHostError,
++                        'acquisition_selector_not_found'):
++                    self.observe_selector(selector)
++                self.assertEqual(len(self.host.candidate_calls), before+1)
++                call = self.host.candidate_calls[-1]
++                self.assertEqual(call['object_directory_traversals'], 1)
++                self.assertEqual(call['mesh_expansions'], [0, 0, 0])
++                self.assertEqual(call['evaluated_reads'], [0, 0, 0])
++        self.assertEqual(orphan.mesh_calls, 0)
++        normal = self.public_selector({'name': 'O0'})
++        self.assertEqual(normal['status'], 'complete')
++        self.assertEqual(normal['focal'], self.host.object(0))
++        # Nonempty surrounding whitespace is meaningful, never normalized.
++        self.host.objects[0].name = self.host.objects[0].name_full = ' O0 '
++        padded = self.public_selector({'name': ' O0 '})
++        self.assertEqual(padded['focal'], self.host.object(0))
++        with self.assertRaisesRegex(capture_fixture.m.BlenderHostError,
++                'acquisition_selector_not_found'):
++            self.observe_selector({'name': 'O0'})
++        self.assertEqual((self.host.scene_calls, self.host.selected_calls,
++            self.host.name_calls, self.host.calls), (0, 0, 0, 0))
++
++    def test_16_duplicate_name_is_rejected_before_any_geometry_read(self):
++        # Public names can collide while library/name_full-derived IDs remain
++        # distinct; changing both names would also create an ID collision.
++        self.host.objects[1].name = self.host.objects[0].name
++        with self.assertRaisesRegex(capture_fixture.m.BlenderHostError,
++                'acquisition_selector_ambiguous'):
++            self.observe_selector({'name': 'O0'})
++        self.assert_only_candidate_capture()
++        rejected = self.host.candidate_calls[0]
++        self.assertEqual(rejected['object_directory_traversals'], 1)
++        self.assertEqual(rejected['evaluated_reads'], [0, 0, 0])
++        self.assertEqual(rejected['mesh_expansions'], [0, 0, 0])
++        # An explicit current ID still denotes one object in the same scene.
++        explicit = self.public_selector({'id': self.host.focal_id})
++        self.assertEqual(explicit['focal']['id'], self.host.focal_id)
++        self.assertEqual(explicit['distance_m'], 2.)
++        self.assert_only_candidate_capture(2)
++
++    def test_17_replacement_and_rename_resolve_the_current_scene_each_call(self):
++        first = self.public_selector({'name': 'O0'})
++        old_id = first['focal']['id']
++        first_binding = self.host.last_packet['binding']['host_identity']
++        self.assertEqual(first_binding['object_instances'][old_id], '101')
++        replacement = capture_fixture.TriangleObject('O0', .5, uid=909)
++        enrich_data(replacement.data)
++        self.host.objects[0] = replacement
++        current_id = self.host.focal_id
++        # Keep the old library/name_full ID algorithm: a same-name replacement
++        # has the same ID, but the current instance binding and geometry differ.
++        self.assertEqual(current_id, old_id)
++        by_name = self.public_selector({'name': 'O0'})
++        replacement_binding = self.host.last_packet['binding']['host_identity']
++        self.assertEqual(by_name['focal'], self.host.object(0))
++        self.assertEqual(replacement_binding['object_instances'][old_id], '909')
++        self.assertEqual(replacement_binding['document_epoch'], first_binding['document_epoch'])
++        self.assertEqual(by_name['distance_m'], 1.5)
++        self.assertNotEqual(by_name['distance_m'], first['distance_m'])
++        self.assert_same_nearest(self.observe(), by_name)
++        self.assert_same_nearest(self.public_selector({'id': old_id}), by_name)
++        replacement.name = replacement.name_full = 'CurrentRenamed'
++        self.assertNotEqual(self.host.focal_id, old_id)
++        with self.assertRaisesRegex(capture_fixture.m.BlenderHostError,
++                'acquisition_selector_not_found'):
++            self.observe_selector({'name': 'O0'})
++        renamed = self.public_selector({'name': 'CurrentRenamed'})
++        self.assertEqual(renamed['focal'], self.host.object(0))
++        self.assertEqual(renamed['distance_m'], by_name['distance_m'])
++        self.assert_only_candidate_capture(6)
++        EVIDENCE['selector_freshness'] = {'old_id': old_id, 'replacement_id': current_id,
++            'before_instance': first_binding['object_instances'][old_id],
++            'replacement_instance': replacement_binding['object_instances'][old_id],
++            'document_epoch_same': replacement_binding['document_epoch'] == first_binding['document_epoch'],
++            'before_distance_m': first['distance_m'], 'replacement_distance_m': by_name['distance_m'],
++            'final_focal': renamed['focal'], 'host_calls': 6,
++            'preliminary_task_captures': self.host.selected_calls,
++            'preliminary_directory_calls': self.host.name_calls}
++
++    def test_18_selector_conflicts_and_invalid_shapes_fail_before_host_reads(self):
++        queries = (
++            {**MODE, 'objects': []}, {**MODE, 'objects': {'name': 'O0'}},
++            {**MODE, 'objects': ['O0']}, {**MODE, 'objects': [{}]},
++            {**MODE, 'objects': [{'name': 'O0'}, {'name': 'O1'}]},
++            {**MODE, 'objects': [{'name': 'O0', 'id': self.host.focal_id}]},
++            {**MODE, 'objects': [{'name': ''}]}, {**MODE, 'objects': [{'name': ' '}]},
++            {**MODE, 'objects': [{'name': 1}]}, {**MODE, 'objects': [{'id': ''}]},
++            {**MODE, 'objects': [{'name': '界'*86}]},
++            {**MODE, 'objects': [{'name': 'O0', 'extra': True}]},
++            {**MODE, 'objects': [{'name': 'O0'}], 'object_ids': ['other']},
++        )
++        for query in queries:
++            with self.subTest(query=query):
++                args = {'session_id': 'entry-read', 'include_image': False, 'query': query}
++                with self.assertRaises(ValueError):
++                    _validate_arguments(TOOL, args)
++                with self.assertRaises(ValueError):
++                    self.service.observe(**args)
++                with self.assertRaises(ValueError):
++                    self.server._call_tool(TOOL, args)
++        for selector in ({'name': 'O0'}, {'id': self.host.focal_id}):
++            args = self.selector_args(selector, focal_id=self.host.focal_id)
++            with self.subTest(conflict=selector):
++                with self.assertRaises(ValueError):
++                    _validate_arguments(TOOL, args)
++                with self.assertRaises(ValueError):
++                    self.service.observe(**args)
++                with self.assertRaises(ValueError):
++                    self.server._call_tool(TOOL, args)
++        self.assert_only_candidate_capture(0)
++        # Direct host calls retain their own boundary validation as well.
++        deadline = time.perf_counter_ns()+10_000_000_000
++        with patch.object(self.host.backend, '_objects',
++                side_effect=AssertionError('invalid request reached the host directory')) as directory:
++            for selector in (1, [], {}, {'name': ' '}, {'name': 'O0', 'id': 'x'}):
++                with self.subTest(host_selector=selector), self.assertRaisesRegex(
++                        capture_fixture.m.BlenderHostError, 'acquisition_selector'):
++                    self.host.backend.capture_nearest_candidates(None, deadline,
++                        1_000_000, selector=selector)
++            with self.assertRaisesRegex(capture_fixture.m.BlenderHostError,
++                    'acquisition_focal_selector_conflict'):
++                self.host.backend.capture_nearest_candidates(self.host.focal_id,
++                    deadline, 1_000_000, selector={'name': 'O0'})
++            directory.assert_not_called()
++
++    def test_19_service_rejects_selector_mismatch_in_the_same_capture_packet(self):
++        cases = [('wrong_focal', {'name': 'O0'}),
++                 ('wrong_focal', {'id': self.host.focal_id}),
++                 ('missing_object_id', {'name': 'O0'}),
++                 ('empty_object_id', {'name': 'O0'}),
++                 ('unbounded_object_id', {'name': 'O0'})]
++        for corruption, selector in cases:
++            with self.subTest(corruption=corruption, selector=selector):
++                def corrupt_focal():
++                    packet = self.host.last_packet
++                    if corruption == 'wrong_focal':
++                        packet['focal_id'] = self.host.object(1)['id']
++                        return
++                    focal = next(mesh for mesh in packet['capture']['meshes']
++                        if mesh['object_id'] == self.host.focal_id)
++                    if corruption == 'missing_object_id':
++                        focal.pop('object_id')
++                        packet['focal_id'] = None
++                    else:
++                        focal['object_id'] = '' if corruption == 'empty_object_id' else 'x'*257
++                        packet['focal_id'] = focal['object_id']
++                self.host.after_capture = corrupt_focal
++                with patch.object(task_query, 'surface_nearest_result',
++                        side_effect=AssertionError('mismatched binding reached the geometry summary')):
++                    with self.assertRaisesRegex(ValueError,
++                            'surface_nearest capture selector mismatch'):
++                        self.observe_selector(selector)
++        self.host.after_capture = None
++        healthy = self.public_selector({'name': 'O0'})
++        self.assertEqual(healthy['status'], 'complete')
++        self.assertEqual(healthy['focal'], self.host.object(0))
++        self.assert_only_candidate_capture(6)
++
+ 
+ if __name__ == '__main__':
+     unittest.main()

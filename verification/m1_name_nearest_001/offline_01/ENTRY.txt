@@ -1,0 +1,57 @@
+test_01_explicit_mode_schema_and_mode_only_query (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_01_explicit_mode_schema_and_mode_only_query) ... ok
+test_02_invalid_envelopes_fail_before_any_host_read (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_02_invalid_envelopes_fail_before_any_host_read) ... ok
+test_03_one_actual_packet_reaches_real_summary_and_no_history (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_03_one_actual_packet_reaches_real_summary_and_no_history) ... ok
+test_04_named_exact_ties_are_stable_and_current (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_04_named_exact_ties_are_stable_and_current) ... ok
+test_05_retained_degenerate_target_is_named_partial (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_05_retained_degenerate_target_is_named_partial) ... ok
+test_06_all_unknown_has_no_global_or_best_known_distance (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_06_all_unknown_has_no_global_or_best_known_distance) ... ok
+test_07_current_capture_repeats_but_real_pair_measurement_hits_cache (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_07_current_capture_repeats_but_real_pair_measurement_hits_cache) ... ok
+test_08_loaded_source_rejection_precedes_host_capture (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_08_loaded_source_rejection_precedes_host_capture) ... ok
+test_09_original_deadline_guards_before_and_after_actual_capture (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_09_original_deadline_guards_before_and_after_actual_capture) ... ok
+test_10_mcp_keeps_original_deadline_through_encoding_and_publication (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_10_mcp_keeps_original_deadline_through_encoding_and_publication) ... ok
+test_11_mcp_delivers_one_compact_text_body_without_private_payload (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_11_mcp_delivers_one_compact_text_body_without_private_payload) ... ok
+test_12_legacy_nearest_top1_and_task_keep_their_existing_routes (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_12_legacy_nearest_top1_and_task_keep_their_existing_routes) ... ok
+test_13_name_id_selector_and_legacy_match_ties_partial_and_unknown (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_13_name_id_selector_and_legacy_match_ties_partial_and_unknown) ... ok
+test_14_selector_reuses_one_acquisition_and_keeps_coherence_check (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_14_selector_reuses_one_acquisition_and_keeps_coherence_check) ... ok
+test_15_missing_and_nonexact_names_do_not_use_global_data_or_poison_reads (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_15_missing_and_nonexact_names_do_not_use_global_data_or_poison_reads) ... ok
+test_16_duplicate_name_is_rejected_before_any_geometry_read (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_16_duplicate_name_is_rejected_before_any_geometry_read) ... ERROR
+test_17_replacement_and_rename_resolve_the_current_scene_each_call (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_17_replacement_and_rename_resolve_the_current_scene_each_call) ... FAIL
+test_18_selector_conflicts_and_invalid_shapes_fail_before_host_reads (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_18_selector_conflicts_and_invalid_shapes_fail_before_host_reads) ... ok
+test_19_service_rejects_selector_mismatch_in_the_same_capture_packet (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_19_service_rejects_selector_mismatch_in_the_same_capture_packet) ... ok
+
+======================================================================
+ERROR: test_16_duplicate_name_is_rejected_before_any_geometry_read (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_16_duplicate_name_is_rejected_before_any_geometry_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "verified-test:058951600bde4bcfc6c185840bab82af4c4d7c311666ff4739ed996f36ee95ed:verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py", line 464, in test_16_duplicate_name_is_rejected_before_any_geometry_read
+  File "verified-test:058951600bde4bcfc6c185840bab82af4c4d7c311666ff4739ed996f36ee95ed:verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py", line 135, in public_selector
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\live_spatial_mcp.py", line 618, in _call_tool
+    value = self._dispatch_tool(name, arguments)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\live_spatial_mcp.py", line 648, in _dispatch_tool
+    value = self.service.observe(
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\live_service.py", line 210, in wrapped
+    result = method(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\live_service.py", line 1030, in observe
+    return self._observe_surface_nearest(session_id, focal_id, selector=selector)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\live_service.py", line 1244, in _observe_surface_nearest
+    captured = self.host.capture_nearest_candidates(None, deadline, 64 * 1024 * 1024, selector=selector)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "verified-test:058951600bde4bcfc6c185840bab82af4c4d7c311666ff4739ed996f36ee95ed:verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py", line 67, in capture_nearest_candidates
+  File "C:\Users\Administrator\.codex\worktrees\2c7d\hefe\verification\m1_name_nearest_001\offline_01\engine\human_eye_plugin\blender_host.py", line 969, in capture_nearest_candidates
+    raise BlenderHostError('acquisition_selector_ambiguous')
+human_eye_plugin.blender_host.BlenderHostError: acquisition_selector_ambiguous
+
+======================================================================
+FAIL: test_17_replacement_and_rename_resolve_the_current_scene_each_call (surface_nearest_entry_tests.SurfaceNearestEntryTests.test_17_replacement_and_rename_resolve_the_current_scene_each_call)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "verified-test:058951600bde4bcfc6c185840bab82af4c4d7c311666ff4739ed996f36ee95ed:verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py", line 476, in test_17_replacement_and_rename_resolve_the_current_scene_each_call
+AssertionError: 'blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238' == 'blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238'
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.476s
+
+FAILED (failures=1, errors=1)
