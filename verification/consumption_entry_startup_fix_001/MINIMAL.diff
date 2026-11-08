@@ -1,0 +1,84 @@
+--- 2195ac8/runner.py
++++ candidate/runner.py
+@@ -11,6 +11,7 @@
+ import os
+ from pathlib import Path
+ import queue
++import re
+ import shutil
+ import subprocess
+ import sys
+@@ -164,7 +165,7 @@
+ 
+ def safe_environment(source):
+     bindings={'CODEX_THREAD_ID','CODEX_SESSION_ID','CODEX_TOOL_CALL_ID','APP_TOOLS_PIPE_PATH',
+-        'CODEX_APP_TOOLS_PIPE_PATH','CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY'}
++        'CODEX_APP_TOOLS_PIPE_PATH','CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY','CODEX_PERMISSION_PROFILE'}
+     env={}
+     for key in source:
+         upper=key.upper()
+@@ -173,6 +174,36 @@
+             continue  # Never read an excluded credential's value.
+         env[key]=source[key]
+     return env
++
++
++def retain_startup_diagnostic(record,raw):
++    """Small ordinary CLI templates only; never arbitrary stderr or values."""
++    record['stderr_bytes']=record.get('stderr_bytes',0)+len(raw)
++    state=record.setdefault('stderr_diagnostics',dict(lines=[],raw_bytes=0,retained_utf8_bytes=0,
++        redacted_bytes=0,redacted_lines=0,truncated=False,unavailable=False,limit_bytes=4096))
++    state['raw_bytes']+=len(raw)
++    text=raw.decode('utf8',errors='replace').strip();safe=None
++    forbidden=re.search(r'(?i)(bearer|authorization|api[_-]?key|access[_-]?token|password|secret|sk-|system|developer|reasoning|encrypted|<analysis|BEGIN.*KEY)',text)
++    if len(raw)<=512 and not forbidden and not any(ord(c)<32 for c in text):
++        if text in ('Error: failed to load bootstrap configuration','Error: failed to load configuration',
++                    'Error loading configuration: invalid transport','Caused by:','invalid transport'):
++            safe=text
++        elif re.fullmatch(r'in `[A-Za-z_][A-Za-z0-9_.-]{0,159}`',text):safe=text
++        elif re.fullmatch(r'Usage: (?:codex|codex.exe)(?: [A-Za-z0-9_<>{}\[\]|=-]+){0,24}',text):safe=text
++        else:
++            field=re.fullmatch(r'(?:Error: )?(unknown|missing|duplicate) field [`\'\"]([A-Za-z_][A-Za-z0-9_.-]{0,127})[`\'\"](?:, expected .*)?',text)
++            flag=re.fullmatch(r'(?:error|Error): unexpected argument [\'`](--[A-Za-z0-9_-]{1,80})[\'`] found',text)
++            if field:safe='configuration: '+field[1]+' field `'+field[2]+'`'
++            elif flag:safe='error: unexpected argument `'+flag[1]+'` found'
++            elif text.startswith('Error:') and 'permission profile' in text.lower() and 'sandbox' in text.lower():
++                safe='Error: permission-profile/sandbox configuration conflict (details redacted)'
++    if safe is not None:
++        size=len(safe.encode('utf8'))+1
++        if state['retained_utf8_bytes']+size<=state['limit_bytes']:
++            state['lines'].append(safe);state['retained_utf8_bytes']+=size;return
++        state['truncated']=True
++    if text:
++        state['redacted_bytes']+=len(raw);state['redacted_lines']+=1;state['unavailable']=True
+ 
+ 
+ def consume(plan,cell,work,prompt):
+@@ -184,7 +215,7 @@
+         tool_actions_observed=0,provider_requests=None,fees=None,backend='unexposed',usage=None,
+         complete=False,deadline_enforcement='controller kill from original dispatch deadline',
+         action_policy='8 is observation threshold only; all actions/costs retained without threshold failure')
+-    record.update(consumer_popen_ns=None,first_public_tool_ns=None,final_received_ns=None,turn_completed_ns=None,
++    record.update(consumer_pid=None,consumer_popen_ns=None,first_public_tool_ns=None,final_received_ns=None,turn_completed_ns=None,
+         process_exit_ns=None,cleanup_end_ns=None,timestamp_scope='same perf counter, local receive/wait observations, not server generation')
+     process=None;threads=[];timer=None;deadline_fired=threading.Event();reap_lock=threading.Lock();cleanup_receipts=[]
+     def reap():
+@@ -208,6 +239,7 @@
+         record['consumer_popen_ns']=time.perf_counter_ns()
+         process=subprocess.Popen(argv,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=work,env=env,
+             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
++        record['consumer_pid']=process.pid
+         if deadline_fired.is_set():raise TimeoutError('deadline_during_process_start')
+         threads=[threading.Thread(target=read,args=(stream,label),daemon=True) for stream,label in
+             ((process.stdout,'stdout'),(process.stderr,'stderr'))]
+@@ -222,9 +254,7 @@
+                 continue
+             if raw is None:closed+=1;continue
+             if label=='stderr':
+-                # Do not export arbitrary stderr that could contain model input
+-                # or runtime internals; byte count/exit status retain failures.
+-                record['stderr_bytes']=record.get('stderr_bytes',0)+len(raw);continue
++                retain_startup_diagnostic(record,raw);continue
+             record['stdout_bytes']=record.get('stdout_bytes',0)+len(raw)
+             try:event=json.loads(raw)
+             except ValueError:raise ValueError('unsupported_non_JSON_exec_event')
