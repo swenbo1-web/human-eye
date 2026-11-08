@@ -1,0 +1,15 @@
+# Fixed material extraction
+
+Only immutable `git show b9336a8037d4781584b703e1aad8f24845f0a5b2:path` inputs were copied from the delivered acquisition repository. No branch was merged, no in-flight implementation was read, and no `.blend` was copied or opened. Four original assets were only SHA256-checked against both their fixed Git blobs and the delivered ASSET_INDEX. Eighteen delivered preparation blobs are reproduced byte-for-byte under `frozen`; selected reference contracts and the original ASSETS.json are under `admin`.
+
+`MATERIAL_MANIFEST.json` binds the exact source commit, every copied preparation/reference blob, prompt, original asset path/hash, helper hash and future eight-cell order. The controller can read its tasks rows. The manifest is administrative data and must not be put in a consumer directory or prompt.
+
+`prompts/T01.txt` through `T04.txt` contain only the exact original prompt-string UTF8 bytes, 911 bytes each, with no final newline. Their hashes equal `frozen/consumer_prompts.json`. Do not read or concatenate `TASKS.md`, original all-question JSON, this document, source filenames, arm maps, or truth into a consumer request. Dispatch one exact prompt string to each arm; keep the fixed order T01 N/P, T02 P/N, T03 N/P, T04 P/N. Runtime assets use the neutral filename `input.blend` in an owned per-answer workspace, not source case filenames.
+
+`frozen/admin/TRUTH.json`, all old raw references, recipes, ASSET_INDEX, SOURCE_INDEX, old cost/results, SCORECARD and admin sources are for controller/review only. The extraction does not execute `truth_from_frozen.py`, recompute geometry or grade any model answer. The root's independent review already supplies the accepted geometry contract.
+
+The exact original SCORECARD remains untouched. The current accepted review amendments must be applied by the future scorer: reject negative/nonfinite/bool unsigned distances before any absolute-error tolerance; if the evidence reviewer is a Pro Agent, label it as such instead of human. Automatic field correctness is separate from coverage/evidence review and cannot grant global completion based on a model's self-reported `coverage` alone.
+
+The old delivered result at `admin/references/verification/fixes/evidence_consume_001/run_01/RESULTS.md:21` confirms historical consumers used alias `gpt-6.1-sol` with effort `ultra`; that run explicitly says aliases cannot prove the actual Pro backend, and it was a CLI protocol diagnostic without real MCP registration. These are provenance facts, not confirmation of the current available model. Current model availability belongs to the normal-entry check. Actual backend remains `unexposed` if the host exposes no evidence.
+
+One initial extraction script SyntaxError occurred before execution of any Git read or product import. Its exact script bytes and error are retained in `admin/extract_fixed.initial.py.txt` and PREP_FAILURES.json. Corrected stdlib extraction succeeded. No consumer, Blender, RPC, API, product import or truth solver ran.
