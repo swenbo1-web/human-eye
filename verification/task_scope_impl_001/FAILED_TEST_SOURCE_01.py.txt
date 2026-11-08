@@ -1,0 +1,213 @@
+"""Task set contracts through existing memory hosts and real in-process handlers."""
+import copy
+import json
+import math
+import os
+from pathlib import Path
+import unittest
+from unittest.mock import patch
+
+from human_eye_plugin import task_query as task
+from human_eye_plugin import live_service, live_spatial_mcp as mcp, mcp_transport as wire
+from human_eye_plugin.query_policy import validate_query
+from human_eye_plugin.scene_cache import SpatialSceneCache
+from human_eye_plugin.auto_router import _validated_scene
+from verification import test_task_query as old
+from verification import test_selected_task_query as selected
+from verification.test_concave_geometry import box, entity
+from verification.closed_solid_read_001.tests import test_closed_solid as original
+
+OUT=Path(__file__).resolve().parent
+RECORDS={}
+def record(name,value):
+    RECORDS[name]=value
+    (OUT/('observations_'+os.environ.get('TASK_SCOPE_RUN','directed')+'.json')).write_text(
+        json.dumps(RECORDS,indent=2,allow_nan=False)+'\n',encoding='utf8')
+
+
+class ScopeTests(unittest.TestCase):
+    setUp=old.TaskQueryTests.setUp
+    def arrange(self, entities=None, *, selected_host=True):
+        entities=entities or [box((0,0,0),(2,2,2),'a'),box((4,0,0),(2,2,2),'b'),
+                              box((.5,0,0),(2,2,2),'c'),box((7,0,0),(2,2,2),'d')]
+        self.host=selected.SelectedHost() if selected_host else old.SelfLockingHost()
+        self.host.scene={'revision':'scope-r1','unit':'m','coordinate_frame':'world','source':'scope-memory',
+                         'meshes':[e.to_dict() for e in entities]}
+        if selected_host:self.host.instances={e.object_id:'instance-'+e.object_id for e in entities}
+        self.service=live_service.LiveSpatialService(self.config,host=self.host)
+        self.server=mcp.LiveSpatialMCPServer(self.service,'scope-test')
+    def query(self, candidates=('b','c','d'), *, aabb=True):
+        return {'mode':'task','target':{'id':'a'},'candidates':[{'id':oid} for oid in candidates],
+                'requested_facts':['closed_solid_relation','surface_proximity']+(['aabb'] if aabb else [])}
+    def observe(self,query=None):
+        return self.service.observe('s',query=query or self.query(),include_image=False)
+    def call(self,query=None):
+        response=self.server.handle_jsonrpc_message({'jsonrpc':'2.0','id':1,'method':'tools/call',
+            'params':{'name':'human_eye_scene_observe','arguments':{'include_image':False,'query':query or self.query()}}})
+        return response,json.loads(response['result']['content'][0]['text'])
+    def work(self):return old.TaskQueryTests.work(self)
+    def test_normalization_is_idempotent_and_mixed_shapes_rejected(self):
+        for candidates in (('b',),('b','c','d')):
+            public=self.query(candidates); canonical=validate_query(public)
+            self.assertEqual(canonical['scope'],task.SET_SCOPE)
+            self.assertEqual(validate_query(json.loads(json.dumps(canonical))),canonical)
+            self.assertEqual(canonical['objects'],[public['target'],*public['candidates']])
+        q=self.query()
+        for bad in ({**q,'objects':[{'id':'a'},{'id':'b'}]}, {**q,'scope':task.SET_SCOPE},
+                    {**q,'candidates':[]}, {**q,'candidates':[{'id':'b'}]*4},
+                    {**q,'requested_facts':['surface_proximity']},
+                    {**q,'requested_facts':['closed_solid_relation','surface_proximity','axis_gap']},
+                    {**q,'target':{'id':'a','name':'a'}}):
+            with self.subTest(bad=bad),self.assertRaises(ValueError):validate_query(bad)
+        old_pair={'mode':'task','objects':[{'id':'a'},{'id':'b'}],'requested_facts':['surface_proximity']}
+        self.assertEqual(validate_query(old_pair),old_pair)
+    def test_one_capture_validate_full_binding_four_entities_three_helpers_one_rank(self):
+        self.arrange()
+        from human_eye_plugin import auto_router
+        with patch.object(live_service,'_validated_scene',wraps=_validated_scene) as validated, \
+             patch.object(task,'bind_objects',wraps=task.bind_objects) as bound, \
+             patch.object(auto_router.MeshEntity3D,'from_dict',wraps=auto_router.MeshEntity3D.from_dict) as built, \
+             patch.object(task,'_closed_solid_pair_measurement',wraps=task._closed_solid_pair_measurement) as closed, \
+             patch.object(task,'_surface_pair_measurement',wraps=task._surface_pair_measurement) as surface, \
+             patch.object(task,'_rank_surface_results',wraps=task._rank_surface_results) as ranked:
+            response,value=self.call()
+        # The memory selected host itself binds once to produce its capture receipt;
+        # production task_result performs one additional complete binding.
+        self.assertEqual(validated.call_count,1);self.assertEqual(built.call_count,4)
+        self.assertEqual(bound.call_count,1)
+        self.assertEqual((closed.call_count,surface.call_count,ranked.call_count),(3,3,1))
+        self.assertEqual(len(self.host.selected_calls),1);self.assertEqual(self.host.captures,0)
+        self.assertFalse(response['result']['isError']);self.assertEqual(value['status'],'observed')
+        self.assertEqual(value['summary']['penetrating_ids'],['c'])
+        self.assertEqual(value['summary']['nearest_separated_ids'],['b'])
+        self.assertEqual([r['object_id'] for r in value['binding']['objects']],['a','b','c','d'])
+        self.assertEqual(len(value['binding']['host_identity']['object_instances']),4)
+        self.assertIn('trace_id',value);self.assertNotIn('request_trace',value)
+        self.assertNotIn('_exact_distance_sq',json.dumps(value))
+        record('one_request',{'work':self.work(),'validation':validated.call_count,'bindings':bound.call_count,
+            'mesh_constructions':built.call_count,'captures':1,'result':value,'wire_bytes':len(wire.encode_response(response).encode())})
+    def test_cold_hot_and_geometry_changes_aggregate_counts(self):
+        self.arrange();rows=[]
+        for state in ('cold','hot','candidate_changed','target_changed'):
+            if state=='candidate_changed':self.host.scene['meshes'][1]['vertices'][0][0] += .125
+            if state=='target_changed':self.host.scene['meshes'][0]['vertices'][0][0] += .125
+            self.observe();w=self.work();rows.append({'state':state,'work':w})
+        self.assertEqual([(r['work']['closed_solid_pair_count'],r['work']['surface_pair_count']) for r in rows],[(3,3),(0,0),(1,1),(3,3)])
+        self.assertEqual([(r['work']['closed_solid_pair_cache_hits'],r['work']['surface_pair_cache_hits']) for r in rows],[(0,0),(3,3),(2,2),(0,0)])
+        events=[json.loads(line) for line in self.service.audit_path.read_text().splitlines()]
+        self.assertEqual([r['engine_invoked'] for r in events if r['event']=='observe'],[True,False,True,True])
+        record('cache_conditions',rows)
+    def test_single_candidate_remains_set_and_full_capture_fallback_is_honest(self):
+        self.arrange(selected_host=False)
+        value=self.observe(self.query(('b',)))
+        self.assertEqual(value['schema_version'],'task-query-set-v1');self.assertEqual(len(value['pairs']),1)
+        self.assertEqual(self.host.captures,1);self.assertEqual(value['binding']['capture_scope'],'complete_scene_meshes')
+        self.assertNotIn('selected_count',value['binding'])
+    def test_duplicates_alias_self_and_missing_preserve_all_rows(self):
+        self.arrange();q=self.query();q['candidates']=[{'id':'b'},{'name':'b'},{'id':'d'}]
+        value=self.observe(q)
+        self.assertEqual(len(value['pairs']),3);self.assertEqual(self.work()['pair_calls'],1)
+        self.assertEqual([r['facts']['closed_solid_relation'].get('reason') for r in value['pairs']],['duplicate_candidate_object','duplicate_candidate_object',None])
+        self.assertIsNone(value['summary']['penetrating_ids']);self.assertFalse(value['summary']['nearest_separated_complete'])
+        q['candidates']=[{'id':'a'},{'id':'missing'},{'id':'d'}];value=self.observe(q)
+        self.assertEqual(self.work()['pair_calls'],1);self.assertEqual(len(value['binding']['objects']),4)
+        self.assertEqual(value['pairs'][0]['facts']['closed_solid_relation']['reason'],'pair_selectors_resolve_to_same_object')
+        self.assertEqual(value['binding']['objects'][2]['reason'],'object_not_found')
+    def test_ambiguous_candidate_and_missing_target_keep_other_evidence(self):
+        self.arrange();self.host.scene['meshes'][2]['name']='b'
+        q=self.query();q['candidates']=[{'name':'b'},{'id':'c'},{'id':'d'}]
+        value=self.observe(q);self.assertEqual(value['binding']['objects'][1]['reason'],'object_name_ambiguous')
+        self.assertEqual(value['summary']['known_penetrating_ids'],['c']);self.assertIsNone(value['summary']['penetrating_ids'])
+        q['target']={'id':'missing'};response,value=self.call(q)
+        self.assertTrue(response['result']['isError']);self.assertEqual(value['status'],'unknown')
+        self.assertEqual(self.work()['pair_calls'],0)
+    def test_containment_positive_surface_distance_is_not_separation_gap(self):
+        self.arrange([box((0,0,0),(10,10,10),'a'),box((0,0,0),(2,2,2),'b')])
+        value=self.observe(self.query(('b',)))
+        self.assertEqual(value['pairs'][0]['facts']['surface_proximity']['value']['distance_m'],4.)
+        self.assertEqual(value['pairs'][0]['separation_gap']['status'],'not_applicable')
+        self.assertEqual(value['summary']['penetrating_ids'],['b'])
+        self.assertTrue(value['summary']['nearest_separated_complete']);self.assertEqual(value['summary']['nearest_separated_ids'],[])
+    def test_touching_and_exact_ties(self):
+        self.arrange([box((0,0,0),(2,2,2),'a'),box((4,0,0),(2,2,2),'b'),box((-4,0,0),(2,2,2),'c'),box((2,0,0),(2,2,2),'d')])
+        value=self.observe();self.assertEqual(value['summary']['nearest_separated_ids'],['b','c'])
+        self.assertEqual(value['pairs'][2]['facts']['closed_solid_relation']['value'],'touching')
+        reordered=self.observe(self.query(('d','c','b')))
+        self.assertEqual([r['object_id'] for r in reordered['pairs']],['d','c','b'])
+        self.assertEqual(reordered['summary']['nearest_separated_ids'],['b','c'])
+        self.assertEqual(self.work()['surface_pair_count'],0)
+    def test_relation_unknown_does_not_become_complete_by_filtering(self):
+        a=box((0,0,0),(2,2,2),'a');b=box((4,0,0),(2,2,2),'b');c=box((7,0,0),(2,2,2),'c')
+        self.arrange([a,b,entity('c',c.vertices,c.faces[:-1])]);value=self.observe(self.query(('b','c')))
+        self.assertFalse(value['summary']['penetration_set_complete']);self.assertFalse(value['summary']['nearest_separated_complete'])
+        self.assertEqual(value['summary']['best_known_separated_ids'],['b'])
+        self.assertEqual(value['pairs'][1]['facts']['surface_proximity']['status'],'measured')
+    def test_missing_rank_and_unknown_witness_are_independent(self):
+        self.arrange();original_helper=task._surface_pair_measurement
+        def missing(*args,**kwargs):
+            value=original_helper(*args,**kwargs);value.pop('_exact_distance_sq',None);return value
+        with patch.object(task,'_surface_pair_measurement',side_effect=missing):value=self.observe(self.query(('b',)))
+        self.assertEqual(value['pairs'][0]['separation_gap']['status'],'measured');self.assertFalse(value['summary']['nearest_separated_complete'])
+        def witness(*args,**kwargs):
+            value=original_helper(*args,**kwargs);value.update(witness_status='unknown',witness_reason='precision',point_a_world=None,point_b_world=None);return value
+        with patch.object(task,'_surface_pair_measurement',side_effect=witness):value=self.observe(self.query(('b',)))
+        self.assertTrue(value['summary']['nearest_separated_complete']);self.assertEqual(value['status'],'partial')
+        self.assertEqual(value['pairs'][0]['facts']['surface_proximity']['witness_status'],'unknown')
+    def test_rank_cache_is_distinct_from_old_pair_and_eviction_is_honest(self):
+        self.arrange()
+        self.service.observe('old',query={'mode':'task','objects':[{'id':'a'},{'id':'b'}],
+            'requested_facts':['closed_solid_relation','surface_proximity']},include_image=False)
+        self.observe(self.query(('b',)));w=self.work()
+        self.assertEqual((w['closed_solid_pair_count'],w['surface_pair_count']),(0,1))
+        self.assertEqual((w['closed_solid_pair_cache_hits'],w['surface_pair_cache_hits']),(1,0))
+        # Explicit fresh tiny cache, not a claimed warm-cache promise.
+        capture=self.host.capture_task_scene(validate_query(self.query())['objects'])
+        scene,meshes,fp=_validated_scene(capture,_task_capture=True);cache=SpatialSceneCache(max_bytes=1024)
+        for _ in range(2):
+            w={};task.task_result(scene,meshes,fp,validate_query(self.query()),cache,lambda _:None,diagnostics=w)
+            self.assertGreater(w['surface_pair_count'],0)
+    def test_exact_rank_distinguishes_equal_float_displays(self):
+        self.arrange();helper=task._surface_pair_measurement
+        def ranked(*args,**kwargs):
+            result=helper(*args,**kwargs)
+            if args[1].object_id in ('b','d'):
+                result['distance_m']=1.;result['_exact_distance_sq']=[2**54+(1 if args[1].object_id=='b' else 3),1,-54]
+            return result
+        with patch.object(task,'_surface_pair_measurement',side_effect=ranked):value=self.observe(self.query(('d','b')))
+        self.assertEqual([r['separation_gap']['value'] for r in value['pairs']],[1.,1.])
+        self.assertEqual(value['summary']['nearest_separated_ids'],['b'])
+    def test_original_geometry_three_states_and_old_pair_equivalence_wire(self):
+        truth=json.loads(original.TRUTH.read_bytes());records=[]
+        for state in ('initial','initial','changed'):
+            meshes=original.snapshot_meshes(state);self.arrange(list(meshes.values()))
+            q={'mode':'task','target':{'id':'Object_01'},'candidates':[{'id':'Object_0'+n} for n in ('2','3','4')],
+               'requested_facts':['aabb','closed_solid_relation','surface_proximity']}
+            response,value=self.call(q);expected=truth['states']['unchanged' if state=='initial' and records else state]
+            self.assertFalse(response['result']['isError'])
+            self.assertEqual(value['summary']['penetrating_ids'],[k for k,p in expected['probes'].items() if p['relation']=='penetrating'])
+            self.assertEqual(value['summary']['nearest_separated_ids'],[expected['nearest_separated_probe']])
+            old_bytes=0
+            for row in value['pairs']:
+                oid=row['object_id'];pair_query={'mode':'task','objects':[{'id':'Object_01'},{'id':oid}],
+                    'requested_facts':['aabb','closed_solid_relation','surface_proximity']}
+                old_response,old_value=self.call(pair_query);old_bytes+=len(wire.encode_response(old_response).encode())
+                self.assertEqual(row['facts'],{key:old_value['facts'][key] for key in row['facts']})
+                if expected['probes'][oid]['relation']=='separated':
+                    low,high=expected['probes'][oid]['distance_interval_m'];gap=row['separation_gap']['value'];self.assertLessEqual(low,gap);self.assertLessEqual(gap,high)
+            records.append({'state':state,'set_full_JSONRPC_bytes':len(wire.encode_response(response).encode()),
+                            'three_pair_full_JSONRPC_bytes':old_bytes,'result':value})
+        record('original_replay',records)
+    def test_publication_deadline_and_oversized_wire_are_not_relaxed(self):
+        self.arrange();check=self.service._check_request_budget
+        def expired(stage):
+            if stage=='before_task_publication':raise live_service.RequestBudgetError('late','publish')
+            return check(stage)
+        with patch.object(self.service,'_check_request_budget',side_effect=expired):
+            response,_=self.call();self.assertTrue(response['result']['isError'])
+        self.host.scene['meshes'][0]['name']='长'*25000
+        response,value=self.call(self.query(('b',)))
+        self.assertFalse(response['result']['isError']);size=len(wire.encode_response(response).encode())
+        self.assertGreater(size,65536);record('large_wire',{'full_JSONRPC_bytes':size,'truncated':False})
+
+
+if __name__=='__main__':unittest.main()

@@ -1,0 +1,92 @@
+{
+  "checks": 12,
+  "validator": "Installed PowerShell Test-Json",
+  "schema_sha256": "c652100c6a629711b8be4f81b58bb52a336da1069a5dfd037a18bbb4e31e79ee",
+  "passed": true,
+  "rows": [
+    {
+      "expected": true,
+      "name": "three_candidates",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": true,
+      "passed": true
+    },
+    {
+      "expected": true,
+      "name": "one_candidate",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": true,
+      "passed": true
+    },
+    {
+      "expected": true,
+      "name": "without_aabb",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": true,
+      "passed": true
+    },
+    {
+      "expected": true,
+      "name": "old_pair",
+      "request": "{\"query\":{\"requested_facts\":[\"pair_relation\"],\"objects\":[{\"id\":\"a\"},{\"id\":\"b\"}],\"mode\":\"task\"},\"include_image\":false}",
+      "actual": true,
+      "passed": true
+    },
+    {
+      "expected": true,
+      "name": "old_aabb_four",
+      "request": "{\"query\":{\"requested_facts\":[\"aabb\"],\"objects\":[{\"id\":\"a\"},{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"mode\":\"task\"},\"include_image\":false}",
+      "actual": true,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "empty_candidates",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "four_candidates",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"},{\"id\":\"e\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "mixed_public_shapes",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\",\"objects\":[{\"id\":\"a\"},{\"id\":\"b\"}]},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "dual_selector",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\",\"name\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "missing_required_fact",
+      "request": "{\"query\":{\"requested_facts\":[\"surface_proximity\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "unsupported_set_fact",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"axis_gap\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\"},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    },
+    {
+      "expected": false,
+      "name": "set_extra_legacy_field",
+      "request": "{\"query\":{\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"],\"candidates\":[{\"id\":\"b\"},{\"id\":\"c\"},{\"id\":\"d\"}],\"target\":{\"id\":\"a\"},\"mode\":\"task\",\"object_ids\":[\"b\"]},\"include_image\":false}",
+      "actual": false,
+      "passed": true
+    }
+  ]
+}
