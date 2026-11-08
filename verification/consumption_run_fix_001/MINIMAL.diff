@@ -1,0 +1,538 @@
+--- 54b2622/runner.py
++++ candidate/runner.py
+@@ -22,6 +22,7 @@
+ HERE=Path(__file__).resolve().parent
+ sys.path.insert(0,str(HERE))
+ ROOT=HERE.parents[1]
++BASE=ROOT/'verification/consumption_run_001'
+ PYTHON=ROOT/'verification/fixes/surface_facts_001/engineering_b/venv/Scripts/python.exe'
+ SOURCE_COMMIT='17db41c481397965a9bae3f4571c59a5a80939c9'
+ SOURCE_SHA='01c296b5dac9c8733670b7b82886fe774fb6e50222d1b935d6ac27efa04760de'
+@@ -53,9 +54,13 @@
+     assert window['token']==approval['window_token'] and window['cycle_id']=='CONSUMPTION-RUN-001'
+     assert str(window.get('status','')).startswith('granted'),'window_not_granted'
+     expiry=window.get('expires_utc',window.get('deadline_utc'))
+-    if expiry is not None:assert datetime.now(timezone.utc)<datetime.fromisoformat(expiry.replace('Z','+00:00')),'window_expired'
++    assert expiry is not None,'explicit_window_expiry_required'
++    now_ns=time.perf_counter_ns();now_utc=datetime.now(timezone.utc)
++    end=datetime.fromisoformat(expiry.replace('Z','+00:00'))
++    assert now_utc<end,'window_expired'
+     assert window['owner']=='W-ENTRY' and window['max_sessions']==8 and window['max_RPC']==1032
+     assert sha(PYTHON.read_bytes())==plan['python']['sha256'] and sys.version==plan['python']['version'],'changed_Python_runtime'
++    return now_ns+int((end-now_utc).total_seconds()*1e9)
+ 
+ 
+ def argv_for(plan,cell,work,final):
+@@ -104,12 +109,57 @@
+ 
+ 
+ def kill_tree(process):
+-    if process is None:return
++    record=dict(parent_reaped=process is None,tree_reaped=process is None,parent_exit_code=None,
++        taskkill_returncode=None,errors=[],scope='owned parent and reported live-PID taskkill tree; fallback parent reap is not tree proof')
++    if process is None:return record
+     if process.poll() is None:
+-        try:subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
+-        except subprocess.TimeoutExpired:process.kill()
++        try:
++            result=subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
++            record['taskkill_returncode']=result.returncode
++            record['tree_reaped']=result.returncode==0
++        except (OSError,subprocess.TimeoutExpired) as exc:
++            record['errors'].append(dict(stage='taskkill',type=type(exc).__name__,message=str(exc)))
++        if not record['tree_reaped']:
++            try:process.kill()
++            except OSError as exc:record['errors'].append(dict(stage='parent_kill',type=type(exc).__name__,message=str(exc)))
+     try:process.wait(timeout=5)
+-    except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)
++    except (OSError,subprocess.TimeoutExpired) as exc:
++        record['errors'].append(dict(stage='parent_wait',type=type(exc).__name__,message=str(exc)))
++        try:process.kill();process.wait(timeout=5)
++        except (OSError,subprocess.TimeoutExpired) as final:
++            record['errors'].append(dict(stage='parent_fallback',type=type(final).__name__,message=str(final)))
++    record['parent_exit_code']=process.poll();record['parent_reaped']=record['parent_exit_code'] is not None
++    return record
++
++
++def process_exited(pid,timeout_ms=1000):
++    """Read-only wait on a known registered PID; never signal/kill a foreign PID."""
++    import ctypes
++    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
++    kernel.OpenProcess.argtypes=(ctypes.c_ulong,ctypes.c_int,ctypes.c_ulong);kernel.OpenProcess.restype=ctypes.c_void_p
++    kernel.WaitForSingleObject.argtypes=(ctypes.c_void_p,ctypes.c_ulong)
++    kernel.CloseHandle.argtypes=(ctypes.c_void_p,)
++    handle=kernel.OpenProcess(0x100000,False,int(pid))
++    if not handle:return ctypes.get_last_error()==87
++    try:return kernel.WaitForSingleObject(handle,timeout_ms)==0
++    finally:kernel.CloseHandle(handle)
++
++
++def registered_tree_cleanup(cell):
++    evidence=[]
++    for kind in (['native','he'] if cell['arm']=='P' else ['native']):
++        folder=Path(cell['audit_root'])/('bridge_'+kind)
++        try:
++            started=load(folder/'STARTED.json')
++            exited=process_exited(started['pid'])
++            ended=load(folder/'EXIT.json')
++            valid=(started['pid']==ended['pid'] and started['ledger_path']==cell['ledger_path']
++                and ended['ledger_path']==cell['ledger_path'] and exited)
++            if kind=='he':valid=valid and ended.get('he_child_reaped') is True
++            evidence.append(dict(kind=kind,confirmed=bool(valid),receipt=ended))
++        except (OSError,ValueError,KeyError) as exc:evidence.append(dict(kind=kind,confirmed=False,error=str(exc)))
++    return dict(confirmed=all(e['confirmed'] for e in evidence),evidence=evidence,
++        scope='registered native/HE bridge processes and HE-owned production child; arbitrary user-created Python descendants are not sandboxed')
+ 
+ 
+ def safe_environment(source):
+@@ -134,23 +184,28 @@
+         tool_actions_observed=0,provider_requests=None,fees=None,backend='unexposed',usage=None,
+         complete=False,deadline_enforcement='controller kill from original dispatch deadline',
+         action_policy='8 is observation threshold only; all actions/costs retained without threshold failure')
+-    process=None;threads=[];timer=None;deadline_fired=threading.Event();reap_lock=threading.Lock()
++    record.update(consumer_popen_ns=None,first_public_tool_ns=None,final_received_ns=None,turn_completed_ns=None,
++        process_exit_ns=None,cleanup_end_ns=None,timestamp_scope='same perf counter, local receive/wait observations, not server generation')
++    process=None;threads=[];timer=None;deadline_fired=threading.Event();reap_lock=threading.Lock();cleanup_receipts=[]
+     def reap():
+-        with reap_lock:kill_tree(process)
++        with reap_lock:
++            receipt=kill_tree(process)
++            if isinstance(receipt,dict):cleanup_receipts.append(receipt)
+     def expire():
+         deadline_fired.set()
+         try:reap()
+         except BaseException:pass  # main finally records the actual reap outcome
+     lines=queue.Queue()
+     def read(stream,label):
+-        for raw in iter(stream.readline,b''):lines.put((label,raw))
+-        lines.put((label,None))
++        for raw in iter(stream.readline,b''):lines.put((label,raw,time.perf_counter_ns()))
++        lines.put((label,None,time.perf_counter_ns()))
+     closed=0;candidate=None;seen=set()
+     try:
+         # Original absolute deadline also interrupts blocking I/O/parse paths;
+         # it never depends on coordinator polling or a new relative timeout.
+         timer=threading.Timer(budget.remaining(),expire);timer.daemon=True;timer.start()
+         budget.remaining()
++        record['consumer_popen_ns']=time.perf_counter_ns()
+         process=subprocess.Popen(argv,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,cwd=work,env=env,
+             creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+         if deadline_fired.is_set():raise TimeoutError('deadline_during_process_start')
+@@ -161,7 +216,7 @@
+         while closed<2:
+             remaining=(cell['deadline_perf_ns']-time.perf_counter_ns())/1e9
+             if remaining<=0:raise TimeoutError('original_answer_180s_deadline')
+-            try:label,raw=lines.get(timeout=min(.05,remaining))
++            try:label,raw,received_ns=lines.get(timeout=min(.05,remaining))
+             except queue.Empty:
+                 if load(cell['ledger_path'])['halted']:raise RuntimeError('shared_budget_halted')
+                 continue
+@@ -175,14 +230,18 @@
+             except ValueError:raise ValueError('unsupported_non_JSON_exec_event')
+             public=public_event(event)
+             if public is not None:
++                public['received_ns']=received_ns
+                 record['public_events'].append(public)
+-                if public['type']=='turn.completed':record['usage']=public['usage'];record['complete']=True
++                if public['type']=='turn.completed':
++                    record['usage']=public['usage'];record['complete']=True;record['turn_completed_ns']=received_ns
+             else:
+                 tag=event.get('item',{}).get('type',event.get('type','unknown'))
+                 record['discarded_event_types'][tag]=record['discarded_event_types'].get(tag,0)+1
+             item=event.get('item',{})
+-            if event.get('type')=='item.completed' and item.get('type')=='agent_message':candidate=item.get('text','')
++            if event.get('type')=='item.completed' and item.get('type')=='agent_message':
++                candidate=item.get('text','');record['final_received_ns']=received_ns
+             if event.get('type')=='item.started' and item.get('type') in PUBLIC_TOOL_TYPES:
++                if record['first_public_tool_ns'] is None:record['first_public_tool_ns']=received_ns
+                 identity=item.get('id', 'anonymous-'+str(record['tool_actions_observed']+1))
+                 if identity not in seen:
+                     seen.add(identity);record['tool_actions_observed']+=1
+@@ -190,6 +249,7 @@
+             if event.get('type')=='item.completed' and item.get('type')=='command_execution':
+                 budget.charge_public(len(str(item.get('aggregated_output','')).encode()),'builtin_shell_observed_after_delivery')
+         process.wait(timeout=max(.01,(cell['deadline_perf_ns']-time.perf_counter_ns())/1e9))
++        record['process_exit_ns']=time.perf_counter_ns()
+         if deadline_fired.is_set() or time.perf_counter_ns()>=cell['deadline_perf_ns']:raise TimeoutError('late_final')
+         if candidate is not None:
+             budget.charge_public(len(candidate.encode()),'final_text');final.write_text(candidate,encoding='utf8')
+@@ -205,9 +265,20 @@
+         try:reap()
+         except BaseException as exc:record['reap_error']=dict(type=type(exc).__name__,message=str(exc))
+         for thread in threads:thread.join(timeout=1)
++        if process is not None and process.poll() is not None and record['process_exit_ns'] is None:
++            record['process_exit_ns']=time.perf_counter_ns()
++        record['cleanup_receipts']=cleanup_receipts
++        tree=any(r.get('tree_reaped') for r in cleanup_receipts)
++        if not tree and process is not None and process.poll() is not None and cell.get('arm') in ('N','P'):
++            record['registered_tree_cleanup']=registered_tree_cleanup(cell)
++            tree=record['registered_tree_cleanup']['confirmed']
++        record['tree_reaped']=bool(tree or process is None)
++        record['cleanup_end_ns']=time.perf_counter_ns()
+         record.update(exit_code=None if process is None else process.poll(),
+             process_spawned=process is not None,process_reaped=process is not None and process.poll() is not None,finished_ns=time.perf_counter_ns())
+         record['deadline_timer_fired']=deadline_fired.is_set()
++        record['safe_to_continue']=record['tree_reaped'] and (process is None or record['process_reaped'])
++        if not record['safe_to_continue']:record['valid_completion']=False
+         record['wall_ns']=record['finished_ns']-record['started_ns']
+         save(folder/'CONSUMER.json',record)
+     return record
+@@ -235,79 +306,135 @@
+         native.socket.create_connection=original;meters['ended_ns']=time.perf_counter_ns();save(folder/'CLOSE_METER.json',meters)
+ 
+ 
++def run_cell(plan, entry, task, native, folder, *, window_deadline_ns):
++    from bridge import Budget
++    began=time.perf_counter_ns();owner=None;start_attempted=False;consumer_attempted=False
++    public_root=Path(plan['neutral_run_root'])/str(entry['ordinal']).zfill(2)
++    record=dict(entry,status='running',dispatch_ns=began,host_ready_ns=None,denominator=1,
++        safe_to_continue=True,consumer=None,cleanup_verified=None)
++    try:
++        if window_deadline_ns-began<240_000_000_000:
++            record.update(status='not_run',reason='insufficient_window_for_original_answer_and_cleanup');return record
++        folder.mkdir(exist_ok=False)
++        public_root.mkdir(parents=True,exist_ok=False);work=public_root/'work';work.mkdir()
++        chain_deadline=min(began+600_000_000_000,window_deadline_ns)
++        answer_deadline=min(began+180_000_000_000,chain_deadline-60_000_000_000)
++        prompt=(BASE/'materials'/task['prompt_path']).read_bytes()
++        assert sha(prompt)==task['prompt_utf8_sha256']
++        asset=public_root/'input.blend';shutil.copyfile(task['source_asset_path'],asset)
++        assert sha(asset.read_bytes())==task['asset_sha256']
++        material=load(BASE/'materials/MATERIAL_MANIFEST.json')
++        helper_path=BASE/'materials'/material['neutral_helper']['local_path']
++        start_attempted=True
++        owner=native.NativeSession.start(blender=plan['blender'],asset=asset,workspace=public_root/'native',
++            deadline_ns=chain_deadline,condition=entry['arm'],expected_asset_sha256=task['asset_sha256'],max_calls=128)
++        record['host_ready_ns']=time.perf_counter_ns()
++        cell=dict(entry,dispatch_ns=began,audit_root=str(folder),ledger_path=str(folder/'BUDGET.json'),
++            deadline_perf_ns=answer_deadline,endpoint=dict(host=owner.host,port=owner.port),
++            native_workspace=str(owner.workspace),native_helper=str(helper_path),
++            native_helper_sha256=material['neutral_helper']['sha256'],source_sha256=SOURCE_SHA,
++            source_root=str(public_root/'sources'),product_manifest=plan['product_manifest'],
++            action_observation_threshold=8,max_native_rpc=128,max_public_text_bytes=1048576,
++            image_limits=dict(max_images=1,max_single_pixels=589824,max_total_pixels=589824),
++            max_image_dimension=768,max_constructed_images=1,he_config=str(folder/'he_config.json'),
++            he_argv=[str(PYTHON),'-I',str(HERE/'he_bootstrap.py'),str(folder/'CELL.json')],he_cwd=str(folder))
++        if entry['arm']=='P':
++            with zipfile.ZipFile(BASE/'PRODUCT_BYTES.zip') as archive:archive.extractall(public_root/'sources')
++            save(cell['he_config'],dict(schema_version='1.0',enabled=True,project_root=cell['source_root'],
++                state_file=str(folder/'state.json'),audit_file=str(folder/'he_audit.jsonl'),
++                expected_identity=dict(source_sha256=SOURCE_SHA),blender=dict(host=owner.host,port=owner.port,timeout_s=30),request_budget_s=30))
++        save(folder/'CELL.json',cell);Budget.create(cell);Budget(cell).charge_public(len(prompt),'exact_question_prompt')
++        consumer_attempted=True;record['safe_to_continue']=False
++        record['consumer']=consume(plan,cell,work,prompt)
++        record['safe_to_continue']=record['consumer']['safe_to_continue']
++        record['status']='completed' if record['consumer']['valid_completion'] else 'error'
++    except BaseException as exc:
++        record.update(status='error',error_type=type(exc).__name__,reason=str(exc),valid_completion=False)
++        if consumer_attempted:record['safe_to_continue']=False
++        if start_attempted and owner is None:
++            failure=public_root/'native/START_FAILURE.json'
++            receipt=load(failure) if failure.exists() else None
++            record['native_start_failure']=receipt
++            record['safe_to_continue']=receipt is not None and receipt.get('cleanup_errors')==[]
++    finally:
++        if owner is not None:
++            try:record['close']=close_meter(native,owner,folder)
++            except BaseException as exc:
++                record['close_error']=dict(type=type(exc).__name__,message=str(exc));record['close']={}
++                try:owner._kill()
++                except BaseException as stop:record['kill_error']=str(stop)
++            closed_path=owner.workspace/'WORKER_CLOSED.json'
++            closed=load(closed_path) if closed_path.exists() else {}
++            record['closed_worker']=closed;record['native_session']=owner.config
++            receipt=record['close']
++            record['cleanup_verified']=(receipt.get('response',{}).get('status')=='closed' and receipt.get('error') is None
++                and receipt.get('process_reaped') and receipt.get('exit_code')==0 and receipt.get('source_file_unchanged')
++                and receipt.get('protected_files_unchanged') and closed.get('poisoned') is False
++                and closed.get('initial_geometry_fingerprint')==closed.get('final_geometry_fingerprint'))
++            record['safe_to_continue']=record['safe_to_continue'] and bool(record['cleanup_verified'])
++        record['cleanup_end_ns']=time.perf_counter_ns();record['whole_cell_ns']=record['cleanup_end_ns']-began
++        consumer=record.get('consumer') or {}
++        for key in ('consumer_popen_ns','first_public_tool_ns','final_received_ns','turn_completed_ns','process_exit_ns'):
++            record[key]=consumer.get(key)
++        final=record['final_received_ns']
++        record['answer_receive_latency_ns']=None if final is None else final-began
++        record['valid_comparison']=None
++        record['comparison_review']='independent quality/context/access/image review;8actions threshold never failure'
++        if folder.is_dir():save(folder/'RESULT.json',record)
++    return record
++
++
++def planned_result(plan):
++    return dict(scheduled=8,cells=[dict(entry,status='planned',reason=None,denominator=1,
++        dispatch_ns=None,host_ready_ns=None,consumer_popen_ns=None,first_public_tool_ns=None,
++        final_received_ns=None,turn_completed_ns=None,process_exit_ns=None,cleanup_end_ns=None)
++        for entry in plan['cells']],provider_requests=None,fees=None,no_retries=True)
++
++
++def execute_slots(plan,approval,material,native,output,*,window_deadline_ns,result=None):
++    output=Path(output);output.mkdir(parents=True,exist_ok=True)
++    result=planned_result(plan) if result is None else result;save(output/'RESULTS.json',result)
++    specs={task['task_id']:task for task in material['tasks']};stop=None
++    for index,slot in enumerate(result['cells']):
++        if stop or window_deadline_ns-time.perf_counter_ns()<240_000_000_000:
++            slot.update(status='not_run',reason=stop or 'insufficient_window_for_original180s_plus60s_cleanup')
++            save(output/'RESULTS.json',result);continue
++        slot['status']='running';save(output/'RESULTS.json',result)
++        try:
++            entry=plan['cells'][index]
++            record=run_cell(plan,entry,specs[entry['task_id']],native,output/str(index+1).zfill(2),window_deadline_ns=window_deadline_ns)
++            slot.update(record)
++            if not record.get('safe_to_continue',False):stop='previous_slot_cleanup_not_confirmed_no_further_start'
++        except BaseException as exc:
++            slot.update(status='error',error_type=type(exc).__name__,reason=str(exc),safe_to_continue=False)
++            stop='previous_slot_unhandled_preparation_or_cleanup_error'
++        save(output/'RESULTS.json',result)
++    return result
++
++
+ def run(approval_path):
+-    run_started=time.perf_counter_ns()
+-    plan=load(HERE/'PLAN.json');approval=load(approval_path)
+-    require_ready(plan,approval)  # before any process, helper import or asset copy
++    run_started=time.perf_counter_ns();plan=load(HERE/'PLAN.json');approval=load(approval_path)
++    window_deadline_ns=require_ready(plan,approval)
+     output=HERE/'actual_01';output.mkdir(exist_ok=False)
++    result=planned_result(plan);save(output/'RESULTS.json',result)
+     save(output/'STARTED.json',dict(at_utc=datetime.now(timezone.utc).isoformat(),approval=approval,
+-        run_started_ns=run_started,preflight_management_ns=time.perf_counter_ns()-run_started))
+-    material=load(HERE/'materials/MATERIAL_MANIFEST.json')
+-    spec_by_id={t['task_id']:t for t in material['tasks']}
+-    helper_path=HERE/'materials'/material['neutral_helper']['local_path']
+-    raw=helper_path.read_bytes();assert sha(raw)==material['neutral_helper']['sha256']
+-    native=types.ModuleType('_consumption_owned_native');native.__file__=str(helper_path)
+-    sys.modules[native.__name__]=native;exec(compile(raw,str(helper_path),'exec',dont_inherit=True),native.__dict__)
+-    from bridge import Budget
+-    records=[]
+-    for index,entry in enumerate(plan['cells'],1):
+-        began=time.perf_counter_ns()
+-        task=spec_by_id[entry['task_id']];folder=output/str(index).zfill(2);folder.mkdir()
+-        public_root=Path(plan['neutral_run_root'])/str(index).zfill(2)
+-        public_root.mkdir(parents=True,exist_ok=False);work=public_root/'work';work.mkdir()
+-        chain_deadline=began+600_000_000_000
+-        # The 180 seconds start when this cell is dispatched, before asset/host
+-        # startup, MCP discovery, queueing and tools. Cleanup has its own reserve.
+-        answer_deadline=min(began+180_000_000_000,chain_deadline-60_000_000_000)
+-        prompt=(HERE/'materials'/task['prompt_path']).read_bytes()
+-        assert sha(prompt)==task['prompt_utf8_sha256']
+-        owner=None;record=dict(task_id=entry['task_id'],arm=entry['arm'],dispatch_ns=began,denominator=1)
+-        try:
+-            asset=public_root/'input.blend'
+-            shutil.copyfile(task['source_asset_path'],asset)
+-            assert sha(asset.read_bytes())==task['asset_sha256']
+-            owner=native.NativeSession.start(blender=plan['blender'],asset=asset,
+-                workspace=public_root/'native',deadline_ns=chain_deadline,condition=entry['arm'],
+-                expected_asset_sha256=task['asset_sha256'],max_calls=128)
+-            cell=dict(entry,audit_root=str(folder),ledger_path=str(folder/'BUDGET.json'),deadline_perf_ns=answer_deadline,
+-                endpoint=dict(host=owner.host,port=owner.port),native_workspace=str(owner.workspace),native_helper=str(helper_path),
+-                native_helper_sha256=material['neutral_helper']['sha256'],source_sha256=SOURCE_SHA,
+-                source_root=str(public_root/'sources'),product_manifest=plan['product_manifest'],
+-                action_observation_threshold=8,max_native_rpc=128,max_public_text_bytes=1048576,
+-                image_limits=dict(max_images=1,max_single_pixels=589824,max_total_pixels=589824),
+-                max_image_dimension=768,max_constructed_images=1,
+-                he_config=str(folder/'he_config.json'),he_argv=[str(PYTHON),'-I',str(HERE/'he_bootstrap.py'),str(folder/'CELL.json')],he_cwd=str(folder))
+-            if entry['arm']=='P':
+-                with zipfile.ZipFile(HERE/'PRODUCT_BYTES.zip') as archive:archive.extractall(public_root/'sources')
+-                save(cell['he_config'],dict(schema_version='1.0',enabled=True,project_root=cell['source_root'],
+-                    state_file=str(folder/'state.json'),audit_file=str(folder/'he_audit.jsonl'),
+-                    expected_identity=dict(source_sha256=SOURCE_SHA),blender=dict(host=owner.host,port=owner.port,timeout_s=30),request_budget_s=30))
+-            save(folder/'CELL.json',cell);Budget.create(cell)
+-            Budget(cell).charge_public(len(prompt),'exact_question_prompt')
+-            record['consumer']=consume(plan,cell,work,prompt)
+-        except BaseException as exc:record.update(error_type=type(exc).__name__,error=str(exc),valid_completion=False)
+-        finally:
+-            if owner is not None:
+-                try:record['close']=close_meter(native,owner,folder)
+-                except BaseException as exc:
+-                    record['close_error']=dict(type=type(exc).__name__,message=str(exc));owner._kill()
+-                    record['close']={}
+-                record['closed_worker']=load(owner.workspace/'WORKER_CLOSED.json') if (owner.workspace/'WORKER_CLOSED.json').exists() else None
+-                record['native_session']=owner.config
+-                closed=record['closed_worker'] or {}
+-                receipt=record['close']
+-                record['cleanup_verified']=(receipt.get('response',{}).get('status')=='closed'
+-                    and receipt.get('error') is None and receipt.get('process_reaped')
+-                    and receipt.get('exit_code')==0 and receipt.get('source_file_unchanged')
+-                    and receipt.get('protected_files_unchanged') and closed.get('poisoned') is False
+-                    and closed.get('initial_geometry_fingerprint')==closed.get('final_geometry_fingerprint'))
+-            record['valid_comparison']=None
+-            record['comparison_review']='requires independent fixed scoring, context/source/access/image audit; tool threshold8 is never a failure'
+-            record['finished_ns']=time.perf_counter_ns();record['whole_cell_ns']=record['finished_ns']-began
+-            save(folder/'RESULT.json',record);records.append(record)
+-    save(output/'RESULTS.json',dict(scheduled=8,cells=records,provider_requests=None,fees=None,no_retries=True,
+-        run_started_ns=run_started,run_wall_through_result_construction_ns=time.perf_counter_ns()-run_started,
+-        clock_scope='includes preflight/cells/close; excludes controller interpreter startup and final record write; outer invocation wall recorded by coordinator'))
++        run_started_ns=run_started,window_deadline_ns=window_deadline_ns,preflight_management_ns=time.perf_counter_ns()-run_started))
++    try:
++        material=load(BASE/'materials/MATERIAL_MANIFEST.json')
++        helper_path=BASE/'materials'/material['neutral_helper']['local_path']
++        raw=helper_path.read_bytes();assert sha(raw)==material['neutral_helper']['sha256']
++        native=types.ModuleType('_consumption_owned_native');native.__file__=str(helper_path)
++        sys.modules[native.__name__]=native;exec(compile(raw,str(helper_path),'exec',dont_inherit=True),native.__dict__)
++        result=execute_slots(plan,approval,material,native,output,window_deadline_ns=window_deadline_ns,result=result)
++    except BaseException as exc:
++        for slot in result['cells']:
++            if slot['status'] in ('planned','running'):slot.update(status='not_run',reason='batch_setup_error:'+str(exc))
++        result['batch_error']=dict(type=type(exc).__name__,message=str(exc))
++    finally:
++        result.update(run_started_ns=run_started,run_wall_through_result_construction_ns=time.perf_counter_ns()-run_started,
++            clock_scope='local observations; includes preflight/cells/close, excludes interpreter startup/final record write')
++        save(output/'RESULTS.json',result)
++    return result
+ 
+ 
+ if __name__=='__main__':
+--- 54b2622/bridge.py
++++ candidate/bridge.py
+@@ -49,13 +49,14 @@
+         with path.open('xb') as stream: stream.write(encoded(value))
+ 
+     @contextmanager
+-    def locked(self):
++    def locked(self, *, record_only=False):
+         import msvcrt
+         lock = self.path.with_suffix(self.path.suffix + '.lock')
+         with lock.open('a+b') as stream:
+             stream.seek(0, 2)
+             if stream.tell() == 0: stream.write(b'0'); stream.flush()
+-            stop = min(self.cell['deadline_perf_ns'], time.perf_counter_ns() + 2_000_000_000)
++            stop = time.perf_counter_ns() + 2_000_000_000
++            if not record_only: stop = min(self.cell['deadline_perf_ns'], stop)
+             while True:
+                 try:
+                     stream.seek(0); msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1); break
+@@ -129,18 +130,21 @@
+             state['events'].append(dict(kind='public_text', bytes=count, label=label, at_ns=time.perf_counter_ns()))
+ 
+     def halt(self, reason):
+-        with self.locked() as state:
++        with self.locked(record_only=True) as state:
+             state.update(halted=True, reason=reason)
+ 
+     poison = halt
+     charge_text = charge_public
+ 
+     def image_output(self, count, label):
+-        self.remaining()
+-        with self.locked() as state:
+-            self._ready(state)
++        assert type(count) is int and count >= 0
++        # These blocks already exist. Their incurred cost survives late arrival,
++        # halt and qualification failure; recording never grants publication.
++        with self.locked(record_only=True) as state:
+             state['generated_image_blocks'] += count
+             state['events'].append(dict(kind='generated_images', count=count, label=label, at_ns=time.perf_counter_ns()))
++            self.remaining()
++            self._ready(state)
+             if state['generated_image_blocks'] > self.cell.get('max_constructed_images', 1):
+                 state.update(halted=True, reason='image_output_limit')
+                 raise BudgetError('image_output_limit')
+@@ -170,7 +174,7 @@
+ def register_images(cell, budget, blocks, origin):
+     """Reuse the original neutral ImageLedger for common PNG delivery credit."""
+     if not blocks: return
+-    folder = Path(cell['audit_root'])/'image_attempts'; folder.mkdir(parents=True, exist_ok=True)
++    folder = Path(cell['audit_root'])/'image_attempts'
+     target = folder/(uuid.uuid4().hex+'.json')
+     record = dict(origin=origin, generated_blocks=len(blocks), started_ns=time.perf_counter_ns(),
+         encoded_data_bytes=sum(len(block.get('data','').encode('utf8')) for block in blocks), rows=[], reservation=None)
+@@ -197,6 +201,7 @@
+         raise
+     finally:
+         record['elapsed_ns'] = time.perf_counter_ns()-record['started_ns']
++        folder.mkdir(parents=True, exist_ok=True)
+         target.write_bytes(encoded(record))
+ 
+ 
+@@ -278,10 +283,19 @@
+ class HE:
+     def __init__(self, cell, budget, audit):
+         self.budget = budget
++        self.audit = audit
+         self.stderr = (audit/'HE_STDERR.bin').open('wb')
+-        self.process = subprocess.Popen(cell['he_argv'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+-            stderr=self.stderr, cwd=cell.get('he_cwd'), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+-        self.incoming = reader(self.process.stdout)
++        try:
++            self.process = subprocess.Popen(cell['he_argv'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
++                stderr=self.stderr, cwd=cell.get('he_cwd'), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
++        except BaseException:
++            self.stderr.close()
++            raise
++        (audit/'HE_CHILD_STARTED.json').write_bytes(encoded(dict(pid=self.process.pid, started_ns=time.perf_counter_ns())))
++        try: self.incoming = reader(self.process.stdout)
++        except BaseException:
++            self.close()
++            raise
+ 
+     def handle_raw(self, raw, request):
+         self.budget.remaining(); self.process.stdin.write(raw); self.process.stdin.flush()
+@@ -292,10 +306,22 @@
+         return reply
+ 
+     def close(self):
+-        self.process.stdin.close()
+-        try: self.process.wait(timeout=5)
+-        except subprocess.TimeoutExpired: self.process.kill(); self.process.wait(timeout=5)
+-        self.stderr.close()
++        record = dict(pid=self.process.pid, started_ns=time.perf_counter_ns(), errors=[], kill_requested=False)
++        try:
++            try: self.process.stdin.close()
++            except OSError as error: record['errors'].append(dict(stage='stdin_close', type=type(error).__name__, message=str(error)))
++            try: self.process.wait(timeout=5)
++            except (subprocess.TimeoutExpired, OSError) as error:
++                record['errors'].append(dict(stage='wait', type=type(error).__name__, message=str(error)))
++                record['kill_requested'] = True
++                self.process.kill(); self.process.wait(timeout=5)
++        except BaseException as error:
++            record['errors'].append(dict(stage='owned_kill_wait', type=type(error).__name__, message=str(error)))
++        finally:
++            record.update(exit_code=self.process.poll(), reaped=self.process.poll() is not None, ended_ns=time.perf_counter_ns())
++            self.stderr.close()
++            (self.audit/'HE_CHILD_EXIT.json').write_bytes(encoded(record))
++        return record
+ 
+ 
+ def main(argv=None):
+@@ -304,9 +330,12 @@
+     parser.add_argument('--cell', type=Path, required=True)
+     options = parser.parse_args(argv); cell = decode(options.cell.read_bytes()); budget = Budget(cell)
+     audit = Path(cell['audit_root'])/('bridge_'+options.kind); audit.mkdir(parents=True, exist_ok=False)
+-    backend = Native(cell, budget, audit) if options.kind=='native' else HE(cell, budget, audit)
+-    incoming = reader(sys.stdin.buffer); sequence = 0
++    pid = os.getpid(); started = time.perf_counter_ns()
++    (audit/'STARTED.json').write_bytes(encoded(dict(pid=pid, kind=options.kind, ledger_path=cell['ledger_path'], started_ns=started)))
++    backend = None; normal_exit = False; close_receipt = None; close_error = None
+     try:
++        backend = Native(cell, budget, audit) if options.kind=='native' else HE(cell, budget, audit)
++        incoming = reader(sys.stdin.buffer); sequence = 0
+         while True:
+             raw = incoming.get(timeout=budget.remaining())
+             if not raw: break
+@@ -343,8 +372,24 @@
+                 (folder/'METER.json').write_bytes(encoded(dict(tx_bytes=len(raw), generated_rx_bytes=len(reply or b''),
+                     published_rx_bytes=len(reply or b'') if published else 0,
+                     elapsed_ns=time.perf_counter_ns()-started)))
++        normal_exit = True
+     finally:
+-        if options.kind=='he': backend.close()
++        active_error = sys.exc_info()[0] is not None
++        if options.kind=='he' and backend is not None:
++            try: close_receipt = backend.close()
++            except BaseException as error: close_error = error
++        child = getattr(backend, 'process', None)
++        child_pid = getattr(child, 'pid', None)
++        if close_receipt is None and (audit/'HE_CHILD_EXIT.json').exists():
++            close_receipt = decode((audit/'HE_CHILD_EXIT.json').read_bytes())
++        cleanup = close_receipt if type(close_receipt) is dict else {}
++        (audit/'EXIT.json').write_bytes(encoded(dict(pid=pid, kind=options.kind, ledger_path=cell['ledger_path'], ended_ns=time.perf_counter_ns(),
++            normal_exit=normal_exit and close_error is None and not cleanup.get('errors')
++                and (options.kind!='he' or cleanup.get('reaped') is True),
++            he_child_pid=cleanup.get('pid', child_pid), he_child_reaped=cleanup.get('reaped'),
++            he_child_exit_code=cleanup.get('exit_code'), he_close_receipt=close_receipt,
++            close_error=None if close_error is None else dict(type=type(close_error).__name__, message=str(close_error)))))
++        if close_error is not None and not active_error: raise close_error
+ 
+ 
+ if __name__ == '__main__': main()
