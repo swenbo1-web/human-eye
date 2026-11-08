@@ -1,0 +1,31 @@
+# CLOSED-SOLID-READ-001
+
+W-ENTRY: continue on your own clean 4ca1fdb2882ae31da2fd3ec49ac77e1710c69a3e. Root independently accepted the previous bound unsupported result; read ENTRY_REVIEW.md. User standing authorization covers this targeted implementation and isolated QA. No additional approval request is needed.
+
+## One capability and one candidate
+
+Implement a general read-only relation for two finite, connected, closed, orientable, non-self-intersecting triangular shells, including nonconvex geometry and through-holes. It must answer the original assembly's solid classification and, with existing surface distance, identify all penetrating parts and the nearest separated part. Do not recognize object names, ring parameters, twelve-sided structure, special world axes or fixture answers.
+
+Keep existing geometry_safety/solid_relation/write execution semantics intact. The old solid_relation means overlap at 1e-9 m tolerance; it must not silently become zero-tolerance topology, and pair_relation must not receive invented signed depths. Add one clearly named read-only fact, preferably closed_solid_relation, to the existing task interface with explicit zero-tolerance classification of represented closed solids: separated, touching, penetrating (positive-volume interior overlap). State the geometry scope once in normal tool/result metadata. Do not build a new service, permission tier, solver framework, global MTV, or write action. Existing normal task query remains the entry; use existing surface_proximity for separated distances and current object/cache binding.
+
+## Algorithm direction
+
+Reuse existing exact triangle predicates and integer frame; surface_geometry has an exact BVH that can be minimally extended to cross-surface candidate traversal. Combine boundary-intersection analysis with a bounded exact point-in-solid/containment test. A positive surface gap alone cannot reject containment; a zero gap alone cannot prove penetration; vertex-only testing misses crossing solids. Choose a deterministic degeneracy policy and return explicit unknown when it cannot establish the promised classification. Do not use unchecked floating winding thresholds or approximate Barnes-Hut values as exact answers. Treat self-intersecting/open/nonmanifold/unsupported multiple-shell inputs honestly.
+
+Aim for a lean implementation from the first candidate: BVH pruning and early sufficient witnesses, shared preparation within a query, existing successful pair-cache reuse keyed by complete current geometry and algorithm version. Avoid repeated mesh validation when existing sound prepared data suffices. Record actual predicate/candidate work where cheaply available. Do not launch an unrelated cache/residency redesign, raise budgets to hide quadratic work, or add layers solely for this experiment.
+
+## Acceptance
+
+Use the unchanged original assembly and accepted Decimal80 truth. Initial and unchanged: 02 separated about .01 m, 03 penetrating, 04 separated about .04 m, nearest separated 02. Changed original four-point patch: 02/03 penetrating, 04 separated and nearest. Check precise distances with the existing nonzero error bound, not rounded example numbers. Preserve original source, rotation, all candidates and AABB-invariant edit.
+
+Targeted analytic tests must distinguish hole containment from material containment, crossing boundaries with neither mesh's vertices inside the other, face/edge/point tangency and coincident/ambiguous boundaries, ordinary rotations/translations and swapped objects/orientation, invalid topology and numerical/work-deadline unknown. Do not write tests that merely restate implementation. Exact represented-geometry answers and source uncertainty must not be conflated. Retain relevant old convex/P1 and task-entry/cache regression checks; run the necessary checks once per meaningful change, not the full unrelated matrix repeatedly.
+
+Freeze at most one coherent product candidate and source identity before actual QA. Reuse the existing private controlled loader/stdio harness. One private NativeSession, original deadline at most 600 seconds without renewal, at most 9 public observations and 16 total physical RPC including captures, admin readback, one original QA patch and close. No new model consumers. Use the three states with the same current candidate; each pair query may request the new relation plus needed existing distance facts. Capture/query and close all count. Prepare before opening the session; reserve cleanup. If the required facts remain unsupported, stop further repeated qualification and explain the precise remaining gap. No second candidate or new session to chase a score.
+
+Use the matching CLOSED_SOLID_WINDOW.json and root STATE for the exclusive resource window. Full implementation budget 90 minutes from receipt; original private session still 600 seconds. Keep all failed attempts and actual unknowns. If a general solution cannot be made correct within this scope, return the incomplete candidate/precise obstacle, rather than expanding to arbitrary solids, decomposition or new write domains.
+
+## Deliver and stop
+
+Commit the candidate and a compact verification/closed_solid_read_001 report on your own branch. Reuse existing evidence machinery; do not create another generic audit/runner platform. Report fixed product/source bytes, actual analytic/public test denominators, cold/unchanged/changed acquisition/compute/cache costs where measured, original contract results, failures/unknowns, and full implementation time. Engineering success is not model-level benefit. Preserve other branches, original assets, shared GUI/default9876, deployment and Google API pause.
+
+Send CLOSED_SOLID_READ_001_COMPLETE (or the concrete incomplete result) to root 01a1971f-eef5-7a23-a1b1-2352beb80a77, then finish the batch. Root will independently review correctness, avoidable work and whether to continue to the bounded original N/P comparison; do not automatically start consumers or another optimization round.
