@@ -137,6 +137,8 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "surface_proximity independently measures nonnegative triangle-surface distance, original points, "
             "positive-distance A-to-B direction and boundary/nonmanifold edge counts. Zero-distance direction "
             "is not applicable; edge counts do not certify a solid. Goals evaluate caller criteria. "
+            "closed_solid_relation classifies represented connected closed triangle shells at zero tolerance "
+            "as separated, touching, or penetrating (positive-volume interior overlap); invalid or ambiguous shells stay unknown. "
             "Other modes retain images/returned IDs; scene changes expire observations. "
             "mesh_structure registered single-target diagnose yields facts/patch refs; patch requests images."
         ),

@@ -12,10 +12,11 @@ from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
 from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
 from .surface_proximity import MAX_FACES, MAX_TRIANGLE_PAIRS, measure_surface_proximity, _rank_surface_results
+from .surface_geometry import classify_closed_solids
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
-         'solid_relation', 'nearest_witness', 'pair_relation', 'surface_proximity')
+         'solid_relation', 'nearest_witness', 'pair_relation', 'surface_proximity', 'closed_solid_relation')
 PAIR_FACTS = frozenset(FACTS) - {'aabb'}
 SELECTOR_SCHEMA = {
     'type': 'object', 'properties': {'id': {'type': 'string', 'minLength': 1, 'maxLength': 256},
@@ -179,7 +180,7 @@ def bind_objects(scene, selectors):
 
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
-                              diagnostics, retain_exact_rank=False):
+                              diagnostics, retain_exact_rank=False, prepared_pair=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -188,6 +189,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     def compute_surface():
         diagnostics['surface_pair_count'] += 1
         options = {'retain_exact_rank': True} if retain_exact_rank else {}
+        if prepared_pair is not None:
+            options['_prepared_pair'] = prepared_pair
         return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
     face_counts = len(left.faces), len(right.faces)
     if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
@@ -203,6 +206,37 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version)
     return result
+
+
+def _closed_solid_pair_measurement(left, right, cache, checkpoint, *, source,
+                                   diagnostics, prepared_holder=None):
+    """Use the current ordered pair cache; preparation is query-local only."""
+    diagnostics['closed_solid_pair_count'] = 0
+    diagnostics['closed_solid_pair_cache_hit'] = False
+    work = {}
+    diagnostics['closed_solid_work'] = work
+    def compute():
+        diagnostics['closed_solid_pair_count'] += 1
+        options = {'prepared_holder': prepared_holder} if prepared_holder is not None else {}
+        return classify_closed_solids(left, right, checkpoint, diagnostics=work, **options)
+    counts = len(left.faces), len(right.faces)
+    if (sum(counts) > MAX_FACES or counts[0] * counts[1] > MAX_TRIANGLE_PAIRS
+            or any(len(mesh.vertices) > 3 * count for mesh, count in zip((left, right), counts))):
+        return compute()
+    result, diagnostics['closed_solid_pair_cache_hit'] = cache.pair_measurement(
+        left, right, compute, parameters={'source': source, 'unit': 'm', 'coordinate_frame': 'world',
+            'relation_tolerance_m': 0.0}, algorithm_version='task-closed-solid-exact-v1')
+    return result
+
+
+def _closed_solid_fact(measured):
+    metadata = dict(method=measured.get('method', 'exact_closed_triangle_shell_v1'),
+        relation_tolerance_m=0.0,
+        geometry_scope='finite_connected_closed_orientable_non_self_intersecting_triangle_shells')
+    relation = measured.get('relation')
+    if measured.get('measurement_valid') is True and relation in ('separated', 'touching', 'penetrating'):
+        return _fact(relation, **metadata)
+    return _fact(reason=measured.get('reason') or 'closed_solid_relation_unavailable', **metadata)
 
 
 def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None):
@@ -394,10 +428,20 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 facts['nearest_witness'] = _nearest_witness(strict)
             if 'pair_relation' in requested_pair:
                 facts['pair_relation'] = _pair_relation(strict)
+            shared_preparation = ({} if 'closed_solid_relation' in requested_pair
+                                  and 'surface_proximity' in requested_pair else None)
+            if 'closed_solid_relation' in requested_pair:
+                checkpoint('before_closed_solid_pair_measurement')
+                closed = _closed_solid_pair_measurement(left, right, cache, checkpoint,
+                    source=scene['source'], diagnostics=metrics,
+                    prepared_holder=shared_preparation)
+                checkpoint('after_closed_solid_pair_measurement')
+                facts['closed_solid_relation'] = _closed_solid_fact(closed)
             if 'surface_proximity' in requested_pair:
                 checkpoint('before_surface_pair_measurement')
                 surface = _surface_pair_measurement(left, right, cache, checkpoint,
-                    source=scene['source'], diagnostics=metrics)
+                    source=scene['source'], diagnostics=metrics,
+                    prepared_pair=shared_preparation.get('pair') if shared_preparation is not None else None)
                 checkpoint('after_surface_pair_measurement')
                 facts['surface_proximity'] = _surface_proximity_fact(surface)
     # Numerical overflow must not turn the otherwise known fields into a JSON

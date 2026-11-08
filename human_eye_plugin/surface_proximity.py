@@ -505,7 +505,8 @@ def _rank_surface_results(results_by_id, checkpoint):
                 scope='provided_kernel_results_only')
 
 
-def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False):
+def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
+                              _prepared_pair=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
@@ -514,8 +515,12 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
         direction_status='unknown', topology=None, method=METHOD,
         work=budget.counts)
     try:
-        records, result['topology'] = _admit((left, right), budget)
-        origin, factor, prepared = _integer_frame(records, budget)
+        if _prepared_pair is None:
+            records, result['topology'] = _admit((left, right), budget)
+            origin, factor, prepared = _integer_frame(records, budget)
+        else:
+            records, result['topology'], origin, factor, prepared = _prepared_pair
+            budget.counts['shared_preparation'] = True
         numerator, denominator, descriptor = _nearest(prepared, budget)
     except _DomainError as exc:
         result['reason'] = str(exc)
