@@ -18,6 +18,8 @@ from .surface_geometry import classify_closed_solids
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
          'solid_relation', 'nearest_witness', 'pair_relation', 'surface_proximity', 'closed_solid_relation')
 PAIR_FACTS = frozenset(FACTS) - {'aabb'}
+SET_SCOPE = 'explicit_target_candidates'
+SET_FACTS = frozenset({'closed_solid_relation', 'surface_proximity', 'aabb'})
 SELECTOR_SCHEMA = {
     'type': 'object', 'properties': {'id': {'type': 'string', 'minLength': 1, 'maxLength': 256},
                                    'name': {'type': 'string', 'minLength': 1, 'maxLength': 256}},
@@ -53,6 +55,26 @@ def validate_object_selector(selector):
 
 
 def validate_task_query(query):
+    if type(query) is dict and (set(query) == {'mode', 'target', 'candidates', 'requested_facts'}
+            or set(query) == {'mode', 'scope', 'objects', 'requested_facts'}):
+        if 'target' in query:
+            candidates = query['candidates']
+            if type(candidates) is not list or not 1 <= len(candidates) <= 3:
+                raise ValueError('task candidates must contain 1..3 explicit selectors')
+            selectors = [query['target'], *candidates]
+        else:
+            if query['scope'] != SET_SCOPE:
+                raise ValueError('Invalid canonical task set scope')
+            selectors = query['objects']
+        if query['mode'] != 'task' or type(selectors) is not list or not 2 <= len(selectors) <= 4:
+            raise ValueError('task set requires one target and 1..3 candidates')
+        selectors = [validate_object_selector(selector) for selector in selectors]
+        facts = query['requested_facts']
+        if (type(facts) is not list or any(type(f) is not str for f in facts)
+                or len(facts) != len(set(facts)) or not set(facts) <= SET_FACTS
+                or not {'closed_solid_relation', 'surface_proximity'} <= set(facts)):
+            raise ValueError('task set requires closed_solid_relation and surface_proximity; optional aabb only')
+        return {'mode': 'task', 'scope': SET_SCOPE, 'objects': selectors, 'requested_facts': list(facts)}
     if type(query) is not dict or set(query) != {'mode', 'objects', 'requested_facts'}:
         raise ValueError('task query requires only mode, objects and requested_facts')
     selectors, facts = query['objects'], query['requested_facts']
@@ -242,6 +264,125 @@ def _closed_solid_fact(measured):
     return _fact(reason=measured.get('reason') or 'closed_solid_relation_unavailable', **metadata)
 
 
+def _closed_surface_facts(left, right, requested, cache, checkpoint, source, diagnostics, *, rank=False):
+    """The existing ordered-pair helpers, with preparation local to this pair."""
+    facts, surface = {}, None
+    holder = {} if {'closed_solid_relation', 'surface_proximity'} <= requested else None
+    if 'closed_solid_relation' in requested:
+        checkpoint('before_closed_solid_pair_measurement')
+        closed = _closed_solid_pair_measurement(left, right, cache, checkpoint,
+            source=source, diagnostics=diagnostics, prepared_holder=holder)
+        checkpoint('after_closed_solid_pair_measurement')
+        facts['closed_solid_relation'] = _closed_solid_fact(closed)
+    if 'surface_proximity' in requested:
+        checkpoint('before_surface_pair_measurement')
+        surface = _surface_pair_measurement(left, right, cache, checkpoint,
+            source=source, diagnostics=diagnostics, retain_exact_rank=rank,
+            prepared_pair=holder.get('pair') if holder is not None else None,
+            boundary_contact=holder.get('boundary_contact') if holder is not None else None)
+        checkpoint('after_surface_pair_measurement')
+        facts['surface_proximity'] = _surface_proximity_fact(surface)
+    return facts, surface
+
+
+def _aabb_fact(mesh):
+    if mesh is None:
+        return _fact(reason='selector_unresolved')
+    low, high = mesh.bbox_min.tolist(), mesh.bbox_max.tolist()
+    value = {'min': low, 'max': high, 'dimensions': [b-a for a,b in zip(low,high)]}
+    return (_fact(value) if all(math.isfinite(v) for vector in value.values() for v in vector)
+            else _fact(reason='world_arithmetic_not_finite'))
+
+
+def _task_set_result(scene, meshes, fingerprint, query, cache, checkpoint, bound, bindings, metrics):
+    """Aggregate only this complete binding; never manufacture pair captures."""
+    by_id = {mesh.object_id: mesh for mesh in meshes}
+    metrics.update(exact_pair_count=0, pair_cache_hit=False, surface_pair_count=0,
+        closed_solid_pair_count=0, surface_pair_cache_hits=0, closed_solid_pair_cache_hits=0,
+        pair_calls=0, rank_calls=0, pairs=[])
+    ids = [item['object_id'] if item is not None else None for item in bound]
+    repeated = {oid for oid in ids[1:] if oid is not None and ids[1:].count(oid) > 1}
+    pairs, measurements, known_penetrating, unresolved = [], {}, [], []
+    known_relations = 0
+    for index, item in enumerate(bound[1:]):
+        checkpoint('task_set_candidate')
+        oid = ids[index+1]
+        reason = ('selector_unresolved' if bound[0] is None or item is None else
+                  'pair_selectors_resolve_to_same_object' if oid == ids[0] else
+                  'duplicate_candidate_object' if oid in repeated else None)
+        work = {}
+        if reason:
+            facts = {name: _fact(reason=reason) for name in ('closed_solid_relation', 'surface_proximity')}
+            surface = None
+        else:
+            facts, surface = _closed_surface_facts(by_id[ids[0]], by_id[oid], SET_FACTS,
+                cache, checkpoint, scene['source'], work, rank=True)
+            metrics['pair_calls'] += 1
+            for name in ('surface_pair_count', 'closed_solid_pair_count'):
+                metrics[name] += work.get(name, 0)
+            for name in ('surface_pair_cache_hit', 'closed_solid_pair_cache_hit'):
+                metrics[name+'s'] += int(work.get(name, False))
+            metrics['pairs'].append(dict(candidate_index=index, object_id=oid, **work))
+        relation = facts['closed_solid_relation']['value']
+        if facts['closed_solid_relation']['status'] == 'measured':
+            known_relations += 1
+            if relation == 'penetrating':
+                known_penetrating.append(oid)
+        else:
+            unresolved.append({'candidate_index': index, 'reason': facts['closed_solid_relation']['reason']})
+        gap = _fact(reason='closed_solid_relation_unavailable')
+        if relation == 'separated':
+            distance = surface.get('distance_m') if surface is not None else None
+            valid = (surface is not None and surface.get('measurement_valid') is True
+                     and finite_metric(distance) and distance >= 0)
+            gap = _fact(distance, semantics='separated_surface_gap_m') if valid else _fact(reason='surface_distance_unavailable')
+            measurements[oid] = surface if valid else {'measurement_valid': False, 'reason': 'surface_distance_unavailable'}
+        elif relation in ('touching', 'penetrating'):
+            gap = {'status': 'not_applicable', 'value': None, 'reason': 'pair_is_not_separated'}
+        pairs.append({'candidate_index': index, 'object_id': oid, 'facts': facts, 'separation_gap': gap})
+    for name in ('surface_pair_cache_hit', 'closed_solid_pair_cache_hit'):
+        metrics[name] = bool(metrics['pair_calls']) and metrics[name+'s'] == metrics['pair_calls']
+    metrics['rank_calls'] = 1
+    ranked = _rank_surface_results(measurements, checkpoint)
+    groups = ranked['ordered_object_id_groups']
+    best = groups[0] if groups else []
+    relations_complete = known_relations == len(pairs)
+    nearest_complete = relations_complete and not ranked['unresolved']
+    distance = measurements[best[0]]['distance_m'] if best else None
+    complete = (nearest_complete and all(all(f['status']=='measured' for f in row['facts'].values()) for row in pairs))
+    boxes = ([_aabb_fact(by_id[oid]) if oid is not None else _aabb_fact(None) for oid in ids]
+             if 'aabb' in query['requested_facts'] else None)
+    if boxes is not None:
+        complete = complete and all(box['status'] == 'measured' for box in boxes)
+    available = (any(row['facts']['closed_solid_relation']['status'] == 'measured'
+        or (row['facts']['surface_proximity']['value'] is not None
+            and finite_metric(row['facts']['surface_proximity']['value'].get('distance_m')))
+        for row in pairs) or boxes is not None and any(box['status'] == 'measured' for box in boxes))
+    binding = {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
+        'source': scene['source'], 'objects': bindings, 'currentness': 'capture_snapshot',
+        'capture_scope': scene.get('capture_scope', 'complete_scene_meshes')}
+    if 'host_identity' in scene:
+        binding['host_identity'] = scene['host_identity']
+    if scene.get('capture_scope') == 'selected_objects':
+        binding.update(candidate_count=scene['task_selection']['candidate_count'], selected_count=len(meshes))
+    checkpoint('task_set_complete')
+    return {'result_kind': 'task_query', 'schema_version': 'task-query-set-v1', 'scope': SET_SCOPE,
+        'status': 'observed' if complete else 'partial' if available else 'unknown',
+        'binding': binding, 'unit': 'm', 'coordinate_frame': 'world', 'pair_order': 'target_to_candidate',
+        'facts': {'aabb': boxes} if boxes is not None else {},
+        'pairs': pairs, 'coverage': {'requested_candidates': len(pairs),
+            'resolved_candidates': sum(oid is not None for oid in ids[1:]),
+            'classified_candidates': known_relations, 'unresolved_candidates': len(unresolved)},
+        'summary': {'penetration_set_complete': relations_complete,
+            'known_penetrating_ids': known_penetrating,
+            'penetrating_ids': known_penetrating if relations_complete else None,
+            'nearest_separated_complete': nearest_complete,
+            'nearest_separated_ids': best if nearest_complete else None,
+            'best_known_separated_ids': best, 'distance_m': distance if nearest_complete else None,
+            'best_known_distance_m': distance, 'unresolved_relations': unresolved,
+            'unresolved_distances': ranked['unresolved']}, 'execution_authority': False}
+
+
 def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None):
     """Internal same-capture nearest summary; never a history/action entry."""
     from .auto_router import _validated_scene
@@ -359,6 +500,8 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
     by_id = {m.object_id: m for m in meshes}
     facts = {}
     metrics = {} if diagnostics is None else diagnostics
+    if query.get('scope') == SET_SCOPE:
+        return _task_set_result(scene, meshes, fingerprint, query, cache, checkpoint, bound, bindings, metrics)
     metrics['exact_pair_count'] = 0
     metrics['pair_cache_hit'] = False
     if 'aabb' in query['requested_facts']:
@@ -431,23 +574,9 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 facts['nearest_witness'] = _nearest_witness(strict)
             if 'pair_relation' in requested_pair:
                 facts['pair_relation'] = _pair_relation(strict)
-            shared_preparation = ({} if 'closed_solid_relation' in requested_pair
-                                  and 'surface_proximity' in requested_pair else None)
-            if 'closed_solid_relation' in requested_pair:
-                checkpoint('before_closed_solid_pair_measurement')
-                closed = _closed_solid_pair_measurement(left, right, cache, checkpoint,
-                    source=scene['source'], diagnostics=metrics,
-                    prepared_holder=shared_preparation)
-                checkpoint('after_closed_solid_pair_measurement')
-                facts['closed_solid_relation'] = _closed_solid_fact(closed)
-            if 'surface_proximity' in requested_pair:
-                checkpoint('before_surface_pair_measurement')
-                surface = _surface_pair_measurement(left, right, cache, checkpoint,
-                    source=scene['source'], diagnostics=metrics,
-                    prepared_pair=shared_preparation.get('pair') if shared_preparation is not None else None,
-                    boundary_contact=shared_preparation.get('boundary_contact') if shared_preparation is not None else None)
-                checkpoint('after_surface_pair_measurement')
-                facts['surface_proximity'] = _surface_proximity_fact(surface)
+            pair_facts, _ = _closed_surface_facts(left, right, requested_pair, cache,
+                checkpoint, scene['source'], metrics)
+            facts.update(pair_facts)
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
     for key in ('center_delta', 'axis_gap'):

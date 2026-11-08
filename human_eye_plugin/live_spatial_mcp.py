@@ -61,6 +61,9 @@ _QUERY_SCHEMA = {
         "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "Exact selectors bound to this capture; each contains name OR id. task: aabb uses 1..4; pair facts exactly two ordered A to B. surface_nearest: exactly one."},
+        "target": {**copy.deepcopy(SELECTOR_SCHEMA), "description": "task set target; use with candidates instead of objects."},
+        "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
+            "description": "task set: explicit candidates in request order. Requires closed_solid_relation and surface_proximity; optional aabb. Unknown and duplicate bindings remain visible. Summaries give the complete penetration and exact nearest-separated sets only when their evidence is complete."},
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
             "minItems": 1, "uniqueItems": True,
             "description": "task only. closed_solid_relation: represented connected closed triangle shells at zero tolerance, separated/touching/penetrating (positive-volume interior overlap); invalid/ambiguous gives unknown with reasons. surface_proximity: independent nonnegative triangle-surface distance, original world points, positive-distance A-to-B direction and boundary/nonmanifold counts. Zero-distance direction is not applicable; edge counts do not certify solids. pair_relation: separation gap/points/direction, touching, or A's certified escape translation; escape is not surface distance, nearest direction or minimum depth."},
@@ -86,7 +89,15 @@ _QUERY_SCHEMA = {
             "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
-               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}}],
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
+              {"if": {"properties": {"mode": {"const": "task"}}, "required": ["mode"]},
+               "then": {"oneOf": [
+                   {"required": ["objects", "requested_facts"], "not": {"anyOf": [{"required": ["target"]}, {"required": ["candidates"]}]}},
+                   {"required": ["target", "candidates", "requested_facts"], "not": {"required": ["objects"]},
+                    "additionalProperties": False,
+                    "properties": {"mode": {}, "target": {}, "candidates": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
+                        "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
+               ]}}],
     "additionalProperties": False,
 }
 _GOAL_SCHEMA = {
@@ -125,9 +136,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Read Blender facts/images. For two specified objects, request solid relation and surface distance together: "
-            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. "
-            "For more candidates, query each relevant pair. Use complete current measurements to answer; supplement missing/unknown quantities using their reasons. "
+            "Read Blender facts/images. Classify explicit candidates against one target and find the nearest separated set in one capture: "
+            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"},{\"name\":\"C\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"]}}. "
+            "Legacy objects-based pair/aabb requests remain supported. Use complete current measurements to answer; supplement missing/unknown quantities using their reasons. "
             "Global surface_nearest instead targets one object: one query.objects selector and no focal_id, "
             "or a known focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "
             "It gives global nearest if complete, only best-known if partial. "

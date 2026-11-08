@@ -231,7 +231,7 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            if result.get('schema_version') == 'task-query-v3' or result.get('result_kind') == 'surface_nearest':
+                            if result.get('result_kind') in ('task_query', 'surface_nearest'):
                                 result['trace_id'] = trace.trace_id
                             else:
                                 result['request_trace'] = {'trace_id': trace.trace_id,
