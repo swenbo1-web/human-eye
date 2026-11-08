@@ -1,0 +1,336 @@
+{
+  "cycle_id": "CONSUMPTION-RUN-001",
+  "auditor": "/root/consumption_actual_counts",
+  "audited_utc": "2026-11-08T02:48:06.899858+00:00",
+  "scope": "Read-only source/count/timing audit only; no scoring/truth/hidden/auth reading, no test/consumer/backend/CLI/Blender/RPC invocation by auditor.",
+  "scheduled_slots": 8,
+  "states": [
+    {
+      "ordinal": 1,
+      "task_id": "T01",
+      "arm": "N",
+      "status": "error",
+      "reason": null,
+      "denominator": 1
+    },
+    {
+      "ordinal": 2,
+      "task_id": "T01",
+      "arm": "P",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 3,
+      "task_id": "T02",
+      "arm": "P",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 4,
+      "task_id": "T02",
+      "arm": "N",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 5,
+      "task_id": "T03",
+      "arm": "N",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 6,
+      "task_id": "T03",
+      "arm": "P",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 7,
+      "task_id": "T04",
+      "arm": "P",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    },
+    {
+      "ordinal": 8,
+      "task_id": "T04",
+      "arm": "N",
+      "status": "not_run",
+      "reason": "previous_slot_cleanup_not_confirmed_no_further_start",
+      "denominator": 1
+    }
+  ],
+  "slot_status_counts": {
+    "error": 1,
+    "not_run": 7
+  },
+  "dispatched_slots": 1,
+  "native_sessions_started": 1,
+  "consumer_process_start_attempts": 1,
+  "public_final_answers": 0,
+  "public_JSON_events": 0,
+  "discarded_JSON_event_count": 0,
+  "observed_model_tool_events": 0,
+  "MCP_tools_call_admissions": 0,
+  "native_execute_RPC": 0,
+  "HE_captures": 0,
+  "physical_RPC_including_close": 1,
+  "RPC_scope": "One native worker close event and raw close TX/RX; no execute_code events. Close audit statusunknown is retained, explicit closed response/reap is separate evidence.",
+  "observed_MCP_bridge_start_receipts": 0,
+  "observed_MCP_catalogue_or_call_frames": 0,
+  "actual_model_delivered_schema_bytes": null,
+  "prompt_bytes_charged_and_handed_to_CLI_stdin": 911,
+  "prompt_bytes_confirmed_received_by_model": null,
+  "public_tool_text_bytes": 0,
+  "public_final_text_bytes": 0,
+  "images_in_shared_budget": 0,
+  "PNG_files_in_private_worker": 0,
+  "wire": {
+    "close_TX_attempted_bytes": 17,
+    "close_TX_completed_bytes": 17,
+    "close_RX_bytes": 62,
+    "native_execute_TX_RX_bytes": 0,
+    "HE_TX_RX_bytes": 0,
+    "recorded_MCP_TX_RX_bytes": 0
+  },
+  "consumer": {
+    "exit_code": 1,
+    "pid": null,
+    "pid_observability": "not persisted by frozen consumer record",
+    "parent_reaped": true,
+    "registered_tree_confirmed": false,
+    "safe_to_continue": false,
+    "stderr_bytes": 71,
+    "stderr_body": "discarded by frozen policy; unavailable, not inferred",
+    "stdout_bytes": 0,
+    "usage": null,
+    "provider_requests": null,
+    "fees": null,
+    "backend": "unexposed"
+  },
+  "known_owners": [
+    {
+      "role": "frozen_runner_controller",
+      "pid": 23304,
+      "exit_code": 0,
+      "reaped": true
+    },
+    {
+      "role": "NativeSession_Blender",
+      "pid": 28760,
+      "exit_code": 0,
+      "reaped": true,
+      "poisoned": false
+    },
+    {
+      "role": "Codex_consumer_CLI",
+      "pid": null,
+      "exit_code": 1,
+      "reaped": true,
+      "registered_tree_confirmed": false
+    }
+  ],
+  "cleanup": {
+    "native_closed_response": true,
+    "native_parent_reaped": true,
+    "geometry_fingerprints_equal": true,
+    "original_source_file_unchanged": true,
+    "protected_files_unchanged": true,
+    "CLI_parent_reaped": true,
+    "registered_tree_confirmed": false,
+    "scope": "Known parent/NativeSession closure only; no fabricated complete tree confirmation"
+  },
+  "clocks": {
+    "unit": "ns",
+    "source": "same-machine perf_counter; receive/exit observations not server generation",
+    "nested_stages_not_additive": true,
+    "phases": {
+      "outer_controller_process_wall_ns": 2435568000,
+      "frozen_runner_wall_through_result_construction_ns": 2342694900,
+      "first_cell_whole_wall_ns": 1666368400,
+      "dispatch_to_host_ready_ns": 1175292900,
+      "native_helper_reported_startup_ns": 1091781900,
+      "host_ready_to_consumer_popen_ns": 267527100,
+      "consumer_popen_to_observed_exit_ns": 48831800,
+      "consumer_entry_through_cleanup_ns": 53286100,
+      "consumer_observed_exit_to_cleanup_end_ns": 3827200,
+      "native_close_outer_meter_ns": 169444200,
+      "native_close_helper_receipt_ns": 157127900,
+      "answer_receive_latency_ns": null,
+      "first_public_tool_ns": null,
+      "final_received_ns": null,
+      "turn_completed_ns": null
+    }
+  },
+  "immutability": {
+    "plan_sha256": "cb78e4f754c7988d26296bbce7be34d8456e41329d11cd51e718cad1e4b49196",
+    "runtime_components_checked": 17,
+    "runtime_components": [
+      {
+        "path": "runner.py",
+        "sha256": "d46143f8081110383c22724729ab8ddaa47bd38bb8eeb089f5d787998d8d970f",
+        "unchanged": true
+      },
+      {
+        "path": "bridge.py",
+        "sha256": "b8b2e876436578e82b21d5faf59fb8f27e1dbb3e188d3bba3d023d216a24f01b",
+        "unchanged": true
+      },
+      {
+        "path": "he_bootstrap.py",
+        "sha256": "5fc5236fd2d822d5f5dab772f222c52d0457974604335cae023176e8eebdae27",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/freeze_plan.py",
+        "sha256": "28b11089f3b2dad45d3257efc5995cc2de085d308bc538c1c79781720263b2d9",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/preparation_checks.py",
+        "sha256": "900957bc90edaec80aaab4836fdc3c6c821a2415108cea866374f24273ac9a2f",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_bridge.py",
+        "sha256": "839d138b87ec2f8e0989c66f569cd2b5705d35cfafe0d5fade487b84bf30cd98",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_runner.py",
+        "sha256": "b4d218f4c994a24578c81d45dc0f1d3e23741802cd0af521ef994b41808c9a3b",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/PRODUCT_BYTES.zip",
+        "sha256": "2f149c6c4625d03044f3ccb50d094799addbba99d829977834d64bbeb9d67497",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/MATERIAL_MANIFEST.json",
+        "sha256": "0fb8fdacb5bdd2fc1b6f42e6c09763e2811b4c2fb5f1421af84ecde5871189df",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/admin/visual004_native.py",
+        "sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T01.txt",
+        "sha256": "ce5b052602073575a5f974b389662009d8eac9cf78cbd91e233c5a6e56dd0252",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T02.txt",
+        "sha256": "96832c3e8223c1a99c0f327687cfc81178fdcd2deace7306b075c45fd3321f66",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T03.txt",
+        "sha256": "08103182ce965075174e653e0c44c600ffa32636a3300f038ecd5d5061df36a6",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T04.txt",
+        "sha256": "5fbf5eff4aca0f3c4a0aefcb53c6fa1bb1b468832c2c5ab2516c49237a575e04",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_images.py",
+        "sha256": "d7998e95e530dc5b67c5ad19df0c8a7b7f617b1c895b57d5068de8c10f7967e8",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_fix_runner.py",
+        "sha256": "5d3f2faaddac93eda39a8252e61afa7c2910b748a400040b8a339ee4a6f36bb1",
+        "unchanged": true
+      },
+      {
+        "path": "../consumption_run_fix_001/run_checks.py",
+        "sha256": "87d75e419ee623613c504733377b526dfa02b5678cb051ffd70089a0623ca3af",
+        "unchanged": true
+      }
+    ],
+    "product_source_files_checked": 131,
+    "product_source_sha256": "01c296b5dac9c8733670b7b82886fe774fb6e50222d1b935d6ac27efa04760de",
+    "both_private_asset_copies_sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a"
+  },
+  "source_references": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\RESULTS.json",
+      "bytes": 13433,
+      "sha256": "ab7897e575c75b4d0a8fc2ddb93397a75f16596e4cadfcfa03a8c4c33635d1dc"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\01\\CONSUMER.json",
+      "bytes": 6148,
+      "sha256": "72c90d9e2e4a6cf4bac97c9157d4157ea4fd871264b522d381a6b3f5a1092de3"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\01\\BUDGET.json",
+      "bytes": 266,
+      "sha256": "1a929a454e77b060222ff9f41125d1448c88a42513c0d59a93d5ea916fb255fd"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\01\\CLOSE_METER.json",
+      "bytes": 130,
+      "sha256": "ce7b83b44027e8094448d45dcb25dc65e011449c26107bfdbe0ce5640856382b"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\01\\CLOSE_TX.bin",
+      "bytes": 17,
+      "sha256": "b021b81c7edc9d678bcb7791b704c4d0038fa18b2490ff27283d25b3b11b723e"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_01\\01\\CLOSE_RX.bin",
+      "bytes": 62,
+      "sha256": "f261af21f09b4be07228d048abb84c78875de473f6740668bb118a766ffebd86"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\native\\SESSION.json",
+      "bytes": 831,
+      "sha256": "43c9262d505f4fdc207971ef03cc3108afeeed7c51dff5e252b9259f30d87d28"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\native\\WORKER_EVENTS.jsonl",
+      "bytes": 110,
+      "sha256": "af4663c0fd5c12beca3388d2c2a5273ff3ea47ac6b6fbb6ca984acb9e2aac5e5"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\native\\WORKER_CLOSED.json",
+      "bytes": 292,
+      "sha256": "589d0888d9cb47d247f795837ad274092d3378edf279b8ee3522b62d8840be25"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\native\\CLOSE_54e41efb734a4370949309d9ebdd48ce.json",
+      "bytes": 397,
+      "sha256": "ab2c347792b87d1615cee7354ad2e8cc19db29131494e4915f833042320dface"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_final_001\\actual_invocation_001\\RESULT.json",
+      "bytes": 981,
+      "sha256": "b9ab5dfe1784f047ac9d044e4da8c921deafea69cb927f3dfb203eed39ab53fd"
+    }
+  ],
+  "quality_scores_given": false,
+  "no_rerun": true,
+  "missing_observations": [
+    "CLI diagnostic body",
+    "CLI PID",
+    "model/backend availability or request count",
+    "model usage/token/fee",
+    "actual effective tool/schema/context delivery",
+    "registered full tree closure"
+  ]
+}

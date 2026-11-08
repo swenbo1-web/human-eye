@@ -1,0 +1,223 @@
+{
+  "cycle_id": "CONSUMPTION-RUN-001",
+  "audit_role": "read-only postrun ownership/source auditor; not consumer or scorer",
+  "audited_utc": "2026-11-08T02:48:08.570035+00:00",
+  "current_audit_activity": {
+    "consumers": 0,
+    "scorers": 0,
+    "Blender": 0,
+    "MCP_services": 0,
+    "RPC": 0,
+    "model_API_calls": 0,
+    "product_imports": 0,
+    "kills": 0
+  },
+  "owners": {
+    "controller": {
+      "pid": 23304,
+      "exit_code": 0,
+      "process_reaped": true,
+      "evidence": "actual_invocation_001/RESULT.json outer-owned Popen.wait"
+    },
+    "native_Blender": {
+      "pid": 28760,
+      "exit_code": 0,
+      "process_reaped": true,
+      "close_response": {
+        "deadline_ns": 215197906665800,
+        "pid": 28760,
+        "status": "closed"
+      },
+      "close_error": null,
+      "source_file_unchanged": true,
+      "protected_files_unchanged": true
+    },
+    "consumer_CLI": {
+      "pid": null,
+      "pid_reason": "not recorded by frozen runner; not recovered or guessed",
+      "exit_code": 1,
+      "process_spawned": true,
+      "process_reaped": true,
+      "tree_reaped": false,
+      "registered_tree_cleanup": {
+        "confirmed": false,
+        "evidence": [
+          {
+            "kind": "native",
+            "confirmed": false,
+            "error": "[Errno 2] No such file or directory: 'C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\2c7d\\\\hefe\\\\verification\\\\consumption_run_final_001\\\\actual_01\\\\01\\\\bridge_native\\\\STARTED.json'"
+          }
+        ],
+        "scope": "registered native/HE bridge processes and HE-owned production child; arbitrary user-created Python descendants are not sandboxed"
+      },
+      "cleanup_receipts": [
+        {
+          "parent_reaped": true,
+          "tree_reaped": false,
+          "parent_exit_code": 1,
+          "taskkill_returncode": null,
+          "errors": [],
+          "scope": "owned parent and reported live-PID taskkill tree; fallback parent reap is not tree proof"
+        }
+      ],
+      "stderr_bytes": 71,
+      "stderr_body": "discarded by frozen consumer recorder; unavailable, no replay performed"
+    }
+  },
+  "cleanup_verified_for_native": true,
+  "safe_to_continue_from_runner": false,
+  "native_terminal": {
+    "poisoned": false,
+    "initial_fingerprint": "39b20317cfad7ec73104523caf243d20e15ff1579a41db396031e12705e42f0c",
+    "final_fingerprint": "39b20317cfad7ec73104523caf243d20e15ff1579a41db396031e12705e42f0c",
+    "same_fingerprint": true,
+    "original_deadline_ns": 215197906665800,
+    "closed_original_deadline_ns": 215197906665800,
+    "worker_events": [
+      {
+        "elapsed_ns": 18545000,
+        "render_events_before": 0,
+        "sequence": 1,
+        "started_ns": 214599408468500,
+        "status": "unknown"
+      }
+    ]
+  },
+  "source": {
+    "plan_sha256": "cb78e4f754c7988d26296bbce7be34d8456e41329d11cd51e718cad1e4b49196",
+    "expected_plan_sha256": "cb78e4f754c7988d26296bbce7be34d8456e41329d11cd51e718cad1e4b49196",
+    "components": [
+      {
+        "path": "runner.py",
+        "expected_sha256": "d46143f8081110383c22724729ab8ddaa47bd38bb8eeb089f5d787998d8d970f",
+        "actual_sha256": "d46143f8081110383c22724729ab8ddaa47bd38bb8eeb089f5d787998d8d970f"
+      },
+      {
+        "path": "bridge.py",
+        "expected_sha256": "b8b2e876436578e82b21d5faf59fb8f27e1dbb3e188d3bba3d023d216a24f01b",
+        "actual_sha256": "b8b2e876436578e82b21d5faf59fb8f27e1dbb3e188d3bba3d023d216a24f01b"
+      },
+      {
+        "path": "he_bootstrap.py",
+        "expected_sha256": "5fc5236fd2d822d5f5dab772f222c52d0457974604335cae023176e8eebdae27",
+        "actual_sha256": "5fc5236fd2d822d5f5dab772f222c52d0457974604335cae023176e8eebdae27"
+      },
+      {
+        "path": "../consumption_run_fix_001/freeze_plan.py",
+        "expected_sha256": "28b11089f3b2dad45d3257efc5995cc2de085d308bc538c1c79781720263b2d9",
+        "actual_sha256": "28b11089f3b2dad45d3257efc5995cc2de085d308bc538c1c79781720263b2d9"
+      },
+      {
+        "path": "../consumption_run_001/preparation_checks.py",
+        "expected_sha256": "900957bc90edaec80aaab4836fdc3c6c821a2415108cea866374f24273ac9a2f",
+        "actual_sha256": "900957bc90edaec80aaab4836fdc3c6c821a2415108cea866374f24273ac9a2f"
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_bridge.py",
+        "expected_sha256": "839d138b87ec2f8e0989c66f569cd2b5705d35cfafe0d5fade487b84bf30cd98",
+        "actual_sha256": "839d138b87ec2f8e0989c66f569cd2b5705d35cfafe0d5fade487b84bf30cd98"
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_runner.py",
+        "expected_sha256": "b4d218f4c994a24578c81d45dc0f1d3e23741802cd0af521ef994b41808c9a3b",
+        "actual_sha256": "b4d218f4c994a24578c81d45dc0f1d3e23741802cd0af521ef994b41808c9a3b"
+      },
+      {
+        "path": "../consumption_run_001/PRODUCT_BYTES.zip",
+        "expected_sha256": "2f149c6c4625d03044f3ccb50d094799addbba99d829977834d64bbeb9d67497",
+        "actual_sha256": "2f149c6c4625d03044f3ccb50d094799addbba99d829977834d64bbeb9d67497"
+      },
+      {
+        "path": "../consumption_run_001/materials/MATERIAL_MANIFEST.json",
+        "expected_sha256": "0fb8fdacb5bdd2fc1b6f42e6c09763e2811b4c2fb5f1421af84ecde5871189df",
+        "actual_sha256": "0fb8fdacb5bdd2fc1b6f42e6c09763e2811b4c2fb5f1421af84ecde5871189df"
+      },
+      {
+        "path": "../consumption_run_001/materials/admin/visual004_native.py",
+        "expected_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+        "actual_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3"
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T01.txt",
+        "expected_sha256": "ce5b052602073575a5f974b389662009d8eac9cf78cbd91e233c5a6e56dd0252",
+        "actual_sha256": "ce5b052602073575a5f974b389662009d8eac9cf78cbd91e233c5a6e56dd0252"
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T02.txt",
+        "expected_sha256": "96832c3e8223c1a99c0f327687cfc81178fdcd2deace7306b075c45fd3321f66",
+        "actual_sha256": "96832c3e8223c1a99c0f327687cfc81178fdcd2deace7306b075c45fd3321f66"
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T03.txt",
+        "expected_sha256": "08103182ce965075174e653e0c44c600ffa32636a3300f038ecd5d5061df36a6",
+        "actual_sha256": "08103182ce965075174e653e0c44c600ffa32636a3300f038ecd5d5061df36a6"
+      },
+      {
+        "path": "../consumption_run_001/materials/prompts/T04.txt",
+        "expected_sha256": "5fbf5eff4aca0f3c4a0aefcb53c6fa1bb1b468832c2c5ab2516c49237a575e04",
+        "actual_sha256": "5fbf5eff4aca0f3c4a0aefcb53c6fa1bb1b468832c2c5ab2516c49237a575e04"
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_images.py",
+        "expected_sha256": "d7998e95e530dc5b67c5ad19df0c8a7b7f617b1c895b57d5068de8c10f7967e8",
+        "actual_sha256": "d7998e95e530dc5b67c5ad19df0c8a7b7f617b1c895b57d5068de8c10f7967e8"
+      },
+      {
+        "path": "../consumption_run_fix_001/tests_fix_runner.py",
+        "expected_sha256": "5d3f2faaddac93eda39a8252e61afa7c2910b748a400040b8a339ee4a6f36bb1",
+        "actual_sha256": "5d3f2faaddac93eda39a8252e61afa7c2910b748a400040b8a339ee4a6f36bb1"
+      },
+      {
+        "path": "../consumption_run_fix_001/run_checks.py",
+        "expected_sha256": "87d75e419ee623613c504733377b526dfa02b5678cb051ffd70089a0623ca3af",
+        "actual_sha256": "87d75e419ee623613c504733377b526dfa02b5678cb051ffd70089a0623ca3af"
+      }
+    ],
+    "components_all_match": true,
+    "product_source_files": 131,
+    "product_file_mismatches": [],
+    "canonical_source_sha256": "01c296b5dac9c8733670b7b82886fe774fb6e50222d1b935d6ac27efa04760de",
+    "expected_source_sha256": "01c296b5dac9c8733670b7b82886fe774fb6e50222d1b935d6ac27efa04760de",
+    "helper_path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_001\\materials\\admin\\visual004_native.py",
+    "helper_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+    "expected_helper_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+    "assets": [
+      {
+        "role": "original_fixed_asset",
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_capture_qa_001\\run_01\\assets\\all_overlap.blend",
+        "sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a",
+        "expected_sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a"
+      },
+      {
+        "role": "private_neutral_input",
+        "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\input.blend",
+        "sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a",
+        "expected_sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a"
+      },
+      {
+        "role": "native_owned_input",
+        "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-001\\01\\native\\input.blend",
+        "sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a",
+        "expected_sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a"
+      }
+    ],
+    "all_asset_bytes_match": true
+  },
+  "disposition": "Known controller/native parents were reaped. Consumer parent exit1/reap is in frozen receipt, but its PID is unexposed and registered tree is unconfirmed. Keep original unsafe stop and remaining7not_run; no full-tree success attestation.",
+  "evidence_limits": [
+    "No independent known CLI PID is available.",
+    "Absence of route-path process matches is a scoped postrun observation, not proof against arbitrary descendants.",
+    "No process was killed or restarted by this audit.",
+    "No answer/truth scoring, model invocation, product import, RPC or auth/key read."
+  ],
+  "targeted_process_scan": {
+    "checked_utc": "2026-11-08T02:47:07.9778053Z",
+    "known_pids": [
+      23304,
+      28760
+    ],
+    "known_alive": [],
+    "exact_registered_route_processes": [],
+    "scan_scope": "readonly process scan for exact private runtime path markers and known PID only; no foreign kill or full descendant attestation"
+  }
+}
