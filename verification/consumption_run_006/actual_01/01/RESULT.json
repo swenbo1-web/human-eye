@@ -1,0 +1,379 @@
+{
+  "ordinal": 1,
+  "task_id": "T01",
+  "arm": "N",
+  "status": "completed",
+  "dispatch_ns": 247503106132000,
+  "host_ready_ns": 247504297922400,
+  "denominator": 1,
+  "safe_to_continue": true,
+  "consumer": {
+    "argv": [
+      "C:\\Users\\Administrator\\AppData\\Local\\OpenAI\\Codex\\bin\\f71a721e0e6193a9\\codex.exe",
+      "exec",
+      "--ignore-user-config",
+      "--ephemeral",
+      "--json",
+      "--strict-config",
+      "--skip-git-repo-check",
+      "-C",
+      "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-006\\01\\work",
+      "-m",
+      "gpt-6.1-sol",
+      "--color",
+      "never",
+      "-o",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_006\\actual_01\\01\\final.txt",
+      "-c",
+      "model=\"gpt-6.1-sol\"",
+      "-c",
+      "model_reasoning_effort=\"ultra\"",
+      "-c",
+      "model_provider=\"openai_http\"",
+      "-c",
+      "service_tier=\"default\"",
+      "-c",
+      "model_providers.openai_http={\"name\"=\"OpenAI\",\"wire_api\"=\"responses\",\"requires_openai_auth\"=true,\"supports_websockets\"=false,\"supports_standalone_web_search\"=true,\"base_url\"=\"https://chatgpt.com/backend-api/codex\"}",
+      "-c",
+      "forced_login_method=\"chatgpt\"",
+      "-c",
+      "hide_agent_reasoning=true",
+      "-c",
+      "show_raw_agent_reasoning=false",
+      "-c",
+      "web_search=\"disabled\"",
+      "-c",
+      "features.hooks=false",
+      "-c",
+      "features.apps=false",
+      "-c",
+      "features.memories=false",
+      "-c",
+      "memories.use_memories=false",
+      "-c",
+      "features.multi_agent=false",
+      "-c",
+      "features.multi_agent_v2=false",
+      "-c",
+      "features.goals=false",
+      "-c",
+      "features.remote_plugin=false",
+      "-c",
+      "features.plugins=false",
+      "-c",
+      "features.skip_host_skill_discovery=true",
+      "-c",
+      "skills.bundled.enabled=false",
+      "-c",
+      "skills.include_instructions=false",
+      "-c",
+      "project_doc_max_bytes=0",
+      "-c",
+      "features.shell_tool=true",
+      "-c",
+      "features.view_image=true",
+      "-c",
+      "skills.config=[{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.agents\\\\skills\\\\binance-agentic-wallet\\\\SKILL.md\",\"enabled\"=false},{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\skills\\\\.system\\\\imagegen\\\\SKILL.md\",\"enabled\"=false},{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\skills\\\\.system\\\\openai-docs\\\\SKILL.md\",\"enabled\"=false},{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\skills\\\\.system\\\\review-agent\\\\SKILL.md\",\"enabled\"=false},{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\skills\\\\.system\\\\skill-creator\\\\SKILL.md\",\"enabled\"=false},{\"path\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\skills\\\\.system\\\\skill-installer\\\\SKILL.md\",\"enabled\"=false}]",
+      "-c",
+      "plugins.\"codex-app-tools@openai-bundled\".enabled=false",
+      "-c",
+      "plugins.\"visualize@openai-bundled\".enabled=false",
+      "-c",
+      "plugins.\"documents@openai-primary-runtime\".enabled=false",
+      "-c",
+      "plugins.\"pdf@openai-primary-runtime\".enabled=false",
+      "-c",
+      "plugins.\"spreadsheets@openai-primary-runtime\".enabled=false",
+      "-c",
+      "plugins.\"presentations@openai-primary-runtime\".enabled=false",
+      "-c",
+      "plugins.\"template-creator@openai-primary-runtime\".enabled=false",
+      "-c",
+      "plugins.\"agent-learning@agent-learning-local\".enabled=false",
+      "-c",
+      "sandbox_mode=\"workspace-write\"",
+      "-c",
+      "approval_policy=\"never\"",
+      "-c",
+      "mcp_servers.native={\"command\"=\"C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\2c7d\\\\hefe\\\\verification\\\\fixes\\\\surface_facts_001\\\\engineering_b\\\\venv\\\\Scripts\\\\python.exe\",\"args\"=[\"-I\",\"C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\2c7d\\\\hefe\\\\verification\\\\consumption_run_006\\\\bridge.py\",\"--kind\",\"native\",\"--cell\",\"C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\2c7d\\\\hefe\\\\verification\\\\consumption_run_006\\\\actual_01\\\\01\\\\CELL.json\"],\"cwd\"=\"C:\\\\Users\\\\Administrator\\\\AppData\\\\Local\\\\Temp\\\\he-consumption-run-006\\\\01\\\\work\",\"required\"=true,\"startup_timeout_sec\"=20,\"tool_timeout_sec\"=180,\"tools\"={\"execute_blender_code\"={\"approval_mode\"=\"approve\"}}}",
+      "-"
+    ],
+    "started_ns": 247504544848000,
+    "public_events": [
+      {
+        "type": "item.started",
+        "item": {
+          "id": "item_2",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy, json\nscene=bpy.context.scene\ninfo={'scene':scene.name,'units':{'system':scene.unit_settings.system,'scale_length':scene.unit_settings.scale_length,'length_unit':scene.unit_settings.length_unit},'objects':[{'name':o.name,'type':o.type,'hide_viewport':o.hide_viewport,'hide_render':o.hide_render,'vertices':len(o.data.vertices) if o.type=='MESH' else None,'polygons':len(o.data.polygons) if o.type=='MESH' else None,'modifiers':[{'type':m.type,'name':m.name,'show_viewport':m.show_viewport} for m in o.modifiers]} for o in scene.objects]}\nprint(json.dumps(info,ensure_ascii=False))"
+          },
+          "result": null,
+          "error": null,
+          "status": "in_progress"
+        },
+        "received_ns": 247528248947700
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_2",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy, json\nscene=bpy.context.scene\ninfo={'scene':scene.name,'units':{'system':scene.unit_settings.system,'scale_length':scene.unit_settings.scale_length,'length_unit':scene.unit_settings.length_unit},'objects':[{'name':o.name,'type':o.type,'hide_viewport':o.hide_viewport,'hide_render':o.hide_render,'vertices':len(o.data.vertices) if o.type=='MESH' else None,'polygons':len(o.data.polygons) if o.type=='MESH' else None,'modifiers':[{'type':m.type,'name':m.name,'show_viewport':m.show_viewport} for m in o.modifiers]} for o in scene.objects]}\nprint(json.dumps(info,ensure_ascii=False))"
+          },
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"result\":{\"executed\":true,\"result\":\"{\\\"scene\\\": \\\"Scene\\\", \\\"units\\\": {\\\"system\\\": \\\"METRIC\\\", \\\"scale_length\\\": 1.0, \\\"length_unit\\\": \\\"METERS\\\"}, \\\"objects\\\": [{\\\"name\\\": \\\"M4_Focal\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}, {\\\"name\\\": \\\"M4_Near\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}, {\\\"name\\\": \\\"M4_Tie\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}, {\\\"name\\\": \\\"M4_Far_00\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}, {\\\"name\\\": \\\"M4_Far_01\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}, {\\\"name\\\": \\\"M4_Far_02\\\", \\\"type\\\": \\\"MESH\\\", \\\"hide_viewport\\\": false, \\\"hide_render\\\": false, \\\"vertices\\\": 3, \\\"polygons\\\": 1, \\\"modifiers\\\": []}]}\\n\"},\"status\":\"success\"}"
+              }
+            ],
+            "structured_content": null
+          },
+          "error": null,
+          "status": "completed"
+        },
+        "received_ns": 247528292658700
+      },
+      {
+        "type": "item.started",
+        "item": {
+          "id": "item_3",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy,json,math\nsc=bpy.context.scene\ndata=[]\nfor o in sc.objects:\n    if o.type!='MESH': continue\n    me=o.data\n    verts=[list(o.matrix_world@v.co) for v in me.vertices]\n    faces=[list(p.vertices) for p in me.polygons]\n    data.append({'name':o.name,'matrix_world':[list(row) for row in o.matrix_world],'world_vertices':verts,'faces':faces,'finite':all(math.isfinite(x) for v in verts for x in v)})\nprint(json.dumps({'meshes':data,'instances':[{'name':i.object.name,'is_instance':i.is_instance} for i in bpy.context.evaluated_depsgraph_get().object_instances]},ensure_ascii=False))"
+          },
+          "result": null,
+          "error": null,
+          "status": "in_progress"
+        },
+        "received_ns": 247537632438500
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_3",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy,json,math\nsc=bpy.context.scene\ndata=[]\nfor o in sc.objects:\n    if o.type!='MESH': continue\n    me=o.data\n    verts=[list(o.matrix_world@v.co) for v in me.vertices]\n    faces=[list(p.vertices) for p in me.polygons]\n    data.append({'name':o.name,'matrix_world':[list(row) for row in o.matrix_world],'world_vertices':verts,'faces':faces,'finite':all(math.isfinite(x) for v in verts for x in v)})\nprint(json.dumps({'meshes':data,'instances':[{'name':i.object.name,'is_instance':i.is_instance} for i in bpy.context.evaluated_depsgraph_get().object_instances]},ensure_ascii=False))"
+          },
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"result\":{\"executed\":true,\"result\":\"{\\\"meshes\\\": [{\\\"name\\\": \\\"M4_Focal\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}, {\\\"name\\\": \\\"M4_Near\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}, {\\\"name\\\": \\\"M4_Tie\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}, {\\\"name\\\": \\\"M4_Far_00\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}, {\\\"name\\\": \\\"M4_Far_01\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}, {\\\"name\\\": \\\"M4_Far_02\\\", \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], \\\"world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"faces\\\": [[0, 1, 2]], \\\"finite\\\": true}], \\\"instances\\\": [{\\\"name\\\": \\\"M4_Focal\\\", \\\"is_instance\\\": false}, {\\\"name\\\": \\\"M4_Near\\\", \\\"is_instance\\\": false}, {\\\"name\\\": \\\"M4_Tie\\\", \\\"is_instance\\\": false}, {\\\"name\\\": \\\"M4_Far_00\\\", \\\"is_instance\\\": false}, {\\\"name\\\": \\\"M4_Far_01\\\", \\\"is_instance\\\": false}, {\\\"name\\\": \\\"M4_Far_02\\\", \\\"is_instance\\\": false}]}\\n\"},\"status\":\"success\"}"
+              }
+            ],
+            "structured_content": null
+          },
+          "error": null,
+          "status": "completed"
+        },
+        "received_ns": 247537671265500
+      },
+      {
+        "type": "item.started",
+        "item": {
+          "id": "item_4",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy,json,math\nsc=bpy.context.scene\ndg=bpy.context.evaluated_depsgraph_get()\nout=[]\nfor ob in sc.objects:\n    if ob.type!='MESH': continue\n    eo=ob.evaluated_get(dg)\n    me=eo.to_mesh()\n    try:\n        vv=[[float(x) for x in eo.matrix_world@v.co] for v in me.vertices]\n        pp=[list(p.vertices) for p in me.polygons]\n        out.append({'name':ob.name,'evaluated_world_vertices':vv,'evaluated_faces':pp,'shape_keys':ob.data.shape_keys is not None,'constraints':len(ob.constraints),'all_coordinates_finite':all(math.isfinite(x) for v in vv for x in v)})\n    finally:\n        eo.to_mesh_clear()\nprint(json.dumps({'mesh_count':len(out),'evaluated_geometry':out},ensure_ascii=False))"
+          },
+          "result": null,
+          "error": null,
+          "status": "in_progress"
+        },
+        "received_ns": 247549024078900
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_4",
+          "type": "mcp_tool_call",
+          "server": "native",
+          "tool": "execute_blender_code",
+          "arguments": {
+            "code": "import bpy,json,math\nsc=bpy.context.scene\ndg=bpy.context.evaluated_depsgraph_get()\nout=[]\nfor ob in sc.objects:\n    if ob.type!='MESH': continue\n    eo=ob.evaluated_get(dg)\n    me=eo.to_mesh()\n    try:\n        vv=[[float(x) for x in eo.matrix_world@v.co] for v in me.vertices]\n        pp=[list(p.vertices) for p in me.polygons]\n        out.append({'name':ob.name,'evaluated_world_vertices':vv,'evaluated_faces':pp,'shape_keys':ob.data.shape_keys is not None,'constraints':len(ob.constraints),'all_coordinates_finite':all(math.isfinite(x) for v in vv for x in v)})\n    finally:\n        eo.to_mesh_clear()\nprint(json.dumps({'mesh_count':len(out),'evaluated_geometry':out},ensure_ascii=False))"
+          },
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "{\"result\":{\"executed\":true,\"result\":\"{\\\"mesh_count\\\": 6, \\\"evaluated_geometry\\\": [{\\\"name\\\": \\\"M4_Focal\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}, {\\\"name\\\": \\\"M4_Near\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}, {\\\"name\\\": \\\"M4_Tie\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}, {\\\"name\\\": \\\"M4_Far_00\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}, {\\\"name\\\": \\\"M4_Far_01\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}, {\\\"name\\\": \\\"M4_Far_02\\\", \\\"evaluated_world_vertices\\\": [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], \\\"evaluated_faces\\\": [[0, 1, 2]], \\\"shape_keys\\\": false, \\\"constraints\\\": 0, \\\"all_coordinates_finite\\\": true}]}\\n\"},\"status\":\"success\"}"
+              }
+            ],
+            "structured_content": null
+          },
+          "error": null,
+          "status": "completed"
+        },
+        "received_ns": 247549082392100
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 77717,
+          "cached_input_tokens": 68992,
+          "output_tokens": 1219
+        },
+        "received_ns": 247562160955100
+      }
+    ],
+    "discarded_event_types": {
+      "thread.started": 1,
+      "error": 1,
+      "turn.started": 1,
+      "agent_message": 2
+    },
+    "collaboration": {
+      "events": [],
+      "calls": {},
+      "event_count": 0,
+      "identifiable_call_count": 0,
+      "unattributed_event_count": 0,
+      "observed_thread_ids": [],
+      "observed_thread_id_count": 0,
+      "extra_participant_count": null,
+      "extra_usage": null,
+      "accounting_complete": false,
+      "scope": "public metadata in this consume; observed IDs include senders, not created-agent counts",
+      "incompleteness": "collaboration usage/total participant coverage not exposed; no main-usage addition"
+    },
+    "tool_actions_observed": 3,
+    "provider_requests": null,
+    "fees": null,
+    "backend": "unexposed",
+    "usage": {
+      "input_tokens": 77717,
+      "cached_input_tokens": 68992,
+      "output_tokens": 1219
+    },
+    "complete": true,
+    "deadline_enforcement": "controller kill from original dispatch deadline",
+    "action_policy": "8 is observation threshold only; all actions/costs retained without threshold failure",
+    "consumer_pid": 24012,
+    "consumer_popen_ns": 247504545498700,
+    "first_public_tool_ns": 247528248947700,
+    "final_received_ns": 247562159909300,
+    "turn_completed_ns": 247562160955100,
+    "process_exit_ns": 247566569166100,
+    "cleanup_end_ns": 247566584668100,
+    "timestamp_scope": "same perf counter, local receive/wait observations, not server generation",
+    "stderr_bytes": 792,
+    "stderr_diagnostics": {
+      "lines": [],
+      "raw_bytes": 792,
+      "retained_utf8_bytes": 0,
+      "redacted_bytes": 792,
+      "redacted_lines": 5,
+      "truncated": false,
+      "unavailable": true,
+      "limit_bytes": 4096
+    },
+    "stdout_bytes": 11568,
+    "above_action_observation_threshold": false,
+    "valid_completion": true,
+    "cleanup_receipts": [
+      {
+        "parent_reaped": true,
+        "tree_reaped": false,
+        "parent_exit_code": 0,
+        "taskkill_returncode": null,
+        "errors": [],
+        "scope": "owned parent and reported live-PID taskkill tree; fallback parent reap is not tree proof"
+      }
+    ],
+    "registered_tree_cleanup": {
+      "confirmed": true,
+      "evidence": [
+        {
+          "kind": "native",
+          "confirmed": true,
+          "process_stopped": true,
+          "graceful_exit_receipt": null,
+          "started": {
+            "pid": 18828,
+            "kind": "native",
+            "ledger_path": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\consumption_run_006\\actual_01\\01\\BUDGET.json",
+            "started_ns": 247505164488200
+          }
+        }
+      ],
+      "scope": "registered native/HE bridge processes and HE-owned production child; arbitrary user-created Python descendants are not sandboxed"
+    },
+    "tree_reaped": true,
+    "exit_code": 0,
+    "process_spawned": true,
+    "process_reaped": true,
+    "finished_ns": 247566584669400,
+    "deadline_timer_fired": false,
+    "safe_to_continue": true,
+    "wall_ns": 62039821400
+  },
+  "cleanup_verified": true,
+  "close": {
+    "schema": "visual004-native-close-v1",
+    "pid": 34716,
+    "response": {
+      "deadline_ns": 248103106132000,
+      "pid": 34716,
+      "status": "closed"
+    },
+    "error": null,
+    "original_deadline_ns": 248103106132000,
+    "elapsed_ns": 124001700,
+    "source_file_unchanged": true,
+    "protected_files_unchanged": true,
+    "exit_code": 0,
+    "process_reaped": true,
+    "scope": "only launcher-owned Popen can attest wait/reap; reopened controller only requests closure"
+  },
+  "closed_worker": {
+    "closed_ns": 247566590974100,
+    "final_geometry_fingerprint": "39b20317cfad7ec73104523caf243d20e15ff1579a41db396031e12705e42f0c",
+    "initial_geometry_fingerprint": "39b20317cfad7ec73104523caf243d20e15ff1579a41db396031e12705e42f0c",
+    "original_deadline_ns": 248103106132000,
+    "pid": 34716,
+    "poisoned": false
+  },
+  "native_session": {
+    "schema": "visual004-native-session-v1",
+    "workspace": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-006\\01\\native",
+    "asset": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-006\\01\\input.blend",
+    "asset_copy": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\he-consumption-run-006\\01\\native\\input.blend",
+    "asset_sha256": "574bcf2b5b636625ef3aa96e1c42af2a1d3fb83e75c6a04a30e83ff42882292a",
+    "blender": "D:\\Tools\\blender5.2\\blender.exe",
+    "blender_sha256": "284f4041f98e113f3dc10654a7193ffaaa9bfdfec8b87fa116620a48b5f6d4cb",
+    "helper_sha256": "5bc1152aeafab89220c93edeec51cbe32ace458cc07d3e7d0507b6412b816fb3",
+    "deadline_ns": 248103106132000,
+    "condition": "N",
+    "max_calls": 128,
+    "started_ns": 247503111760900,
+    "protected_public_images": [],
+    "pid": 34716,
+    "host": "127.0.0.1",
+    "port": 54302,
+    "startup_ns": 1110509400
+  },
+  "cleanup_end_ns": 247566722662700,
+  "whole_cell_ns": 63616530700,
+  "consumer_popen_ns": 247504545498700,
+  "first_public_tool_ns": 247528248947700,
+  "final_received_ns": 247562159909300,
+  "turn_completed_ns": 247562160955100,
+  "process_exit_ns": 247566569166100,
+  "answer_receive_latency_ns": 59053777300,
+  "valid_comparison": null,
+  "comparison_review": "independent quality/context/access/image review;8actions threshold never failure"
+}
