@@ -1,0 +1,654 @@
+{
+  "baseline": [
+    {
+      "name": "generic_pair",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "surface_nearest_name",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "surface_nearest_known_id",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest"
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "task_aabb_four",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            },
+            {
+              "name": "C"
+            },
+            {
+              "name": "D"
+            }
+          ],
+          "requested_facts": [
+            "aabb"
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "overview",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "overview"
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "exact_pairs",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "exact_pairs",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "nearest",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "nearest",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "top1",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "top1",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "mesh_structure_diagnose",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "mesh_structure",
+          "operation": "diagnose",
+          "request_id": "read-1"
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "mesh_surface_diagnose",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "mesh_surface",
+          "operation": "diagnose",
+          "request_id": "read-1"
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "pair_one_selector",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "pair facts require exactly two selectors, ordered A to B"
+    },
+    {
+      "name": "pair_three_selectors",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            },
+            {
+              "name": "C"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "pair facts require exactly two selectors, ordered A to B"
+    },
+    {
+      "name": "selector_name_and_id",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A",
+              "id": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes"
+    },
+    {
+      "name": "nearest_two_selectors",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "surface_nearest query accepts only mode and optionally one object selector"
+    },
+    {
+      "name": "nearest_selector_and_focal",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ]
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "surface_nearest accepts query.objects or focal_id, not both"
+    },
+    {
+      "name": "unknown_fact",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "identity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "task requested_facts must be a nonempty unique finite fact list"
+    }
+  ],
+  "candidate": [
+    {
+      "name": "generic_pair",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "surface_nearest_name",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "surface_nearest_known_id",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest"
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "task_aabb_four",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            },
+            {
+              "name": "C"
+            },
+            {
+              "name": "D"
+            }
+          ],
+          "requested_facts": [
+            "aabb"
+          ]
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "overview",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "overview"
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "exact_pairs",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "exact_pairs",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "nearest",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "nearest",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "top1",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "top1",
+          "object_ids": [
+            "B"
+          ],
+          "max_exact_pairs": 1
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "mesh_structure_diagnose",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "mesh_structure",
+          "operation": "diagnose",
+          "request_id": "read-1"
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "mesh_surface_diagnose",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "mesh_surface",
+          "operation": "diagnose",
+          "request_id": "read-1"
+        }
+      },
+      "expected_accepted": true,
+      "accepted": true,
+      "reason": null
+    },
+    {
+      "name": "pair_one_selector",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "pair facts require exactly two selectors, ordered A to B"
+    },
+    {
+      "name": "pair_three_selectors",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            },
+            {
+              "name": "C"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "pair facts require exactly two selectors, ordered A to B"
+    },
+    {
+      "name": "selector_name_and_id",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A",
+              "id": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes"
+    },
+    {
+      "name": "nearest_two_selectors",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "surface_nearest query accepts only mode and optionally one object selector"
+    },
+    {
+      "name": "nearest_selector_and_focal",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "name": "A"
+            }
+          ]
+        },
+        "focal_id": "A"
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "surface_nearest accepts query.objects or focal_id, not both"
+    },
+    {
+      "name": "unknown_fact",
+      "arguments": {
+        "session_id": "read-1",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "A"
+            },
+            {
+              "name": "B"
+            }
+          ],
+          "requested_facts": [
+            "identity"
+          ]
+        }
+      },
+      "expected_accepted": false,
+      "accepted": false,
+      "reason": "task requested_facts must be a nonempty unique finite fact list"
+    }
+  ],
+  "identical_original_parser_outcomes": true,
+  "example_normalizes_identically": true
+}

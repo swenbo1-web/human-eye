@@ -1,0 +1,15 @@
+# TOOL-AFFORDANCE-001 semantic review
+
+PASS: no blocking semantic defect found in the single current candidate. The reviewer did not author or edit the product wording, run product imports/tests, invoke a model, start Blender, make live RPCs, or take performance samples.
+
+Reviewed source: `human_eye_plugin/live_spatial_mcp.py`, SHA256 `319e7b6b7adc36d7fd57d33b5561e857035fa9a3d6ab9f09d72f67fd611a4f93`. The assignment and root complex-consumption review were read and hashed; the full bindings and 21 source checks are in `SEMANTIC_REVIEW.json`.
+
+The first complete example now asks for the two specified A/B objects' closed-solid relation and independent surface distance in one task request. It explains additional candidates through relevant pairs. The per-selector name-or-id choice is separated from pair cardinality, while the single-target requirement is explicitly attached to global surface_nearest. Both the query.objects and known focal_id forms are stated, along with text-only/session requirements and complete versus partial best-known scope.
+
+The fact descriptions correctly preserve zero-tolerance connected closed-shell classification, positive-volume overlap, independent nonnegative triangle-surface distance, original world witnesses, undefined zero-distance direction and the limits of edge-count evidence. Invalid or ambiguous geometry remains unknown with reasons. The retained pair_relation escape is clearly distinguished from distance, nearest direction and minimum depth. Legacy overview/exact_pairs/nearest/top1 and registered mesh reads retain accurate guidance in the existing fields.
+
+Capture/revision/code binding and scene-change expiry remain present. Complete current measurements can be used to answer, with missing or unknown quantities supplemented using their reasons. This guidance neither forces trust nor forbids independent native verification. The example carries no fixture identity, shape, measurement or truth. No actual adoption, task-speed, token-saving or trust claim appears.
+
+This source review leaves generated-schema equality, byte comparisons, JSONSchema acceptance and execution of the original pure request parser to the assigned offline verifier. It does not establish exact model-visible schema exposure or model benefit. Exploratory source reads encountered one absent guessed filename and a not-yet-created evidence directory; neither involved product execution or mutation.
+
+The final byte-gate correction deleted only the eight UTF-8 bytes `current ` from the first phrase, yielding `Read Blender facts/images.`. The initial draft tied compact JSON bytes but exceeded production serialization by two bytes from the added description-key separator. Exact comparison confirms no other product source bytes changed from that draft. Fresh-capture/current-measurement/revision binding and scene-change expiry guidance remain in the other reviewed text, so all 21 semantic findings still apply. The original bound review is preserved in `SEMANTIC_REVIEW.initial.json/md`; this update covers the final source without alternative wording trials or live calls.

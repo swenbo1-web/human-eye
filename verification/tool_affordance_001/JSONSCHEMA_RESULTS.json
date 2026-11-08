@@ -1,0 +1,157 @@
+{
+  "field_RPC": 0,
+  "performance_samples": 0,
+  "source": "Installed PowerShell Test-Json against archived actual product-generated schemas; no replacement validator",
+  "validator": {
+    "version": "7.0.0.0",
+    "schema_assemblies": [
+      {
+        "path": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\JsonSchema.Net.dll",
+        "name": "JsonSchema.Net, Version=7.0.0.0, Culture=neutral, PublicKeyToken=17ed63f672b0e278",
+        "sha256": "f46da4d56677fd2132b86be7ab593c28e868317c7138208ce052f8c9b44950ae"
+      },
+      {
+        "path": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\JsonPointer.Net.dll",
+        "name": "JsonPointer.Net, Version=5.0.0.0, Culture=neutral, PublicKeyToken=17ed63f672b0e278",
+        "sha256": "17c59587a7ca59dc229b81cd11edc0c8c5621ed9420e0ae11c32e25c2ede7c26"
+      },
+      {
+        "path": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\Json.More.dll",
+        "name": "Json.More, Version=2.0.0.0, Culture=neutral, PublicKeyToken=17ed63f672b0e278",
+        "sha256": "37f4ac64ebe59367e7d7f6a0120a36a5183bb1db7623bb5da5a7b9c561ddb764"
+      }
+    ],
+    "source": "Microsoft.PowerShell.Utility",
+    "powershell": "7.6.9",
+    "assembly": "Microsoft.PowerShell.Commands.Utility, Version=7.6.0.500, Culture=neutral, PublicKeyToken=31bf3856ad364e35",
+    "command": "Test-Json",
+    "sha256": "6cfb73421e9760d77068dc7fd462fcd4cdf75a54adebe87191792c52c0822127",
+    "path": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\Microsoft.PowerShell.Commands.Utility.dll"
+  },
+  "checks": 12,
+  "models": 0,
+  "cases": [
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": true,
+      "arm": "baseline",
+      "expected": true,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}",
+      "passed": true,
+      "case": "generic_pair_example"
+    },
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": true,
+      "arm": "baseline",
+      "expected": true,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"}]},\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "one_object_global_surface_nearest"
+    },
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": false,
+      "arm": "baseline",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\",\"id\":\"A-id\"},{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}",
+      "passed": true,
+      "case": "selector_name_and_id_rejected"
+    },
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": false,
+      "arm": "baseline",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}]},\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "surface_nearest_two_objects_rejected"
+    },
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": false,
+      "arm": "baseline",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"not_a_fact\"]}}",
+      "passed": true,
+      "case": "unsupported_fact_rejected"
+    },
+    {
+      "schema_sha256": "2a652811ebe06236dd44fb54c4712b62aef20159653905be119f3ebbacfbc295",
+      "actual": false,
+      "arm": "baseline",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"}]},\"focal_id\":\"A-id\",\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "surface_nearest_selector_and_focal_rejected"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": true,
+      "arm": "candidate",
+      "expected": true,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}",
+      "passed": true,
+      "case": "generic_pair_example"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": true,
+      "arm": "candidate",
+      "expected": true,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"}]},\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "one_object_global_surface_nearest"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": false,
+      "arm": "candidate",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\",\"id\":\"A-id\"},{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}",
+      "passed": true,
+      "case": "selector_name_and_id_rejected"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": false,
+      "arm": "candidate",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}]},\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "surface_nearest_two_objects_rejected"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": false,
+      "arm": "candidate",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"not_a_fact\"]}}",
+      "passed": true,
+      "case": "unsupported_fact_rejected"
+    },
+    {
+      "schema_sha256": "b34789c852b35f893d891e491d3a4de3f6e139449a9a8594be23e9a35deb4850",
+      "actual": false,
+      "arm": "candidate",
+      "expected": false,
+      "validation_messages": [],
+      "request_json": "{\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"A\"}]},\"focal_id\":\"A-id\",\"session_id\":\"read-1\"}",
+      "passed": true,
+      "case": "surface_nearest_selector_and_focal_rejected"
+    }
+  ],
+  "passed": true,
+  "Blender_sessions": 0
+}

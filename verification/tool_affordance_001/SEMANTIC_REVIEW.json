@@ -1,0 +1,177 @@
+{
+  "cycle_id": "TOOL-AFFORDANCE-001",
+  "role": "independent source semantic reviewer",
+  "passed": true,
+  "reviewed_utc": "2026-11-08T18:00:51.198190+00:00",
+  "baseline_HEAD": "bfcde7e739d61049271cc715e448fe849b10ef3e",
+  "source": {
+    "path": "human_eye_plugin/live_spatial_mcp.py",
+    "sha256": "319e7b6b7adc36d7fd57d33b5561e857035fa9a3d6ab9f09d72f67fd611a4f93"
+  },
+  "assignment": {
+    "path": "D:/hefe/verification/fixes/20261108_complex_reentry/TOOL_AFFORDANCE_ASSIGNMENT.md",
+    "sha256": "09dd96e0e30bbbf06ae58789a9ba197effc2367931fae0bb06c45483abcc5b10"
+  },
+  "root_review": {
+    "path": "D:/hefe/verification/fixes/20261108_complex_reentry/COMPLEX001_REVIEW.md",
+    "sha256": "ac5a9077c71806840d3c9f192e80aa6ef46f4c999f81828cbef27fa5ee6c6d72"
+  },
+  "reviewed_description_paths": [
+    "/0/description",
+    "/0/inputSchema/properties/query/description",
+    "/0/inputSchema/properties/query/properties/objects/description",
+    "/0/inputSchema/properties/query/properties/requested_facts/description"
+  ],
+  "source_references": [
+    "human_eye_plugin/live_spatial_mcp.py:59",
+    "human_eye_plugin/live_spatial_mcp.py:63",
+    "human_eye_plugin/live_spatial_mcp.py:66",
+    "human_eye_plugin/live_spatial_mcp.py:128",
+    "human_eye_plugin/query_policy.py:46",
+    "human_eye_plugin/task_query.py:47",
+    "human_eye_plugin/task_query.py:55",
+    "human_eye_plugin/task_query.py:99",
+    "human_eye_plugin/task_query.py:135",
+    "human_eye_plugin/task_query.py:235",
+    "human_eye_plugin/task_query.py:344",
+    "human_eye_plugin/structure_task.py:43",
+    "human_eye_plugin/surface_task_service.py:18"
+  ],
+  "checks": [
+    {
+      "id": "joint_pair_entry",
+      "passed": true,
+      "evidence": "The first complete request uses task with the two generic name selectors A and B and requests closed_solid_relation plus surface_proximity."
+    },
+    {
+      "id": "pair_candidates",
+      "passed": true,
+      "evidence": "More candidates are handled by querying each relevant pair; no unsupported multi-pair array is advertised."
+    },
+    {
+      "id": "per_selector_choice",
+      "passed": true,
+      "evidence": "The objects description says each exact selector contains name OR id, separately from the number of selectors. The unchanged SELECTOR_SCHEMA oneOf enforces that choice."
+    },
+    {
+      "id": "pair_cardinality",
+      "passed": true,
+      "evidence": "aabb remains 1..4 selectors, while pair facts explicitly require exactly two ordered A to B."
+    },
+    {
+      "id": "single_target_scope",
+      "passed": true,
+      "evidence": "Exactly one target is scoped to global surface_nearest, rather than incorrectly applied to task pair facts."
+    },
+    {
+      "id": "global_selector_form",
+      "passed": true,
+      "evidence": "surface_nearest documents one query.objects selector without focal_id."
+    },
+    {
+      "id": "global_legacy_form",
+      "passed": true,
+      "evidence": "The alternative known focal_id with query containing only mode is documented, with session_id and include_image=false required."
+    },
+    {
+      "id": "global_partial_scope",
+      "passed": true,
+      "evidence": "Complete global nearest and partial best-known are distinguished, avoiding a global-completeness claim for partial output."
+    },
+    {
+      "id": "closed_solid_scope",
+      "passed": true,
+      "evidence": "The fact description retains represented connected closed triangle shells at zero tolerance and separated/touching/penetrating classifications."
+    },
+    {
+      "id": "penetration_meaning",
+      "passed": true,
+      "evidence": "Penetrating is stated to mean positive-volume interior overlap, independently of surface distance."
+    },
+    {
+      "id": "closed_unknown",
+      "passed": true,
+      "evidence": "Invalid or ambiguous geometry is explicitly unknown with reasons; no universal measurement promise is made."
+    },
+    {
+      "id": "surface_distance",
+      "passed": true,
+      "evidence": "surface_proximity remains an independent nonnegative triangle-surface distance with original world points, positive-distance A-to-B direction, and boundary/nonmanifold counts."
+    },
+    {
+      "id": "surface_limits",
+      "passed": true,
+      "evidence": "Zero-distance direction is not applicable, and edge counts do not certify solids. Missing/unknown quantity guidance allows retained known quantities to remain useful."
+    },
+    {
+      "id": "legacy_pair_fact",
+      "passed": true,
+      "evidence": "pair_relation retains separation gap/points/direction, touching, and certified escape translation of A, with escape distinguished from surface distance, nearest direction, and minimum depth."
+    },
+    {
+      "id": "legacy_query_modes",
+      "passed": true,
+      "evidence": "overview/exact_pairs/nearest/top1 remain named. object_ids and max_exact_pairs guidance is scoped to legacy exact_pairs/nearest/top1; complete exact nonpenetrating nearest and strict-bound top1 ties remain accurate."
+    },
+    {
+      "id": "registered_reads",
+      "passed": true,
+      "evidence": "Unchanged operation/task_ref/include_image descriptions retain registered single-target mesh_structure and local opt-in mesh_surface guidance, original budgets, references and preview-only behavior."
+    },
+    {
+      "id": "current_binding",
+      "passed": true,
+      "evidence": "The observe description retains scene_revision/fingerprint, source identity, trace diagnostics and expiration after scene changes."
+    },
+    {
+      "id": "answer_guidance",
+      "passed": true,
+      "evidence": "Complete current measurements may be used to answer, while missing/unknown quantities call for additional evidence using their reasons. No forced trust or prohibition on native verification is introduced."
+    },
+    {
+      "id": "generic_example",
+      "passed": true,
+      "evidence": "The request uses only generic A/B names and read-1 session label; no fixture identity, shape, measurement, expected classification or answer is present."
+    },
+    {
+      "id": "no_adoption_claim",
+      "passed": true,
+      "evidence": "The candidate makes no claim of actual model adoption, faster successful task completion, token saving or distrust; those remain unmeasured."
+    },
+    {
+      "id": "other_tools",
+      "passed": true,
+      "evidence": "Transform, connection status and clearance segment descriptions remain unchanged in the inspected diff."
+    }
+  ],
+  "check_count": 21,
+  "blocking_findings": [],
+  "execution": {
+    "product_imports": 0,
+    "tests": 0,
+    "models": 0,
+    "Blender_sessions": 0,
+    "live_RPC": 0,
+    "performance_samples": 0
+  },
+  "limits": [
+    "This is read-only source semantics review, not an execution of product validators or JSONSchema.",
+    "Actual catalogue generation, recursive stripped-description equality, UTF8 byte counts and original pure parser checks are separate offline evidence.",
+    "The generic example is reviewed as text here; the original parser execution is performed only by the assigned offline verifier.",
+    "Model-visible schema exposure, adoption, trust, task completion benefit and token/fee savings are not established by this review.",
+    "Two exploratory read commands encountered an absent guessed source filename and a not-yet-created evidence directory; no product execution or source mutation occurred."
+  ],
+  "deterministic_byte_correction": {
+    "initial_source_sha256": "5a5dd3464442ace24d836f1c1f223c1a0515982f78d8bb4da183b1f098bc2cd4",
+    "final_source_sha256": "319e7b6b7adc36d7fd57d33b5561e857035fa9a3d6ab9f09d72f67fd611a4f93",
+    "deleted_literal": "current ",
+    "deleted_utf8_bytes": 8,
+    "exact_other_source_bytes_equal": true,
+    "reason": "The initial uncommitted draft tied compact JSON bytes but added 2 bytes under production serialization due to the new description key separator. Parent removed only current plus its trailing space to satisfy the fixed byte gate; no alternative wording was designed or sampled.",
+    "semantics": "Freshness remains explicit in Exact selectors bound to this capture, Use complete current measurements, scene_revision/fingerprint capture binding, and Scene changes expire observations. All 21 original source semantic checks remain valid.",
+    "preserved_initial_reviews": [
+      "SEMANTIC_REVIEW.initial.json",
+      "SEMANTIC_REVIEW.initial.md"
+    ]
+  }
+}
