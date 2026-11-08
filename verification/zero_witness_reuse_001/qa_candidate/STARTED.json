@@ -1,0 +1,49 @@
+{
+  "started_ns": 260909447285300,
+  "started_utc": "2026-11-08T15:36:23.831054+00:00",
+  "argv": [
+    "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\zero_witness_reuse_001\\qa_control.py",
+    "run",
+    "--arm",
+    "candidate"
+  ],
+  "python": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\fixes\\surface_facts_001\\engineering_b\\venv\\Scripts\\python.exe",
+  "controller_pid": 33724,
+  "window": {
+    "status": "granted",
+    "owner": "W-ENTRY",
+    "cycle_id": "ZERO-WITNESS-REUSE-001",
+    "token": "ZERO-WITNESS-REUSE-001-20261108T152216Z-ONLY",
+    "granted_utc": "2026-11-08T15:22:16.671797+00:00",
+    "expires_utc": "2026-11-08T16:37:16.671797+00:00",
+    "max_complete_implementation_seconds": 2700,
+    "max_native_session_seconds": 600,
+    "max_sessions": 2,
+    "max_RPC": 32,
+    "max_public_observations": 18,
+    "model_answers": 0,
+    "product_candidates": 1,
+    "baseline_HEAD": "51be5e37b57449dd65335e8181337fc08d06051d",
+    "baseline_product_commit": "b60dd327e3926a06b73d77b37be7b63c50a3939a",
+    "baseline_source_sha256": "1545da06b415864cf3f666f3a56432e91689d1a0565ea8589a19e3ecfff2b459",
+    "order": [
+      "fixed_baseline",
+      "one_fixed_candidate"
+    ],
+    "per_arm_limits": {
+      "sessions": 1,
+      "RPC": 16,
+      "public_observations": 9,
+      "original_session_seconds": 600
+    },
+    "source_rule": "Freeze exactly one scoped witness-reuse candidate source before paired QA. Verify actual A bytes against b60dd327 and B against its distinct candidate manifest; never label B with A digest.",
+    "gates": {
+      "known_contact_paths_skip_nearest": 3,
+      "cold_changed_observe_total_reduction_min": 0.1,
+      "unchanged_regression_limit": "max(0.010 seconds, baseline unchanged total *0.10)",
+      "full_original_contract_required": true
+    },
+    "stop_rule": "Once baseline plus candidate. No extra candidate/repeated sampling/threshold change; reject optimization if gates fail, preserve accepted capability baseline.",
+    "private_scope": "Same copied original assembly and one original patch perarm; all readback/capture/patch/close count; no original/shared asset save."
+  }
+}
