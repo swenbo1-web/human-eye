@@ -1,0 +1,936 @@
+[
+  {
+    "name": "old_generic_pair",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "objects": [
+          {
+            "name": "A"
+          },
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "old_surface_nearest_name",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "A"
+          }
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "old_surface_nearest_known_id",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "surface_nearest"
+      },
+      "focal_id": "A"
+    },
+    "expected": true
+  },
+  {
+    "name": "old_task_aabb_four",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "objects": [
+          {
+            "name": "A"
+          },
+          {
+            "name": "B"
+          },
+          {
+            "name": "C"
+          },
+          {
+            "name": "D"
+          }
+        ],
+        "requested_facts": [
+          "aabb"
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "old_overview",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "overview"
+      },
+      "focal_id": "A"
+    },
+    "expected": true
+  },
+  {
+    "name": "old_exact_pairs",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "exact_pairs",
+        "object_ids": [
+          "B"
+        ],
+        "max_exact_pairs": 1
+      },
+      "focal_id": "A"
+    },
+    "expected": true
+  },
+  {
+    "name": "old_nearest",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "nearest",
+        "object_ids": [
+          "B"
+        ],
+        "max_exact_pairs": 1
+      },
+      "focal_id": "A"
+    },
+    "expected": true
+  },
+  {
+    "name": "old_top1",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "top1",
+        "object_ids": [
+          "B"
+        ],
+        "max_exact_pairs": 1
+      },
+      "focal_id": "A"
+    },
+    "expected": true
+  },
+  {
+    "name": "old_mesh_structure_diagnose",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "mesh_structure",
+        "operation": "diagnose",
+        "request_id": "read-1"
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "old_mesh_surface_diagnose",
+    "arguments": {
+      "session_id": "read-1",
+      "include_image": false,
+      "query": {
+        "mode": "mesh_surface",
+        "operation": "diagnose",
+        "request_id": "read-1"
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "callable_example",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "three_candidates_with_aabb",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          },
+          {
+            "name": "C"
+          },
+          {
+            "name": "D"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity",
+          "aabb"
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "old_four_aabb",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "requested_facts": [
+          "aabb"
+        ]
+      }
+    },
+    "expected": true
+  },
+  {
+    "name": "None_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "None_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "None_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "surface_nearest_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "surface_nearest",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "surface_nearest_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "surface_nearest",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "surface_nearest_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "surface_nearest",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "overview_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "overview",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "overview_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "overview",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "overview_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "overview",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "exact_pairs_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "exact_pairs",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "exact_pairs_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "exact_pairs",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "exact_pairs_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "exact_pairs",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "nearest_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "nearest",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "nearest_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "nearest",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "nearest_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "nearest",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "top1_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "top1",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "top1_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "top1",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "top1_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "top1",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_structure_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_structure",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_structure_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_structure",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_structure_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_structure",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_surface_both",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_surface",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_surface_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_surface",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mesh_surface_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "mesh_surface",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "task_target_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "task_candidates_only",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "mixed_objects",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "objects": [
+          {
+            "name": "A"
+          },
+          {
+            "name": "B"
+          }
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "extra_object_ids",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "object_ids": [
+          "B"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "extra_pair_budget",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "max_exact_pairs": 1
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "empty_candidates",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "four_candidates",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "id": "0"
+          },
+          {
+            "id": "1"
+          },
+          {
+            "id": "2"
+          },
+          {
+            "id": "3"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "missing_fact",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "unsupported_fact",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity",
+          "pair_relation"
+        ]
+      }
+    },
+    "expected": false
+  },
+  {
+    "name": "dual_selector",
+    "arguments": {
+      "include_image": false,
+      "query": {
+        "mode": "task",
+        "target": {
+          "name": "A",
+          "id": "A"
+        },
+        "candidates": [
+          {
+            "name": "B"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      }
+    },
+    "expected": false
+  }
+]
