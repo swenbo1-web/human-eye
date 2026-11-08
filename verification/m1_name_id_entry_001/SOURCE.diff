@@ -1,0 +1,38 @@
+--- human_eye_plugin/live_spatial_mcp.py (baseline)
++++ human_eye_plugin/live_spatial_mcp.py (candidate)
+@@ -124,21 +124,22 @@
+     {
+         "name": "human_eye_scene_observe",
+         "description": (
+-            "Read fresh Blender facts or images. For named/ID text facts use query.mode='task', "
+-            "objects, requested_facts and include_image=false. aabb accepts 1..4 objects; pair facts "
+-            "take two in A-to-B order. task-query-v3 pair_relation returns zero-tolerance separation "
+-            "with surface gap, original points and A-to-B direction; computed surface touching with zero gap "
+-            "and undefined direction; or penetration with certified escape evidence. Escape is a translation "
+-            "of A, not surface distance, nearest direction or minimum depth. Requested unknowns remain partial. "
+-            "binding.runtime_source_sha256 identifies code; scene_revision/fingerprint identify the current "
+-            "capture including source and revision. trace_id supports diagnostics. "
++            "Read fresh Blender facts/images. Name to ID: "
++            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"<object-name>\"}],\"requested_facts\":[\"aabb\"]}}. "
++            "If resolved, use binding.objects[0].object_id as focal_id: "
++            "{\"session_id\":\"read-1\",\"focal_id\":\"<object-id>\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\"}}. "
++            "identity/object_identity are not facts. "
++            "surface_nearest returns current global triangle-surface nearest objects if complete, best-known if partial. "
++            "aabb takes 1..4 name/id selectors; pair facts take two ordered A to B. "
++            "task-query-v3 pair_relation: zero-tolerance separation with surface gap/original points/A-to-B direction; "
++            "computed touching with zero gap/undefined direction; or penetration with certified escape translation of A. "
++            "Escape is not surface distance, nearest direction or minimum depth. Unknowns stay partial. "
++            "binding.runtime_source_sha256 identifies code; scene_revision/fingerprint bind capture/source/revision; trace_id aids diagnostics. "
+             "surface_proximity independently measures nonnegative triangle-surface distance, original points, "
+             "positive-distance A-to-B direction and boundary/nonmanifold edge counts. Zero-distance direction "
+-            "is not applicable. Edge counts alone do not certify a solid. Goals evaluate caller criteria. Other observation "
+-            "modes retain images and returned object IDs; scene changes expire observations. "
+-            "mesh_structure uses registered single-target tasks; diagnose yields facts/patch references, patch requests images. "
+-            "surface_nearest returns current global triangle-surface nearest objects when complete, or best-known objects when partial; use a known ID, for example "
+-            "{\"session_id\":\"read-1\",\"focal_id\":\"<known-id>\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\"}}."
++            "is not applicable; edge counts do not certify a solid. Goals evaluate caller criteria. "
++            "Other modes retain images/returned IDs; scene changes expire observations. "
++            "mesh_structure registered single-target diagnose yields facts/patch refs; patch requests images."
+         ),
+         "inputSchema": {
+             "type": "object",
