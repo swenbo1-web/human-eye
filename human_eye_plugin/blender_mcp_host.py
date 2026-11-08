@@ -218,9 +218,18 @@ class BlenderMCPHost:
     def capture_task_scene(self, selectors) -> dict[str, Any]:
         return self._request('capture_task', {'selectors': selectors})
 
-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
-        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
-            raise ValueError('acquisition_focal_id')
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+        if selector is None:
+            if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+                raise ValueError('acquisition_focal_id')
+        else:
+            if focal_id is not None:
+                raise ValueError('acquisition_focal_selector_conflict')
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise ValueError('acquisition_selector')
+            selector = dict(selector)
         now_ns = time.perf_counter_ns()
         if type(deadline_ns) is not int or now_ns >= deadline_ns:
             raise ValueError('acquisition_deadline_exceeded')
@@ -231,15 +240,32 @@ class BlenderMCPHost:
             raise ValueError('acquisition_deadline_exceeded')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
             raise ValueError('acquisition_document_budget')
-        result = self._request('capture_nearest_candidates', {'focal_id': focal_id,
-            'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes})
+        params = {'focal_id': focal_id, 'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes}
+        if selector is not None:
+            params['selector'] = selector
+        result = self._request('capture_nearest_candidates', params)
         if time.perf_counter_ns() >= deadline_ns:
             raise ValueError('acquisition_deadline_exceeded')
         binding = result.get('binding')
         if (type(binding) is not dict or result.get('protocol') != 'single-read-surface-candidates-v1'
-                or result.get('focal_id') != focal_id or result.get('execution_authority') is not False
+                or result.get('execution_authority') is not False
                 or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
             raise ValueError('acquisition_response_binding')
+        if selector is None:
+            if result.get('focal_id') != focal_id:
+                raise ValueError('acquisition_response_binding')
+        else:
+            capture = result.get('capture')
+            meshes = capture.get('meshes') if type(capture) is dict else None
+            if type(meshes) is not list or any(type(mesh) is not dict for mesh in meshes):
+                raise ValueError('acquisition_response_binding')
+            key, value = next(iter(selector.items()))
+            field = 'object_id' if key == 'id' else 'name'
+            matches = [mesh.get('object_id') for mesh in meshes if mesh.get(field) == value]
+            if (len(matches) != 1 or type(matches[0]) is not str or not matches[0]
+                    or len(matches[0].encode('utf8')) > 256
+                    or result.get('focal_id') != matches[0]):
+                raise ValueError('acquisition_response_binding')
         self._record_observation_document(binding)
         return result
 
@@ -435,6 +461,8 @@ class BlenderMCPHost:
             'capture_nearest_candidates':{'focal_id','deadline_ns','max_response_bytes'},'native_observation_capabilities':set(),
             'observe_readonly_native':{'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'},
             'last_readonly_native_audit':{'request_id'}}
+        if command == 'capture_nearest_candidates' and type(params) is dict and 'selector' in params:
+            required[command] = required[command] | {'selector'}
         if command not in required or type(params) is not dict or set(params)!=required[command]:
             raise ValueError('Invalid fixed native observation command')
         request=json.dumps({'id':request_id,'command':command,'params':params},

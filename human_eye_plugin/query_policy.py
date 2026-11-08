@@ -46,9 +46,12 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     normalized by full ID; they do not consume exact-pair work slots.
     """
     if type(query) is dict and query.get('mode') == 'surface_nearest':
-        if set(query) != {'mode'}:
-            raise ValueError('surface_nearest query accepts only mode')
-        return {'mode': 'surface_nearest'}
+        if set(query) == {'mode'}:
+            return {'mode': 'surface_nearest'}
+        if set(query) != {'mode', 'objects'} or type(query['objects']) is not list or len(query['objects']) != 1:
+            raise ValueError('surface_nearest query accepts only mode and optionally one object selector')
+        from .task_query import validate_object_selector
+        return {'mode': 'surface_nearest', 'objects': [validate_object_selector(query['objects'][0])]}
     if type(query) is dict and query.get('mode') == 'task':
         from .task_query import validate_task_query
         return validate_task_query(query)

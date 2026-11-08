@@ -1020,11 +1020,14 @@ class LiveSpatialService:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
         if query['mode'] == 'surface_nearest':
-            if (include_image or type(focal_id) is not str or not focal_id.strip()
-                    or len(focal_id.encode('utf8')) > 256 or reference_id is not None
+            selector = query['objects'][0] if 'objects' in query else None
+            if selector is not None and focal_id is not None:
+                raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
+            if (include_image or (selector is None and (type(focal_id) is not str or not focal_id.strip()
+                    or len(focal_id.encode('utf8')) > 256)) or reference_id is not None
                     or goal is not None or scene_delta is not None):
-                raise ValueError('surface_nearest requires an explicit focal_id, include_image=false and no reference, goal or scene_delta')
-            return self._observe_surface_nearest(session_id, focal_id)
+                raise ValueError('surface_nearest requires one target, include_image=false and no reference, goal or scene_delta')
+            return self._observe_surface_nearest(session_id, focal_id, selector=selector)
         if query['mode'] == 'task':
             if (include_image or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1215,7 +1218,7 @@ class LiveSpatialService:
             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
         return result
 
-    def _observe_surface_nearest(self, session_id, focal_id):
+    def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
         """One current candidate capture through the existing read-only boundary."""
         from .task_query import surface_nearest_result
         if not self.config.get('enabled', True):
@@ -1235,9 +1238,22 @@ class LiveSpatialService:
             timeout = getattr(self.host, 'timeout_s', 10.)
             deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
             with span('host.capture', kind='host'):
-                captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
+                if selector is None:
+                    captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
+                else:
+                    captured = self.host.capture_nearest_candidates(None, deadline, 64 * 1024 * 1024, selector=selector)
             self._check_request_budget('after_host_capture')
-            if captured.get('focal_id') != focal_id:
+            if selector is not None:
+                field = 'object_id' if 'id' in selector else 'name'
+                selected = selector.get('id', selector.get('name'))
+                capture = captured.get('capture')
+                if type(capture) is not dict or type(capture.get('meshes')) is not list:
+                    raise ValueError('surface_nearest capture selector mismatch')
+                matches = [item.get('object_id') for item in capture['meshes'] if type(item) is dict and item.get(field) == selected]
+                if (len(matches) != 1 or type(matches[0]) is not str or not matches[0]
+                        or len(matches[0].encode('utf8')) > 256 or captured.get('focal_id') != matches[0]):
+                    raise ValueError('surface_nearest capture selector mismatch')
+            elif captured.get('focal_id') != focal_id:
                 raise ValueError('surface_nearest capture focal_id mismatch')
             with span('observation.surface_nearest'):
                 work = {}

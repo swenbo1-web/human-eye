@@ -928,7 +928,7 @@ class BlenderSceneHost:
         with self._lock:
             return self._capture()
 
-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes):
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
         """Internal unsigned-surface acquisition, one synchronous host window.
 
         Restricted to independent static triangle meshes. API-derived bounds
@@ -936,8 +936,17 @@ class BlenderSceneHost:
         solid certificate, legacy complete-scene capture or action authority.
         """
         self._main_thread()
-        if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
-            raise BlenderHostError('acquisition_focal_id')
+        if selector is None:
+            if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+                raise BlenderHostError('acquisition_focal_id')
+        else:
+            if focal_id is not None:
+                raise BlenderHostError('acquisition_focal_selector_conflict')
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('acquisition_selector')
+            selector_key, selector_value = next(iter(selector.items()))
         if type(deadline_ns) is not int or deadline_ns <= 0:
             raise BlenderHostError('acquisition_deadline')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
@@ -951,6 +960,14 @@ class BlenderSceneHost:
             checkpoint()
             objects = self._objects(graph)
             ids = [self.object_id(obj) for obj in objects]
+            if selector is not None:
+                matches = [oid for obj, oid in zip(objects, ids)
+                           if (oid if selector_key == 'id' else obj.name) == selector_value]
+                if not matches:
+                    raise BlenderHostError('acquisition_selector_not_found')
+                if len(matches) != 1:
+                    raise BlenderHostError('acquisition_selector_ambiguous')
+                focal_id = matches[0]
             if len(set(ids)) != len(ids) or focal_id not in ids or len(ids) < 2:
                 raise BlenderHostError('acquisition_object_coverage')
             identity = self._identity_metadata(objects)

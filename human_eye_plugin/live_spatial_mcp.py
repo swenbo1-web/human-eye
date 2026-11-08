@@ -60,7 +60,7 @@ _QUERY_SCHEMA = {
     "properties": {
         "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
-            "description": "task only: exact name or id selectors bound to one fresh capture. Pair facts use exactly two objects ordered A to B."},
+            "description": "Exact name or id selectors bound to one fresh capture. task uses 1..4 (pair facts two ordered A to B); surface_nearest uses exactly one, without top-level focal_id."},
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
             "minItems": 1, "uniqueItems": True},
         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
@@ -85,7 +85,7 @@ _QUERY_SCHEMA = {
             "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
-               "then": {"maxProperties": 1}}],
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}}],
     "additionalProperties": False,
 }
 _GOAL_SCHEMA = {
@@ -124,10 +124,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Read fresh Blender facts/images. Name to ID: "
-            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"<object-name>\"}],\"requested_facts\":[\"aabb\"]}}. "
-            "If resolved, use binding.objects[0].object_id as focal_id: "
-            "{\"session_id\":\"read-1\",\"focal_id\":\"<object-id>\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\"}}. "
+            "Read fresh Blender facts/images. Nearest surfaces by exact name in one request: "
+            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"surface_nearest\",\"objects\":[{\"name\":\"<object-name>\"}]}}. "
+            "Use exactly one name/id selector, without focal_id. Legacy known-ID requests use focal_id and query with only mode. "
             "identity/object_identity are not facts. "
             "surface_nearest returns current global triangle-surface nearest objects if complete, best-known if partial. "
             "aabb takes 1..4 name/id selectors; pair facts take two ordered A to B. "
@@ -153,6 +152,16 @@ LIVE_MCP_TOOLS_SCHEMA = [
                 "include_image": {"type": "boolean", "default": True,
                     "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
             },
+            "allOf": [{
+                "if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"const": "surface_nearest"}}}}},
+                "then": {"required": ["session_id", "include_image"],
+                         "properties": {"include_image": {"const": False}},
+                         "oneOf": [
+                             {"required": ["focal_id"], "properties": {"query": {"not": {"required": ["objects"]}}}},
+                             {"not": {"required": ["focal_id"]}, "properties": {"query": {"required": ["objects"]}}},
+                         ]},
+            }],
             "additionalProperties": False,
         },
     },
@@ -286,10 +295,13 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         if 'include_image' in arguments and type(arguments['include_image']) is not bool:
             raise ValueError('include_image must be boolean')
         if validate_query(arguments.get('query'))['mode'] == 'surface_nearest':
-            if (not arguments.get('session_id') or not arguments.get('focal_id')
+            selected_query = validate_query(arguments.get('query'))
+            if 'objects' in selected_query and 'focal_id' in arguments:
+                raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
+            if (not arguments.get('session_id') or ('objects' not in selected_query and not arguments.get('focal_id'))
                     or arguments.get('include_image', True)
                     or any(arguments.get(key) is not None for key in ('goal', 'reference_id', 'scene_delta'))):
-                raise ValueError('surface_nearest requires session_id, focal_id, include_image=false and no reference, goal or scene_delta')
+                raise ValueError('surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta')
         if (validate_query(arguments.get('query')).get('alignment_evidence') is False
                 and arguments.get('include_image', True)):
             raise ValueError('alignment_evidence=false requires include_image=false')

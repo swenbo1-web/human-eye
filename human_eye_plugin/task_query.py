@@ -43,6 +43,14 @@ def _aabb_center_delta_component(a0, a1, b0, b1):
     return None if exact and rounded == 0 else rounded
 
 
+def validate_object_selector(selector):
+    if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+            or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                   for value in selector.values())):
+        raise ValueError('task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes')
+    return dict(selector)
+
+
 def validate_task_query(query):
     if type(query) is not dict or set(query) != {'mode', 'objects', 'requested_facts'}:
         raise ValueError('task query requires only mode, objects and requested_facts')
@@ -50,10 +58,7 @@ def validate_task_query(query):
     if type(selectors) is not list or not 1 <= len(selectors) <= 4:
         raise ValueError('task objects must contain 1..4 explicit selectors')
     for selector in selectors:
-        if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
-                or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
-                       for value in selector.values())):
-            raise ValueError('task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes')
+        validate_object_selector(selector)
     if (type(facts) is not list or not facts or any(type(f) is not str or f not in FACTS for f in facts)
             or len(facts) != len(set(facts))):
         raise ValueError('task requested_facts must be a nonempty unique finite fact list')
