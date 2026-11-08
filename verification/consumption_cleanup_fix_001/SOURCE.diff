@@ -1,0 +1,78 @@
+--- verification/consumption_run_002/runner.py
++++ verification/consumption_cleanup_fix_001/runner.py
+@@ -134,15 +134,18 @@
+ 
+ 
+ def process_exited(pid,timeout_ms=1000):
+-    """Read-only wait on a known registered PID; never signal/kill a foreign PID."""
++    """Read-only registered-PID wait: stopped/live/unknown; never signal a PID."""
++    if type(pid) is not int or not 0<pid<2**32:return None
+     import ctypes
+     kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+     kernel.OpenProcess.argtypes=(ctypes.c_ulong,ctypes.c_int,ctypes.c_ulong);kernel.OpenProcess.restype=ctypes.c_void_p
+     kernel.WaitForSingleObject.argtypes=(ctypes.c_void_p,ctypes.c_ulong)
+     kernel.CloseHandle.argtypes=(ctypes.c_void_p,)
+     handle=kernel.OpenProcess(0x100000,False,int(pid))
+-    if not handle:return ctypes.get_last_error()==87
+-    try:return kernel.WaitForSingleObject(handle,timeout_ms)==0
++    if not handle:return True if ctypes.get_last_error()==87 else None
++    try:
++        waited=kernel.WaitForSingleObject(handle,timeout_ms)
++        return True if waited==0 else False if waited==258 else None
+     finally:kernel.CloseHandle(handle)
+ 
+ 
+@@ -150,15 +153,46 @@
+     evidence=[]
+     for kind in (['native','he'] if cell['arm']=='P' else ['native']):
+         folder=Path(cell['audit_root'])/('bridge_'+kind)
++        row=dict(kind=kind,confirmed=False,process_stopped=None,graceful_exit_receipt=None)
++        evidence.append(row)
+         try:
+             started=load(folder/'STARTED.json')
+-            exited=process_exited(started['pid'])
+-            ended=load(folder/'EXIT.json')
+-            valid=(started['pid']==ended['pid'] and started['ledger_path']==cell['ledger_path']
+-                and ended['ledger_path']==cell['ledger_path'] and exited)
+-            if kind=='he':valid=valid and ended.get('he_child_reaped') is True
+-            evidence.append(dict(kind=kind,confirmed=bool(valid),receipt=ended))
+-        except (OSError,ValueError,KeyError) as exc:evidence.append(dict(kind=kind,confirmed=False,error=str(exc)))
++            row['started']=started
++            if (type(started) is not dict or type(started.get('pid')) is not int or not 0<started['pid']<2**32
++                    or started.get('kind')!=kind or not isinstance(cell['ledger_path'],str) or not cell['ledger_path']
++                    or started.get('ledger_path')!=cell['ledger_path']):
++                raise ValueError('STARTED_identity_or_ledger_mismatch')
++            row['process_stopped']=process_exited(started['pid'])
++            try:row['graceful_exit_receipt']=load(folder/'EXIT.json')
++            except FileNotFoundError:pass  # Optional receipt; retain the independent OS observation.
++            else:
++                if type(row['graceful_exit_receipt']) is not dict:raise ValueError('EXIT_receipt_invalid')
++            ended=row['graceful_exit_receipt']
++            if ended is not None and (type(ended.get('pid')) is not int or ended.get('pid')!=started['pid']
++                    or ended.get('kind')!=kind or ended.get('ledger_path')!=cell['ledger_path']):
++                raise ValueError('EXIT_identity_or_ledger_mismatch')
++            if kind=='he':
++                child=dict(process_stopped=None,graceful_exit_receipt=None)
++                row['he_child']=child
++                # This existing child identity belongs to the already-bound bridge audit directory.
++                child['started']=load(folder/'HE_CHILD_STARTED.json')
++                identity=child['started']
++                if (type(identity) is not dict or type(identity.get('pid')) is not int or not 0<identity['pid']<2**32
++                        or identity['pid']==started['pid']):
++                    raise ValueError('HE_CHILD_STARTED_identity_invalid')
++                child['process_stopped']=process_exited(identity['pid'])
++                try:child['graceful_exit_receipt']=load(folder/'HE_CHILD_EXIT.json')
++                except FileNotFoundError:pass
++                else:
++                    if type(child['graceful_exit_receipt']) is not dict:raise ValueError('HE_CHILD_EXIT_receipt_invalid')
++                closed=child['graceful_exit_receipt']
++                if closed is not None and (type(closed.get('pid')) is not int or closed.get('pid')!=identity['pid']):
++                    raise ValueError('HE_CHILD_EXIT_identity_mismatch')
++                if ended is not None and (type(ended.get('he_child_pid')) is not int or ended.get('he_child_pid')!=identity['pid']):
++                    raise ValueError('EXIT_HE_child_identity_mismatch')
++                row['confirmed']=row['process_stopped'] is True and child['process_stopped'] is True
++            else:row['confirmed']=row['process_stopped'] is True
++        except (OSError,ValueError,KeyError,TypeError) as exc:row['error']=str(exc)
+     return dict(confirmed=all(e['confirmed'] for e in evidence),evidence=evidence,
+         scope='registered native/HE bridge processes and HE-owned production child; arbitrary user-created Python descendants are not sandboxed')
+ 
