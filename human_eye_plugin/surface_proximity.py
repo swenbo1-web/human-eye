@@ -505,8 +505,39 @@ def _rank_surface_results(results_by_id, checkpoint):
                 scope='provided_kernel_results_only')
 
 
+def _boundary_witness(contact, pair, budget):
+    """Check a same-query exact contact against its two original triangles."""
+    if type(contact) is not dict or contact.get('pair') is not pair:
+        return None
+    indices, point = contact.get('triangles'), contact.get('point')
+    if (type(indices) is not tuple or len(indices) != 2
+            or any(type(index) is not int for index in indices)
+            or type(point) is not tuple or len(point) != 3
+            or any(type(value) not in (int, Fraction) for value in point)):
+        return None
+    budget.checkpoint('surface_proximity_boundary_witness')
+    try:
+        for value in point:
+            _bounded(value)
+        for side, index in zip(pair[4], indices):
+            if not 0 <= index < len(side):
+                return None
+            points, normal, squared, _, _ = side[index]
+            if not squared or _dot(normal, _sub(point, points[0])) != 0:
+                return None
+            drop = max(range(3), key=lambda axis: abs(normal[axis]))
+            axes = tuple(axis for axis in range(3) if axis != drop)
+            sign = 1 if _orient(*points, axes) > 0 else -1
+            if any(sign * _orient(points[i], points[(i + 1) % 3], point, axes) < 0
+                   for i in range(3)):
+                return None
+    except _DomainError:
+        return None
+    return point
+
+
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
-                              _prepared_pair=None):
+                              _prepared_pair=None, _boundary_contact=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
@@ -515,13 +546,20 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
         direction_status='unknown', topology=None, method=METHOD,
         work=budget.counts)
     try:
-        if _prepared_pair is None:
+        if (_prepared_pair is None or _prepared_pair[0][0][0] is not left
+                or _prepared_pair[0][1][0] is not right):
             records, result['topology'] = _admit((left, right), budget)
             origin, factor, prepared = _integer_frame(records, budget)
+            contact = None
         else:
             records, result['topology'], origin, factor, prepared = _prepared_pair
             budget.counts['shared_preparation'] = True
-        numerator, denominator, descriptor = _nearest(prepared, budget)
+            contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
+        if contact is None:
+            numerator, denominator, descriptor = _nearest(prepared, budget)
+        else:
+            budget.counts['zero_witness_reused'] = True
+            numerator, denominator, descriptor = 0, 1, ('contact', contact)
     except _DomainError as exc:
         result['reason'] = str(exc)
         return result

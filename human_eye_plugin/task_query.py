@@ -180,7 +180,8 @@ def bind_objects(scene, selectors):
 
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
-                              diagnostics, retain_exact_rank=False, prepared_pair=None):
+                              diagnostics, retain_exact_rank=False, prepared_pair=None,
+                              boundary_contact=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -191,6 +192,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
         options = {'retain_exact_rank': True} if retain_exact_rank else {}
         if prepared_pair is not None:
             options['_prepared_pair'] = prepared_pair
+        if boundary_contact is not None:
+            options['_boundary_contact'] = boundary_contact
         return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
     face_counts = len(left.faces), len(right.faces)
     if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
@@ -441,7 +444,8 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 checkpoint('before_surface_pair_measurement')
                 surface = _surface_pair_measurement(left, right, cache, checkpoint,
                     source=scene['source'], diagnostics=metrics,
-                    prepared_pair=shared_preparation.get('pair') if shared_preparation is not None else None)
+                    prepared_pair=shared_preparation.get('pair') if shared_preparation is not None else None,
+                    boundary_contact=shared_preparation.get('boundary_contact') if shared_preparation is not None else None)
                 checkpoint('after_surface_pair_measurement')
                 facts['surface_proximity'] = _surface_proximity_fact(surface)
     # Numerical overflow must not turn the otherwise known fields into a JSON

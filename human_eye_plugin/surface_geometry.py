@@ -425,6 +425,7 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
     Contact needs a global separating plane certificate. Unresolved coincident
     or mesh-edge boundary arrangements remain unknown, never guessed touching.
     """
+    if prepared_holder is not None:prepared_holder.pop('boundary_contact',None)
     from . import surface_proximity as exact
     budget=_ClosedWork(checkpoint,diagnostics,exact)
     result=dict(measurement_valid=False,relation=None,method=CLOSED_SOLID_METHOD,
@@ -451,6 +452,9 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
             ta,tb=a['triangles'][i],b['triangles'][j]
             points=exact._intersection(ta[0],tb[0],ta[1],tb[1],budget)
             if not points:continue
+            if prepared_holder is not None and 'boundary_contact' not in prepared_holder:
+                prepared_holder['boundary_contact']=dict(pair=prepared_pair,
+                    point=points[0],triangles=(i,j))
             if _closed_transverse(points,ta,tb,budget):
                 result.update(measurement_valid=True,relation='penetrating',certificate='transverse_boundary_interiors')
                 return result
