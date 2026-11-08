@@ -196,10 +196,10 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
         return compute_surface()
     parameters = {'source': source, 'unit': 'm', 'coordinate_frame': 'world',
                   'world_witness_tolerance_m': COLLISION_TOLERANCE_M}
-    version = 'task-surface-proximity-exact-aabb-v2'
+    version = 'task-surface-proximity-exact-aabb-v3'
     if retain_exact_rank:
         parameters['retain_exact_rank'] = True
-        version = 'task-surface-proximity-exact-world-rank-v1'
+        version = 'task-surface-proximity-exact-world-rank-v2'
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version)
     return result

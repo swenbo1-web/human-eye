@@ -7,6 +7,7 @@ capture_nearest_candidates implementation, and every nearest result executes
 the accepted summarizer and geometry kernel. No final nearest result is faked.
 """
 import json
+import math
 from pathlib import Path
 import tempfile
 import time
@@ -99,6 +100,22 @@ def add_retained_degenerate_face(obj, world_x=1.):
         vertex.co = (local_x, y, 0.)
     obj.bound_box = [(x, y, z) for x in (local_x, 0.)
         for y in (0., 4.) for z in (0., 1.)]
+
+
+def add_retained_exact_bit_budget_face(obj, world_x=1.):
+    """Finite source whose common dyadic frame exceeds exact work width.
+
+    The new tiny nonzero face and original unit face share a 2**1070 scale.
+    The original face's normal squared then exceeds the unchanged MAX_BITS.
+    Acquisition remains valid; the real kernel supplies the budget refusal.
+    """
+    second_face(obj)
+    local_x = world_x - float(obj.matrix_world[0][3])
+    tiny = math.ldexp(1., -1070)
+    for vertex, (y, z) in zip(obj.data.vertices[3:], ((0., 0.), (tiny, 0.), (0., tiny))):
+        vertex.co = (local_x, y, z)
+    obj.bound_box = [(x, y, z) for x in (local_x, 0.)
+        for y in (0., 1.) for z in (0., 1.)]
 
 
 class SurfaceNearestEntryTests(unittest.TestCase):
@@ -237,25 +254,26 @@ class SurfaceNearestEntryTests(unittest.TestCase):
         self.assertEqual(result['coverage']['distance_valid'], 2)
         self.assert_only_candidate_capture()
 
-    def test_05_retained_degenerate_target_is_named_partial(self):
+    def test_05_retained_degenerate_target_is_complete(self):
         add_retained_degenerate_face(self.host.objects[2])
         result = self.observe()
-        self.assertEqual(result['status'], 'partial')
-        self.assertIsNone(result['nearest_objects'])
-        self.assertIsNone(result['distance_m'])
-        self.assertEqual(result['best_known_objects'], [self.host.object(1)])
-        self.assertEqual(result['best_known_distance_m'], 2.)
-        self.assertEqual(result['unresolved'], [{**self.host.object(2),
-            'reason': 'surface_degenerate_triangle'}])
+        # Focal y<=1, new segment x=1 and 2<=y<=4 attain sqrt(1+1)
+        # at (0,1,0) and (1,2,0), beating the other candidate at x=2.
+        self.assertEqual(result['status'], 'complete')
+        self.assertEqual(result['nearest_objects'], [self.host.object(2)])
+        self.assertEqual(result['distance_m'], math.sqrt(2))
+        self.assertEqual(result['best_known_objects'], [self.host.object(2)])
+        self.assertEqual(result['best_known_distance_m'], math.sqrt(2))
+        self.assertEqual(result['unresolved'], [])
         self.assertEqual(result['coverage'], {'targets_excluding_focal': 2,
-            'distance_valid': 1, 'strictly_excluded': 0, 'unresolved': 1})
+            'distance_valid': 2, 'strictly_excluded': 0, 'unresolved': 0})
         self.assert_only_candidate_capture()
-        EVIDENCE['partial'] = {'status': result['status'], 'work': self.audit_work(),
-            'coverage': result['coverage'], 'reason': result['unresolved'][0]['reason']}
+        EVIDENCE['degenerate_complete'] = {'status': result['status'], 'work': self.audit_work(),
+            'coverage': result['coverage'], 'distance_m': result['distance_m']}
 
     def test_06_all_unknown_has_no_global_or_best_known_distance(self):
         self.use_host(ActualCandidateHost((0., 100.)))
-        add_retained_degenerate_face(self.host.objects[1])
+        add_retained_exact_bit_budget_face(self.host.objects[1])
         result = self.observe()
         self.assertEqual(result['status'], 'unknown')
         self.assertIsNone(result['nearest_objects'])
@@ -263,7 +281,7 @@ class SurfaceNearestEntryTests(unittest.TestCase):
         self.assertEqual(result['best_known_objects'], [])
         self.assertIsNone(result['best_known_distance_m'])
         self.assertEqual(result['unresolved'], [{**self.host.object(1),
-            'reason': 'surface_degenerate_triangle'}])
+            'reason': 'surface_exact_bit_budget'}])
         self.assertEqual(result['coverage']['unresolved'], 1)
         self.assert_only_candidate_capture()
 
@@ -381,8 +399,10 @@ class SurfaceNearestEntryTests(unittest.TestCase):
             with self.subTest(variant=variant):
                 self.use_host(ActualCandidateHost(xs))
                 if variant != 'ties':
-                    add_retained_degenerate_face(self.host.objects[-1])
+                    add_retained_exact_bit_budget_face(self.host.objects[-1])
                 legacy = self.observe()
+                self.assertEqual(legacy['status'],
+                    {'ties': 'complete', 'partial': 'partial', 'unknown': 'unknown'}[variant])
                 by_id = self.public_selector({'id': self.host.focal_id})
                 by_name = self.public_selector({'name': self.host.objects[0].name})
                 self.assert_same_nearest(by_id, legacy)

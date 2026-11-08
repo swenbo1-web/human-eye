@@ -291,16 +291,34 @@ class SurfaceProximityMathTests(unittest.TestCase):
                               (base, base + 1, base)])
         right = translated(left, (0, 0, 256), 'b')
         result = self.measure(left, right)
-        self.assertFalse(result['measurement_valid'], result)
-        self.assertIn('degenerate', result['reason'])
+        # The binary64 input has already collapsed each nominal triangle to a
+        # point. Preserve those actual points, not the intended +1 edges.
+        self.assertTrue(result['measurement_valid'], result)
+        self.assertEqual(result['distance_m'], 256.)
+        self.assertEqual(result['point_a_world'], [base, base, base])
+        self.assertEqual(result['point_b_world'], [base, base, base + 256])
+        self.assertEqual(result['witness_status'], 'measured')
+        self.assertEqual(result['direction_a_to_b'], [0., 0., 1.])
 
     def test_g08_degenerate_late_face_is_checked_before_zero_early_exit(self):
         left, right = edge_face_crossing_pair()
         left = entity('a', np.vstack([left.vertices, [[4, 4, 4], [5, 5, 5], [6, 6, 6]]]),
                       [[0, 1, 2], [3, 4, 5]])
         result = self.measure(left, right)
-        self.assertFalse(result['measurement_valid'], result)
-        self.assertIn('degenerate', result['reason'])
+        self.assertTrue(result['measurement_valid'], result)
+        self.assertEqual(result['distance_m'], 0.)
+        self.assertEqual(result['point_a_world'], result['point_b_world'])
+        self.assertEqual(result['direction_status'], 'not_applicable')
+        self.assertEqual(result['work']['validated_faces'], 3)
+        self.assertEqual(result['work']['referenced_vertices'], 9)
+        self.assertEqual(result['work']['triangle_pairs'], 1)
+        # A genuinely invalid later face still refuses the whole request
+        # before an earlier zero-distance pair can short-circuit validation.
+        left.faces[-1, -1] = len(left.vertices)
+        invalid = self.measure(left, right)
+        self.assertFalse(invalid['measurement_valid'], invalid)
+        self.assertEqual(invalid['reason'], 'surface_invalid_triangle_indices')
+        self.assertEqual(invalid['work']['triangle_pairs'], 0)
 
     def test_g08_nonmanifold_edge_counts_do_not_block_surface_metric(self):
         left = entity('a', [(0, 0, 0), (1, 0, 0), (0, 1, 0),

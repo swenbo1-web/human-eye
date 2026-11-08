@@ -40,7 +40,7 @@ class SurfaceAABBPruningTests(unittest.TestCase):
         self.assertTrue(result['measurement_valid'], result)
         self.assertEqual(result['distance_m'], expected)
         self.assertEqual(result['witness_status'], 'measured')
-        self.assertEqual(result['method'], 'exact_binary64_triangle_surface_features_v2')
+        self.assertEqual(result['method'], 'exact_binary64_triangle_surface_hulls_v3')
         self.assertEqual(result['work']['intersection_tests'],
                          result['work']['triangle_pairs'] - result['work']['aabb_pruned_pairs'])
 
@@ -119,12 +119,17 @@ class SurfaceAABBPruningTests(unittest.TestCase):
         right = triangles('b', [horizontal(1), [(100, 100, 100), (101, 101, 101),
                                                (102, 102, 102)]])
         result = self.measure(left, right)
-        self.assertFalse(result['measurement_valid'], result)
-        self.assertEqual(result['reason'], 'surface_degenerate_triangle')
+        self.assert_distance(result, 1.)
         self.assertEqual(result['work']['validated_faces'], 3)
-        self.assertEqual(result['work']['triangle_pairs'], 0)
-        self.assertEqual(result['work']['aabb_bound_tests'], 0)
-        self.assertEqual(result['work']['aabb_pruned_pairs'], 0)
+        self.assertEqual(result['work']['triangle_pairs'], 2)
+        self.assertEqual(result['work']['aabb_bound_tests'], 1)
+        self.assertEqual(result['work']['aabb_pruned_pairs'], 1)
+        right.faces[-1, -1] = len(right.vertices)
+        invalid = self.measure(left, right)
+        self.assertFalse(invalid['measurement_valid'], invalid)
+        self.assertEqual(invalid['reason'], 'surface_invalid_triangle_indices')
+        self.assertEqual(invalid['work']['triangle_pairs'], 0)
+        self.assertEqual(invalid['work']['aabb_bound_tests'], 0)
 
     def test_bounds_and_best_use_same_exact_integer_frame_units(self):
         for scale, shift in ((math.ldexp(1., -600), np.zeros(3)),
@@ -235,13 +240,13 @@ class SurfaceAABBCacheTests(unittest.TestCase):
             self.set_pair(changed, right, 'r3')
             updated = self.observe()
             updated_work = self.work()
-        self.assertEqual(versions, ['task-surface-proximity-exact-aabb-v2'] * 4)
+        self.assertEqual(versions, ['task-surface-proximity-exact-aabb-v3'] * 4)
         for result, distance in ((cold, 1.), (hot, 1.), (revised, 1.), (updated, 2.)):
             fact = result['facts']['surface_proximity']
             self.assertEqual(result['status'], 'observed')
             self.assertEqual(fact['status'], 'measured')
             self.assertEqual(fact['value']['distance_m'], distance)
-            self.assertEqual(fact['method'], 'exact_binary64_triangle_surface_features_v2')
+            self.assertEqual(fact['method'], 'exact_binary64_triangle_surface_hulls_v3')
         self.assertEqual(cold['facts'], hot['facts'])
         self.assertEqual(hot['facts'], revised['facts'])
         self.assertEqual(revised['binding']['scene_revision'], 'r2')
