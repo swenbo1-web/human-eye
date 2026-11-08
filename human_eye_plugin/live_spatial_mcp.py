@@ -56,19 +56,19 @@ _ACTION_SCHEMA = {
 }
 _QUERY_SCHEMA = {
     "type": "object",
-    "description": "Select task facts, global surface_nearest, legacy overview/exact_pairs/nearest/top1, or registered mesh reads. Legacy exact_pairs/nearest/top1 may select object_ids and max_exact_pairs. nearest requires complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs give no nearest result; reads grant no execution permission.",
+    "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
         "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
-            "description": "Exact selectors bound to this capture; each contains name OR id. task: aabb uses 1..4; pair facts exactly two ordered A to B. surface_nearest: exactly one."},
-        "target": {**copy.deepcopy(SELECTOR_SCHEMA), "description": "task set target; use with candidates instead of objects."},
+            "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
+        "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
-            "description": "task set: explicit candidates in request order. Requires closed_solid_relation and surface_proximity; optional aabb. Unknown and duplicate bindings remain visible. Summaries give the complete penetration and exact nearest-separated sets only when their evidence is complete."},
+            "description": "1..3 explicit candidates in request order; one capture with target. Requires closed_solid_relation and surface_proximity; aabb optional."},
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
             "minItems": 1, "uniqueItems": True,
-            "description": "task only. closed_solid_relation: represented connected closed triangle shells at zero tolerance, separated/touching/penetrating (positive-volume interior overlap); invalid/ambiguous gives unknown with reasons. surface_proximity: independent nonnegative triangle-surface distance, original world points, positive-distance A-to-B direction and boundary/nonmanifold counts. Zero-distance direction is not applicable; edge counts do not certify solids. pair_relation: separation gap/points/direction, touching, or A's certified escape translation; escape is not surface distance, nearest direction or minimum depth."},
+            "description": "task: closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."},
         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
-            "description":"Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in; diagnose/reference/restore_preview require include_image=false. reference_patch uses a returned opaque feature patch_ref and may request useful native images under the original task budget. Reference input is locally trusted; previews never execute. Caller labels never reset budgets."},
+            "description":"Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
         "near_m": {"type":"number","minimum":0,"maximum":0.001},
         "threshold_m": {"type":"number","exclusiveMinimum":0,"maximum":0.01},
@@ -76,24 +76,25 @@ _QUERY_SCHEMA = {
         "indices": {"type":"array","items":{"type":"integer","minimum":0,"maximum":4095},"minItems":1,"maxItems":64,"uniqueItems":True},
         "patch_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
         "task_ref": {"type":"string","pattern":"^[a-f0-9]{32}$",
-            "description":"Required in locally controlled lifecycle mode; use the trusted begin handoff. Selects the active registered generation and never creates or renews a task."},
+            "description":"Trusted begin handoff, required in local lifecycle mode; selects the active generation without creating or renewing a task."},
         "object_ids": {"type": "array", "items": copy.deepcopy(_ID_SCHEMA), "minItems": 1, "maxItems": 255, "uniqueItems": True},
         "label_object_ids": {"type": "array", "items": copy.deepcopy(_ID_SCHEMA), "minItems": 1, "maxItems": MAX_VISUAL_LABEL_IDS, "uniqueItems": True,
-            "description": "Optional current full object IDs to prioritize in paired image observations. Separate from measurement object_ids; expands only the related annotation budget, up to six related labels plus A/B. Missing pair, unrequested image, occlusion or undersampling is reported explicitly; never an action permission."},
+            "description": "Current full IDs for image annotation, separate from measurement object_ids: up to six related labels plus A/B. Missing pair/image, occlusion or undersampling is explicit; display only."},
         "max_exact_pairs": {"type": "integer", "minimum": 1, "maximum": 255},
         "alignment_evidence": {"type": "boolean", "default": True,
-            "description": "False explicitly requests strict distance evidence without optional face-alignment angles; requires include_image=false. Host rigid-frame and all action checks remain independent."},
+            "description": "False omits optional face angles and requires include_image=false; strict distance, host rigid-frame and action checks remain."},
         "support_plane_discovery": copy.deepcopy(SUPPORT_PLANE_DISCOVERY_REQUEST_SCHEMA),
         "native_visual": copy.deepcopy(NATIVE_VISUAL_SCHEMA),
         "visual_diagnostic": {"type": "string", "enum": ["contact_section"],
-            "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."},
+            "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
-              {"if": {"properties": {"mode": {"const": "task"}}, "required": ["mode"]},
-               "then": {"oneOf": [
-                   {"required": ["objects", "requested_facts"], "not": {"anyOf": [{"required": ["target"]}, {"required": ["candidates"]}]}},
-                   {"required": ["target", "candidates", "requested_facts"], "not": {"required": ["objects"]},
+              {"if": {"anyOf": [{"properties": {"mode": {"const": "task"}}, "required": ["mode"]},
+                                  {"required": ["target"]}, {"required": ["candidates"]}]},
+               "then": {"required": ["mode", "requested_facts"], "properties": {"mode": {"const": "task"}}, "oneOf": [
+                   {"required": ["objects"], "properties": {"target": False, "candidates": False}},
+                   {"required": ["target", "candidates"],
                     "additionalProperties": False,
                     "properties": {"mode": {}, "target": {}, "candidates": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
                         "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
@@ -136,14 +137,13 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Read Blender facts/images. Classify explicit candidates against one target and find the nearest separated set in one capture: "
-            "{\"session_id\":\"read-1\",\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"},{\"name\":\"C\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\",\"aabb\"]}}. "
-            "Legacy objects-based pair/aabb requests remain supported. Use complete current measurements to answer; supplement missing/unknown quantities using their reasons. "
-            "Global surface_nearest instead targets one object: one query.objects selector and no focal_id, "
-            "or a known focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "
-            "It gives global nearest if complete, only best-known if partial. "
-            "scene_revision/fingerprint bind capture/source/revision; runtime_source_sha256 identifies code, trace_id diagnostics. "
-            "Scene changes expire observations. Goals evaluate caller criteria."
+            "Current Blender facts. Task set example: "
+            "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. "
+            "Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. "
+            "Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, "
+            "or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "
+            "Complete means global nearest; partial means best-known. scene_revision/fingerprint bind this capture/source/revision; "
+            "runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria."
         ),
         "inputSchema": {
             "type": "object",
