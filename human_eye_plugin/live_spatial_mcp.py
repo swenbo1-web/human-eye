@@ -166,7 +166,11 @@ LIVE_MCP_TOOLS_SCHEMA = [
                              {"required": ["focal_id"], "properties": {"query": {"not": {"required": ["objects"]}}}},
                              {"not": {"required": ["focal_id"]}, "properties": {"query": {"required": ["objects"]}}},
                          ]},
-            }],
+            }, {"if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"const": "task"}}}}},
+                "then": {"required": ["include_image"], "properties": {"include_image": {"const": False}},
+                         "not": {"anyOf": [{"required": [field]} for field in
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}}}],
             "additionalProperties": False,
         },
     },
@@ -240,6 +244,25 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
         }
 
 
+SPATIAL_TASK_TOOLS_SCHEMA = [{
+    'name': 'human_eye_spatial_relations',
+    'description': ('Read current solid relations and surface distances from a target to 1..3 explicit '
+        'candidates in one capture. Returns each pair, penetrating candidates and nearest separated ties; '
+        'unknowns and incomplete sets stay explicit. Surface distance is not penetration depth. '
+        'Read-only: no images or actions.'),
+    'inputSchema': {'type': 'object', 'properties': {
+        'target': copy.deepcopy(SELECTOR_SCHEMA),
+        'candidates': {'type': 'array', 'items': copy.deepcopy(SELECTOR_SCHEMA), 'minItems': 1, 'maxItems': 3},
+        'include_aabb': {'type': 'boolean', 'default': False}},
+        'required': ['target', 'candidates'], 'additionalProperties': False}}]
+
+
+def _spatial_task_query(arguments):
+    return {'mode': 'task', 'target': arguments.get('target'), 'candidates': arguments.get('candidates'),
+        'requested_facts': ['closed_solid_relation', 'surface_proximity']
+            + (['aabb'] if arguments.get('include_aabb', False) else [])}
+
+
 def _rpc_error(request_id: Any, code: int, message: str) -> dict:
     return {"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}}
 
@@ -277,6 +300,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
     if not isinstance(arguments, dict):
         raise ValueError("arguments must be an object")
     allowed = {
+        'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb'},
         "human_eye_scene_observe": {"task_instruction", "focal_id", "reference_id", "session_id", "goal", "query", 'task_context', 'scene_delta', 'response_detail', 'include_image'},
         "human_eye_transform": {"action", "session_id", "goal", 'task_context'},
         "human_eye_connection_status": set(),
@@ -286,6 +310,11 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         raise ValueError(f"Unknown tool: {name}")
     if set(arguments) - allowed[name]:
         raise ValueError("Unexpected tool arguments")
+    if name == 'human_eye_spatial_relations':
+        if type(arguments.get('include_aabb', False)) is not bool:
+            raise ValueError('include_aabb must be boolean')
+        validate_query(_spatial_task_query(arguments))
+        return
     for field in ("session_id", "focal_id", "reference_id"):
         if field in arguments and (not isinstance(arguments[field], str) or not arguments[field].strip()):
             raise ValueError(f"{field} must be a nonempty string")
@@ -331,6 +360,10 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         if "goal" in arguments:
             _validate_goal_arguments(arguments["goal"],
                 {field: arguments[field] for field in ("focal_id", "reference_id") if field in arguments})
+        if (name == 'human_eye_scene_observe' and validate_query(arguments.get('query'))['mode'] == 'task'
+                and (arguments.get('include_image', True)
+                     or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta')))):
+            raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
         return
     action = arguments.get("action")
     if not isinstance(action, dict):
@@ -583,8 +616,11 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
 class LiveSpatialMCPServer:
     """One persistent MCP process, with a stable default spatial session."""
 
-    def __init__(self, service: Any, default_session_id: str | None = None):
+    def __init__(self, service: Any, default_session_id: str | None = None, *, spatial_task_only=False):
+        if type(spatial_task_only) is not bool:
+            raise ValueError('spatial_task_only must be boolean')
         self.service = service
+        self.spatial_task_only = spatial_task_only
         self.default_session_id = f"mcp-{uuid.uuid4()}" if default_session_id is None else default_session_id
         if not isinstance(self.default_session_id, str) or not self.default_session_id.strip():
             raise ValueError("default_session_id must be a nonempty string")
@@ -596,6 +632,7 @@ class LiveSpatialMCPServer:
             yield None
             return
         operations = {'human_eye_scene_observe': 'mcp.observe',
+                      'human_eye_spatial_relations': 'mcp.observe',
                       'human_eye_transform': 'mcp.transform',
                       'human_eye_clearance_segment': 'mcp.clearance_segment',
                       'human_eye_connection_status': 'mcp.status'}
@@ -603,7 +640,8 @@ class LiveSpatialMCPServer:
         operation = operations.get(name, 'mcp.invalid') if isinstance(name, str) else 'mcp.invalid'
         with factory(operation,
                      session_id=args.get('session_id', self.default_session_id)) as trace:
-            set_image_request(args.get('include_image', False) if name == 'human_eye_clearance_segment' else
+            set_image_request(False if name == 'human_eye_spatial_relations' else
+                              args.get('include_image', False) if name == 'human_eye_clearance_segment' else
                               args.get('include_image', True) if name == 'human_eye_scene_observe' else
                               True if name == 'human_eye_transform' else None,
                               source_name='mcp_transport')
@@ -640,7 +678,12 @@ class LiveSpatialMCPServer:
         return _tool_result(metadata, is_error=True)
 
     def _dispatch_tool(self, name: str, arguments: dict) -> dict:
+        if (name == 'human_eye_spatial_relations') != self.spatial_task_only:
+            raise ValueError('Tool not exposed by this server mode: ' + name)
         _validate_arguments(name, arguments)
+        if name == 'human_eye_spatial_relations':
+            arguments = {'query': _spatial_task_query(arguments), 'include_image': False}
+            name = 'human_eye_scene_observe'
         bind_task_context(current_trace(), arguments.get('task_context'))
         # A service must not retain or mutate the incoming protocol message.
         args = copy.deepcopy(arguments)
@@ -709,7 +752,7 @@ class LiveSpatialMCPServer:
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            result = {"tools": copy.deepcopy(LIVE_MCP_TOOLS_SCHEMA)}
+            result = {"tools": copy.deepcopy(SPATIAL_TASK_TOOLS_SCHEMA if self.spatial_task_only else LIVE_MCP_TOOLS_SCHEMA)}
         elif method == "tools/call":
             if not isinstance(params.get("name"), str):
                 return _rpc_error(request_id, -32602, "Tool name must be a string")
@@ -733,11 +776,11 @@ def handle_jsonrpc_message(req: Any, service: Any = None, *, server: LiveSpatial
 
 
 def run_stdio_mcp_server(service: Any, input_stream: TextIO | None = None,
-                         output_stream: TextIO | None = None) -> None:
+                         output_stream: TextIO | None = None, *, spatial_task_only=False) -> None:
     """Serve newline-delimited MCP JSON-RPC without writing logs to stdout."""
     incoming = sys.stdin if input_stream is None else input_stream
     outgoing = sys.stdout if output_stream is None else output_stream
-    server = LiveSpatialMCPServer(service)
+    server = LiveSpatialMCPServer(service, spatial_task_only=spatial_task_only)
     try:
         for req,error in wire.requests(incoming):
             if error is not None:
@@ -799,10 +842,14 @@ def _configure_utf8_stdio() -> None:
             stream.reconfigure(encoding="utf-8")
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
+    if type(spatial_task_only) is not bool:
+        raise ValueError('spatial_task_only must be boolean')
     _configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="Serve the live Human Eye Blender connection over MCP stdio")
     parser.add_argument("--config", required=True, help="Trusted local live-service configuration JSON")
+    parser.add_argument('--spatial-task-only', action='store_true', default=spatial_task_only,
+                        help='Expose only the read-only spatial relations task')
     args = parser.parse_args(argv)
     from .live_service import LiveSpatialService
     try:
@@ -810,7 +857,7 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:
         print(f"Unable to configure live spatial service: {exc}", file=sys.stderr)
         return 2
-    run_stdio_mcp_server(service)
+    run_stdio_mcp_server(service, **({'spatial_task_only': True} if args.spatial_task_only else {}))
     return 0
 
 

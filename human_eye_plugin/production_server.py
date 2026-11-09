@@ -89,14 +89,20 @@ def construct_live_service(config):
     return service
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
+    if type(spatial_task_only) is not bool:
+        raise ValueError('spatial_task_only must be boolean')
     parser = argparse.ArgumentParser(description=(
         "Human Eye production MCP: requires trusted live configuration; "
         "use --demo only for the legacy synthetic demonstration."))
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--config", help="Trusted local live-service configuration JSON")
     mode.add_argument("--demo", action="store_true", help="Explicit legacy synthetic-scene demonstration")
+    parser.add_argument('--spatial-task-only', action='store_true', default=spatial_task_only,
+                        help='Expose only the live read-only spatial relations task')
     args = parser.parse_args(argv)
+    if args.demo and args.spatial_task_only:
+        parser.error('--spatial-task-only cannot be combined with --demo')
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
@@ -113,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Unable to configure Human Eye production service: " + str(exc), file=sys.stderr)
         return 2
     from .live_spatial_mcp import run_stdio_mcp_server
-    run_stdio_mcp_server(service)
+    run_stdio_mcp_server(service, **({'spatial_task_only': True} if args.spatial_task_only else {}))
     return 0
 
 

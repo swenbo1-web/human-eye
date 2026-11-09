@@ -1031,7 +1031,7 @@ class LiveSpatialService:
         if query['mode'] == 'task':
             if (include_image or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
-                raise ValueError('task queries require include_image=false and selectors only in query.objects')
+                raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
             return self._observe_task(session_id, query)
         if query['mode']=='mesh_surface':
             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
