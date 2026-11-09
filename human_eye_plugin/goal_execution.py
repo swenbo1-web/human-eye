@@ -15,7 +15,7 @@ import re
 import time
 import uuid
 
-from .auto_router import _validated_scene, _trace_span
+from .auto_router import _ValidatedObservation, _trace_span
 from .goal_segment import (validate_clearance_segment_request,
                            solve_segment_candidate, clearance_segment_goal,
                            selection_binding_rejection)
@@ -190,15 +190,14 @@ def _capture(service, runtime):
     service._check_request_budget('before_segment_host_capture')
     with runtime._transaction(), _trace_span('host.segment_capture', kind='host', source_name='host_blender'):
         raw = service.host.capture_scene()
-    scene, _, _ = _validated_scene(raw)
-    return scene
+    return _ValidatedObservation(raw)
 
 
 def _pivot(scene, focal_id):
     return next(mesh['pivot_world'] for mesh in scene['meshes'] if mesh['object_id'] == focal_id)
 
 
-def _first_step_plan(scene, request, readback_atol_m):
+def _first_step_plan(scene, request, readback_atol_m, *, _observation=None):
     """Plan the action the first submission can admit, without granting rights.
 
     The caller's normalized request remains the receipt identity. Only the
@@ -212,7 +211,8 @@ def _first_step_plan(scene, request, readback_atol_m):
     available = remaining > 0 and step_limit > 0
     bounded = (dict(request, max_total_translation_m=remaining,
                     max_step_translation_m=step_limit) if available else request)
-    plan = solve_segment_candidate(scene, bounded)
+    plan = (solve_segment_candidate(scene, bounded) if _observation is None else
+        solve_segment_candidate(scene, bounded, _observation=_observation))
     # Keep each solver's existing request shape, with the caller's caps. The
     # explicit planning metadata below carries the effective caps instead.
     for field in ('max_step_translation_m', 'max_total_translation_m'):
@@ -237,7 +237,8 @@ def _first_step_plan(scene, request, readback_atol_m):
 
 
 def run_clearance_segment(service, session_id, request_id, request, *, execute=False,
-                          include_image=False, _parent_goal_id=None):
+                          include_image=False, _parent_goal_id=None,
+                          _initial_observation=None, _plan_handoff=None):
     """Run under one connector lock; never call the locking public transform."""
     _identifier(session_id, 'session_id')
     _identifier(request_id, 'request_id')
@@ -294,8 +295,15 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             deadline = min(deadline, parent_deadline)
             if clock() >= deadline:
                 return _result('review_required', reasons=['parent_goal_time_budget_exhausted'])
-        scene = _capture(service, runtime)
-        binding_rejection = (selection_binding_rejection(scene, request)
+        if not execute and _initial_observation is not None:
+            if type(_initial_observation) is not _ValidatedObservation:
+                raise ValueError('Internal initial observation required')
+            _initial_observation._require_scene(_initial_observation.scene)
+            observation = _initial_observation
+        else:
+            observation = _capture(service, runtime)
+        scene = observation.scene
+        binding_rejection = (selection_binding_rejection(scene, request, _observation=observation)
                              if 'selection_binding' in request else None)
         if binding_rejection is not None:
             # Historical receipts have already returned above. A fresh goal
@@ -303,11 +311,25 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             # and a refused selection must not reserve a running receipt.
             return _result('blocked', reasons=[binding_rejection], executed=False,
                 selection_binding_status='mismatch', requires_reobserve=True)
+        def first_plan():
+            if (_plan_handoff is not None and _plan_handoff.get('request') == request
+                    and _plan_handoff.get('fingerprint') == observation.fingerprint
+                    and _plan_handoff.get('host_binding') == _binding(scene)
+                    and _plan_handoff.get('readback_atol_m') == runtime.router.readback_atol_m):
+                return copy.deepcopy(_plan_handoff['plan'])
+            return _first_step_plan(scene, request, runtime.router.readback_atol_m,
+                _observation=observation)
+
         if not execute:
             # Preview can inspect old hosts without an identity contract, but
             # does not persist observations, reserve IDs, or grant write rights.
-            return _result('preview', candidate=_first_step_plan(scene, request,
-                    runtime.router.readback_atol_m), executed=False,
+            plan = first_plan()
+            if _plan_handoff is not None:
+                _plan_handoff.clear()
+                _plan_handoff.update(request=copy.deepcopy(request), fingerprint=observation.fingerprint,
+                    host_binding=_binding(scene), readback_atol_m=runtime.router.readback_atol_m,
+                    plan=copy.deepcopy(plan))
+            return _result('preview', candidate=plan, executed=False,
                 host_identity_available=_binding(scene) is not None,
                 remaining_write_gates_required=True)
         if _binding(scene) is None:
@@ -317,7 +339,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
         # running receipt. The first loop uses this exact captured plan;
         # Later steps recapture and check the complete snapshot before reusing
         # the preceding readback plan. A changed budget is still solved below.
-        initial_plan = _first_step_plan(scene, request, runtime.router.readback_atol_m)
+        initial_plan = first_plan()
         if clock() >= deadline:
             return _result('review_required', reasons=['segment_time_budget_exhausted_after_initial_plan'])
         segment_id = uuid.uuid4().hex
@@ -338,7 +360,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
         last_error = None
         signs = []
 
-        def finish(status, reasons=()):
+        def finish(status, reasons=(), *, persist=True):
             elapsed_ns = max(0, time.monotonic_ns() - started_ns)
             result = _result(status, reasons=reasons, request_id=request_id, segment_id=segment_id,
                 request=copy.deepcopy(request), steps=copy.deepcopy(entry['steps']),
@@ -359,13 +381,24 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             entry['status'] = status
             entry['result'] = copy.deepcopy(result)
             # Receipts contain no PNG, full scene, or mutable runtime state.
-            service._save(value, runtime)
+            if persist:
+                service._save(value, runtime)
+                return publish(result)
+            return result
+
+        def publish(result):
+            # Optional delivery always follows the acknowledged completion.
+            # Rendering/session state never enters that durable step receipt.
+            status = result['status']
             if include_image and status != 'execution_uncertain':
                 try:
+                    image_observation = runtime._last_verified_observation or observation
+                    image_options = ({'_validated_observation': image_observation._fork()}
+                        if image_observation.scene is actual else {})
                     prepared = runtime._before_model_on_captured_scene(scene=actual, session_id=session_id,
                         task_instruction='Final bounded clearance segment observation.',
                         focal_id=request['focal_id'], reference_id=request['reference_id'],
-                        messages=[], format='mcp', include_image=True, supports_images=True)
+                        messages=[], format='mcp', include_image=True, supports_images=True, **image_options)
                     result['routing'] = prepared['routing']
                     result['presentation_scope'] = 'segment_end_snapshot_not_current_after_return'
                 except Exception:
@@ -384,7 +417,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             if clock() >= deadline:
                 return finish('review_required', ['segment_time_budget_exhausted'])
             if feature is not None:
-                scene = _capture(service, runtime)
+                observation = _capture(service, runtime)
+                scene = observation.scene
                 if (scene['revision'] != actual['revision']
                         or _fingerprint(scene) != last_plan_scene_fingerprint):
                     return finish('review_required', ['external_scene_change_between_steps'])
@@ -400,7 +434,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             if last_plan['goal_satisfied']:
                 from .task_verification import evaluate_spatial_goal
                 try:
-                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request))
+                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request),
+                        _observation=observation)
                 except Exception:
                     return finish('review_required', ['goal_evaluation_unavailable'])
                 if evaluation['task_succeeded'] is True:
@@ -424,7 +459,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             bounded = dict(request, max_total_translation_m=min(request['max_total_translation_m'], remaining),
                 max_step_translation_m=min(step_limit, remaining))
             if last_plan['proposed_translation_m'] > min(step_limit, remaining):
-                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature)
+                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature,
+                    _observation=observation)
                 if last_plan['status'] != 'candidate':
                     return finish('review_required', last_plan['reason_codes'])
             if last_error is not None and last_plan['absolute_error_m'] >= last_error:
@@ -438,7 +474,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
                     if request.get('solver') == 'support_plane'
                     else 'Execute the current bounded box-face clearance target.'),
                 focal_id=request['focal_id'], reference_id=request['reference_id'],
-                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False)
+                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False,
+                _validated_observation=observation._fork())
             if clock() >= deadline:
                 return finish('review_required', ['segment_time_budget_exhausted_before_submit'])
             step = {'step_id': uuid.uuid4().hex, 'step_index': len(entry['steps']),
@@ -449,44 +486,66 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             except Exception:
                 pass
             before_pivot = _pivot(scene, request['focal_id'])
+            completion = {'called': False, 'result': None}
+
+            def complete_step(result):
+                nonlocal actual, total_motion, last_error, last_plan, last_plan_scene_fingerprint
+                completion['called'] = True
+                if step['state'] == 'uncertain' or result.get('executed') is None:
+                    completion['result'] = finish('execution_uncertain', ['host_step_outcome_uncertain'], persist=False)
+                    return
+                if result.get('status') not in {'verified', 'no_op'}:
+                    completion['result'] = finish(
+                        'blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
+                        result.get('reason_codes') or [result.get('status', 'step_blocked')], persist=False)
+                    return
+                actual = runtime._last_verified_scene
+                if actual is None:
+                    completion['result'] = finish('execution_uncertain', ['verified_readback_snapshot_unavailable'], persist=False)
+                    return
+                motion = runtime._last_actual_translation_m
+                if motion is None:
+                    motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
+                total_motion += motion
+                # Cheap execution facts precede any fallible residual solver.
+                # _transform_locked commits them even when that solver raises.
+                step['actual_translation_m'] = motion
+                entry['end_revision'] = actual['revision']
+                last_error = last_plan['absolute_error_m']
+                actual_observation = runtime._last_verified_observation
+                options = ({'_observation': actual_observation} if actual_observation is not None else {})
+                last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature, **options)
+                if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
+                    completion['result'] = finish('review_required', ['actual_motion_budget_exceeded'], persist=False)
+                elif _binding(actual) != entry['host_binding']:
+                    completion['result'] = finish('review_required', ['host_object_or_document_identity_changed'], persist=False)
+                elif last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
+                    completion['result'] = finish('satisfied', persist=False)
+                elif last_plan['status'] not in {'candidate', 'goal_satisfied'}:
+                    completion['result'] = finish('review_required', last_plan['reason_codes'], persist=False)
+                elif clock() >= deadline:
+                    completion['result'] = finish('review_required', ['segment_time_budget_exhausted'], persist=False)
+                else:
+                    # Freeze content before the next fresh capture. Mutating a
+                    # retained readback cannot change this comparison input.
+                    last_plan_scene_fingerprint = _fingerprint(actual)
+
             result = service._transform_locked(value, runtime, session_id, action,
                 clearance_segment_goal(request), prepared=prepared, segment_step=step, segment_id=segment_id,
                 precommit_deadline=deadline, precommit_clock=clock,
-                parent_deadline=parent_deadline)
-            if 'result' not in step:
-                record_step_result(step, result)
-            if step['state'] == 'uncertain' or result.get('executed') is None:
-                return finish('execution_uncertain', ['host_step_outcome_uncertain'])
-            if result.get('status') not in {'verified', 'no_op'}:
-                return finish('blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
-                    result.get('reason_codes') or [result.get('status', 'step_blocked')])
-            actual = runtime._last_verified_scene
-            if actual is None:
-                return finish('execution_uncertain', ['verified_readback_snapshot_unavailable'])
-            motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
-            total_motion += motion
-            step['actual_translation_m'] = motion
-            entry['end_revision'] = actual['revision']
-            last_error = last_plan['absolute_error_m']
-            last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature)
-            service._save(value, runtime)
-            if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
-                return finish('review_required', ['actual_motion_budget_exceeded'])
-            if _binding(actual) != entry['host_binding']:
-                return finish('review_required', ['host_object_or_document_identity_changed'])
-            if last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
-                return finish('satisfied')
-            if last_plan['status'] not in {'candidate', 'goal_satisfied'}:
-                return finish('review_required', last_plan['reason_codes'])
-            if clock() >= deadline:
-                return finish('review_required', ['segment_time_budget_exhausted'])
-            # Freeze the content at planning time rather than hashing the
-            # mutable runtime snapshot on the next iteration. This also stops
-            # an aliased readback being changed together with the next capture.
-            # Terminal steps return above, so they pay no extra fingerprint.
-            last_plan_scene_fingerprint = _fingerprint(actual)
-            # Confirmed but residual remains: only the next fresh capture may
-            # authorize a different candidate. Never resend the preceding step.
+                parent_deadline=parent_deadline, _completion=complete_step)
+            if not completion['called']:
+                # Preparation refusals return before the execution boundary.
+                # Test/embedding overrides may also return their own receipt.
+                if 'result' not in step:
+                    record_step_result(step, result)
+                complete_step(result)
+                service._save(value, runtime)
+            if completion['result'] is not None:
+                return publish(completion['result'])
+            # A nonterminal completion is already durable. Only a new capture
+            # can admit the next correction; the preceding setter is never resent.
+
 
 
 __all__ = ['run_clearance_segment', 'validate_segment_ledger', 'unfinished_segment',

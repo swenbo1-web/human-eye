@@ -12,7 +12,7 @@ import math
 import numpy as np
 
 from human_eye_module1_operators import SpatialAnomalySniffer
-from .auto_router import _validated_scene
+from .auto_router import _ValidatedObservation, _validated_scene
 from .geometry_safety import measure_pair_geometry
 
 
@@ -131,7 +131,7 @@ def _unrounded_contact_angles(focal, reference, probe, symmetry_order):
             "tangent_yaw_mismatch_deg": abs(math.degrees(yaw))}
 
 
-def evaluate_spatial_goal(scene, goal):
+def evaluate_spatial_goal(scene, goal, *, _observation=None):
     """Return a conservative pairwise goal assessment without changing the host.
 
     Invalid input/identity raises ValueError.  Unsupported or invalid geometry,
@@ -142,8 +142,16 @@ def evaluate_spatial_goal(scene, goal):
     use the strict unrounded measurement, never the display probe's flush value.
     """
     normalized_goal = _goal(goal)
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
     try:
-        normalized_scene, meshes, fingerprint = _validated_scene(scene)
+        if _observation is None:
+            normalized_scene, meshes, fingerprint = _validated_scene(scene)
+        else:
+            normalized_scene, meshes, fingerprint = (
+                _observation.scene, _observation.meshes, _observation.fingerprint)
     except (TypeError, ValueError) as exc:
         raise ValueError("Invalid spatial scene: " + str(exc)) from exc
     by_id = {mesh.object_id: mesh for mesh in meshes}
@@ -164,7 +172,9 @@ def evaluate_spatial_goal(scene, goal):
         "reason_codes": [],
     }
     try:
-        geometry = measure_pair_geometry(focal, reference, need_clearance=True)
+        geometry = (measure_pair_geometry(focal, reference, need_clearance=True)
+            if _observation is None else _observation._measure_pair(
+                focal, reference, measure_pair_geometry, need_clearance=True))
     except Exception as exc:
         result["reason_codes"] = ["geometry_measurement_failed"]
         result["error_type"] = type(exc).__name__

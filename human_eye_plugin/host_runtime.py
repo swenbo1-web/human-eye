@@ -9,6 +9,7 @@ from collections import OrderedDict
 from contextlib import nullcontext
 import copy
 import json
+import math
 import threading
 import uuid
 from typing import Any, Protocol
@@ -42,12 +43,13 @@ def _bound_goal(goal, focal_id, reference_id):
     return _normalize_goal(value)
 
 
-def _goal_fields(scene, goal):
+def _goal_fields(scene, goal, *, _observation=None):
     if goal is None:
         return {}
     try:
         with _trace_span("goal.evaluate"):
-            verified = evaluate_spatial_goal(scene, goal)
+            verified = (evaluate_spatial_goal(scene, goal) if _observation is None else
+                evaluate_spatial_goal(scene, goal, _observation=_observation))
     except Exception as exc:
         # Actual action/readback verification has already succeeded. A failed
         # optional evaluator must not turn it into an uncertain/retryable write.
@@ -105,6 +107,8 @@ class GuardedHostRuntime:
         self._lock = threading.RLock()
         self._quarantine: dict | None = None
         self._last_verified_scene = None
+        self._last_verified_observation = None
+        self._last_actual_translation_m = None
 
     def _transaction(self):
         transaction = getattr(self.host, "transaction", None)
@@ -228,6 +232,8 @@ class GuardedHostRuntime:
         action = copy.deepcopy(action)
         with self._lock, self._transaction():
             self._last_verified_scene = None
+            self._last_verified_observation = None
+            self._last_actual_translation_m = None
             if self._quarantine:
                 return self._result("host_quarantined", reason=copy.deepcopy(self._quarantine))
             saved = self._sessions.get(session_id)
@@ -240,7 +246,8 @@ class GuardedHostRuntime:
             try:
                 with _trace_span("host.capture_before_action", kind="host", source_name="host_blender"):
                     raw_scene = self.host.capture_scene()
-                scene, _, _ = _validated_scene(raw_scene)
+                observation = _ValidatedObservation(raw_scene)
+                scene = observation.scene
             except Exception as exc:
                 self._quarantine_host("host_snapshot_unavailable", None)
                 return self._result("host_snapshot_unavailable", error_type=type(exc).__name__)
@@ -266,11 +273,11 @@ class GuardedHostRuntime:
                 return self._result("invalid_action")
             is_noop = not np.any(translation) and not np.any(euler)
             with _trace_span("host.execution_gate"):
-                check = self.router.handle_event({
-                    "event": "before_action", "session_id": session_id, "scene": scene,
+                check = self.router._handle_validated_action({
+                    "event": "before_action", "session_id": session_id,
                     "observation_id": observation_id or saved["observation_id"],
                     "focal_id": saved["focal_id"], "reference_id": saved["reference_id"],
-                    "yaw_symmetry_order": saved["yaw_symmetry_order"], "action": action})
+                    "yaw_symmetry_order": saved["yaw_symmetry_order"], "action": action}, observation._fork())
             if check["allow_action"] is not True:
                 self._sessions.pop(session_id, None)
                 return self._result("blocked", routing=check)
@@ -294,8 +301,11 @@ class GuardedHostRuntime:
                 # change or fabricating a revision. Old observations are gone.
                 self.router = HumanEyeAutoRouter(**self._router_options)
                 self._sessions.clear()
-                self._last_verified_scene = copy.deepcopy(scene)
-                return self._result("no_op", routing=check, **_goal_fields(scene, goal))
+                self._last_verified_scene = scene
+                self._last_verified_observation = observation
+                self._last_actual_translation_m = 0.
+                return self._result("no_op", routing=check,
+                    **_goal_fields(scene, goal, _observation=observation))
             self._sessions.clear()  # Another session cannot reuse this pre-state.
             request_nonce = None
             host_arguments = {"expected_revision": revision,
@@ -350,7 +360,8 @@ class GuardedHostRuntime:
             try:
                 with _trace_span("host.readback_capture", kind="host", source_name="host_blender"):
                     raw_actual = self.host.capture_scene()
-                actual, _, _ = _validated_scene(raw_actual)
+                actual_observation = _ValidatedObservation(raw_actual)
+                actual = actual_observation.scene
                 # A one-object transform cannot quietly move/delete/create
                 # another mesh or change its metadata.
                 before_other = {m["object_id"]: m for m in scene["meshes"]
@@ -366,10 +377,11 @@ class GuardedHostRuntime:
                     if before_focal[key] != after_focal[key]:
                         raise ValueError("Unexpected focal metadata change: " + key)
                 with _trace_span("host.readback_verify"):
-                    post = self.router.handle_event({"event": "after_action", "session_id": session_id,
-                        "scene": actual, "focal_id": saved["focal_id"],
+                    post = self.router._handle_validated_action({"event": "after_action", "session_id": session_id,
+                        "focal_id": saved["focal_id"],
                         "reference_id": saved["reference_id"], "yaw_symmetry_order": saved["yaw_symmetry_order"],
-                        "task_instruction": saved["task_instruction"], "include_image": saved.get("include_image", True)})
+                        "task_instruction": saved["task_instruction"], "include_image": saved.get("include_image", True)},
+                        actual_observation._fork())
                 if (post["route"] != "engine" or post["requires_reobserve"]
                         or not post["measurement_valid"] or post.get("rigid_frame_valid") is not True):
                     self._quarantine_host("host_readback_rejected", revision)
@@ -379,11 +391,16 @@ class GuardedHostRuntime:
                 self._quarantine_host("host_readback_uncertain", revision)
                 return self._result("host_readback_uncertain", executed=None,
                                     routing=check, error_type=type(exc).__name__, host_call_completed=True)
-            self._last_verified_scene = copy.deepcopy(actual)
+            self._last_verified_scene = actual
+            self._last_verified_observation = actual_observation
+            self._last_actual_translation_m = math.dist(
+                next(mesh.pivot_world for mesh in observation.meshes if mesh.object_id == saved['focal_id']),
+                next(mesh.pivot_world for mesh in actual_observation.meshes if mesh.object_id == saved['focal_id']))
             receipt = host_result.get("receipt") if isinstance(host_result, dict) else None
             return self._result("verified", executed=True, verified=True, routing=post,
                                 receipt=copy.deepcopy(receipt),
-                                actual_scene_revision=actual["revision"], **_goal_fields(actual, goal))
+                                actual_scene_revision=actual["revision"],
+                                **_goal_fields(actual, goal, _observation=actual_observation))
 
     @_trace_stage("host.preview_action", kind="host", source_name="host_blender")
     def preview_action(self, *, session_id: str, action: dict) -> dict:

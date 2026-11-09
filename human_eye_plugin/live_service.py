@@ -1404,7 +1404,7 @@ class LiveSpatialService:
 
     def _transform_locked(self, value, runtime, session_id, action, goal=None, *,
                           prepared=None, segment_step=None, segment_id=None, precommit_deadline=None,
-                          precommit_clock=None, parent_deadline=None):
+                          precommit_clock=None, parent_deadline=None, _completion=None):
         """Shared single-step core; caller already owns the durable state lock."""
         if value.get("inflight") or runtime.status["quarantined"]:
             return {"status": "host_quarantined", "executed": False, "verified": False, "routing": None}
@@ -1465,6 +1465,14 @@ class LiveSpatialService:
         if segment_step is not None:
             from .goal_execution import record_step_result
             record_step_result(segment_step, result)
+        if _completion is not None:
+            try:
+                _completion(result)
+            except BaseException:
+                # A planner/accounting failure after the setter cannot erase
+                # its known receipt or make a retry look unsubmitted.
+                self._save(value, runtime)
+                raise
         # Uncertain results keep the durable journal as well as quarantine.
         self._save(value, runtime)
         self.record_event("transform", session_id=session_id, status=result["status"],
@@ -1489,11 +1497,17 @@ class LiveSpatialService:
 
     @_request('clearance_segment')
     def run_clearance_segment(self, session_id, request_id, request, *, execute=False,
-                              include_image=False, task_context=None):
+                              include_image=False, task_context=None,
+                              _initial_observation=None, _plan_handoff=None):
         """Preview or execute one bounded goal; model-selected IDs are not authority."""
         from .goal_execution import run_clearance_segment
+        internal = {}
+        if _initial_observation is not None:
+            internal['_initial_observation'] = _initial_observation
+        if _plan_handoff is not None:
+            internal['_plan_handoff'] = _plan_handoff
         return run_clearance_segment(self, session_id, request_id, request,
-                                     execute=execute, include_image=include_image)
+            execute=execute, include_image=include_image, **internal)
 
     @_request('goal_supervision')
     def goal_supervision(self, operation, goal_id, session_id=None, *,
@@ -1505,13 +1519,15 @@ class LiveSpatialService:
 
     @_request('supervised_clearance_segment')
     def run_supervised_clearance_segment(self, goal_id, session_id, request_id,
-                                         request, *, include_image=False):
+                                         request, *, include_image=False, _plan_handoff=None):
         """Trusted caller still owns task authorization and fresh review."""
         from .goal_supervision import _context
         _context(self)
         from .goal_execution import run_clearance_segment
+        internal = {} if _plan_handoff is None else {'_plan_handoff': _plan_handoff}
         return run_clearance_segment(self, session_id, request_id, request,
-            execute=True, include_image=include_image, _parent_goal_id=goal_id)
+            execute=True, include_image=include_image, _parent_goal_id=goal_id,
+            **internal)
 
     @_request('status')
     def status(self):

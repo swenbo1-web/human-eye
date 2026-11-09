@@ -73,7 +73,7 @@ def _failed(result, code, *, status='unsupported'):
     return result
 
 
-def discover_support_planes(scene, focal_id, reference_id, request):
+def discover_support_planes(scene, focal_id, reference_id, request, *, _observation=None):
     """Scan bounded original reference triangles using one exact pair preparation.
 
     Each admitted group has an exact global support plane and an attained foot
@@ -104,16 +104,24 @@ def discover_support_planes(scene, focal_id, reference_id, request):
         'selector_scope': 'current_scene_pair_selection_not_authorization_or_cross_rebuild_identity',
         'reason_codes': []}
     # Lazy imports are essential: query_policy is itself imported by auto_router.
-    from .auto_router import _validated_scene
+    from .auto_router import _ValidatedObservation, _validated_scene
     from .rigid_frame import pair_rigid_frame_status
     from .support_plane_candidate import (
         _preflight, _rational_mesh, _certificate_from_rationals, _strict,
         _sub, _dot, _cross, MIN_DIRECTIONAL_DERIVATIVE,
     )
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
     limit_reason = _preflight(scene, {'focal_id': focal_id, 'reference_id': reference_id})
     if limit_reason:
         return _failed(result, limit_reason, status='unknown')
-    normalized, meshes, fingerprint = _validated_scene(scene)
+    if _observation is None:
+        normalized, meshes, fingerprint = _validated_scene(scene)
+    else:
+        normalized, meshes, fingerprint = (
+            _observation.scene, _observation.meshes, _observation.fingerprint)
     result.update(scene_revision=normalized['revision'], scene_fingerprint=fingerprint)
     if len(normalized['revision']) > 256:
         return _failed(result, 'selection_binding_revision_outside_supported_range', status='unknown')
@@ -160,7 +168,8 @@ def discover_support_planes(scene, focal_id, reference_id, request):
         eligible = [group for group in groups.values() if group['certificate'] is not None]
         if not eligible:
             return _failed(result, 'no_exact_support_plane_witness')
-        measured, _ = _strict(focal, reference, eligible[0]['certificate'])
+        strict_options = {} if _observation is None else {'_observation': _observation}
+        measured, _ = _strict(focal, reference, eligible[0]['certificate'], **strict_options)
         metric = float(measured['signed_clearance_m'])
         extent = max(float((mesh.vertices.max(axis=0)-mesh.vertices.min(axis=0)).max())
                      for mesh in (focal, reference))

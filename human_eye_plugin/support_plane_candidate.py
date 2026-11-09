@@ -21,7 +21,7 @@ import math
 import numpy as np
 
 from human_eye_module1_operators import MeshEntity3D
-from .auto_router import _validated_scene
+from .auto_router import _ValidatedObservation, _validated_scene
 from .geometry_safety import measure_pair_geometry, work_budget_status
 from .rigid_frame import pair_rigid_frame_status
 
@@ -276,9 +276,15 @@ def _certificate_from_rationals(fv, rv, rf, index):
     return certificate
 
 
-def _strict(mesh_a, mesh_b, certificate):
+def _strict(mesh_a, mesh_b, certificate, *, _observation=None):
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for measurement reuse')
+        _observation._require_scene(_observation.scene)
     try:
-        measured = measure_pair_geometry(mesh_a, mesh_b, need_clearance=True)
+        measured = (measure_pair_geometry(mesh_a, mesh_b, need_clearance=True)
+            if _observation is None else _observation._measure_pair(
+                mesh_a, mesh_b, measure_pair_geometry, need_clearance=True))
     except (ValueError, IndexError, TypeError, AttributeError, FloatingPointError, OverflowError) as exc:
         raise ArithmeticError('strict_pair_measurement_failed') from exc
     metric = measured.get('signed_clearance_m')
@@ -302,7 +308,8 @@ def _failed(result, code, status='unsupported'):
     return result
 
 
-def solve_support_plane_candidate(scene, request, *, expected_feature_signature=None):
+def solve_support_plane_candidate(scene, request, *, expected_feature_signature=None,
+                                  _observation=None):
     """Propose one bounded translation from a snapshot; never execute it.
 
     The contact-feature signature binds reference geometry, selected triangle,
@@ -310,6 +317,10 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
     not a focal shape/instance/external-edit proof or a cross-step write gate.
     """
     request = validate_support_plane_request(request)
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
     if expected_feature_signature is not None and (
             not isinstance(expected_feature_signature, str) or len(expected_feature_signature) != 64
             or any(c not in '0123456789abcdef' for c in expected_feature_signature)):
@@ -332,7 +343,11 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
     limit_reason = _preflight(scene, request)
     if limit_reason:
         return _failed(result, limit_reason, 'unknown')
-    normalized, meshes, fingerprint = _validated_scene(scene)
+    if _observation is None:
+        normalized, meshes, fingerprint = _validated_scene(scene)
+    else:
+        normalized, meshes, fingerprint = (
+            _observation.scene, _observation.meshes, _observation.fingerprint)
     result.update(scene_revision=normalized['revision'], scene_fingerprint=fingerprint,
                   scene_source=normalized['source'])
     by_id = {m.object_id: m for m in meshes}
@@ -349,7 +364,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
     try:
         certificate = _certificate(focal, reference, index)
         result['current_certificate'] = certificate
-        measured, agreement = _strict(focal, reference, certificate)
+        strict_options = {} if _observation is None else {'_observation': _observation}
+        measured, agreement = _strict(focal, reference, certificate, **strict_options)
         metric = float(measured['signed_clearance_m'])
         features = {'reference_id': reference.object_id, 'reference_vertices': reference.vertices.tolist(),
             'reference_faces': reference.faces.tolist(), 'reference_triangle_index': index,
@@ -468,7 +484,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
                     if trial_certificate['support_vertex_indices'] != certificate['support_vertex_indices']:
                         trial['reason'] = 'contact_feature_changed_after_rounded_translation'
                         continue
-                    trial_measurement, trial_agreement = _strict(trial_mesh, reference, trial_certificate)
+                    trial_measurement, trial_agreement = _strict(
+                        trial_mesh, reference, trial_certificate, **strict_options)
                 except (ArithmeticError, FloatingPointError, OverflowError) as exc:
                     # A numerical/resource/unsupported failure is not a
                     # reason to search around an unproved geometry domain.
@@ -495,7 +512,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
             if candidate_measurement is None:
                 return _failed(result, 'contact_feature_changed_after_rounded_translation', 'feature_changed')
         if candidate_measurement is None:
-            candidate_measurement, after_agreement = _strict(candidate_mesh, reference, candidate_certificate)
+            candidate_measurement, after_agreement = _strict(
+                candidate_mesh, reference, candidate_certificate, **strict_options)
         actual_gap = float(candidate_measurement['signed_clearance_m'])
         predicted = certificate['plane_clearance_m']+clipped_scalar*derivative
         if not math.isfinite(predicted) or abs(actual_gap-predicted) > max(agreement, after_agreement):

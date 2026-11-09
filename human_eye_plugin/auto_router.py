@@ -427,17 +427,20 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
 
 
 class _ValidatedObservation:
-    """One detached capture, for one synchronous internal observation only.
+    """One detached capture shared by synchronous internal consumers.
 
     This Python object never enters an agent event or persisted state. It does
-    not authorize an action or replace any execution/readback validation.
+    not authorize an action. Execution still captures and validates its own
+    prewrite and readback scenes; each router handoff is consumed once.
     """
-    __slots__ = ('_parts', '_owner_thread', '_used')
+    __slots__ = ('_parts', '_owner_thread', '_used', '_measurements', '_capture_state')
 
     def __init__(self, captured):
+        self._capture_state = copy.deepcopy(captured.get('capture_state')) if isinstance(captured, dict) else None
         self._parts = _validated_scene(captured, _return_payload=True)
         self._owner_thread = threading.get_ident()
         self._used = False
+        self._measurements = {}
 
     @property
     def scene(self):
@@ -450,6 +453,29 @@ class _ValidatedObservation:
     @property
     def fingerprint(self):
         return self._parts[2]
+
+    def _require_scene(self, scene):
+        if self._owner_thread != threading.get_ident() or scene is not self.scene:
+            raise ValueError('Validated observation must own this scene on its capturing thread')
+
+    def _fork(self):
+        """Another synchronous consumer of these same detached capture parts."""
+        self._require_scene(self.scene)
+        view = object.__new__(type(self))
+        view._parts, view._owner_thread = self._parts, self._owner_thread
+        view._measurements, view._capture_state = self._measurements, self._capture_state
+        view._used = False
+        return view
+
+    def _measure_pair(self, focal, reference, compute, **options):
+        self._require_scene(self.scene)
+        # Projected candidates are distinct geometry, even with the same ID.
+        if not all(any(mesh is item for mesh in self.meshes) for item in (focal, reference)):
+            return compute(focal, reference, **options)
+        key = (compute, focal.object_id, reference.object_id, tuple(sorted(options.items())))
+        if key not in self._measurements:
+            self._measurements[key] = compute(focal, reference, **options)
+        return copy.deepcopy(self._measurements[key])
 
     def _consume(self):
         if self._owner_thread != threading.get_ident() or self._used:
@@ -573,6 +599,14 @@ class HumanEyeAutoRouter:
         if (type(capture) is not _ValidatedObservation or not isinstance(event, dict)
                 or event.get('event') != 'before_model' or 'scene' in event):
             raise ValueError('Internal validated capture requires an observation-only metadata event')
+        return self._handle_event(event, _observation_parts=capture._consume())
+
+    @_trace_stage('router.event', image_event=True)
+    def _handle_validated_action(self, event, capture):
+        """Use this execution call's independently captured pre/post objects."""
+        if (type(capture) is not _ValidatedObservation or not isinstance(event, dict)
+                or event.get('event') not in {'before_action', 'after_action'} or 'scene' in event):
+            raise ValueError('Internal action capture requires action metadata')
         return self._handle_event(event, _observation_parts=capture._consume())
 
     def _handle_event(self, event, *, _observation_parts=None):

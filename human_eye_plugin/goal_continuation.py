@@ -2,8 +2,9 @@
 
 This module neither authorizes nor executes anything. The caller owns task
 authorization, the shared whole-goal budget, fresh discovery/preview, and host
-CAS. Double captures bracket a native read; this is not an atomic host sample
-and does not rule out an external ABA edit between the samples.
+CAS. Owned evidence may export capture and native views in one main-thread
+traversal; legacy envelopes may bracket a native read with two captures. Neither
+form records external edit history or rules out an external ABA edit.
 """
 from __future__ import annotations
 

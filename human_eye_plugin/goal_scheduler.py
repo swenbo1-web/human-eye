@@ -13,7 +13,7 @@ import threading
 import time
 
 from . import goal_journal as journal
-from .auto_router import _validated_scene
+from .auto_router import _ValidatedObservation
 from .goal_continuation import (ContinuationPolicy, inspect_current_clearance,
                                 review_continuation)
 from .goal_segment import validate_clearance_segment_request
@@ -130,24 +130,32 @@ class OwnedGoalScheduler:
 
     def _capture(self):
         packet = self.host.capture_evidence()
-        capture = _validated_scene(packet['capture'])[0]
-        confirmation = _validated_scene(self.host.capture_scene())[0]
-        _require(_json(capture) == _json(confirmation), 'capture_window_changed')
-        return {'capture': capture, 'native_scene': copy.deepcopy(packet['native_scene']),
-                'capture_confirmation': confirmation}
+        observation = _ValidatedObservation(packet['capture'])
+        # capture_evidence exports both views in the same host traversal.
+        # Keep the existing envelope shape without claiming a second sample.
+        envelope = {'capture': observation.scene, 'native_scene': copy.deepcopy(packet['native_scene']),
+                    'capture_confirmation': copy.deepcopy(observation.scene)}
+        self._captured_observation = (envelope, observation)
+        return envelope
+
+    def _observation(self, envelope):
+        retained = getattr(self, '_captured_observation', None)
+        if retained is not None and retained[0] is envelope:
+            retained[1]._require_scene(envelope['capture'])
+            return retained[1]
+        return _ValidatedObservation(envelope['capture'])
 
     def _discover(self, spec, envelope, session_id):
-        observation = self.service.observe(session_id, focal_id=spec.focal_id,
-            reference_id=spec.reference_id, include_image=False,
-            query={'alignment_evidence': False,
-                   'support_plane_discovery': {'direction_world': list(spec.direction_world)}})
-        discovery = observation.get('support_plane_discovery', {})
+        from .support_plane_discovery import discover_support_planes
+        observation = self._observation(envelope)
+        discovery = discover_support_planes(observation.scene, spec.focal_id, spec.reference_id,
+            {'direction_world': list(spec.direction_world)}, _observation=observation)
         _require(discovery.get('status') == 'complete'
                  and discovery.get('ambiguous') is False
                  and discovery.get('omitted_candidate_count') == 0
                  and len(discovery.get('candidates', [])) == 1, 'unique_complete_support_required')
         selector = copy.deepcopy(discovery['candidates'][0]['selector'])
-        capture, meshes, fingerprint = _validated_scene(envelope['capture'])
+        capture, meshes, fingerprint = observation.scene, observation.meshes, observation.fingerprint
         expected = {'scene_revision': capture['revision'], 'scene_fingerprint': fingerprint,
                     'focal_id': spec.focal_id, 'reference_id': spec.reference_id}
         _require(selector.get('selection_binding') == expected, 'discovery_not_original_fresh_capture')
@@ -419,8 +427,10 @@ class OwnedGoalScheduler:
                     request_id=child_id, request=request)
                 _require(reservation['fresh_reservation'] is True, 'child_reservation_not_fresh')
                 request = validate_clearance_segment_request(reservation['request'])
+                plan_handoff = {}
                 preview = self.service.run_clearance_segment(grant.session_id,
-                    child_id + ':preview', request, execute=False, include_image=False)
+                    child_id + ':preview', request, execute=False, include_image=False,
+                    _initial_observation=self._observation(before), _plan_handoff=plan_handoff)
                 candidate = preview.get('candidate') or {}
                 result['last_preview'] = {'status': preview.get('status'),
                     'candidate_status': candidate.get('status'),
@@ -428,7 +438,6 @@ class OwnedGoalScheduler:
                 _require(preview.get('status') == 'preview' and preview.get('executed') is False
                     and candidate.get('status') in {'candidate', 'goal_satisfied'},
                     'fresh_preview_not_executable')
-                _require(_json(self._capture()) == _json(before), 'scene_changed_during_preview')
                 if _handoff is not None:_handoff.check()
                 self._ticket = {'child_id': child_id, 'request': copy.deepcopy(request), 'used': False}
                 # This call can raise after the host setter or durable commit.
@@ -440,7 +449,7 @@ class OwnedGoalScheduler:
                 result['new_setter_count'] = None
                 try:
                     receipt = self.service.run_supervised_clearance_segment(grant.goal_id,
-                        grant.session_id, child_id, request)
+                        grant.session_id, child_id, request, _plan_handoff=plan_handoff)
                 finally:
                     self._ticket = None
                 # Persist known physical accounting before native post-review.

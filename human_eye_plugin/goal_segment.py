@@ -16,7 +16,7 @@ import math
 
 import numpy as np
 
-from .auto_router import _validated_scene
+from .auto_router import _ValidatedObservation, _validated_scene
 from .geometry_safety import measure_pair_geometry
 from .rigid_frame import pair_rigid_frame_status
 from .support_plane_candidate import (
@@ -179,7 +179,8 @@ def validate_clearance_segment_request(request):
     return _validate_box_clearance_segment_request(request)
 
 
-def solve_segment_candidate(scene, request, *, expected_feature_signature=None):
+def solve_segment_candidate(scene, request, *, expected_feature_signature=None,
+                            _observation=None):
     """Dispatch a pure constraint, not a write gate or binding validation.
 
     The live segment entry checks an optional initial selection binding before
@@ -187,15 +188,19 @@ def solve_segment_candidate(scene, request, *, expected_feature_signature=None):
     later captured snapshots produced by its own verified movement.
     """
     request = validate_clearance_segment_request(request)
+    options = {'expected_feature_signature': expected_feature_signature}
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
+        options['_observation'] = _observation
     if request.get("solver") == "support_plane":
         solver_request = {field: request[field] for field in _SUPPORT_SOLVER_FIELDS}
-        return solve_support_plane_candidate(scene, solver_request,
-            expected_feature_signature=expected_feature_signature)
-    return solve_clearance_candidate(scene, request,
-        expected_feature_signature=expected_feature_signature)
+        return solve_support_plane_candidate(scene, solver_request, **options)
+    return solve_clearance_candidate(scene, request, **options)
 
 
-def selection_binding_rejection(scene, request):
+def selection_binding_rejection(scene, request, *, _observation=None):
     """Compare discovery freshness with the initial capture; grant no rights.
 
     A matching binding does not authenticate its caller, the chosen surface,
@@ -203,12 +208,19 @@ def selection_binding_rejection(scene, request):
     all geometry, host, version, instance and readback checks remain required.
     """
     request = validate_clearance_segment_request(request)
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
     binding = request.get('selection_binding')
     if binding is None:
         return None
     if any(binding[field] != request[field] for field in ('focal_id', 'reference_id')):
         return 'support_plane_selection_pair_mismatch'
-    normalized, _, fingerprint = _validated_scene(scene)
+    if _observation is None:
+        normalized, _, fingerprint = _validated_scene(scene)
+    else:
+        normalized, fingerprint = _observation.scene, _observation.fingerprint
     if binding['scene_revision'] != normalized['revision']:
         return 'support_plane_selection_stale_revision'
     if binding['scene_fingerprint'] != fingerprint:
@@ -293,7 +305,8 @@ def _failed(result, code, *, status="unsupported"):
     return result
 
 
-def solve_clearance_candidate(scene, request, *, expected_feature_signature=None):
+def solve_clearance_candidate(scene, request, *, expected_feature_signature=None,
+                              _observation=None):
     """Read a snapshot and propose at most one clipped, pure-translation action.
 
     The feature signature binds face topology, corner identity and the overlap
@@ -303,12 +316,20 @@ def solve_clearance_candidate(scene, request, *, expected_feature_signature=None
     external-edit detection, fresh full-scene gates and actual readback.
     """
     request = _validate_box_clearance_segment_request(request)
+    if _observation is not None:
+        if type(_observation) is not _ValidatedObservation:
+            raise ValueError('Validated observation required for scene reuse')
+        _observation._require_scene(scene)
     if (expected_feature_signature is not None
             and (not isinstance(expected_feature_signature, str)
                  or len(expected_feature_signature) != 64
                  or any(character not in "0123456789abcdef" for character in expected_feature_signature))):
         raise ValueError("expected_feature_signature must be a lower-case SHA256 digest")
-    normalized, meshes, fingerprint = _validated_scene(scene)
+    if _observation is None:
+        normalized, meshes, fingerprint = _validated_scene(scene)
+    else:
+        normalized, meshes, fingerprint = (
+            _observation.scene, _observation.meshes, _observation.fingerprint)
     by_id = {mesh.object_id: mesh for mesh in meshes}
     if any(request[field] not in by_id for field in ("focal_id", "reference_id")):
         raise ValueError("Clearance segment object is not in the captured scene")
@@ -368,7 +389,9 @@ def solve_clearance_candidate(scene, request, *, expected_feature_signature=None
     if expected_feature_signature is not None and expected_feature_signature != feature_signature:
         return _failed(result, "contact_feature_changed", status="feature_changed")
     try:
-        measured = measure_pair_geometry(focal, reference, need_clearance=True)
+        measured = (measure_pair_geometry(focal, reference, need_clearance=True)
+            if _observation is None else _observation._measure_pair(
+                focal, reference, measure_pair_geometry, need_clearance=True))
     except Exception as exc:
         result["error_type"] = type(exc).__name__
         return _failed(result, "strict_pair_measurement_failed", status="unknown")
