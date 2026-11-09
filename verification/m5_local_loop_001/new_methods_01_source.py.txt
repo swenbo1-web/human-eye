@@ -1,0 +1,359 @@
+"""Behavioral M5 checks over the existing mutable host and real state journal.
+
+These checks do not launch Blender. They exercise the existing single-step
+executor and segment ledger, including failures after a host setter. The actual
+owned fixture batch separately records whole-loop work counts.
+"""
+from __future__ import annotations
+
+import copy
+import json
+from pathlib import Path
+import sys
+import tempfile
+from types import SimpleNamespace
+import unittest
+from unittest.mock import Mock, patch
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from human_eye_plugin import goal_execution
+from human_eye_plugin import goal_scheduler
+from human_eye_plugin import goal_segment
+from human_eye_plugin import live_service
+from human_eye_plugin import task_verification
+from human_eye_plugin.auto_router import _ValidatedObservation, _validated_scene
+from human_eye_plugin.task_authority import (
+    ClearanceTaskSpec, TaskApproval, TrustedTaskAuthority,
+)
+from verification.test_clearance_segment_service import (
+    ClearanceSegmentServiceTests, SegmentHost,
+)
+from verification.test_goal_continuation import envelope
+
+
+class _SegmentFixture:
+    # Reuse the maintained fixture, without inheriting or rerunning its suite.
+    setUp = ClearanceSegmentServiceTests.setUp
+    new_service = ClearanceSegmentServiceTests.new_service
+    request = staticmethod(ClearanceSegmentServiceTests.request)
+    run_segment = ClearanceSegmentServiceTests.run_segment
+    read_state = ClearanceSegmentServiceTests.read_state
+
+    def trace_writes(self):
+        committed = []
+        atomic_write = live_service._atomic_write
+
+        def write(path, data, **kwargs):
+            result = atomic_write(path, data, **kwargs)
+            if Path(path) == self.state_path:
+                committed.append(copy.deepcopy(data))
+            return result
+
+        return committed, patch.object(live_service, '_atomic_write', side_effect=write)
+
+
+class SchedulerSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        folder = Path(temporary.name)
+        self.config_path = folder / 'live.json'
+        self.config_path.write_text(json.dumps({
+            'schema_version': '1.0', 'project_root': str(ROOT),
+            'state_file': 'state.json', 'audit_file': 'audit.jsonl',
+            'quad_size': 64, 'max_sessions': 4, 'enabled': True,
+        }), encoding='utf8')
+        self.packet = envelope(.154, 'native-capture-v1')
+        self.host = SimpleNamespace(
+            capture_evidence=Mock(return_value=self.packet),
+            capture_scene=Mock(side_effect=AssertionError('Redundant host capture')),
+        )
+        authority = TrustedTaskAuthority('m5-test', lambda spec, scope: TaskApproval('event', 'approval'))
+        self.scheduler = goal_scheduler.OwnedGoalScheduler(self.config_path, self.host, authority)
+
+    def test_capture_uses_one_evidence_packet_and_detaches_native_sidecar(self):
+        original = copy.deepcopy(self.packet)
+        current = self.scheduler._capture()
+        self.host.capture_evidence.assert_called_once_with()
+        self.host.capture_scene.assert_not_called()
+        self.assertEqual(current['capture']['revision'], original['capture']['revision'])
+        self.assertEqual(current['native_scene'], original['native_scene'])
+        self.assertEqual(current['capture_confirmation'], current['capture'])
+        current['native_scene']['objects'][0]['name'] = 'caller changed retained copy'
+        self.assertEqual(self.packet, original)
+
+    def test_discovery_consumes_the_same_normalized_capture_without_service_observe(self):
+        calls = []
+        code = _validated_scene.__code__
+
+        def profile(frame, event, value):
+            if event == 'call' and frame.f_code is code:
+                calls.append(frame.f_locals.get('scene'))
+
+        previous = sys.getprofile()
+        try:
+            sys.setprofile(profile)
+            current = self.scheduler._capture()
+            with patch.object(self.scheduler.service, 'observe', side_effect=AssertionError('Redundant observe')):
+                selection = self.scheduler._discover(ClearanceTaskSpec('part', 'base'), current, 'm5-discovery')
+        finally:
+            sys.setprofile(previous)
+        self.assertEqual(len(calls), 1, 'One normalization supplies capture and discovery')
+        self.host.capture_evidence.assert_called_once_with()
+        self.host.capture_scene.assert_not_called()
+        self.assertEqual(selection['selection_binding']['scene_revision'], current['capture']['revision'])
+        self.assertEqual(selection['selection_binding']['focal_id'], 'part')
+        self.assertEqual(selection['selection_binding']['reference_id'], 'base')
+        self.assertIsInstance(selection['reference_triangle_index'], int)
+
+
+class SharedReadbackGeometryTests(unittest.TestCase):
+    def test_goal_and_next_solver_share_current_pair_but_new_capture_remeasures(self):
+        calls = []
+        measure = task_verification.measure_pair_geometry
+
+        def measured(left, right, **kwargs):
+            calls.append((id(left), id(right), dict(kwargs)))
+            return measure(left, right, **kwargs)
+
+        request = ClearanceSegmentServiceTests.request()
+        goal = goal_segment.clearance_segment_goal(request)
+        first = _ValidatedObservation(SegmentHost(gap=.004).scene)
+        changed = _ValidatedObservation(SegmentHost(gap=.005).scene)
+        self.assertEqual(first.scene['revision'], changed.scene['revision'])
+        with patch.object(task_verification, 'measure_pair_geometry', new=measured), \
+             patch.object(goal_segment, 'measure_pair_geometry', new=measured):
+            initial_goal = task_verification.evaluate_spatial_goal(first.scene, goal, _observation=first)
+            plan = goal_segment.solve_segment_candidate(first.scene, request, _observation=first)
+            repeat = task_verification.evaluate_spatial_goal(first.scene, goal, _observation=first)
+            changed_goal = task_verification.evaluate_spatial_goal(changed.scene, goal, _observation=changed)
+        first_ids = {mesh.object_id: id(mesh) for mesh in first.meshes}
+        changed_ids = {mesh.object_id: id(mesh) for mesh in changed.meshes}
+        current_pair = lambda ids: [row for row in calls if row[:2] == (ids['part'], ids['base'])]
+        self.assertEqual(len(current_pair(first_ids)), 1, 'Goal and next plan reuse one actual readback measurement')
+        self.assertEqual(len(current_pair(changed_ids)), 1, 'A fresh capture never inherits prior dynamic geometry')
+        self.assertEqual(initial_goal, repeat)
+        self.assertEqual(plan['status'], 'candidate')
+        self.assertAlmostEqual(initial_goal['measurements']['signed_clearance_m'], .004, delta=1e-12)
+        self.assertAlmostEqual(changed_goal['measurements']['signed_clearance_m'], .005, delta=1e-12)
+
+    def test_private_geometry_reuse_rejects_a_different_scene_or_duck_type(self):
+        observation = _ValidatedObservation(SegmentHost().scene)
+        request = ClearanceSegmentServiceTests.request()
+        goal = goal_segment.clearance_segment_goal(request)
+        copied_scene = copy.deepcopy(observation.scene)
+        fake = SimpleNamespace(scene=observation.scene, meshes=observation.meshes,
+                               fingerprint=observation.fingerprint)
+        for scene, context in ((copied_scene, observation), (observation.scene, fake)):
+            with self.subTest(context=type(context).__name__):
+                with self.assertRaises(ValueError):
+                    task_verification.evaluate_spatial_goal(scene, goal, _observation=context)
+                with self.assertRaises(ValueError):
+                    goal_segment.solve_segment_candidate(scene, request, _observation=context)
+
+
+    def test_collision_only_measurement_and_trial_geometry_do_not_poison_clearance(self):
+        observation = _ValidatedObservation(SegmentHost().scene)
+        by_id = {mesh.object_id: mesh for mesh in observation.meshes}
+        focal, reference = by_id['part'], by_id['base']
+        calls = []
+        measure = task_verification.measure_pair_geometry
+
+        def measured(left, right, **kwargs):
+            calls.append(kwargs['need_clearance'])
+            return measure(left, right, **kwargs)
+
+        observation._measure_pair(focal, reference, measured, need_clearance=False)
+        clearance = observation._measure_pair(focal, reference, measured, need_clearance=True)
+        observation._measure_pair(focal, reference, measured, need_clearance=False)
+        observation._measure_pair(focal, reference, measured, need_clearance=True)
+        self.assertEqual(calls, [False, True])
+        self.assertAlmostEqual(clearance['signed_clearance_m'], .004, delta=1e-12)
+        trial = focal.translated([0, 0, .0005])
+        for _ in range(2):
+            candidate = observation._measure_pair(trial, reference, measured, need_clearance=True)
+            self.assertAlmostEqual(candidate['signed_clearance_m'], .0045, delta=1e-12)
+        self.assertEqual(calls, [False, True, True, True], 'Trial meshes are outside the actual-capture cache')
+
+
+class PlanHandoffTests(_SegmentFixture, unittest.TestCase):
+    def preview(self, request=None):
+        request = self.request() if request is None else request
+        with self.host.transaction():
+            observation = _ValidatedObservation(self.host.capture_scene())
+        handoff = {}
+        captures = self.host.captures
+        preview = self.service.run_clearance_segment('segment-test', 'preview-only', request,
+            execute=False, include_image=False, _initial_observation=observation,
+            _plan_handoff=handoff)
+        self.assertEqual(preview['status'], 'preview', preview)
+        self.assertEqual(self.host.captures, captures, 'Preview uses the existing captured snapshot')
+        self.assertFalse(self.state_path.exists())
+        return preview, handoff
+
+    def test_preview_plan_is_detached_and_reused_only_after_fresh_execution_capture(self):
+        first_plan = goal_execution._first_step_plan
+        with patch.object(goal_execution, '_first_step_plan', wraps=first_plan) as planning:
+            preview, handoff = self.preview()
+            # The model-visible preview result cannot alter the private plan.
+            preview['candidate']['candidate']['translation'][2] = .02
+            before = self.host.captures
+            original_apply = self.host.apply_transform
+            capture_at_apply = []
+
+            def apply(*args, **kwargs):
+                capture_at_apply.append(self.host.captures)
+                return original_apply(*args, **kwargs)
+
+            self.host.apply_transform = apply
+            result = self.service.run_clearance_segment('segment-test', 'request-1', self.request(),
+                execute=True, include_image=False, _plan_handoff=handoff)
+        self.assertEqual(result['status'], 'satisfied', result)
+        self.assertEqual(planning.call_count, 1, 'Preview and matching execute share their first-step solve')
+        self.assertEqual(self.host.calls, 1)
+        self.assertGreater(capture_at_apply[0], before, 'The handoff never replaces a fresh execution capture')
+        self.assertLessEqual(abs(self.host.actual_gap() - .001), 1e-6)
+
+    def test_same_revision_external_geometry_change_replans_from_current_scene(self):
+        first_plan = goal_execution._first_step_plan
+        with patch.object(goal_execution, '_first_step_plan', wraps=first_plan) as planning:
+            _, handoff = self.preview()
+            revision = self.host.scene['revision']
+            self.host.scene['meshes'][1] = SegmentHost(gap=.006).scene['meshes'][1]
+            self.assertEqual(self.host.scene['revision'], revision)
+            result = self.service.run_clearance_segment('segment-test', 'request-1', self.request(),
+                execute=True, include_image=False, _plan_handoff=handoff)
+        self.assertEqual(result['status'], 'satisfied', result)
+        self.assertEqual(planning.call_count, 2, 'Same revision alone cannot validate a dynamic plan')
+        self.assertAlmostEqual(result['steps'][0]['actual_translation_m'], .005, delta=1e-6)
+        self.assertLessEqual(abs(self.host.actual_gap() - .001), 1e-6)
+
+    def test_changed_motion_budget_replans_and_preserves_the_execution_caps(self):
+        first_plan = goal_execution._first_step_plan
+        with patch.object(goal_execution, '_first_step_plan', wraps=first_plan) as planning:
+            _, handoff = self.preview()
+            request = self.request(max_step_translation_m=.002)
+            result = self.service.run_clearance_segment('segment-test', 'request-1', request,
+                execute=True, include_image=False, _plan_handoff=handoff)
+        self.assertEqual(result['status'], 'satisfied', result)
+        self.assertEqual(planning.call_count, 2, 'An old effective budget cannot be reused')
+        self.assertGreaterEqual(self.host.calls, 2)
+        self.assertTrue(all(step['actual_translation_m'] <= .002 for step in result['steps']))
+        self.assertEqual(result['request']['max_step_translation_m'], .002)
+
+
+class CompletionCommitTests(_SegmentFixture, unittest.TestCase):
+    def test_inflight_precedes_setter_and_first_completion_has_actual_motion(self):
+        committed, trace = self.trace_writes()
+        original_apply = self.host.apply_transform
+        admitted = []
+
+        def apply(*args, **kwargs):
+            durable = self.read_state()
+            step = durable['goal_segments']['records']['request-1']['steps'][-1]
+            self.assertEqual(step['state'], 'submitting')
+            self.assertIsNotNone(durable['inflight'])
+            self.assertEqual(durable['inflight']['step_id'], step['step_id'])
+            self.assertEqual(durable['inflight']['operation_id'], step['operation_id'])
+            admitted.append(step['operation_id'])
+            return original_apply(*args, **kwargs)
+
+        self.host.apply_transform = apply
+        with trace:
+            result = self.run_segment()
+        self.assertEqual(result['status'], 'satisfied', result)
+        self.assertEqual(len(admitted), 1)
+        confirmed = []
+        for value in committed:
+            record = value.get('goal_segments', {}).get('records', {}).get('request-1', {})
+            steps = record.get('steps', [])
+            if steps and steps[-1]['state'] == 'complete' and value['inflight'] is None:
+                confirmed.append(record)
+        self.assertTrue(confirmed)
+        # No intermediate durable "complete" result may omit actual movement
+        # and the endpoint revision just to add them in a later save.
+        first = confirmed[0]
+        self.assertAlmostEqual(first['steps'][-1]['actual_translation_m'], .003, delta=1e-6)
+        self.assertEqual(first['end_revision'], first['steps'][-1]['result']['actual_scene_revision'])
+        running = [record for record in confirmed if record['status'] == 'running']
+        self.assertLessEqual(len(running), 1, 'Duplicate completion saves for the same step')
+        self.assertLessEqual(len(committed), 4, 'Reservation, inflight, one completion and final receipt suffice')
+
+    def test_every_multistep_completion_contains_its_readback_displacement(self):
+        self.host = SegmentHost(gap=.024)
+        self.service = self.new_service()
+        committed, trace = self.trace_writes()
+        with trace:
+            result = self.run_segment()
+        self.assertEqual(result['status'], 'satisfied', result)
+        first_completion = {}
+        for value in committed:
+            record = value.get('goal_segments', {}).get('records', {}).get('request-1', {})
+            if value['inflight'] is None:
+                for step in record.get('steps', []):
+                    if step['state'] == 'complete':
+                        first_completion.setdefault(step['step_id'], (copy.deepcopy(step), record['end_revision']))
+        self.assertEqual(len(first_completion), self.host.calls)
+        for step in result['steps']:
+            durable, revision = first_completion[step['step_id']]
+            self.assertEqual(durable['actual_translation_m'], step['actual_translation_m'])
+            self.assertEqual(revision, durable['result']['actual_scene_revision'])
+        self.assertAlmostEqual(sum(step['actual_translation_m'] for step in result['steps']),
+                               result['actual_total_translation_m'])
+
+    def test_post_readback_plan_error_preserves_confirmed_step_without_resubmit(self):
+        self.host = SegmentHost(gap=.024)
+        self.service = self.new_service()
+        before_gap = self.host.actual_gap()
+        solve = goal_execution.solve_segment_candidate
+
+        def fail_after_readback(*args, **kwargs):
+            if self.host.calls:
+                raise RuntimeError('post-readback planning failed')
+            return solve(*args, **kwargs)
+
+        with patch.object(goal_execution, 'solve_segment_candidate', side_effect=fail_after_readback):
+            try:
+                result = self.run_segment()
+            except RuntimeError as error:
+                self.assertIn('post-readback planning failed', str(error))
+            else:
+                self.assertEqual(result['status'], 'review_required', result)
+        self.assertEqual(self.host.calls, 1)
+        state = self.read_state()
+        step = state['goal_segments']['records']['request-1']['steps'][-1]
+        self.assertIsNone(state['inflight'])
+        self.assertEqual(step['state'], 'complete')
+        self.assertTrue(step['result']['executed'])
+        self.assertTrue(step['result']['execution_verified'])
+        self.assertAlmostEqual(step['actual_translation_m'], before_gap - self.host.actual_gap(), delta=1e-12)
+        self.assertGreater(step['actual_translation_m'], .009)
+        replay = self.run_segment(service=self.new_service())
+        self.assertIn(replay['status'], {'segment_interrupted', 'review_required', 'satisfied'})
+        self.assertEqual(self.host.calls, 1, 'A known setter is never retried after planning failure')
+
+    def test_completion_save_failure_retains_pending_operation_without_resubmit(self):
+        atomic_write = live_service._atomic_write
+
+        def fail_completion(path, data, **kwargs):
+            if self.host.calls and data.get('inflight') is None:
+                raise OSError('completion commit unavailable')
+            return atomic_write(path, data, **kwargs)
+
+        with patch.object(live_service, '_atomic_write', side_effect=fail_completion):
+            with self.assertRaisesRegex(OSError, 'completion commit unavailable'):
+                self.run_segment()
+        self.assertEqual(self.host.calls, 1)
+        state = self.read_state()
+        self.assertIsNotNone(state['inflight'])
+        self.assertEqual(state['goal_segments']['records']['request-1']['steps'][-1]['state'], 'submitting')
+        for identity in ('request-1', 'fresh-request'):
+            replay = self.run_segment(service=self.new_service(), request_id=identity)
+            self.assertIn(replay['status'], {'execution_uncertain', 'segment_interrupted', 'blocked'})
+            self.assertEqual(self.host.calls, 1)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

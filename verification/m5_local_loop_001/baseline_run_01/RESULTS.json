@@ -1,0 +1,109 @@
+{
+  "passed": false,
+  "runtime_root": "C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\m5_local_loop_001\\baseline_sources",
+  "source_sha256": "d5f3f7d29c201c21611014f0c963afd8c6b5f6fb501b0d94e60f79890d006936",
+  "source_count": 133,
+  "cases": [
+    {
+      "label": "zero",
+      "target_clearance_m": 0.004,
+      "passed": false,
+      "fixture_sha256_before": "a4a444f5cdead9f9d303e6c5e017f945921dd1caa6de262f4318d808dd84d808",
+      "worker_pid": 25256,
+      "loop_ms": 79.5159,
+      "calls": {
+        "goal_scheduler.py:OwnedGoalScheduler._capture": 1,
+        "blender_process.py:BlenderProcessHost.capture_evidence": 1,
+        "auto_router.py:_validated_scene": 5,
+        "human_eye_foveated_renderer.py:MeshEntity3D.from_dict": 24,
+        "human_eye_foveated_renderer.py:MeshEntity3D.__init__": 24,
+        "blender_process.py:BlenderProcessHost.capture_scene": 2,
+        "blender_process.py:BlenderProcessHost._capture_request": 2,
+        "goal_scheduler.py:OwnedGoalScheduler._discover": 1,
+        "live_service.py:LiveSpatialService._locked": 2,
+        "live_service.py:LiveSpatialService._runtime": 1,
+        "host_runtime.py:GuardedHostRuntime._before_model_on_captured_scene": 1,
+        "geometry_safety.py:measure_pair_geometry": 2
+      },
+      "inclusive_profile_ms": {
+        "blender_process.py:BlenderProcessHost.capture_evidence": 5.9788,
+        "human_eye_foveated_renderer.py:MeshEntity3D.__init__": 0.6144,
+        "human_eye_foveated_renderer.py:MeshEntity3D.from_dict": 1.3893,
+        "auto_router.py:_validated_scene": 6.4852,
+        "blender_process.py:BlenderProcessHost._capture_request": 21.2347,
+        "blender_process.py:BlenderProcessHost.capture_scene": 21.2462,
+        "goal_scheduler.py:OwnedGoalScheduler._capture": 25.657,
+        "live_service.py:LiveSpatialService._runtime": 0.0433,
+        "live_service.py:LiveSpatialService._locked": 3.5555,
+        "geometry_safety.py:measure_pair_geometry": 4.5528,
+        "host_runtime.py:GuardedHostRuntime._before_model_on_captured_scene": 36.1937,
+        "goal_scheduler.py:OwnedGoalScheduler._discover": 53.699
+      },
+      "loop_transport_bytes": {
+        "owned_tx.bin": 337,
+        "owned_rx.bin": 21360
+      },
+      "loop_host_requests": 3,
+      "loop_host_commands": {
+        "capture_evidence": 1,
+        "capture": 2
+      },
+      "receipt": {
+        "schema_version": "owned-goal-scheduler-v1",
+        "status": "review_required",
+        "task_succeeded": false,
+        "executed_this_call": false,
+        "new_setter_count": 0,
+        "engine_confirmed_steps": 0,
+        "host_closed": false,
+        "segments": [],
+        "execution_phase": "not_submitted",
+        "physical_task_succeeded": null,
+        "completion_persistence": "not_attempted",
+        "execution_authority": false,
+        "retry_authorized": false,
+        "presentation_scope": "recorded_task_end_snapshot_not_current_after_return",
+        "reason_codes": [
+          "TypeError:main.<locals>.observed_save() got an unexpected keyword argument '_observation_baseline'"
+        ]
+      },
+      "loop_worker_counter_boundary": "capture_delta",
+      "loop_worker_calls": {
+        "capture_evidence": 1,
+        "_capture": 3,
+        "capture_scene": 2,
+        "_resident_capture": 2,
+        "capture_delta": 2
+      },
+      "loop_resident_work": {
+        "to_mesh": 4,
+        "triangulations": 4,
+        "resource_builds": 4,
+        "world_transforms": 4,
+        "capture_cache_hits": 1,
+        "resident_resources": 4
+      },
+      "native_check": {
+        "gap_m": 0.0040000006556510925,
+        "target_m": 0.004,
+        "error_m": 6.556510924460301e-10,
+        "focal_z_translation_m": 0.0,
+        "other_objects_unchanged": 3,
+        "basis": "direct native RNA world points, rigid fixture horizontal faces"
+      },
+      "lifecycle_ms": 1971.0736,
+      "whole_host_transport_bytes": {
+        "owned_tx.bin": 529,
+        "owned_rx.bin": 46710
+      },
+      "fixture_sha256_after": "a4a444f5cdead9f9d303e6c5e017f945921dd1caa6de262f4318d808dd84d808"
+    }
+  ],
+  "timing_scope": "loop_ms strictly scheduler.run call; lifecycle includes owned host startup/setup/verification/close; observer overhead included, not subtracted",
+  "geometry_scope": "actual Python host capture/setter entries and resident counters; nonresident to_mesh/triangulation unknown",
+  "model_calls": 0,
+  "user_assets": 0,
+  "failure": "AssertionError({'schema_version': 'owned-goal-scheduler-v1', 'status': 'review_required', 'task_succeeded': False, 'executed_this_call': False, 'new_setter_count': 0, 'engine_confirmed_steps': 0, 'host_closed': False, 'segments': [], 'execution_phase': 'not_submitted', 'physical_task_succeeded': None, 'completion_persistence': 'not_attempted', 'execution_authority': False, 'retry_authorized': False, 'presentation_scope': 'recorded_task_end_snapshot_not_current_after_return', 'reason_codes': [\"TypeError:main.<locals>.observed_save() got an unexpected keyword argument '_observation_baseline'\"]})",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\2c7d\\hefe\\verification\\m5_local_loop_001\\run_owned_qa.py\", line 285, in main\n    assert receipt['status']=='completed' and receipt['task_succeeded'] is True,receipt\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'schema_version': 'owned-goal-scheduler-v1', 'status': 'review_required', 'task_succeeded': False, 'executed_this_call': False, 'new_setter_count': 0, 'engine_confirmed_steps': 0, 'host_closed': False, 'segments': [], 'execution_phase': 'not_submitted', 'physical_task_succeeded': None, 'completion_persistence': 'not_attempted', 'execution_authority': False, 'retry_authorized': False, 'presentation_scope': 'recorded_task_end_snapshot_not_current_after_return', 'reason_codes': [\"TypeError:main.<locals>.observed_save() got an unexpected keyword argument '_observation_baseline'\"]}\n",
+  "runner_sequence_ms": 2697.4017
+}

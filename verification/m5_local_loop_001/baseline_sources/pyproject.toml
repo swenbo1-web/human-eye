@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "human-eye-spatial-plugin"
+version = "9.7.2"
+description = "Human-Eye (人类之眼) 3D Foveated Spatial Intelligence, Low-Token MCP Scene Bridge & 6-DoF Closed-Loop Control Plugin for LLMs/VLMs"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0.0",
+    "Pillow>=10.0.0",
+]
+
+[project.scripts]
+human-eye-mcp-server = "human_eye_plugin.production_server:main"
+human-eye-live = "human_eye_plugin.production_server:main"
+human-eye-auto-router = "human_eye_plugin.router_server:run_stdio_router"
+human-eye-hook = "human_eye_hook:main"
+
+[tool.setuptools]
+packages = ["human_eye_plugin", "human_eye_module1_operators"]
+py-modules = [
+    "human_eye_hook",
+    "human_eye_foveated_renderer",
+    "native_3d_spatial_scratchpad",
+    "module_2_low_token_mcp_scene_bridge",
+    "module_3_1_mcp_protocol_ipc_engine",
+    "module_3_2_vlm_grounding_closed_loop_agent",
+    "module_3_3_closed_loop_control_engine",
+]
+
+[tool.setuptools.package-data]
+human_eye_plugin = ["plugin.json", "mcp_config.json"]

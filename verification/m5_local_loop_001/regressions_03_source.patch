@@ -1,0 +1,962 @@
+diff --git a/human_eye_plugin/auto_router.py b/human_eye_plugin/auto_router.py
+index fc4e5a2..a7fbbc5 100644
+--- a/human_eye_plugin/auto_router.py
++++ b/human_eye_plugin/auto_router.py
+@@ -427,17 +427,20 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
+ 
+ 
+ class _ValidatedObservation:
+-    """One detached capture, for one synchronous internal observation only.
++    """One detached capture shared by synchronous internal consumers.
+ 
+     This Python object never enters an agent event or persisted state. It does
+-    not authorize an action or replace any execution/readback validation.
++    not authorize an action. Execution still captures and validates its own
++    prewrite and readback scenes; each router handoff is consumed once.
+     """
+-    __slots__ = ('_parts', '_owner_thread', '_used')
++    __slots__ = ('_parts', '_owner_thread', '_used', '_measurements', '_capture_state')
+ 
+     def __init__(self, captured):
++        self._capture_state = copy.deepcopy(captured.get('capture_state')) if isinstance(captured, dict) else None
+         self._parts = _validated_scene(captured, _return_payload=True)
+         self._owner_thread = threading.get_ident()
+         self._used = False
++        self._measurements = {}
+ 
+     @property
+     def scene(self):
+@@ -451,6 +454,29 @@ class _ValidatedObservation:
+     def fingerprint(self):
+         return self._parts[2]
+ 
++    def _require_scene(self, scene):
++        if self._owner_thread != threading.get_ident() or scene is not self.scene:
++            raise ValueError('Validated observation must own this scene on its capturing thread')
++
++    def _fork(self):
++        """Another synchronous consumer of these same detached capture parts."""
++        self._require_scene(self.scene)
++        view = object.__new__(type(self))
++        view._parts, view._owner_thread = self._parts, self._owner_thread
++        view._measurements, view._capture_state = self._measurements, self._capture_state
++        view._used = False
++        return view
++
++    def _measure_pair(self, focal, reference, compute, **options):
++        self._require_scene(self.scene)
++        # Projected candidates are distinct geometry, even with the same ID.
++        if not all(any(mesh is item for mesh in self.meshes) for item in (focal, reference)):
++            return compute(focal, reference, **options)
++        key = (compute, focal.object_id, reference.object_id, tuple(sorted(options.items())))
++        if key not in self._measurements:
++            self._measurements[key] = compute(focal, reference, **options)
++        return copy.deepcopy(self._measurements[key])
++
+     def _consume(self):
+         if self._owner_thread != threading.get_ident() or self._used:
+             raise ValueError('Validated observation must be used once on its capturing thread')
+@@ -575,6 +601,14 @@ class HumanEyeAutoRouter:
+             raise ValueError('Internal validated capture requires an observation-only metadata event')
+         return self._handle_event(event, _observation_parts=capture._consume())
+ 
++    @_trace_stage('router.event', image_event=True)
++    def _handle_validated_action(self, event, capture):
++        """Use this execution call's independently captured pre/post objects."""
++        if (type(capture) is not _ValidatedObservation or not isinstance(event, dict)
++                or event.get('event') not in {'before_action', 'after_action'} or 'scene' in event):
++            raise ValueError('Internal action capture requires action metadata')
++        return self._handle_event(event, _observation_parts=capture._consume())
++
+     def _handle_event(self, event, *, _observation_parts=None):
+         if not isinstance(event, dict):
+             raise ValueError("event must be an object")
+diff --git a/human_eye_plugin/goal_continuation.py b/human_eye_plugin/goal_continuation.py
+index 303d33c..d999300 100644
+--- a/human_eye_plugin/goal_continuation.py
++++ b/human_eye_plugin/goal_continuation.py
+@@ -2,8 +2,9 @@
+ 
+ This module neither authorizes nor executes anything. The caller owns task
+ authorization, the shared whole-goal budget, fresh discovery/preview, and host
+-CAS. Double captures bracket a native read; this is not an atomic host sample
+-and does not rule out an external ABA edit between the samples.
++CAS. Owned evidence may export capture and native views in one main-thread
++traversal; legacy envelopes may bracket a native read with two captures. Neither
++form records external edit history or rules out an external ABA edit.
+ """
+ from __future__ import annotations
+ 
+diff --git a/human_eye_plugin/goal_execution.py b/human_eye_plugin/goal_execution.py
+index 679c4b1..edf15d0 100644
+--- a/human_eye_plugin/goal_execution.py
++++ b/human_eye_plugin/goal_execution.py
+@@ -15,7 +15,7 @@ import re
+ import time
+ import uuid
+ 
+-from .auto_router import _validated_scene, _trace_span
++from .auto_router import _ValidatedObservation, _trace_span
+ from .goal_segment import (validate_clearance_segment_request,
+                            solve_segment_candidate, clearance_segment_goal,
+                            selection_binding_rejection)
+@@ -190,15 +190,14 @@ def _capture(service, runtime):
+     service._check_request_budget('before_segment_host_capture')
+     with runtime._transaction(), _trace_span('host.segment_capture', kind='host', source_name='host_blender'):
+         raw = service.host.capture_scene()
+-    scene, _, _ = _validated_scene(raw)
+-    return scene
++    return _ValidatedObservation(raw)
+ 
+ 
+ def _pivot(scene, focal_id):
+     return next(mesh['pivot_world'] for mesh in scene['meshes'] if mesh['object_id'] == focal_id)
+ 
+ 
+-def _first_step_plan(scene, request, readback_atol_m):
++def _first_step_plan(scene, request, readback_atol_m, *, _observation=None):
+     """Plan the action the first submission can admit, without granting rights.
+ 
+     The caller's normalized request remains the receipt identity. Only the
+@@ -212,7 +211,8 @@ def _first_step_plan(scene, request, readback_atol_m):
+     available = remaining > 0 and step_limit > 0
+     bounded = (dict(request, max_total_translation_m=remaining,
+                     max_step_translation_m=step_limit) if available else request)
+-    plan = solve_segment_candidate(scene, bounded)
++    plan = (solve_segment_candidate(scene, bounded) if _observation is None else
++        solve_segment_candidate(scene, bounded, _observation=_observation))
+     # Keep each solver's existing request shape, with the caller's caps. The
+     # explicit planning metadata below carries the effective caps instead.
+     for field in ('max_step_translation_m', 'max_total_translation_m'):
+@@ -237,7 +237,8 @@ def _first_step_plan(scene, request, readback_atol_m):
+ 
+ 
+ def run_clearance_segment(service, session_id, request_id, request, *, execute=False,
+-                          include_image=False, _parent_goal_id=None):
++                          include_image=False, _parent_goal_id=None,
++                          _initial_observation=None, _plan_handoff=None):
+     """Run under one connector lock; never call the locking public transform."""
+     _identifier(session_id, 'session_id')
+     _identifier(request_id, 'request_id')
+@@ -294,8 +295,15 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             deadline = min(deadline, parent_deadline)
+             if clock() >= deadline:
+                 return _result('review_required', reasons=['parent_goal_time_budget_exhausted'])
+-        scene = _capture(service, runtime)
+-        binding_rejection = (selection_binding_rejection(scene, request)
++        if not execute and _initial_observation is not None:
++            if type(_initial_observation) is not _ValidatedObservation:
++                raise ValueError('Internal initial observation required')
++            _initial_observation._require_scene(_initial_observation.scene)
++            observation = _initial_observation
++        else:
++            observation = _capture(service, runtime)
++        scene = observation.scene
++        binding_rejection = (selection_binding_rejection(scene, request, _observation=observation)
+                              if 'selection_binding' in request else None)
+         if binding_rejection is not None:
+             # Historical receipts have already returned above. A fresh goal
+@@ -303,11 +311,25 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             # and a refused selection must not reserve a running receipt.
+             return _result('blocked', reasons=[binding_rejection], executed=False,
+                 selection_binding_status='mismatch', requires_reobserve=True)
++        def first_plan():
++            if (_plan_handoff is not None and _plan_handoff.get('request') == request
++                    and _plan_handoff.get('fingerprint') == observation.fingerprint
++                    and _plan_handoff.get('host_binding') == _binding(scene)
++                    and _plan_handoff.get('readback_atol_m') == runtime.router.readback_atol_m):
++                return copy.deepcopy(_plan_handoff['plan'])
++            return _first_step_plan(scene, request, runtime.router.readback_atol_m,
++                _observation=observation)
++
+         if not execute:
+             # Preview can inspect old hosts without an identity contract, but
+             # does not persist observations, reserve IDs, or grant write rights.
+-            return _result('preview', candidate=_first_step_plan(scene, request,
+-                    runtime.router.readback_atol_m), executed=False,
++            plan = first_plan()
++            if _plan_handoff is not None:
++                _plan_handoff.clear()
++                _plan_handoff.update(request=copy.deepcopy(request), fingerprint=observation.fingerprint,
++                    host_binding=_binding(scene), readback_atol_m=runtime.router.readback_atol_m,
++                    plan=copy.deepcopy(plan))
++            return _result('preview', candidate=plan, executed=False,
+                 host_identity_available=_binding(scene) is not None,
+                 remaining_write_gates_required=True)
+         if _binding(scene) is None:
+@@ -317,7 +339,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+         # running receipt. The first loop uses this exact captured plan;
+         # Later steps recapture and check the complete snapshot before reusing
+         # the preceding readback plan. A changed budget is still solved below.
+-        initial_plan = _first_step_plan(scene, request, runtime.router.readback_atol_m)
++        initial_plan = first_plan()
+         if clock() >= deadline:
+             return _result('review_required', reasons=['segment_time_budget_exhausted_after_initial_plan'])
+         segment_id = uuid.uuid4().hex
+@@ -338,7 +360,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+         last_error = None
+         signs = []
+ 
+-        def finish(status, reasons=()):
++        def finish(status, reasons=(), *, persist=True):
+             elapsed_ns = max(0, time.monotonic_ns() - started_ns)
+             result = _result(status, reasons=reasons, request_id=request_id, segment_id=segment_id,
+                 request=copy.deepcopy(request), steps=copy.deepcopy(entry['steps']),
+@@ -359,13 +381,24 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             entry['status'] = status
+             entry['result'] = copy.deepcopy(result)
+             # Receipts contain no PNG, full scene, or mutable runtime state.
+-            service._save(value, runtime)
++            if persist:
++                service._save(value, runtime)
++                return publish(result)
++            return result
++
++        def publish(result):
++            # Optional delivery always follows the acknowledged completion.
++            # Rendering/session state never enters that durable step receipt.
++            status = result['status']
+             if include_image and status != 'execution_uncertain':
+                 try:
++                    image_observation = runtime._last_verified_observation or observation
++                    image_options = ({'_validated_observation': image_observation._fork()}
++                        if image_observation.scene is actual else {})
+                     prepared = runtime._before_model_on_captured_scene(scene=actual, session_id=session_id,
+                         task_instruction='Final bounded clearance segment observation.',
+                         focal_id=request['focal_id'], reference_id=request['reference_id'],
+-                        messages=[], format='mcp', include_image=True, supports_images=True)
++                        messages=[], format='mcp', include_image=True, supports_images=True, **image_options)
+                     result['routing'] = prepared['routing']
+                     result['presentation_scope'] = 'segment_end_snapshot_not_current_after_return'
+                 except Exception:
+@@ -384,7 +417,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             if clock() >= deadline:
+                 return finish('review_required', ['segment_time_budget_exhausted'])
+             if feature is not None:
+-                scene = _capture(service, runtime)
++                observation = _capture(service, runtime)
++                scene = observation.scene
+                 if (scene['revision'] != actual['revision']
+                         or _fingerprint(scene) != last_plan_scene_fingerprint):
+                     return finish('review_required', ['external_scene_change_between_steps'])
+@@ -400,7 +434,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             if last_plan['goal_satisfied']:
+                 from .task_verification import evaluate_spatial_goal
+                 try:
+-                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request))
++                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request),
++                        _observation=observation)
+                 except Exception:
+                     return finish('review_required', ['goal_evaluation_unavailable'])
+                 if evaluation['task_succeeded'] is True:
+@@ -424,7 +459,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             bounded = dict(request, max_total_translation_m=min(request['max_total_translation_m'], remaining),
+                 max_step_translation_m=min(step_limit, remaining))
+             if last_plan['proposed_translation_m'] > min(step_limit, remaining):
+-                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature)
++                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature,
++                    _observation=observation)
+                 if last_plan['status'] != 'candidate':
+                     return finish('review_required', last_plan['reason_codes'])
+             if last_error is not None and last_plan['absolute_error_m'] >= last_error:
+@@ -438,7 +474,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+                     if request.get('solver') == 'support_plane'
+                     else 'Execute the current bounded box-face clearance target.'),
+                 focal_id=request['focal_id'], reference_id=request['reference_id'],
+-                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False)
++                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False,
++                _validated_observation=observation._fork())
+             if clock() >= deadline:
+                 return finish('review_required', ['segment_time_budget_exhausted_before_submit'])
+             step = {'step_id': uuid.uuid4().hex, 'step_index': len(entry['steps']),
+@@ -449,44 +486,66 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
+             except Exception:
+                 pass
+             before_pivot = _pivot(scene, request['focal_id'])
++            completion = {'called': False, 'result': None}
++
++            def complete_step(result):
++                nonlocal actual, total_motion, last_error, last_plan, last_plan_scene_fingerprint
++                completion['called'] = True
++                if step['state'] == 'uncertain' or result.get('executed') is None:
++                    completion['result'] = finish('execution_uncertain', ['host_step_outcome_uncertain'], persist=False)
++                    return
++                if result.get('status') not in {'verified', 'no_op'}:
++                    completion['result'] = finish(
++                        'blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
++                        result.get('reason_codes') or [result.get('status', 'step_blocked')], persist=False)
++                    return
++                actual = runtime._last_verified_scene
++                if actual is None:
++                    completion['result'] = finish('execution_uncertain', ['verified_readback_snapshot_unavailable'], persist=False)
++                    return
++                motion = runtime._last_actual_translation_m
++                if motion is None:
++                    motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
++                total_motion += motion
++                # Cheap execution facts precede any fallible residual solver.
++                # _transform_locked commits them even when that solver raises.
++                step['actual_translation_m'] = motion
++                entry['end_revision'] = actual['revision']
++                last_error = last_plan['absolute_error_m']
++                actual_observation = runtime._last_verified_observation
++                options = ({'_observation': actual_observation} if actual_observation is not None else {})
++                last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature, **options)
++                if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
++                    completion['result'] = finish('review_required', ['actual_motion_budget_exceeded'], persist=False)
++                elif _binding(actual) != entry['host_binding']:
++                    completion['result'] = finish('review_required', ['host_object_or_document_identity_changed'], persist=False)
++                elif last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
++                    completion['result'] = finish('satisfied', persist=False)
++                elif last_plan['status'] not in {'candidate', 'goal_satisfied'}:
++                    completion['result'] = finish('review_required', last_plan['reason_codes'], persist=False)
++                elif clock() >= deadline:
++                    completion['result'] = finish('review_required', ['segment_time_budget_exhausted'], persist=False)
++                else:
++                    # Freeze content before the next fresh capture. Mutating a
++                    # retained readback cannot change this comparison input.
++                    last_plan_scene_fingerprint = _fingerprint(actual)
++
+             result = service._transform_locked(value, runtime, session_id, action,
+                 clearance_segment_goal(request), prepared=prepared, segment_step=step, segment_id=segment_id,
+                 precommit_deadline=deadline, precommit_clock=clock,
+-                parent_deadline=parent_deadline)
+-            if 'result' not in step:
+-                record_step_result(step, result)
+-            if step['state'] == 'uncertain' or result.get('executed') is None:
+-                return finish('execution_uncertain', ['host_step_outcome_uncertain'])
+-            if result.get('status') not in {'verified', 'no_op'}:
+-                return finish('blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
+-                    result.get('reason_codes') or [result.get('status', 'step_blocked')])
+-            actual = runtime._last_verified_scene
+-            if actual is None:
+-                return finish('execution_uncertain', ['verified_readback_snapshot_unavailable'])
+-            motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
+-            total_motion += motion
+-            step['actual_translation_m'] = motion
+-            entry['end_revision'] = actual['revision']
+-            last_error = last_plan['absolute_error_m']
+-            last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature)
+-            service._save(value, runtime)
+-            if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
+-                return finish('review_required', ['actual_motion_budget_exceeded'])
+-            if _binding(actual) != entry['host_binding']:
+-                return finish('review_required', ['host_object_or_document_identity_changed'])
+-            if last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
+-                return finish('satisfied')
+-            if last_plan['status'] not in {'candidate', 'goal_satisfied'}:
+-                return finish('review_required', last_plan['reason_codes'])
+-            if clock() >= deadline:
+-                return finish('review_required', ['segment_time_budget_exhausted'])
+-            # Freeze the content at planning time rather than hashing the
+-            # mutable runtime snapshot on the next iteration. This also stops
+-            # an aliased readback being changed together with the next capture.
+-            # Terminal steps return above, so they pay no extra fingerprint.
+-            last_plan_scene_fingerprint = _fingerprint(actual)
+-            # Confirmed but residual remains: only the next fresh capture may
+-            # authorize a different candidate. Never resend the preceding step.
++                parent_deadline=parent_deadline, _completion=complete_step)
++            if not completion['called']:
++                # Preparation refusals return before the execution boundary.
++                # Test/embedding overrides may also return their own receipt.
++                if 'result' not in step:
++                    record_step_result(step, result)
++                complete_step(result)
++                service._save(value, runtime)
++            if completion['result'] is not None:
++                return publish(completion['result'])
++            # A nonterminal completion is already durable. Only a new capture
++            # can admit the next correction; the preceding setter is never resent.
++
+ 
+ 
+ __all__ = ['run_clearance_segment', 'validate_segment_ledger', 'unfinished_segment',
+diff --git a/human_eye_plugin/goal_scheduler.py b/human_eye_plugin/goal_scheduler.py
+index ab30c07..d857b4e 100644
+--- a/human_eye_plugin/goal_scheduler.py
++++ b/human_eye_plugin/goal_scheduler.py
+@@ -13,7 +13,7 @@ import threading
+ import time
+ 
+ from . import goal_journal as journal
+-from .auto_router import _validated_scene
++from .auto_router import _ValidatedObservation
+ from .goal_continuation import (ContinuationPolicy, inspect_current_clearance,
+                                 review_continuation)
+ from .goal_segment import validate_clearance_segment_request
+@@ -130,24 +130,32 @@ class OwnedGoalScheduler:
+ 
+     def _capture(self):
+         packet = self.host.capture_evidence()
+-        capture = _validated_scene(packet['capture'])[0]
+-        confirmation = _validated_scene(self.host.capture_scene())[0]
+-        _require(_json(capture) == _json(confirmation), 'capture_window_changed')
+-        return {'capture': capture, 'native_scene': copy.deepcopy(packet['native_scene']),
+-                'capture_confirmation': confirmation}
++        observation = _ValidatedObservation(packet['capture'])
++        # capture_evidence exports both views in the same host traversal.
++        # Keep the existing envelope shape without claiming a second sample.
++        envelope = {'capture': observation.scene, 'native_scene': copy.deepcopy(packet['native_scene']),
++                    'capture_confirmation': copy.deepcopy(observation.scene)}
++        self._captured_observation = (envelope, observation)
++        return envelope
++
++    def _observation(self, envelope):
++        retained = getattr(self, '_captured_observation', None)
++        if retained is not None and retained[0] is envelope:
++            retained[1]._require_scene(envelope['capture'])
++            return retained[1]
++        return _ValidatedObservation(envelope['capture'])
+ 
+     def _discover(self, spec, envelope, session_id):
+-        observation = self.service.observe(session_id, focal_id=spec.focal_id,
+-            reference_id=spec.reference_id, include_image=False,
+-            query={'alignment_evidence': False,
+-                   'support_plane_discovery': {'direction_world': list(spec.direction_world)}})
+-        discovery = observation.get('support_plane_discovery', {})
++        from .support_plane_discovery import discover_support_planes
++        observation = self._observation(envelope)
++        discovery = discover_support_planes(observation.scene, spec.focal_id, spec.reference_id,
++            {'direction_world': list(spec.direction_world)}, _observation=observation)
+         _require(discovery.get('status') == 'complete'
+                  and discovery.get('ambiguous') is False
+                  and discovery.get('omitted_candidate_count') == 0
+                  and len(discovery.get('candidates', [])) == 1, 'unique_complete_support_required')
+         selector = copy.deepcopy(discovery['candidates'][0]['selector'])
+-        capture, meshes, fingerprint = _validated_scene(envelope['capture'])
++        capture, meshes, fingerprint = observation.scene, observation.meshes, observation.fingerprint
+         expected = {'scene_revision': capture['revision'], 'scene_fingerprint': fingerprint,
+                     'focal_id': spec.focal_id, 'reference_id': spec.reference_id}
+         _require(selector.get('selection_binding') == expected, 'discovery_not_original_fresh_capture')
+@@ -419,8 +427,10 @@ class OwnedGoalScheduler:
+                     request_id=child_id, request=request)
+                 _require(reservation['fresh_reservation'] is True, 'child_reservation_not_fresh')
+                 request = validate_clearance_segment_request(reservation['request'])
++                plan_handoff = {}
+                 preview = self.service.run_clearance_segment(grant.session_id,
+-                    child_id + ':preview', request, execute=False, include_image=False)
++                    child_id + ':preview', request, execute=False, include_image=False,
++                    _initial_observation=self._observation(before), _plan_handoff=plan_handoff)
+                 candidate = preview.get('candidate') or {}
+                 result['last_preview'] = {'status': preview.get('status'),
+                     'candidate_status': candidate.get('status'),
+@@ -428,7 +438,6 @@ class OwnedGoalScheduler:
+                 _require(preview.get('status') == 'preview' and preview.get('executed') is False
+                     and candidate.get('status') in {'candidate', 'goal_satisfied'},
+                     'fresh_preview_not_executable')
+-                _require(_json(self._capture()) == _json(before), 'scene_changed_during_preview')
+                 if _handoff is not None:_handoff.check()
+                 self._ticket = {'child_id': child_id, 'request': copy.deepcopy(request), 'used': False}
+                 # This call can raise after the host setter or durable commit.
+@@ -440,7 +449,7 @@ class OwnedGoalScheduler:
+                 result['new_setter_count'] = None
+                 try:
+                     receipt = self.service.run_supervised_clearance_segment(grant.goal_id,
+-                        grant.session_id, child_id, request)
++                        grant.session_id, child_id, request, _plan_handoff=plan_handoff)
+                 finally:
+                     self._ticket = None
+                 # Persist known physical accounting before native post-review.
+diff --git a/human_eye_plugin/goal_segment.py b/human_eye_plugin/goal_segment.py
+index 1472772..5b1f9c7 100644
+--- a/human_eye_plugin/goal_segment.py
++++ b/human_eye_plugin/goal_segment.py
+@@ -16,7 +16,7 @@ import math
+ 
+ import numpy as np
+ 
+-from .auto_router import _validated_scene
++from .auto_router import _ValidatedObservation, _validated_scene
+ from .geometry_safety import measure_pair_geometry
+ from .rigid_frame import pair_rigid_frame_status
+ from .support_plane_candidate import (
+@@ -179,7 +179,8 @@ def validate_clearance_segment_request(request):
+     return _validate_box_clearance_segment_request(request)
+ 
+ 
+-def solve_segment_candidate(scene, request, *, expected_feature_signature=None):
++def solve_segment_candidate(scene, request, *, expected_feature_signature=None,
++                            _observation=None):
+     """Dispatch a pure constraint, not a write gate or binding validation.
+ 
+     The live segment entry checks an optional initial selection binding before
+@@ -187,15 +188,19 @@ def solve_segment_candidate(scene, request, *, expected_feature_signature=None):
+     later captured snapshots produced by its own verified movement.
+     """
+     request = validate_clearance_segment_request(request)
++    options = {'expected_feature_signature': expected_feature_signature}
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
++        options['_observation'] = _observation
+     if request.get("solver") == "support_plane":
+         solver_request = {field: request[field] for field in _SUPPORT_SOLVER_FIELDS}
+-        return solve_support_plane_candidate(scene, solver_request,
+-            expected_feature_signature=expected_feature_signature)
+-    return solve_clearance_candidate(scene, request,
+-        expected_feature_signature=expected_feature_signature)
++        return solve_support_plane_candidate(scene, solver_request, **options)
++    return solve_clearance_candidate(scene, request, **options)
+ 
+ 
+-def selection_binding_rejection(scene, request):
++def selection_binding_rejection(scene, request, *, _observation=None):
+     """Compare discovery freshness with the initial capture; grant no rights.
+ 
+     A matching binding does not authenticate its caller, the chosen surface,
+@@ -203,12 +208,19 @@ def selection_binding_rejection(scene, request):
+     all geometry, host, version, instance and readback checks remain required.
+     """
+     request = validate_clearance_segment_request(request)
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
+     binding = request.get('selection_binding')
+     if binding is None:
+         return None
+     if any(binding[field] != request[field] for field in ('focal_id', 'reference_id')):
+         return 'support_plane_selection_pair_mismatch'
+-    normalized, _, fingerprint = _validated_scene(scene)
++    if _observation is None:
++        normalized, _, fingerprint = _validated_scene(scene)
++    else:
++        normalized, fingerprint = _observation.scene, _observation.fingerprint
+     if binding['scene_revision'] != normalized['revision']:
+         return 'support_plane_selection_stale_revision'
+     if binding['scene_fingerprint'] != fingerprint:
+@@ -293,7 +305,8 @@ def _failed(result, code, *, status="unsupported"):
+     return result
+ 
+ 
+-def solve_clearance_candidate(scene, request, *, expected_feature_signature=None):
++def solve_clearance_candidate(scene, request, *, expected_feature_signature=None,
++                              _observation=None):
+     """Read a snapshot and propose at most one clipped, pure-translation action.
+ 
+     The feature signature binds face topology, corner identity and the overlap
+@@ -303,12 +316,20 @@ def solve_clearance_candidate(scene, request, *, expected_feature_signature=None
+     external-edit detection, fresh full-scene gates and actual readback.
+     """
+     request = _validate_box_clearance_segment_request(request)
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
+     if (expected_feature_signature is not None
+             and (not isinstance(expected_feature_signature, str)
+                  or len(expected_feature_signature) != 64
+                  or any(character not in "0123456789abcdef" for character in expected_feature_signature))):
+         raise ValueError("expected_feature_signature must be a lower-case SHA256 digest")
+-    normalized, meshes, fingerprint = _validated_scene(scene)
++    if _observation is None:
++        normalized, meshes, fingerprint = _validated_scene(scene)
++    else:
++        normalized, meshes, fingerprint = (
++            _observation.scene, _observation.meshes, _observation.fingerprint)
+     by_id = {mesh.object_id: mesh for mesh in meshes}
+     if any(request[field] not in by_id for field in ("focal_id", "reference_id")):
+         raise ValueError("Clearance segment object is not in the captured scene")
+@@ -368,7 +389,9 @@ def solve_clearance_candidate(scene, request, *, expected_feature_signature=None
+     if expected_feature_signature is not None and expected_feature_signature != feature_signature:
+         return _failed(result, "contact_feature_changed", status="feature_changed")
+     try:
+-        measured = measure_pair_geometry(focal, reference, need_clearance=True)
++        measured = (measure_pair_geometry(focal, reference, need_clearance=True)
++            if _observation is None else _observation._measure_pair(
++                focal, reference, measure_pair_geometry, need_clearance=True))
+     except Exception as exc:
+         result["error_type"] = type(exc).__name__
+         return _failed(result, "strict_pair_measurement_failed", status="unknown")
+diff --git a/human_eye_plugin/host_runtime.py b/human_eye_plugin/host_runtime.py
+index d4f4f96..5704711 100644
+--- a/human_eye_plugin/host_runtime.py
++++ b/human_eye_plugin/host_runtime.py
+@@ -9,6 +9,7 @@ from collections import OrderedDict
+ from contextlib import nullcontext
+ import copy
+ import json
++import math
+ import threading
+ import uuid
+ from typing import Any, Protocol
+@@ -42,12 +43,13 @@ def _bound_goal(goal, focal_id, reference_id):
+     return _normalize_goal(value)
+ 
+ 
+-def _goal_fields(scene, goal):
++def _goal_fields(scene, goal, *, _observation=None):
+     if goal is None:
+         return {}
+     try:
+         with _trace_span("goal.evaluate"):
+-            verified = evaluate_spatial_goal(scene, goal)
++            verified = (evaluate_spatial_goal(scene, goal) if _observation is None else
++                evaluate_spatial_goal(scene, goal, _observation=_observation))
+     except Exception as exc:
+         # Actual action/readback verification has already succeeded. A failed
+         # optional evaluator must not turn it into an uncertain/retryable write.
+@@ -105,6 +107,8 @@ class GuardedHostRuntime:
+         self._lock = threading.RLock()
+         self._quarantine: dict | None = None
+         self._last_verified_scene = None
++        self._last_verified_observation = None
++        self._last_actual_translation_m = None
+ 
+     def _transaction(self):
+         transaction = getattr(self.host, "transaction", None)
+@@ -228,6 +232,8 @@ class GuardedHostRuntime:
+         action = copy.deepcopy(action)
+         with self._lock, self._transaction():
+             self._last_verified_scene = None
++            self._last_verified_observation = None
++            self._last_actual_translation_m = None
+             if self._quarantine:
+                 return self._result("host_quarantined", reason=copy.deepcopy(self._quarantine))
+             saved = self._sessions.get(session_id)
+@@ -240,7 +246,8 @@ class GuardedHostRuntime:
+             try:
+                 with _trace_span("host.capture_before_action", kind="host", source_name="host_blender"):
+                     raw_scene = self.host.capture_scene()
+-                scene, _, _ = _validated_scene(raw_scene)
++                observation = _ValidatedObservation(raw_scene)
++                scene = observation.scene
+             except Exception as exc:
+                 self._quarantine_host("host_snapshot_unavailable", None)
+                 return self._result("host_snapshot_unavailable", error_type=type(exc).__name__)
+@@ -266,11 +273,11 @@ class GuardedHostRuntime:
+                 return self._result("invalid_action")
+             is_noop = not np.any(translation) and not np.any(euler)
+             with _trace_span("host.execution_gate"):
+-                check = self.router.handle_event({
+-                    "event": "before_action", "session_id": session_id, "scene": scene,
++                check = self.router._handle_validated_action({
++                    "event": "before_action", "session_id": session_id,
+                     "observation_id": observation_id or saved["observation_id"],
+                     "focal_id": saved["focal_id"], "reference_id": saved["reference_id"],
+-                    "yaw_symmetry_order": saved["yaw_symmetry_order"], "action": action})
++                    "yaw_symmetry_order": saved["yaw_symmetry_order"], "action": action}, observation._fork())
+             if check["allow_action"] is not True:
+                 self._sessions.pop(session_id, None)
+                 return self._result("blocked", routing=check)
+@@ -294,8 +301,11 @@ class GuardedHostRuntime:
+                 # change or fabricating a revision. Old observations are gone.
+                 self.router = HumanEyeAutoRouter(**self._router_options)
+                 self._sessions.clear()
+-                self._last_verified_scene = copy.deepcopy(scene)
+-                return self._result("no_op", routing=check, **_goal_fields(scene, goal))
++                self._last_verified_scene = scene
++                self._last_verified_observation = observation
++                self._last_actual_translation_m = 0.
++                return self._result("no_op", routing=check,
++                    **_goal_fields(scene, goal, _observation=observation))
+             self._sessions.clear()  # Another session cannot reuse this pre-state.
+             request_nonce = None
+             host_arguments = {"expected_revision": revision,
+@@ -350,7 +360,8 @@ class GuardedHostRuntime:
+             try:
+                 with _trace_span("host.readback_capture", kind="host", source_name="host_blender"):
+                     raw_actual = self.host.capture_scene()
+-                actual, _, _ = _validated_scene(raw_actual)
++                actual_observation = _ValidatedObservation(raw_actual)
++                actual = actual_observation.scene
+                 # A one-object transform cannot quietly move/delete/create
+                 # another mesh or change its metadata.
+                 before_other = {m["object_id"]: m for m in scene["meshes"]
+@@ -366,10 +377,11 @@ class GuardedHostRuntime:
+                     if before_focal[key] != after_focal[key]:
+                         raise ValueError("Unexpected focal metadata change: " + key)
+                 with _trace_span("host.readback_verify"):
+-                    post = self.router.handle_event({"event": "after_action", "session_id": session_id,
+-                        "scene": actual, "focal_id": saved["focal_id"],
++                    post = self.router._handle_validated_action({"event": "after_action", "session_id": session_id,
++                        "focal_id": saved["focal_id"],
+                         "reference_id": saved["reference_id"], "yaw_symmetry_order": saved["yaw_symmetry_order"],
+-                        "task_instruction": saved["task_instruction"], "include_image": saved.get("include_image", True)})
++                        "task_instruction": saved["task_instruction"], "include_image": saved.get("include_image", True)},
++                        actual_observation._fork())
+                 if (post["route"] != "engine" or post["requires_reobserve"]
+                         or not post["measurement_valid"] or post.get("rigid_frame_valid") is not True):
+                     self._quarantine_host("host_readback_rejected", revision)
+@@ -379,11 +391,16 @@ class GuardedHostRuntime:
+                 self._quarantine_host("host_readback_uncertain", revision)
+                 return self._result("host_readback_uncertain", executed=None,
+                                     routing=check, error_type=type(exc).__name__, host_call_completed=True)
+-            self._last_verified_scene = copy.deepcopy(actual)
++            self._last_verified_scene = actual
++            self._last_verified_observation = actual_observation
++            self._last_actual_translation_m = math.dist(
++                next(mesh.pivot_world for mesh in observation.meshes if mesh.object_id == saved['focal_id']),
++                next(mesh.pivot_world for mesh in actual_observation.meshes if mesh.object_id == saved['focal_id']))
+             receipt = host_result.get("receipt") if isinstance(host_result, dict) else None
+             return self._result("verified", executed=True, verified=True, routing=post,
+                                 receipt=copy.deepcopy(receipt),
+-                                actual_scene_revision=actual["revision"], **_goal_fields(actual, goal))
++                                actual_scene_revision=actual["revision"],
++                                **_goal_fields(actual, goal, _observation=actual_observation))
+ 
+     @_trace_stage("host.preview_action", kind="host", source_name="host_blender")
+     def preview_action(self, *, session_id: str, action: dict) -> dict:
+diff --git a/human_eye_plugin/live_service.py b/human_eye_plugin/live_service.py
+index 48a4444..e65c2ef 100644
+--- a/human_eye_plugin/live_service.py
++++ b/human_eye_plugin/live_service.py
+@@ -1404,7 +1404,7 @@ class LiveSpatialService:
+ 
+     def _transform_locked(self, value, runtime, session_id, action, goal=None, *,
+                           prepared=None, segment_step=None, segment_id=None, precommit_deadline=None,
+-                          precommit_clock=None, parent_deadline=None):
++                          precommit_clock=None, parent_deadline=None, _completion=None):
+         """Shared single-step core; caller already owns the durable state lock."""
+         if value.get("inflight") or runtime.status["quarantined"]:
+             return {"status": "host_quarantined", "executed": False, "verified": False, "routing": None}
+@@ -1465,6 +1465,14 @@ class LiveSpatialService:
+         if segment_step is not None:
+             from .goal_execution import record_step_result
+             record_step_result(segment_step, result)
++        if _completion is not None:
++            try:
++                _completion(result)
++            except BaseException:
++                # A planner/accounting failure after the setter cannot erase
++                # its known receipt or make a retry look unsubmitted.
++                self._save(value, runtime)
++                raise
+         # Uncertain results keep the durable journal as well as quarantine.
+         self._save(value, runtime)
+         self.record_event("transform", session_id=session_id, status=result["status"],
+@@ -1489,11 +1497,17 @@ class LiveSpatialService:
+ 
+     @_request('clearance_segment')
+     def run_clearance_segment(self, session_id, request_id, request, *, execute=False,
+-                              include_image=False, task_context=None):
++                              include_image=False, task_context=None,
++                              _initial_observation=None, _plan_handoff=None):
+         """Preview or execute one bounded goal; model-selected IDs are not authority."""
+         from .goal_execution import run_clearance_segment
++        internal = {}
++        if _initial_observation is not None:
++            internal['_initial_observation'] = _initial_observation
++        if _plan_handoff is not None:
++            internal['_plan_handoff'] = _plan_handoff
+         return run_clearance_segment(self, session_id, request_id, request,
+-                                     execute=execute, include_image=include_image)
++            execute=execute, include_image=include_image, **internal)
+ 
+     @_request('goal_supervision')
+     def goal_supervision(self, operation, goal_id, session_id=None, *,
+@@ -1505,13 +1519,15 @@ class LiveSpatialService:
+ 
+     @_request('supervised_clearance_segment')
+     def run_supervised_clearance_segment(self, goal_id, session_id, request_id,
+-                                         request, *, include_image=False):
++                                         request, *, include_image=False, _plan_handoff=None):
+         """Trusted caller still owns task authorization and fresh review."""
+         from .goal_supervision import _context
+         _context(self)
+         from .goal_execution import run_clearance_segment
++        internal = {} if _plan_handoff is None else {'_plan_handoff': _plan_handoff}
+         return run_clearance_segment(self, session_id, request_id, request,
+-            execute=True, include_image=include_image, _parent_goal_id=goal_id)
++            execute=True, include_image=include_image, _parent_goal_id=goal_id,
++            **internal)
+ 
+     @_request('status')
+     def status(self):
+diff --git a/human_eye_plugin/support_plane_candidate.py b/human_eye_plugin/support_plane_candidate.py
+index 95c20b9..91bde84 100644
+--- a/human_eye_plugin/support_plane_candidate.py
++++ b/human_eye_plugin/support_plane_candidate.py
+@@ -21,7 +21,7 @@ import math
+ import numpy as np
+ 
+ from human_eye_module1_operators import MeshEntity3D
+-from .auto_router import _validated_scene
++from .auto_router import _ValidatedObservation, _validated_scene
+ from .geometry_safety import measure_pair_geometry, work_budget_status
+ from .rigid_frame import pair_rigid_frame_status
+ 
+@@ -276,9 +276,15 @@ def _certificate_from_rationals(fv, rv, rf, index):
+     return certificate
+ 
+ 
+-def _strict(mesh_a, mesh_b, certificate):
++def _strict(mesh_a, mesh_b, certificate, *, _observation=None):
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for measurement reuse')
++        _observation._require_scene(_observation.scene)
+     try:
+-        measured = measure_pair_geometry(mesh_a, mesh_b, need_clearance=True)
++        measured = (measure_pair_geometry(mesh_a, mesh_b, need_clearance=True)
++            if _observation is None else _observation._measure_pair(
++                mesh_a, mesh_b, measure_pair_geometry, need_clearance=True))
+     except (ValueError, IndexError, TypeError, AttributeError, FloatingPointError, OverflowError) as exc:
+         raise ArithmeticError('strict_pair_measurement_failed') from exc
+     metric = measured.get('signed_clearance_m')
+@@ -302,7 +308,8 @@ def _failed(result, code, status='unsupported'):
+     return result
+ 
+ 
+-def solve_support_plane_candidate(scene, request, *, expected_feature_signature=None):
++def solve_support_plane_candidate(scene, request, *, expected_feature_signature=None,
++                                  _observation=None):
+     """Propose one bounded translation from a snapshot; never execute it.
+ 
+     The contact-feature signature binds reference geometry, selected triangle,
+@@ -310,6 +317,10 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
+     not a focal shape/instance/external-edit proof or a cross-step write gate.
+     """
+     request = validate_support_plane_request(request)
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
+     if expected_feature_signature is not None and (
+             not isinstance(expected_feature_signature, str) or len(expected_feature_signature) != 64
+             or any(c not in '0123456789abcdef' for c in expected_feature_signature)):
+@@ -332,7 +343,11 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
+     limit_reason = _preflight(scene, request)
+     if limit_reason:
+         return _failed(result, limit_reason, 'unknown')
+-    normalized, meshes, fingerprint = _validated_scene(scene)
++    if _observation is None:
++        normalized, meshes, fingerprint = _validated_scene(scene)
++    else:
++        normalized, meshes, fingerprint = (
++            _observation.scene, _observation.meshes, _observation.fingerprint)
+     result.update(scene_revision=normalized['revision'], scene_fingerprint=fingerprint,
+                   scene_source=normalized['source'])
+     by_id = {m.object_id: m for m in meshes}
+@@ -349,7 +364,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
+     try:
+         certificate = _certificate(focal, reference, index)
+         result['current_certificate'] = certificate
+-        measured, agreement = _strict(focal, reference, certificate)
++        strict_options = {} if _observation is None else {'_observation': _observation}
++        measured, agreement = _strict(focal, reference, certificate, **strict_options)
+         metric = float(measured['signed_clearance_m'])
+         features = {'reference_id': reference.object_id, 'reference_vertices': reference.vertices.tolist(),
+             'reference_faces': reference.faces.tolist(), 'reference_triangle_index': index,
+@@ -468,7 +484,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
+                     if trial_certificate['support_vertex_indices'] != certificate['support_vertex_indices']:
+                         trial['reason'] = 'contact_feature_changed_after_rounded_translation'
+                         continue
+-                    trial_measurement, trial_agreement = _strict(trial_mesh, reference, trial_certificate)
++                    trial_measurement, trial_agreement = _strict(
++                        trial_mesh, reference, trial_certificate, **strict_options)
+                 except (ArithmeticError, FloatingPointError, OverflowError) as exc:
+                     # A numerical/resource/unsupported failure is not a
+                     # reason to search around an unproved geometry domain.
+@@ -495,7 +512,8 @@ def solve_support_plane_candidate(scene, request, *, expected_feature_signature=
+             if candidate_measurement is None:
+                 return _failed(result, 'contact_feature_changed_after_rounded_translation', 'feature_changed')
+         if candidate_measurement is None:
+-            candidate_measurement, after_agreement = _strict(candidate_mesh, reference, candidate_certificate)
++            candidate_measurement, after_agreement = _strict(
++                candidate_mesh, reference, candidate_certificate, **strict_options)
+         actual_gap = float(candidate_measurement['signed_clearance_m'])
+         predicted = certificate['plane_clearance_m']+clipped_scalar*derivative
+         if not math.isfinite(predicted) or abs(actual_gap-predicted) > max(agreement, after_agreement):
+diff --git a/human_eye_plugin/support_plane_discovery.py b/human_eye_plugin/support_plane_discovery.py
+index 9522c14..481d3a8 100644
+--- a/human_eye_plugin/support_plane_discovery.py
++++ b/human_eye_plugin/support_plane_discovery.py
+@@ -73,7 +73,7 @@ def _failed(result, code, *, status='unsupported'):
+     return result
+ 
+ 
+-def discover_support_planes(scene, focal_id, reference_id, request):
++def discover_support_planes(scene, focal_id, reference_id, request, *, _observation=None):
+     """Scan bounded original reference triangles using one exact pair preparation.
+ 
+     Each admitted group has an exact global support plane and an attained foot
+@@ -104,16 +104,24 @@ def discover_support_planes(scene, focal_id, reference_id, request):
+         'selector_scope': 'current_scene_pair_selection_not_authorization_or_cross_rebuild_identity',
+         'reason_codes': []}
+     # Lazy imports are essential: query_policy is itself imported by auto_router.
+-    from .auto_router import _validated_scene
++    from .auto_router import _ValidatedObservation, _validated_scene
+     from .rigid_frame import pair_rigid_frame_status
+     from .support_plane_candidate import (
+         _preflight, _rational_mesh, _certificate_from_rationals, _strict,
+         _sub, _dot, _cross, MIN_DIRECTIONAL_DERIVATIVE,
+     )
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
+     limit_reason = _preflight(scene, {'focal_id': focal_id, 'reference_id': reference_id})
+     if limit_reason:
+         return _failed(result, limit_reason, status='unknown')
+-    normalized, meshes, fingerprint = _validated_scene(scene)
++    if _observation is None:
++        normalized, meshes, fingerprint = _validated_scene(scene)
++    else:
++        normalized, meshes, fingerprint = (
++            _observation.scene, _observation.meshes, _observation.fingerprint)
+     result.update(scene_revision=normalized['revision'], scene_fingerprint=fingerprint)
+     if len(normalized['revision']) > 256:
+         return _failed(result, 'selection_binding_revision_outside_supported_range', status='unknown')
+@@ -160,7 +168,8 @@ def discover_support_planes(scene, focal_id, reference_id, request):
+         eligible = [group for group in groups.values() if group['certificate'] is not None]
+         if not eligible:
+             return _failed(result, 'no_exact_support_plane_witness')
+-        measured, _ = _strict(focal, reference, eligible[0]['certificate'])
++        strict_options = {} if _observation is None else {'_observation': _observation}
++        measured, _ = _strict(focal, reference, eligible[0]['certificate'], **strict_options)
+         metric = float(measured['signed_clearance_m'])
+         extent = max(float((mesh.vertices.max(axis=0)-mesh.vertices.min(axis=0)).max())
+                      for mesh in (focal, reference))
+diff --git a/human_eye_plugin/task_verification.py b/human_eye_plugin/task_verification.py
+index fba0527..829315a 100644
+--- a/human_eye_plugin/task_verification.py
++++ b/human_eye_plugin/task_verification.py
+@@ -12,7 +12,7 @@ import math
+ import numpy as np
+ 
+ from human_eye_module1_operators import SpatialAnomalySniffer
+-from .auto_router import _validated_scene
++from .auto_router import _ValidatedObservation, _validated_scene
+ from .geometry_safety import measure_pair_geometry
+ 
+ 
+@@ -131,7 +131,7 @@ def _unrounded_contact_angles(focal, reference, probe, symmetry_order):
+             "tangent_yaw_mismatch_deg": abs(math.degrees(yaw))}
+ 
+ 
+-def evaluate_spatial_goal(scene, goal):
++def evaluate_spatial_goal(scene, goal, *, _observation=None):
+     """Return a conservative pairwise goal assessment without changing the host.
+ 
+     Invalid input/identity raises ValueError.  Unsupported or invalid geometry,
+@@ -142,8 +142,16 @@ def evaluate_spatial_goal(scene, goal):
+     use the strict unrounded measurement, never the display probe's flush value.
+     """
+     normalized_goal = _goal(goal)
++    if _observation is not None:
++        if type(_observation) is not _ValidatedObservation:
++            raise ValueError('Validated observation required for scene reuse')
++        _observation._require_scene(scene)
+     try:
+-        normalized_scene, meshes, fingerprint = _validated_scene(scene)
++        if _observation is None:
++            normalized_scene, meshes, fingerprint = _validated_scene(scene)
++        else:
++            normalized_scene, meshes, fingerprint = (
++                _observation.scene, _observation.meshes, _observation.fingerprint)
+     except (TypeError, ValueError) as exc:
+         raise ValueError("Invalid spatial scene: " + str(exc)) from exc
+     by_id = {mesh.object_id: mesh for mesh in meshes}
+@@ -164,7 +172,9 @@ def evaluate_spatial_goal(scene, goal):
+         "reason_codes": [],
+     }
+     try:
+-        geometry = measure_pair_geometry(focal, reference, need_clearance=True)
++        geometry = (measure_pair_geometry(focal, reference, need_clearance=True)
++            if _observation is None else _observation._measure_pair(
++                focal, reference, measure_pair_geometry, need_clearance=True))
+     except Exception as exc:
+         result["reason_codes"] = ["geometry_measurement_failed"]
+         result["error_type"] = type(exc).__name__
