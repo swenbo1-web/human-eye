@@ -1717,6 +1717,38 @@ class HumanEyeAutoRouter:
                           "expected_scene_fingerprint": state["fingerprint"]}, ensure_ascii=False))
         return result
 
+    def _cleanup_observation_state(self, item, fingerprint):
+        retry = _attention_retry_state(item.get('attention_retry'), self._clock())
+        if retry is None:
+            if 'attention_retry' in item:
+                item['observation'] = None
+            item.pop('attention_retry', None)
+        else:
+            item['attention_retry'] = retry
+        obs = item.get("observation")
+        if obs and (obs.get('contract_revision') != OBSERVATION_CONTRACT_REVISION
+                    or obs.get("fingerprint") != fingerprint or not
+                    0 <= self._clock() - obs["created"] <= self.observation_ttl_s):
+            item["observation"] = None
+        raw_refill = item.get('refill_retry')
+        # The most recent observation may be text-only, which must not
+        # reset a visual recovery episode. Bind the record to the actual
+        # image request key when that request arrives, before any reuse.
+        refill = _refill_retry_state(raw_refill, self._clock(),
+            key=raw_refill.get('key') if type(raw_refill) is dict else None)
+        if refill is None:
+            if 'refill_retry' in item:
+                item['observation'] = None
+            item.pop('refill_retry', None)
+        else:
+            item['refill_retry'] = refill
+
+    def _cleanup_observations(self):
+        """Apply restore-time expiry to trusted memory without rebuilding scenes."""
+        with self._lock:
+            for item in self._sessions.values():
+                self._cleanup_observation_state(item, item['fingerprint'])
+
     def export_state(self) -> dict:
         """Trusted local persistence only; not a model-writable authorization token."""
         with self._lock:
@@ -1738,30 +1770,7 @@ class HumanEyeAutoRouter:
             if fingerprint != state.get("fingerprint"):
                 raise ValueError("Persisted scene fingerprint mismatch")
             item = copy.deepcopy(state); item["scene"] = scene
-            retry = _attention_retry_state(item.get('attention_retry'), self._clock())
-            if retry is None:
-                if 'attention_retry' in item:
-                    item['observation'] = None
-                item.pop('attention_retry', None)
-            else:
-                item['attention_retry'] = retry
-            obs = item.get("observation")
-            if obs and (obs.get('contract_revision') != OBSERVATION_CONTRACT_REVISION
-                        or obs.get("fingerprint") != fingerprint or not
-                        0 <= self._clock() - obs["created"] <= self.observation_ttl_s):
-                item["observation"] = None
-            raw_refill = item.get('refill_retry')
-            # The most recent observation may be text-only, which must not
-            # reset a visual recovery episode. Bind the record to the actual
-            # image request key when that request arrives, before any reuse.
-            refill = _refill_retry_state(raw_refill, self._clock(),
-                key=raw_refill.get('key') if type(raw_refill) is dict else None)
-            if refill is None:
-                if 'refill_retry' in item:
-                    item['observation'] = None
-                item.pop('refill_retry', None)
-            else:
-                item['refill_retry'] = refill
+            self._cleanup_observation_state(item, fingerprint)
             restored[sid] = item
         with self._lock:
             self._sessions = restored

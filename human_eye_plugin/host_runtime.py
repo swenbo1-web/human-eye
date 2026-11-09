@@ -465,6 +465,12 @@ class GuardedHostRuntime:
                 return self._result('observation_required', routing=route, allow_action=False, operation='preview')
             return self._preview_on_captured_scene(scene, session_id, action)
 
+    def _discard_prepared_session(self, session_id: str) -> None:
+        """Invalidate a task's action context without restoring trusted geometry."""
+        with self._lock:
+            self.router._cleanup_observations()
+            self._sessions.pop(session_id, None)
+
     def export_state(self) -> dict:
         """Persist only to host-owned local storage, never model input."""
         with self._lock:

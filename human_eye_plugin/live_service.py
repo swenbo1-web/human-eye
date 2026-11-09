@@ -1313,9 +1313,7 @@ class LiveSpatialService:
                     runtime.router.scene_cache, self._check_request_budget, diagnostics=work)
             # This read creates no action token. Drop a prior same-session
             # prepare context, just as an unpaired legacy overview does.
-            state = runtime.export_state()
-            state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
-            runtime.import_state(state)
+            runtime._discard_prepared_session(session_id)
             result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
             if source_check is not None and source_check['status'] == 'loaded_generation':
                 result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
