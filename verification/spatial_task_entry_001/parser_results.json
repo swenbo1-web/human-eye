@@ -1,0 +1,907 @@
+{
+  "checks": 40,
+  "rows": [
+    {
+      "name": "new_minimum",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ]
+      },
+      "expected": true,
+      "schema": "dedicated",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "new_one_aabb",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "include_aabb": true
+      },
+      "expected": true,
+      "schema": "dedicated",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "new_extra_include_image",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "include_image": false
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_extra_query",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "query": {}
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_extra_mode",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "mode": "task"
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_extra_requested_facts",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "requested_facts": []
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_extra_session_id",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "session_id": "x"
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_extra_task_context",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "task_context": {}
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "Unexpected tool arguments"
+    },
+    {
+      "name": "new_aabb_0",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "include_aabb": 0
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "include_aabb must be boolean"
+    },
+    {
+      "name": "new_aabb_1",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "include_aabb": 1
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "include_aabb must be boolean"
+    },
+    {
+      "name": "new_aabb_None",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "include_aabb": null
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "include_aabb must be boolean"
+    },
+    {
+      "name": "new_aabb_'false'",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ],
+        "include_aabb": "false"
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "include_aabb must be boolean"
+    },
+    {
+      "name": "new_candidates_zero",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": []
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task candidates must contain 1..3 explicit selectors"
+    },
+    {
+      "name": "new_candidates_four",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "0"
+          },
+          {
+            "id": "1"
+          },
+          {
+            "id": "2"
+          },
+          {
+            "id": "3"
+          }
+        ]
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task candidates must contain 1..3 explicit selectors"
+    },
+    {
+      "name": "new_candidates_none",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        },
+        "candidates": null
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task candidates must contain 1..3 explicit selectors"
+    },
+    {
+      "name": "new_dual_selector",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "name": "a",
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ]
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes"
+    },
+    {
+      "name": "new_missing_target",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ]
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task selector must contain exactly one nonempty id or name of at most 256 UTF-8 bytes"
+    },
+    {
+      "name": "new_missing_candidates",
+      "tool": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "id": "a"
+        }
+      },
+      "expected": false,
+      "schema": "dedicated",
+      "actual": false,
+      "reason": "task candidates must contain 1..3 explicit selectors"
+    },
+    {
+      "name": "frozen_explicit_false",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "name": "Object_01"
+          },
+          "candidates": [
+            {
+              "name": "Object_02"
+            },
+            {
+              "name": "Object_03"
+            },
+            {
+              "name": "Object_04"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "frozen_omitted_image",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "name": "Object_01"
+          },
+          "candidates": [
+            {
+              "name": "Object_02"
+            },
+            {
+              "name": "Object_03"
+            },
+            {
+              "name": "Object_04"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "frozen_explicit_true",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "name": "Object_01"
+          },
+          "candidates": [
+            {
+              "name": "Object_02"
+            },
+            {
+              "name": "Object_03"
+            },
+            {
+              "name": "Object_04"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": true
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "frozen_extra_focal",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "name": "Object_01"
+          },
+          "candidates": [
+            {
+              "name": "Object_02"
+            },
+            {
+              "name": "Object_03"
+            },
+            {
+              "name": "Object_04"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "focal_id": "Object_01"
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "task_focal_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "focal_id": "a"
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "task_null_focal_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "focal_id": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "focal_id must be a nonempty string"
+    },
+    {
+      "name": "overview_focal_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "focal_id": "a"
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "overview_null_focal_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "focal_id": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "focal_id must be a nonempty string"
+    },
+    {
+      "name": "task_reference_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "reference_id": "b"
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "task_null_reference_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "reference_id": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "reference_id must be a nonempty string"
+    },
+    {
+      "name": "overview_reference_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "reference_id": "b"
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "overview_null_reference_id",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "reference_id": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "reference_id must be a nonempty string"
+    },
+    {
+      "name": "task_goal",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "goal": {
+          "target_clearance_m": 1.0,
+          "clearance_tolerance_m": 0.0
+        }
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "task_null_goal",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "goal": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "goal must be an object"
+    },
+    {
+      "name": "overview_goal",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "goal": {
+          "target_clearance_m": 1.0,
+          "clearance_tolerance_m": 0.0
+        }
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "overview_null_goal",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "goal": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "goal must be an object"
+    },
+    {
+      "name": "task_scene_delta",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "scene_delta": {}
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    },
+    {
+      "name": "task_null_scene_delta",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        },
+        "include_image": false,
+        "scene_delta": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "scene_delta must be an object"
+    },
+    {
+      "name": "overview_scene_delta",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "scene_delta": {}
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "overview_null_scene_delta",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        },
+        "scene_delta": null
+      },
+      "expected": false,
+      "schema": "legacy",
+      "actual": false,
+      "reason": "scene_delta must be an object"
+    },
+    {
+      "name": "legacy_pair_valid",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "pair_relation"
+          ]
+        },
+        "include_image": false
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    },
+    {
+      "name": "overview_default_image",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "query": {
+          "mode": "overview"
+        }
+      },
+      "expected": true,
+      "schema": "legacy",
+      "actual": true,
+      "reason": null
+    }
+  ],
+  "passed": true
+}
