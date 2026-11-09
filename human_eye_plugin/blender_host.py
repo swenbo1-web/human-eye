@@ -1508,7 +1508,7 @@ class BlenderSceneHost:
                 result['timings_ns']['scope'] = time.perf_counter_ns()-start
                 stage = 'before_capture';mark = time.perf_counter_ns()
                 result['work']['source_capture_attempts'] += 1
-                before = bound.capture(_export_static_patch=False)
+                before = bound.capture(_export_static_patch=False, _prepare_expert=False)
                 result['work']['source_captures'] += 1
                 result['timings_ns']['source_before'] = time.perf_counter_ns()-mark
                 static = bound._static;scale = self._scale()
@@ -1573,7 +1573,7 @@ class BlenderSceneHost:
                 result['executed'] = True
                 stage = 'after_capture';mark = time.perf_counter_ns()
                 result['work']['source_capture_attempts'] += 1
-                after = bound.capture(_export_static_patch=False)
+                after = bound.capture(_export_static_patch=False, _prepare_expert=False)
                 result['work']['source_captures'] += 1
                 result['timings_ns']['source_after'] = time.perf_counter_ns()-mark
                 result['after_source'] = after['source'];audit['after_capture'] = after

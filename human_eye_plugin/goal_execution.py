@@ -725,7 +725,6 @@ def run_arm_axial_step(service, spec):
     lock_started = time.perf_counter_ns()
     with service._locked() as (value, runtime):
         timings = {'state_lock_restore': time.perf_counter_ns()-lock_started}
-        validate_arm_axial_ledger(value)
         records = value.setdefault('arm_axial_events', {'schema_version': '1.0', 'records': {}})['records']
         previous = records.get(event)
         if previous is not None:

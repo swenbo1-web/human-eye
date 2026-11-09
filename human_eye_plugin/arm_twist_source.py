@@ -187,7 +187,7 @@ class BoundArmPatch:
             sections=[[local[i] for i in section] for section in self._sections])
         return patch,raw
 
-    def capture(self,*,_export_static_patch=True):
+    def capture(self,*,_export_static_patch=True,_prepare_expert=True):
         host=self._source.host;host._main_thread()
         with host.transaction():
             graph=host._depsgraph();scale=host._scale()
@@ -199,8 +199,14 @@ class BoundArmPatch:
                 patch,witness=self._read_static(mesh,rig,bones,relative,scale)
             changed=(not tracked or binding!=self._binding or patch!=self._static or witness!=self._witness)
             if changed:
+                prepared=None;self._prepared=None
+                if not _prepare_expert:
+                    from .arm_twist_expert import _parse_patch
+                    _parse_patch(patch,dynamic=False)
+            if _prepare_expert and prepared is None:
                 from .arm_twist_expert import prepare_patch
                 prepared=prepare_patch(patch)
+                self._work['preparations']+=1
             current=[]
             for index in self._indices:
                 current.append(_point(current_relative,em.data.vertices[index].co,scale));self._work['current_vertices']+=1
@@ -219,7 +225,7 @@ class BoundArmPatch:
             _need(version==(state.instance_id,state.epoch,state.revision,state.serial),'source_changed_during_capture')
             self._static=patch;self._witness=witness;self._prepared=prepared
             self._binding=binding;self._notice=deepcopy(notice)
-            if changed:self._static_revision+=1;self._work['preparations']+=1
+            if changed:self._static_revision+=1
             self._work['captures']+=1
             source=dict(instance_id=state.instance_id,epoch=state.epoch,revision=state.revision,
                 static_revision=self._static_revision,selection_key=self._selection_key,
