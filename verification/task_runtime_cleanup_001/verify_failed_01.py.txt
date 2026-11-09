@@ -1,0 +1,246 @@
+"""Bounded memory-host equivalence checks against one fixed source tree."""
+from __future__ import annotations
+import argparse
+from collections import Counter
+from contextlib import ExitStack
+import copy
+import hashlib
+import io
+import json
+from pathlib import Path
+import socket
+import subprocess
+import sys
+import tempfile
+import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--source', required=True)
+parser.add_argument('--label', choices=('baseline', 'candidate'), required=True)
+parser.add_argument('--output', required=True)
+args = parser.parse_args()
+SOURCE = Path(args.source).resolve()
+OUT = Path(args.output).resolve()
+sys.path.insert(0, str(SOURCE))
+from human_eye_plugin import auto_router as ar, host_runtime as hr, live_service as ls
+from human_eye_plugin import live_spatial_mcp as mcp, task_query as tq
+from human_eye_plugin.refill_recovery import record_budget_failure
+from human_eye_plugin.runtime_identity import runtime_identity
+from verification.test_live_service import SelfLockingHost
+
+QUERY = {'mode': 'task', 'target': {'id': 'part'}, 'candidates': [{'id': 'base'}],
+         'requested_facts': ['closed_solid_relation', 'surface_proximity', 'aabb']}
+ROWS = []
+
+def encoded(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
+
+def normalize(value):
+    if isinstance(value, dict):
+        return {key: normalize(item) for key, item in value.items()
+                if key not in ('trace_id', 'runtime_source_sha256')}
+    if isinstance(value, list):
+        return [normalize(item) for item in value]
+    return value
+
+def forbidden(*a, **kw):
+    raise AssertionError('Network, external host and mutation forbidden')
+
+class Host(SelfLockingHost):
+    def apply_transform(self, *a, **kw):
+        self.calls += 1
+        forbidden()
+
+class Checks(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.base = Path(self.temp.name)
+        self.clock = SimpleNamespace(value=1000.)
+        self.clock_patch = patch.object(ar, 'time', SimpleNamespace(time=lambda: self.clock.value))
+        self.clock_patch.start(); self.addCleanup(self.clock_patch.stop)
+        config = self.base / 'connector.json'
+        config.write_bytes(encoded({'schema_version': '1.0', 'project_root': str(SOURCE),
+            'state_file': str(self.base / 'state.json'), 'audit_file': str(self.base / 'audit.jsonl'),
+            'quad_size': 64, 'max_sessions': 4, 'enabled': True}))
+        self.host = Host()
+        self.service = ls.LiveSpatialService(config, host=self.host)
+        for sid in ('history_a', 'history_b', 'current'):
+            self.host.scene['revision'] = 'scene_' + sid
+            result = self.service.observe(sid, focal_id='part', reference_id='base', include_image=False)
+            self.assertEqual(result['status'], 'observed')
+        self.before = self.state()
+
+    def state(self):
+        return json.loads(self.service.state_path.read_bytes())
+
+    def run_task(self, end=1000.):
+        counts = Counter()
+        original = {'historical_validate': ar._validated_scene, 'current_validate': ls._validated_scene,
+                    'task_result': tq.task_result, 'import': hr.GuardedHostRuntime.import_state,
+                    'export': hr.GuardedHostRuntime.export_state}
+        def counted(key):
+            def call(*a, **kw):
+                counts[key] += 1
+                result = original[key](*a, **kw)
+                if key == 'task_result': self.clock.value = end
+                return result
+            return call
+        capture_before = self.host.captures
+        with ExitStack() as stack:
+            for obj, name, key in ((ar, '_validated_scene', 'historical_validate'),
+                (ls, '_validated_scene', 'current_validate'), (tq, 'task_result', 'task_result'),
+                (hr.GuardedHostRuntime, 'import_state', 'import'),
+                (hr.GuardedHostRuntime, 'export_state', 'export')):
+                stack.enter_context(patch.object(obj, name, counted(key)))
+            answer = self.service.observe('current', query=copy.deepcopy(QUERY), include_image=False)
+        self.assertEqual(answer['status'], 'observed')
+        self.assertEqual(counts['historical_validate'], 6 if args.label == 'baseline' else 3)
+        self.assertEqual(counts['current_validate'], 1)
+        self.assertEqual(counts['task_result'], 1)
+        self.assertEqual(counts['import'], 2 if args.label == 'baseline' else 1)
+        self.assertEqual(counts['export'], 2 if args.label == 'baseline' else 1)
+        self.assertEqual(self.host.captures - capture_before, 1)
+        self.assertEqual(self.host.calls, 0)
+        return answer, counts
+
+    def equivalence(self, end):
+        answer, counts = self.run_task(end)
+        after = self.state()
+        expected = copy.deepcopy(self.before)
+        expected['runtime']['sessions'] = [row for row in expected['runtime']['sessions'] if row[0] != 'current']
+        if end > 1120. or end < 1000.:
+            for _, item in expected['runtime']['router']['sessions']:
+                item['observation'] = None
+        self.assertEqual(after, expected)
+        ROWS.append({'test': self.id(), 'end_clock': end, 'counts': dict(counts),
+                     'state': after, 'result': normalize(answer)})
+
+    def test_stable_root_case(self): self.equivalence(1000.)
+    def test_cross_ttl_root_case(self): self.equivalence(1121.)
+    def test_ttl_inclusive_boundary(self): self.equivalence(1120.)
+    def test_clock_reversal(self): self.equivalence(999.)
+
+    def retry_case(self, end):
+        value = self.state()
+        for _, item in value['runtime']['router']['sessions']:
+            item['attention_retry'] = ar._attention_retry_record('a' * 64, 1000.)
+            item['refill_retry'] = record_budget_failure(None, key='b' * 64, now=1000., cost_ms=0.)
+        self.service.state_path.write_bytes(encoded(value))
+        self.before = value
+        answer, counts = self.run_task(end)
+        after = self.state()
+        expected = copy.deepcopy(value)
+        expected['runtime']['sessions'] = [row for row in expected['runtime']['sessions'] if row[0] != 'current']
+        if end > 1030. or end < 1000.:
+            for _, item in expected['runtime']['router']['sessions']:
+                item.pop('attention_retry'); item.pop('refill_retry'); item['observation'] = None
+        self.assertEqual(after, expected)
+        ROWS.append({'test': self.id(), 'end_clock': end, 'state': after, 'result': normalize(answer), 'counts': dict(counts)})
+
+    def test_retry_cooldown_valid(self): self.retry_case(1000.5)
+    def test_retry_due_records_retained(self): self.retry_case(1002.)
+    def test_retry_inclusive_boundary(self): self.retry_case(1030.)
+    def test_retry_episode_expired(self): self.retry_case(1030.001)
+    def test_retry_clock_reversal(self): self.retry_case(999.)
+
+    def test_pending_and_measurement_cache_preserved(self):
+        result = self.service.preview_action('history_a', {'focal_id': 'part',
+            'reference_id': 'base', 'translation': [0, 0, .05]}, include_image=False)
+        self.assertTrue(result['allow_action'], result)
+        self.before = self.state()
+        self.assertTrue(dict(self.before['runtime']['router']['sessions'])['history_a']['pending'])
+        cache = self.service._perception_cache
+        before_measurements = copy.deepcopy(cache._measurements)
+        self.equivalence(1000.)
+        self.assertIs(cache, self.service._perception_cache)
+        for key, item in before_measurements.items(): self.assertEqual(cache._measurements[key], item)
+
+    def test_initial_restore_rejects_corrupt_scene_and_fingerprint(self):
+        for field in ('source', 'fingerprint'):
+            with self.subTest(field=field):
+                value = copy.deepcopy(self.before)
+                item = value['runtime']['router']['sessions'][0][1]
+                if field == 'source': item['scene']['source'] = ''
+                else: item['fingerprint'] = 'bad'
+                self.service.state_path.write_bytes(encoded(value))
+                captures = self.host.captures
+                with self.assertRaises(ValueError): self.run_task()
+                self.assertEqual(self.host.captures, captures)
+                self.assertEqual(self.state(), value)
+
+    def test_quarantine_and_inflight_remain_blocked(self):
+        for kind in ('quarantine', 'inflight'):
+            value = copy.deepcopy(self.before)
+            if kind == 'quarantine':
+                value['runtime']['quarantine'] = {'reason': 'uncertain', 'last_checked_revision': 'scene_current'}
+            else:
+                value['inflight'] = {'operation_id': 'pending', 'session_id': 'history_a', 'started': 1000.}
+            self.service.state_path.write_bytes(encoded(value))
+            captures = self.host.captures
+            answer = self.service.observe('current', query=copy.deepcopy(QUERY), include_image=False)
+            self.assertEqual(answer['status'], 'host_quarantined')
+            self.assertEqual(self.host.captures, captures)
+            self.assertEqual(self.state(), value)
+
+    def failed_delivery(self, stage):
+        server = mcp.LiveSpatialMCPServer(self.service, 'current', spatial_task_only=True)
+        request = {'jsonrpc': '2.0', 'id': 7, 'method': 'tools/call', 'params': {
+            'name': 'human_eye_spatial_relations', 'arguments': {'target': {'id': 'part'}, 'candidates': [{'id': 'base'}]}}}
+        original_encode = mcp._tool_result
+        original_check = self.service._check_request_budget
+        def encode(*a, **kw):
+            if not kw.get('is_error'): raise ValueError('forced encoding failure')
+            return original_encode(*a, **kw)
+        def check(name):
+            if name == 'before_task_publication': raise ValueError('forced publication failure')
+            return original_check(name)
+        captures = self.host.captures
+        with (patch.object(mcp, '_tool_result', side_effect=encode) if stage == 'encoding' else
+              patch.object(self.service, '_check_request_budget', side_effect=check)):
+            reply = server.handle_jsonrpc_message(request)
+        self.assertTrue(reply['result']['isError'], reply)
+        self.assertEqual(reply['id'], 7)
+        self.assertEqual(self.host.captures - captures, 1)
+        expected = copy.deepcopy(self.before)
+        expected['runtime']['sessions'] = [row for row in expected['runtime']['sessions'] if row[0] != 'current']
+        self.assertEqual(self.state(), expected)
+        self.assertEqual(self.host.calls, 0)
+        ROWS.append({'test': self.id(), 'state': self.state(), 'reply': normalize(reply)})
+
+    def test_encoding_failure_keeps_saved_invalidation(self): self.failed_delivery('encoding')
+    def test_publication_failure_keeps_saved_invalidation(self): self.failed_delivery('publication')
+
+    @unittest.skipIf(args.label == 'baseline', 'new in-memory method only')
+    def test_in_memory_cleanup_keeps_objects_and_does_not_revalidate(self):
+        with self.service._locked() as (_, runtime):
+            router = runtime.router
+            sessions = {key: value for key, value in router._sessions.items()}
+            cache = router.scene_cache
+            before = runtime.export_state()
+            with patch.object(ar, '_validated_scene', side_effect=AssertionError('duplicate geometry validation')):
+                runtime._discard_prepared_session('current')
+                runtime._discard_prepared_session('current')
+            self.assertIs(runtime.router, router)
+            self.assertIs(router.scene_cache, cache)
+            self.assertTrue(all(router._sessions[key] is value for key, value in sessions.items()))
+            before['sessions'] = [row for row in before['sessions'] if row[0] != 'current']
+            self.assertEqual(runtime.export_state(), before)
+
+if __name__ == '__main__':
+    OUT.mkdir(parents=True, exist_ok=True)
+    log = io.StringIO()
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(Checks)
+    with patch.object(socket, 'socket', forbidden), patch.object(socket, 'create_connection', forbidden), patch.object(subprocess, 'Popen', forbidden):
+        result = unittest.TextTestRunner(stream=log, verbosity=2).run(suite)
+    identity = runtime_identity()
+    value = {'label': args.label, 'source': str(SOURCE), 'source_sha256': identity['source_sha256'],
+             'source_files': identity['source_files'], 'testsRun': result.testsRun, 'failures': len(result.failures),
+             'errors': len(result.errors), 'skipped': len(result.skipped), 'rows': ROWS,
+             'script_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+    (OUT / (args.label + '_checks.json')).write_bytes((json.dumps(value, indent=2) + '\n').encode())
+    (OUT / (args.label + '_checks.log')).write_text(log.getvalue(), encoding='utf8')
+    print(log.getvalue())
+    sys.exit(0 if result.wasSuccessful() else 1)
