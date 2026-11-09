@@ -15,6 +15,7 @@ socket failed before any request could be sent; the failing call is not retried.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import base64
 import errno
 import hashlib
 import ipaddress
@@ -28,15 +29,18 @@ import threading
 import time
 from typing import Any, Iterator
 import uuid
+import zlib
 
 from .blender_process import (HostRemoteError, HostTransportError, NATIVE_OBSERVATION_PROTOCOL,
     _validate_native_observation_capabilities, _validate_native_observation_request)
 from .blender_host import PREWRITE_REFUSAL_PROTOCOL, validate_prewrite_refusal
+from .scene_residency import SceneDeltaDecoder
 
 
 RPC_PREFIX = "HUMAN_EYE_BLENDER_MCP:"
 PROTOCOL_VERSION = "1.0"
 _MAX_REQUEST_BYTES = 32 * 1024
+_MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
@@ -156,6 +160,16 @@ class BlenderMCPHost:
         if len(source_bytes)>512*1024:
             raise ValueError('Readonly host source exceeds its fixed connector bound')
         self._readonly_host_source_sha256 = hashlib.sha256(source_bytes).hexdigest()
+        helper_source = source.with_name('scene_residency.py')
+        helper_bytes = helper_source.read_bytes()
+        if len(helper_bytes) > 128 * 1024:
+            raise ValueError('Scene residency helper exceeds its connector bound')
+        self._resident_sources = ((str(helper_source), base64.b64encode(zlib.compress(helper_bytes)).decode('ascii')),
+                                  (str(source), base64.b64encode(zlib.compress(source_bytes)).decode('ascii')))
+        self._resident_tag = hashlib.sha256(source_bytes + helper_bytes).hexdigest()
+        self._resident_slot = '_human_eye_mcp_resident_' + hashlib.sha256(str(root).encode('utf8')).hexdigest()[:20]
+        self._resident_ready = False
+        self._scene_decoder = SceneDeltaDecoder()
         self.host, self.port, self.timeout_s = str(address), port, float(timeout_s)
         self._lock = threading.RLock()
         self._closed = False
@@ -385,173 +399,105 @@ class BlenderMCPHost:
 
     def _code(self, command, params, request_id):
         if command in _STRUCTURE_COMMANDS:
-            return self._structure_code(command,params,request_id)
+            return self._structure_code(command, params, request_id)
         if command in _OBSERVATION_COMMANDS:
-            return self._observation_code(command,params,request_id)
+            return self._observation_code(command, params, request_id)
         if command in {'capture_evidence', 'motion_begin', 'motion_status', 'motion_end'}:
             return self._supervision_code(command, params, request_id)
-        # JSON is a Python string literal, never interpolated as executable code.
-        request = json.dumps({"id": request_id, "command": command, "params": params},
-                             ensure_ascii=True, allow_nan=False, separators=(",", ":"))
-        if len(request.encode("utf-8")) > 4096:
-            raise ValueError("Blender transform request exceeds 4096 bytes")
-        return "\n".join([
-            "import importlib.util as _iu, json as _json, hashlib as _hl",
-            "_request = _json.loads(" + repr(request) + ")",
-            "try:",
-            "    _spec = _iu.spec_from_file_location('_human_eye_blender_mcp_host', " + repr(str(self.source)) + ")",
-            "    if _spec is None or _spec.loader is None: raise RuntimeError('Cannot load trusted Blender host')",
-            "    _module = _iu.module_from_spec(_spec)",
-            "    with open("+repr(str(self.source))+",'rb') as _stream: _source_bytes=_stream.read(512*1024+1)",
-            "    if len(_source_bytes)>512*1024 or _hl.sha256(_source_bytes).hexdigest()!="+repr(self._readonly_host_source_sha256)+": raise ValueError('Host source differs from connector snapshot')",
-            "    exec(compile(_source_bytes,"+repr(str(self.source))+",'exec',dont_inherit=True),_module.__dict__)",
-            "    _host_options = {'bpy_module': bpy, 'execution_metadata': True}",
-            "    if getattr(_module.BlenderSceneHost, 'identity_metadata_protocol', None) == 'host-identity-v1-20261026': _host_options['identity_metadata'] = True",
-            "    _host = _module.BlenderSceneHost(**_host_options)",
-            "    if _request['command'] == 'capture':",
-            "        _result = _host.capture_scene()",
-            "    elif _request['command'] == 'apply':",
-            "        _result = _host.apply_transform(**_request['params'])",
-            "    else: raise ValueError('Unsupported fixed host command')",
+        if command not in {'capture', 'apply'}:
+            raise ValueError('Unsupported fixed host command')
+        return self._resident_code(command, params, request_id, 4096)
+
+    def _resident_setup(self):
+        # Source is frozen in this connector once. Only the first dispatch
+        # carries those bytes; warm RPCs only look up the live host.
+        lines = ["    import sys as _sys", "    _module = _sys.modules.get(" + repr(self._resident_slot) + ")"]
+        if not self._resident_ready:
+            helper, source = self._resident_sources
+            lines += [
+                "    if _module is None or getattr(_module, '_resident_tag', None) != " + repr(self._resident_tag) + ":",
+                "        import importlib.util as _iu, base64 as _b64, zlib as _zl",
+                "        if _module is not None:",
+                "            _old = getattr(_module, '_mcp_resident_host', None)",
+                "            if _old is not None: _old.close_residency()",
+                "        _helper_spec = _iu.spec_from_file_location('_human_eye_scene_residency', " + repr(helper[0]) + ")",
+                "        _helper = _iu.module_from_spec(_helper_spec)",
+                "        _sys.modules['_human_eye_scene_residency'] = _helper",
+                "        exec(compile(_zl.decompress(_b64.b64decode(" + repr(helper[1]) + ")), " + repr(helper[0]) + ", 'exec', dont_inherit=True), _helper.__dict__)",
+                "        _spec = _iu.spec_from_file_location(" + repr(self._resident_slot) + ", " + repr(source[0]) + ")",
+                "        _module = _iu.module_from_spec(_spec)",
+                "        _sys.modules[" + repr(self._resident_slot) + "] = _module",
+                "        exec(compile(_zl.decompress(_b64.b64decode(" + repr(source[1]) + ")), " + repr(source[0]) + ", 'exec', dont_inherit=True), _module.__dict__)",
+                "        _module._READONLY_LOADED_HOST_SHA256 = " + repr(self._readonly_host_source_sha256),
+                "        _module._mcp_resident_host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)",
+                "        _module._resident_tag = " + repr(self._resident_tag),
+            ]
+        lines += [
+            "    if _module is None or getattr(_module, '_resident_tag', None) != " + repr(self._resident_tag) + ": raise RuntimeError('Resident Blender host unavailable; reconnect with a new connector')",
+            "    _host = _module._mcp_resident_host",
+        ]
+        return lines
+
+    def _resident_code(self, command, params, request_id, limit):
+        request = json.dumps({'id': request_id, 'command': command, 'params': params},
+                             ensure_ascii=True, allow_nan=False, separators=(',', ':'))
+        if len(request.encode('utf8')) > limit:
+            raise ValueError('Fixed host request exceeds ' + str(limit) + ' bytes')
+        methods = {'capture': 'capture_scene', 'capture_task': 'capture_task_scene',
+                   'motion_begin': 'begin_motion_goal', 'motion_status': 'motion_goal_status',
+                   'motion_end': 'end_motion_goal', 'apply': 'apply_transform'}
+        method = methods.get(command, command)
+        lines = ['import json as _json, contextlib as _cl, io as _io',
+                 '_request = _json.loads(' + repr(request) + ')', 'try:']
+        lines += self._resident_setup()
+        if command == 'native_observation_capabilities':
+            lines.append("    _result = _host.native_observation_capabilities() if getattr(_host, 'native_observation_protocol', None) == " + repr(NATIVE_OBSERVATION_PROTOCOL) + " else {'supported': False}")
+        else:
+            lines += ['    with _cl.redirect_stdout(_io.StringIO()):',
+                      '        _result = getattr(_host, ' + repr(method) + ")(**_request['params'])"]
+        if command in {'capture', 'capture_task', 'capture_nearest_candidates'}:
+            baseline = json.dumps(self._scene_decoder.baseline(), allow_nan=False, separators=(',', ':'))
+            lines.append('    _result = _host.capture_delta(_result, _json.loads(' + repr(baseline) + '))')
+        lines += [
             "    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'result': _result}",
-            "except Exception as _exc:",
+            'except Exception as _exc:',
             "    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'error': {'type': type(_exc).__name__, 'message': str(_exc)[:2000], 'mutation_uncertain': _request['command'] == 'apply'}}",
-            "print(" + repr(RPC_PREFIX) + " + _json.dumps(_envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')))",
-        ])
+            'print(' + repr(RPC_PREFIX) + " + _json.dumps(_envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')))",
+        ]
+        return '\n'.join(lines)
 
     def _supervision_code(self, command, params, request_id):
-        """Separate fixed template; legacy capture/apply code bytes stay fixed."""
-        request = json.dumps({'id':request_id, 'command':command, 'params':params},
-                             ensure_ascii=True, allow_nan=False, separators=(',', ':'))
-        if len(request.encode('utf-8')) > 4096:
-            raise ValueError('Host supervision request exceeds 4096 bytes')
-        return '\n'.join([
-            'import importlib.util as _iu, json as _json, hashlib as _hl',
-            '_request = _json.loads(' + repr(request) + ')',
-            'try:',
-            "    _spec = _iu.spec_from_file_location('_human_eye_blender_mcp_host', " + repr(str(self.source)) + ')',
-            "    if _spec is None or _spec.loader is None: raise RuntimeError('Cannot load trusted Blender host')",
-            '    _module = _iu.module_from_spec(_spec)',
-            "    with open("+repr(str(self.source))+",'rb') as _stream: _source_bytes=_stream.read(512*1024+1)",
-            "    if len(_source_bytes)>512*1024 or _hl.sha256(_source_bytes).hexdigest()!="+repr(self._readonly_host_source_sha256)+": raise ValueError('Host source differs from connector snapshot')",
-            "    exec(compile(_source_bytes,"+repr(str(self.source))+",'exec',dont_inherit=True),_module.__dict__)",
-            '    _host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)',
-            "    if _request['command'] == 'capture_evidence':",
-            "        if _request['params']: raise ValueError('capture_evidence accepts no arguments')",
-            '        _result = _host.capture_evidence()',
-            "    elif _request['command'] == 'motion_begin':",
-            "        if set(_request['params']) != {'goal_id','focal_id','reference_id','limits'}: raise ValueError('Invalid motion_begin arguments')",
-            "        _result = _host.begin_motion_goal(**_request['params'])",
-            "    elif _request['command'] == 'motion_status':",
-            "        if set(_request['params']) != {'goal_id','after_event_count'}: raise ValueError('Invalid motion_status arguments')",
-            "        _result = _host.motion_goal_status(**_request['params'])",
-            "    elif _request['command'] == 'motion_end':",
-            "        if set(_request['params']) != {'goal_id'}: raise ValueError('Invalid motion_end arguments')",
-            "        _result = _host.end_motion_goal(**_request['params'])",
-            "    else: raise ValueError('Unsupported fixed supervision command')",
-            "    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'result': _result}",
-            'except Exception as _exc:',
-            "    _envelope = {'protocol_version':'1.0', 'id':_request['id'], 'error':{'type':type(_exc).__name__, 'message':str(_exc)[:2000], 'mutation_uncertain':False}}",
-            'print(' + repr(RPC_PREFIX) + " + _json.dumps(_envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')))",
-        ])
+        required = {'capture_evidence': set(), 'motion_begin': {'goal_id', 'focal_id', 'reference_id', 'limits'},
+                    'motion_status': {'goal_id', 'after_event_count'}, 'motion_end': {'goal_id'}}
+        if command not in required or type(params) is not dict or set(params) != required[command]:
+            raise ValueError('Invalid fixed supervision command')
+        return self._resident_code(command, params, request_id, 4096)
 
     def _observation_code(self, command, params, request_id):
-        """Separate constant read-only template; legacy template bytes are kept."""
-        required={'capture':set(),'capture_evidence':set(),'capture_task':{'selectors'},
-            'capture_nearest_candidates':{'focal_id','deadline_ns','max_response_bytes'},'native_observation_capabilities':set(),
-            'observe_readonly_native':{'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'},
-            'last_readonly_native_audit':{'request_id'}}
+        required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
+            'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
+            'native_observation_capabilities': set(),
+            'observe_readonly_native': {'request_id', 'focal_id', 'reference_id', 'expected_capture_revision', 'deadline_ns', 'view'},
+            'last_readonly_native_audit': {'request_id'}}
         if command == 'capture_nearest_candidates' and type(params) is dict and 'selector' in params:
             required[command] = required[command] | {'selector'}
-        if command not in required or type(params) is not dict or set(params)!=required[command]:
+        if command not in required or type(params) is not dict or set(params) != required[command]:
             raise ValueError('Invalid fixed native observation command')
-        request=json.dumps({'id':request_id,'command':command,'params':params},
-            ensure_ascii=True,allow_nan=False,separators=(',',':'))
-        limit = 8192 if command == 'capture_task' else 4096
-        if len(request.encode('utf8')) > limit:
-            raise ValueError('Native observation request exceeds ' + str(limit) + ' bytes')
-        return '\n'.join([
-            'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
-            '_request = _json.loads('+repr(request)+')',
-            'try:',
-            '    from pathlib import Path as _Path',
-            '    _source = _Path('+repr(str(self.source))+')',
-            "    if _source.resolve()!=_source: raise ValueError('Readonly host source escaped its fixed root')",
-            "    with _source.open('rb') as _stream: _source_bytes = _stream.read(512*1024+1)",
-            '    _source_sha = _hl.sha256(_source_bytes).hexdigest()',
-            '    if len(_source_bytes)>512*1024 or _source_sha!='+repr(self._readonly_host_source_sha256)+": raise ValueError('Readonly host source differs from the fixed connector snapshot')",
-            "    _spec = _iu.spec_from_file_location('_human_eye_blender_native_read', "+repr(str(self.source))+')',
-            "    if _spec is None or _spec.loader is None: raise RuntimeError('Cannot load trusted native read host')",
-            '    _module = _iu.module_from_spec(_spec)',
-            "    exec(compile(_source_bytes,str(_source),'exec',dont_inherit=True),_module.__dict__)",
-            '    _module._READONLY_LOADED_HOST_SHA256 = _source_sha',
-            '    _host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)',
-            "    _supported = getattr(_host,'native_observation_protocol',None)=="+repr(NATIVE_OBSERVATION_PROTOCOL),
-            "    if _request['command'] in ('capture','capture_evidence'):",
-            "        if _request['params']: raise ValueError('Capture accepts no arguments')",
-            "        _result = _host.capture_scene() if _request['command']=='capture' else _host.capture_evidence()",
-            "    elif _request['command']=='capture_task':",
-            "        _result = _host.capture_task_scene(_request['params']['selectors'])",
-            "    elif _request['command']=='capture_nearest_candidates':",
-            "        _result = _host.capture_nearest_candidates(**_request['params'])",
-            "    elif _request['command']=='native_observation_capabilities':",
-            "        if _request['params']: raise ValueError('Capabilities accepts no arguments')",
-            "        _result = _host.native_observation_capabilities() if _supported else {'supported':False}",
-            '    else:',
-            "        if not _supported: raise ValueError('Typed native observation unavailable')",
-            '        with _cl.redirect_stdout(_io.StringIO()):',
-            "            if _request['command']=='observe_readonly_native':",
-            "                if set(_request['params'])!={'request_id','focal_id','reference_id','expected_capture_revision','deadline_ns','view'}: raise ValueError('Invalid readonly native arguments')",
-            "                _result = _host.observe_readonly_native(**_request['params'])",
-            "            elif _request['command']=='last_readonly_native_audit':",
-            "                if set(_request['params'])!={'request_id'}: raise ValueError('Invalid native audit arguments')",
-            "                _result = _host.last_readonly_native_audit(**_request['params'])",
-            "            else: raise ValueError('Unsupported fixed native observation command')",
-            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'result':_result}",
-            'except Exception as _exc:',
-            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'error':{'type':type(_exc).__name__,'message':str(_exc)[:2000],'mutation_uncertain':False}}",
-            'print('+repr(RPC_PREFIX)+" + _json.dumps(_envelope,ensure_ascii=True,allow_nan=False,separators=(',',':')))",
-        ])
+        return self._resident_code(command, params, request_id, 8192 if command == 'capture_task' else 4096)
 
-    def _structure_code(self,command,params,request_id):
-        """A separate pinned, typed read template; old template bytes stay fixed."""
-        required={'reference_view_capabilities':set(),'observe_reference_patch':{'request_id','object_id','patch','deadline_ns'},'capture_surface_source':{'request_id','object_id','deadline_ns'},'surface_geometry_capabilities':set(),'observe_surface_geometry':{'request_id','object_id','deadline_ns','near_m'},
-            'mesh_structure_capabilities':set(),'mesh_region_summary_capabilities':set(),
-            'observe_mesh_structure_summary':{'request_id','object_id','categories','deadline_ns'},'patch_observation_capabilities':set(),
-            'nonplanar_observation_capabilities':set(),
-            'observe_nonplanar_patch':{'request_id','object_id','patch','deadline_ns','mode'},
-            'observe_mesh_structure':{'request_id','object_id','categories','deadline_ns'},
-            'observe_patch':{'request_id','object_id','patch','deadline_ns'}}
-        if command not in required or type(params) is not dict or set(params)!=required[command]:
+    def _structure_code(self, command, params, request_id):
+        required = {'reference_view_capabilities': set(), 'observe_reference_patch': {'request_id', 'object_id', 'patch', 'deadline_ns'},
+            'capture_surface_source': {'request_id', 'object_id', 'deadline_ns'}, 'surface_geometry_capabilities': set(),
+            'observe_surface_geometry': {'request_id', 'object_id', 'deadline_ns', 'near_m'},
+            'mesh_structure_capabilities': set(), 'mesh_region_summary_capabilities': set(),
+            'observe_mesh_structure_summary': {'request_id', 'object_id', 'categories', 'deadline_ns'},
+            'patch_observation_capabilities': set(), 'observe_patch': {'request_id', 'object_id', 'patch', 'deadline_ns'},
+            'nonplanar_observation_capabilities': set(),
+            'observe_nonplanar_patch': {'request_id', 'object_id', 'patch', 'deadline_ns', 'mode'},
+            'observe_mesh_structure': {'request_id', 'object_id', 'categories', 'deadline_ns'}}
+        if command not in required or type(params) is not dict or set(params) != required[command]:
             raise ValueError('Invalid fixed structure observation command')
-        request=json.dumps(dict(id=request_id,command=command,params=params),ensure_ascii=True,
-            allow_nan=False,separators=(',',':'))
-        if len(request.encode('utf8'))>16384:raise ValueError('Structure observation request exceeds 16384 bytes')
-        return '\n'.join([
-            'import importlib.util as _iu, json as _json, contextlib as _cl, io as _io, hashlib as _hl',
-            '_request = _json.loads('+repr(request)+')',
-            'try:',
-            '    from pathlib import Path as _Path',
-            '    _source = _Path('+repr(str(self.source))+')',
-            "    if _source.resolve()!=_source: raise ValueError('Readonly host source escaped its fixed root')",
-            "    with _source.open('rb') as _stream: _source_bytes = _stream.read(512*1024+1)",
-            '    _source_sha = _hl.sha256(_source_bytes).hexdigest()',
-            '    if len(_source_bytes)>512*1024 or _source_sha!='+repr(self._readonly_host_source_sha256)+": raise ValueError('Readonly host source differs from the fixed connector snapshot')",
-            "    _spec = _iu.spec_from_file_location('_human_eye_blender_structure_read',str(_source))",
-            "    if _spec is None or _spec.loader is None: raise RuntimeError('Trusted structure host unavailable')",
-            '    _module = _iu.module_from_spec(_spec)',
-            "    exec(compile(_source_bytes,str(_source),'exec',dont_inherit=True),_module.__dict__)",
-            '    _module._READONLY_LOADED_HOST_SHA256 = _source_sha',
-            '    _host = _module.BlenderSceneHost(bpy_module=bpy,execution_metadata=True,identity_metadata=True)',
-            '    _allowed = '+repr({key:sorted(value) for key,value in required.items()}),
-            "    if _request['command'] not in _allowed or set(_request['params'])!=set(_allowed[_request['command']]): raise ValueError('Invalid fixed structure arguments')",
-            '    with _cl.redirect_stdout(_io.StringIO()):',
-            "        _result = getattr(_host,_request['command'])(**_request['params'])",
-            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'result':_result}",
-            'except Exception as _exc:',
-            "    _envelope = {'protocol_version':'1.0','id':_request['id'],'error':{'type':type(_exc).__name__,'message':str(_exc)[:2000],'mutation_uncertain':False}}",
-            'print('+repr(RPC_PREFIX)+" + _json.dumps(_envelope,ensure_ascii=True,allow_nan=False,separators=(',',':')))",
-        ])
+        return self._resident_code(command, params, request_id, 16384)
 
     def _fail(self, message):
         self._poisoned = True
@@ -568,7 +514,9 @@ class BlenderMCPHost:
                     else self._code(command, params, request_id))
             payload = json.dumps({"type": "execute_code", "params": {"code": code}},
                                  allow_nan=False, separators=(",", ":")).encode("utf-8")
-            if len(payload) > _MAX_REQUEST_BYTES:
+            request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready else
+                             64 * 1024 if command in {'capture', 'capture_task', 'capture_nearest_candidates'} else _MAX_REQUEST_BYTES)
+            if len(payload) > request_limit:
                 raise ValueError("BlenderMCP request exceeds the transport size limit")
             try:
                 outer = self._exchange(payload)
@@ -601,6 +549,9 @@ class BlenderMCPHost:
                 result = response["result"]
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
+                self._resident_ready = True
+                if command in {'capture', 'capture_task', 'capture_nearest_candidates'}:
+                    result = self._scene_decoder.apply(result)
                 if self._observation_depth and command in {'capture', 'capture_evidence', 'capture_task'}:
                     capture = result.get('capture') if command == 'capture_evidence' else result
                     self._record_observation_document(capture)
@@ -621,7 +572,7 @@ class BlenderMCPHost:
             except HostTransportError:
                 self._poisoned = True
                 raise
-            except (OSError, ValueError, TypeError, UnicodeError, RecursionError) as exc:
+            except (OSError, ValueError, TypeError, KeyError, IndexError, UnicodeError, RecursionError) as exc:
                 self._fail("BlenderMCP response unavailable or invalid; execution outcome unknown: " + str(exc))
 
     def _connect(self, deadline):

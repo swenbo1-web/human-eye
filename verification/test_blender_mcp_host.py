@@ -104,9 +104,13 @@ class BlenderMCPHostTests(unittest.TestCase):
             self.assertEqual(requests[0][0]["type"], "execute_code")
             for command, _ in requests:
                 ast.parse(command["params"]["code"])
-                self.assertIn(str(ROOT / "human_eye_plugin" / "blender_host.py"),
-                              ast.literal_eval(next(line for line in command["params"]["code"].splitlines()
-                                  if "_iu.spec_from_file_location" in line).split(", ", 1)[1][:-1]))
+            cold_code = requests[0][0]["params"]["code"]
+            warm_code = requests[1][0]["params"]["code"]
+            self.assertIn(repr(str(ROOT / "human_eye_plugin" / "blender_host.py")), cold_code)
+            self.assertNotIn('compile(', warm_code)
+            self.assertNotIn('open(', warm_code)
+            self.assertNotIn('BlenderSceneHost(', warm_code)
+            self.assertLess(len(warm_code), len(cold_code) // 4)
             self.assertTrue(host.is_alive)
             host.close()
             host.close()

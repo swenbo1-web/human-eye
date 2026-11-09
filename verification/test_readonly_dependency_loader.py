@@ -21,6 +21,7 @@ ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT/'verification/fixes/20261031_v21_readonly_dependency/design_work'
 HOST=ROOT/'human_eye_plugin/blender_host.py'
 HELPERS=('episode_gateway.py','forward_deadline.py')
+RESIDENT_HELPER='scene_residency.py'
 
 
 class ReadonlyDependencyLoaderTests(unittest.TestCase):
@@ -30,7 +31,7 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
         self.root=Path(self.private.name).resolve()
         assert self.root.is_relative_to(WORK.resolve())
         self.package=self.root/'human_eye_plugin';self.package.mkdir()
-        for name in ('blender_host.py',*HELPERS):
+        for name in ('blender_host.py',*HELPERS,RESIDENT_HELPER):
             (self.package/name).write_bytes((HOST.parent/name).read_bytes())
         self.module=self.load_host()
         self.host=self.module.BlenderSceneHost.__new__(self.module.BlenderSceneHost)
@@ -205,6 +206,7 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
                              ['capture','capture_evidence'])
         expected=(self.package/'blender_host.py').read_bytes()
         real_compile=builtins.compile;real_open=Path.open
+        resident_module=None
         for index,(request,_) in enumerate(requests):
             compiled=[];namespace={'bpy':fixture()[0].bpy};output=io.StringIO()
             def compile_snapshot(raw,filename,*args,**kwargs):
@@ -219,8 +221,13 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
                 exec(real_compile(request['params']['code'],'<capture-scope>','exec'),namespace)
             value=json.loads(output.getvalue()[len(RPC_PREFIX):])
             self.assertIn('result',value);self.assertNotIn('error',value)
-            self.assertEqual(compiled,[expected])
+            # The cold request executes the checked source once. Every warm
+            # read reuses that same module and host instead of recompiling it.
+            self.assertEqual(len(compiled),1 if index==0 else 0)
+            if compiled:self.assertEqual(hashlib.sha256(compiled[0]).hexdigest(),hashlib.sha256(expected).hexdigest())
             self.assertEqual(namespace['_module'].__file__,str(self.package/'blender_host.py'))
+            if resident_module is None:resident_module=namespace['_module']
+            self.assertIs(namespace['_module'],resident_module)
             if index in (1,2):
                 self.assertEqual(namespace['_module']._READONLY_LOADED_HOST_SHA256,
                                  hashlib.sha256(expected).hexdigest())
@@ -229,13 +236,49 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
         (self.package/'blender_host.py').write_bytes(b'x'*(512*1024+1))
         with self.assertRaisesRegex(ValueError,'fixed connector bound'):BlenderMCPHost(self.root)
 
-    def test_connector_snapshot_rejects_changed_host_before_compilation(self):
+    def test_connector_executes_frozen_host_snapshot_instead_of_later_disk_bytes(self):
         connector=BlenderMCPHost(self.root)
+        expected=hashlib.sha256((self.package/'blender_host.py').read_bytes()).hexdigest()
         (self.package/'blender_host.py').write_text("raise RuntimeError('changed code ran')",encoding='utf8')
-        value,_=self.execute_template(connector)
-        self.assertIn('differs from the fixed connector snapshot',value['error']['message'])
-        self.assertNotIn('changed code ran',value['error']['message'])
-        self.assertFalse(value['error']['mutation_uncertain'])
+        value,namespace=self.execute_template(connector)
+        self.assertNotIn('error',value)
+        self.assertEqual(value['result']['host_source_sha256'],expected)
+        self.assertEqual(namespace['_module']._READONLY_LOADED_HOST_SHA256,expected)
+        self.assertNotEqual(hashlib.sha256((self.package/'blender_host.py').read_bytes()).hexdigest(),expected)
+
+    def test_connector_missing_resident_dependency_is_not_silently_ignored(self):
+        (self.package/RESIDENT_HELPER).unlink()
+        with self.assertRaises(FileNotFoundError):BlenderMCPHost(self.root)
+
+    def test_worker_resident_dependency_requires_manifest_and_unchanged_source(self):
+        from human_eye_plugin.blender_worker import run_worker,RPC_PREFIX as WORKER_PREFIX
+        from human_eye_plugin.verified_source_loader import SourceGuard,capture
+        from verification.test_blender_native_evidence import fixture
+        helper=self.package/RESIDENT_HELPER;original=helper.read_bytes()
+        for included in (False,True):
+            with self.subTest(included=included):
+                names=('blender_host.py',*HELPERS,*((RESIDENT_HELPER,) if included else ()))
+                manifest=[{'path':'human_eye_plugin/'+name,
+                           'sha256':hashlib.sha256((self.package/name).read_bytes()).hexdigest()}
+                          for name in names]
+                guard=SourceGuard(self.root,capture(self.root,manifest))
+                if included:helper.write_bytes(original+b'\n# changed after capture\n')
+                bpy=fixture()[0].bpy;bpy.app.version_string='isolated-RNA-fixture'
+                incoming=io.StringIO(json.dumps({'id':1,'command':'capture','params':{}})+'\n'
+                                    +json.dumps({'id':2,'command':'shutdown','params':{}})+'\n')
+                output=io.StringIO()
+                try:
+                    with patch.dict(sys.modules,{'bpy':bpy}),patch.object(sys,'meta_path',[guard,*sys.meta_path]), \
+                            patch('sys.stdin',incoming),patch('sys.stdout',output):
+                        sys.modules.pop('_human_eye_scene_residency',None)
+                        run_worker(self.root)
+                    replies=[json.loads(line[len(WORKER_PREFIX):]) for line in output.getvalue().splitlines()]
+                    self.assertEqual(replies[0]['error']['type'],'SourceBindingError')
+                    reason='verified_source_changed:' if included else 'verified_source_unlisted_path:'
+                    self.assertIn(reason+'human_eye_plugin/'+RESIDENT_HELPER,replies[0]['error']['message'])
+                    self.assertFalse(replies[0]['error']['mutation_uncertain'])
+                    self.assertEqual(replies[1]['result'],{'closed':True})
+                finally:helper.write_bytes(original)
 
     def test_readonly_worker_executes_one_verified_host_snapshot(self):
         from human_eye_plugin.blender_worker import run_worker,RPC_PREFIX as WORKER_PREFIX
@@ -244,7 +287,7 @@ class ReadonlyDependencyLoaderTests(unittest.TestCase):
         import builtins
         manifest=[{'path':'human_eye_plugin/'+name,
                    'sha256':hashlib.sha256((self.package/name).read_bytes()).hexdigest()}
-                  for name in ('blender_host.py',*HELPERS)]
+                  for name in ('blender_host.py',*HELPERS,RESIDENT_HELPER)]
         guard=SourceGuard(self.root,capture(self.root,manifest))
         expected=(self.package/'blender_host.py').read_bytes()
         self.poison_pyc(self.package/'blender_host.py')

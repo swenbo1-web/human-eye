@@ -22,6 +22,7 @@ READONLY_EVIDENCE_PROTOCOL = 'owned-readonly-native-evidence-v1-20261031'
 RENDER_AUDIT_PROTOCOL = 'owned-native-render-audit-v1-20261031'
 MULTISCALE_PROTOCOL = 'owned-native-multiscale-v1-20261031'
 NATIVE_OBSERVATION_PROTOCOL = 'typed-native-readonly-observation-v1-20261031'
+SCENE_DELTA_PROTOCOL = 'human-eye-scene-delta-v1'
 
 
 def _reject_constant(value: str) -> None:
@@ -116,11 +117,18 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
             if material_readview_only and command not in ('capabilities','material_readview_header',
                     'observe_material_readview','last_material_readview_audit','shutdown'):
                 raise ValueError('Material readview worker has no setter or general capture commands')
+            capture_delta = (command in ('capture', 'capture_task', 'capture_nearest_candidates')
+                             and '_scene_baseline' in params)
+            scene_baseline = params.pop('_scene_baseline') if capture_delta else None
+            if capture_delta and not callable(getattr(host, 'capture_delta', None)):
+                raise ValueError('Resident capture deltas are unavailable')
             if command == "capabilities":
                 result = {"protocol_version": PROTOCOL_VERSION, "blender_version": bpy.app.version_string,
                           'material_readview_only':material_readview_only,
                           'material_readview_protocol':'static-material-readview-v1' if material_readview_only else None,
                           "connection": "owned_headless_process", "persistent": True,
+                          'scene_delta_protocol': SCENE_DELTA_PROTOCOL
+                              if not material_readview_only and callable(getattr(host, 'capture_delta', None)) else None,
                           "saves_original_file": False, "attaches_to_open_window": False,
                           'motion_meter_protocol':'owned-typed-worker-meter-v1-20261030',
                           'generic_code_execution':False, 'process_id':os.getpid(),
@@ -153,6 +161,15 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                 result=getattr(host,command)(**params)
             elif command == "capture":
                 result = host.capture_scene()
+            elif command == 'capture_task':
+                if set(params) != {'selectors'}:
+                    raise ValueError('Invalid task capture arguments')
+                result = host.capture_task_scene(**params)
+            elif command == 'capture_nearest_candidates':
+                if (set(params) - {'focal_id','deadline_ns','max_response_bytes','selector'}
+                        or not {'focal_id','deadline_ns','max_response_bytes'}.issubset(params)):
+                    raise ValueError('Invalid nearest candidate capture arguments')
+                result = host.capture_nearest_candidates(**params)
             elif command in ('nonplanar_observation_capabilities','observe_nonplanar_patch'):
                 required=set() if command=='nonplanar_observation_capabilities' else {'request_id','object_id','patch','deadline_ns','mode'}
                 if set(params)!=required:raise ValueError('Invalid typed nonplanar observation arguments')
@@ -262,6 +279,10 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                 break
             else:
                 raise ValueError("unsupported worker command")
+            if capture_delta:
+                result = host.capture_delta(result, scene_baseline)
+            if command == 'capture_nearest_candidates' and time.perf_counter_ns() >= params['deadline_ns']:
+                raise ValueError('acquisition_deadline_exceeded')
             _emit({"id": request_id, "result": result})
         except Exception as exc:
             # A transform exception may follow a partial host mutation. Discard

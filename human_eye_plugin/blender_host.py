@@ -25,6 +25,7 @@ import struct
 import threading
 import time
 import uuid
+import copy
 from contextlib import contextmanager
 
 
@@ -200,9 +201,28 @@ def _same_rna(left, right):
         return True
     if left is None or right is None:
         return False
-    if hasattr(left, "as_pointer") and hasattr(right, "as_pointer"):
-        return left.as_pointer() == right.as_pointer()
+    try:
+        if hasattr(left, "as_pointer") and hasattr(right, "as_pointer"):
+            return left.as_pointer() == right.as_pointer()
+    except ReferenceError:
+        # Undo/file load can leave an old Python wrapper around a freed ID.
+        return False
     return False
+
+
+def _scene_residency_module():
+    """The bridge may preload this standalone helper from its source snapshot."""
+    import sys
+    import types
+    from pathlib import Path
+    source=Path(__file__).resolve().with_name('scene_residency.py')
+    name='_human_eye_scene_residency'
+    module=sys.modules.get(name)
+    if module is not None and Path(getattr(module,'__file__','')).resolve()==source:
+        return module
+    module=types.ModuleType(name);module.__file__=str(source)
+    _exec_source_snapshot(module,source);sys.modules[name]=module
+    return module
 
 
 def _acquisition_bounds(corners, matrix, scale):
@@ -434,6 +454,8 @@ class BlenderSceneHost:
             except ImportError as exc:
                 raise BlenderHostError("This operation requires Blender's Python runtime") from exc
         self.bpy = bpy_module
+        self._default_scene = scene is None
+        self._default_view_layer = view_layer is None
         self.scene = scene if scene is not None else bpy_module.context.scene
         self.view_layer = view_layer if view_layer is not None else bpy_module.context.view_layer
         layers = getattr(self.scene, "view_layers", None)
@@ -452,6 +474,9 @@ class BlenderSceneHost:
             raise BlenderHostError('identity_metadata must be boolean')
         self.identity_metadata = identity_metadata
         self._lock = threading.RLock()
+        self._residency_module = self._residency = None
+        self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
+            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0)
 
     @staticmethod
     def _main_thread():
@@ -465,6 +490,25 @@ class BlenderSceneHost:
         return "blender:" + _digest(identity)
 
     def _depsgraph(self):
+        try:
+            return self._current_depsgraph()
+        except ReferenceError as exc:
+            if not self._default_scene:
+                raise BlenderHostError('The explicitly supplied scene or view layer is no longer available') from exc
+            self.scene=self.bpy.context.scene
+            self.view_layer=self.bpy.context.view_layer
+            if self._residency is not None:self._residency.reset()
+            return self._current_depsgraph()
+
+    def _current_depsgraph(self):
+        if self._default_scene and not _same_rna(self.bpy.context.scene,self.scene):
+            self.scene=self.bpy.context.scene
+            self.view_layer=self.bpy.context.view_layer
+        elif self._default_view_layer and _same_rna(self.bpy.context.scene,self.scene):
+            self.view_layer=self.bpy.context.view_layer
+        # Explicit scenes remain pinned, but invalid RNA must be a clear refusal.
+        if not self._default_scene:
+            getattr(self.scene,'name',None)
         self.view_layer.update()
         graph = getattr(self.view_layer, "depsgraph", None)
         if graph is None:
@@ -475,6 +519,148 @@ class BlenderSceneHost:
         if graph_scene is not None and not _same_rna(getattr(graph_scene, "original", graph_scene), self.scene):
             raise BlenderHostError("The dependency graph belongs to a different scene")
         return graph
+
+    def close_residency(self):
+        if self._residency is not None:self._residency.close()
+
+    def residency_work(self):
+        return dict(self._residency_stats, enabled=self._residency is not None and self._residency.enabled,
+                    resident_resources=len(self._residency.resources) if self._residency is not None else 0)
+
+    def _sync_residency(self, graph, scale):
+        if self._residency is None:
+            self._residency_module=_scene_residency_module()
+            self._residency=self._residency_module.SceneResidency(self.bpy)
+        state=self._residency
+        if not state.enabled:return False
+        rows=[];live=set();by_id={}
+        ident=self._residency_module.identity
+        for obj in self.scene.objects:
+            key=ident(obj);data=getattr(obj,'data',None)
+            live.add(key)
+            live.add(ident(data))
+            if getattr(obj,'type',None)=='MESH':by_id[self.object_id(obj)]=key
+            rows.append((key,ident(data),str(obj.name),str(getattr(obj,'name_full',obj.name)),
+                getattr(obj,'type',None),_matrix(obj.matrix_world),self._guard_description(obj),
+                list(getattr(obj,'color',())),getattr(obj,'hide_viewport',None),getattr(obj,'hide_render',None),
+                len(getattr(data,'vertices',())),len(getattr(data,'polygons',()))))
+        namespace=getattr(getattr(self.bpy,'app',None),'driver_namespace',None)
+        namespace_marker=None
+        if isinstance(namespace,dict):
+            key='_human_eye_residency_document_v1'
+            if key not in namespace:namespace[key]=uuid.uuid4().hex
+            namespace_marker=namespace[key]
+        context=(ident(self.scene),ident(self.view_layer),namespace_marker,
+                 str(getattr(getattr(self.bpy,'data',None),'filepath','')))
+        signature=(rows,scale,getattr(self.scene.unit_settings,'system',None),
+            getattr(self.scene.unit_settings,'length_unit',None),int(getattr(self.scene,'frame_current',0)),
+            float(getattr(self.scene,'frame_subframe',0)),
+            ident(getattr(getattr(self.view_layer,'objects',None),'active',None)))
+        state.sync(context,signature,live);state.by_object_id=by_id
+        state.wire={oid:entry for oid,entry in state.wire.items() if oid in by_id}
+        return True
+
+    def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition):
+        state=self._residency
+        selection_key=_digest(['nearest_selected' if acquisition is not None else
+            'task' if task_selection is not None else 'scene',
+            task_selection['selectors'] if task_selection is not None else [self.object_id(o) for o in objects]])
+        cached=state.captures.get(selection_key)
+        if cached is not None:
+            self._residency_stats['capture_cache_hits']+=1
+            return cached
+        meshes=[];vertex_count=face_count=0
+        active=getattr(getattr(self.view_layer,'objects',None),'active',None)
+        ident=self._residency_module.identity
+        selected_keys={ident(obj) for obj in objects}
+        for ordinal,obj in enumerate(objects,1):
+            checkpoint=acquisition[4] if acquisition is not None else lambda:None
+            checkpoint()
+            evaluated=obj.evaluated_get(graph) if acquisition is None else acquisition[3][self.object_id(obj)]
+            if not bool(getattr(evaluated,'is_evaluated',True)):
+                raise BlenderHostError('Mesh is not evaluated in the current view layer: '+obj.name)
+            matrix=_matrix(evaluated.matrix_world);key=ident(obj);data=getattr(obj,'data',None)
+            guards=self._guard_description(obj)
+            dynamic=bool(guards['modifiers'] or guards['animation'] or guards['data_animation'] or guards['shape_keys'])
+            stamp=(ident(data),state.dirty.get(key,0),state.dirty.get(ident(data),0),guards,
+                int(getattr(self.scene,'frame_current',0)) if dynamic else None,
+                float(getattr(self.scene,'frame_subframe',0)) if dynamic else None)
+            resource=state.resources.get(key)
+            if resource is None or resource['stamp']!=stamp:
+                temporary=None
+                try:
+                    self._residency_stats['to_mesh']+=1;temporary=evaluated.to_mesh()
+                    if temporary is None:raise BlenderHostError('Evaluated mesh is unavailable: '+obj.name)
+                    if len(temporary.vertices)>500000:raise BlenderHostError('Scene geometry budget exceeded')
+                    self._residency_stats['triangulations']+=1;temporary.calc_loop_triangles()
+                    if len(temporary.loop_triangles)>1000000:raise BlenderHostError('Scene geometry budget exceeded')
+                    local=tuple(tuple(float(v.co[i]) for i in range(3)) for v in
+                                _acquisition_vertices(temporary.vertices,checkpoint))
+                    faces=tuple(tuple(int(i) for i in triangle.vertices) for triangle in temporary.loop_triangles)
+                    if (len(local)<3 or not faces or any(not math.isfinite(x) for p in local for x in p)
+                            or any(len(f)!=3 or min(f)<0 or max(f)>=len(local) for f in faces)):
+                        raise BlenderHostError('A mesh requires valid evaluated triangles: '+obj.name)
+                    edges=tuple(sorted({tuple(sorted((f[a],f[b]))) for f in faces for a,b in ((0,1),(1,2),(2,0))}))
+                    remaining=[k for k in state.resources if k!=key]
+                    def cache_exceeded():
+                        return (len(remaining)>=256 or len(local)+sum(len(state.resources[k]['vertices_local']) for k in remaining)>500000
+                                or len(faces)+sum(len(state.resources[k]['faces']) for k in remaining)>1000000)
+                    while cache_exceeded():
+                        evict=next((k for k in remaining if k not in selected_keys),None)
+                        if evict is None:raise BlenderHostError('Scene geometry budget exceeded')
+                        remaining.remove(evict);old_resource=state.resources.pop(evict)
+                        state.wire={oid:item for oid,item in state.wire.items() if item[0] is not old_resource}
+                        state.captures.clear();state.nearest.clear()
+                    state.resource_serial+=1
+                    resource=dict(resource_id='mesh:'+str(key),revision=state.resource_serial,
+                        stamp=copy.deepcopy(stamp),vertices_local=local,faces=faces,edges=edges,pose=None,mesh=None)
+                    state.resources[key]=resource;self._residency_stats['resource_builds']+=1
+                finally:
+                    if temporary is not None:evaluated.to_mesh_clear()
+            vertex_count+=len(resource['vertices_local']);face_count+=len(resource['faces'])
+            if vertex_count>500000 or face_count>1000000:raise BlenderHostError('Scene geometry budget exceeded')
+            color=[int(round(min(1.,max(0.,float(c)))*255)) for c in list(getattr(obj,'color',(0.5,0.5,0.5,1)))[:3]]
+            if len(color)!=3:raise BlenderHostError('Object color must have three components')
+            pose=(matrix,scale,ordinal,self.object_id(obj),str(obj.name),_same_rna(obj,active),color)
+            if resource['pose']!=pose:
+                vertices=[[(sum(matrix[r][c]*p[c] for c in range(3))+matrix[r][3])*scale for r in range(3)]
+                          for p in resource['vertices_local']]
+                if any(not math.isfinite(v) for p in vertices for v in p):raise BlenderHostError('Nonfinite evaluated geometry: '+obj.name)
+                axes,confidence,reason,_=_frame(matrix)
+                resource['mesh']=dict(object_id=self.object_id(obj),mark_label='#B%04d'%ordinal,name=str(obj.name),
+                    is_focal_target=_same_rna(obj,active),color_rgb=color,vertices=vertices,
+                    faces=[list(f) for f in resource['faces']],edges=[list(e) for e in resource['edges']],
+                    local_axes=axes,pivot_world=[matrix[r][3]*scale for r in range(3)],
+                    axes_source='host',axes_confidence=confidence,axes_reason=reason)
+                resource['pose']=copy.deepcopy(pose);self._residency_stats['world_transforms']+=1
+            state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
+            meshes.append(resource['mesh'])
+        scene=dict(unit='m',coordinate_frame='world',source='blender',meshes=meshes)
+        if task_selection is not None:
+            scene.update(capture_scope='selected_objects',task_selection=task_selection,host_identity=task_identity)
+        elif acquisition is not None:scene.update(capture_scope='surface_nearest_candidates',execution_authority=False)
+        elif self.execution_metadata:scene['host_execution']=self._execution_status(objects)
+        if task_selection is None and self.identity_metadata:
+            identity=self._identity_metadata(objects,capture_scope='surface_nearest_candidates') if acquisition is not None else self._identity_metadata(objects)
+            if identity is not None:scene['host_identity']=identity
+        if task_selection is None:
+            scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale,
+                frame=int(getattr(self.scene,'frame_current',0)),guards=[[self.object_id(o),self._guard_description(o)] for o in objects]))
+        else:scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale))
+        if len(state.captures)>=8:state.captures.clear()
+        state.captures[selection_key]=scene
+        return scene
+
+    def _capture_state(self, scene, selection_key):
+        result=copy.deepcopy(scene)
+        if self._residency is not None and self._residency.enabled:result['capture_state']=self._residency.token(selection_key)
+        return result
+
+    def capture_delta(self, capture, known=None):
+        scene=capture.get('capture',capture);token=scene.get('capture_state')
+        if token is None or self._residency is None or token!=self._residency.token(token.get('selection_key','')):
+            return copy.deepcopy(capture)
+        return self._residency_module.encode_capture(capture,known,self._residency.wire)
 
     def _objects(self, graph):
         objects = list(self.scene.objects)
@@ -605,7 +791,7 @@ class BlenderSceneHost:
                          'pair_reason': pair_reason, 'candidate_count': len(candidates)}
 
     def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None,
-                 _acquisition_context=None):
+                 _acquisition_context=None, _resident=False):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
@@ -613,7 +799,7 @@ class BlenderSceneHost:
         if _native_evidence and not (self.execution_metadata and self.identity_metadata):
             raise BlenderHostError("Native evidence requires explicit execution and identity metadata")
         graph, scale = (self._depsgraph(), self._scale()) if _acquisition_context is None else _acquisition_context[:2]
-        task_selection = None
+        task_selection = task_identity = None
         if _acquisition_context is not None:
             if _native_evidence or _task_selectors is not None:
                 raise BlenderHostError('Acquisition context cannot supply legacy evidence')
@@ -636,6 +822,8 @@ class BlenderSceneHost:
             if native_identity is None:
                 raise BlenderHostError("Native original-pose evidence requires complete host identity")
         active = getattr(getattr(self.view_layer, "objects", None), "active", None)
+        if _resident and self._sync_residency(graph,scale):
+            return self._resident_capture(graph,scale,objects,task_selection,task_identity,_acquisition_context)
         meshes, vertex_count, face_count = [], 0, 0
         for ordinal, obj in enumerate(objects, 1):
             if _acquisition_context is not None:
@@ -926,7 +1114,7 @@ class BlenderSceneHost:
         """Read evaluated world geometry; raises if collision coverage is incomplete."""
         self._main_thread()
         with self._lock:
-            return self._capture()
+            return self._capture_state(self._capture(_resident=True),_digest(['scene']))
 
     def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
         """Internal unsigned-surface acquisition, one synchronous host window.
@@ -970,6 +1158,15 @@ class BlenderSceneHost:
                 focal_id = matches[0]
             if len(set(ids)) != len(ids) or focal_id not in ids or len(ids) < 2:
                 raise BlenderHostError('acquisition_object_coverage')
+            resident=self._sync_residency(graph,scale)
+            nearest_key=_digest(['nearest',focal_id])
+            cached=self._residency.nearest.get(nearest_key) if resident else None
+            if cached is not None:
+                checkpoint()
+                if cached[1]>max_response_bytes:raise BlenderHostError('acquisition_document_budget_exceeded')
+                result=copy.deepcopy(cached[0]);checkpoint()
+                self._residency_stats['nearest_cache_hits']+=1
+                return result
             identity = self._identity_metadata(objects)
             source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
             if identity is None or not _hex_string(source_sha, 64):
@@ -1058,7 +1255,7 @@ class BlenderSceneHost:
                 coverage.append(row)
                 if not excluded:
                     selected.append(obj)
-            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint))
+            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint),_resident=True)
             checkpoint()
             # The witness defining U must survive the actual selected capture.
             captured = {mesh['object_id']: mesh for mesh in scene['meshes']}
@@ -1082,6 +1279,7 @@ class BlenderSceneHost:
                 if (self._guard_description(obj) != old[0] or _matrix(evaluated.matrix_world) != old[1]
                         or len(evaluated.data.vertices) != old[2] or len(evaluated.data.polygons) != old[3]):
                     raise BlenderHostError('acquisition_source_changed')
+            scene=self._capture_state(scene,nearest_key)
             packet = {'protocol': 'single-read-surface-candidates-v1', 'capture': scene,
                 'focal_id': focal_id, 'coverage': coverage,
                 'scope': 'independent_static_triangle_meshes_current_evaluated_surfaces',
@@ -1101,9 +1299,13 @@ class BlenderSceneHost:
                 'result_kind': 'acquisition_only_not_nearest_result', 'execution_authority': False}
             packet['binding']['directory_sha256'] = _digest(coverage)
             checkpoint()
-            if len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
+            packet_bytes=len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+            if packet_bytes > max_response_bytes:
                 raise BlenderHostError('acquisition_document_budget_exceeded')
             checkpoint()
+            if resident:
+                if len(self._residency.nearest)>=8:self._residency.nearest.clear()
+                self._residency.nearest[nearest_key]=(copy.deepcopy(packet),packet_bytes)
             return packet
 
     def capture_task_scene(self, selectors):
@@ -1117,7 +1319,7 @@ class BlenderSceneHost:
                            for value in selector.values())):
                 raise BlenderHostError('Task selector requires one bounded nonempty id or name')
         with self._lock:
-            return self._capture(_task_selectors=selectors)
+            return self._capture_state(self._capture(_task_selectors=selectors,_resident=True),_digest(['task',selectors]))
 
     def capture_evidence(self):
         """Read one coherent original-pose sidecar without changing old capture.

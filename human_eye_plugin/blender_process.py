@@ -35,8 +35,10 @@ READONLY_EVIDENCE_PROTOCOL = 'owned-readonly-native-evidence-v1-20261031'
 RENDER_AUDIT_PROTOCOL = 'owned-native-render-audit-v1-20261031'
 MULTISCALE_PROTOCOL = 'owned-native-multiscale-v1-20261031'
 NATIVE_OBSERVATION_PROTOCOL = 'typed-native-readonly-observation-v1-20261031'
+SCENE_DELTA_PROTOCOL = 'human-eye-scene-delta-v1'
 _MAX_LINE_CHARS = 64 * 1024 * 1024
 _MAX_REQUEST_CHARS = 4096
+_MAX_CAPTURE_REQUEST_CHARS = 64 * 1024
 _DEADLINE_REPLY_GRACE_NS = 2_000_000_000
 
 
@@ -139,6 +141,7 @@ class BlenderProcessHost:
         self._poisoned = False
         self._sequence = 0
         self._deadline_bindings = {}
+        self._scene_decoder = None
         command = [str(executable), "--factory-startup", "--disable-autoexec", "--background",
                    str(source), *(worker_arguments(root,worker) if worker_path is None else ["--python",str(worker)]), "--", str(root)]
         if material_readview_only:command.append('material-readview-only-v1')
@@ -202,7 +205,59 @@ class BlenderProcessHost:
         return json.loads(json.dumps(self._capabilities, allow_nan=False))
 
     def capture_scene(self) -> dict[str, Any]:
-        return self._request("capture", {})
+        return self._capture_request("capture", {})
+
+    def _capture_request(self, command, params, *, timeout=None):
+        """Keep resource baselines private to this connection and this lock.
+
+        The public methods still return ordinary captures. Only the worker wire
+        uses resource deltas; evidence and mutation protocols never use them.
+        """
+        with self._lock:
+            if self._capabilities.get('scene_delta_protocol') != SCENE_DELTA_PROTOCOL:
+                return self._request(command, params, timeout=timeout)
+            if self._scene_decoder is None:
+                from .scene_residency import SceneDeltaDecoder
+                self._scene_decoder = SceneDeltaDecoder()
+            arguments = dict(params, _scene_baseline=self._scene_decoder.baseline())
+            result = self._request(command, arguments, timeout=timeout)
+            try:
+                return self._scene_decoder.apply(result)
+            except (ValueError, TypeError, KeyError, IndexError) as exc:
+                self._fail('Invalid resident capture response: ' + str(exc))
+
+    def capture_task_scene(self, selectors) -> dict[str, Any]:
+        return self._capture_request('capture_task', {'selectors': selectors})
+
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+        with self._lock:
+            if selector is None:
+                if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+                    raise ValueError('acquisition_focal_id')
+            else:
+                if focal_id is not None:
+                    raise ValueError('acquisition_focal_selector_conflict')
+                if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                        or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                               for value in selector.values())):
+                    raise ValueError('acquisition_selector')
+                selector = dict(selector)
+            now_ns = time.perf_counter_ns()
+            if type(deadline_ns) is not int or now_ns >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            deadline_ns = min(deadline_ns, now_ns + int(self.timeout * 1_000_000_000))
+            if deadline_ns <= now_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+                raise ValueError('acquisition_document_budget')
+            params = dict(focal_id=focal_id, deadline_ns=deadline_ns, max_response_bytes=max_response_bytes)
+            if selector is not None:
+                params['selector'] = selector
+            result = self._capture_request('capture_nearest_candidates', params,
+                timeout=(deadline_ns-now_ns)/1_000_000_000)
+            if time.perf_counter_ns() >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            return result
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
@@ -422,8 +477,11 @@ class BlenderProcessHost:
             # Validate before writing: a local serialization failure cannot mutate Blender.
             payload = json.dumps({"id": request_id, "command": command, "params": params},
                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
-            if len(payload) > _MAX_REQUEST_CHARS:
-                raise ValueError("Blender request exceeds the 4096-character transform protocol limit")
+            capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates')
+            limit = _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS
+            if len(payload) > limit:
+                raise ValueError("Blender request exceeds the 65536-character capture protocol limit"
+                    if capture_request else "Blender request exceeds the 4096-character transform protocol limit")
             stop_ns = None
             wire = params.get('forward_deadline') if command == 'apply' else None
             if wire is not None:
@@ -556,6 +614,7 @@ class BlenderProcessHost:
 
     def _fail(self, reason: str) -> None:
         self._poisoned = True
+        self._scene_decoder = None
         self._terminate_child()
         raise HostTransportError(reason, self.diagnostics)
 
@@ -579,6 +638,7 @@ class BlenderProcessHost:
                 except (HostTransportError, HostRemoteError, subprocess.TimeoutExpired):
                     pass
             self._closed = True
+            self._scene_decoder = None
             self._terminate_child()
             for stream in (self._process.stdin, self._process.stdout, self._process.stderr):
                 if stream is not None:
