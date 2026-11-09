@@ -164,6 +164,7 @@ class BlenderMCPHost:
         helper_bytes = helper_source.read_bytes()
         if len(helper_bytes) > 128 * 1024:
             raise ValueError('Scene residency helper exceeds its connector bound')
+        self._readonly_scene_residency_sha256 = hashlib.sha256(helper_bytes).hexdigest()
         self._resident_sources = ((str(helper_source), base64.b64encode(zlib.compress(helper_bytes)).decode('ascii')),
                                   (str(source), base64.b64encode(zlib.compress(source_bytes)).decode('ascii')))
         self._resident_tag = hashlib.sha256(source_bytes + helper_bytes).hexdigest()
@@ -430,6 +431,8 @@ class BlenderMCPHost:
                 "        exec(compile(_zl.decompress(_b64.b64decode(" + repr(source[1]) + ")), " + repr(source[0]) + ", 'exec', dont_inherit=True), _module.__dict__)",
                 "        _module._READONLY_LOADED_HOST_SHA256 = " + repr(self._readonly_host_source_sha256),
                 "        _module._mcp_resident_host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)",
+                "        _module._mcp_resident_host._residency_module = _helper",
+                "        _module._mcp_resident_host._residency = _helper.SceneResidency(bpy)",
                 "        _module._resident_tag = " + repr(self._resident_tag),
             ]
         lines += [

@@ -698,12 +698,16 @@ class LiveSpatialService:
             if isinstance(self.host, BlenderMCPHost):
                 expected = next(item['sha256'] for item in self._identity['source_files']
                                 if item['path'] == 'human_eye_plugin/blender_host.py')
+                expected_helper = next(item['sha256'] for item in self._identity['source_files']
+                                       if item['path'] == 'human_eye_plugin/scene_residency.py')
                 try:
                     with span('runtime.host_source_check', kind='io'):
                         actual = hashlib.sha256(self.host.source.read_bytes()).hexdigest()
                 except OSError:
                     actual = None
-                if actual != expected:
+                if (actual != expected
+                        or getattr(self.host, '_readonly_host_source_sha256', None) != expected
+                        or getattr(self.host, '_readonly_scene_residency_sha256', None) != expected_helper):
                     return {'status': 'implementation_mismatch', 'executed': False,
                             'verified': False, 'execution_verified': False,
                             'allow_action': False, 'routing': None,
@@ -1252,7 +1256,7 @@ class LiveSpatialService:
             # earlier parent deadline. The connector also caps its own timeout.
             now = time.perf_counter_ns()
             remaining = self._check_request_budget('before_host_capture')
-            timeout = getattr(self.host, 'timeout_s', 10.)
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
             deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
             with span('host.capture', kind='host'):
                 if selector is None:
