@@ -202,6 +202,9 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                     'last_readonly_native_audit':{'request_id'}}[command]
                 if set(params)!=required:raise ValueError('Invalid typed readonly observation arguments')
                 result=getattr(host,command)(**params)
+            elif command == 'observe_arm_twist':
+                if set(params) != {'selection'}:raise ValueError('Arm twist requires only selection')
+                result = host.observe_arm_twist(params['selection'])
             elif command == 'capture_evidence':
                 if params:raise ValueError('capture_evidence accepts no arguments')
                 result = host.capture_evidence()

@@ -100,6 +100,22 @@ def _unique_object(pairs):
     return result
 
 
+def _validate_arm_twist_report(value, selection):
+    source = value.get('source') if isinstance(value, dict) else None
+    mesh = source.get('mesh') if isinstance(source, dict) else None
+    armature = source.get('armature') if isinstance(source, dict) else None
+    if (not isinstance(source, dict) or value.get('schema') != 'arm-twist-expert-report-v1'
+            or value.get('status') not in ('estimated', 'unknown')
+            or value.get('source_binding') != 'local_armature_source_adapter'
+            or source.get('unit') != 'm' or source.get('coordinate_frame') != 'armature_local'
+            or not isinstance(mesh, dict) or mesh.get('name') != selection.get('mesh_name')
+            or source.get('selected_bones') != selection.get('bone_names')
+            or 'armature_name' in selection and (not isinstance(armature, dict)
+                or armature.get('name') != selection['armature_name'])):
+        raise ValueError('Arm twist report schema or current selection binding mismatch')
+    return value
+
+
 class BlenderProcessHost:
     """Serialize capture and transform requests to an owned headless process.
 
@@ -261,6 +277,13 @@ class BlenderProcessHost:
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
+
+    def observe_arm_twist(self, selection):
+        if not self._default_worker:
+            raise ValueError('Arm twist observation requires the fixed worker')
+        if type(selection) is not dict:
+            raise ValueError('Arm twist selection requires an object')
+        return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
 
     def mesh_structure_capabilities(self):
         if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
@@ -486,8 +509,11 @@ class BlenderProcessHost:
             payload = json.dumps({"id": request_id, "command": command, "params": params},
                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
             capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates')
-            limit = _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS
+            limit = (_MAX_LINE_CHARS if command == 'observe_arm_twist' else
+                _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS)
             if len(payload) > limit:
+                if command == 'observe_arm_twist':
+                    raise ValueError('Arm twist selection exceeds the existing line protocol limit')
                 raise ValueError("Blender request exceeds the 65536-character capture protocol limit"
                     if capture_request else "Blender request exceeds the 4096-character transform protocol limit")
             stop_ns = None

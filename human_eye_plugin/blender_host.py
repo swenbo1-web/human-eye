@@ -1342,6 +1342,76 @@ class BlenderSceneHost:
         with self._lock:
             return self._capture(_native_evidence=True)
 
+    def _arm_twist_source_module(self):
+        module = getattr(self, '_arm_twist_module', None)
+        if module is not None:
+            return module
+        import importlib.util
+        import sys
+        import types
+        from pathlib import Path
+        root = Path(__file__).resolve().parent
+        names = ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py')
+        sources = getattr(self, '_arm_twist_dependency_sources', None)
+        if sources is None:
+            guard = next((f for f in sys.meta_path if getattr(f, 'protocol', None) ==
+                'human-eye-verified-source-v1' and f.root == root.parent), None)
+            sources = {name: (guard.sources['human_eye_plugin/' + name] if guard is not None
+                else (root / name).read_bytes()) for name in names}
+        if set(sources) != set(names):
+            raise BlenderHostError('Arm twist dependency snapshot unavailable')
+        digest = hashlib.sha256(str(root).encode('utf8') + b''.join(sources[n] for n in names)).hexdigest()
+        package_name = '_human_eye_arm_twist_' + digest[:24]
+        package = sys.modules.get(package_name)
+        if package is None:
+            package = types.ModuleType(package_name)
+            package.__path__ = [str(root)]
+            package.__package__ = package_name
+            sys.modules[package_name] = package
+            created = [(package_name, package)]
+            try:
+                for name in names:
+                    leaf = name[:-3]
+                    spec = importlib.util.spec_from_file_location(package_name + '.' + leaf, root / name)
+                    child = importlib.util.module_from_spec(spec)
+                    sys.modules[spec.name] = child
+                    setattr(package, leaf, child)
+                    created.append((spec.name, child))
+                    _exec_source_snapshot(child, root / name, sources[name])
+            except BaseException:
+                for key, child in reversed(created):
+                    if sys.modules.get(key) is child:
+                        del sys.modules[key]
+                raise
+        self._arm_twist_module = package.arm_twist_source
+        return self._arm_twist_module
+
+    def observe_arm_twist(self, selection):
+        """Estimate the current explicitly selected native arm patch, read-only."""
+        self._main_thread()
+        with self.transaction():
+            adapter = getattr(self, '_arm_twist_adapter', None)
+            if adapter is None:
+                adapter = self._arm_twist_source_module().ArmTwistSource(self)
+                self._arm_twist_adapter = adapter
+            bound = getattr(self, '_arm_twist_bound', None)
+            retained = None if bound is None else bound._selection
+            if type(selection) is dict and 'vertex_indices' not in selection and retained is not None:
+                retained = {key: value for key, value in retained.items() if key != 'vertex_indices'}
+            def same(left, right):
+                if type(left) is not type(right):
+                    return False
+                if type(left) is dict:
+                    return left.keys() == right.keys() and all(same(left[k], right[k]) for k in left)
+                if type(left) is list:
+                    return len(left) == len(right) and all(same(a, b) for a, b in zip(left, right))
+                return left == right
+            # bool/int/float equality must not bypass the source's typed bind.
+            if bound is None or not same(selection, retained):
+                bound = adapter.bind(selection)
+                self._arm_twist_bound = bound
+            return bound.analyze()
+
     def capture_readonly_evidence(self):
         """Read locked static original poses without making them executable.
 

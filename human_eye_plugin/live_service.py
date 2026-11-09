@@ -202,7 +202,8 @@ def _request(operation):
                     task_context=task_context,
                     include_image=None if operation == 'status' else
                         kwargs.get('include_image', operation not in {
-                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure'})) as trace:
+                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure',
+                            'arm_twist_observe'})) as trace:
                 if self.request_budget_s is not None:
                     annotate(request_budget_s=self.request_budget_s,
                         request_budget_scope=_REQUEST_BUDGET_SCOPE)
@@ -1240,6 +1241,40 @@ class LiveSpatialService:
                             'execution_authority': False}
         self.record_event("observe", session_id=session_id, status=status,
             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
+        return result
+
+    @_request('arm_twist_observe')
+    def observe_arm_twist(self, session_id, selection, *, task_context=None):
+        """Read one explicit local arm selection without the action runtime."""
+        if type(session_id) is not str or not session_id.strip():
+            raise ValueError('session_id required')
+        if type(selection) is not dict:
+            raise ValueError('selection must be an object')
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id}
+        with self._read_context.lock, self._observation_scope():
+            rejected, _ = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            if self.production_mode:
+                from .blender_mcp_host import BlenderMCPHost
+                if isinstance(self.host, BlenderMCPHost):
+                    paths = {'human_eye_plugin/' + name + '.py' for name in
+                        ('rig_pose', 'arm_twist_source', 'arm_twist_expert', 'arm_twist_weights')}
+                    expected = {row['path']: row['sha256'] for row in self._identity['source_files']
+                                if row['path'] in paths}
+                    if getattr(self.host, '_readonly_arm_twist_sources_sha256', None) != expected:
+                        return {'status': 'implementation_mismatch', 'executed': False,
+                            'verified': False, 'execution_verified': False, 'allow_action': False,
+                            'runtime_identity': self.describe_runtime(),
+                            'reason_codes': ['host_bridge_source_mismatch']}
+            self._check_request_budget('before_arm_twist_read')
+            with span('host.arm_twist_observe', kind='host'):
+                result = self.host.observe_arm_twist(selection)
+            self._check_request_budget('after_arm_twist_read')
+            result['source']['runtime_source_sha256'] = self._identity['source_sha256']
+        self.record_event('arm_twist_observe', session_id=session_id, status=result['status'])
+        self._check_request_budget('before_arm_twist_result')
         return result
 
     def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):

@@ -32,7 +32,7 @@ import uuid
 import zlib
 
 from .blender_process import (HostRemoteError, HostTransportError, NATIVE_OBSERVATION_PROTOCOL,
-    _validate_native_observation_capabilities, _validate_native_observation_request)
+    _validate_native_observation_capabilities, _validate_native_observation_request, _validate_arm_twist_report)
 from .blender_host import PREWRITE_REFUSAL_PROTOCOL, validate_prewrite_refusal
 from .scene_residency import SceneDeltaDecoder
 
@@ -44,7 +44,7 @@ _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _OBSERVATION_COMMANDS=frozenset({'capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
-_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
+_STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
 _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
@@ -167,7 +167,22 @@ class BlenderMCPHost:
         self._readonly_scene_residency_sha256 = hashlib.sha256(helper_bytes).hexdigest()
         self._resident_sources = ((str(helper_source), base64.b64encode(zlib.compress(helper_bytes)).decode('ascii')),
                                   (str(source), base64.b64encode(zlib.compress(source_bytes)).decode('ascii')))
-        self._resident_tag = hashlib.sha256(source_bytes + helper_bytes).hexdigest()
+        self._resident_expert_sources = {}
+        self._readonly_arm_twist_sources_sha256 = {}
+        expert_bytes = []
+        for name in ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py'):
+            path = source.with_name(name)
+            if not path.is_file():
+                continue  # Minimal SDK roots can still use ordinary capture.
+            if not path.resolve().is_relative_to(root):
+                raise ValueError('Arm twist dependency is outside the trusted root')
+            blob = path.read_bytes()
+            if len(blob) > 512 * 1024:
+                raise ValueError('Arm twist dependency exceeds its source bound')
+            expert_bytes.append(blob)
+            self._readonly_arm_twist_sources_sha256['human_eye_plugin/' + name] = hashlib.sha256(blob).hexdigest()
+            self._resident_expert_sources[name] = base64.b64encode(zlib.compress(blob)).decode('ascii')
+        self._resident_tag = hashlib.sha256(source_bytes + helper_bytes + b''.join(expert_bytes)).hexdigest()
         self._resident_slot = '_human_eye_mcp_resident_' + hashlib.sha256(str(root).encode('utf8')).hexdigest()[:20]
         self._resident_ready = False
         self._scene_decoder = SceneDeltaDecoder()
@@ -286,6 +301,11 @@ class BlenderMCPHost:
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
+
+    def observe_arm_twist(self, selection):
+        if type(selection) is not dict:
+            raise ValueError('Arm twist selection requires an object')
+        return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
 
     def native_observation_capabilities(self):
         with self._lock:
@@ -433,6 +453,7 @@ class BlenderMCPHost:
                 "        _module._mcp_resident_host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)",
                 "        _module._mcp_resident_host._residency_module = _helper",
                 "        _module._mcp_resident_host._residency = _helper.SceneResidency(bpy)",
+                "        _module._mcp_resident_host._arm_twist_dependency_sources = {n: _zl.decompress(_b64.b64decode(v)) for n, v in " + repr(self._resident_expert_sources) + ".items()}",
                 "        _module._resident_tag = " + repr(self._resident_tag),
             ]
         lines += [
@@ -497,10 +518,12 @@ class BlenderMCPHost:
             'patch_observation_capabilities': set(), 'observe_patch': {'request_id', 'object_id', 'patch', 'deadline_ns'},
             'nonplanar_observation_capabilities': set(),
             'observe_nonplanar_patch': {'request_id', 'object_id', 'patch', 'deadline_ns', 'mode'},
-            'observe_mesh_structure': {'request_id', 'object_id', 'categories', 'deadline_ns'}}
+            'observe_mesh_structure': {'request_id', 'object_id', 'categories', 'deadline_ns'},
+            'observe_arm_twist': {'selection'}}
         if command not in required or type(params) is not dict or set(params) != required[command]:
             raise ValueError('Invalid fixed structure observation command')
-        return self._resident_code(command, params, request_id, 16384)
+        return self._resident_code(command, params, request_id,
+            _MAX_RESIDENT_INIT_BYTES if command == 'observe_arm_twist' else 16384)
 
     def _fail(self, message):
         self._poisoned = True
@@ -517,7 +540,7 @@ class BlenderMCPHost:
                     else self._code(command, params, request_id))
             payload = json.dumps({"type": "execute_code", "params": {"code": code}},
                                  allow_nan=False, separators=(",", ":")).encode("utf-8")
-            request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready else
+            request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready or command == 'observe_arm_twist' else
                              64 * 1024 if command in {'capture', 'capture_task', 'capture_nearest_candidates'} else _MAX_REQUEST_BYTES)
             if len(payload) > request_limit:
                 raise ValueError("BlenderMCP request exceeds the transport size limit")

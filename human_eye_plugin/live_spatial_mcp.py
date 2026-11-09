@@ -222,6 +222,28 @@ LIVE_MCP_TOOLS_SCHEMA.append({
         'required': ['request_id', 'request']},
 })
 
+LIVE_MCP_TOOLS_SCHEMA.append({
+    'name': 'human_eye_arm_twist_observe',
+    'description': ('Read an explicitly selected Blender arm patch. Returns synthetic-trained '
+        'twist-collapse severity by original vertex section and current source. Diagnostic only: '
+        'no repair or execution authority. Supply mesh, a 2..4 bone chain and existing ordered sections.'),
+    'annotations': {'readOnlyHint': True, 'destructiveHint': False, 'idempotentHint': True, 'openWorldHint': False},
+    'inputSchema': {'type': 'object', 'additionalProperties': False,
+        'properties': {'session_id': copy.deepcopy(_ID_SCHEMA),
+            'selection': {'type': 'object', 'additionalProperties': False,
+                'properties': {
+                    'mesh_name': {'type': 'string', 'minLength': 1, 'maxLength': 256},
+                    'armature_name': {'type': 'string', 'minLength': 1, 'maxLength': 256},
+                    'bone_names': {'type': 'array', 'minItems': 2, 'maxItems': 4, 'uniqueItems': True,
+                        'items': {'type': 'string', 'minLength': 1, 'maxLength': 256}},
+                    'vertex_indices': {'type': 'array', 'minItems': 6, 'maxItems': 8192, 'uniqueItems': True,
+                        'items': {'type': 'integer', 'minimum': 0}},
+                    'sections': {'type': 'array', 'minItems': 2, 'maxItems': 128,
+                        'items': {'type': 'array', 'minItems': 3, 'maxItems': 256, 'uniqueItems': True,
+                            'items': {'type': 'integer', 'minimum': 0}}}},
+                'required': ['mesh_name', 'bone_names', 'sections']}},
+        'required': ['selection']}})
+
 for _tool in LIVE_MCP_TOOLS_SCHEMA:
     if _tool['name'] != 'human_eye_connection_status':
         _tool['inputSchema']['properties']['task_context'] = copy.deepcopy(TASK_CONTEXT_SCHEMA)
@@ -301,6 +323,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         raise ValueError("arguments must be an object")
     allowed = {
         'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb'},
+        'human_eye_arm_twist_observe': {'selection', 'session_id', 'task_context'},
         "human_eye_scene_observe": {"task_instruction", "focal_id", "reference_id", "session_id", "goal", "query", 'task_context', 'scene_delta', 'response_detail', 'include_image'},
         "human_eye_transform": {"action", "session_id", "goal", 'task_context'},
         "human_eye_connection_status": set(),
@@ -320,6 +343,8 @@ def _validate_arguments(name: str, arguments: Any) -> None:
             raise ValueError(f"{field} must be a nonempty string")
     if "task_instruction" in arguments and not isinstance(arguments["task_instruction"], str):
         raise ValueError("task_instruction must be a string")
+    if name == 'human_eye_arm_twist_observe' and type(arguments.get('selection')) is not dict:
+        raise ValueError('selection must be an object')
     if 'response_detail' in arguments and (not isinstance(arguments['response_detail'], str)
             or arguments['response_detail'] not in ('full', 'brief')):
         raise ValueError('response_detail must be full or brief')
@@ -600,7 +625,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
-    if value.get('result_kind') in ('task_query', 'surface_nearest'):
+    if (value.get('result_kind') in ('task_query', 'surface_nearest')
+            or value.get('schema') == 'arm-twist-expert-report-v1'):
         # Already selected structured facts. No full diagnostic, alias pass,
         # copy, model message, nested context JSON or second encoding.
         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
@@ -705,6 +731,7 @@ class LiveSpatialMCPServer:
             return
         operations = {'human_eye_scene_observe': 'mcp.observe',
                       'human_eye_spatial_relations': 'mcp.observe',
+                      'human_eye_arm_twist_observe': 'mcp.arm_twist_observe',
                       'human_eye_transform': 'mcp.transform',
                       'human_eye_clearance_segment': 'mcp.clearance_segment',
                       'human_eye_connection_status': 'mcp.status'}
@@ -712,7 +739,7 @@ class LiveSpatialMCPServer:
         operation = operations.get(name, 'mcp.invalid') if isinstance(name, str) else 'mcp.invalid'
         with factory(operation,
                      session_id=args.get('session_id', self.default_session_id)) as trace:
-            set_image_request(False if name == 'human_eye_spatial_relations' else
+            set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_arm_twist_observe'} else
                               args.get('include_image', False) if name == 'human_eye_clearance_segment' else
                               args.get('include_image', True) if name == 'human_eye_scene_observe' else
                               True if name == 'human_eye_transform' else None,
@@ -780,6 +807,9 @@ class LiveSpatialMCPServer:
             if value.get('result_kind') == 'surface_nearest':
                 is_error = value.get('status') not in {'complete', 'partial'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
+        elif name == 'human_eye_arm_twist_observe':
+            value = self.service.observe_arm_twist(session_id, args['selection'], **context_kwargs)
+            is_error = value.get('status') not in {'estimated', 'unknown'}
         elif name == "human_eye_transform":
             value = self.service.transform(session_id, args["action"], **goal_kwargs, **context_kwargs)
             is_error = value.get("status") not in {"verified", "no_op"}
