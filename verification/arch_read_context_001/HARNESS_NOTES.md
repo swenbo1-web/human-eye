@@ -1,0 +1,20 @@
+# 保留的失败
+
+nearest_tests_01.log / FAILED_NEAREST_TEST.py.txt 保留首次9方法中的1个FAIL。
+旧integration fixture的far_with_late_line/collinear输入曾用来断言unknown，
+当前接受的v3 surface kernel已支持它，实际正确返回complete。新测试改用
+真实binary64极端尺度的surface_exact_bit_budget样本验证partial/unknown；
+产品几何模块未改。修后9方法及最终9方法通过。
+
+另一个非unittest审计脚本设置失败保留在FAILED_AUDIT.py.txt。第一次audit
+错误假设从bd1产品提交新建分支后，旧2c3证据提交新增的50文件仍在当前
+工作目录。工具回执是FileNotFoundError，路径为
+verification/spatial_delivery_001/ADDITIONAL_MEMORY_RESULTS.json。
+这不是证据遗失：codex/nearest-integration仍固定2c3f36e，50文件完整保留
+在该Git提交；本次按指派从产品bd1建分支，当前树本就不含后续证据提交。
+修正审计为：98个共同祖先证据逐字节比较当前磁盘，50个delivery证据核对
+旧分支/固定Git保留。没有复制旧归档或改旧分支。
+
+该审计异常来自工具transcript，未冒称它有独立原始stderr文件；源脚本快照
+已保留。它不计入101次unittest方法执行。第一次读取本架构目录STATE.json
+也因该文件不存在报错，随后找到更新的原协调STATE；这属于只读路径发现。
