@@ -3,7 +3,9 @@
 This cache has no observation tokens, execution gates, rollback or host writes.
 Every input is a complete world/metre snapshot. A missing object therefore means
 removed from that snapshot, not inferred occlusion. Exact byte keys, never the
-diagnostic rigid-fit tolerance, govern measurement reuse.
+diagnostic rigid-fit tolerance, govern legacy measurement reuse. The resident
+read owner can instead bind its private normalized meshes to a current capture
+version; these bindings never enter persisted state or action authorization.
 """
 from __future__ import annotations
 
@@ -164,6 +166,19 @@ class SpatialSceneCache:
         self._hits = self._misses = self._computations = 0
         self._support_hits = self._support_misses = 0
         self._estimated_saved_ms = 0.0
+        self._read_meshes = {}
+
+    def _bind_read_meshes(self, version, meshes):
+        """Only the resident owner binds its private normalized mesh objects."""
+        with self._lock:
+            self._read_meshes = ({id(mesh): (mesh, (version, mesh.object_id)) for mesh in meshes}
+                                 if version is not None else {})
+
+    def _measurement_mesh(self, mesh):
+        entry = self._read_meshes.get(id(mesh))
+        if entry is not None and entry[0] is mesh:
+            return {'read_resource_version': entry[1]}
+        return _mesh_dict(mesh)
 
     def _bytes(self):
         return (self._blob_bytes + self._frame_bytes + self._measurement_bytes
@@ -362,15 +377,14 @@ class SpatialSceneCache:
     def _observation_solid_support(self, mesh):
         """Exact-content, bounded, process-local support memo for observations.
 
-        Hash the complete current normalized mesh, including every geometry,
-        frame and metadata field consumed by support validation. No caller CRC,
-        scene fingerprint or dirty hint participates. Unknown results are not
+        Legacy callers hash the complete current normalized mesh. Resident
+        readers use the owner's private mesh/capture-version binding instead;
+        model inputs cannot provide such a binding. Unknown results are not
         memoized; serialized result bytes prevent mutations through a return.
         Execution indexes deliberately never opt into this evaluator.
         """
         from .geometry_safety import solid_support_status
-        value = _mesh_dict(mesh)
-        key = _digest(_encode(value))
+        key = _digest(_encode(self._measurement_mesh(mesh)))
         with self._lock:
             cached = self._solid_support.get(key)
             if cached is not None:
@@ -378,7 +392,7 @@ class SpatialSceneCache:
                 self._support_hits += 1
                 return _decode(cached)
             self._support_misses += 1
-            result = solid_support_status(value)
+            result = solid_support_status(_mesh_dict(mesh))
             if result.get('supported') is True:
                 encoded = _encode(result)
                 charge = _charge(encoded, key)
@@ -403,7 +417,7 @@ class SpatialSceneCache:
         if parameters is not None and not isinstance(parameters, dict):
             raise ValueError("measurement parameters must be a mapping")
         key = _digest(_encode({"algorithm": algorithm_version, "parameters": parameters or {},
-                              "focal": _mesh_dict(focal), "reference": _mesh_dict(reference)}))
+                              "focal": self._measurement_mesh(focal), "reference": self._measurement_mesh(reference)}))
         with self._lock:
             cached = self._measurements.get(key)
             if cached is not None:

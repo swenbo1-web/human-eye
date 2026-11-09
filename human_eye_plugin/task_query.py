@@ -385,12 +385,12 @@ def _task_set_result(scene, meshes, fingerprint, query, cache, checkpoint, bound
             'unresolved_distances': ranked['unresolved']}, 'execution_authority': False}
 
 
-def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None):
+def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _normalize=None, _identity=None):
     """Internal same-capture nearest summary; never a history/action entry."""
     from .auto_router import _validated_scene
     from .runtime_identity import runtime_identity
     checkpoint('surface_nearest_binding')
-    identity = runtime_identity()
+    identity = runtime_identity() if _identity is None else _identity
     host_sha = next(row['sha256'] for row in identity['source_files']
                     if row['path'] == 'human_eye_plugin/blender_host.py')
     if (type(packet) is not dict or packet.get('protocol') != 'single-read-surface-candidates-v1'
@@ -449,8 +449,8 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None):
                              'reason': 'strict_current_bound'})
         else:
             raise ValueError('Invalid nearest directory disposition')
-    scene, meshes, fingerprint = _validated_scene(packet.get('capture'),
-        _surface_nearest_capture=True, _annotate_scene=False)
+    scene, meshes, fingerprint = (_validated_scene(packet.get('capture'),
+        _surface_nearest_capture=True, _annotate_scene=False) if _normalize is None else _normalize())
     current = scene['host_identity']
     by_id = {mesh.object_id: mesh for mesh in meshes}
     if (scene['source'] != 'blender' or set(by_id) != retained or focal not in retained

@@ -338,6 +338,26 @@ class LiveSpatialService:
                 port=connection.get("port", 9876), timeout_s=connection.get("timeout_s", 10))
         self.host = host
         self._perception_cache = None
+        from .read_context import ReadContext
+        self._read_context = ReadContext()
+        self._read_generation = None
+        self._read_source_identity()
+
+    def _read_source_identity(self):
+        generation = (self._identity['source_sha256'], id(self.host), self.production_mode)
+        if generation != self._read_generation:
+            self._identity_check = validate_expected_identity(self.config.get('expected_identity'), self._identity)
+            if self._read_generation is not None:
+                self._read_context.reset(clear_measurements=True)
+            self._read_identity_result = self._check_identity(readonly_task=True)
+            self._read_generation = generation
+        return self._read_identity_result
+
+    def _bind_read_result(self, result, source_check):
+        result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
+        if source_check is not None and source_check['status'] == 'loaded_generation':
+            result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
+                source_check_scope=source_check['source_check_scope'])
 
     @contextmanager
     def _request_budget(self):
@@ -1223,14 +1243,11 @@ class LiveSpatialService:
         from .task_query import surface_nearest_result
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
-        rejected, source_check = self._check_identity(readonly_task=True)
-        if rejected is not None:
-            return rejected
-        with self._locked() as (value, runtime), self._observation_scope():
-            if value.get('inflight') or runtime.status['quarantined']:
-                return {'status': 'host_quarantined', 'session_id': session_id, 'routing': None}
-            observation_baseline = ({key: old if key == 'runtime' else copy.deepcopy(old)
-                for key, old in value.items()} if type(value.get('runtime')) is dict else None)
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
             # Sample the destination clock first so conversion cannot extend an
             # earlier parent deadline. The connector also caps its own timeout.
             now = time.perf_counter_ns()
@@ -1255,10 +1272,17 @@ class LiveSpatialService:
                     raise ValueError('surface_nearest capture selector mismatch')
             elif captured.get('focal_id') != focal_id:
                 raise ValueError('surface_nearest capture focal_id mismatch')
+            selection = {'focal_id': focal_id, 'selector': selector}
+            context.activate(captured.get('capture'), 'surface_nearest', selection)
+            def normalize():
+                return context.normalized(lambda: _validated_scene(captured.get('capture'),
+                    _surface_nearest_capture=True, _annotate_scene=False))
             with span('observation.surface_nearest'):
-                work = {}
-                result = surface_nearest_result(captured, runtime.router.scene_cache,
-                    self._check_request_budget, diagnostics=work)
+                work = {'kernel_calls': 0}
+                result, hit = context.result('surface_nearest', lambda: surface_nearest_result(
+                    captured, context.scene_cache, self._check_request_budget, diagnostics=work,
+                    _normalize=normalize, _identity=self._identity))
+                work['result_cache_hit'] = hit
             names = {item['object_id']: item['name'] for item in captured['capture']['meshes']}
             def named(oid):
                 return {'id': oid, 'name': names[oid]}
@@ -1269,15 +1293,7 @@ class LiveSpatialService:
             result['unresolved'] = [dict(named(oid), reason=reason)
                 for oid, reason in sorted(result['unresolved'].items())]
             result.pop('excluded')
-            state = runtime.export_state()
-            state['sessions'] = [item for item in state['sessions'] if item[0] != session_id]
-            runtime.import_state(state)
-            result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
-            if source_check is not None and source_check['status'] == 'loaded_generation':
-                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
-                    source_check_scope=source_check['source_check_scope'])
-            self._save(value, runtime, _observation_baseline=observation_baseline)
-            self._check_request_budget('after_surface_nearest_state_write')
+            self._bind_read_result(result, source_check)
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=result['binding']['scene_revision'],
             engine_invoked=work['kernel_calls'] > 0, task_work=work)
@@ -1285,41 +1301,34 @@ class LiveSpatialService:
         return result
 
     def _observe_task(self, session_id, query):
-        """Read-only finite query, sharing the existing capture/cache/ledger."""
+        """Finite current-capture query, independent of action persistence."""
         from .task_query import task_result
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
-        rejected, source_check = self._check_identity(readonly_task=True)
-        if rejected is not None:
-            return rejected
-        with self._locked() as (value, runtime), self._observation_scope():
-            if value.get('inflight') or runtime.status['quarantined']:
-                return {'status': 'host_quarantined', 'session_id': session_id, 'routing': None}
-            # Retain the loaded runtime before import-time cleanup is exported.
-            # Other envelope fields must remain detached from this operation.
-            observation_baseline = ({key: old if key == 'runtime' else copy.deepcopy(old)
-                for key, old in value.items()} if type(value.get('runtime')) is dict else None)
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
             self._check_request_budget('before_host_capture')
             task_capture = getattr(self.host, 'capture_task_scene', None)
             selected_capture = callable(task_capture)
             with span('host.capture', kind='host'):
                 captured = task_capture(query['objects']) if selected_capture else self.host.capture_scene()
             self._check_request_budget('after_host_capture')
+            context.activate(captured, 'task_selected' if selected_capture else 'task_full',
+                query['objects'] if selected_capture else None)
             with span('scene.validate'):
-                scene, meshes, fingerprint = _validated_scene(captured, _task_capture=selected_capture)
+                scene, meshes, fingerprint = context.normalized(
+                    lambda: _validated_scene(captured, _task_capture=selected_capture))
             with span('observation.task_facts'):
-                work = {}
-                result = task_result(scene, meshes, fingerprint, query,
-                    runtime.router.scene_cache, self._check_request_budget, diagnostics=work)
-            # This read creates no action token. Drop a prior same-session
-            # prepare context, just as an unpaired legacy overview does.
-            runtime._discard_prepared_session(session_id)
-            result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
-            if source_check is not None and source_check['status'] == 'loaded_generation':
-                result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
-                    source_check_scope=source_check['source_check_scope'])
-            self._save(value, runtime, _observation_baseline=observation_baseline)
-            self._check_request_budget('after_task_state_write')
+                from .read_context import query_key
+                work = {'exact_pair_count': 0, 'surface_pair_count': 0, 'closed_solid_pair_count': 0}
+                result, hit = context.result(query_key(query), lambda: task_result(
+                    scene, meshes, fingerprint, query, context.scene_cache,
+                    self._check_request_budget, diagnostics=work))
+                work['result_cache_hit'] = hit
+            self._bind_read_result(result, source_check)
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=scene['revision'],
             engine_invoked=(work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0
