@@ -1,0 +1,249 @@
+"""One fixed-source sequential shared/owned expert-entry QA group.
+
+This script may run only after the parent supplies candidate SHA and the
+coordinator's Blender window. It never edits product/global configuration.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import queue
+import shutil
+import socket
+import subprocess
+import sys
+import threading
+import time
+import traceback
+
+ROOT=Path(__file__).resolve().parents[2];HERE=Path(__file__).resolve().parent
+HIDDEN=getattr(subprocess,'CREATE_NO_WINDOW',0)
+
+def compact(value):return json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')
+def save(path,value):Path(path).write_text(json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n',encoding='utf8')
+def rows(path):return [json.loads(line) for line in Path(path).read_text(encoding='utf8').splitlines() if line] if Path(path).exists() else []
+def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest() if Path(path).exists() else None
+
+def control(port,output,params):
+    tx=compact(dict(type='test_control',params=params));started=time.perf_counter_ns()
+    with socket.create_connection(('127.0.0.1',port),timeout=30) as stream:
+        stream.sendall(tx);rx=bytearray()
+        while True:
+            block=stream.recv(65536)
+            if not block:break
+            rx.extend(block)
+    with (output/'controls.jsonl').open('a',encoding='utf8') as file:file.write(json.dumps(dict(params=params,
+        tx_hex=tx.hex(),rx_hex=rx.hex(),duration_ms=(time.perf_counter_ns()-started)/1e6,
+        scope='isolated QA control outside measured tool'))+'\n')
+    result=json.loads(rx);assert 'control' in result,result
+    return result['control']
+
+class Client:
+    def __init__(self,output,mode,config,spec,python,blender,scene,blender_events):
+        self.folder=output/mode;self.folder.mkdir();self.mode=mode;self.sequence=0;self.queue=queue.Queue()
+        self.events=blender_events;self.state=Path(json.loads(Path(config).read_text(encoding='utf8'))['state_file'])
+        command=[str(python),'-X','utf8','-B',str(HERE/'instrumented_stdio.py'),'--mode',mode,
+            '--config',str(config),'--directory',str(self.folder),'--spec',str(spec)]
+        if mode!='shared':command+=['--blender',str(blender),'--scene',str(scene)]
+        save(self.folder/'command.json',command);self.stderr=(self.folder/'stderr.log').open('wb')
+        self.process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
+            stderr=self.stderr,bufsize=0,creationflags=HIDDEN)
+        def read():
+            while True:
+                line=self.process.stdout.readline()
+                if not line:break
+                with (self.folder/'stdio_rx.bin').open('ab') as stream:stream.write(line)
+                try:self.queue.put((line,json.loads(line)))
+                except ValueError:self.queue.put((line,None))
+            self.queue.put((b'',None))
+        self.thread=threading.Thread(target=read,daemon=True);self.thread.start()
+        self.request('initialize',dict(protocolVersion='2025-06-18' if mode=='owned_task' else '2025-03-26',
+            capabilities={},clientInfo=dict(name='expert-entry-qa',version='1')))
+        _,listing,_=self.request('tools/list',{})
+        assert 'human_eye_arm_twist_observe' in [tool['name'] for tool in listing['result']['tools']],listing
+
+    def request(self,method,params):
+        self.sequence+=1;request_id=self.sequence
+        tx=compact(dict(jsonrpc='2.0',id=request_id,method=method,params=params))+b'\n'
+        started=time.perf_counter_ns();self.process.stdin.write(tx);self.process.stdin.flush()
+        line,response=self.queue.get(timeout=90);duration=(time.perf_counter_ns()-started)/1e6
+        with (self.folder/'stdio_tx.bin').open('ab') as stream:stream.write(tx)
+        assert response is not None and response.get('id')==request_id,(line[:1000],self.process.poll())
+        assert 'error' not in response,response
+        return dict(full_tool_rtt_ms=duration,stdio_tx_bytes=len(tx),stdio_rx_bytes=len(line)),response,request_id
+
+    def tool(self,name,arguments,*,expected_error=False):
+        before=sha(self.state);event_start=len(rows(self.events));cost,response,request_id=self.request('tools/call',dict(name=name,arguments=arguments))
+        with (self.folder/'tool_attempts.jsonl').open('a',encoding='utf8') as stream:
+            stream.write(json.dumps(dict(request_id=request_id,name=name,arguments=arguments,response=response,**cost),ensure_ascii=False)+'\n')
+        assert bool(response['result'].get('isError')) is expected_error,response
+        value=json.loads(next(row['text'] for row in response['result']['content'] if row['type']=='text'))
+        metric=next(row for row in reversed(rows(self.folder/'metrics.jsonl')) if row.get('event')=='tool' and row.get('request_id')==request_id)
+        assert sha(self.state)==before,'Readonly tool changed ledger bytes'
+        for key,count in metric['calls'].items():
+            assert not count or not key.endswith(('._locked','._runtime','._save',':_atomic_write')),(key,count)
+        events=rows(self.events)[event_start:]
+        result=dict(request_id=request_id,tool=name,arguments=arguments,result=value,metric=metric,**cost,
+            ledger_before_sha256=before,ledger_after_sha256=sha(self.state),blender_events=events)
+        return result
+
+    def close(self):
+        if self.process.poll() is None:
+            self.process.stdin.close()
+            try:self.process.wait(timeout=25)
+            except subprocess.TimeoutExpired:
+                self.process.terminate()
+                try:self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:self.process.kill();self.process.wait(timeout=10)
+        self.thread.join(timeout=2);self.stderr.close();save(self.folder/'exit.json',dict(returncode=self.process.returncode))
+        assert self.process.returncode==0,(self.mode,self.process.returncode)
+
+def compare_report(actual,expected):
+    for key in ('schema','status','assessment','model_id','scope','reason'):
+        assert actual[key]==expected[key],(key,actual,expected)
+    assert actual['execution_authority'] is False
+    assert actual['source_binding']=='local_armature_source_adapter'
+    assert len(actual['regions'])==len(expected['regions'])
+    worst=0.
+    for left,right in zip(actual['regions'],expected['regions']):
+        for key in ('section_index','vertex_ids','flagged'):assert left[key]==right[key],key
+        error=abs(left['predicted_severity']-right['predicted_severity']);worst=max(worst,error)
+        assert error<=1e-9,(error,left,right)
+    if 'max_severity' in expected:assert abs(actual['max_severity']-expected['max_severity'])<=1e-9
+    return worst
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',type=Path,required=True);parser.add_argument('--expected-source-sha256',required=True)
+    parser.add_argument('--expected-commit',required=True)
+    parser.add_argument('--python',type=Path,default=Path('D:/hefe/.human-eye/releases/9.7.2+20261028.support.discovery.r1/.venv/Scripts/python.exe'))
+    parser.add_argument('--blender',type=Path,default=Path('D:/Tools/blender5.2/blender.exe'))
+    parser.add_argument('--run-m5',action='store_true',help='Same-source 0/1/4 path after all expert processes close')
+    args=parser.parse_args();output=args.output.resolve();output.mkdir(parents=True,exist_ok=False)
+    sys.path.insert(0,str(ROOT))
+    from human_eye_plugin.runtime_identity import runtime_identity
+    def identity():
+        value=runtime_identity(mode='live');assert value['source_sha256']==args.expected_source_sha256
+        assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==args.expected_commit
+        for row in value['source_files']:assert sha(ROOT/row['path'])==row['sha256'],row['path']
+        return value
+    before=identity();save(output/'identity_before.json',before)
+    for name in ('qa_fixture.py','observe_blender.py','instrumented_stdio.py','run_actual.py'):
+        shutil.copyfile(HERE/name,output/(name+'.txt'))
+    result=dict(passed=False,source_sha256=before['source_sha256'],source_members=len(before['source_files']),
+        product_commit=args.expected_commit,records=[],processes=[],model_api_calls=0,user_assets=0,
+        timing_scope='tool RTT includes observer/direct native same-model oracle; product_method_ms excludes oracle; controls separate; no performance guarantee')
+    clients=[];fixture_process=None;fixture_log=None;started=time.perf_counter_ns()
+    def persist():save(output/'RESULTS.json',result)
+    try:
+        original_fixture=output/'original_fixture.blend';original_spec=output/'original_spec.json'
+        command=[str(args.blender),'--factory-startup','--disable-autoexec','--background','--python',str(HERE/'qa_fixture.py'),
+            '--','create',str(ROOT),str(original_fixture),str(original_spec)]
+        save(output/'fixture_create_command.json',command)
+        created=subprocess.run(command,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            timeout=90,creationflags=HIDDEN)
+        (output/'fixture_create.stdout').write_bytes(created.stdout);(output/'fixture_create.stderr').write_bytes(created.stderr)
+        assert created.returncode==0 and original_fixture.is_file(),created.stderr[-3000:]
+        spec=json.loads(original_spec.read_text(encoding='utf8'));selection=spec['selection'];result['fixture_spec']=spec
+        fixture_sha=sha(original_fixture);result['fixture_sha256']=fixture_sha
+        for mode in ('owned','shared','owned_task'):
+            run=output/(mode+'_setup');run.mkdir();fixture=run/'fixture.blend';shutil.copyfile(original_fixture,fixture)
+            local_spec=dict(spec,fixture=str(fixture));spec_path=run/'spec.json';save(spec_path,local_spec)
+            port=None
+            if mode=='shared':
+                worker_folder=run/'blender_observer';ready=run/'ready.json';fixture_log=(run/'blender.log').open('wb')
+                command=[str(args.blender),'--factory-startup','--disable-autoexec','--background',str(fixture),
+                    '--python',str(HERE/'qa_fixture.py'),'--','serve',str(spec_path),str(ready),str(worker_folder)]
+                save(run/'command.json',command)
+                fixture_process=subprocess.Popen(command,stdout=fixture_log,stderr=subprocess.STDOUT,creationflags=HIDDEN)
+                deadline=time.monotonic()+60
+                while not ready.exists():
+                    assert fixture_process.poll() is None and time.monotonic()<deadline,'Shared fixture startup failed'
+                    time.sleep(.05)
+                info=json.loads(ready.read_text());port=info['port'];result['processes'].append(dict(kind='shared_fixture',pid=fixture_process.pid))
+                events=worker_folder/'blender_events.jsonl'
+            else:events=output/mode/'blender_events.jsonl'
+            state=run/'actions.json';state.write_bytes(b'opaque existing action ledger must not be parsed by expert reads\n')
+            config=dict(schema_version='1.0',enabled=True,project_root=str(ROOT),state_file=str(state),audit_file=str(run/'audit.jsonl'),
+                quad_size=64,max_sessions=4,expected_identity={key:before[key] for key in ('source_sha256','build_id','implementation_revision')})
+            if mode=='shared':config['blender']=dict(host='127.0.0.1',port=port,timeout_s=30.)
+            config_path=run/'connector.json';save(config_path,config)
+            client=Client(output,mode,config_path,spec_path,args.python,args.blender,fixture,events);clients.append(client)
+            def manipulate(op):
+                if port:return control(port,output,dict(op=op))
+                return client.request('qa/control',dict(op=op))[1]['result']
+            # Existing nearest semantics require a static-triangle scene;
+            # keep that read-domain fixture separate from the Armature patch.
+            manipulate('ordinary_scene');imports_before=manipulate('stats')['loaded']
+            task=dict(session_id='expert-qa',include_image=False,query=dict(mode='task',objects=[dict(name='BluePart'),dict(name='GreyBase')],requested_facts=['aabb']))
+            nearest=dict(session_id='expert-qa',include_image=False,query=dict(mode='surface_nearest',objects=[dict(name='BluePart')]))
+            for name,arguments in [('ordinary_task_before_expert',task),('ordinary_nearest_before_expert',nearest)]:
+                row=client.tool('human_eye_scene_observe',arguments);row.update(mode=mode,label=name);result['records'].append(row);persist()
+            imports_after=manipulate('stats')['loaded'];assert imports_after==imports_before,(imports_before,imports_after)
+            assert not any('arm_twist' in name for name in imports_after),imports_after
+            result.setdefault('lazy_import_checks',[]).append(dict(mode=mode,before=imports_before,after=imports_after,
+                scope='Blender side; client runtime already has NumPy; no new NumPy or expert/weight module from ordinary reads'))
+            manipulate('expert_scene')
+            sequence=[('first',None),('repeat',None)] if mode=='owned_task' else [
+                ('first',None),('repeat',None),('pose','pose'),('static','static'),('out_of_domain','unsupported'),
+                ('recovered','restore'),('load_lifecycle','load')]
+            for label,op in sequence:
+                if op:manipulate(op)
+                row=client.tool('human_eye_arm_twist_observe',dict(session_id='expert-qa',selection=selection),expected_error=label=='out_of_domain')
+                row.update(mode=mode,label=label);result['records'].append(row);persist()
+                event=next(event for event in reversed(row['blender_events']) if event.get('event')=='expert')
+                if label=='out_of_domain':continue
+                assert event.get('oracle_file') and 'oracle_error' not in event,event
+                oracle=json.loads(Path(event['oracle_file']).read_text(encoding='utf8'))
+                row['direct_model_max_abs_error']=compare_report(row['result'],oracle['report'])
+                assert row['result']['status']=='estimated','Fixture must exercise the real MLP, not only an unknown result'
+                assert event['work_delta']['captures']==1,event
+                if label=='repeat':
+                    assert event['work_delta'].get('preparations',0)==0 and event['work_delta'].get('static_reads',0)==0,event
+                    assert event['prepared_before']==event['prepared_after'],event
+                if label=='pose':
+                    assert event['work_delta'].get('preparations',0)==0,event
+                    assert event['prepared_before']==event['prepared_after'],event
+                if label in ('first','static','load_lifecycle'):assert event['work_delta']['preparations']==1,event
+                persist()
+            manipulate('ordinary_scene')
+            row=client.tool('human_eye_scene_observe',nearest);row.update(mode=mode,label='ordinary_nearest_after_expert');result['records'].append(row);persist()
+            client.close();clients.remove(client)
+            armed=next(row for row in rows(events) if row.get('event')=='observer_armed')
+            result['processes'].append(dict(kind=mode+'_worker',pid=armed['pid'],stdio_returncode=client.process.returncode))
+            assert sha(fixture)==fixture_sha
+            if fixture_process is not None:
+                fixture_process.terminate();fixture_process.wait(timeout=20)
+                result['processes'].append(dict(kind='shared_fixture_teardown',pid=fixture_process.pid,returncode=fixture_process.returncode,
+                    method='controlled terminate then wait'))
+                fixture_process=None;fixture_log.close();fixture_log=None
+        if args.run_m5:
+            m5=ROOT/'verification/m5_local_loop_opt_001/run_owned_qa.py'
+            command=[str(args.python),'-X','utf8','-I','-B',str(m5),'--runtime-root',str(ROOT),
+                '--expected-source-sha256',args.expected_source_sha256,'--output',str(output/'m5_same_source'),
+                '--fixture-root',str(ROOT/'verification/m5_local_loop_001/candidate_run_01'),'--blender',str(args.blender)]
+            save(output/'m5_command.json',command)
+            checked=subprocess.run(command,cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=HIDDEN,timeout=180)
+            (output/'m5.stdout').write_bytes(checked.stdout);(output/'m5.stderr').write_bytes(checked.stderr)
+            assert checked.returncode==0,checked.stderr[-2000:]
+            result['m5_same_source']=json.loads((output/'m5_same_source/RESULTS.json').read_text());assert result['m5_same_source']['passed']
+        after=identity();save(output/'identity_after.json',after);assert after==before
+        result['passed']=True
+    except BaseException as exc:
+        result.update(failure=repr(exc),traceback=traceback.format_exc());(output/'failure.txt').write_text(result['traceback'],encoding='utf8')
+        print(result['traceback'],flush=True)
+    finally:
+        for client in reversed(clients):
+            try:client.close()
+            except BaseException as exc:result.setdefault('cleanup_errors',[]).append(repr(exc))
+        if fixture_process is not None:
+            fixture_process.terminate()
+            try:fixture_process.wait(timeout=15)
+            except subprocess.TimeoutExpired:fixture_process.kill();fixture_process.wait(timeout=10)
+        if fixture_log:fixture_log.close()
+        result['runner_sequence_ms']=(time.perf_counter_ns()-started)/1e6
+        result['record_count']=len(result['records']);persist()
+    print(json.dumps(dict(passed=result['passed'],records=len(result['records']),result=str(output/'RESULTS.json'))))
+    return 0 if result['passed'] else 1
+
+if __name__=='__main__':raise SystemExit(main())

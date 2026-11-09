@@ -1,0 +1,372 @@
+"""Explicit expert entry wiring, without Blender, sockets or model training.
+
+Transport tests keep the real command encoder/envelope validator and replace
+only endpoints. Lazy-import checks use a fresh isolated Python interpreter.
+"""
+from __future__ import annotations
+
+import ast
+from collections import deque
+from contextlib import ExitStack
+import copy
+import hashlib
+import io
+import json
+from pathlib import Path
+import queue
+import subprocess
+import sys
+import tempfile
+import threading
+from types import SimpleNamespace as NS
+import unittest
+from unittest.mock import patch
+
+ROOT=Path(__file__).resolve().parents[2]
+OUT=Path(__file__).resolve().parent
+sys.path.insert(0,str(ROOT))
+from human_eye_plugin.blender_process import BlenderProcessHost,HostRemoteError,HostTransportError
+from human_eye_plugin.blender_mcp_host import BlenderMCPHost,RPC_PREFIX
+from human_eye_plugin.live_service import LiveSpatialService
+from human_eye_plugin.live_spatial_mcp import LiveSpatialMCPServer
+from human_eye_plugin.owned_task_mcp import OwnedTaskMCP
+from verification.test_goal_segment import clearance_scene
+
+TOOL='human_eye_arm_twist_observe'
+
+
+def selection(count=6):
+    ids=[100_000_003+3*i for i in range(count)]
+    width=32 if count>256 else 3
+    return dict(mesh_name='ArmMesh',armature_name='Rig',bone_names=['upper','lower'],
+        vertex_indices=ids,sections=[ids[i:i+width] for i in range(0,count,width)])
+
+
+def expert_report(value):
+    indices=value.get('vertex_indices') or sorted({i for row in value['sections'] for i in row})
+    identity=lambda name:'blender:'+hashlib.sha256(name.encode()).hexdigest()
+    return dict(schema='arm-twist-expert-report-v1',status='estimated',
+        assessment='synthetic_twist_collapse_estimate_not_damage',
+        model_id='test-synthetic-model',scope='specified_closed_arm_sections_synthetic_training',
+        source_binding='local_armature_source_adapter',execution_authority=False,reason=None,
+        regions=[dict(section_index=i,vertex_ids=row[:],predicted_severity=.125,flagged=False)
+            for i,row in enumerate(value['sections'])],max_severity=.125,
+        source=dict(instance_id='a'*32,epoch=1,revision=1,static_revision=1,selection_key='b'*64,
+            mesh=dict(name=value['mesh_name'],object_id=identity(value['mesh_name']),instance=['uid',1],data_instance=['uid',2]),
+            armature=dict(name=value.get('armature_name','Rig'),object_id=identity(value.get('armature_name','Rig')),
+                instance=['uid',3],data_instance=['uid',4]),
+            frame=dict(number=1,subframe=0.),coordinate_frame='armature_local',unit='m',
+            selected_vertices=len(indices),selected_bones=value['bone_names'][:],local_root_parent=None,
+            tracking='scene_residency',max_lbs_readback_error_m=0.))
+
+
+def forbidden(*args,**kwargs):raise AssertionError('Unexpected action state, network or process work')
+
+
+def unpack(code):
+    """Inspect the actual generated fixed command, without executing bpy code."""
+    for node in ast.parse(code).body:
+        if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='_request' for t in node.targets):
+            return json.loads(ast.literal_eval(node.value.args[0]))
+    raise AssertionError('Generated fixed command has no request literal')
+
+
+class Endpoint:
+    def __init__(self):self.requests=[];self.bad=None
+    def dispatch(self,request):
+        self.requests.append(copy.deepcopy(request))
+        if request['command']=='observe_arm_twist':
+            if self.bad=='remote':return {'error':dict(type='ValueError',message='source_domain_refusal',mutation_uncertain=False)}
+            value=expert_report(request['params']['selection'])
+            if self.bad=='schema':value['schema']='unexpected-expert-schema'
+            if self.bad=='binding':value['source']['mesh']['name']='OtherArm'
+            return {'result':value}
+        return {'result':dict(revision='fresh-after-expert-error',unit='m',coordinate_frame='world',meshes=[])}
+
+
+class PipeSink:
+    def __init__(self,host,endpoint):self.host=host;self.endpoint=endpoint;self.payloads=[]
+    def write(self,payload):
+        self.payloads.append(payload);request=json.loads(payload)
+        response=self.endpoint.dispatch(request)
+        self.host._responses.put(('response',dict(id=request['id'],**response)))
+        return len(payload)
+    def flush(self):pass
+
+
+def owned_client():
+    host=object.__new__(BlenderProcessHost)
+    host._lock=threading.RLock();host._closed=host._poisoned=False;host._sequence=0
+    host._responses=queue.Queue();host._diagnostics=deque(maxlen=64);host._scene_decoder=None
+    host._default_worker=True;host._capabilities={};host.timeout=2.
+    host._terminate_child=forbidden
+    endpoint=Endpoint();sink=PipeSink(host,endpoint)
+    host._process=NS(poll=lambda:None,stdin=sink)
+    return host,endpoint,sink
+
+
+class SharedEndpoint(BlenderMCPHost):
+    def __init__(self):
+        super().__init__(ROOT);self.endpoint=Endpoint();self.payloads=[]
+    def _exchange(self,payload):
+        self.payloads.append(payload);request=unpack(json.loads(payload)['params']['code'])
+        response=self.endpoint.dispatch(request)
+        result=dict(protocol_version='1.0',id=request['id'],**response)
+        output=RPC_PREFIX+json.dumps(result,separators=(',',':'))+'\n'
+        return dict(status='success',result=dict(executed=True,result=output))
+
+
+class BridgeEntryTests(unittest.TestCase):
+    def test_owned_legal_sparse_selection_uses_large_read_channel_and_keeps_action_cap(self):
+        host,endpoint,sink=owned_client();value=selection(4096)
+        self.assertGreater(len(json.dumps(value)),65536)
+        original=copy.deepcopy(value);result=host.observe_arm_twist(value)
+        self.assertEqual(endpoint.requests[-1]['params']['selection'],original)
+        self.assertGreater(len(sink.payloads[-1]),65536)
+        self.assertEqual(result['regions'][0]['vertex_ids'],value['sections'][0])
+        self.assertEqual(value,original)
+        before=len(sink.payloads)
+        with self.assertRaises(ValueError):host._request('apply',{'padding':'x'*8192})
+        self.assertEqual(len(sink.payloads),before)
+        self.assertFalse(host._poisoned)
+
+    def test_shared_legal_sparse_selection_exceeds_small_structure_and_capture_limits(self):
+        host=SharedEndpoint();self.addCleanup(host.close);value=selection(4096)
+        result=host.observe_arm_twist(value)
+        self.assertEqual(host.endpoint.requests[-1]['params']['selection'],value)
+        self.assertGreater(len(host.payloads[-1]),65536)
+        self.assertEqual(result['source']['selected_vertices'],4096)
+        self.assertFalse(result['execution_authority'])
+
+    def test_report_schema_and_selection_binding_cannot_be_laundered_by_either_bridge(self):
+        for kind in ('owned','shared'):
+            for bad in ('schema','binding'):
+                with self.subTest(kind=kind,bad=bad):
+                    if kind=='owned':host,endpoint,_=owned_client()
+                    else:host=SharedEndpoint();endpoint=host.endpoint;self.addCleanup(host.close)
+                    endpoint.bad=bad
+                    with self.assertRaises((ValueError,HostTransportError)):
+                        host.observe_arm_twist(selection())
+
+    def test_known_expert_domain_error_does_not_poison_next_normal_read(self):
+        for kind in ('owned','shared'):
+            with self.subTest(kind=kind):
+                if kind=='owned':host,endpoint,_=owned_client()
+                else:host=SharedEndpoint();endpoint=host.endpoint;self.addCleanup(host.close)
+                endpoint.bad='remote'
+                with self.assertRaises(HostRemoteError):host.observe_arm_twist(selection())
+                self.assertFalse(host._poisoned)
+                endpoint.bad=None
+                self.assertEqual(host.capture_scene()['revision'],'fresh-after-expert-error')
+
+
+class ReadHost:
+    def __init__(self):self.calls=[];self.fail=False
+    def observe_arm_twist(self,value):
+        self.calls.append(copy.deepcopy(value))
+        if self.fail:raise ValueError('explicit_expert_domain_error')
+        return expert_report(value)
+    def capture_scene(self):return clearance_scene()
+
+
+class ServiceAndToolTests(unittest.TestCase):
+    def setUp(self):
+        temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);self.folder=Path(temp.name)
+        config=self.folder/'connector.json'
+        config.write_text(json.dumps(dict(schema_version='1.0',enabled=True,project_root=str(ROOT),
+            state_file='state.json',audit_file='audit.jsonl',quad_size=64)),encoding='utf8')
+        self.host=ReadHost();self.service=LiveSpatialService(config,host=self.host)
+        self.ledger=self.service.state_path;self.ledger.write_bytes(b'opaque existing action state')
+        self.server=LiveSpatialMCPServer(self.service,'expert-entry-test')
+
+    def no_action_state(self):
+        stack=ExitStack()
+        for name in ('_locked','_runtime','_save'):stack.enter_context(patch.object(self.service,name,side_effect=forbidden))
+        return stack
+
+    def call(self,arguments):
+        return self.server.handle_jsonrpc_message(dict(jsonrpc='2.0',id=1,method='tools/call',
+            params=dict(name=TOOL,arguments=arguments)))
+
+    def test_direct_service_is_one_read_host_call_and_preserves_opaque_ledger(self):
+        with self.no_action_state():result=self.service.observe_arm_twist('expert-entry-test',selection())
+        self.assertEqual(len(self.host.calls),1)
+        self.assertEqual(result['schema'],'arm-twist-expert-report-v1')
+        self.assertEqual(self.ledger.read_bytes(),b'opaque existing action state')
+        self.assertFalse(result['execution_authority'])
+
+    def test_mcp_explicit_read_tool_returns_regions_and_current_source_as_text_only(self):
+        tools=self.server.handle_jsonrpc_message(dict(jsonrpc='2.0',id=2,method='tools/list'))['result']['tools']
+        tool=next(row for row in tools if row['name']==TOOL)
+        self.assertTrue(tool['annotations']['readOnlyHint'])
+        with self.no_action_state():reply=self.call({'selection':selection()})
+        self.assertFalse(reply['result']['isError'],reply)
+        self.assertEqual([item['type'] for item in reply['result']['content']],['text'])
+        body=json.loads(reply['result']['content'][0]['text'])
+        self.assertEqual(body['regions'][0]['predicted_severity'],.125)
+        self.assertEqual(body['source']['mesh']['name'],'ArmMesh')
+        self.assertIn('synthetic',body['assessment'])
+        self.assertEqual(len(self.host.calls),1)
+
+    def test_bad_tool_arguments_refuse_before_host_and_expert_error_then_normal_read_recovers(self):
+        for arguments in ({},{'selection':[]},{'selection':selection(),'repair':True}):
+            with self.subTest(arguments=list(arguments)):
+                with self.no_action_state():reply=self.call(arguments)
+                self.assertTrue(reply['result']['isError'],reply)
+        self.assertEqual(self.host.calls,[])
+        self.host.fail=True
+        with self.no_action_state():reply=self.call({'selection':selection()})
+        self.assertTrue(reply['result']['isError'],reply)
+        with self.no_action_state():
+            normal=self.service.observe('expert-entry-test',include_image=False,
+                query=dict(mode='task',objects=[{'id':'part'},{'id':'base'}],requested_facts=['aabb']))
+        self.assertEqual(normal['status'],'observed')
+        self.assertEqual(self.ledger.read_bytes(),b'opaque existing action state')
+
+    def test_owned_task_entry_reuses_same_read_tool_without_goal_or_approval_path(self):
+        entry=object.__new__(OwnedTaskMCP);entry.initialized=True;entry.live=self.server
+        entry.episodes={};entry._goal=forbidden
+        listing=entry.handle(dict(jsonrpc='2.0',id=3,method='tools/list'))
+        self.assertIn(TOOL,[row['name'] for row in listing['result']['tools']])
+        request=dict(jsonrpc='2.0',id=4,method='tools/call',params=dict(name=TOOL,arguments={'selection':selection()}))
+        with self.no_action_state():reply=entry.handle(request)
+        self.assertFalse(reply['result']['isError'],reply)
+        self.assertEqual(len(self.host.calls),1)
+
+
+class LazyBoundaryTests(unittest.TestCase):
+    def test_fresh_boundary_ordinary_task_nearest_do_not_load_numpy_weights_or_expert(self):
+        script=r'''
+import json,sys,time
+sys.path.insert(0,sys.argv[1])
+from verification.arch_resident_001.test_residency_contract import make_host
+host,focal,reference,graph=make_host()
+names=('numpy','human_eye_plugin.arm_twist_expert','human_eye_plugin.arm_twist_weights')
+before={name:name in sys.modules for name in names}
+assert not any(before.values()),before
+host.capture_task_scene([{'name':'Focal'},{'name':'Reference'}])
+host.capture_nearest_candidates(None,time.perf_counter_ns()+5_000_000_000,64*1024*1024,selector={'name':'Focal'})
+after={name:name in sys.modules for name in names}
+assert not any(after.values()),after
+class Named(list):
+ def get(self,name,default=None):return next((item for item in self if item.name==name),default)
+host.scene.objects=Named(host.scene.objects)
+bad={'mesh_name':'missing-arm','bone_names':['upper','lower'],'vertex_indices':[0,1,2,3,4,5],'sections':[[0,1,2],[3,4,5]]}
+try:host.observe_arm_twist(bad)
+except ValueError:pass
+else:raise AssertionError('missing native arm was accepted')
+normal=host.capture_task_scene([{'name':'Focal'},{'name':'Reference'}])
+assert len(normal['meshes'])==2
+host.close_residency()
+print(json.dumps({'before':before,'ordinary_after':after,'normal_after_error':True}))
+'''
+        process=subprocess.run([sys.executable,'-I','-B','-c',script,str(ROOT)],capture_output=True,
+            text=True,encoding='utf8',cwd=ROOT,timeout=20)
+        self.assertEqual(process.returncode,0,process.stdout+'\n'+process.stderr)
+        result=json.loads(process.stdout)
+        self.assertFalse(any(result['ordinary_after'].values()))
+        self.assertTrue(result['normal_after_error'])
+
+    def test_frozen_dependencies_execute_once_and_warm_loading_ignores_mutable_disk(self):
+        script=r'''
+import builtins,importlib.util,json,pathlib,sys,tempfile
+from unittest.mock import patch
+root=pathlib.Path(sys.argv[1]);names=('rig_pose.py','arm_twist_weights.py','arm_twist_expert.py','arm_twist_source.py')
+assert 'numpy' not in sys.modules
+with tempfile.TemporaryDirectory() as folder:
+ package=pathlib.Path(folder)/'human_eye_plugin';package.mkdir()
+ for name in ('blender_host.py',*names):(package/name).write_bytes((root/'human_eye_plugin'/name).read_bytes())
+ spec=importlib.util.spec_from_file_location('isolated_lazy_host',package/'blender_host.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+ host=object.__new__(module.BlenderSceneHost);frozen={name:(package/name).read_bytes() for name in names};host._arm_twist_dependency_sources=frozen
+ # Shared resident hosts receive these bytes in the connector's initial frozen
+ # snapshot. The native process must execute them, not a later on-disk change.
+ for name in names:(package/name).write_text("raise AssertionError('mutable dependency was executed')\n")
+ compiled=[];original=builtins.compile
+ def count(source,filename,*a,**kw):
+  if pathlib.Path(filename).name in names:compiled.append(pathlib.Path(filename).name)
+  return original(source,filename,*a,**kw)
+ with patch.object(builtins,'compile',side_effect=count):first=host._arm_twist_source_module()
+ assert sorted(compiled)==sorted(names),compiled
+ assert 'numpy' in sys.modules
+ compiled.clear()
+ with patch.object(builtins,'compile',side_effect=count):second=host._arm_twist_source_module()
+ assert second is first and compiled==[],compiled
+ print(json.dumps({'cold_compiles':4,'warm_compiles':0,'frozen_source_used':True,'numpy_loaded_only_after_explicit':True}))
+'''
+        process=subprocess.run([sys.executable,'-I','-B','-c',script,str(ROOT)],capture_output=True,
+            text=True,encoding='utf8',cwd=ROOT,timeout=25)
+        self.assertEqual(process.returncode,0,process.stdout+'\n'+process.stderr)
+        self.assertEqual(json.loads(process.stdout)['warm_compiles'],0)
+
+    def test_partial_dependency_failure_removes_half_loaded_namespace_then_retry_works(self):
+        script=r'''
+import importlib.util,json,pathlib,sys,tempfile
+root=pathlib.Path(sys.argv[1]);names=('rig_pose.py','arm_twist_weights.py','arm_twist_expert.py','arm_twist_source.py')
+with tempfile.TemporaryDirectory() as folder:
+ package=pathlib.Path(folder)/'human_eye_plugin';package.mkdir()
+ for name in ('blender_host.py',*names):(package/name).write_bytes((root/'human_eye_plugin'/name).read_bytes())
+ spec=importlib.util.spec_from_file_location('isolated_failed_lazy_host',package/'blender_host.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+ host=object.__new__(module.BlenderSceneHost);frozen={name:(package/name).read_bytes() for name in names}
+ bad=dict(frozen);bad['arm_twist_expert.py']=b"raise ValueError('controlled dependency initialization failure')\n";host._arm_twist_dependency_sources=bad
+ before={name for name in sys.modules if name.startswith('_human_eye_arm_twist_')}
+ try:host._arm_twist_source_module()
+ except ValueError:pass
+ else:raise AssertionError('dependency failure disappeared')
+ after={name for name in sys.modules if name.startswith('_human_eye_arm_twist_')}
+ assert before==after,(before,after)
+ host._arm_twist_dependency_sources=frozen
+ assert hasattr(host._arm_twist_source_module(),'ArmTwistSource')
+ print(json.dumps({'no_partial_modules':True,'retry_loaded_frozen_source':True}))
+'''
+        process=subprocess.run([sys.executable,'-I','-B','-c',script,str(ROOT)],capture_output=True,
+            text=True,encoding='utf8',cwd=ROOT,timeout=25)
+        self.assertEqual(process.returncode,0,process.stdout+'\n'+process.stderr)
+        self.assertTrue(json.loads(process.stdout)['no_partial_modules'])
+
+
+class NativeAdapterEntryTests(unittest.TestCase):
+    def fixture(self):
+        from verification.m6_arm_source_001 import test_arm_source as f
+        value=f.make_host();self.addCleanup(value.host.close_residency)
+        # Only the native topology reader is injected. Both bound/analyze and
+        # the entry method execute the original source/expert implementations.
+        custom=f.bind(value);value.host._arm_twist_adapter=custom._source
+        return f,value
+
+    def test_each_public_analyze_captures_once_and_unchanged_selection_keeps_prepared(self):
+        _,f=self.fixture();original=copy.deepcopy(f.selection)
+        first=f.host.observe_arm_twist(f.selection);bound=f.host._arm_twist_bound;prepared=bound.prepared
+        self.assertEqual(bound.work_totals()['captures'],1)
+        self.assertEqual(bound.work_totals()['preparations'],1)
+        second=f.host.observe_arm_twist(copy.deepcopy(f.selection))
+        self.assertIs(f.host._arm_twist_bound,bound)
+        self.assertIs(bound.prepared,prepared)
+        self.assertEqual(bound.work_totals()['captures'],2)
+        self.assertEqual(bound.work_totals()['preparations'],1)
+        self.assertEqual(first,second)
+        self.assertEqual(f.selection,original)
+
+    def test_default_indices_reuse_bound_but_original_selection_mutation_and_load_are_fresh(self):
+        _,f=self.fixture();value={k:copy.deepcopy(v) for k,v in f.selection.items() if k!='vertex_indices'}
+        first=f.host.observe_arm_twist(value);bound=f.host._arm_twist_bound;prepared=bound.prepared
+        f.host.observe_arm_twist(copy.deepcopy(value))
+        self.assertIs(f.host._arm_twist_bound,bound)
+        self.assertIs(bound.prepared,prepared)
+        self.assertEqual(bound.work_totals()['captures'],2)
+        # The caller's later list edit cannot rewrite the retained selection.
+        retained=copy.deepcopy(bound._selection)
+        value['sections'][0]=value['sections'][0][1:]+value['sections'][0][:1]
+        self.assertEqual(bound._selection,retained)
+        f.host.observe_arm_twist(value)
+        replacement=f.host._arm_twist_bound
+        self.assertIsNot(replacement,bound)
+        replacement_prepared=replacement.prepared
+        for callback in tuple(f.bpy.app.handlers.load_post):callback(f.host.scene)
+        after=f.host.observe_arm_twist(value)
+        self.assertIs(f.host._arm_twist_bound,replacement)
+        self.assertIsNot(replacement.prepared,replacement_prepared)
+        self.assertNotEqual(after['source']['epoch'],first['source']['epoch'])
+        self.assertEqual(replacement.work_totals()['captures'],2)
+
+
+if __name__=='__main__':unittest.main(verbosity=2)

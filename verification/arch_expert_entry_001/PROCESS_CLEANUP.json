@@ -1,0 +1,81 @@
+{
+  "checked_utc": "2026-11-09T16:32:55.9409765Z",
+  "scope": "Read-only process query; no terminate or kill at audit time; task-owned known PIDs and command lines only",
+  "known_task_pids": [
+    7872,
+    37792,
+    25376,
+    36444,
+    24328,
+    35148,
+    16248
+  ],
+  "active_scoped_processes": [],
+  "exit_records": [
+    {
+      "run": "actual_run_01",
+      "kind": "owned_worker",
+      "pid": 7872,
+      "stdio_returncode": 0
+    },
+    {
+      "run": "actual_run_02",
+      "kind": "owned_worker",
+      "pid": 37792,
+      "stdio_returncode": 0
+    },
+    {
+      "run": "actual_run_02",
+      "kind": "shared_fixture",
+      "pid": 25376,
+      "stdio_returncode": 0,
+      "fixture_returncode": 1,
+      "teardown": "controlled terminate then wait"
+    },
+    {
+      "run": "actual_run_02",
+      "kind": "owned_task_worker",
+      "pid": 36444,
+      "stdio_returncode": 0
+    },
+    {
+      "run": "m5_same_source",
+      "kind": "zero",
+      "pid": 24328,
+      "worker_returncode": 0,
+      "worker_closed": true
+    },
+    {
+      "run": "m5_same_source",
+      "kind": "one",
+      "pid": 35148,
+      "worker_returncode": 0,
+      "worker_closed": true
+    },
+    {
+      "run": "m5_same_source",
+      "kind": "multi",
+      "pid": 16248,
+      "worker_returncode": 0,
+      "worker_closed": true
+    }
+  ],
+  "known_pid_processes_observed": [
+    {
+      "ProcessId": 37792,
+      "Name": "VSSVC.exe",
+      "CommandLine": null
+    }
+  ],
+  "pid_reuse_observed": [
+    {
+      "ProcessId": 37792,
+      "Name": "VSSVC.exe",
+      "CommandLine": null
+    }
+  ],
+  "active_task_pid_matches": [],
+  "all_known_numeric_pids_absent": false,
+  "task_workers_absent": true,
+  "interpretation": "Blender workers have recorded exit/close; no task Blender/python command line remains. Numeric PID 37792 is reused by unrelated VSSVC.exe and was not touched."
+}

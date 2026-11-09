@@ -1,0 +1,399 @@
+diff --git a/examples/blender_worker.py b/examples/blender_worker.py
+index d784873..523dbe6 100644
+--- a/examples/blender_worker.py
++++ b/examples/blender_worker.py
+@@ -202,6 +202,9 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
+                     'last_readonly_native_audit':{'request_id'}}[command]
+                 if set(params)!=required:raise ValueError('Invalid typed readonly observation arguments')
+                 result=getattr(host,command)(**params)
++            elif command == 'observe_arm_twist':
++                if set(params) != {'selection'}:raise ValueError('Arm twist requires only selection')
++                result = host.observe_arm_twist(params['selection'])
+             elif command == 'capture_evidence':
+                 if params:raise ValueError('capture_evidence accepts no arguments')
+                 result = host.capture_evidence()
+diff --git a/human_eye_plugin/blender_host.py b/human_eye_plugin/blender_host.py
+index 7bf6424..6692542 100644
+--- a/human_eye_plugin/blender_host.py
++++ b/human_eye_plugin/blender_host.py
+@@ -1342,6 +1342,67 @@ class BlenderSceneHost:
+         with self._lock:
+             return self._capture(_native_evidence=True)
+ 
++    def _arm_twist_source_module(self):
++        module = getattr(self, '_arm_twist_module', None)
++        if module is not None:
++            return module
++        import importlib.util
++        import sys
++        import types
++        from pathlib import Path
++        root = Path(__file__).resolve().parent
++        names = ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py')
++        sources = getattr(self, '_arm_twist_dependency_sources', None)
++        if sources is None:
++            guard = next((f for f in sys.meta_path if getattr(f, 'protocol', None) ==
++                'human-eye-verified-source-v1' and f.root == root.parent), None)
++            sources = {name: (guard.sources['human_eye_plugin/' + name] if guard is not None
++                else (root / name).read_bytes()) for name in names}
++        if set(sources) != set(names):
++            raise BlenderHostError('Arm twist dependency snapshot unavailable')
++        digest = hashlib.sha256(str(root).encode('utf8') + b''.join(sources[n] for n in names)).hexdigest()
++        package_name = '_human_eye_arm_twist_' + digest[:24]
++        package = sys.modules.get(package_name)
++        if package is None:
++            package = types.ModuleType(package_name)
++            package.__path__ = [str(root)]
++            package.__package__ = package_name
++            sys.modules[package_name] = package
++            created = [(package_name, package)]
++            try:
++                for name in names:
++                    leaf = name[:-3]
++                    spec = importlib.util.spec_from_file_location(package_name + '.' + leaf, root / name)
++                    child = importlib.util.module_from_spec(spec)
++                    sys.modules[spec.name] = child
++                    setattr(package, leaf, child)
++                    created.append((spec.name, child))
++                    _exec_source_snapshot(child, root / name, sources[name])
++            except BaseException:
++                for key, child in reversed(created):
++                    if sys.modules.get(key) is child:
++                        del sys.modules[key]
++                raise
++        self._arm_twist_module = package.arm_twist_source
++        return self._arm_twist_module
++
++    def observe_arm_twist(self, selection):
++        """Estimate the current explicitly selected native arm patch, read-only."""
++        self._main_thread()
++        with self.transaction():
++            adapter = getattr(self, '_arm_twist_adapter', None)
++            if adapter is None:
++                adapter = self._arm_twist_source_module().ArmTwistSource(self)
++                self._arm_twist_adapter = adapter
++            bound = getattr(self, '_arm_twist_bound', None)
++            retained = None if bound is None else bound._selection
++            if type(selection) is dict and 'vertex_indices' not in selection and retained is not None:
++                retained = {key: value for key, value in retained.items() if key != 'vertex_indices'}
++            if bound is None or selection != retained:
++                bound = adapter.bind(selection)
++                self._arm_twist_bound = bound
++            return bound.analyze()
++
+     def capture_readonly_evidence(self):
+         """Read locked static original poses without making them executable.
+ 
+diff --git a/human_eye_plugin/blender_mcp_host.py b/human_eye_plugin/blender_mcp_host.py
+index 27f8e80..43457a9 100644
+--- a/human_eye_plugin/blender_mcp_host.py
++++ b/human_eye_plugin/blender_mcp_host.py
+@@ -32,7 +32,7 @@ import uuid
+ import zlib
+ 
+ from .blender_process import (HostRemoteError, HostTransportError, NATIVE_OBSERVATION_PROTOCOL,
+-    _validate_native_observation_capabilities, _validate_native_observation_request)
++    _validate_native_observation_capabilities, _validate_native_observation_request, _validate_arm_twist_report)
+ from .blender_host import PREWRITE_REFUSAL_PROTOCOL, validate_prewrite_refusal
+ from .scene_residency import SceneDeltaDecoder
+ 
+@@ -44,7 +44,7 @@ _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
+ _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+ _OBSERVATION_UNPROBED = object()
+ _OBSERVATION_COMMANDS=frozenset({'capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+-_STRUCTURE_COMMANDS=frozenset({'mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
++_STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
+     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
+     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
+ _READONLY_COMMANDS = _OBSERVATION_COMMANDS | _STRUCTURE_COMMANDS | {'capture', 'capture_evidence'}
+@@ -167,7 +167,22 @@ class BlenderMCPHost:
+         self._readonly_scene_residency_sha256 = hashlib.sha256(helper_bytes).hexdigest()
+         self._resident_sources = ((str(helper_source), base64.b64encode(zlib.compress(helper_bytes)).decode('ascii')),
+                                   (str(source), base64.b64encode(zlib.compress(source_bytes)).decode('ascii')))
+-        self._resident_tag = hashlib.sha256(source_bytes + helper_bytes).hexdigest()
++        self._resident_expert_sources = {}
++        self._readonly_arm_twist_sources_sha256 = {}
++        expert_bytes = []
++        for name in ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py'):
++            path = source.with_name(name)
++            if not path.is_file():
++                continue  # Minimal SDK roots can still use ordinary capture.
++            if not path.resolve().is_relative_to(root):
++                raise ValueError('Arm twist dependency is outside the trusted root')
++            blob = path.read_bytes()
++            if len(blob) > 512 * 1024:
++                raise ValueError('Arm twist dependency exceeds its source bound')
++            expert_bytes.append(blob)
++            self._readonly_arm_twist_sources_sha256['human_eye_plugin/' + name] = hashlib.sha256(blob).hexdigest()
++            self._resident_expert_sources[name] = base64.b64encode(zlib.compress(blob)).decode('ascii')
++        self._resident_tag = hashlib.sha256(source_bytes + helper_bytes + b''.join(expert_bytes)).hexdigest()
+         self._resident_slot = '_human_eye_mcp_resident_' + hashlib.sha256(str(root).encode('utf8')).hexdigest()[:20]
+         self._resident_ready = False
+         self._scene_decoder = SceneDeltaDecoder()
+@@ -287,6 +302,11 @@ class BlenderMCPHost:
+     def capture_evidence(self) -> dict[str, Any]:
+         return self._request('capture_evidence', {})
+ 
++    def observe_arm_twist(self, selection):
++        if type(selection) is not dict:
++            raise ValueError('Arm twist selection requires an object')
++        return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
++
+     def native_observation_capabilities(self):
+         with self._lock:
+             self._ensure_live()
+@@ -433,6 +453,7 @@ class BlenderMCPHost:
+                 "        _module._mcp_resident_host = _module.BlenderSceneHost(bpy_module=bpy, execution_metadata=True, identity_metadata=True)",
+                 "        _module._mcp_resident_host._residency_module = _helper",
+                 "        _module._mcp_resident_host._residency = _helper.SceneResidency(bpy)",
++                "        _module._mcp_resident_host._arm_twist_dependency_sources = {n: _zl.decompress(_b64.b64decode(v)) for n, v in " + repr(self._resident_expert_sources) + ".items()}",
+                 "        _module._resident_tag = " + repr(self._resident_tag),
+             ]
+         lines += [
+@@ -497,10 +518,12 @@ class BlenderMCPHost:
+             'patch_observation_capabilities': set(), 'observe_patch': {'request_id', 'object_id', 'patch', 'deadline_ns'},
+             'nonplanar_observation_capabilities': set(),
+             'observe_nonplanar_patch': {'request_id', 'object_id', 'patch', 'deadline_ns', 'mode'},
+-            'observe_mesh_structure': {'request_id', 'object_id', 'categories', 'deadline_ns'}}
++            'observe_mesh_structure': {'request_id', 'object_id', 'categories', 'deadline_ns'},
++            'observe_arm_twist': {'selection'}}
+         if command not in required or type(params) is not dict or set(params) != required[command]:
+             raise ValueError('Invalid fixed structure observation command')
+-        return self._resident_code(command, params, request_id, 16384)
++        return self._resident_code(command, params, request_id,
++            _MAX_RESIDENT_INIT_BYTES if command == 'observe_arm_twist' else 16384)
+ 
+     def _fail(self, message):
+         self._poisoned = True
+@@ -517,7 +540,7 @@ class BlenderMCPHost:
+                     else self._code(command, params, request_id))
+             payload = json.dumps({"type": "execute_code", "params": {"code": code}},
+                                  allow_nan=False, separators=(",", ":")).encode("utf-8")
+-            request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready else
++            request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready or command == 'observe_arm_twist' else
+                              64 * 1024 if command in {'capture', 'capture_task', 'capture_nearest_candidates'} else _MAX_REQUEST_BYTES)
+             if len(payload) > request_limit:
+                 raise ValueError("BlenderMCP request exceeds the transport size limit")
+diff --git a/human_eye_plugin/blender_process.py b/human_eye_plugin/blender_process.py
+index 7fe67c9..dd081d8 100644
+--- a/human_eye_plugin/blender_process.py
++++ b/human_eye_plugin/blender_process.py
+@@ -100,6 +100,22 @@ def _unique_object(pairs):
+     return result
+ 
+ 
++def _validate_arm_twist_report(value, selection):
++    source = value.get('source') if isinstance(value, dict) else None
++    mesh = source.get('mesh') if isinstance(source, dict) else None
++    armature = source.get('armature') if isinstance(source, dict) else None
++    if (not isinstance(source, dict) or value.get('schema') != 'arm-twist-expert-report-v1'
++            or value.get('status') not in ('estimated', 'unknown')
++            or value.get('source_binding') != 'local_armature_source_adapter'
++            or source.get('unit') != 'm' or source.get('coordinate_frame') != 'armature_local'
++            or not isinstance(mesh, dict) or mesh.get('name') != selection.get('mesh_name')
++            or source.get('selected_bones') != selection.get('bone_names')
++            or 'armature_name' in selection and (not isinstance(armature, dict)
++                or armature.get('name') != selection['armature_name'])):
++        raise ValueError('Arm twist report schema or current selection binding mismatch')
++    return value
++
++
+ class BlenderProcessHost:
+     """Serialize capture and transform requests to an owned headless process.
+ 
+@@ -262,6 +278,13 @@ class BlenderProcessHost:
+     def capture_evidence(self) -> dict[str, Any]:
+         return self._request('capture_evidence', {})
+ 
++    def observe_arm_twist(self, selection):
++        if not self._default_worker:
++            raise ValueError('Arm twist observation requires the fixed worker')
++        if type(selection) is not dict:
++            raise ValueError('Arm twist selection requires an object')
++        return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
++
+     def mesh_structure_capabilities(self):
+         if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
+         return self._request('mesh_structure_capabilities',{})
+@@ -486,8 +509,11 @@ class BlenderProcessHost:
+             payload = json.dumps({"id": request_id, "command": command, "params": params},
+                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
+             capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates')
+-            limit = _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS
++            limit = (_MAX_LINE_CHARS if command == 'observe_arm_twist' else
++                _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS)
+             if len(payload) > limit:
++                if command == 'observe_arm_twist':
++                    raise ValueError('Arm twist selection exceeds the existing line protocol limit')
+                 raise ValueError("Blender request exceeds the 65536-character capture protocol limit"
+                     if capture_request else "Blender request exceeds the 4096-character transform protocol limit")
+             stop_ns = None
+diff --git a/human_eye_plugin/blender_worker.py b/human_eye_plugin/blender_worker.py
+index d784873..523dbe6 100644
+--- a/human_eye_plugin/blender_worker.py
++++ b/human_eye_plugin/blender_worker.py
+@@ -202,6 +202,9 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
+                     'last_readonly_native_audit':{'request_id'}}[command]
+                 if set(params)!=required:raise ValueError('Invalid typed readonly observation arguments')
+                 result=getattr(host,command)(**params)
++            elif command == 'observe_arm_twist':
++                if set(params) != {'selection'}:raise ValueError('Arm twist requires only selection')
++                result = host.observe_arm_twist(params['selection'])
+             elif command == 'capture_evidence':
+                 if params:raise ValueError('capture_evidence accepts no arguments')
+                 result = host.capture_evidence()
+diff --git a/human_eye_plugin/live_service.py b/human_eye_plugin/live_service.py
+index e65c2ef..6345326 100644
+--- a/human_eye_plugin/live_service.py
++++ b/human_eye_plugin/live_service.py
+@@ -202,7 +202,8 @@ def _request(operation):
+                     task_context=task_context,
+                     include_image=None if operation == 'status' else
+                         kwargs.get('include_image', operation not in {
+-                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure'})) as trace:
++                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure',
++                            'arm_twist_observe'})) as trace:
+                 if self.request_budget_s is not None:
+                     annotate(request_budget_s=self.request_budget_s,
+                         request_budget_scope=_REQUEST_BUDGET_SCOPE)
+@@ -1242,6 +1243,40 @@ class LiveSpatialService:
+             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
+         return result
+ 
++    @_request('arm_twist_observe')
++    def observe_arm_twist(self, session_id, selection, *, task_context=None):
++        """Read one explicit local arm selection without the action runtime."""
++        if type(session_id) is not str or not session_id.strip():
++            raise ValueError('session_id required')
++        if type(selection) is not dict:
++            raise ValueError('selection must be an object')
++        if not self.config.get('enabled', True):
++            return {'status': 'disabled', 'session_id': session_id}
++        with self._read_context.lock, self._observation_scope():
++            rejected, _ = self._read_source_identity()
++            if rejected is not None:
++                return copy.deepcopy(rejected)
++            if self.production_mode:
++                from .blender_mcp_host import BlenderMCPHost
++                if isinstance(self.host, BlenderMCPHost):
++                    paths = {'human_eye_plugin/' + name + '.py' for name in
++                        ('rig_pose', 'arm_twist_source', 'arm_twist_expert', 'arm_twist_weights')}
++                    expected = {row['path']: row['sha256'] for row in self._identity['source_files']
++                                if row['path'] in paths}
++                    if getattr(self.host, '_readonly_arm_twist_sources_sha256', None) != expected:
++                        return {'status': 'implementation_mismatch', 'executed': False,
++                            'verified': False, 'execution_verified': False, 'allow_action': False,
++                            'runtime_identity': self.describe_runtime(),
++                            'reason_codes': ['host_bridge_source_mismatch']}
++            self._check_request_budget('before_arm_twist_read')
++            with span('host.arm_twist_observe', kind='host'):
++                result = self.host.observe_arm_twist(selection)
++            self._check_request_budget('after_arm_twist_read')
++            result['source']['runtime_source_sha256'] = self._identity['source_sha256']
++        self.record_event('arm_twist_observe', session_id=session_id, status=result['status'])
++        self._check_request_budget('before_arm_twist_result')
++        return result
++
+     def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
+         """One current candidate capture through the existing read-only boundary."""
+         from .task_query import surface_nearest_result
+diff --git a/human_eye_plugin/live_spatial_mcp.py b/human_eye_plugin/live_spatial_mcp.py
+index fe6bbd0..560bb0e 100644
+--- a/human_eye_plugin/live_spatial_mcp.py
++++ b/human_eye_plugin/live_spatial_mcp.py
+@@ -222,6 +222,28 @@ LIVE_MCP_TOOLS_SCHEMA.append({
+         'required': ['request_id', 'request']},
+ })
+ 
++LIVE_MCP_TOOLS_SCHEMA.append({
++    'name': 'human_eye_arm_twist_observe',
++    'description': ('Read an explicitly selected Blender arm patch. Returns synthetic-trained '
++        'twist-collapse severity by original vertex section and current source. Diagnostic only: '
++        'no repair or execution authority. Supply mesh, a 2..4 bone chain and existing ordered sections.'),
++    'annotations': {'readOnlyHint': True, 'destructiveHint': False, 'idempotentHint': True, 'openWorldHint': False},
++    'inputSchema': {'type': 'object', 'additionalProperties': False,
++        'properties': {'session_id': copy.deepcopy(_ID_SCHEMA),
++            'selection': {'type': 'object', 'additionalProperties': False,
++                'properties': {
++                    'mesh_name': {'type': 'string', 'minLength': 1, 'maxLength': 256},
++                    'armature_name': {'type': 'string', 'minLength': 1, 'maxLength': 256},
++                    'bone_names': {'type': 'array', 'minItems': 2, 'maxItems': 4, 'uniqueItems': True,
++                        'items': {'type': 'string', 'minLength': 1, 'maxLength': 256}},
++                    'vertex_indices': {'type': 'array', 'minItems': 6, 'maxItems': 8192, 'uniqueItems': True,
++                        'items': {'type': 'integer', 'minimum': 0}},
++                    'sections': {'type': 'array', 'minItems': 2, 'maxItems': 128,
++                        'items': {'type': 'array', 'minItems': 3, 'maxItems': 256, 'uniqueItems': True,
++                            'items': {'type': 'integer', 'minimum': 0}}}},
++                'required': ['mesh_name', 'bone_names', 'sections']}},
++        'required': ['selection']}})
++
+ for _tool in LIVE_MCP_TOOLS_SCHEMA:
+     if _tool['name'] != 'human_eye_connection_status':
+         _tool['inputSchema']['properties']['task_context'] = copy.deepcopy(TASK_CONTEXT_SCHEMA)
+@@ -301,6 +323,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
+         raise ValueError("arguments must be an object")
+     allowed = {
+         'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb'},
++        'human_eye_arm_twist_observe': {'selection', 'session_id', 'task_context'},
+         "human_eye_scene_observe": {"task_instruction", "focal_id", "reference_id", "session_id", "goal", "query", 'task_context', 'scene_delta', 'response_detail', 'include_image'},
+         "human_eye_transform": {"action", "session_id", "goal", 'task_context'},
+         "human_eye_connection_status": set(),
+@@ -320,6 +343,8 @@ def _validate_arguments(name: str, arguments: Any) -> None:
+             raise ValueError(f"{field} must be a nonempty string")
+     if "task_instruction" in arguments and not isinstance(arguments["task_instruction"], str):
+         raise ValueError("task_instruction must be a string")
++    if name == 'human_eye_arm_twist_observe' and type(arguments.get('selection')) is not dict:
++        raise ValueError('selection must be an object')
+     if 'response_detail' in arguments and (not isinstance(arguments['response_detail'], str)
+             or arguments['response_detail'] not in ('full', 'brief')):
+         raise ValueError('response_detail must be full or brief')
+@@ -600,7 +625,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
+                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
+     if not isinstance(value, dict):
+         raise ValueError("Live service returned an invalid result")
+-    if value.get('result_kind') in ('task_query', 'surface_nearest'):
++    if (value.get('result_kind') in ('task_query', 'surface_nearest')
++            or value.get('schema') == 'arm-twist-expert-report-v1'):
+         # Already selected structured facts. No full diagnostic, alias pass,
+         # copy, model message, nested context JSON or second encoding.
+         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+@@ -705,6 +731,7 @@ class LiveSpatialMCPServer:
+             return
+         operations = {'human_eye_scene_observe': 'mcp.observe',
+                       'human_eye_spatial_relations': 'mcp.observe',
++                      'human_eye_arm_twist_observe': 'mcp.arm_twist_observe',
+                       'human_eye_transform': 'mcp.transform',
+                       'human_eye_clearance_segment': 'mcp.clearance_segment',
+                       'human_eye_connection_status': 'mcp.status'}
+@@ -712,7 +739,7 @@ class LiveSpatialMCPServer:
+         operation = operations.get(name, 'mcp.invalid') if isinstance(name, str) else 'mcp.invalid'
+         with factory(operation,
+                      session_id=args.get('session_id', self.default_session_id)) as trace:
+-            set_image_request(False if name == 'human_eye_spatial_relations' else
++            set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_arm_twist_observe'} else
+                               args.get('include_image', False) if name == 'human_eye_clearance_segment' else
+                               args.get('include_image', True) if name == 'human_eye_scene_observe' else
+                               True if name == 'human_eye_transform' else None,
+@@ -780,6 +807,9 @@ class LiveSpatialMCPServer:
+             if value.get('result_kind') == 'surface_nearest':
+                 is_error = value.get('status') not in {'complete', 'partial'}
+             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
++        elif name == 'human_eye_arm_twist_observe':
++            value = self.service.observe_arm_twist(session_id, args['selection'], **context_kwargs)
++            is_error = value.get('status') not in {'estimated', 'unknown'}
+         elif name == "human_eye_transform":
+             value = self.service.transform(session_id, args["action"], **goal_kwargs, **context_kwargs)
+             is_error = value.get("status") not in {"verified", "no_op"}
+diff --git a/human_eye_plugin/owned_task_mcp.py b/human_eye_plugin/owned_task_mcp.py
+index 1746232..5dda439 100644
+--- a/human_eye_plugin/owned_task_mcp.py
++++ b/human_eye_plugin/owned_task_mcp.py
+@@ -28,7 +28,7 @@ from .live_spatial_mcp import (LiveSpatialMCPServer,LIVE_MCP_TOOLS_SCHEMA,
+ PROTOCOL='2025-06-18'
+ MAX_INPUT=256*1024
+ MAX_CALLS=16
+-READ_TOOLS={'human_eye_connection_status','human_eye_scene_observe'}
++READ_TOOLS={'human_eye_connection_status','human_eye_scene_observe','human_eye_arm_twist_observe'}
+ GOAL_TOOL={
+     'name':'human_eye_owned_clearance_goal',
+     'description':('Propose one finite original-support clearance goal for this configured owned Blender copy. '
