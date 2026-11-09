@@ -463,6 +463,14 @@ class BlenderProcessHost:
                 process_id=self._process.pid, goal_id=goal_id)
         return self._request("apply", params)
 
+    def _readback_after_apply(self, result):
+        """Consume this owned apply response's actual post-setter scene."""
+        if getattr(self, '_default_worker', False) is not True:
+            return self.capture_scene()
+        if type(result) is not dict or type(result.get('scene')) is not dict:
+            raise HostTransportError('Owned apply returned no readback scene')
+        return result['scene']
+
     def _ensure_live(self) -> None:
         if self._closed or self._poisoned:
             raise HostTransportError("Blender connection is closed or invalidated; start a new host and observe again")

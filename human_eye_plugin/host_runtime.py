@@ -359,7 +359,9 @@ class GuardedHostRuntime:
                                     routing=check, error_type=type(exc).__name__)
             try:
                 with _trace_span("host.readback_capture", kind="host", source_name="host_blender"):
-                    raw_actual = self.host.capture_scene()
+                    from .blender_process import BlenderProcessHost
+                    raw_actual = (self.host._readback_after_apply(host_result)
+                        if isinstance(self.host, BlenderProcessHost) else self.host.capture_scene())
                 actual_observation = _ValidatedObservation(raw_actual)
                 actual = actual_observation.scene
                 # A one-object transform cannot quietly move/delete/create
