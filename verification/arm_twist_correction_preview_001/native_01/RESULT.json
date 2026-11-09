@@ -1,0 +1,563 @@
+{
+  "schema": "arm-correction-preview-native-feasibility-v1",
+  "passed": true,
+  "blender_version": "5.2.1 LTS",
+  "blender_build_hash": "9e2066aef7ef",
+  "background": true,
+  "opened_blend_file": false,
+  "saved_blend_file": false,
+  "native_gates": {
+    "angle_deg": 0.001,
+    "position_m": 5e-06,
+    "section_area_loss": 2e-05
+  },
+  "source_hashes_before": {
+    "human_eye_plugin/arm_twist_correction.py": "9146cd465af25024e876de6d8af6447ea5af33302ca374dca16c190b71a38771",
+    "human_eye_plugin/arm_twist_source.py": "5cd8f002b264e0f07753794f360e01766b77470f92ac9b6f7346613160ab2b58",
+    "human_eye_plugin/arm_twist_expert.py": "25a9b0d4040104107f0d507126c111d34f0418547798f7ca81a25d3828d20d45",
+    "human_eye_plugin/arm_twist_weights.py": "f9f1aced3003728f797d37a5c9a48786bc65425d4ddc0c5f83a81751b6952f1a",
+    "human_eye_plugin/rig_pose.py": "fb7e3c380395ec9d00bb290b07990991b9986f0dc12c538af5a49ab66a172468",
+    "verification/m6_arm_expert_001/synthetic.py": "bab03dbe6c6cdf3b675eb87b58f05f1f39b31509a07b5c60d4204313b19c50f2",
+    "verification/arm_twist_correction_preview_001/cases.py": "c17e02f1f880f38db16d3872733bbd527cb8cf29879a6211b89fb7418888b478",
+    "verification/arm_twist_correction_preview_001/oracle.py": "bedcab15ea484db10c51da9b3e7caba31daf553b98b6e0ed6dbfcc37e052b2fe",
+    "verification/arm_twist_correction_preview_001/native_probe.py": "e6980549d77919b0f82bf9198b6f5b7b37a0b4cdc1f13c0efa3b9e74bc1034b4",
+    "verification/arm_twist_correction_preview_001/run_native.py": "069645d828f2348829fafaa7a9e76c7ef3bace40d9363c193343f082f3240a6d"
+  },
+  "cases": [
+    {
+      "case_id": "round_120",
+      "passed": true,
+      "asset_id": "train/round/three_even/linear/0",
+      "input_sha256_before": "522ed4248e5442244a2e3b8000796ee08190f83bd1416d24018dd9a2a22ed957",
+      "native_gates": {
+        "angle_deg": 0.001,
+        "position_m": 5e-06,
+        "section_area_loss": 2e-05
+      },
+      "preview_elapsed_ns": 7523200,
+      "fixture_construction_elapsed_ns": 2757100,
+      "joint_weight_proof": [
+        {
+          "section_index": 8,
+          "weights": [
+            0.5,
+            0.5,
+            0.0
+          ],
+          "vertices": 16
+        },
+        {
+          "section_index": 16,
+          "weights": [
+            0.0,
+            0.5,
+            0.5
+          ],
+          "vertices": 16
+        }
+      ],
+      "qa_candidate_application_elapsed_ns": 109300,
+      "checks": {
+        "initial_pose": {
+          "max_matrix_abs": 1.7031864457672796e-07,
+          "max_angle_deg": 8.089056195640467e-06,
+          "max_translation_m": 6.367564142438768e-08
+        },
+        "initial_vertices_max_m": 1.0426538103186859e-07,
+        "candidate_pose": {
+          "max_matrix_abs": 1.677326144644553e-07,
+          "max_angle_deg": 1.0632346523753525e-05,
+          "max_translation_m": 5.0992656192393954e-08
+        },
+        "fixed_end_global_pose": {
+          "max_matrix_abs": 1.4901161193847656e-07,
+          "max_angle_deg": 9.709139245476104e-06,
+          "max_translation_m": 2.9802322387695312e-08
+        },
+        "centerline_max_m": 5.960464477539063e-08,
+        "protected_vertices_max_m": 1.3657139822709083e-07,
+        "candidate_vertices_max_m": 1.421950706804516e-07,
+        "before_j_error": 2.5215890597785062e-08,
+        "after_j_error": 1.2398972332183789e-07,
+        "static_data_exact": true,
+        "outside_object_exact": true,
+        "input_packet_and_task_exact": true,
+        "target_met": true
+      },
+      "before_objective": {
+        "section_area_ratios": [
+          0.9999998757843005,
+          0.9999999032621402,
+          0.9999999983689443,
+          1.000000005185838,
+          0.9999999755041746,
+          0.9999999775516825,
+          0.7463699340787111,
+          0.3740924863962221,
+          0.24999997478410949,
+          0.37409236882626246,
+          0.7463698630478796,
+          0.9999996877355334,
+          0.9999996977624239,
+          0.9999997234486048,
+          0.9999998492041288,
+          0.9999997651025911,
+          0.9999997709617335,
+          0.999999911298246,
+          0.9999998067966839,
+          0.9999998234264651,
+          0.9999998869452901,
+          0.9999999343482262,
+          0.9999999653210941,
+          0.9999999285420146,
+          0.999999758417976
+        ],
+        "max_section_area_loss": 0.7500000252158905
+      },
+      "after_objective": {
+        "section_area_ratios": [
+          0.9999998757843005,
+          0.9999999032621402,
+          0.9999999983689443,
+          1.000000005185838,
+          0.9999999755041746,
+          0.9999999775516825,
+          0.915456623559145,
+          0.7913641662037474,
+          0.7499999480791353,
+          0.791364098022434,
+          0.9154564846937302,
+          0.9999998536233897,
+          0.9999997912730388,
+          0.9999998271837112,
+          0.9154565741038068,
+          0.7913639992140962,
+          0.7499998760102767,
+          0.7913641389261308,
+          0.9154566662626085,
+          0.9999999330629818,
+          0.9999999853850894,
+          1.0000000556906545,
+          1.000000050647224,
+          0.999999791463562,
+          0.9999999437499238
+        ],
+        "max_section_area_loss": 0.25000012398972327
+      },
+      "candidate_u_deg": 60.0,
+      "raw_native_readback_file": "case_01.json",
+      "raw_native_readback_sha256": "b1f82b3d6fafb16306e2eac34cccf6c63750d7c947288dd4fc17bc0492107782",
+      "case_elapsed_ns": 34055100
+    },
+    {
+      "case_id": "round_minus150",
+      "passed": true,
+      "asset_id": "train/round/three_even/linear/0",
+      "input_sha256_before": "785c31d6575b80debb80c50c154279399cbe58bdb27c7dbc7f059b541453c033",
+      "native_gates": {
+        "angle_deg": 0.001,
+        "position_m": 5e-06,
+        "section_area_loss": 2e-05
+      },
+      "preview_elapsed_ns": 4794100,
+      "fixture_construction_elapsed_ns": 2278900,
+      "joint_weight_proof": [
+        {
+          "section_index": 8,
+          "weights": [
+            0.5,
+            0.5,
+            0.0
+          ],
+          "vertices": 16
+        },
+        {
+          "section_index": 16,
+          "weights": [
+            0.0,
+            0.5,
+            0.5
+          ],
+          "vertices": 16
+        }
+      ],
+      "qa_candidate_application_elapsed_ns": 67500,
+      "checks": {
+        "initial_pose": {
+          "max_matrix_abs": 4.639297571662482e-07,
+          "max_angle_deg": 7.87626512195009e-06,
+          "max_translation_m": 4.1216852119947294e-08
+        },
+        "initial_vertices_max_m": 1.4049305927461405e-07,
+        "candidate_pose": {
+          "max_matrix_abs": 1.144734872449149e-07,
+          "max_angle_deg": 6.110094672222955e-06,
+          "max_translation_m": 2.771669410604619e-08
+        },
+        "fixed_end_global_pose": {
+          "max_matrix_abs": 4.76837158203125e-07,
+          "max_angle_deg": 6.898193919284721e-06,
+          "max_translation_m": 2.9802322387695312e-08
+        },
+        "centerline_max_m": 5.960464477539063e-08,
+        "protected_vertices_max_m": 1.228781230931777e-07,
+        "candidate_vertices_max_m": 9.822770155417124e-08,
+        "before_j_error": 3.929029657179228e-09,
+        "after_j_error": 1.4047761542901327e-07,
+        "static_data_exact": true,
+        "outside_object_exact": true,
+        "input_packet_and_task_exact": true,
+        "target_met": true
+      },
+      "before_objective": {
+        "section_area_ratios": [
+          0.9999998757843005,
+          0.9999999032621402,
+          0.9999999983689443,
+          1.000000005185838,
+          0.9999999755041746,
+          0.9999999775516825,
+          0.6844798330824754,
+          0.22136037548648696,
+          0.06698730203681029,
+          0.22136067710079213,
+          0.6844805412672832,
+          1.0000007244907578,
+          1.0000007028755358,
+          1.0000006690857723,
+          1.0000007447272328,
+          1.000000758914005,
+          1.0000008711083228,
+          1.00000099838744,
+          1.0000009196171729,
+          1.000000977705977,
+          1.0000009860582764,
+          1.0000009913985821,
+          1.000000921404515,
+          1.0000007857184718,
+          1.0000010053361352
+        ],
+        "max_section_area_loss": 0.9330126979631898
+      },
+      "after_objective": {
+        "section_area_ratios": [
+          0.9999998757843005,
+          0.9999999032621402,
+          0.9999999983689443,
+          1.000000005185838,
+          0.9999999755041746,
+          0.9999999775516825,
+          0.8746761100482057,
+          0.6907261217775507,
+          0.629409478767359,
+          0.6907261277978645,
+          0.8746761179560261,
+          0.9999998067524136,
+          0.9999997988580909,
+          0.9999997604157903,
+          0.8746760419488315,
+          0.6907259756832035,
+          0.6294093820736449,
+          0.6907261112135238,
+          0.8746762979287233,
+          0.999999953937345,
+          0.9999999399257002,
+          0.9999999799288224,
+          0.9999999798210889,
+          1.0000000360194075,
+          1.000000109111279
+        ],
+        "max_section_area_loss": 0.37059061792635506
+      },
+      "candidate_u_deg": -75.0,
+      "raw_native_readback_file": "case_02.json",
+      "raw_native_readback_sha256": "441194434681c8ff9a63a360667fbf5d43b528141adbcefa1a095be720c9fbd6",
+      "case_elapsed_ns": 26593900
+    },
+    {
+      "case_id": "elliptic_120",
+      "passed": true,
+      "asset_id": "train/elliptic/three_even/linear/0",
+      "input_sha256_before": "48bf52ef72bfbde4a43a9db8c94522c5bc982ccbedc320df0c10b77ce160600f",
+      "native_gates": {
+        "angle_deg": 0.001,
+        "position_m": 5e-06,
+        "section_area_loss": 2e-05
+      },
+      "preview_elapsed_ns": 7314400,
+      "fixture_construction_elapsed_ns": 2736300,
+      "joint_weight_proof": [
+        {
+          "section_index": 8,
+          "weights": [
+            0.5,
+            0.5,
+            0.0
+          ],
+          "vertices": 16
+        },
+        {
+          "section_index": 16,
+          "weights": [
+            0.0,
+            0.5,
+            0.5
+          ],
+          "vertices": 16
+        }
+      ],
+      "qa_candidate_application_elapsed_ns": 87900,
+      "checks": {
+        "initial_pose": {
+          "max_matrix_abs": 1.387836239263862e-07,
+          "max_angle_deg": 6.314606368770198e-06,
+          "max_translation_m": 3.7485831007341405e-08
+        },
+        "initial_vertices_max_m": 1.850128516799984e-07,
+        "candidate_pose": {
+          "max_matrix_abs": 2.5131287803570324e-07,
+          "max_angle_deg": 1.4109159593314936e-05,
+          "max_translation_m": 3.748583094923688e-08
+        },
+        "fixed_end_global_pose": {
+          "max_matrix_abs": 1.4156103134155273e-07,
+          "max_angle_deg": 9.200300768979995e-06,
+          "max_translation_m": 0.0
+        },
+        "centerline_max_m": 0.0,
+        "protected_vertices_max_m": 1.9082797281243946e-07,
+        "candidate_vertices_max_m": 2.475964406355577e-07,
+        "before_j_error": 5.6977483842146626e-09,
+        "after_j_error": 2.5567477413002138e-08,
+        "static_data_exact": true,
+        "outside_object_exact": true,
+        "input_packet_and_task_exact": true,
+        "target_met": true
+      },
+      "before_objective": {
+        "section_area_ratios": [
+          0.9999999890436149,
+          0.9999999407869518,
+          0.9999999605025217,
+          0.9999999070267419,
+          0.9999999515523408,
+          0.9999999848152381,
+          0.7477081920683512,
+          0.3744270617757673,
+          0.2500000056977485,
+          0.374426864478905,
+          0.7477080024365916,
+          0.9999998066355856,
+          0.9999996555357304,
+          0.9999997228949404,
+          0.9999997612841302,
+          0.9999997181348147,
+          0.9999998390383672,
+          0.9999998741901303,
+          0.9999998456049795,
+          0.9999998897543296,
+          0.9999997139394805,
+          0.9999996637304656,
+          0.9999996784310451,
+          0.9999998774550511,
+          0.9999995168650808
+        ],
+        "max_section_area_loss": 0.7499999943022515
+      },
+      "after_objective": {
+        "section_area_ratios": [
+          0.9999999890436149,
+          0.9999999407869518,
+          0.9999999605025217,
+          0.9999999070267419,
+          0.9999999515523408,
+          0.9999999848152381,
+          0.915902631688869,
+          0.7914757734213558,
+          0.7500000255674775,
+          0.7914756470385562,
+          0.9159025914007605,
+          1.000000056151355,
+          0.9999999532333331,
+          0.9999998748652722,
+          0.9159025445701929,
+          0.7914755585997137,
+          0.7500001908831573,
+          0.7914757313763198,
+          0.9159025328711632,
+          0.9999998118103604,
+          0.9999998543207795,
+          0.9999996598065976,
+          0.9999998066122278,
+          0.9999997121413821,
+          0.9999998567949285
+        ],
+        "max_section_area_loss": 0.24999997443252253
+      },
+      "candidate_u_deg": 60.0,
+      "raw_native_readback_file": "case_03.json",
+      "raw_native_readback_sha256": "553d7710db8c19f6b1347652b2d157e629480613dbb1f960f1d9e235ea8283a6",
+      "case_elapsed_ns": 29273300
+    },
+    {
+      "case_id": "elliptic_minus150",
+      "passed": true,
+      "asset_id": "train/elliptic/three_even/linear/0",
+      "input_sha256_before": "c40ee915f1fadebdbefd33d1492cfa17738c9df796a5e53c086ed5d9b457c62b",
+      "native_gates": {
+        "angle_deg": 0.001,
+        "position_m": 5e-06,
+        "section_area_loss": 2e-05
+      },
+      "preview_elapsed_ns": 4956400,
+      "fixture_construction_elapsed_ns": 2103000,
+      "joint_weight_proof": [
+        {
+          "section_index": 8,
+          "weights": [
+            0.5,
+            0.5,
+            0.0
+          ],
+          "vertices": 16
+        },
+        {
+          "section_index": 16,
+          "weights": [
+            0.0,
+            0.5,
+            0.5
+          ],
+          "vertices": 16
+        }
+      ],
+      "qa_candidate_application_elapsed_ns": 63500,
+      "checks": {
+        "initial_pose": {
+          "max_matrix_abs": 5.108994450830906e-07,
+          "max_angle_deg": 1.0492577200456592e-05,
+          "max_translation_m": 3.7485831007341405e-08
+        },
+        "initial_vertices_max_m": 2.3340487425427226e-07,
+        "candidate_pose": {
+          "max_matrix_abs": 9.366693165535622e-08,
+          "max_angle_deg": 6.525434141084845e-06,
+          "max_translation_m": 3.748583092889158e-08
+        },
+        "fixed_end_global_pose": {
+          "max_matrix_abs": 4.172325134277344e-07,
+          "max_angle_deg": 4.62958052126292e-06,
+          "max_translation_m": 0.0
+        },
+        "centerline_max_m": 1.4901161193847656e-08,
+        "protected_vertices_max_m": 1.884864366154897e-07,
+        "candidate_vertices_max_m": 2.1035379955720447e-07,
+        "before_j_error": 1.3000834853116316e-09,
+        "after_j_error": 3.527228431554619e-08,
+        "static_data_exact": true,
+        "outside_object_exact": true,
+        "input_packet_and_task_exact": true,
+        "target_met": true
+      },
+      "before_objective": {
+        "section_area_ratios": [
+          0.9999999890436149,
+          0.9999999407869518,
+          0.9999999605025217,
+          0.9999999070267419,
+          0.9999999515523408,
+          0.9999999848152381,
+          0.6861445866015016,
+          0.22177653045165072,
+          0.06698729940786412,
+          0.22177686643110342,
+          0.6861453972976012,
+          1.000000985260642,
+          1.0000008013649724,
+          1.0000008167263157,
+          1.000000913347105,
+          1.0000006515532405,
+          1.000001023357156,
+          1.0000008958573783,
+          1.0000008897096209,
+          1.000000710292356,
+          1.0000010191692317,
+          1.0000009512793624,
+          1.0000007219494214,
+          1.0000008225083334,
+          1.0000008311207862
+        ],
+        "max_section_area_loss": 0.9330127005921359
+      },
+      "after_objective": {
+        "section_area_ratios": [
+          0.9999999890436149,
+          0.9999999407869518,
+          0.9999999605025217,
+          0.9999999070267419,
+          0.9999999515523408,
+          0.9999999848152381,
+          0.8753373014461927,
+          0.6908914693508448,
+          0.6294095578235447,
+          0.6908916053942449,
+          0.8753373644021604,
+          0.9999999245427675,
+          1.0000000086582588,
+          1.0000000823050306,
+          0.8753373859759299,
+          0.6908915530512503,
+          0.6294095799918976,
+          0.6908913888493181,
+          0.8753371316660027,
+          0.9999997654602226,
+          0.9999997410180733,
+          0.9999999893853538,
+          1.0000001769138749,
+          0.999999676086514,
+          0.9999997417645685
+        ],
+        "max_section_area_loss": 0.3705904421764553
+      },
+      "candidate_u_deg": -75.0,
+      "raw_native_readback_file": "case_04.json",
+      "raw_native_readback_sha256": "7b804cb18f453fdac8f9056bf2b328461a28e4a9d2b20d680b6f11452079d29f",
+      "case_elapsed_ns": 24708400
+    }
+  ],
+  "work": {
+    "preview_calls": 4,
+    "model_calls": 0,
+    "product_setters": 0,
+    "qa_initial_pose_assignments": 12,
+    "qa_candidate_pose_assignments": 8,
+    "native_readbacks": 8,
+    "fixtures_constructed": 4
+  },
+  "limitations": [
+    "These four generated positive cases only, not a character or animation test.",
+    "The two bone writes are QA operations, not a delivered product execution path.",
+    "Native float32 gates are separate from CPU double-precision gates.",
+    "Section area is not enclosed-mesh volume or an anatomical damage judgment.",
+    "Nested timings are observations, not a comparative speed or learning-benefit claim."
+  ],
+  "outside_object_exact": true,
+  "owned_objects_removed": true,
+  "owned_meshes_removed": true,
+  "owned_rigs_removed": true,
+  "source_hashes_after": {
+    "human_eye_plugin/arm_twist_correction.py": "9146cd465af25024e876de6d8af6447ea5af33302ca374dca16c190b71a38771",
+    "human_eye_plugin/arm_twist_source.py": "5cd8f002b264e0f07753794f360e01766b77470f92ac9b6f7346613160ab2b58",
+    "human_eye_plugin/arm_twist_expert.py": "25a9b0d4040104107f0d507126c111d34f0418547798f7ca81a25d3828d20d45",
+    "human_eye_plugin/arm_twist_weights.py": "f9f1aced3003728f797d37a5c9a48786bc65425d4ddc0c5f83a81751b6952f1a",
+    "human_eye_plugin/rig_pose.py": "fb7e3c380395ec9d00bb290b07990991b9986f0dc12c538af5a49ab66a172468",
+    "verification/m6_arm_expert_001/synthetic.py": "bab03dbe6c6cdf3b675eb87b58f05f1f39b31509a07b5c60d4204313b19c50f2",
+    "verification/arm_twist_correction_preview_001/cases.py": "c17e02f1f880f38db16d3872733bbd527cb8cf29879a6211b89fb7418888b478",
+    "verification/arm_twist_correction_preview_001/oracle.py": "bedcab15ea484db10c51da9b3e7caba31daf553b98b6e0ed6dbfcc37e052b2fe",
+    "verification/arm_twist_correction_preview_001/native_probe.py": "e6980549d77919b0f82bf9198b6f5b7b37a0b4cdc1f13c0efa3b9e74bc1034b4",
+    "verification/arm_twist_correction_preview_001/run_native.py": "069645d828f2348829fafaa7a9e76c7ef3bace40d9363c193343f082f3240a6d"
+  },
+  "source_bytes_unchanged": true,
+  "blend_file_still_unsaved": true,
+  "probe_elapsed_ns": 117284300
+}
