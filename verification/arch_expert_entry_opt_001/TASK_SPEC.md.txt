@@ -1,0 +1,19 @@
+# ARCH-EXPERT-ENTRY-OPT-001
+
+W-ENTRY 从干净证据27785b3/产品c5116e3继续 codex/architecture-expert-entry。此批修根复核发现的一项选择缓存缺陷，并删除一个已证实无消费者的静态副本。直接实现、相关测试、固定同版实际验证后回报，不另设准备审批。
+
+## 两处改动
+
+1. 修 BlenderSceneHost.observe_arm_twist 的输入等价比较。独立反例在 entry_review/behavior/selection_probe.py：前次显式402点超集、当前相同sections省略indices应384点，却复用旧bound。按原请求语义记录/比较选择，或正确处理默认并集；仅修改入口，不重复写来源验证器。默认输入重复和显式输入重复仍复用；显式超集↔默认的切换必须取对当前索引。保留调用者修改隔离及bool/float输入回归。
+2. BoundArmPatch.analyze 当前调用 capture 后丢弃 static_patch。仅内部分析路径不再构造这份深拷贝；公共 capture() 默认输出与隔离语义原样。每次实际capture、静态检查、prepare与MLP各自次数和当前source不变。使用最少的内部参数/代码调整，不增加RPC开关、缓存层或新的校验框架。
+
+参考根复核 ARCH_EXPERT_ENTRY_001_REVIEW.md 及 entry_review/next/ENTRY_COST_AND_NEXT_TASK.md。旧拓扑候选继续关闭；训练参数、数值核和M5动作逻辑不改。
+
+## 验收与收口
+
+- 先使根402→384反例通过，覆盖反向转换与两种输入各自的暖重复。保留相关入口/源码延迟加载检查，补公共capture返回副本可被修改但不改变prepared/静态缓存、内部analyze的副本构造1→0。根unknown_probe.py可纳入本批相关回归；不复制旧165方法矩阵或历史封存。
+- 固定一个产品提交后，沿原1602高ID生成fixture做一小组默认owned旧/新配对：首次、重复、静态变更、load。轻量统计副本、capture、static-read、prepare；时间窗关闭sys.setprofile并把oracle放到计时外，分别记录产品方法与完整调用时间，不把旧82–87ms残差当作预期节省。保留失败和实际总调用数，不反复补最快样本。
+- 在同版真实入口验证选择转换；复用现有shared socket夹具做最短选择转换检查即可。补一次真实unknown与后续恢复，证明正常未知报告未被当作工具失败。其余同字节算法矩阵直接引用。普通task/nearest与M5未改依赖的已通过记录引用，只有改动或失败暴露实际影响才扩回归。
+- 正确性和少做的工作是采用依据；实测完整成本如实报告。复制可能只占无profiler运行的小部分，不能把有用简化夸大为大幅端到端提速。完成此轮后关闭入口热点，不自动启动第三轮调参。
+
+本次独占Blender窗口已可用，仅测试副本，普通实施与可恢复错误当批处理。完成后发 ARCH-EXPERT-ENTRY-OPT-001_COMPLETE 到主线01a1971f-eef5-7a23-a1b1-2352beb80a77，附固定产品/证据、测试分母、实际计数/成本及清理，结束该批等待深审。当前其他实施线空闲；Google/API和正式配置保持原状态。

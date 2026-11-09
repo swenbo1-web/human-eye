@@ -1,0 +1,173 @@
+{
+  "task": "ARCH-EXPERT-ENTRY-OPT-001",
+  "passed": true,
+  "disposition": "candidate_fixed_and_qa_complete_pending_mainline_deep_review",
+  "product_commit": "fa096c1e4172e216d567a0f8b2d13c651573284d",
+  "source_sha256": "46ee6672b23a9df9b2bdd13dde5edb6f2e8eb9f65aab2cc77209f8577b8ca24e",
+  "source_members": 136,
+  "base_commit": "27785b3f40716b71cfbc8326590a751cccdf9138",
+  "old_source_sha256": "239cc00a3cf09e9c18874cf0071e811e3244695c93590f806048fab97129b3b9",
+  "product_scope": [
+    "human_eye_plugin/blender_host.py",
+    "human_eye_plugin/arm_twist_source.py"
+  ],
+  "product_lines": {
+    "insertions": 6,
+    "deletions": 4
+  },
+  "cpu": {
+    "attempts": 1,
+    "tests": 27,
+    "passed": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "new_methods": 7,
+    "related_entry_methods": 14,
+    "related_source_methods": 6,
+    "fake_endpoint_unknown_tools_inside_methods": 6,
+    "source_unchanged": true
+  },
+  "actual": {
+    "attempts": 1,
+    "tool_calls": 19,
+    "estimated": 18,
+    "unknown": 1,
+    "unexpected_errors": 0,
+    "by_mode": {
+      "old_owned": {
+        "tool_calls": 4,
+        "estimated": 4,
+        "unknown": 0
+      },
+      "new_owned": {
+        "tool_calls": 12,
+        "estimated": 11,
+        "unknown": 1
+      },
+      "new_shared": {
+        "tool_calls": 3,
+        "estimated": 3,
+        "unknown": 0
+      }
+    },
+    "work": {
+      "captures": 19,
+      "static_reads": 14,
+      "preparations": 14,
+      "rest_vertices": 22296,
+      "weight_rows": 22296,
+      "current_vertices": 30240,
+      "rest_bones": 28,
+      "pose_bones": 38,
+      "topology_reads": 14
+    },
+    "method_entries": {
+      "capture_entries": 19,
+      "static_read_entries": 14,
+      "prepare_entries": 14,
+      "static_patch_copies": 3,
+      "predict_entries": 19
+    },
+    "oracle_score_regions": 441,
+    "oracle_severity_max_abs_error": 0,
+    "post_response_oracle_controls": 19,
+    "owned_and_shared_selection_vertices": [
+      1602,
+      1536,
+      1602
+    ],
+    "unknown_reason": "bone_twist_branch_unknown",
+    "unknown_is_error": false,
+    "unknown_recovery": "load_then_estimated_with_new_preparation",
+    "profiler_enabled": false,
+    "old_new_pairs": [
+      {
+        "label": "first",
+        "old_product_ms": 102.6097,
+        "new_product_ms": 90.7759,
+        "old_full_tool_ms": 114.7616,
+        "new_full_tool_ms": 102.165,
+        "old_static_copies": 1,
+        "new_static_copies": 0
+      },
+      {
+        "label": "repeat",
+        "old_product_ms": 11.8172,
+        "new_product_ms": 12.0602,
+        "old_full_tool_ms": 21.681,
+        "new_full_tool_ms": 22.1035,
+        "old_static_copies": 0,
+        "new_static_copies": 0
+      },
+      {
+        "label": "static",
+        "old_product_ms": 48.2573,
+        "new_product_ms": 41.2248,
+        "old_full_tool_ms": 58.9208,
+        "new_full_tool_ms": 51.6048,
+        "old_static_copies": 1,
+        "new_static_copies": 0
+      },
+      {
+        "label": "load",
+        "old_product_ms": 47.8603,
+        "new_product_ms": 41.1324,
+        "old_full_tool_ms": 58.3654,
+        "new_full_tool_ms": 51.8115,
+        "old_static_copies": 1,
+        "new_static_copies": 0
+      }
+    ],
+    "runner_sequence_ms": 16927.1201
+  },
+  "fixture_sha256": "29922da194a8a05b0399b670282e87d38db8f82007e040518e64d54f3df45cb9",
+  "processes": [
+    {
+      "kind": "old_owned",
+      "pid": 29420,
+      "stdio_returncode": 0
+    },
+    {
+      "kind": "new_owned",
+      "pid": 6496,
+      "stdio_returncode": 0
+    },
+    {
+      "kind": "new_shared",
+      "pid": 28636,
+      "stdio_returncode": 0
+    },
+    {
+      "kind": "shared_fixture_teardown",
+      "pid": 28636,
+      "returncode": 1,
+      "method": "controlled terminate then wait"
+    }
+  ],
+  "model_api_calls": 0,
+  "user_assets": 0,
+  "prior_matrices_referenced_not_replayed": [
+    "arch_expert_entry_001 actual25",
+    "historical165CPU",
+    "M5zero_one_four"
+  ],
+  "evidence": {
+    "report": "REPORT.md",
+    "actual_report": "ACTUAL_QA_REPORT.md",
+    "costs": "ACTUAL_COSTS.json",
+    "cleanup": "PROCESS_CLEANUP.json",
+    "independent_review": "REVIEW.md",
+    "index": "EVIDENCE_INDEX.json"
+  },
+  "limits": [
+    "Single old/new pair per phase, old group first; no statistical speed guarantee. Repeat is slightly slower.",
+    "Timers include lightweight counters and wire recording; no sys.setprofile, oracle or large packet/event writes inside timing.",
+    "Native same-model oracle checks source and integration consistency, not model accuracy.",
+    "BMesh still has whole-mesh C work; selected Python row counts do not prove O(selected) total cost.",
+    "Unknown is a normal report and enters predict_prepared but returns before MLP severity scoring.",
+    "Real unknown recovery uses load and re-prepares; CPU same-binding recovery separately proves reuse.",
+    "Shared controlled terminate/wait returns1; stdio clients return0. Stdio client PIDs were not separately recorded.",
+    "No old25 tool,165 CPU or M5 matrix repeated; future repair operators are outside this task."
+  ]
+}
