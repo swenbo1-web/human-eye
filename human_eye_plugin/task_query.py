@@ -260,6 +260,8 @@ def _closed_solid_fact(measured):
         geometry_scope='finite_connected_closed_orientable_non_self_intersecting_triangle_shells')
     relation = measured.get('relation')
     if measured.get('measurement_valid') is True and relation in ('separated', 'touching', 'penetrating'):
+        if 'certificate' in measured:
+            metadata['certificate'] = measured['certificate']
         return _fact(relation, **metadata)
     return _fact(reason=measured.get('reason') or 'closed_solid_relation_unavailable', **metadata)
 

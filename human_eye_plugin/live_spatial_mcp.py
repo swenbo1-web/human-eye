@@ -524,6 +524,78 @@ def _compact_discovery_metadata(metadata):
     return {'support_plane_value_encoding': header, **result}
 
 
+def _project_spatial_relations(value):
+    """Same facts, with request rows and shared metadata written only once."""
+    if value.get('schema_version') != 'task-query-set-v1':
+        return value
+    binding = value['binding']
+    rows = [dict(row) for row in binding['objects']]
+    context = {key: item for key, item in binding.items() if key not in ('objects', 'host_identity')}
+    context.update(scope=value['scope'], unit=value['unit'], coordinate_frame=value['coordinate_frame'],
+                   pair_order=value['pair_order'])
+    host = binding.get('host_identity')
+    if host is not None:
+        instances = host.get('object_instances', {})
+        for row in rows:
+            if row.get('object_id') in instances:
+                row['instance_id'] = instances[row['object_id']]
+        remaining = {oid: instance for oid, instance in instances.items()
+                     if not any(row.get('object_id') == oid for row in rows)}
+        context['host_identity'] = {key: item for key, item in host.items()
+            if key != 'object_instances' and not (key == 'capture_scope' and item == context.get(key))}
+        if remaining:
+            context['host_identity']['object_instances'] = remaining
+        context['identity_scope'] = 'Object and instance IDs belong to this captured document/snapshot.'
+    boxes = value['facts'].get('aabb')
+    if boxes is not None:
+        for row, box in zip(rows, boxes):
+            row['aabb'] = box
+    pairs = value['pairs']
+    contracts = {}
+    for name in ('closed_solid_relation', 'surface_proximity', 'separation_gap'):
+        facts = [pair['separation_gap'] if name == 'separation_gap' else pair['facts'][name]
+                 for pair in pairs]
+        common = {key: facts[0][key] for key in
+                  ('method', 'semantics', 'geometry_scope', 'relation_tolerance_m')
+                  if key in facts[0] and all(key in fact and fact[key] == facts[0][key] for fact in facts)}
+        if common:
+            contracts[name] = common
+        for pair, fact in zip(pairs, facts):
+            row = rows[pair['candidate_index'] + 1]
+            row['candidate_index'] = pair['candidate_index']
+            row[name] = {key: item for key, item in fact.items() if key not in common}
+    if any('certificate' in row['closed_solid_relation'] for row in rows[1:]):
+        context['certificate_scope'] = 'Proof category only; surface witnesses are not shared-interior proofs.'
+    indices = {row['object_id']: row['candidate_index'] for row in rows[1:] if 'object_id' in row}
+    def candidate_indices(ids):
+        return None if ids is None else [indices[oid] for oid in ids]
+    summary = value['summary']
+    penetrating = {'complete': summary['penetration_set_complete'],
+                   'candidate_indices': candidate_indices(summary['penetrating_ids'])}
+    if summary['known_penetrating_ids'] != summary['penetrating_ids']:
+        penetrating['known_candidate_indices'] = candidate_indices(summary['known_penetrating_ids'])
+    if summary['unresolved_relations']:
+        penetrating['unresolved'] = summary['unresolved_relations']
+    nearest = {'complete': summary['nearest_separated_complete'],
+               'candidate_indices': candidate_indices(summary['nearest_separated_ids']),
+               'distance_m': summary['distance_m']}
+    if (summary['best_known_separated_ids'] != summary['nearest_separated_ids']
+            or summary['best_known_distance_m'] != summary['distance_m']):
+        nearest.update(best_known_candidate_indices=candidate_indices(summary['best_known_separated_ids']),
+                       best_known_distance_m=summary['best_known_distance_m'])
+    if summary['unresolved_distances']:
+        nearest['unresolved_distances'] = [dict(candidate_index=indices[oid], reason=reason)
+            for oid, reason in summary['unresolved_distances'].items()]
+    result = {'result_kind': value['result_kind'], 'schema_version': 'spatial-relations-v1',
+        'status': value['status'], 'target': rows[0], 'candidates': rows[1:],
+        'sets': {'penetrating': penetrating, 'nearest_separated': nearest},
+        'coverage': value['coverage'], 'context': context, 'measurement_contracts': contracts,
+        'execution_authority': value['execution_authority']}
+    if 'trace_id' in value:
+        result['trace_id'] = value['trace_id']
+    return result
+
+
 def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
@@ -681,7 +753,8 @@ class LiveSpatialMCPServer:
         if (name == 'human_eye_spatial_relations') != self.spatial_task_only:
             raise ValueError('Tool not exposed by this server mode: ' + name)
         _validate_arguments(name, arguments)
-        if name == 'human_eye_spatial_relations':
+        spatial_relations = name == 'human_eye_spatial_relations'
+        if spatial_relations:
             arguments = {'query': _spatial_task_query(arguments), 'include_image': False}
             name = 'human_eye_scene_observe'
         bind_task_context(current_trace(), arguments.get('task_context'))
@@ -718,6 +791,8 @@ class LiveSpatialMCPServer:
             value = self.service.status()
             is_error = value.get("status") in {"blocked", "error", "unavailable", "disconnected"}
         with span('mcp.content_encode', kind='encoding'):
+            if spatial_relations:
+                value = _project_spatial_relations(value)
             result = _tool_result(value, is_error=is_error,
                 response_detail=args.get('response_detail', 'full'),
                 segment_brief=(name == 'human_eye_clearance_segment'),
