@@ -1342,8 +1342,9 @@ class BlenderSceneHost:
         with self._lock:
             return self._capture(_native_evidence=True)
 
-    def _arm_twist_source_module(self):
-        module = getattr(self, '_arm_twist_module', None)
+    def _arm_twist_source_module(self, *, execution=False):
+        cache_name = '_arm_twist_execution_module' if execution else '_arm_twist_module'
+        module = getattr(self, cache_name, None)
         if module is not None:
             return module
         import importlib.util
@@ -1352,7 +1353,9 @@ class BlenderSceneHost:
         from pathlib import Path
         root = Path(__file__).resolve().parent
         names = ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py')
-        sources = getattr(self, '_arm_twist_dependency_sources', None)
+        if execution:
+            names += ('arm_twist_correction.py',)
+        sources = getattr(self, '_arm_correction_dependency_sources' if execution else '_arm_twist_dependency_sources', None)
         if sources is None:
             guard = next((f for f in sys.meta_path if getattr(f, 'protocol', None) ==
                 'human-eye-verified-source-v1' and f.root == root.parent), None)
@@ -1383,8 +1386,259 @@ class BlenderSceneHost:
                     if sys.modules.get(key) is child:
                         del sys.modules[key]
                 raise
-        self._arm_twist_module = package.arm_twist_source
-        return self._arm_twist_module
+        if execution:
+            self._arm_correction_module = package.arm_twist_correction
+            self._arm_correction_preview = package.arm_twist_correction.preview_axial_redistribution
+        setattr(self, cache_name, package.arm_twist_source)
+        return getattr(self, cache_name)
+
+    def _arm_axial_side(self, mesh, rig, bones, sentinel, scale):
+        """Small native facts missing from the selected source patch."""
+        ident = self._residency_module.identity
+        for obj in (mesh, rig, sentinel):
+            present = self.scene.objects.get(obj.name)
+            if present is None or not _same_rna(present, obj):
+                raise BlenderHostError('arm_execution_object_incarnation_changed')
+        def pose_in_metres(bone):
+            matrix = _matrix(rig.pose.bones.get(bone.name).matrix)
+            for row in matrix[:3]:row[3] *= scale
+            return matrix
+        return {
+            'mesh_world': _matrix(mesh.matrix_world), 'rig_world': _matrix(rig.matrix_world),
+            'frame': [int(self.scene.frame_current), float(getattr(self.scene, 'frame_subframe', 0.))],
+            'unit_scale_m': scale,
+            'object_static': [{'object_id': self.object_id(obj),
+                'parent_instance': ident(getattr(obj, 'parent', None)),
+                'constraints': len(getattr(obj, 'constraints', ())),
+                'animated': getattr(obj, 'animation_data', None) is not None,
+                'data_animated': getattr(obj.data, 'animation_data', None) is not None}
+                for obj in (mesh, rig, sentinel)],
+            'bone_static': [{'name': b.name, 'length_m': float(b.length)*scale,
+                'inherit_rotation': bool(getattr(b, 'use_inherit_rotation', True)),
+                'inherit_scale': getattr(b, 'inherit_scale', 'FULL'),
+                'local_location': bool(getattr(b, 'use_local_location', True)),
+                'connected': bool(getattr(b, 'use_connect', False)),
+                'constraints': len(getattr(rig.pose.bones.get(b.name), 'constraints', ())),
+                'rotation_mode': getattr(rig.pose.bones.get(b.name), 'rotation_mode', None)} for b in bones],
+            'heads_m': [[float(v)*scale for v in rig.pose.bones.get(b.name).head] for b in bones],
+            'tails_m': [[float(v)*scale for v in rig.pose.bones.get(b.name).tail] for b in bones],
+            'poses_m': [pose_in_metres(b) for b in bones],
+            'sentinel': {'object_id': self.object_id(sentinel), 'instance': ident(sentinel),
+                'data_instance': ident(sentinel.data), 'world': _matrix(sentinel.matrix_world),
+                'vertices_m': [[float(v)*scale for v in vertex.co] for vertex in sentinel.data.vertices],
+                'faces': [list(poly.vertices) for poly in sentinel.data.polygons]}}
+
+    def _arm_axial_scope(self, mesh, rig, bones, sentinel):
+        """The writable subset is the declared static generated three-bone rig."""
+        if (len(bones) != 3 or len(rig.data.bones) != 3 or getattr(bones[0], 'parent', None) is not None
+                or sentinel is mesh or sentinel is rig or getattr(sentinel, 'type', None) != 'MESH'
+                or len(sentinel.data.vertices) > 64 or len(sentinel.data.polygons) > 128
+                or len(getattr(sentinel, 'modifiers', ()))
+                or getattr(sentinel.data, 'shape_keys', None) is not None):
+            raise BlenderHostError('arm_execution_fixture_scope')
+        for obj in (mesh, rig, sentinel):
+            if (getattr(obj, 'parent', None) is not None or getattr(obj, 'animation_data', None) is not None
+                    or getattr(obj.data, 'animation_data', None) is not None or len(getattr(obj, 'constraints', ()))
+                    or getattr(obj, 'library', None) is not None or getattr(obj.data, 'library', None) is not None):
+                raise BlenderHostError('arm_execution_static_unconstrained_required')
+        if getattr(mesh.data, 'users', 1) != 1 or getattr(rig.data, 'users', 1) != 1:
+            raise BlenderHostError('arm_execution_shared_data_unsupported')
+        for bone in bones:
+            pose = rig.pose.bones.get(bone.name)
+            if (pose is None or len(getattr(pose, 'constraints', ()))
+                    or not getattr(bone, 'use_inherit_rotation', True)
+                    or getattr(bone, 'inherit_scale', 'FULL') != 'FULL'
+                    or not getattr(bone, 'use_local_location', True)
+                    or getattr(bone, 'use_connect', False) or getattr(bone, 'bbone_segments', 1) != 1):
+                raise BlenderHostError('arm_execution_default_bone_inheritance_required')
+        # Only metadata is inspected here, never unrelated mesh geometry.
+        for obj in self.scene.objects:
+            if obj is not mesh and any(getattr(modifier, 'type', None) == 'ARMATURE'
+                    and _same_rna(getattr(modifier, 'object', None), rig)
+                    for modifier in getattr(obj, 'modifiers', ())):
+                raise BlenderHostError('arm_execution_shared_rig_unsupported')
+
+    def correct_arm_axial(self, task):
+        """One owned typed pair, with actual feedback and no automatic retry."""
+        self._main_thread()
+        start = time.perf_counter_ns()
+        result = {'schema': 'arm-axial-execution-result-v1',
+            'event_id': task.get('event_id') if type(task) is dict else None,
+            'status': 'not_applicable', 'reason': '', 'executed': False,
+            'setter_attempts': 0, 'setter_returns': 0, 'task_succeeded': False,
+            'before_source': None, 'after_source': None, 'feedback': None,
+            'timings_ns': {}, 'work': {'source_capture_attempts': 0, 'source_captures': 0,
+                'preview_calls': 0, 'model_calls': 0, 'feedback_rest_area_batches': 0}}
+        audit = {'task': task, 'receipt': result}
+        self._last_arm_axial_audit = audit
+        bound = mesh = rig = bones = sentinel = None
+        stage = 'prewrite_scope'
+
+        def finish():
+            result['timings_ns']['host_total'] = time.perf_counter_ns()-start
+            if bound is not None:result['work']['source'] = bound.work_totals()
+            return result
+
+        with self.transaction():
+            try:
+                if (getattr(self, '_owned_arm_correction_worker', False) is not True
+                        or getattr(self, '_material_readview_only', False)
+                        or not getattr(self.bpy.app, 'background', False)):
+                    raise BlenderHostError('arm_execution_owned_background_worker_required')
+                fields = {'schema', 'event_id', 'selection', 'u_interval_deg', 'max_section_area_loss',
+                    'protected_vertex_ids', 'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance', 'sentinel_name'}
+                if (type(task) is not dict or set(task) != fields or task.get('schema') != 'arm-axial-execution-task-v1'
+                        or type(task['event_id']) is not str or not 0 < len(task['event_id']) <= 256
+                        or any(ord(v) < 32 for v in task['event_id'])):
+                    raise BlenderHostError('arm_execution_task_schema')
+                if self._active_motion() is not None or self._episode_store() is not None:
+                    raise BlenderHostError('arm_execution_other_mutation_domain_active')
+                module = self._arm_twist_source_module(execution=True)
+                correction = self._arm_correction_module
+                np, r = correction.np, correction.r
+                adapter = getattr(self, '_arm_correction_adapter', None)
+                if adapter is None:
+                    adapter = module.ArmTwistSource(self);self._arm_correction_adapter = adapter
+                bound = adapter.bind(task['selection'])
+                mesh = self.scene.objects.get(task['selection']['mesh_name'])
+                rig = self.scene.objects.get(task['selection']['armature_name'])
+                sentinel = self.scene.objects.get(task['sentinel_name'])
+                if mesh is None or rig is None or sentinel is None:
+                    raise BlenderHostError('arm_execution_bound_object_missing')
+                result['timings_ns']['scope'] = time.perf_counter_ns()-start
+                stage = 'before_capture';mark = time.perf_counter_ns()
+                result['work']['source_capture_attempts'] += 1
+                before = bound.capture(_export_static_patch=False)
+                result['work']['source_captures'] += 1
+                result['timings_ns']['source_before'] = time.perf_counter_ns()-mark
+                static = bound._static;scale = self._scale()
+                result['before_source'] = before['source']
+                audit.update(static_patch=static, before_capture=before)
+                stage = 'prewrite_scope'
+                ident = self._residency_module.identity
+                for obj, key in ((mesh, 'mesh'), (rig, 'armature')):
+                    source_object = before['source'][key]
+                    if (source_object['instance'] != ident(obj)
+                            or source_object['data_instance'] != ident(obj.data)):
+                        raise BlenderHostError('arm_execution_source_object_incarnation_changed')
+                bones = [rig.data.bones.get(name) for name in task['selection']['bone_names']]
+                if any(bone is None for bone in bones):raise BlenderHostError('arm_execution_bound_bone_missing')
+                if len(bound._indices) != len(mesh.data.vertices):
+                    raise BlenderHostError('arm_execution_full_generated_mesh_required')
+                mark = time.perf_counter_ns();self._arm_axial_scope(mesh, rig, bones, sentinel)
+                result['timings_ns']['scope'] += time.perf_counter_ns()-mark
+                patch = dict(static, current_vertices=before['current_vertices'], bone_chain=[
+                    dict(bone, pose_matrix=pose) for bone, pose in zip(static['bone_chain'], before['pose_matrices'])])
+                resolved = {key: task[key] for key in ('u_interval_deg', 'max_section_area_loss', 'protected_vertex_ids',
+                    'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance')}
+                resolved.update(schema=correction.TASK_SCHEMA,
+                    fixed_end_pose_matrices=[before['pose_matrices'][0], before['pose_matrices'][-1]])
+                side_before = self._arm_axial_side(mesh, rig, bones, sentinel, scale)
+                result['before_source'] = before['source']
+                audit.update(static_patch=static, input_patch=patch, resolved_task=resolved,
+                             before_capture=before, side_before=side_before)
+                stage = 'preview';mark = time.perf_counter_ns();result['work']['preview_calls'] += 1
+                proposal = self._arm_correction_preview(patch, resolved)
+                result['timings_ns']['solve'] = time.perf_counter_ns()-mark
+                audit['preview'] = proposal
+                result['preview'] = {'status': proposal['status'], 'reason': proposal['reason'],
+                    'u_deg': proposal.get('optimal_u_deg'), 'objective': proposal.get('objective')}
+                if proposal['status'] != 'candidate':
+                    result.update(status=proposal['status'], reason=proposal['reason'],
+                                  task_succeeded=proposal['status'] == 'no_op')
+                    objective = proposal.get('objective')
+                    result['feedback'] = {'source': 'actual_before_no_write', 'target_met': result['task_succeeded'],
+                        'max_section_area_loss': objective['before']['max_section_area_loss'] if objective else None}
+                    return finish()
+                candidate = proposal['candidate']
+                from mathutils import Matrix
+                if (len(candidate['bone_changes']) != 2 or len(candidate['local_basis_matrices']) != 3
+                        or len(candidate['pose_matrices']) != 3):
+                    raise BlenderHostError('arm_execution_candidate_shape')
+                assignments = []
+                for index, change in zip((1, 2), candidate['bone_changes']):
+                    if change['name'] != bones[index].name or change['basis_matrix'] != candidate['local_basis_matrices'][index]:
+                        raise BlenderHostError('arm_execution_candidate_binding')
+                    basis = [row[:] for row in change['basis_matrix']]
+                    for row in basis[:3]:row[3] /= scale
+                    native = Matrix(basis);_matrix(native)
+                    assignments.append((rig.pose.bones.get(bones[index].name), native))
+                if len(assignments) != 2:raise BlenderHostError('arm_execution_two_changes_required')
+                stage = 'basis_assignment';mark = time.perf_counter_ns()
+                for pose, basis in assignments:
+                    result['setter_attempts'] += 1
+                    pose.matrix_basis = basis
+                    result['setter_returns'] += 1
+                result['timings_ns']['assignment'] = time.perf_counter_ns()-mark
+                result['executed'] = True
+                stage = 'after_capture';mark = time.perf_counter_ns()
+                result['work']['source_capture_attempts'] += 1
+                after = bound.capture(_export_static_patch=False)
+                result['work']['source_captures'] += 1
+                result['timings_ns']['source_after'] = time.perf_counter_ns()-mark
+                result['after_source'] = after['source'];audit['after_capture'] = after
+                audit['after_static_patch'] = bound._static
+                if (static != bound._static or any(before['source'][key] != after['source'][key]
+                        for key in before['source'] if key not in ('revision', 'max_lbs_readback_error_m'))):
+                    raise BlenderHostError('arm_execution_after_source_binding_changed')
+                stage = 'actual_feedback';mark = time.perf_counter_ns()
+                side_after = self._arm_axial_side(mesh, rig, bones, sentinel, self._scale())
+                audit['side_after'] = side_after
+                sections = static['sections'];points = np.asarray(after['current_vertices'])
+                old_points = np.asarray(before['current_vertices'])
+                result['work']['feedback_rest_area_batches'] += 1
+                areas0 = correction._areas(np.asarray(static['rest_vertices']), sections)
+                actual = correction._objective(points, sections, areas0)
+                def point_error(left, right):
+                    return float(np.linalg.norm(np.asarray(left)-np.asarray(right), axis=-1).max())
+                pose_angles = [];pose_translations = [];candidate_angles = [];candidate_translations = []
+                for index in (0, 1, 2):
+                    old = candidate['pose_matrices'][index];new = after['pose_matrices'][index]
+                    angle = r.angles(r.multiply(r.inverse(old), new))['rotation_deg']
+                    translation = point_error(np.asarray(old)[:3,3], np.asarray(new)[:3,3])
+                    candidate_angles.append(angle);candidate_translations.append(translation)
+                    if index not in (0, 2):continue
+                    pose_angles.append(angle)
+                    pose_translations.append(translation)
+                by_id = {value: index for index, value in enumerate(static['vertex_ids'])}
+                protected = [by_id[index] for index in task['protected_vertex_ids']]
+                protected_delta = point_error(old_points[protected], points[protected])
+                center_delta = point_error([old_points[row].mean(axis=0) for row in sections],
+                                           [points[row].mean(axis=0) for row in sections])
+                bone_center_delta = max(point_error(side_before['heads_m'], side_after['heads_m']),
+                                        point_error(side_before['tails_m'], side_after['tails_m']))
+                target_error = point_error(candidate['current_vertices'], points)
+                static_side_same = all(side_before[key] == side_after[key] for key in
+                    ('mesh_world', 'rig_world', 'frame', 'unit_scale_m', 'object_static', 'bone_static', 'sentinel'))
+                pose_error = max(float(np.max(np.abs(np.asarray(left)-np.asarray(right))))
+                                 for left, right in zip(candidate['pose_matrices'], after['pose_matrices']))
+                feedback = {'source': 'actual_after_capture', 'max_section_area_loss': actual['max_section_area_loss'],
+                    'target_met': actual['max_section_area_loss'] <= task['max_section_area_loss']+task['area_tolerance'],
+                    'end_pose_angle_deg': max(pose_angles), 'end_pose_translation_m': max(pose_translations),
+                    'protected_points_delta_m': protected_delta, 'section_centers_delta_m': center_delta,
+                    'bone_heads_tails_delta_m': bone_center_delta, 'candidate_points_error_m': target_error,
+                    'candidate_pose_angle_deg': max(candidate_angles), 'candidate_pose_translation_m': max(candidate_translations),
+                    'candidate_pose_max_abs': pose_error, 'static_side_unchanged': static_side_same}
+                verified = (feedback['target_met'] and static_side_same and max(pose_angles) <= task['angle_tolerance_deg']
+                    and max(candidate_angles) <= task['angle_tolerance_deg']
+                    and max(pose_translations + candidate_translations + [protected_delta, center_delta, bone_center_delta, target_error]) <= task['position_tolerance_m'])
+                result.update(feedback=feedback, status='satisfied' if verified else 'feedback_failed',
+                    reason='actual_goal_and_preservation_verified' if verified else 'actual_feedback_did_not_verify',
+                    task_succeeded=bool(verified))
+                result['timings_ns']['feedback'] = time.perf_counter_ns()-mark
+                return finish()
+            except Exception as exc:
+                result.update(status='execution_uncertain' if result['setter_attempts'] else 'not_applicable',
+                    reason=stage+':'+str(exc)[:1500], task_succeeded=False,
+                    executed=True if result['setter_returns'] else None if result['setter_attempts'] else False)
+                audit['failure'] = {'stage': stage, 'type': type(exc).__name__, 'message': str(exc)[:1500]}
+                if result['setter_attempts'] and all(value is not None for value in (mesh, rig, bones, sentinel)):
+                    try:
+                        self._depsgraph()
+                        audit['partial_native_after'] = self._arm_axial_side(mesh, rig, bones, sentinel, self._scale())
+                        result['partial_pose_matrices'] = audit['partial_native_after']['poses_m']
+                    except Exception as read_error:audit['partial_readback_error'] = str(read_error)[:1500]
+                return finish()
 
     def observe_arm_twist(self, selection):
         """Estimate the current explicitly selected native arm patch, read-only."""

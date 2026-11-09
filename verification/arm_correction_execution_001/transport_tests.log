@@ -1,0 +1,116 @@
+test_actual_worker_dispatch_accepts_the_full_selection_and_receipt (test_transport.ArmTransportTests.test_actual_worker_dispatch_accepts_the_full_selection_and_receipt) ... ERROR
+test_custom_or_readonly_workers_cannot_use_new_writes (test_transport.ArmTransportTests.test_custom_or_readonly_workers_cannot_use_new_writes) ... ok
+test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) ... 
+  test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='wrong_event') ... ERROR
+  test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='boolean_count') ... ERROR
+  test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='contradictory_noop') ... ERROR
+test_local_nonfinite_or_untyped_input_is_rejected_without_dispatch (test_transport.ArmTransportTests.test_local_nonfinite_or_untyped_input_is_rejected_without_dispatch) ... ok
+test_noop_has_no_writes_and_keeps_connection (test_transport.ArmTransportTests.test_noop_has_no_writes_and_keeps_connection) ... ERROR
+test_partial_pair_returns_known_counts_then_quarantines (test_transport.ArmTransportTests.test_partial_pair_returns_known_counts_then_quarantines) ... ERROR
+test_postwrite_readback_failure_preserves_two_returned_setters (test_transport.ArmTransportTests.test_postwrite_readback_failure_preserves_two_returned_setters) ... ERROR
+test_worker_error_does_not_reuse_the_previous_event_counts (test_transport.ArmTransportTests.test_worker_error_does_not_reuse_the_previous_event_counts) ... ERROR
+test_worker_serialization_failure_carries_known_action_receipt (test_transport.ArmTransportTests.test_worker_serialization_failure_carries_known_action_receipt) ... ERROR
+
+======================================================================
+ERROR: test_actual_worker_dispatch_accepts_the_full_selection_and_receipt (test_transport.ArmTransportTests.test_actual_worker_dispatch_accepts_the_full_selection_and_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 90, in test_actual_worker_dispatch_accepts_the_full_selection_and_receipt
+    host=self.host();receipt=host.correct_arm_axial(value)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='wrong_event')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 126, in test_invalid_event_counts_or_completion_receipts_fail_closed
+    with self.assertRaises(HostTransportError):host.correct_arm_axial(task(event))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='boolean_count')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 126, in test_invalid_event_counts_or_completion_receipts_fail_closed
+    with self.assertRaises(HostTransportError):host.correct_arm_axial(task(event))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_invalid_event_counts_or_completion_receipts_fail_closed (test_transport.ArmTransportTests.test_invalid_event_counts_or_completion_receipts_fail_closed) (event='contradictory_noop')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 126, in test_invalid_event_counts_or_completion_receipts_fail_closed
+    with self.assertRaises(HostTransportError):host.correct_arm_axial(task(event))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_noop_has_no_writes_and_keeps_connection (test_transport.ArmTransportTests.test_noop_has_no_writes_and_keeps_connection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 95, in test_noop_has_no_writes_and_keeps_connection
+    host=self.host();receipt=host.correct_arm_axial(task('no_op'))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_partial_pair_returns_known_counts_then_quarantines (test_transport.ArmTransportTests.test_partial_pair_returns_known_counts_then_quarantines)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 100, in test_partial_pair_returns_known_counts_then_quarantines
+    host=self.host();receipt=host.correct_arm_axial(task('partial'))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_postwrite_readback_failure_preserves_two_returned_setters (test_transport.ArmTransportTests.test_postwrite_readback_failure_preserves_two_returned_setters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 109, in test_postwrite_readback_failure_preserves_two_returned_setters
+    host=self.host();receipt=host.correct_arm_axial(task('readback_failed'))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_worker_error_does_not_reuse_the_previous_event_counts (test_transport.ArmTransportTests.test_worker_error_does_not_reuse_the_previous_event_counts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 130, in test_worker_error_does_not_reuse_the_previous_event_counts
+    host=self.host();host.correct_arm_axial(task('success'))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+======================================================================
+ERROR: test_worker_serialization_failure_carries_known_action_receipt (test_transport.ArmTransportTests.test_worker_serialization_failure_carries_known_action_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\arm_correction_execution_001\test_transport.py", line 115, in test_worker_serialization_failure_carries_known_action_receipt
+    with self.assertRaises(HostTransportError) as caught:host.correct_arm_axial(task('nonfinite_receipt'))
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\human_eye_plugin\blender_process.py", line 342, in correct_arm_axial
+    raise ValueError('Arm correction requires the fixed owned writable worker')
+ValueError: Arm correction requires the fixed owned writable worker
+
+----------------------------------------------------------------------
+Ran 9 tests in 2.059s
+
+FAILED (errors=9)

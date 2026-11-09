@@ -14,6 +14,7 @@ import math
 import re
 import time
 import uuid
+from dataclasses import dataclass
 
 from .auto_router import _ValidatedObservation, _trace_span
 from .goal_segment import (validate_clearance_segment_request,
@@ -45,6 +46,7 @@ def _fingerprint(value):
 
 def validate_segment_ledger(value):
     """Old connector states have no ledger; malformed new ledgers fail closed."""
+    validate_arm_axial_ledger(value)
     if 'goal_segments' not in value:
         return
     ledger = value['goal_segments']
@@ -548,5 +550,246 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
 
 
 
+_ARM_FIELDS = {'schema', 'event_id', 'selection', 'u_interval_deg', 'max_section_area_loss',
+    'protected_vertex_ids', 'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance', 'sentinel_name'}
+_ARM_TERMINAL = {'satisfied', 'feedback_failed', 'no_op', 'unreachable', 'not_applicable'}
+
+
+def validate_arm_axial_request(request):
+    """Validate the finite task, never a caller-supplied bone write list."""
+    if type(request) is not dict or set(request) != _ARM_FIELDS or request.get('schema') != 'arm-axial-execution-task-v1':
+        raise ValueError('arm_axial_task_fields')
+    _identifier(request['event_id'], 'arm event_id')
+    def text(value):
+        return type(value) is str and 0 < len(value) <= 256 and not any(ord(c) < 32 for c in value)
+    selection = request['selection']
+    if (type(selection) is not dict or set(selection) != {'mesh_name', 'armature_name', 'bone_names', 'vertex_indices', 'sections'}
+            or not text(selection['mesh_name']) or not text(selection['armature_name'])
+            or type(selection['bone_names']) is not list or len(selection['bone_names']) != 3
+            or not all(text(name) for name in selection['bone_names']) or len(set(selection['bone_names'])) != 3):
+        raise ValueError('arm_axial_selection')
+    indices = selection['vertex_indices']; sections = selection['sections']
+    if (type(indices) is not list or not 6 <= len(indices) <= 8192
+            or any(type(i) is not int or i < 0 for i in indices) or len(set(indices)) != len(indices)
+            or type(sections) is not list or not 2 <= len(sections) <= 128):
+        raise ValueError('arm_axial_indices')
+    available = set(indices); seen = set()
+    for row in sections:
+        if (type(row) is not list or not 3 <= len(row) <= 256 or any(type(i) is not int or i not in available for i in row)
+                or len(set(row)) != len(row) or seen.intersection(row)):
+            raise ValueError('arm_axial_sections')
+        seen.update(row)
+    protected = request['protected_vertex_ids']
+    if (type(protected) is not list or not protected or any(type(i) is not int or i not in available for i in protected)
+            or len(set(protected)) != len(protected)):
+        raise ValueError('arm_axial_protected_ids')
+    interval = request['u_interval_deg']
+    if (type(interval) is not list or len(interval) != 2 or any(type(v) not in (int, float) or not math.isfinite(v) for v in interval)
+            or not -180 < interval[0] <= interval[1] < 180):
+        raise ValueError('arm_axial_interval')
+    for field, upper in (('angle_tolerance_deg', .001), ('position_tolerance_m', 1e-5), ('area_tolerance', 1e-6)):
+        if type(request[field]) not in (int, float) or not math.isfinite(request[field]) or not 0 < request[field] <= upper:
+            raise ValueError('arm_axial_tolerance:' + field)
+    target = request['max_section_area_loss']
+    if type(target) not in (int, float) or not math.isfinite(target) or not 0 <= target < 1:
+        raise ValueError('arm_axial_target')
+    if not text(request['sentinel_name']) or request['sentinel_name'] in (selection['mesh_name'], selection['armature_name']):
+        raise ValueError('arm_axial_sentinel')
+    return request
+
+
+@dataclass(frozen=True, init=False)
+class ArmAxialTaskSpec:
+    """An immutable owned task snapshot; starting end poses resolve in worker."""
+    _payload: str
+
+    def __init__(self, event_id, selection, u_interval_deg, max_section_area_loss, protected_vertex_ids,
+                 sentinel_name, angle_tolerance_deg=.001, position_tolerance_m=5e-6, area_tolerance=1e-6):
+        request = dict(schema='arm-axial-execution-task-v1', event_id=event_id, selection=selection,
+            u_interval_deg=u_interval_deg, max_section_area_loss=max_section_area_loss,
+            protected_vertex_ids=protected_vertex_ids, sentinel_name=sentinel_name,
+            angle_tolerance_deg=angle_tolerance_deg, position_tolerance_m=position_tolerance_m,
+            area_tolerance=area_tolerance)
+        validate_arm_axial_request(request)
+        object.__setattr__(self, '_payload', json.dumps(request, sort_keys=True, ensure_ascii=True,
+            allow_nan=False, separators=(',', ':')))
+
+    def to_request(self):
+        return json.loads(self._payload)
+
+    @property
+    def event_id(self):
+        return self.to_request()['event_id']
+
+
+def _arm_receipt(value, event_id):
+    required = {'schema', 'event_id', 'status', 'reason', 'executed', 'task_succeeded', 'setter_attempts', 'setter_returns'}
+    if (type(value) is not dict or not required.issubset(value) or value.get('schema') != 'arm-axial-execution-result-v1'
+            or value.get('event_id') != event_id or type(value.get('status')) is not str
+            or value['status'] not in _ARM_TERMINAL | {'execution_uncertain'}
+            or type(value.get('reason')) is not str or not value['reason']
+            or type(value.get('task_succeeded')) is not bool
+            or value.get('executed') is not None and type(value.get('executed')) is not bool):
+        raise ValueError('invalid_arm_execution_receipt')
+    attempted, returned = value.get('setter_attempts'), value.get('setter_returns')
+    if any(v is not None and (type(v) is not int or not 0 <= v <= 2) for v in (attempted, returned)):
+        raise ValueError('invalid_arm_setter_counts')
+    if attempted is not None and returned is not None and returned > attempted:
+        raise ValueError('invalid_arm_setter_counts')
+    status = value['status']
+    if status in {'satisfied', 'feedback_failed'}:
+        valid = attempted == returned == 2 and value['executed'] is True and value['task_succeeded'] is (status == 'satisfied')
+    elif status in {'no_op', 'unreachable', 'not_applicable'}:
+        valid = attempted == returned == 0 and value['executed'] is False and value['task_succeeded'] is (status == 'no_op')
+    else:
+        valid = (not value['task_succeeded']
+            and (returned is None or returned == 0 or value['executed'] is True)
+            and (value['executed'] is not True or returned is not None and returned > 0)
+            and (value['executed'] is not False or attempted == returned == 0)
+            and (attempted != 0 or returned == 0 and value['executed'] is False)
+            and (attempted != 0 or returned != 0 or value['executed'] is False))
+    if not valid:
+        raise ValueError('contradictory_arm_execution_receipt')
+    # Fail before journaling non-JSON values supplied by a broken embedding.
+    json.dumps(value, allow_nan=False)
+    return value
+
+
+def validate_arm_axial_ledger(value):
+    if 'arm_axial_events' not in value:
+        return
+    ledger = value['arm_axial_events']
+    if (type(ledger) is not dict or set(ledger) != {'schema_version', 'records'} or ledger['schema_version'] != '1.0'
+            or type(ledger['records']) is not dict or len(ledger['records']) > MAX_SEGMENT_RECEIPTS):
+        raise ValueError('invalid_arm_event_ledger')
+    for event, record in ledger['records'].items():
+        _identifier(event, 'persisted arm event')
+        if (type(record) is not dict or set(record) != {'request', 'request_fingerprint', 'operation_id', 'started', 'state', 'result'}
+                or type(record['state']) is not str or record['state'] not in {'pending', 'complete', 'execution_uncertain'}
+                or type(record['started']) not in (int, float) or not math.isfinite(record['started'])
+                or type(record['operation_id']) is not str or not record['operation_id']):
+            raise ValueError('invalid_arm_event_record')
+        request = validate_arm_axial_request(record['request'])
+        if request['event_id'] != event or _fingerprint(request) != record['request_fingerprint']:
+            raise ValueError('arm_event_binding_mismatch')
+        if record['state'] == 'pending':
+            if record['result'] is not None:
+                raise ValueError('pending_arm_event_has_result')
+        else:
+            result = _arm_receipt(record['result'], event)
+            if (result['status'] == 'execution_uncertain') != (record['state'] == 'execution_uncertain'):
+                raise ValueError('arm_event_result_state_mismatch')
+    unresolved = [(event, record) for event, record in ledger['records'].items() if record['state'] != 'complete']
+    inflight = value.get('inflight')
+    if unresolved:
+        if len(unresolved) != 1 or type(inflight) is not dict:
+            raise ValueError('arm_event_lost_pending_barrier')
+        event, record = unresolved[0]
+        if (inflight.get('kind') != 'arm_axial' or inflight.get('event_id') != event
+                or inflight.get('operation_id') != record['operation_id']
+                or inflight.get('request_fingerprint') != record['request_fingerprint']):
+            raise ValueError('arm_event_pending_binding_mismatch')
+    elif type(inflight) is dict and inflight.get('kind') == 'arm_axial':
+        raise ValueError('arm_inflight_has_no_pending_event')
+
+
+def _arm_entry_result(event, status, reason, *, unknown=False):
+    return dict(schema='arm-axial-execution-result-v1', event_id=event, status=status, reason=reason,
+        task_succeeded=False, executed=None if unknown else False,
+        setter_attempts=None if unknown else 0, setter_returns=None if unknown else 0,
+        executed_this_call=None if unknown else False, new_setter_count=None if unknown else 0,
+        retry_authorized=False, completion_persistence='not_attempted')
+
+
+def _arm_replay(result):
+    replay = copy.deepcopy(result)
+    replay.update(replayed=True, historical_receipt=True, executed_this_call=False,
+        new_setter_count=0, current_scene_revalidated=False, retry_authorized=False)
+    return replay
+
+
+def run_arm_axial_step(service, spec):
+    """One durable event and one mutation RPC; uncertainty is never a retry."""
+    if type(spec) is not ArmAxialTaskSpec:
+        raise ValueError('frozen_arm_axial_task_required')
+    request = spec.to_request(); event = request['event_id']; fingerprint = _fingerprint(request)
+    retained = getattr(service, '_arm_axial_outcomes', None)
+    if retained is None:
+        retained = {}; service._arm_axial_outcomes = retained
+    if event in retained:
+        old = retained[event]
+        if old['fingerprint'] != fingerprint:
+            return _arm_entry_result(event, 'event_conflict', 'arm_event_parameters_changed')
+        return _arm_replay(old['result'])
+    started = time.perf_counter_ns()
+    lock_started = time.perf_counter_ns()
+    with service._locked() as (value, runtime):
+        timings = {'state_lock_restore': time.perf_counter_ns()-lock_started}
+        validate_arm_axial_ledger(value)
+        records = value.setdefault('arm_axial_events', {'schema_version': '1.0', 'records': {}})['records']
+        previous = records.get(event)
+        if previous is not None:
+            if previous['request_fingerprint'] != fingerprint:
+                return _arm_entry_result(event, 'event_conflict', 'arm_event_parameters_changed')
+            result = previous['result'] or _arm_entry_result(event, 'execution_uncertain', 'arm_event_pending_outcome_unknown', unknown=True)
+            return _arm_replay(result)
+        if not service.config.get('enabled', True) or service._identity_rejection() is not None:
+            return _arm_entry_result(event, 'blocked', 'connector_disabled_or_runtime_identity_changed')
+        if value.get('inflight') or runtime.status.get('quarantined'):
+            return _arm_entry_result(event, 'execution_uncertain', 'pending_host_operation_requires_review', unknown=True)
+        if len(records) >= MAX_SEGMENT_RECEIPTS or len(retained) >= MAX_SEGMENT_RECEIPTS:
+            return _arm_entry_result(event, 'receipt_capacity_exhausted', 'arm_event_receipts_not_evicted')
+        operation = uuid.uuid4().hex
+        entry = dict(request=request, request_fingerprint=fingerprint, operation_id=operation,
+            started=time.time(), state='pending', result=None)
+        records[event] = entry
+        pending = dict(operation_id=operation, session_id='arm:'+operation, started=entry['started'],
+                       kind='arm_axial', event_id=event, request_fingerprint=fingerprint)
+        value['inflight'] = pending
+        save_started = time.perf_counter_ns()
+        try:
+            service._save(value, runtime)
+        except Exception as exc:
+            result = _arm_entry_result(event, 'execution_uncertain', 'arm_pending_persistence_failed', unknown=False)
+            result.update(completion_persistence='failed_or_unknown', persistence_error=type(exc).__name__)
+            retained[event] = dict(fingerprint=fingerprint, result=copy.deepcopy(result))
+            return result
+        timings['pending_save'] = time.perf_counter_ns()-save_started
+        service._submitted_request()
+        rpc_started = time.perf_counter_ns()
+        try:
+            result = copy.deepcopy(_arm_receipt(service.host.correct_arm_axial(request), event))
+        except Exception as exc:
+            known = getattr(exc, 'mutation_result', None)
+            try:
+                result = copy.deepcopy(_arm_receipt(known, event))
+                if result['status'] != 'execution_uncertain':raise ValueError('uncertain_error_receipt_required')
+            except (ValueError, TypeError):
+                result = _arm_entry_result(event, 'execution_uncertain', 'arm_mutation_outcome_unknown', unknown=True)
+            result['transport_error'] = type(exc).__name__
+        timings['mutation_rpc'] = time.perf_counter_ns()-rpc_started
+        uncertain = result['status'] == 'execution_uncertain'
+        result.update(replayed=False, historical_receipt=False, retry_authorized=False,
+            executed_this_call=result['executed'], new_setter_count=None if uncertain else result['setter_returns'],
+            completion_persistence='committed', entry_timings_ns=dict(timings))
+        entry['state'] = 'execution_uncertain' if uncertain else 'complete'
+        entry['result'] = copy.deepcopy(result)
+        value['inflight'] = pending if uncertain else None
+        save_started = time.perf_counter_ns()
+        try:
+            service._save(value, runtime)
+        except Exception as exc:
+            # Durable pending remains the restart barrier. Keep the observed
+            # physical result in memory, without inventing rollback or a retry.
+            entry.update(state='pending', result=None); value['inflight'] = pending
+            result.update(completion_persistence='failed_or_unknown', persistence_error=type(exc).__name__)
+        timings['completion_save'] = time.perf_counter_ns()-save_started
+        timings['entry'] = time.perf_counter_ns()-started
+        result['entry_timings_ns'] = timings
+        retained[event] = dict(fingerprint=fingerprint, result=copy.deepcopy(result))
+        return result
+
+
 __all__ = ['run_clearance_segment', 'validate_segment_ledger', 'unfinished_segment',
-           'record_step_result', 'MAX_SEGMENT_RECEIPTS']
+           'record_step_result', 'MAX_SEGMENT_RECEIPTS', 'ArmAxialTaskSpec', 'run_arm_axial_step',
+           'validate_arm_axial_request', 'validate_arm_axial_ledger']

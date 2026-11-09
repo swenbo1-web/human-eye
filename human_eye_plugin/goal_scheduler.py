@@ -297,6 +297,9 @@ class OwnedGoalScheduler:
 
     def run(self, spec):
         with self._run_lock:
+            from .goal_execution import ArmAxialTaskSpec, run_arm_axial_step
+            if type(spec) is ArmAxialTaskSpec:
+                return run_arm_axial_step(self.service, spec)
             return self._run(spec)
 
     def run_registered(self, handoff):

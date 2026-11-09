@@ -36,6 +36,7 @@ RENDER_AUDIT_PROTOCOL = 'owned-native-render-audit-v1-20261031'
 MULTISCALE_PROTOCOL = 'owned-native-multiscale-v1-20261031'
 NATIVE_OBSERVATION_PROTOCOL = 'typed-native-readonly-observation-v1-20261031'
 SCENE_DELTA_PROTOCOL = 'human-eye-scene-delta-v1'
+ARM_AXIAL_EXECUTION_PROTOCOL = 'owned-arm-axial-execution-v1'
 _MAX_LINE_CHARS = 64 * 1024 * 1024
 _MAX_REQUEST_CHARS = 4096
 _MAX_CAPTURE_REQUEST_CHARS = 64 * 1024
@@ -113,6 +114,54 @@ def _validate_arm_twist_report(value, selection):
             or 'armature_name' in selection and (not isinstance(armature, dict)
                 or armature.get('name') != selection['armature_name'])):
         raise ValueError('Arm twist report schema or current selection binding mismatch')
+    return value
+
+
+def _validate_arm_axial_result(value, task):
+    """Bind the mutation receipt to this event, including true partial counts."""
+    if (type(value) is not dict or value.get('schema')!='arm-axial-execution-result-v1'
+            or value.get('event_id')!=task.get('event_id')
+            or value.get('status') not in ('satisfied','feedback_failed','no_op',
+                'unreachable','not_applicable','execution_uncertain')
+            or type(value.get('reason')) is not str
+            or type(value.get('task_succeeded')) is not bool
+            or value.get('executed') is not None and type(value.get('executed')) is not bool):
+        raise ValueError('Arm correction receipt schema or event mismatch')
+    if not {'executed','setter_attempts','setter_returns'}.issubset(value):
+        raise ValueError('Arm correction receipt omitted action state')
+    attempts,returns=value['setter_attempts'],value['setter_returns']
+    if (any(v is not None and (type(v) is not int or not 0<=v<=2) for v in (attempts,returns))
+            or returns is not None and attempts is not None and returns>attempts):
+        raise ValueError('Arm correction receipt has invalid setter counts')
+    status=value['status'];executed=value['executed'];succeeded=value['task_succeeded']
+    if status=='execution_uncertain':
+        if (succeeded or executed is False and (attempts,returns)!=(0,0)
+                or (attempts,returns)==(0,0) and executed is not False
+                or attempts==0 and (returns!=0 or executed is not False)
+                or returns is not None and returns>0 and executed is not True
+                or executed is True and (returns is None or returns==0)):
+            raise ValueError('Arm correction uncertainty contradicts known setters')
+    elif status in ('satisfied','feedback_failed'):
+        if (attempts,returns)!=(2,2) or executed is not True or succeeded!=(status=='satisfied'):
+            raise ValueError('Arm correction completion contradicts setter counts')
+    elif (attempts,returns)!=(0,0) or executed is not False or succeeded!=(status=='no_op'):
+        raise ValueError('Arm correction no-write receipt contradicts action state')
+    selection=task['selection']
+    for name in ('before_source','after_source'):
+        source=value.get(name)
+        if source is None:
+            if status in ('satisfied','feedback_failed') or (name=='before_source' and status in ('no_op','unreachable')):
+                raise ValueError('Arm correction completion omitted current source')
+            continue
+        if (type(source) is not dict or source.get('unit')!='m'
+                or source.get('coordinate_frame')!='armature_local'
+                or source.get('selected_bones')!=selection.get('bone_names')
+                or type(source.get('mesh')) is not dict
+                or source['mesh'].get('name')!=selection.get('mesh_name')
+                or type(source.get('armature')) is not dict
+                or source['armature'].get('name')!=selection.get('armature_name')):
+            raise ValueError('Arm correction source selection binding mismatch')
+    json.dumps(value,allow_nan=False)
     return value
 
 
@@ -284,6 +333,33 @@ class BlenderProcessHost:
         if type(selection) is not dict:
             raise ValueError('Arm twist selection requires an object')
         return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
+
+    def correct_arm_axial(self, task):
+        """Submit one fixed owned arm step; uncertain outcomes are never retried."""
+        fields={'schema','event_id','selection','u_interval_deg','max_section_area_loss',
+                'protected_vertex_ids','angle_tolerance_deg','position_tolerance_m','area_tolerance','sentinel_name'}
+        if (not self._default_worker or self._capabilities.get('arm_axial_execution_protocol')!=ARM_AXIAL_EXECUTION_PROTOCOL
+                or self._capabilities.get('process_id')!=self._process.pid
+                or self._capabilities.get('material_readview_only') is True):
+            raise ValueError('Arm correction requires the fixed owned writable worker')
+        if (type(task) is not dict or set(task)!=fields or task.get('schema')!='arm-axial-execution-task-v1'
+                or type(task.get('event_id')) is not str or not 0<len(task['event_id'])<=256
+                or any(ord(char)<32 for char in task['event_id']) or type(task.get('selection')) is not dict):
+            raise ValueError('Invalid typed arm correction request')
+        # Freeze the precise task sent across the process boundary. A caller
+        # mutating its original dict cannot change the expected receipt event.
+        request=json.loads(json.dumps(task,allow_nan=False))
+        with self._lock:
+            result=self._request('correct_arm_axial',{'task':request})
+            try:
+                _validate_arm_axial_result(result,request)
+            except (ValueError,TypeError,KeyError,OverflowError,RecursionError) as exc:
+                self._fail('Invalid arm correction receipt; execution outcome unknown: '+str(exc))
+            if result['status']=='execution_uncertain':
+                self._poisoned=True;self._scene_decoder=None
+                self._diagnostics.append('Arm correction outcome uncertain; owned connection quarantined')
+                self._terminate_child()
+            return result
 
     def mesh_structure_capabilities(self):
         if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
@@ -509,11 +585,13 @@ class BlenderProcessHost:
             payload = json.dumps({"id": request_id, "command": command, "params": params},
                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
             capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates')
-            limit = (_MAX_LINE_CHARS if command == 'observe_arm_twist' else
+            limit = (_MAX_LINE_CHARS if command in ('observe_arm_twist','correct_arm_axial') else
                 _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS)
             if len(payload) > limit:
                 if command == 'observe_arm_twist':
                     raise ValueError('Arm twist selection exceeds the existing line protocol limit')
+                if command == 'correct_arm_axial':
+                    raise ValueError('Arm correction task exceeds the existing line protocol limit')
                 raise ValueError("Blender request exceeds the 65536-character capture protocol limit"
                     if capture_request else "Blender request exceeds the 4096-character transform protocol limit")
             stop_ns = None
@@ -581,6 +659,22 @@ class BlenderProcessHost:
                     and error.get('mutation_uncertain') is False
                     and error.get('known_preentry_refusal') is True
                     and error.get('executed') is False)
+                if command == 'correct_arm_axial':
+                    # A complete host result may have failed worker JSON
+                    # delivery after real writes. Preserve only a validated
+                    # event-bound action receipt, then discard the process.
+                    known=error.get('mutation_receipt')
+                    try:
+                        if known is not None:
+                            _validate_arm_axial_result(known,params['task'])
+                            if known['status']!='execution_uncertain':raise ValueError('uncertain receipt required')
+                    except (ValueError,TypeError,KeyError,OverflowError,RecursionError):
+                        known=None
+                    try:
+                        self._fail('Blender arm mutation could not be verified: '+str(error.get('message','unknown error')))
+                    except HostTransportError as exc:
+                        if known is not None:exc.mutation_result=known
+                        raise
                 if command == "apply" or error.get("mutation_uncertain") or (
                         command == 'native_transform' and not known_native_refusal):
                     self._fail(f"Blender mutation could not be verified: {error.get('message', 'unknown error')}")

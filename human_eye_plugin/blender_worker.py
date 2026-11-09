@@ -23,6 +23,7 @@ RENDER_AUDIT_PROTOCOL = 'owned-native-render-audit-v1-20261031'
 MULTISCALE_PROTOCOL = 'owned-native-multiscale-v1-20261031'
 NATIVE_OBSERVATION_PROTOCOL = 'typed-native-readonly-observation-v1-20261031'
 SCENE_DELTA_PROTOCOL = 'human-eye-scene-delta-v1'
+ARM_AXIAL_EXECUTION_PROTOCOL = 'owned-arm-axial-execution-v1'
 
 
 def _reject_constant(value: str) -> None:
@@ -61,6 +62,7 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
         host_options['identity_metadata'] = True
     host = module.BlenderSceneHost(**host_options)
     host._material_readview_only=material_readview_only
+    host._owned_arm_correction_worker=not material_readview_only
     deadline_protocol = deadline_clock = None
     deadline_source = root/'human_eye_plugin'/'forward_deadline.py'
     if (deadline_source.is_file() and callable(getattr(host, 'require_forward_deadline', None))
@@ -103,6 +105,8 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
     for line in sys.stdin:
         request_id = None
         command = None
+        params = {}
+        result = None
         try:
             request = json.loads(line, parse_constant=_reject_constant)
             if not isinstance(request, dict):
@@ -127,6 +131,8 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                           'material_readview_only':material_readview_only,
                           'material_readview_protocol':'static-material-readview-v1' if material_readview_only else None,
                           "connection": "owned_headless_process", "persistent": True,
+                          'arm_axial_execution_protocol':ARM_AXIAL_EXECUTION_PROTOCOL
+                              if not material_readview_only and callable(getattr(host,'correct_arm_axial',None)) else None,
                           'scene_delta_protocol': SCENE_DELTA_PROTOCOL
                               if not material_readview_only and callable(getattr(host, 'capture_delta', None)) else None,
                           "saves_original_file": False, "attaches_to_open_window": False,
@@ -205,6 +211,10 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
             elif command == 'observe_arm_twist':
                 if set(params) != {'selection'}:raise ValueError('Arm twist requires only selection')
                 result = host.observe_arm_twist(params['selection'])
+            elif command == 'correct_arm_axial':
+                if set(params)!={'task'} or type(params['task']) is not dict:
+                    raise ValueError('Arm correction requires one typed task')
+                result=host.correct_arm_axial(params['task'])
             elif command == 'capture_evidence':
                 if params:raise ValueError('capture_evidence accepts no arguments')
                 result = host.capture_evidence()
@@ -287,15 +297,29 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
             if command == 'capture_nearest_candidates' and time.perf_counter_ns() >= params['deadline_ns']:
                 raise ValueError('acquisition_deadline_exceeded')
             _emit({"id": request_id, "result": result})
+            if command=='correct_arm_axial' and type(result) is dict and result.get('status')=='execution_uncertain':
+                break
         except Exception as exc:
             # A transform exception may follow a partial host mutation. Discard
             # this connection rather than authorizing another operation on it.
             known_episode_refusal = (command == 'native_transform'
                 and isinstance(exc, getattr(module, 'EpisodePrewriteRefused', ())))
-            uncertain = (command == 'apply' or command == 'native_transform' and not known_episode_refusal
+            uncertain = (command in ('apply','correct_arm_axial') or command == 'native_transform' and not known_episode_refusal
                 or isinstance(exc, getattr(module, 'EpisodeUncertain', ())))
+            mutation_receipt=None
+            if (command=='correct_arm_axial' and type(result) is dict and type(params.get('task')) is dict
+                    and result.get('schema')=='arm-axial-execution-result-v1'
+                    and result.get('event_id')==params['task'].get('event_id')):
+                attempts,returns=result.get('setter_attempts'),result.get('setter_returns')
+                executed=result.get('executed')
+                if (all(type(v) is int and 0<=v<=2 for v in (attempts,returns)) and returns<=attempts
+                        and (executed is None or type(executed) is bool)):
+                    mutation_receipt={'schema':'arm-axial-execution-result-v1','event_id':result['event_id'],
+                        'status':'execution_uncertain','reason':'worker_result_delivery_failed',
+                        'executed':executed,'setter_attempts':attempts,'setter_returns':returns,'task_succeeded':False}
             _emit({"id": request_id, "error": {"type": type(exc).__name__, "message": str(exc)[:2000],
                                                  "mutation_uncertain": uncertain,
+                                                 **({'mutation_receipt':mutation_receipt} if mutation_receipt is not None else {}),
                                                  **({'known_preentry_refusal': True, 'executed': False}
                                                     if known_episode_refusal else {})}})
             if uncertain:
