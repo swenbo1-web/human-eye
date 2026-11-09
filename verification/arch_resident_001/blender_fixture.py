@@ -35,6 +35,10 @@ def control(value):
         obj = bpy.data.objects[value['name']]
         obj.data.vertices[0].co.z += value['dz']
         obj.data.update()
+    elif op == 'color':
+        bpy.data.objects[value['name']].color = tuple(value['color'])
+    elif op == 'active':
+        bpy.context.view_layer.objects.active = bpy.data.objects.get(value.get('name')) if value.get('name') else None
     elif op == 'rename':
         bpy.data.objects[value['name']].name = value['new_name']
     elif op == 'replace':

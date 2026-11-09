@@ -7,6 +7,12 @@ import weakref
 PROTOCOL = 'human-eye-scene-delta-v1'
 
 
+def _world_number_key(value):
+    # Numeric equality merges +0.0/-0.0, although the unchanged forward map
+    # can produce different IEEE signs. Keep that distinction in cached keys.
+    return ('float_zero',value.hex()) if type(value) is float and value==0. else value
+
+
 def identity(value):
     if value is None:return None
     uid=getattr(value,'session_uid',None)
@@ -95,7 +101,13 @@ def encode_capture(capture,known,bindings):
 
 
 class SceneDeltaDecoder:
-    def __init__(self):self._state=None;self._resources={}
+    def __init__(self):
+        self._state=None;self._resources={};self._world={}
+        self._world_transforms=0;self._transformed_vertices=0
+
+    def work_totals(self):
+        """Cumulative coordinate work committed by successful complete packets."""
+        return dict(world_transforms=self._world_transforms,transformed_vertices=self._transformed_vertices)
 
     def baseline(self):
         if self._state is None:return None
@@ -110,7 +122,7 @@ class SceneDeltaDecoder:
     def _apply(self,packet):
         if type(packet) is not dict:raise ValueError('scene_delta_packet_object')
         if packet.get('schema')!=PROTOCOL:
-            self._state=None;self._resources={}
+            self._state=None;self._resources={};self._world={}
             return deepcopy(packet)
         payload=deepcopy(packet['capture']);scene=payload.get('capture',payload);state=scene.get('capture_state')
         if (type(state) is not dict or type(state.get('instance_id')) is not str
@@ -118,23 +130,42 @@ class SceneDeltaDecoder:
                 or type(state.get('selection_key')) is not str):raise ValueError('scene_delta_state')
         same=self._state is not None and all(self._state[k]==state[k] for k in ('instance_id','epoch'))
         resources=dict(self._resources) if same else {}
+        # Existing cache entries are immutable. Stage replacements privately so
+        # a later missing/invalid mesh cannot publish a partial new baseline.
+        world=dict(self._world) if same else {}
+        replaced=set()
         for resource in packet['resources']:
             if (type(resource) is not dict or type(resource.get('id')) is not str
                     or type(resource.get('revision')) is not int or resource['revision']<1):raise ValueError('scene_delta_resource')
             resources[resource['id']]=deepcopy(resource)
+            replaced.add(resource['id'])
         live=packet.get('live_resources')
         if type(live) is not list or any(type(k) is not str for k in live):raise ValueError('scene_delta_live_resources')
         live=set(live)
         resources={key:value for key,value in resources.items() if key in live}
+        world={key:value for key,value in world.items() if key[0] in live and key[0] not in replaced}
         vertices=faces=0
+        used=set();touched=set();world_transforms=transformed_vertices=0
         for mesh in scene['meshes']:
             reference=mesh.pop('_scene_resource');resource=resources.get(reference['id'])
             if resource is None or resource['revision']!=reference['revision']:raise ValueError('scene_delta_missing_resource')
             local=resource['vertices_local'];matrix=reference['matrix'];scale=reference['scale']
             vertices+=len(local);faces+=len(resource['faces'])
             if vertices>500000 or faces>1000000:raise ValueError('scene_delta_geometry_budget')
-            mesh['vertices']=[[(sum(matrix[r][c]*p[c] for c in range(3))+matrix[r][3])*scale for r in range(3)] for p in local]
-            if any(not math.isfinite(v) for p in mesh['vertices'] for v in p):raise ValueError('scene_delta_nonfinite_geometry')
+            key=(reference['id'],reference['revision'],
+                 tuple(tuple(_world_number_key(value) for value in row) for row in matrix),_world_number_key(scale))
+            cached=world.get(key)
+            if cached is None:
+                cached=tuple(tuple((sum(matrix[r][c]*p[c] for c in range(3))+matrix[r][3])*scale
+                                   for r in range(3)) for p in local)
+                if any(not math.isfinite(v) for p in cached for v in p):raise ValueError('scene_delta_nonfinite_geometry')
+                world[key]=cached;world_transforms+=1;transformed_vertices+=len(local)
+            used.add(key);touched.add(reference['id'])
+            mesh['vertices']=[list(point) for point in cached]
             mesh['faces']=[list(face) for face in resource['faces']];mesh['edges']=[list(edge) for edge in resource['edges']]
-        self._state=deepcopy(state);self._resources=resources
+        # Retain other live selections, but discard obsolete poses of resources
+        # present in this packet instead of accumulating their motion history.
+        world={key:value for key,value in world.items() if key[0] not in touched or key in used}
+        self._state=deepcopy(state);self._resources=resources;self._world=world
+        self._world_transforms+=world_transforms;self._transformed_vertices+=transformed_vertices
         return payload

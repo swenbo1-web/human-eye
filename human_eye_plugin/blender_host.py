@@ -582,7 +582,9 @@ class BlenderSceneHost:
             matrix=_matrix(evaluated.matrix_world);key=ident(obj);data=getattr(obj,'data',None)
             guards=self._guard_description(obj)
             dynamic=bool(guards['modifiers'] or guards['animation'] or guards['data_animation'] or guards['shape_keys'])
-            stamp=(ident(data),state.dirty.get(key,0),state.dirty.get(ident(data),0),guards,
+            geometry_guards=dict(guards,parent=ident(getattr(obj,'parent',None)),
+                children=sorted(ident(child) for child in getattr(obj,'children',())))
+            stamp=(ident(data),state.dirty.get(key,0),state.dirty.get(ident(data),0),geometry_guards,
                 int(getattr(self.scene,'frame_current',0)) if dynamic else None,
                 float(getattr(self.scene,'frame_subframe',0)) if dynamic else None)
             resource=state.resources.get(key)
@@ -621,20 +623,27 @@ class BlenderSceneHost:
             if vertex_count>500000 or face_count>1000000:raise BlenderHostError('Scene geometry budget exceeded')
             color=[int(round(min(1.,max(0.,float(c)))*255)) for c in list(getattr(obj,'color',(0.5,0.5,0.5,1)))[:3]]
             if len(color)!=3:raise BlenderHostError('Object color must have three components')
-            pose=(matrix,scale,ordinal,self.object_id(obj),str(obj.name),_same_rna(obj,active),color)
+            # World geometry depends on the evaluated resource and physical
+            # pose. Names, selection ordinals, active state and colors must
+            # refresh metadata without repeating the vertex forward map.
+            pose=(matrix,scale)
             if resource['pose']!=pose:
                 vertices=[[(sum(matrix[r][c]*p[c] for c in range(3))+matrix[r][3])*scale for r in range(3)]
                           for p in resource['vertices_local']]
                 if any(not math.isfinite(v) for p in vertices for v in p):raise BlenderHostError('Nonfinite evaluated geometry: '+obj.name)
                 axes,confidence,reason,_=_frame(matrix)
-                resource['mesh']=dict(object_id=self.object_id(obj),mark_label='#B%04d'%ordinal,name=str(obj.name),
-                    is_focal_target=_same_rna(obj,active),color_rgb=color,vertices=vertices,
+                resource['mesh']=dict(vertices=vertices,
                     faces=[list(f) for f in resource['faces']],edges=[list(e) for e in resource['edges']],
                     local_axes=axes,pivot_world=[matrix[r][3]*scale for r in range(3)],
                     axes_source='host',axes_confidence=confidence,axes_reason=reason)
                 resource['pose']=copy.deepcopy(pose);self._residency_stats['world_transforms']+=1
             state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
-            meshes.append(resource['mesh'])
+            # Copy the small metadata dict; geometry remains private and is
+            # detached once at the public capture boundary. Older selections
+            # retain their own labels when another selection reuses a resource.
+            meshes.append(dict(resource['mesh'],object_id=self.object_id(obj),
+                mark_label='#B%04d'%ordinal,name=str(obj.name),
+                is_focal_target=_same_rna(obj,active),color_rgb=color))
         scene=dict(unit='m',coordinate_frame='world',source='blender',meshes=meshes)
         if task_selection is not None:
             scene.update(capture_scope='selected_objects',task_selection=task_selection,host_identity=task_identity)

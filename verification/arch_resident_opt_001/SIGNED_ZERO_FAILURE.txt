@@ -1,0 +1,10 @@
+Observed independent counterexample; preserved from the actual prior tool result, not rerun.
+Command: fixed verification Python -I -S -B -X utf8 verification/arch_resident_opt_001/test_decoder_world_reuse.py DecoderWorldReuseTests.test_signed_zero_scale_does_not_alias_a_different_legacy_float64_result -v
+Exit code: 1
+Ran 1 test in 0.005s
+FAILED (failures=1)
+Traceback location: test_decoder_world_reuse.py line 309, float_bits(actual) == float_bits(legacy) assertion.
+Actual first point bits:   0000000000000000 0000000000000000 0000000000000000
+Legacy expected point:     8000000000000000 8000000000000000 8000000000000000
+Initial +0.0 scale packet succeeds. Subsequent -0.0 scale aliases Python numeric cache key and incorrectly reuses positive zero. Actual Blender scale_length is positive; this concerns the unchanged pre-existing codec acceptance domain.
+The test was not changed after failure. A later fix must preserve that old domain and old sum formula rather than reject this input.

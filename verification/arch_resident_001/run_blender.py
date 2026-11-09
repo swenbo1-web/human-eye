@@ -54,6 +54,7 @@ def gap(capture):
 
 def main():
     output = Path(sys.argv[1]).resolve()
+    world_reuse = '--world-reuse' in sys.argv[2:]
     output.mkdir(parents=True, exist_ok=True)
     fixture, ready = output / 'fixture.blend', output / ('ready-%d.json' % os.getpid())
     records = []
@@ -86,6 +87,8 @@ def main():
                 'request_bytes': host.last_request_bytes, 'response_bytes': host.last_wire_bytes,
                 'state': capture.get('capture_state'), 'wire': wire})
             records[-1]['work_totals'] = control(port, op='stats')
+            if world_reuse:
+                records[-1]['decoder_work_totals'] = host._scene_decoder.work_totals()
             return value
 
         cold = query('mcp_task_cold', lambda: host.capture_task_scene(selectors))
@@ -96,17 +99,44 @@ def main():
         assert records[0]['work_totals'][0]['stats']['resource_builds'] == 2
         assert records[1]['work_totals'][0]['stats']['resource_builds'] == 2
         assert len(records[1]['wire']['resources']) == 0
+        if world_reuse:
+            assert records[0]['decoder_work_totals'] == records[1]['decoder_work_totals']
+            unchanged_work = records[1]['work_totals'][0]['stats']['world_transforms']
+            unchanged_decoder = records[1]['decoder_work_totals']
+            control(port, op='color', name='BluePart', color=[1, 0, 0, 1])
+            colored = query('mcp_metadata_color', lambda: host.capture_task_scene(selectors))
+            assert next(m for m in colored['meshes'] if m['name'] == 'BluePart')['color_rgb'] == [255, 0, 0]
+            control(port, op='active', name='GreyBase')
+            active = query('mcp_metadata_active', lambda: host.capture_task_scene(selectors))
+            assert next(m for m in active['meshes'] if m['name'] == 'GreyBase')['is_focal_target'] is True
+            control(port, op='rename', name='BluePart', new_name='BlueMeta')
+            renamed = query('mcp_metadata_rename', lambda: host.capture_task_scene(
+                [{'name': 'BlueMeta'}, {'name': 'GreyBase'}]))
+            assert {m['name'] for m in renamed['meshes']} == {'BlueMeta', 'GreyBase'}
+            control(port, op='rename', name='BlueMeta', new_name='BluePart')
+            query('mcp_metadata_restore_name', lambda: host.capture_task_scene(selectors))
+            for record in records[2:6]:
+                assert record['work_totals'][0]['stats']['world_transforms'] == unchanged_work
+                assert record['work_totals'][0]['stats']['resource_builds'] == 2
+                assert record['decoder_work_totals'] == unchanged_decoder
+                assert len(record['wire']['resources']) == 0
         control(port, op='translate', name='BluePart', dz=.002)
         pose = query('mcp_pose_change', lambda: host.capture_task_scene(selectors))
         assert abs(gap(pose) - .006) < 1e-7, gap(pose)
         assert pose['capture_state'] != warm['capture_state']
         assert records[-1]['work_totals'][0]['stats']['resource_builds'] == 2
         assert len(records[-1]['wire']['resources']) == 0
+        if world_reuse:
+            assert records[-1]['decoder_work_totals']['world_transforms'] == 3
+            assert records[-1]['decoder_work_totals']['transformed_vertices'] == 24
         control(port, op='mesh', name='BluePart', dz=-.001)
         mesh = query('mcp_mesh_change', lambda: host.capture_task_scene(selectors))
         assert abs(gap(mesh) - .005) < 1e-7, gap(mesh)
         assert records[-1]['work_totals'][0]['stats']['resource_builds'] == 3
         assert len(records[-1]['wire']['resources']) == 1
+        if world_reuse:
+            assert records[-1]['decoder_work_totals']['world_transforms'] == 4
+            assert records[-1]['decoder_work_totals']['transformed_vertices'] == 32
         full = query('mcp_full', host.capture_scene)
         assert abs(gap(full) - gap(mesh)) < 1e-12
         nearest = lambda: host.capture_nearest_candidates(None, time.perf_counter_ns()+15_000_000_000,
@@ -114,6 +144,9 @@ def main():
         near = query('mcp_nearest', nearest)
         assert abs(gap(near['capture']) - gap(full)) < 1e-12
         query('mcp_nearest_warm', nearest)
+        if world_reuse:
+            assert records[-1]['decoder_work_totals'] == records[-2]['decoder_work_totals'] == records[-3]['decoder_work_totals']
+            assert records[-1]['work_totals'][0]['stats']['world_transforms'] == records[-3]['work_totals'][0]['stats']['world_transforms']
         control(port, op='rename', name='BluePart', new_name='BlueRenamed')
         missing = query('mcp_rename_old_name', lambda: host.capture_task_scene(selectors))
         assert not any(m['name'] == 'BluePart' for m in missing['meshes'])
@@ -163,12 +196,16 @@ def main():
                 assert abs(gap(value.get('capture', value)) - .004) < 1e-7
                 records.append({'label': label, 'duration_ms': (time.perf_counter_ns()-t0)/1e6,
                                 'state': value.get('capture', value).get('capture_state')})
+                if world_reuse:
+                    records[-1]['decoder_work_totals'] = owned._scene_decoder.work_totals()
+            if world_reuse:
+                assert all(record['decoder_work_totals'] == records[-4]['decoder_work_totals'] for record in records[-4:])
         assert source_hash == hashlib.sha256(fixture.read_bytes()).hexdigest()
         assert source_hashes == {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in product_paths}
         from human_eye_plugin.runtime_identity import runtime_identity
         identity = runtime_identity()
         result = {'passed': True, 'fixture_startup_ms': startup_ms, 'records': records,
-                  'fixture_unchanged': True, 'product_sources': source_hashes,
+                  'fixture_unchanged': True, 'world_reuse_checks': world_reuse, 'product_sources': source_hashes,
                   'source_sha256': identity['source_sha256'], 'source_count': len(identity['source_files'])}
         (output / 'result.json').write_text(json.dumps(result, indent=2, allow_nan=False), encoding='utf8')
         print(json.dumps({'passed': True, 'records': len(records), 'result': str(output/'result.json')}))

@@ -24,6 +24,9 @@ suite = unittest.TestSuite()
 for pattern in patterns:
     suite.addTests(unittest.defaultTestLoader.discover(str(ROOT / 'verification'), pattern=pattern))
 suite.addTests(unittest.defaultTestLoader.discover(str(Path(__file__).parent), pattern='test_residency_contract.py'))
+if '--world-reuse' in sys.argv[2:]:
+    suite.addTests(unittest.defaultTestLoader.discover(str(Path(__file__).parent.with_name('arch_resident_opt_001')), pattern='test_*.py'))
+    patterns.append('arch_resident_opt_001/test_*.py')
 stream = io.StringIO()
 start = time.perf_counter_ns()
 result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
