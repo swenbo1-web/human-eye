@@ -34,11 +34,15 @@ def _points(matrix,vertices):
     return vertices@matrix[:3,:3].T+matrix[:3,3]
 
 
-def _lbs(rest,weights,rests,poses):
-    output=np.zeros_like(rest)
-    for index,(original,pose) in enumerate(zip(rests,poses)):
-        output+=weights[:,index,None]*_points(r.multiply(pose,r.inverse(original)),rest)
-    return output
+def _lbs(rest,weights,inverses,poses,work):
+    # Both absolute end poses remain fixed in this call's candidate.
+    fixed=np.zeros_like(rest)
+    for index in (0,2):
+        work['full_vertex_bone_transforms']+=1
+        fixed+=weights[:,index,None]*_points(r.multiply(poses[index],inverses[index]),rest)
+    work['full_vertex_bone_transforms']+=1
+    current=fixed+weights[:,1,None]*_points(r.multiply(poses[1],inverses[1]),rest)
+    return current,fixed
 
 
 def _areas(points,sections):
@@ -54,6 +58,40 @@ def _objective(points,sections,areas0):
     _need(np.isfinite(ratios).all(),'unreliable_section_area')
     return {'max_section_area_loss':max(0.,1.-float(ratios.min())),
             'section_area_ratios':ratios.tolist()}
+
+
+def _infeasibility_floor(d,u,work):
+    """Lower-bound loss using the two actual half-weight area vectors only.
+
+    Cofactor maps polygon area vectors under a linear map. Bound its departure
+    from the ideal axial mixture before calling a close numerical miss proven
+    infeasible. This is not a second optimizer or a relaxed task tolerance.
+    """
+    a=np.asarray(d['poses'][0])[:3,:3]
+    cofactor=np.column_stack((np.cross(a[:,1],a[:,2]),np.cross(a[:,2],a[:,0]),np.cross(a[:,0],a[:,1])))
+    c=math.sqrt(1.+float(np.max(np.sum(np.abs(cofactor.T@cofactor-np.eye(3)),axis=1))))
+    residual=float(np.linalg.norm(a@np.asarray(d['first_pose_inverse'])[:3,:3]-np.eye(3)))
+    for rest,inverse in zip(d['rests'],d['inverses']):
+        linear=np.asarray(rest)[:3,:3];inv=np.asarray(inverse)[:3,:3]
+        residual=max(residual,float(np.linalg.norm(linear@inv-np.eye(3))),float(np.linalg.norm(inv@linear-np.eye(3))))
+    errors=[];epsilon=np.finfo(float).eps
+    coordinate=max(float(np.max(np.abs(d['rest']))),float(np.max(np.abs(d['current']))))
+    for joint,number in enumerate(d['half_sections']):
+        ring=d['local_rest'][d['sections'][number]];ring=ring-ring.mean(axis=0)
+        crossed=np.cross(ring,np.roll(ring,-1,axis=0));area0=d['areas0'][number]
+        vector=crossed.sum(axis=0)/(2*area0)
+        e=4*residual+(0.5*float(np.linalg.norm(d['last_axial']-np.asarray(_ry(d['theta']))[:3,:3])) if joint else 0.)
+        g=math.sqrt(3.)*(2*e+e*e)
+        radius=float(np.linalg.norm(ring,axis=1).max())
+        perimeter=float(np.linalg.norm(np.roll(ring,-1,axis=0)-ring,axis=1).sum())
+        condition=max(1.,float(np.linalg.norm(crossed,axis=1).sum())/(2*area0),
+                      len(ring)*radius*radius/(2*area0),coordinate*perimeter/area0)
+        roundoff=max(128,8*len(ring))*epsilon*condition
+        errors.append(max(0.,c*abs(float(vector[1]))-1.)+c*math.hypot(float(vector[0]),float(vector[2]))
+                      +c*g*float(np.linalg.norm(vector))+roundoff)
+        work['infeasibility_section_bounds']+=1
+    ideal=max(math.sin(math.radians(u)/2)**2,math.sin(math.radians(d['theta']-u)/2)**2)
+    return max(0.,ideal-max(errors))
 
 
 def _task(task):
@@ -86,17 +124,20 @@ def _domain(patch,task,work):
         _need(r.angles(delta)['rotation_deg']<=angle_tol and
               np.linalg.norm(np.asarray(target_pose)[:3,3]-np.asarray(pose)[:3,3])<=position_tol,
               'fixed_end_target_mismatch')
-    first_rest_inv=r.inverse(rests[0]);first_pose_inv=r.inverse(poses[0])
+    inverses=[]
+    for matrix in rests:
+        work['rest_matrix_inversions']+=1;inverses.append(r.inverse(matrix))
+    first_rest_inv=inverses[0];first_pose_inv=r.inverse(poses[0])
     heads=[];angles=[]
     rotation_tol=math.radians(angle_tol)
-    for rest_matrix,pose in zip(rests,poses):
+    for rest_matrix,inverse,pose in zip(rests,inverses,poses):
         local_rest=r.multiply(first_rest_inv,rest_matrix)
         _need(np.linalg.norm(np.asarray(local_rest)[[0,2],3])<=position_tol and
               np.linalg.norm(np.asarray(local_rest)[:3,1]-[0.,1.,0.])<=rotation_tol,
               'rest_bones_not_coaxial')
         heads.append(local_rest[1][3])
         # Remove first-bone motion and each bone's rest roll before taking u.
-        axial=r.multiply(r.multiply(first_pose_inv,pose),r.inverse(local_rest))
+        axial=r.multiply(r.multiply(first_pose_inv,pose),r.multiply(inverse,rests[0]))
         fact=r.angles(axial);angle=fact['twist_deg']
         _need(angle is not None and fact['swing_deg']<=angle_tol,'non_axial_or_ambiguous_pose')
         expected=np.asarray(_ry(angle));actual=np.asarray(axial)
@@ -109,15 +150,18 @@ def _domain(patch,task,work):
     _need(abs(theta)<180-angle_tol and lower-angle_tol<=u<=upper+angle_tol,'axial_angle_domain')
     _need(lower-angle_tol<=interval[0]<=interval[1]<=upper+angle_tol,'interval_outside_axial_domain')
     _need(np.max(np.abs(weights.sum(axis=1)-1.))<=WEIGHT_ATOL,'weights_not_unit_precision')
-    _need(not np.any((weights[:,0]>WEIGHT_ATOL)&(weights[:,2]>WEIGHT_ATOL)),
+    # Support is structural: dropping even a tiny third influence changes the
+    # minimizer. Numerical closeness does not establish a two-bone mixture.
+    _need(not np.any((weights[:,0]>0)&(weights[:,2]>0)),
           'non_adjacent_weights')
-    local=_points(first_rest_inv,rest);heights=[];halves=[False,False]
-    for section in sections:
+    last_axial=np.asarray(axial)[:3,:3]
+    local=_points(first_rest_inv,rest);heights=[];halves=[None,None]
+    for number,section in enumerate(sections):
         ring=local[section];center=ring.mean(axis=0);heights.append(float(center[1]))
         _need(np.linalg.norm(center[[0,2]])<=position_tol and
               np.max(np.abs(ring[:,1]-center[1]))<=position_tol,'section_not_transverse_centered')
         row=weights[section[0]]
-        _need(np.max(np.abs(weights[section]-row))<=WEIGHT_ATOL,'nonuniform_section_weights')
+        _need(np.all(weights[section]==row),'nonuniform_section_weights')
         polygon=ring[:,[0,2]];edge=np.roll(polygon,-1,axis=0)-polygon
         _need(np.min(np.linalg.norm(edge,axis=1))>position_tol,'degenerate_section_edge')
         # Strict interior-side evidence excludes star windings. A thin crossing
@@ -129,9 +173,9 @@ def _domain(patch,task,work):
         interior=side[(columns!=rows)&(columns!=(rows+1)%len(polygon))]
         _need(np.all(interior>guard) or np.all(interior<-guard),'section_not_reliably_convex_ordered')
         for joint,pattern in enumerate(([.5,.5,0.],[0.,.5,.5])):
-            if np.max(np.abs(row-pattern))<=WEIGHT_ATOL and abs(center[1]-heads[joint+1])<=position_tol:
-                halves[joint]=True
-    _need(all(halves),'both_joint_half_weight_sections_required')
+            if np.array_equal(row,pattern) and abs(center[1]-heads[joint+1])<=position_tol:
+                halves[joint]=number
+    _need(all(number is not None for number in halves),'both_joint_half_weight_sections_required')
     _need(all(b-a>position_tol for a,b in zip(heights,heights[1:])) and
           abs(heights[0])<=position_tol and heights[-1]>heads[-1]+position_tol,'ordered_axial_sections')
     work['rest_area_batches']+=1
@@ -139,11 +183,11 @@ def _domain(patch,task,work):
     scale=max(float(np.ptp(local,axis=0).max()),position_tol)
     _need(np.isfinite(areas0).all() and np.min(areas0)>max(position_tol**2,scale**2*1e-12),
           'unreliable_rest_section_area')
-    pure=(weights[:,0]>=1-WEIGHT_ATOL)|(weights[:,2]>=1-WEIGHT_ATOL)
+    pure=np.all(weights==[1.,0.,0.],axis=1)|np.all(weights==[0.,0.,1.],axis=1)
     protected={ids[index] for index in np.flatnonzero(pure)}
     _need(protected and set(task['protected_vertex_ids'])==protected,'protect_all_and_only_pure_end_vertices')
     work['lbs_evaluations']+=1
-    predicted=_lbs(rest,weights,rests,poses)
+    predicted,fixed=_lbs(rest,weights,inverses,poses,work)
     residual=float(np.linalg.norm(predicted-current,axis=1).max())
     _need(residual<=position_tol,'current_not_declared_lbs')
     centers=np.array([current[s].mean(axis=0) for s in sections])
@@ -151,7 +195,9 @@ def _domain(patch,task,work):
     _need(np.max(np.linalg.norm(centers-reference,axis=1))<=position_tol,'current_centerline_changed')
     return dict(rest=rest,ids=ids,rests=rests,poses=poses,weights=weights,sections=sections,current=current,
                 areas0=areas0,pure=pure,u=u,theta=theta,interval=interval,target=target,
-                area_tol=area_tol,position_tol=position_tol,lbs_residual=residual)
+                area_tol=area_tol,position_tol=position_tol,lbs_residual=residual,
+                inverses=inverses,first_pose_inverse=first_pose_inv,fixed_contribution=fixed,
+                local_rest=local,half_sections=halves,last_axial=last_axial)
 
 
 def preview_axial_redistribution(patch,task):
@@ -165,7 +211,8 @@ def preview_axial_redistribution(patch,task):
     report={'schema':SCHEMA,'status':'not_applicable','reason':None,'candidate':None,
             'candidate_source':'bounded_geometric_solver','objective':None,'preservation':None,
             'work':{'lbs_evaluations':0,'rest_area_batches':0,'current_area_batches':0,
-                    'candidate_area_batches':0,'model_calls':0},
+                    'candidate_area_batches':0,'model_calls':0,
+                    'full_vertex_bone_transforms':0,'rest_matrix_inversions':0,'infeasibility_section_bounds':0},
             'not_checked':['source_provenance','rig_constraints','actual_bone_tails','animation_winding',
                            'outside_patch_objects','volume','damage_or_artistic_intent']}
     try:
@@ -182,9 +229,11 @@ def preview_axial_redistribution(patch,task):
             report['objective']['after']=dict(before);return report
         poses=[[row[:] for row in matrix] for matrix in d['poses']]
         poses[1]=r.multiply(r.multiply(d['poses'][0],_ry(optimal)),
-                            r.multiply(r.inverse(d['rests'][0]),d['rests'][1]))
+                            r.multiply(d['inverses'][0],d['rests'][1]))
         work['lbs_evaluations']+=1
-        after_points=_lbs(d['rest'],d['weights'],d['rests'],poses)
+        work['full_vertex_bone_transforms']+=1
+        after_points=d['fixed_contribution']+d['weights'][:,1,None]*_points(
+            r.multiply(poses[1],d['inverses'][1]),d['rest'])
         work['candidate_area_batches']+=1
         after=_objective(after_points,d['sections'],d['areas0'])
         before_centers=np.array([d['current'][s].mean(axis=0) for s in d['sections']])
@@ -200,12 +249,18 @@ def preview_axial_redistribution(patch,task):
                                       max_protected_vertex_delta_m=protected_delta,
                                       max_bone_axis_vector_delta=axis_delta)
         if after['max_section_area_loss']>d['target']+d['area_tol']:
+            floor=_infeasibility_floor(d,optimal,work)
+            report['objective']['minimum_loss_lower_bound']=floor
+            if floor<=d['target']+d['area_tol']:
+                report.update(status='not_applicable',reason='area_target_below_supported_precision')
+                return report
             report.update(status='unreachable',reason='best_allowed_u_exceeds_area_target',best_feasible_u_deg=optimal)
             return report
-        basis=[r.multiply(r.inverse(d['rests'][0]),poses[0])]
+        basis=[r.multiply(d['inverses'][0],poses[0])]
         for i in (1,2):
-            relative=r.multiply(r.inverse(d['rests'][i-1]),d['rests'][i])
-            basis.append(r.multiply(r.inverse(relative),r.multiply(r.inverse(poses[i-1]),poses[i])))
+            inverse_relative=r.multiply(d['inverses'][i],d['rests'][i-1])
+            inverse_parent=d['first_pose_inverse'] if i==1 else r.inverse(poses[1])
+            basis.append(r.multiply(inverse_relative,r.multiply(inverse_parent,poses[i])))
         report.update(status='candidate',reason='area_target_met_with_fixed_end_poses',candidate={
             'u_deg':optimal,'pose_matrices':poses,'local_basis_matrices':basis,
             'bone_changes':[{'name':patch['bone_chain'][i]['name'],'basis_matrix':basis[i]} for i in (1,2)],
