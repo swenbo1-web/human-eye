@@ -1396,7 +1396,8 @@ class BlenderSceneHost:
                 self._arm_twist_adapter = adapter
             bound = getattr(self, '_arm_twist_bound', None)
             retained = None if bound is None else bound._selection
-            if type(selection) is dict and 'vertex_indices' not in selection and retained is not None:
+            if (type(selection) is dict and 'vertex_indices' not in selection and retained is not None
+                    and getattr(self, '_arm_twist_bound_default_indices', False)):
                 retained = {key: value for key, value in retained.items() if key != 'vertex_indices'}
             def same(left, right):
                 if type(left) is not type(right):
@@ -1410,6 +1411,7 @@ class BlenderSceneHost:
             if bound is None or not same(selection, retained):
                 bound = adapter.bind(selection)
                 self._arm_twist_bound = bound
+                self._arm_twist_bound_default_indices = 'vertex_indices' not in selection
             return bound.analyze()
 
     def capture_readonly_evidence(self):

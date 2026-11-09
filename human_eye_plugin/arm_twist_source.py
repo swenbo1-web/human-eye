@@ -187,7 +187,7 @@ class BoundArmPatch:
             sections=[[local[i] for i in section] for section in self._sections])
         return patch,raw
 
-    def capture(self):
+    def capture(self,*,_export_static_patch=True):
         host=self._source.host;host._main_thread()
         with host.transaction():
             graph=host._depsgraph();scale=host._scale()
@@ -229,11 +229,11 @@ class BoundArmPatch:
                 coordinate_frame='armature_local',unit='m',selected_vertices=len(self._indices),
                 selected_bones=list(self._names),local_root_parent=getattr(getattr(bones[0],'parent',None),'name',None),
                 tracking='scene_residency' if tracked else 'fresh_untracked',max_lbs_readback_error_m=worst)
-            return dict(schema='arm-twist-source-capture-v1',source=source,static_patch=deepcopy(patch) if changed else None,
+            return dict(schema='arm-twist-source-capture-v1',source=source,static_patch=deepcopy(patch) if changed and _export_static_patch else None,
                         current_vertices=current,pose_matrices=poses,static_changed=changed)
 
     def analyze(self,model=None):
-        capture=self.capture()
+        capture=self.capture(_export_static_patch=False)
         report=self._prepared.analyze(capture['current_vertices'],capture['pose_matrices'],model=model)
         report['source_binding']='local_armature_source_adapter';report['source']=capture['source']
         return report
