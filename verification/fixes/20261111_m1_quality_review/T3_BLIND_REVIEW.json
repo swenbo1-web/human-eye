@@ -1,0 +1,745 @@
+{
+  "schema": "m1-t3-independent-blind-quality-review-v1",
+  "reviewer": "/root/latest_local_upgrade_audit",
+  "created_utc": "2026-11-10T17:44:14.842853+00:00",
+  "status": "completed",
+  "task": "T3",
+  "scoring_contract_sha256": "eeb098715ac69216fdcab188f83b2541ad224b828622bb0c00d8d6703890e0e0",
+  "independent_truth": {
+    "truth_path": "tasks/T3/TRUTH.json",
+    "truth_sha256": "a4a2a7a1286b87cd9246b00ab7f037244bd9728439406f24ae204a6e43a8f6c3",
+    "asset_sha256": "7fb7d648644d35c8e1c07c6be7f5ff741b4b32230f0e3eb18a461330b6f90d4c",
+    "target": "Mesh_DDBB95",
+    "kind": "nearest",
+    "required_nearest_names": [
+      "Mesh_8CC127"
+    ],
+    "certified_interval_m": [
+      0.0078125,
+      0.0078125
+    ],
+    "answer_tolerance_m": 1e-06,
+    "candidate_count": 5,
+    "representativeness": {
+      "every_pair_AABB_lower_bound_is_exact": true,
+      "center_sorting_selects_correct_winner": true,
+      "vertex_pair_only_ranking_is_wrong": true,
+      "native_lower_bound_plus_attained_surface_witness_is_valid": true,
+      "subdivision_adds_work_not_intrinsic_spatial_difficulty": true
+    }
+  },
+  "summary": {
+    "fixed_denominator": 9,
+    "present": 9,
+    "complete_correct": 9,
+    "fail": 0,
+    "unknown_or_incomplete": 0,
+    "not_run_by_reviewer": 9,
+    "tool_parameter_errors_preserved": 5,
+    "sessions_with_recovered_parameter_errors": 3,
+    "blocking_quality_findings": 0
+  },
+  "method": [
+    "Read all nine T3 answers, their original public request/code and projected results, and public source consistency records.",
+    "Checked voluntary witnesses, units, optional all-candidate distances, object bindings, and global coverage; a right-looking final answer alone is insufficient.",
+    "Accepted valid AABB lower bounds with attained actual surface witnesses; did not require redundant full-mesh computation.",
+    "Separated measured surface facts from closed-solid unknown statuses and preserved recoverable parameter errors.",
+    "Read only permitted public handoff files plus frozen SCORING_CONTRACT; no private map, formal-run directory, cost file, model, Blender, or product run."
+  ],
+  "blindness": {
+    "arm_map_read": false,
+    "arm_inference_performed": false,
+    "costs_used": false,
+    "limitation": "Tool names and code reveal execution routes, so blinding is imperfect. No arm label is assigned. A native stdout payload includes an elapsed diagnostic; it was not used, copied into this report, or compared."
+  },
+  "source_scope": "Public packet byte hashes verified against public INDEX answer hashes; source record equality is corroborative producer evidence, not independent asset execution or complete raw-provenance attestation.",
+  "geometric_reasoning": {
+    "winner_witness_world_m": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0.0078125
+      ]
+    ],
+    "witness_length_m": 0.0078125,
+    "all_candidate_names": [
+      "Mesh_8CC127",
+      "Mesh_696772",
+      "Mesh_879214",
+      "Mesh_79F58B",
+      "Mesh_A83E57"
+    ],
+    "candidate_distance_m_from_captured_bounds_and_attained_witnesses": {
+      "Mesh_8CC127": 0.0078125,
+      "Mesh_696772": 0.008734640537108554,
+      "Mesh_879214": 0.008734640537108554,
+      "Mesh_79F58B": 0.009765625,
+      "Mesh_A83E57": 0.01171875
+    },
+    "note": "Unique minimum and optional five-row tables are supported; vertex-only ranking is not accepted. No closed-solid classification is required by T3."
+  },
+  "answers": [
+    {
+      "anonymous_id": "answer_0571e520af7f45b0",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "cb7d6524fae4ec8e670fa2886cb9448ae3d3439015430becb8a2a5a96ab8d9d0",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": null,
+      "additional_rounded_distance_error_m": null,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0571e520af7f45b0\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2,
+        3
+      ],
+      "global_support": "Order 1 enumerates all six meshes and metric scale 1. Order 2 evaluates world-space triangles for all six. Order 3 computes bidirectional vertex-face and edge-edge distances for all five candidates, not vertex-only ranking. Captured target max Z=0 and every candidate min Z>=0.0078125 m give a scene-wide lower bound attained by the reported edge-edge witness. Individual candidate bounds also attain the reported table distances.",
+      "volunteered_claims": "All five table distances, unique nearest set, millimetre witness, evaluated/world geometry and global lower-bound explanation agree with code/results. No closed-solid or penetration claim.",
+      "adoption_observation": "Geometry answer derived from native code results.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_0e70ca7a24a8cb73",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "d0dde0caa7b0915344c119a366dc26ea0e0e10446303f6fd1e10847dc3853b5a",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": null,
+      "additional_rounded_distance_error_m": null,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0e70ca7a24a8cb73\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2,
+        3
+      ],
+      "global_support": "Order 1 enumerates six meshes and metric scale 1. Orders 2-3 evaluate world triangles and compute all five target-candidate surface distances using edge endpoints/interiors and bidirectional vertex-face projection. Order 3 prints each AABB lower bound equal to its attained surface distance; these are valid lower-bound certificates, not unsupported AABB approximations.",
+      "volunteered_claims": "Five table distances and all five AABB-bound equality claims agree with captured bounds/results. The winning edge-interior witness is (0,0,0)/(0,0,0.0078125) m; answer correctly converts to millimetres. Each mesh has 56 evaluated triangles.",
+      "adoption_observation": "Geometry answer derived from native code results.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_73cf7371f9a2d71d",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "a6309f44370909473cfd20ae41cf63f4936e0346346fbcf34696396e75c97aea",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": 0.007813,
+      "additional_rounded_distance_error_m": 5e-07,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_73cf7371f9a2d71d\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        3,
+        4
+      ],
+      "global_support": "Order 1 enumerates all six meshes. After a parameter error at order 2, order 3 evaluates all six world triangle arrays and computes all five distances with vertex-face and edge-edge methods. Order 4 checks both directed edge-face crossings and prints positive-separated bounds for every candidate. The winner witness attains the captured global lower bound, so the answer has global support rather than merely a guessed winner.",
+      "volunteered_claims": "All five distances, 56 triangles per object, absence of detected surface crossings, millimetre witness and units match evidence. All triangles have positive reported area. Rounded 7.813 mm differs from truth by 5e-7 m, within tolerance; exact 7.812500 mm is also supplied.",
+      "adoption_observation": "A plugin parameter error is followed by a full native solve; final correctness does not establish direct plugin-fact adoption.",
+      "preserved_attempt_errors": [
+        {
+          "order": 2,
+          "error": [
+            "task query requires only mode, objects and requested_facts"
+          ],
+          "classification": "protocol_or_parameter_error",
+          "later_recovered": true
+        }
+      ],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_7e38575be4b761fb",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "ee8485d786c5faae535f119d6ab7e8a2c18b22c0cbc313ec8cb368252ac0365f",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": 0.007813,
+      "additional_rounded_distance_error_m": 5e-07,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_7e38575be4b761fb\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2,
+        3,
+        6,
+        7
+      ],
+      "global_support": "Order 2 returns complete global surface_nearest coverage: five targets, five valid distances, zero unresolved, unique Mesh_8CC127 at 0.0078125 m. Order 3 confirms scene units and names. Orders 6-7 measure the full set in explicit 3+2 candidate batches with bound object IDs, supporting the optional five-row table and winner witness.",
+      "volunteered_claims": "Five candidate distances and millimetre witness match the measured surface facts. Each pair has open boundary topology; the answer correctly restricts the conclusion to surface distance and does not promote unknown closed-solid relations to known classifications.",
+      "adoption_observation": "Uses measured plugin global/pair facts; native supplement is scene metadata, not a full geometry solve.",
+      "preserved_attempt_errors": [
+        {
+          "order": 4,
+          "error": [
+            "task candidates must contain 1..3 explicit selectors"
+          ],
+          "classification": "protocol_or_parameter_error",
+          "later_recovered": true
+        },
+        {
+          "order": 5,
+          "error": [
+            "task set requires closed_solid_relation and surface_proximity; optional aabb only"
+          ],
+          "classification": "protocol_or_parameter_error",
+          "later_recovered": true
+        }
+      ],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_8450c2dfaf804cb2",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "404666c93bc84255a5f894d33ad725d2a786fef4d05794cc22122afb1c456496",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": 0.007813,
+      "additional_rounded_distance_error_m": 5e-07,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_8450c2dfaf804cb2\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2
+      ],
+      "global_support": "Order 1 returns complete surface_nearest coverage for all five candidates, all five valid and zero unresolved, unique Mesh_8CC127 at 0.0078125 m. Order 2 provides the winning measured surface witness and matching AABBs. Thus the final global statement is not based solely on the single-pair second query.",
+      "volunteered_claims": "Metre witness and millimetre answer convert correctly. Both meshes have 22 boundary edges. The answer explicitly retains closed-solid/penetration uncertainty while reporting the measured surface distance.",
+      "adoption_observation": "Uses plugin global/pair facts directly.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_b66f4f19d56bf15a",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "84085cfcfe5a73655eed29699f3be16399d1d40fea3954ee550abb675e022694",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": null,
+      "additional_rounded_distance_error_m": null,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_b66f4f19d56bf15a\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        4,
+        5
+      ],
+      "global_support": "Order 1 enumerates all six meshes and metric scale 1. Following parameter errors at orders 2-3, orders 4-5 measure all five distinct candidates in 3+2 explicit batches. Object-name/ID bindings and query order cover every non-target mesh exactly once. All five surface distances are measured and their minimum is uniquely Mesh_8CC127. An overall partial status reflects closed-solid relation uncertainty, not missing surface distances.",
+      "volunteered_claims": "Five-row table and millimetre witness match all measured pair facts. The answer correctly keeps open-surface distance separate from unknown closed-solid interior/penetration relations.",
+      "adoption_observation": "Uses plugin pair facts after parameter-error recovery; native call only enumerates scene and units.",
+      "preserved_attempt_errors": [
+        {
+          "order": 2,
+          "error": [
+            "task candidates must contain 1..3 explicit selectors"
+          ],
+          "classification": "protocol_or_parameter_error",
+          "later_recovered": true
+        },
+        {
+          "order": 3,
+          "error": [
+            "task set requires closed_solid_relation and surface_proximity; optional aabb only"
+          ],
+          "classification": "protocol_or_parameter_error",
+          "later_recovered": true
+        }
+      ],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_dceb0e2d90135bf1",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "08048e8e150d2952f3e083aca8c6ff12661ef90b4a383db170426640bbe1a425",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": null,
+      "additional_rounded_distance_error_m": null,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_dceb0e2d90135bf1\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2,
+        3
+      ],
+      "global_support": "Order 1 enumerates six meshes and scale 1. Orders 2-3 evaluate all world triangles, compute bidirectional vertex-face/vertex-edge plus edge-interior distances for all five candidates, and print the global Z separation lower bound. Winner witness is an actual edge-edge interpolation attaining 0.0078125 m. Full pair results and candidate AABB bounds rule out ties.",
+      "volunteered_claims": "Five candidate distances, lower-bound explanation, millimetre witness and evaluated world-space method agree with code/results. No vertex-only substitution or closed-solid inference.",
+      "adoption_observation": "Geometry answer derived from native code results.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_e6383676cdfa0546",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "75f95c9cf3bd3df0c242d6f6c3c7aebbe964359d5cac29c8e10ab2ace813229b",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": 0.007813,
+      "additional_rounded_distance_error_m": 5e-07,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_e6383676cdfa0546\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2
+      ],
+      "global_support": "Order 1 returns complete surface_nearest coverage (five targets, five valid, zero unresolved) and the unique correct winner. Order 2 supplies measured surface witness plus AABBs whose Z interval separation is 0.0078125 m. Global coverage comes from order 1, pair certificate from order 2.",
+      "volunteered_claims": "The metre point pair and binary-exact dyadic distance are correct; 7.813 mm rounding remains within tolerance. Open boundary facts support the answer retaining closed-solid uncertainty.",
+      "adoption_observation": "Uses plugin global/pair facts directly.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    },
+    {
+      "anonymous_id": "answer_fad6838a0cc8b064",
+      "task_id": "T3",
+      "quality_verdict": "pass",
+      "complete_correct": true,
+      "answer_sha256": "7ca7485ec8f929647d23645cd50bd2ad21fe7bb1a31f8609497e0829126eaba0",
+      "answer_binding_to_public_index": "match",
+      "nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "distance_m": 0.0078125,
+      "distance_error_m": 0.0,
+      "tolerance_m": 1e-06,
+      "additional_rounded_distance_m": 0.007813,
+      "additional_rounded_distance_error_m": 5e-07,
+      "checks": {
+        "complete_nearest_set": true,
+        "surface_not_vertex_only": true,
+        "global_scope_supported": true,
+        "unit_conversion": true,
+        "distance_within_tolerance": true,
+        "volunteered_witness_supported": true,
+        "no_wrong_extra_geometry_claim": true
+      },
+      "volunteered_witness_world_m": {
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "nearest": [
+          0,
+          0,
+          0.0078125
+        ],
+        "euclidean_distance_m": 0.0078125
+      },
+      "evidence_reference": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_fad6838a0cc8b064\\tool_evidence.json",
+      "evidence_order_convention": "owner_attempts[].order, one-based recorded order; code reviewed statically and results read, not rerun",
+      "evidence_orders": [
+        1,
+        2
+      ],
+      "global_support": "Order 1 returns complete global surface_nearest coverage of all five candidates with no unresolved distances, unique correct winner. Order 2 reports a measured surface witness attaining the winning AABB Z lower bound; this supports the answer without requiring a full extra native solve.",
+      "volunteered_claims": "Millimetre coordinates and AABB limits are correct conversions of measured metre values; the answer correctly separates surface distance from unknown closed-solid relations.",
+      "adoption_observation": "Uses plugin global/pair facts directly.",
+      "preserved_attempt_errors": [],
+      "source_consistency_checks": {
+        "expected_asset_in_actor_config": true,
+        "expected_asset_in_owner_identity": true,
+        "initial_final_original_record_hash_equal": true,
+        "initial_final_geometry_fingerprint_equal": true,
+        "producer_asset_unchanged": true,
+        "producer_geometry_unchanged": true,
+        "producer_protected_files_unchanged": true,
+        "producer_source_file_unchanged": true,
+        "producer_worker_not_poisoned": true,
+        "producer_close_errors_empty": true,
+        "missing_or_null_notes_empty": true
+      },
+      "source_consistency_limit": "These checks compare the public producer records; they do not independently rerun the asset or exclude every transient edit.",
+      "blocking_quality_findings": []
+    }
+  ],
+  "input_hashes": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\README.md": "2c01090eda7f1695abb9fc6fa9807f194d4ad600039d4a9876cc19cbeddce007",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\INDEX.json": "a8f7832732c489db4d870ea8305cd191890c77a5cb8a4030b44aaf4cb04c7884",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\SCORING_CONTRACT.json": "eeb098715ac69216fdcab188f83b2541ad224b828622bb0c00d8d6703890e0e0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0571e520af7f45b0\\answer.txt": "cb7d6524fae4ec8e670fa2886cb9448ae3d3439015430becb8a2a5a96ab8d9d0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0571e520af7f45b0\\tool_evidence.json": "e03da3ebdb32068d396967e0af7bca7c3e065a4986b2999e3341d56c0834c207",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0571e520af7f45b0\\source_consistency.json": "db3683ab66fbd42158cb4137c76184db01fb6e952c997b1cb995eeda5d707094",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0e70ca7a24a8cb73\\answer.txt": "d0dde0caa7b0915344c119a366dc26ea0e0e10446303f6fd1e10847dc3853b5a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0e70ca7a24a8cb73\\tool_evidence.json": "12befdae6d5c87cd24fd83652fa0e0eaea27ebea035ce1b7fd5832009e48d090",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_0e70ca7a24a8cb73\\source_consistency.json": "0db8ac9200d5680e9163608779b21a57d35cead59432cefc1d05662fcf51ec11",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_73cf7371f9a2d71d\\answer.txt": "a6309f44370909473cfd20ae41cf63f4936e0346346fbcf34696396e75c97aea",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_73cf7371f9a2d71d\\tool_evidence.json": "bc42571726eefd035dfde98240a5bd4510a4fab9e677d528f5ca4e8c36714821",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_73cf7371f9a2d71d\\source_consistency.json": "bf431cf6aabfbed0b3455d2c229352f276f7b2b9345366947549bcbc4dc1c94b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_7e38575be4b761fb\\answer.txt": "ee8485d786c5faae535f119d6ab7e8a2c18b22c0cbc313ec8cb368252ac0365f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_7e38575be4b761fb\\tool_evidence.json": "bffd803f00a87d74e69b4218b5ee3aee4e1d7a216c348c44958a5c0f356e901b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_7e38575be4b761fb\\source_consistency.json": "98cf048d36c672b0ff8db75d1ae3a3f76778a9cb97c1398342a86de0fde3b468",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_8450c2dfaf804cb2\\answer.txt": "404666c93bc84255a5f894d33ad725d2a786fef4d05794cc22122afb1c456496",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_8450c2dfaf804cb2\\tool_evidence.json": "6f5d7edfd2d1810af1e72fe5b49403f857ffd48a312f245720ee2b85d1b1f12d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_8450c2dfaf804cb2\\source_consistency.json": "c930a46d9ffd33c8685f4015748bde1d0a8f93ad5ca1b91b1065b329da48d6f7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_b66f4f19d56bf15a\\answer.txt": "84085cfcfe5a73655eed29699f3be16399d1d40fea3954ee550abb675e022694",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_b66f4f19d56bf15a\\tool_evidence.json": "ceaf90254da384d473f40c97d3c0b2b4395d30b4101bbe977588d7ae7c4c731a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_b66f4f19d56bf15a\\source_consistency.json": "831644a9eea20c1e32ac49ba8dbad0721ef4d946d1a8e44b43166ba55e1d3f7c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_dceb0e2d90135bf1\\answer.txt": "08048e8e150d2952f3e083aca8c6ff12661ef90b4a383db170426640bbe1a425",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_dceb0e2d90135bf1\\tool_evidence.json": "184b486227060a9d7d3cb62e3d7f5ef16dcfc63dcb33e1e55952b6bb3e0c60c0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_dceb0e2d90135bf1\\source_consistency.json": "300865174b6bb2ed306b1a56b3a418ca36b7c66c9be2399b0d567ac62eac2b3b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_e6383676cdfa0546\\answer.txt": "75f95c9cf3bd3df0c242d6f6c3c7aebbe964359d5cac29c8e10ab2ace813229b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_e6383676cdfa0546\\tool_evidence.json": "b5cae6db1fb58679b3d535e9ef567e6337678985a4c9644fd5fef1fa554030d0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_e6383676cdfa0546\\source_consistency.json": "9e66fa26690a96b7862bbc2b1d9ee2943168d3c58df410d7c6f590c40deb866a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_fad6838a0cc8b064\\answer.txt": "7ca7485ec8f929647d23645cd50bd2ad21fe7bb1a31f8609497e0829126eaba0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_fad6838a0cc8b064\\tool_evidence.json": "43dc742956e393acd4c9fe8ca7aa813d01d7bc122393f7eab5c90f1990def367",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m1_task_entry_001_eval\\quality_handoff\\handoff_01\\public\\answer_fad6838a0cc8b064\\source_consistency.json": "b2307247819a7cd478b532e144c85d65f33573911f19eab9ed727df106973a4c"
+  },
+  "not_performed": [
+    "No product, Blender or model run.",
+    "No raw private provenance audit.",
+    "No timing, usage or arm comparison.",
+    "No claim of independent live asset state verification."
+  ],
+  "agent_learning": "No active own binding established for this grading task; no parent handle borrowed and no Agent Learning state mutation."
+}
