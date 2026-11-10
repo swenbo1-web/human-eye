@@ -1,0 +1,900 @@
+{
+  "phase": "baseline",
+  "runtime_source_sha256": "347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea",
+  "source_kind": "unregistered_runtime",
+  "validation": [
+    {
+      "id": "overview_explicit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "overview_omitted",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "overview_null",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "ordinary_nearest",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "ordinary_task",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_selector",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_focal",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "bad_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "omitted_query_after_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "null_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "valid_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "false_query_is_not_default",
+      "exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_missing_session",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_conflict_before_missing_session",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest accepts query.objects or focal_id, not both"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest accepts query.objects or focal_id, not both"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_forbidden_reference",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "task_focal_conflict",
+      "exception": {
+        "type": "ValueError",
+        "message": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+      },
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "alignment_before_bad_context",
+      "exception": {
+        "type": "ValueError",
+        "message": "alignment_evidence=false requires include_image=false"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "alignment_evidence=false requires include_image=false"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "extra_before_bad_query",
+      "exception": {
+        "type": "ValueError",
+        "message": "Unexpected tool arguments"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "Unexpected tool arguments"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "unknown_tool",
+      "exception": {
+        "type": "ValueError",
+        "message": "Unknown tool: human_eye_not_a_tool"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "Unknown tool: human_eye_not_a_tool"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "session_before_bad_query",
+      "exception": {
+        "type": "ValueError",
+        "message": "session_id must be a nonempty string"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "session_id must be a nonempty string"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "compact_relations",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "compact_nearest",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "nonobserve_status_short_circuit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "nonobserve_transform_short_circuit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    }
+  ],
+  "integration": [
+    {
+      "id": "overview_disabled",
+      "raw_output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"status\": \"disabled\", \"session_id\": \"fixed\", \"routing\": null, \"pair_goal\": {\"status\": \"not_requested\", \"scope\": \"known_mesh_pair_clearance_alignment_and_world_pivot\", \"evaluation_status\": \"not_requested\", \"satisfied\": null, \"focal_id\": null, \"reference_id\": null, \"scene_revision\": null, \"reason_codes\": [], \"goal_source\": null}, \"task_succeeded_scope\": null, \"observation_status\": \"not_requested\", \"scene_assessment\": {\"status\": \"not_evaluated\", \"scope\": \"all_scene_objects\", \"unknown_object_ids\": [], \"reason_codes\": []}, \"reason_codes\": [\"disabled\"], \"execution_status\": \"not_requested\", \"action_eligibility\": {\"status\": \"blocked\", \"reason_codes\": [\"disabled\"], \"execution_authority\": false}, \"result_contract_version\": \"1.1\", \"request_trace\": {\"trace_id\": \"78cd4d02923b4e898e6cd2172e66023d\", \"request_id\": \"9c6ce988d02e4facaec10f234a45d12f\", \"model_usage\": \"unknown\", \"delivery\": \"service_result_constructed\"}}"
+          }
+        ],
+        "isError": true
+      },
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "status": "disabled",
+              "session_id": "fixed",
+              "routing": null,
+              "pair_goal": {
+                "status": "not_requested",
+                "scope": "known_mesh_pair_clearance_alignment_and_world_pivot",
+                "evaluation_status": "not_requested",
+                "satisfied": null,
+                "focal_id": null,
+                "reference_id": null,
+                "scene_revision": null,
+                "reason_codes": [],
+                "goal_source": null
+              },
+              "task_succeeded_scope": null,
+              "observation_status": "not_requested",
+              "scene_assessment": {
+                "status": "not_evaluated",
+                "scope": "all_scene_objects",
+                "unknown_object_ids": [],
+                "reason_codes": []
+              },
+              "reason_codes": [
+                "disabled"
+              ],
+              "execution_status": "not_requested",
+              "action_eligibility": {
+                "status": "blocked",
+                "reason_codes": [
+                  "disabled"
+                ],
+                "execution_authority": false
+              },
+              "result_contract_version": "1.1",
+              "request_trace": {
+                "trace_id": "<CORRELATION:/request_trace/trace_id>",
+                "request_id": "<CORRELATION:/request_trace/request_id>",
+                "model_usage": "unknown",
+                "delivery": "service_result_constructed"
+              }
+            }
+          }
+        ],
+        "isError": true
+      },
+      "normalized_correlation_ids": {
+        "/request_trace/trace_id": "78cd4d02923b4e898e6cd2172e66023d",
+        "/request_trace/request_id": "9c6ce988d02e4facaec10f234a45d12f"
+      },
+      "fixture_settings": {},
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 0,
+      "expected_captures": 0,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "ordinary_task_actual",
+      "raw_output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"task-query-set-v1\",\"scope\":\"explicit_target_candidates\",\"status\":\"observed\",\"binding\":{\"scene_revision\":\"selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112\",\"scene_fingerprint\":\"dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf\",\"source\":\"resident-memory-host\",\"objects\":[{\"object_id\":\"a\",\"name\":\"a\"},{\"object_id\":\"b\",\"name\":\"b\"}],\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"host_identity\":{\"schema_version\":\"1.0\",\"capture_scope\":\"selected_objects\",\"document_epoch\":\"document-1\",\"object_instances\":{\"a\":\"instance-a\",\"b\":\"instance-b\"}},\"candidate_count\":4,\"selected_count\":2,\"runtime_source_sha256\":\"347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"facts\":{},\"pairs\":[{\"candidate_index\":0,\"object_id\":\"b\",\"facts\":{\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":2.0,\"nearest_witness\":{\"a\":[1.0,-1.0,-1.0],\"b\":[3.0,-1.0,-1.0],\"direction_a_to_b\":[1.0,0.0,0.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":2.0,\"semantics\":\"separated_surface_gap_m\"}}],\"coverage\":{\"requested_candidates\":1,\"resolved_candidates\":1,\"classified_candidates\":1,\"unresolved_candidates\":0},\"summary\":{\"penetration_set_complete\":true,\"known_penetrating_ids\":[],\"penetrating_ids\":[],\"nearest_separated_complete\":true,\"nearest_separated_ids\":[\"b\"],\"best_known_separated_ids\":[\"b\"],\"distance_m\":2.0,\"best_known_distance_m\":2.0,\"unresolved_relations\":[],\"unresolved_distances\":{}},\"execution_authority\":false,\"trace_id\":\"5683c4796f89459cb7cbce58849c9d54\"}"
+          }
+        ],
+        "isError": false
+      },
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "task_query",
+              "schema_version": "task-query-set-v1",
+              "scope": "explicit_target_candidates",
+              "status": "observed",
+              "binding": {
+                "scene_revision": "selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112",
+                "scene_fingerprint": "dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf",
+                "source": "resident-memory-host",
+                "objects": [
+                  {
+                    "object_id": "a",
+                    "name": "a"
+                  },
+                  {
+                    "object_id": "b",
+                    "name": "b"
+                  }
+                ],
+                "currentness": "capture_snapshot",
+                "capture_scope": "selected_objects",
+                "host_identity": {
+                  "schema_version": "1.0",
+                  "capture_scope": "selected_objects",
+                  "document_epoch": "document-1",
+                  "object_instances": {
+                    "a": "instance-a",
+                    "b": "instance-b"
+                  }
+                },
+                "candidate_count": 4,
+                "selected_count": 2,
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "unit": "m",
+              "coordinate_frame": "world",
+              "pair_order": "target_to_candidate",
+              "facts": {},
+              "pairs": [
+                {
+                  "candidate_index": 0,
+                  "object_id": "b",
+                  "facts": {
+                    "closed_solid_relation": {
+                      "status": "measured",
+                      "value": "separated",
+                      "method": "bounded_exact_closed_shell_v1",
+                      "relation_tolerance_m": 0.0,
+                      "geometry_scope": "finite_connected_closed_orientable_non_self_intersecting_triangle_shells",
+                      "certificate": "disjoint_boundaries_with_exact_parity"
+                    },
+                    "surface_proximity": {
+                      "status": "measured",
+                      "value": {
+                        "distance_m": 2.0,
+                        "nearest_witness": {
+                          "a": [
+                            1.0,
+                            -1.0,
+                            -1.0
+                          ],
+                          "b": [
+                            3.0,
+                            -1.0,
+                            -1.0
+                          ],
+                          "direction_a_to_b": [
+                            1.0,
+                            0.0,
+                            0.0
+                          ]
+                        },
+                        "topology": [
+                          {
+                            "boundary_edge_count": 0,
+                            "nonmanifold_edge_count": 0
+                          },
+                          {
+                            "boundary_edge_count": 0,
+                            "nonmanifold_edge_count": 0
+                          }
+                        ]
+                      },
+                      "semantics": "current_evaluated_triangle_surfaces_world_metres",
+                      "method": "exact_binary64_triangle_surface_hulls_v3",
+                      "witness_status": "measured",
+                      "direction_status": "measured"
+                    }
+                  },
+                  "separation_gap": {
+                    "status": "measured",
+                    "value": 2.0,
+                    "semantics": "separated_surface_gap_m"
+                  }
+                }
+              ],
+              "coverage": {
+                "requested_candidates": 1,
+                "resolved_candidates": 1,
+                "classified_candidates": 1,
+                "unresolved_candidates": 0
+              },
+              "summary": {
+                "penetration_set_complete": true,
+                "known_penetrating_ids": [],
+                "penetrating_ids": [],
+                "nearest_separated_complete": true,
+                "nearest_separated_ids": [
+                  "b"
+                ],
+                "best_known_separated_ids": [
+                  "b"
+                ],
+                "distance_m": 2.0,
+                "best_known_distance_m": 2.0,
+                "unresolved_relations": [],
+                "unresolved_distances": {}
+              },
+              "execution_authority": false,
+              "trace_id": "<CORRELATION:/trace_id>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "normalized_correlation_ids": {
+        "/trace_id": "5683c4796f89459cb7cbce58849c9d54"
+      },
+      "fixture_settings": {},
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "ordinary_nearest_actual",
+      "raw_output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result_kind\":\"surface_nearest\",\"status\":\"complete\",\"scope\":\"surface_nearest_candidates\",\"distance_m\":2.0,\"best_known_distance_m\":2.0,\"unit\":\"m\",\"coverage\":{\"targets_excluding_focal\":2,\"distance_valid\":1,\"strictly_excluded\":1,\"unresolved\":0},\"unresolved\":[],\"measurement_notes\":{},\"binding\":{\"scene_revision\":\"blender:c7277da3a8b1b90796e945526e9145668bd6b37df461af4c6348176cabbf2354\",\"scene_fingerprint\":\"c7b0e6f181dd204b2ca94820f92d5133c538e89582eccbf3e8af08d2d3f51b8f\",\"document_epoch\":\"1830986c9fc1eeff79e55a7152b95a958820c7a1578a938bbfc2b6652cc97911\",\"directory_sha256\":\"11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838\",\"host_source_sha256\":\"10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60\",\"runtime_source_sha256\":\"347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea\"},\"execution_authority\":false,\"focal\":{\"id\":\"blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238\",\"name\":\"O0\"},\"nearest_objects\":[{\"id\":\"blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5\",\"name\":\"O1\"}],\"best_known_objects\":[{\"id\":\"blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5\",\"name\":\"O1\"}],\"trace_id\":\"02eab78ab36e40828941aadafb5175d8\"}"
+          }
+        ],
+        "isError": false
+      },
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "surface_nearest",
+              "status": "complete",
+              "scope": "surface_nearest_candidates",
+              "distance_m": 2.0,
+              "best_known_distance_m": 2.0,
+              "unit": "m",
+              "coverage": {
+                "targets_excluding_focal": 2,
+                "distance_valid": 1,
+                "strictly_excluded": 1,
+                "unresolved": 0
+              },
+              "unresolved": [],
+              "measurement_notes": {},
+              "binding": {
+                "scene_revision": "blender:c7277da3a8b1b90796e945526e9145668bd6b37df461af4c6348176cabbf2354",
+                "scene_fingerprint": "c7b0e6f181dd204b2ca94820f92d5133c538e89582eccbf3e8af08d2d3f51b8f",
+                "document_epoch": "1830986c9fc1eeff79e55a7152b95a958820c7a1578a938bbfc2b6652cc97911",
+                "directory_sha256": "11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838",
+                "host_source_sha256": "10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60",
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "execution_authority": false,
+              "focal": {
+                "id": "blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238",
+                "name": "O0"
+              },
+              "nearest_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "best_known_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "trace_id": "<CORRELATION:/trace_id>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "normalized_correlation_ids": {
+        "/trace_id": "02eab78ab36e40828941aadafb5175d8"
+      },
+      "fixture_settings": {
+        "path": "host.backend.bpy.app.driver_namespace",
+        "key": "_human_eye_document_epoch_v1",
+        "value": "a08d8fc101ef607e4e2dff0020b4d3b1",
+        "basis": "sha256(ascii case_id)[:32], set before capture"
+      },
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "compact_relations_actual",
+      "raw_output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"spatial-relations-v1\",\"status\":\"observed\",\"target\":{\"object_id\":\"a\",\"name\":\"a\",\"instance_id\":\"instance-a\"},\"candidates\":[{\"object_id\":\"b\",\"name\":\"b\",\"instance_id\":\"instance-b\",\"candidate_index\":0,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":2.0,\"nearest_witness\":{\"a\":[1.0,-1.0,-1.0],\"b\":[3.0,-1.0,-1.0],\"direction_a_to_b\":[1.0,0.0,0.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"separation_gap\":{\"status\":\"measured\",\"value\":2.0}}],\"sets\":{\"penetrating\":{\"complete\":true,\"candidate_indices\":[]},\"nearest_separated\":{\"complete\":true,\"candidate_indices\":[0],\"distance_m\":2.0}},\"coverage\":{\"requested_candidates\":1,\"resolved_candidates\":1,\"classified_candidates\":1,\"unresolved_candidates\":0},\"context\":{\"scene_revision\":\"selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112\",\"scene_fingerprint\":\"dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf\",\"source\":\"resident-memory-host\",\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"candidate_count\":4,\"selected_count\":2,\"runtime_source_sha256\":\"347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea\",\"scope\":\"explicit_target_candidates\",\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"document-1\"},\"identity_scope\":\"Object and instance IDs belong to this captured document/snapshot.\",\"certificate_scope\":\"Proof category only; surface witnesses are not shared-interior proofs.\"},\"measurement_contracts\":{\"closed_solid_relation\":{\"method\":\"bounded_exact_closed_shell_v1\",\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"relation_tolerance_m\":0.0},\"surface_proximity\":{\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\"},\"separation_gap\":{\"semantics\":\"separated_surface_gap_m\"}},\"execution_authority\":false,\"trace_id\":\"8dd86543e5434e05bf90699575f14779\"}"
+          }
+        ],
+        "isError": false
+      },
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "task_query",
+              "schema_version": "spatial-relations-v1",
+              "status": "observed",
+              "target": {
+                "object_id": "a",
+                "name": "a",
+                "instance_id": "instance-a"
+              },
+              "candidates": [
+                {
+                  "object_id": "b",
+                  "name": "b",
+                  "instance_id": "instance-b",
+                  "candidate_index": 0,
+                  "closed_solid_relation": {
+                    "status": "measured",
+                    "value": "separated",
+                    "certificate": "disjoint_boundaries_with_exact_parity"
+                  },
+                  "surface_proximity": {
+                    "status": "measured",
+                    "value": {
+                      "distance_m": 2.0,
+                      "nearest_witness": {
+                        "a": [
+                          1.0,
+                          -1.0,
+                          -1.0
+                        ],
+                        "b": [
+                          3.0,
+                          -1.0,
+                          -1.0
+                        ],
+                        "direction_a_to_b": [
+                          1.0,
+                          0.0,
+                          0.0
+                        ]
+                      },
+                      "topology": [
+                        {
+                          "boundary_edge_count": 0,
+                          "nonmanifold_edge_count": 0
+                        },
+                        {
+                          "boundary_edge_count": 0,
+                          "nonmanifold_edge_count": 0
+                        }
+                      ]
+                    },
+                    "witness_status": "measured",
+                    "direction_status": "measured"
+                  },
+                  "separation_gap": {
+                    "status": "measured",
+                    "value": 2.0
+                  }
+                }
+              ],
+              "sets": {
+                "penetrating": {
+                  "complete": true,
+                  "candidate_indices": []
+                },
+                "nearest_separated": {
+                  "complete": true,
+                  "candidate_indices": [
+                    0
+                  ],
+                  "distance_m": 2.0
+                }
+              },
+              "coverage": {
+                "requested_candidates": 1,
+                "resolved_candidates": 1,
+                "classified_candidates": 1,
+                "unresolved_candidates": 0
+              },
+              "context": {
+                "scene_revision": "selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112",
+                "scene_fingerprint": "dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf",
+                "source": "resident-memory-host",
+                "currentness": "capture_snapshot",
+                "capture_scope": "selected_objects",
+                "candidate_count": 4,
+                "selected_count": 2,
+                "runtime_source_sha256": "<SOURCE>",
+                "scope": "explicit_target_candidates",
+                "unit": "m",
+                "coordinate_frame": "world",
+                "pair_order": "target_to_candidate",
+                "host_identity": {
+                  "schema_version": "1.0",
+                  "document_epoch": "document-1"
+                },
+                "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+                "certificate_scope": "Proof category only; surface witnesses are not shared-interior proofs."
+              },
+              "measurement_contracts": {
+                "closed_solid_relation": {
+                  "method": "bounded_exact_closed_shell_v1",
+                  "geometry_scope": "finite_connected_closed_orientable_non_self_intersecting_triangle_shells",
+                  "relation_tolerance_m": 0.0
+                },
+                "surface_proximity": {
+                  "method": "exact_binary64_triangle_surface_hulls_v3",
+                  "semantics": "current_evaluated_triangle_surfaces_world_metres"
+                },
+                "separation_gap": {
+                  "semantics": "separated_surface_gap_m"
+                }
+              },
+              "execution_authority": false,
+              "trace_id": "<CORRELATION:/trace_id>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "normalized_correlation_ids": {
+        "/trace_id": "8dd86543e5434e05bf90699575f14779"
+      },
+      "fixture_settings": {},
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "compact_nearest_actual",
+      "raw_output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result_kind\":\"surface_nearest\",\"status\":\"complete\",\"scope\":\"surface_nearest_candidates\",\"distance_m\":2.0,\"best_known_distance_m\":2.0,\"unit\":\"m\",\"coverage\":{\"targets_excluding_focal\":2,\"distance_valid\":1,\"strictly_excluded\":1,\"unresolved\":0},\"unresolved\":[],\"measurement_notes\":{},\"binding\":{\"scene_revision\":\"blender:dec945b631596b5438948b5b8459b7584e241e28f2fc9b1930478e980ea9861a\",\"scene_fingerprint\":\"2f5df290c4318e2c70f3534165f26a4502b737498bc657771da81f200835647f\",\"document_epoch\":\"6849e12f193dad8a918482e8ee5cdc431dbefe768dc1111d143fec79cb4033c6\",\"directory_sha256\":\"11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838\",\"host_source_sha256\":\"10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60\",\"runtime_source_sha256\":\"347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea\"},\"execution_authority\":false,\"focal\":{\"id\":\"blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238\",\"name\":\"O0\"},\"nearest_objects\":[{\"id\":\"blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5\",\"name\":\"O1\"}],\"best_known_objects\":[{\"id\":\"blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5\",\"name\":\"O1\"}],\"trace_id\":\"cd23010b489d417999aa7c1b516e6f3b\"}"
+          }
+        ],
+        "isError": false
+      },
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "surface_nearest",
+              "status": "complete",
+              "scope": "surface_nearest_candidates",
+              "distance_m": 2.0,
+              "best_known_distance_m": 2.0,
+              "unit": "m",
+              "coverage": {
+                "targets_excluding_focal": 2,
+                "distance_valid": 1,
+                "strictly_excluded": 1,
+                "unresolved": 0
+              },
+              "unresolved": [],
+              "measurement_notes": {},
+              "binding": {
+                "scene_revision": "blender:dec945b631596b5438948b5b8459b7584e241e28f2fc9b1930478e980ea9861a",
+                "scene_fingerprint": "2f5df290c4318e2c70f3534165f26a4502b737498bc657771da81f200835647f",
+                "document_epoch": "6849e12f193dad8a918482e8ee5cdc431dbefe768dc1111d143fec79cb4033c6",
+                "directory_sha256": "11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838",
+                "host_source_sha256": "10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60",
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "execution_authority": false,
+              "focal": {
+                "id": "blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238",
+                "name": "O0"
+              },
+              "nearest_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "best_known_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "trace_id": "<CORRELATION:/trace_id>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "normalized_correlation_ids": {
+        "/trace_id": "cd23010b489d417999aa7c1b516e6f3b"
+      },
+      "fixture_settings": {
+        "path": "host.backend.bpy.app.driver_namespace",
+        "key": "_human_eye_document_epoch_v1",
+        "value": "0e52bdff208a6c74e0d50c28f3fee31d",
+        "basis": "sha256(ascii case_id)[:32], set before capture"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    }
+  ],
+  "direct_service": {
+    "exception": {
+      "type": "ValueError",
+      "message": "query contains unsupported observation fields"
+    },
+    "service_validate_query": 1,
+    "input_unchanged": true,
+    "capture_delta": 0,
+    "passed": true
+  },
+  "guard_verify_loaded": true,
+  "external_operation_attempts": [],
+  "snapshot_unchanged": true,
+  "passed": true
+}

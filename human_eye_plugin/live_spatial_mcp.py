@@ -368,19 +368,20 @@ def _validate_arguments(name: str, arguments: Any) -> None:
             or arguments['response_detail'] not in ('full', 'brief')):
         raise ValueError('response_detail must be full or brief')
     if "query" in arguments:
-        validate_query(arguments["query"])
+        selected_query = validate_query(arguments["query"])
     if name == 'human_eye_scene_observe':
         if 'include_image' in arguments and type(arguments['include_image']) is not bool:
             raise ValueError('include_image must be boolean')
-        if validate_query(arguments.get('query'))['mode'] == 'surface_nearest':
-            selected_query = validate_query(arguments.get('query'))
+        if 'query' not in arguments:
+            selected_query = validate_query(None)
+        if selected_query['mode'] == 'surface_nearest':
             if 'objects' in selected_query and 'focal_id' in arguments:
                 raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
             if (not arguments.get('session_id') or ('objects' not in selected_query and not arguments.get('focal_id'))
                     or arguments.get('include_image', True)
                     or any(arguments.get(key) is not None for key in ('goal', 'reference_id', 'scene_delta'))):
                 raise ValueError('surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta')
-        if (validate_query(arguments.get('query')).get('alignment_evidence') is False
+        if (selected_query.get('alignment_evidence') is False
                 and arguments.get('include_image', True)):
             raise ValueError('alignment_evidence=false requires include_image=false')
     if 'task_context' in arguments:
@@ -404,7 +405,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         if "goal" in arguments:
             _validate_goal_arguments(arguments["goal"],
                 {field: arguments[field] for field in ("focal_id", "reference_id") if field in arguments})
-        if (name == 'human_eye_scene_observe' and validate_query(arguments.get('query'))['mode'] == 'task'
+        if (name == 'human_eye_scene_observe' and selected_query['mode'] == 'task'
                 and (arguments.get('include_image', True)
                      or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta')))):
             raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')

@@ -1,0 +1,824 @@
+{
+  "phase": "baseline",
+  "runtime_source_sha256": "347ec4e52b24ff77239c5540caac52cdc6031e3542c0359798f821538ef4e3ea",
+  "source_kind": "unregistered_runtime",
+  "validation": [
+    {
+      "id": "overview_explicit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "overview_omitted",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "overview_null",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "ordinary_nearest",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "ordinary_task",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_selector",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_focal",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "bad_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "omitted_query_after_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "null_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "valid_query_before_bad_image",
+      "exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "include_image must be boolean"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "false_query_is_not_default",
+      "exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "query contains unsupported observation fields"
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_missing_session",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_conflict_before_missing_session",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest accepts query.objects or focal_id, not both"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest accepts query.objects or focal_id, not both"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "surface_forbidden_reference",
+      "exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "task_focal_conflict",
+      "exception": {
+        "type": "ValueError",
+        "message": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+      },
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "alignment_before_bad_context",
+      "exception": {
+        "type": "ValueError",
+        "message": "alignment_evidence=false requires include_image=false"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "alignment_evidence=false requires include_image=false"
+      },
+      "mcp_validate_query": 3,
+      "expected_count": 3,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "extra_before_bad_query",
+      "exception": {
+        "type": "ValueError",
+        "message": "Unexpected tool arguments"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "Unexpected tool arguments"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "unknown_tool",
+      "exception": {
+        "type": "ValueError",
+        "message": "Unknown tool: human_eye_not_a_tool"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "Unknown tool: human_eye_not_a_tool"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "session_before_bad_query",
+      "exception": {
+        "type": "ValueError",
+        "message": "session_id must be a nonempty string"
+      },
+      "expected_exception": {
+        "type": "ValueError",
+        "message": "session_id must be a nonempty string"
+      },
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "compact_relations",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "compact_nearest",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "nonobserve_status_short_circuit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    },
+    {
+      "id": "nonobserve_transform_short_circuit",
+      "exception": null,
+      "expected_exception": null,
+      "mcp_validate_query": 0,
+      "expected_count": 0,
+      "input_unchanged": true,
+      "service_observe": 0,
+      "captures": 0,
+      "passed": true
+    }
+  ],
+  "integration": [
+    {
+      "id": "overview_disabled",
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "status": "disabled",
+              "session_id": "fixed",
+              "routing": null,
+              "pair_goal": {
+                "status": "not_requested",
+                "scope": "known_mesh_pair_clearance_alignment_and_world_pivot",
+                "evaluation_status": "not_requested",
+                "satisfied": null,
+                "focal_id": null,
+                "reference_id": null,
+                "scene_revision": null,
+                "reason_codes": [],
+                "goal_source": null
+              },
+              "task_succeeded_scope": null,
+              "observation_status": "not_requested",
+              "scene_assessment": {
+                "status": "not_evaluated",
+                "scope": "all_scene_objects",
+                "unknown_object_ids": [],
+                "reason_codes": []
+              },
+              "reason_codes": [
+                "disabled"
+              ],
+              "execution_status": "not_requested",
+              "action_eligibility": {
+                "status": "blocked",
+                "reason_codes": [
+                  "disabled"
+                ],
+                "execution_authority": false
+              },
+              "result_contract_version": "1.1",
+              "request_trace": {
+                "trace_id": "b0a614fe0b1049e492545a13264c3398",
+                "request_id": "414006a035704cadaeee93aabc2f8d3b",
+                "model_usage": "unknown",
+                "delivery": "service_result_constructed"
+              }
+            }
+          }
+        ],
+        "isError": true
+      },
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 0,
+      "expected_captures": 0,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "ordinary_task_actual",
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "task_query",
+              "schema_version": "task-query-set-v1",
+              "scope": "explicit_target_candidates",
+              "status": "observed",
+              "binding": {
+                "scene_revision": "selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112",
+                "scene_fingerprint": "dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf",
+                "source": "resident-memory-host",
+                "objects": [
+                  {
+                    "object_id": "a",
+                    "name": "a"
+                  },
+                  {
+                    "object_id": "b",
+                    "name": "b"
+                  }
+                ],
+                "currentness": "capture_snapshot",
+                "capture_scope": "selected_objects",
+                "host_identity": {
+                  "schema_version": "1.0",
+                  "capture_scope": "selected_objects",
+                  "document_epoch": "document-1",
+                  "object_instances": {
+                    "a": "instance-a",
+                    "b": "instance-b"
+                  }
+                },
+                "candidate_count": 4,
+                "selected_count": 2,
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "unit": "m",
+              "coordinate_frame": "world",
+              "pair_order": "target_to_candidate",
+              "facts": {},
+              "pairs": [
+                {
+                  "candidate_index": 0,
+                  "object_id": "b",
+                  "facts": {
+                    "closed_solid_relation": {
+                      "status": "measured",
+                      "value": "separated",
+                      "method": "bounded_exact_closed_shell_v1",
+                      "relation_tolerance_m": 0.0,
+                      "geometry_scope": "finite_connected_closed_orientable_non_self_intersecting_triangle_shells",
+                      "certificate": "disjoint_boundaries_with_exact_parity"
+                    },
+                    "surface_proximity": {
+                      "status": "measured",
+                      "value": {
+                        "distance_m": 2.0,
+                        "nearest_witness": {
+                          "a": [
+                            1.0,
+                            -1.0,
+                            -1.0
+                          ],
+                          "b": [
+                            3.0,
+                            -1.0,
+                            -1.0
+                          ],
+                          "direction_a_to_b": [
+                            1.0,
+                            0.0,
+                            0.0
+                          ]
+                        },
+                        "topology": [
+                          {
+                            "boundary_edge_count": 0,
+                            "nonmanifold_edge_count": 0
+                          },
+                          {
+                            "boundary_edge_count": 0,
+                            "nonmanifold_edge_count": 0
+                          }
+                        ]
+                      },
+                      "semantics": "current_evaluated_triangle_surfaces_world_metres",
+                      "method": "exact_binary64_triangle_surface_hulls_v3",
+                      "witness_status": "measured",
+                      "direction_status": "measured"
+                    }
+                  },
+                  "separation_gap": {
+                    "status": "measured",
+                    "value": 2.0,
+                    "semantics": "separated_surface_gap_m"
+                  }
+                }
+              ],
+              "coverage": {
+                "requested_candidates": 1,
+                "resolved_candidates": 1,
+                "classified_candidates": 1,
+                "unresolved_candidates": 0
+              },
+              "summary": {
+                "penetration_set_complete": true,
+                "known_penetrating_ids": [],
+                "penetrating_ids": [],
+                "nearest_separated_complete": true,
+                "nearest_separated_ids": [
+                  "b"
+                ],
+                "best_known_separated_ids": [
+                  "b"
+                ],
+                "distance_m": 2.0,
+                "best_known_distance_m": 2.0,
+                "unresolved_relations": [],
+                "unresolved_distances": {}
+              },
+              "execution_authority": false,
+              "trace_id": "<TRACE>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "mcp_validate_query": 4,
+      "expected_count": 4,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "ordinary_nearest_actual",
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "surface_nearest",
+              "status": "complete",
+              "scope": "surface_nearest_candidates",
+              "distance_m": 2.0,
+              "best_known_distance_m": 2.0,
+              "unit": "m",
+              "coverage": {
+                "targets_excluding_focal": 2,
+                "distance_valid": 1,
+                "strictly_excluded": 1,
+                "unresolved": 0
+              },
+              "unresolved": [],
+              "measurement_notes": {},
+              "binding": {
+                "scene_revision": "blender:1dc3421c90f6713dd9001415a969cdfd09e36e0cd227ac135be16d0899dbce5c",
+                "scene_fingerprint": "89cf662013822350c5422c15a29a9f28fa6ce7f01bd73b04d7fecdc2ab46a90c",
+                "document_epoch": "ccd1717effb0f9050363531b07287e7113eca146fc62604b9d73a5bd508f810a",
+                "directory_sha256": "11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838",
+                "host_source_sha256": "10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60",
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "execution_authority": false,
+              "focal": {
+                "id": "blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238",
+                "name": "O0"
+              },
+              "nearest_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "best_known_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "trace_id": "<TRACE>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "mcp_validate_query": 5,
+      "expected_count": 5,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "compact_relations_actual",
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "task_query",
+              "schema_version": "spatial-relations-v1",
+              "status": "observed",
+              "target": {
+                "object_id": "a",
+                "name": "a",
+                "instance_id": "instance-a"
+              },
+              "candidates": [
+                {
+                  "object_id": "b",
+                  "name": "b",
+                  "instance_id": "instance-b",
+                  "candidate_index": 0,
+                  "closed_solid_relation": {
+                    "status": "measured",
+                    "value": "separated",
+                    "certificate": "disjoint_boundaries_with_exact_parity"
+                  },
+                  "surface_proximity": {
+                    "status": "measured",
+                    "value": {
+                      "distance_m": 2.0,
+                      "nearest_witness": {
+                        "a": [
+                          1.0,
+                          -1.0,
+                          -1.0
+                        ],
+                        "b": [
+                          3.0,
+                          -1.0,
+                          -1.0
+                        ],
+                        "direction_a_to_b": [
+                          1.0,
+                          0.0,
+                          0.0
+                        ]
+                      },
+                      "topology": [
+                        {
+                          "boundary_edge_count": 0,
+                          "nonmanifold_edge_count": 0
+                        },
+                        {
+                          "boundary_edge_count": 0,
+                          "nonmanifold_edge_count": 0
+                        }
+                      ]
+                    },
+                    "witness_status": "measured",
+                    "direction_status": "measured"
+                  },
+                  "separation_gap": {
+                    "status": "measured",
+                    "value": 2.0
+                  }
+                }
+              ],
+              "sets": {
+                "penetrating": {
+                  "complete": true,
+                  "candidate_indices": []
+                },
+                "nearest_separated": {
+                  "complete": true,
+                  "candidate_indices": [
+                    0
+                  ],
+                  "distance_m": 2.0
+                }
+              },
+              "coverage": {
+                "requested_candidates": 1,
+                "resolved_candidates": 1,
+                "classified_candidates": 1,
+                "unresolved_candidates": 0
+              },
+              "context": {
+                "scene_revision": "selected:d5b10fc70ed6a7147a47d1c2bf45dd2d7331511e086aa75dde5e4860fa59f112",
+                "scene_fingerprint": "dc618459cde7f3f0c62341b5465f4b996b99dda55bafe5659312bffee10e6bdf",
+                "source": "resident-memory-host",
+                "currentness": "capture_snapshot",
+                "capture_scope": "selected_objects",
+                "candidate_count": 4,
+                "selected_count": 2,
+                "runtime_source_sha256": "<SOURCE>",
+                "scope": "explicit_target_candidates",
+                "unit": "m",
+                "coordinate_frame": "world",
+                "pair_order": "target_to_candidate",
+                "host_identity": {
+                  "schema_version": "1.0",
+                  "document_epoch": "document-1"
+                },
+                "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+                "certificate_scope": "Proof category only; surface witnesses are not shared-interior proofs."
+              },
+              "measurement_contracts": {
+                "closed_solid_relation": {
+                  "method": "bounded_exact_closed_shell_v1",
+                  "geometry_scope": "finite_connected_closed_orientable_non_self_intersecting_triangle_shells",
+                  "relation_tolerance_m": 0.0
+                },
+                "surface_proximity": {
+                  "method": "exact_binary64_triangle_surface_hulls_v3",
+                  "semantics": "current_evaluated_triangle_surfaces_world_metres"
+                },
+                "separation_gap": {
+                  "semantics": "separated_surface_gap_m"
+                }
+              },
+              "execution_authority": false,
+              "trace_id": "<TRACE>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    },
+    {
+      "id": "compact_nearest_actual",
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "json": {
+              "result_kind": "surface_nearest",
+              "status": "complete",
+              "scope": "surface_nearest_candidates",
+              "distance_m": 2.0,
+              "best_known_distance_m": 2.0,
+              "unit": "m",
+              "coverage": {
+                "targets_excluding_focal": 2,
+                "distance_valid": 1,
+                "strictly_excluded": 1,
+                "unresolved": 0
+              },
+              "unresolved": [],
+              "measurement_notes": {},
+              "binding": {
+                "scene_revision": "blender:0ae4c10dcecbab68081b884919a4ac08c5bb816278948e0749ec3a7d1cb603ad",
+                "scene_fingerprint": "3c4d420f2feab57f00bf7d08c196babd2808804b34f742273816ddaa83c686c9",
+                "document_epoch": "746a924d67cc04400a39c2ccae950854226c9d42cfc09a155fa24acb3ad46967",
+                "directory_sha256": "11d98931d63475ee81c4cd800e4ea7e4f3da1e99014aceb8ba552403a5204838",
+                "host_source_sha256": "10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60",
+                "runtime_source_sha256": "<SOURCE>"
+              },
+              "execution_authority": false,
+              "focal": {
+                "id": "blender:957e2537d65409cda6056fb658a6ac888cbeabf9394cf50bb7a11c4ac5489238",
+                "name": "O0"
+              },
+              "nearest_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "best_known_objects": [
+                {
+                  "id": "blender:7e098d4ba79e7e6de73e471c5b3ff2b3833e1f9b1960348b0f4eeead5ca7c4e5",
+                  "name": "O1"
+                }
+              ],
+              "trace_id": "<TRACE>"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "mcp_validate_query": 1,
+      "expected_count": 1,
+      "service_validate_query": 1,
+      "service_observe": 1,
+      "captures": 1,
+      "expected_captures": 1,
+      "input_unchanged": true,
+      "passed": true
+    }
+  ],
+  "direct_service": {
+    "exception": {
+      "type": "ValueError",
+      "message": "query contains unsupported observation fields"
+    },
+    "service_validate_query": 1,
+    "input_unchanged": true,
+    "capture_delta": 0,
+    "passed": true
+  },
+  "guard_verify_loaded": true,
+  "external_operation_attempts": [],
+  "snapshot_unchanged": true,
+  "passed": true
+}

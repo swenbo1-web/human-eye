@@ -1,0 +1,382 @@
+[
+  {
+    "id": "overview_explicit",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "overview"
+      }
+    },
+    "baseline_count": 4,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "overview_omitted",
+    "tool": "human_eye_scene_observe",
+    "arguments": {},
+    "baseline_count": 3,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "overview_null",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": null
+    },
+    "baseline_count": 4,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "ordinary_nearest",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "nearest",
+        "object_ids": [
+          "b"
+        ]
+      }
+    },
+    "baseline_count": 4,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "ordinary_task",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "task",
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      },
+      "include_image": false
+    },
+    "baseline_count": 4,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "surface_selector",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "session_id": "fixed",
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "O0"
+          }
+        ]
+      },
+      "include_image": false
+    },
+    "baseline_count": 5,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "surface_focal",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "session_id": "fixed",
+      "focal_id": "f",
+      "query": {
+        "mode": "surface_nearest"
+      },
+      "include_image": false
+    },
+    "baseline_count": 5,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "bad_query_before_bad_image",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": [],
+      "include_image": 0
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "query contains unsupported observation fields"
+    }
+  },
+  {
+    "id": "omitted_query_after_bad_image",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "include_image": 0
+    },
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "include_image must be boolean"
+    }
+  },
+  {
+    "id": "null_query_before_bad_image",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": null,
+      "include_image": 0
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "include_image must be boolean"
+    }
+  },
+  {
+    "id": "valid_query_before_bad_image",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "overview"
+      },
+      "include_image": 0
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "include_image must be boolean"
+    }
+  },
+  {
+    "id": "false_query_is_not_default",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": false
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "query contains unsupported observation fields"
+    }
+  },
+  {
+    "id": "surface_missing_session",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "O0"
+          }
+        ]
+      },
+      "include_image": false
+    },
+    "baseline_count": 3,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+    }
+  },
+  {
+    "id": "surface_conflict_before_missing_session",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "O0"
+          }
+        ]
+      },
+      "focal_id": "f"
+    },
+    "baseline_count": 3,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "surface_nearest accepts query.objects or focal_id, not both"
+    }
+  },
+  {
+    "id": "surface_forbidden_reference",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "session_id": "fixed",
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "O0"
+          }
+        ]
+      },
+      "include_image": false,
+      "reference_id": "r"
+    },
+    "baseline_count": 3,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta"
+    }
+  },
+  {
+    "id": "task_focal_conflict",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "mode": "task",
+        "target": {
+          "id": "a"
+        },
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      },
+      "include_image": false,
+      "focal_id": "f"
+    },
+    "baseline_count": 4,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "task queries require include_image=false and selectors only in query.objects or query.target/query.candidates"
+    }
+  },
+  {
+    "id": "alignment_before_bad_context",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": {
+        "alignment_evidence": false
+      },
+      "task_context": null
+    },
+    "baseline_count": 3,
+    "candidate_count": 1,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "alignment_evidence=false requires include_image=false"
+    }
+  },
+  {
+    "id": "extra_before_bad_query",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "query": [],
+      "extra": true
+    },
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "Unexpected tool arguments"
+    }
+  },
+  {
+    "id": "unknown_tool",
+    "tool": "human_eye_not_a_tool",
+    "arguments": {
+      "query": []
+    },
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "Unknown tool: human_eye_not_a_tool"
+    }
+  },
+  {
+    "id": "session_before_bad_query",
+    "tool": "human_eye_scene_observe",
+    "arguments": {
+      "session_id": null,
+      "query": []
+    },
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": {
+      "type": "ValueError",
+      "message": "session_id must be a nonempty string"
+    }
+  },
+  {
+    "id": "compact_relations",
+    "tool": "human_eye_spatial_relations",
+    "arguments": {
+      "target": {
+        "id": "a"
+      },
+      "candidates": [
+        {
+          "id": "b"
+        }
+      ]
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "compact_nearest",
+    "tool": "human_eye_surface_nearest",
+    "arguments": {
+      "target": {
+        "name": "O0"
+      }
+    },
+    "baseline_count": 1,
+    "candidate_count": 1,
+    "expected_exception": null
+  },
+  {
+    "id": "nonobserve_status_short_circuit",
+    "tool": "human_eye_connection_status",
+    "arguments": {},
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": null
+  },
+  {
+    "id": "nonobserve_transform_short_circuit",
+    "tool": "human_eye_transform",
+    "arguments": {
+      "action": {
+        "focal_id": "a",
+        "reference_id": "b",
+        "translation": [
+          0,
+          0,
+          1
+        ]
+      }
+    },
+    "baseline_count": 0,
+    "candidate_count": 0,
+    "expected_exception": null
+  }
+]
