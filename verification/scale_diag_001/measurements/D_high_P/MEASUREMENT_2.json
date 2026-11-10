@@ -1,0 +1,2601 @@
+{
+  "group": "P",
+  "mode": "D",
+  "scene": "D192",
+  "repeat_or_step": 2,
+  "entry_ns": 29995942700,
+  "cold": false,
+  "setup_ns_charged_to_cold": 0,
+  "rss_before": {
+    "actor": {
+      "working_set_bytes": 85250048,
+      "lifetime_peak_working_set_bytes": 137543680
+    },
+    "host": {
+      "working_set_bytes": 252465152,
+      "lifetime_peak_working_set_bytes": 253222912
+    }
+  },
+  "rss_after": {
+    "actor": {
+      "working_set_bytes": 86642688,
+      "lifetime_peak_working_set_bytes": 137543680
+    },
+    "host": {
+      "working_set_bytes": 251817984,
+      "lifetime_peak_working_set_bytes": 253222912
+    }
+  },
+  "response_bytes": 1072,
+  "result": {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"status\": \"expired\", \"error\": \"[live_request_expired] Local request budget exhausted at surface_proximity_point_edge_tests\", \"tool_outcome\": \"unknown\", \"automatic_retry\": false, \"executed\": false, \"verified\": false, \"execution_verified\": false, \"execution_status\": \"not_executed\", \"host_mutation_started\": false, \"allow_action\": false, \"execution_authority\": false, \"retry_authorized\": false, \"connector_state_write_attempted\": false, \"connector_state_write_committed\": false, \"connector_state_write_status\": \"not_attempted\", \"connector_state_write_attempts\": 0, \"connector_state_write_commits\": 0, \"connector_state_write_unknown\": false, \"state_write_scope\": \"connector_state_json_not_audit_or_lock_sidecars\", \"code\": \"live_request_expired\", \"reason_codes\": [\"live_request_expired\"], \"budget_stage\": \"surface_proximity_point_edge_tests\", \"budget_scope\": \"cooperative_service_entry_through_mcp_prewrite_checkpoints\"}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  "exception": null,
+  "meter": {
+    "schema": "scale-diag-001-meter-v1",
+    "timing_semantics": "inclusive_do_not_sum_nested",
+    "overhead": "verification_wrappers_included_in_outer_runner_not_subtracted",
+    "stages": {
+      "host.connect": {
+        "calls": 1,
+        "duration_ns": 22272200,
+        "max_ns": 22272200,
+        "errors": 0
+      },
+      "socket.sendall": {
+        "calls": 1,
+        "duration_ns": 72400,
+        "max_ns": 72400,
+        "errors": 0
+      },
+      "socket.recv": {
+        "calls": 6,
+        "duration_ns": 149954800,
+        "max_ns": 149883600,
+        "errors": 0
+      },
+      "host.exchange": {
+        "calls": 1,
+        "duration_ns": 176217100,
+        "max_ns": 176217100,
+        "errors": 0
+      },
+      "ipc.resource_decode_and_world_expand": {
+        "calls": 1,
+        "duration_ns": 21396800,
+        "max_ns": 21396800,
+        "errors": 0
+      },
+      "host.request": {
+        "calls": 1,
+        "duration_ns": 201053600,
+        "max_ns": 201053600,
+        "errors": 0
+      },
+      "host.capture_nearest_candidates": {
+        "calls": 1,
+        "duration_ns": 201081700,
+        "max_ns": 201081700,
+        "errors": 0
+      },
+      "cache.read_activate": {
+        "calls": 1,
+        "duration_ns": 42700,
+        "max_ns": 42700,
+        "errors": 0
+      },
+      "cache.read_normalized": {
+        "calls": 1,
+        "duration_ns": 700,
+        "max_ns": 700,
+        "errors": 0
+      },
+      "geometry.admit": {
+        "calls": 55,
+        "duration_ns": 21864600,
+        "max_ns": 636800,
+        "errors": 0
+      },
+      "geometry.exact_prepare": {
+        "calls": 55,
+        "duration_ns": 152598000,
+        "max_ns": 3378700,
+        "errors": 0
+      },
+      "geometry.nearest_pair_loop": {
+        "calls": 55,
+        "duration_ns": 29596979100,
+        "max_ns": 648066800,
+        "errors": 1
+      },
+      "kernel.surface_proximity": {
+        "calls": 55,
+        "duration_ns": 29784847200,
+        "max_ns": 651448900,
+        "errors": 1
+      },
+      "cache.read_result": {
+        "calls": 1,
+        "duration_ns": 29793408600,
+        "max_ns": 29793408600,
+        "errors": 1
+      }
+    },
+    "counts": {
+      "exchange_calls": 1,
+      "exchange_payload_bytes": 7064,
+      "socket_connections": 1,
+      "socket_send_attempt_bytes": 7064,
+      "socket_send_bytes": 7064,
+      "socket_recv_bytes": 342743,
+      "socket_recv_calls": 6,
+      "read_generation_changes": 0,
+      "read_selection_hits": 1,
+      "normalized_hits": 1
+    },
+    "rpc_by_command": {
+      "capture_nearest_candidates": 1
+    },
+    "details": {
+      "decoder_packets": [
+        {
+          "schema": "human-eye-scene-delta-v1",
+          "resource_rows": 0,
+          "resource_vertices": 0,
+          "resource_faces": 0,
+          "live_resource_rows": 192
+        }
+      ],
+      "captures": [
+        {
+          "work": {
+            "directory_objects": 192,
+            "source_vertices": 6144,
+            "source_faces": 11520,
+            "expanded_objects": 192,
+            "expanded_vertices": 6144,
+            "expanded_faces": 11520
+          },
+          "capture_state": {
+            "instance_id": "6c4bf834c2b44fefa70e703c71f56073",
+            "epoch": 1,
+            "revision": 1,
+            "selection_key": "e13e4f351e2a7fc57cf4782f77ba0d4f17a7697e588fb40a82d6d68abc305258"
+          },
+          "mesh_count": 192,
+          "expanded_vertices": 6144,
+          "expanded_faces": 11520,
+          "coverage_count": 192
+        }
+      ],
+      "admission": [
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        },
+        {
+          "faces": [
+            60,
+            60
+          ],
+          "face_sum": 120,
+          "triangle_product": 3600,
+          "max_faces": 4096,
+          "max_triangle_pairs": 16384,
+          "accepted": true,
+          "reason": null
+        }
+      ],
+      "kernels": [
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:8e61569b50982cb5657b5d2c82bbf58ced3cf83bdc2afba1219966f645093638"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09099999351518387,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1581,
+            "point_face_tests": 9486,
+            "point_edge_tests": 28458,
+            "edge_edge_tests": 14229,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2019
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:9701ab64b080a0742a3f8bff9b21b929ea222c99828a231c747f474acfdbcf42"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.16999998932624205,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1913,
+            "point_face_tests": 11478,
+            "point_edge_tests": 34434,
+            "edge_edge_tests": 17217,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1687
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:9762fa94f3c8b9e70d32c7b8e0fa04b4a5c2ea5e97f511f43feb8b51534414b9"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09500000031716847,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1617,
+            "point_face_tests": 9702,
+            "point_edge_tests": 29106,
+            "edge_edge_tests": 14553,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1983
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:977cd98a6fa95368fd337c88863985600ec0ac4a331a38bc4c7c933bd3a97bf4"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.07399999269421756,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1568,
+            "point_face_tests": 9408,
+            "point_edge_tests": 28224,
+            "edge_edge_tests": 14112,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2032
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:9bd8480b13b5fd891d143f8fbe8b0ebf0948712061d50bb7f546536b6266f18f"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.03899999705210729,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1306,
+            "point_face_tests": 7836,
+            "point_edge_tests": 23508,
+            "edge_edge_tests": 11754,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2294
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:9e8e722a5b1732004971fb3afe8c8135c6f263cc7268bb8665251f5bf9b72be4"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.16899997569167574,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1876,
+            "point_face_tests": 11256,
+            "point_edge_tests": 33768,
+            "edge_edge_tests": 16884,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1724
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:9f0f9d57b29e411d559786dec89948c66fd02850698e1b930c156be3dd02e315"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.033999999327254254,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1318,
+            "point_face_tests": 7908,
+            "point_edge_tests": 23724,
+            "edge_edge_tests": 11862,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2282
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:a051f216a658bcdd92cafa2e526a24f82d473cc5f43dabe7c7eec64592b586af"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.16399999980266386,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1866,
+            "point_face_tests": 11196,
+            "point_edge_tests": 33588,
+            "edge_edge_tests": 16794,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1734
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:a1c12b06e576ffc9271cb9a1a45de143781b395c9051ffb3f1f09ed034983c72"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.12599998915729413,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1696,
+            "point_face_tests": 10176,
+            "point_edge_tests": 30528,
+            "edge_edge_tests": 15264,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1904
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:a2c4adcac3c3f532482b0d23d4930891d81e33d0c3b76239a7737b6a3bb631a1"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.11300000608630735,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1613,
+            "point_face_tests": 9678,
+            "point_edge_tests": 29034,
+            "edge_edge_tests": 14517,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1987
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:a791c9a366f1d81a8c2b12f1e182953dca22b38ab29a49074b1c92a47470bd37"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.04600000087888129,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1402,
+            "point_face_tests": 8412,
+            "point_edge_tests": 25236,
+            "edge_edge_tests": 12618,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2198
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:ab8c924c92773da7048bc12ff686f56338ce07dbb3a7098248e35bfa5d8af9b2"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.16000000790184013,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1876,
+            "point_face_tests": 11256,
+            "point_edge_tests": 33768,
+            "edge_edge_tests": 16884,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1724
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:add224bf703c908067d5774c4e2e3831efd0ecdb19f285458a6d7803a6f4990e"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.05300000367706919,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1446,
+            "point_face_tests": 8676,
+            "point_edge_tests": 26028,
+            "edge_edge_tests": 13014,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2154
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:af54584dd1dbbf53eed90754188e935373274bf7795bc77219d9b0bb64f2914c"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.19699998626554394,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1969,
+            "point_face_tests": 11814,
+            "point_edge_tests": 35442,
+            "edge_edge_tests": 17721,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1631
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b09ead62c7b454585297b1ba28fbe23029a35dd72bb375a744fac7beed3f6989"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.16799999504817273,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1790,
+            "point_face_tests": 10740,
+            "point_edge_tests": 32220,
+            "edge_edge_tests": 16110,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1810
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b4248de2a4a6413f2b2ecfc02cca3446dad692cb34e42f749f3fb3c99f407255"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.03499999770070311,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1346,
+            "point_face_tests": 8076,
+            "point_edge_tests": 24228,
+            "edge_edge_tests": 12114,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2254
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b4f6d0b88eb4e76b640708fef127024cfd348ea64aee0081096e0ea212538935"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.10900000323748868,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1658,
+            "point_face_tests": 9948,
+            "point_edge_tests": 29844,
+            "edge_edge_tests": 14922,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1942
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b54591915e50bdbb53451a0b92d42299c6895b49e259bd05a00a5a7983c86361"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.04700000670291058,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1455,
+            "point_face_tests": 8730,
+            "point_edge_tests": 26190,
+            "edge_edge_tests": 13095,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2145
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b6503ec2176cd2977a5f874b32ec515232642d3da11ab708a825d94909626698"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.17199998694899649,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1898,
+            "point_face_tests": 11388,
+            "point_edge_tests": 34164,
+            "edge_edge_tests": 17082,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1702
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b680846c0152baafce5e902a1f526f44c954f25de37503654a02cde00e6e1085"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.07499998449294269,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1607,
+            "point_face_tests": 9642,
+            "point_edge_tests": 28926,
+            "edge_edge_tests": 14463,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1993
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:b7e371da0c93763d9aa48beb63a3d1d26924ed28f771e04a0757fb749f222647"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.1390000011547459,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1817,
+            "point_face_tests": 10902,
+            "point_edge_tests": 32706,
+            "edge_edge_tests": 16353,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1783
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:baf0fc73f97e097733f55f0072e73b870e983a8274a24a1a190d60df4eb55758"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.02799999012799037,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 961,
+            "point_face_tests": 5766,
+            "point_edge_tests": 17298,
+            "edge_edge_tests": 8649,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2639
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:bb828e3578805fe9379bbd516baa2c6b88c4b5f20268334d6b402fec6687e749"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.12800000861588973,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1749,
+            "point_face_tests": 10494,
+            "point_edge_tests": 31482,
+            "edge_edge_tests": 15741,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1851
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:bd47e82c15c26677af0e295fd8261333c1e4c187c8a7099e3c5c80e5a75032e0"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.18899999151590152,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1904,
+            "point_face_tests": 11424,
+            "point_edge_tests": 34272,
+            "edge_edge_tests": 17136,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1696
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:bd6dd9623db2c285879a8e3d9c3432901daf02c0b6a2ea27546b8dc14f7a8691"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.18600001324964408,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1916,
+            "point_face_tests": 11496,
+            "point_edge_tests": 34488,
+            "edge_edge_tests": 17244,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1684
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:bd737282911f5cf88826df48bb05decb89cb99e51e82141e82f62048806b49cc"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.024999994131787093,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1236,
+            "point_face_tests": 7416,
+            "point_edge_tests": 22248,
+            "edge_edge_tests": 11124,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2364
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c2166445bd68076152d824c7b932381ce6afe9726d68ab247115f964fb1a3818"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.1449999906783241,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1801,
+            "point_face_tests": 10806,
+            "point_edge_tests": 32418,
+            "edge_edge_tests": 16209,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1799
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c2aa9c07ecef3fb112c4db692fd6daa46bafbb52c5b53fb4f66e0bb58c38c904"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.18099997724330277,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1890,
+            "point_face_tests": 11340,
+            "point_edge_tests": 34020,
+            "edge_edge_tests": 17010,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1710
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c2e4f6f707d26390cdd78740f460eec4e677d3a3cac86641506c191a49bd3140"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.15399999587379126,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1834,
+            "point_face_tests": 11004,
+            "point_edge_tests": 33012,
+            "edge_edge_tests": 16506,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1766
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c30abc4de5599b37dd6b27420bac67af58d83d8a264eb28878866a01d7c9a9b2"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09000000171645872,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1610,
+            "point_face_tests": 9660,
+            "point_edge_tests": 28980,
+            "edge_edge_tests": 14490,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1990
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c426c0407603b3edf6b4c1773518486e1e6ad2422100c294e87dcf4a0f00ef19"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.024000002333061946,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1180,
+            "point_face_tests": 7080,
+            "point_edge_tests": 21240,
+            "edge_edge_tests": 10620,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2420
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c49fc38baccbd495a11ee74a061d7ffa7fdb9c8b2d17740019ad8a5e346a89eb"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.12100000478911573,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1687,
+            "point_face_tests": 10122,
+            "point_edge_tests": 30366,
+            "edge_edge_tests": 15183,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1913
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c4fcfb2b4b0609b594c2590601043f22abe3d9e4edb05e22c7f2d94b1ff352c7"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.10999999503621383,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1659,
+            "point_face_tests": 9954,
+            "point_edge_tests": 29862,
+            "edge_edge_tests": 14931,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1941
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c56712b243c0584cef32deedfe52fc9317c0b310b704b631e6d4133442bb89b4"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.17999998632043435,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1913,
+            "point_face_tests": 11478,
+            "point_edge_tests": 34434,
+            "edge_edge_tests": 17217,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1687
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c6314622ea4ebe3dcbbc38453659cbcfe32136a119ae3ca0fb8c69b40f6c9315"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09799998886279133,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1645,
+            "point_face_tests": 9870,
+            "point_edge_tests": 29610,
+            "edge_edge_tests": 14805,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1955
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:c89e03990ab478e4101fb8f369b165abe984df51b68fd4928bb4d660b82220fa"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.05199999785303991,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1426,
+            "point_face_tests": 8556,
+            "point_edge_tests": 25668,
+            "edge_edge_tests": 12834,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2174
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cae613b056a42db87675a56b41b3574f38289568c8ff7ff282f345c0ec9e0ade"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.03299999530342384,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 982,
+            "point_face_tests": 5892,
+            "point_edge_tests": 17676,
+            "edge_edge_tests": 8838,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2618
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cbeef18ea0e32425c997246fd2fbea7581d627985c75d689c6b85b1c4e2c3eb5"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.07599999031697198,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1563,
+            "point_face_tests": 9378,
+            "point_edge_tests": 28134,
+            "edge_edge_tests": 14067,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2037
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cdaf36b6c44a320b15af7188a5ac6e6bbeb3d892a16a6971890603d3ca7e1ef5"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.08099999652099156,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1602,
+            "point_face_tests": 9612,
+            "point_edge_tests": 28836,
+            "edge_edge_tests": 14418,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1998
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cdbe87bcbadbacff4e04b2013b8afb8f8f5a8942bdc3b44c10770cc20f099b42"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.124999997358569,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1687,
+            "point_face_tests": 10122,
+            "point_edge_tests": 30366,
+            "edge_edge_tests": 15183,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1913
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cf3ae63caff499b1ff9482d3a4f0192c37914a5c4695e26ee4316b9afbe44a1f"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09999999804202152,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1632,
+            "point_face_tests": 9792,
+            "point_edge_tests": 29376,
+            "edge_edge_tests": 14688,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1968
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:cfed97a0d18d36eaa4b4a7a0b9432734ee00226bd23e1fecab02b229d2031cb3"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.18999999091793648,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1887,
+            "point_face_tests": 11322,
+            "point_edge_tests": 33966,
+            "edge_edge_tests": 16983,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1713
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d040d279fdf0f01769bb4623fe0aceebec4e61b1327cc72d9b64797a51206641"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.10800000769282482,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1692,
+            "point_face_tests": 10152,
+            "point_edge_tests": 30456,
+            "edge_edge_tests": 15228,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1908
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d1a56f871897786a4a014ca901211bdc567399ecad8f14d4712341d5b8026fde"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.03999998885083244,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1376,
+            "point_face_tests": 8256,
+            "point_edge_tests": 24768,
+            "edge_edge_tests": 12384,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2224
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d251fc780a0df6f3de412487f4000cb54843ae25d4a9daa0d30e7d72256ef5f4"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.04499999402626591,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1382,
+            "point_face_tests": 8292,
+            "point_edge_tests": 24876,
+            "edge_edge_tests": 12438,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2218
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d625de4b23d71add3fd2fe4e4de5e4d39cfe56573b55c816b31acba92cacdc4b"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.18200000644765946,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1911,
+            "point_face_tests": 11466,
+            "point_edge_tests": 34398,
+            "edge_edge_tests": 17199,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1689
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d7ac546423b3130932a464dd5fca434d590d832d7b73193643c11d561cd18bcf"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.1759999944196106,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1881,
+            "point_face_tests": 11286,
+            "point_edge_tests": 33858,
+            "edge_edge_tests": 16929,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1719
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d852fdab304903ccffc805457b87a015e986490538db730fd6ea2519bad48e37"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.09699999706406619,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1665,
+            "point_face_tests": 9990,
+            "point_edge_tests": 29970,
+            "edge_edge_tests": 14985,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1935
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d8faf9c1f44f1654f25860be4043b20b169b4dcdfad054375bb4e9221b826be7"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.0489999940462996,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1377,
+            "point_face_tests": 8262,
+            "point_edge_tests": 24786,
+            "edge_edge_tests": 12393,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2223
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:d95c1fd45a69c300ea48dec3cc0658f1f4146149f4f82ffc37aa143716388dfb"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.13699999130688623,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1740,
+            "point_face_tests": 10440,
+            "point_edge_tests": 31320,
+            "edge_edge_tests": 15660,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1860
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:dc6dae15c11bbee9becf5dd10672da2a769c1ce44d1fcb3e0ded8195df60ac93"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.04300000735150639,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1277,
+            "point_face_tests": 7662,
+            "point_edge_tests": 22986,
+            "edge_edge_tests": 11493,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2323
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:dcabd3a46ae302a28ffeddbaf40d69fed6f3fef58f26498ca6697bb767394ad9"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.20000000214466013,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1925,
+            "point_face_tests": 11550,
+            "point_edge_tests": 34650,
+            "edge_edge_tests": 17325,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1675
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:df127a004257f3907ad304d4a4a86e8f4625f9c486069220e10265ba2658a046"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.06899999496936451,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1558,
+            "point_face_tests": 9348,
+            "point_edge_tests": 28044,
+            "edge_edge_tests": 14022,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 2042
+          }
+        },
+        {
+          "kind": "surface_proximity",
+          "object_ids": [
+            "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+            "blender:e092b24829a734babf431b5d7a6d142fe2c7af8dde998d34a96aaf7932941f61"
+          ],
+          "faces": [
+            60,
+            60
+          ],
+          "vertices": [
+            32,
+            32
+          ],
+          "measurement_valid": true,
+          "reason": null,
+          "relation": null,
+          "distance_m": 0.0799999971189566,
+          "work": {
+            "validated_faces": 120,
+            "referenced_vertices": 64,
+            "triangle_pairs": 3600,
+            "intersection_tests": 1620,
+            "point_face_tests": 9720,
+            "point_edge_tests": 29160,
+            "edge_edge_tests": 14580,
+            "predicate_steps": 0,
+            "aabb_bound_tests": 3599,
+            "aabb_pruned_pairs": 1980
+          }
+        }
+      ]
+    },
+    "issues": [],
+    "baseline": {
+      "scene_cache": {
+        "frames": 0,
+        "content_blobs": 0,
+        "measurement_entries": 113,
+        "accounted_bytes": 157646,
+        "max_bytes": 2097152,
+        "max_frames": 16,
+        "measurement_hits": 59,
+        "measurement_misses": 115,
+        "measurement_computations": 115,
+        "solid_support_entries": 0,
+        "solid_support_hits": 0,
+        "solid_support_misses": 0,
+        "solid_support_scope": "exact_content_observation_only_not_execution",
+        "estimated_compute_ms_avoided": 29397.546100022737,
+        "savings_basis": "duration_of_original_compute_excludes_lookup_overhead",
+        "byte_accounting": "immutable_payload_and_per_entry_allowance_excludes_temporary_work",
+        "purpose": "observation_only_no_execution_authority"
+      },
+      "read_context": {
+        "selection_entries": 1,
+        "result_entries": 0,
+        "normalized_entries": 1
+      },
+      "decoder_work": {
+        "world_transforms": 192,
+        "transformed_vertices": 6144
+      },
+      "decoder_cache": {
+        "resource_entries": 192,
+        "world_entries": 192,
+        "resource_vertices": 6144,
+        "resource_faces": 11520
+      }
+    },
+    "current": {
+      "scene_cache": {
+        "frames": 0,
+        "content_blobs": 0,
+        "measurement_entries": 167,
+        "accounted_bytes": 232752,
+        "max_bytes": 2097152,
+        "max_frames": 16,
+        "measurement_hits": 172,
+        "measurement_misses": 170,
+        "measurement_computations": 170,
+        "solid_support_entries": 0,
+        "solid_support_hits": 0,
+        "solid_support_misses": 0,
+        "solid_support_scope": "exact_content_observation_only_not_execution",
+        "estimated_compute_ms_avoided": 88606.108799926,
+        "savings_basis": "duration_of_original_compute_excludes_lookup_overhead",
+        "byte_accounting": "immutable_payload_and_per_entry_allowance_excludes_temporary_work",
+        "purpose": "observation_only_no_execution_authority"
+      },
+      "read_context": {
+        "selection_entries": 1,
+        "result_entries": 0,
+        "normalized_entries": 1
+      },
+      "decoder_work": {
+        "world_transforms": 192,
+        "transformed_vertices": 6144
+      },
+      "decoder_cache": {
+        "resource_entries": 192,
+        "world_entries": 192,
+        "resource_vertices": 6144,
+        "resource_faces": 11520
+      }
+    },
+    "socket_send_bytes_exact": true,
+    "peak_rss": {
+      "bytes": 137543680,
+      "scope": "process_lifetime_peak",
+      "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+    },
+    "memory_scope": "scene_cache_accounted_bytes_exclude_read_context_normalized_results_decoder_host_and_temporary_python_allocations"
+  }
+}
