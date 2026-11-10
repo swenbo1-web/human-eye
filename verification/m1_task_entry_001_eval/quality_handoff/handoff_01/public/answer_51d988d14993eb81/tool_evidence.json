@@ -1,0 +1,271 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\ns=bpy.context.scene\nprint('units',s.unit_settings.system,s.unit_settings.scale_length)\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in s.objects if o.type=='MESH'])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\ntarget <bpy_struct, Object(\\\"Mesh_D17AB2\\\") at 0x00000228DED81D20>\\nmeshes [('Mesh_3307B2', 8, 12), ('Mesh_D17AB2', 58, 112), ('Mesh_662CF6', 8, 12), ('Mesh_2E2F54', 8, 12), ('Mesh_A7A7A6', 8, 12), ('Mesh_A89EE8', 8, 12), ('Mesh_A9E055', 8, 12), ('Mesh_B19194', 8, 12), ('Mesh_097A63', 8, 12)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "64169160fe6667c004c9095524031107352b7ff0433aff878459009056a03cb4"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "14041ef400f1412b254c4f9acc1188a060fa1604f2b72c238dacfe672df0d54d"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "40dbcf283346480f4bcc76e9519ead95f6d95e3a91b93ead1981ac07b04e56b1"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import numpy as np\nD=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor o in s.objects:\n    if o.type!='MESH': continue\n    eo=o.evaluated_get(D); me=eo.to_mesh(); me.calc_loop_triangles()\n    mat=np.array(eo.matrix_world,dtype=np.float64)\n    verts=np.array([tuple(v.co) for v in me.vertices],dtype=np.float64)\n    verts=verts@mat[:3,:3].T+mat[:3,3]\n    faces=np.array([tuple(t.vertices) for t in me.loop_triangles],dtype=np.int64)\n    geom[o.name]=(verts,faces,verts[faces])\n    eo.to_mesh_clear()\n    print(o.name,'triangles',len(faces),'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type,m.show_viewport) for m in o.modifiers])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_3307B2 triangles 12 world_bounds [0.9375, 0.8125, -0.125] [1.0625, 0.9375, 0.125] modifiers []\\nMesh_D17AB2 triangles 112 world_bounds [0.0, 0.0, -0.25] [2.0, 1.75, 0.25] modifiers []\\nMesh_662CF6 triangles 12 world_bounds [0.51171875, 0.5, -0.125] [0.625, 0.75, 0.125] modifiers []\\nMesh_2E2F54 triangles 12 world_bounds [2.0078125, 0.26171875, -0.125] [2.125, 0.375, 0.125] modifiers []\\nMesh_A7A7A6 triangles 12 world_bounds [-0.125, 0.5, -0.125] [-0.01953125, 0.75, 0.125] modifiers []\\nMesh_A89EE8 triangles 12 world_bounds [0.75, 1.765625, -0.125] [1.0, 1.875, 0.125] modifiers []\\nMesh_A9E055 triangles 12 world_bounds [0.125, 0.75, 0.2734375] [0.375, 1.0, 0.375] modifiers []\\nMesh_B19194 triangles 12 world_bounds [0.75, 0.2578125, -0.125] [1.0, 0.375, 0.125] modifiers []\\nMesh_097A63 triangles 12 world_bounds [2.00390625, 0.0625, -0.125] [2.25, 0.1875, 0.125] modifiers []\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "e7b6f6a0d0e27b90374b325d183e1b2a5562337e1db2f267a064c0a97967e373"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "758ae285c0881221cb11ba11767e2d691ff9432ebd75f26b2b4e0badf7a8262f"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "0a28bdb0451d0e90837cbf95317408ad2e891e3422fb63dd3c76ddabd71f7aaf"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef triangle_pair_distances(ta,tb):\n    count_a,count_b=len(ta),len(tb)\n    aa=np.repeat(ta,count_b,axis=0); bb=np.tile(tb,(count_a,1,1))\n    n=len(aa); best=np.full(n,np.inf); pa=np.zeros((n,3)); pb=np.zeros((n,3)); hit=np.zeros(n,dtype=bool)\n    def update(x,y,valid=None):\n        dd=dot(x-y,x-y)\n        mask=dd<best\n        if valid is not None: mask &= valid\n        best[mask]=dd[mask]; pa[mask]=x[mask]; pb[mask]=y[mask]\n    for rev in (False,True):\n        src,dst=(bb,aa) if rev else (aa,bb)\n        base=dst[:,0]; u=dst[:,1]-base; v=dst[:,2]-base\n        norm=np.cross(u,v); norm2=dot(norm,norm)\n        uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); det=uu*vv-uv*uv\n        for k in range(3):\n            point=src[:,k]\n            offset=point-base\n            projected=point-(dot(offset,norm)/norm2)[:,None]*norm\n            rel=projected-base\n            pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            update(projected,point,valid) if rev else update(point,projected,valid)\n            end=src[:,(k+1)%3]; direction=end-point\n            denom=dot(direction,norm)\n            good=np.abs(denom)>1e-15\n            frac=np.divide(dot(base-point,norm),denom,out=np.zeros(n),where=good)\n            crossing=point+frac[:,None]*direction\n            rel=crossing-base; pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=good&(frac>=0)&(frac<=1)&(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            hit |= valid\n            update(crossing,crossing,valid)\n    for i in range(3):\n        p=aa[:,i]; u=aa[:,(i+1)%3]-p; uu=dot(u,u)\n        for j in range(3):\n            q=bb[:,j]; v=bb[:,(j+1)%3]-q; vv=dot(v,v)\n            w=p-q; uv=dot(u,v); uw=dot(u,w); vw=dot(v,w)\n            for fraction in (0.,1.):\n                x=p+fraction*u\n                t=np.clip(dot(x-q,v)/vv,0,1)\n                update(x,q+t[:,None]*v)\n                y=q+fraction*v\n                t=np.clip(dot(y-p,u)/uu,0,1)\n                update(p+t[:,None]*u,y)\n            det=uu*vv-uv*uv\n            good=det>1e-14*uu*vv\n            ss=np.divide(uv*vw-vv*uw,det,out=np.zeros(n),where=good)\n            tt=np.divide(uu*vw-uv*uw,det,out=np.zeros(n),where=good)\n            valid=good&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n            update(p+ss[:,None]*u,q+tt[:,None]*v,valid)\n    idx=int(np.argmin(best))\n    return {'distance':float(np.sqrt(best[idx])),'point_target':pa[idx].tolist(),'point_other':pb[idx].tolist(),'triangle_target':idx//count_b,'triangle_other':idx%count_b,'intersection_pairs':int(hit.sum())}\nresults={}\nfor name,(_,_,tri) in geom.items():\n    if name=='Mesh_D17AB2': continue\n    results[name]=triangle_pair_distances(geom['Mesh_D17AB2'][2],tri)\nfor name,r in sorted(results.items(),key=lambda x:x[1]['distance']):\n    print(name,'distance_mm',format(r['distance']*s.unit_settings.scale_length*1000,'.12f'),r)\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_097A63 distance_mm 3.906250000000 {'distance': 0.00390625, 'point_target': [2.0, 0.125, 0.0], 'point_other': [2.00390625, 0.125, 0.0], 'triangle_target': 11, 'triangle_other': 5, 'intersection_pairs': 0}\\nMesh_B19194 distance_mm 7.812500000000 {'distance': 0.0078125, 'point_target': [0.75, 0.25, -0.125], 'point_other': [0.75, 0.2578125, -0.125], 'triangle_target': 15, 'triangle_other': 1, 'intersection_pairs': 0}\\nMesh_662CF6 distance_mm 11.718750000000 {'distance': 0.01171875, 'point_target': [0.5, 0.75, 0.125], 'point_other': [0.51171875, 0.75, 0.125], 'triangle_target': 35, 'triangle_other': 0, 'intersection_pairs': 0}\\nMesh_2E2F54 distance_mm 14.084184669781 {'distance': 0.014084184669781208, 'point_target': [2.0, 0.25, 0.0], 'point_other': [2.0078125, 0.26171875, 0.0], 'triangle_target': 36, 'triangle_other': 8, 'intersection_pairs': 0}\\nMesh_A89EE8 distance_mm 15.625000000000 {'distance': 0.015625, 'point_target': [0.75, 1.75, 0.0], 'point_other': [0.75, 1.765625, 0.0], 'triangle_target': 13, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_A7A7A6 distance_mm 19.531250000000 {'distance': 0.01953125, 'point_target': [0.0, 0.75, 0.125], 'point_other': [-0.01953125, 0.75, 0.125], 'triangle_target': 76, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_A9E055 distance_mm 23.437500000000 {'distance': 0.0234375, 'point_target': [0.25, 1.0, 0.25], 'point_other': [0.25, 1.0, 0.2734375], 'triangle_target': 4, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_3307B2 distance_mm 437.500000000000 {'distance': 0.4375, 'point_target': [0.5, 0.875, 0.0], 'point_other': [0.9375, 0.875, 0.0], 'triangle_target': 35, 'triangle_other': 0, 'intersection_pairs': 0}\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "782d80a056dee17bd1a48c4a629b94ab156c8845a8a5aeca16ed56359ad34786"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "34f7ffbd33da43eddb596d12f926c736dcc337699142e36c103d28134047a764"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "539204de7d25de2cebea77d8a57843f7c88952b094231ed8c949998726b33238"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\ns=bpy.context.scene\nprint('units',s.unit_settings.system,s.unit_settings.scale_length)\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in s.objects if o.type=='MESH'])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "444b2df952cee88aee80543cc2c7e07f48958a9212b7e0bbccf1c3b9bce071cd",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\ns=bpy.context.scene\nprint('units',s.unit_settings.system,s.unit_settings.scale_length)\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in s.objects if o.type=='MESH'])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\ntarget <bpy_struct, Object(\\\"Mesh_D17AB2\\\") at 0x00000228DED81D20>\\nmeshes [('Mesh_3307B2', 8, 12), ('Mesh_D17AB2', 58, 112), ('Mesh_662CF6', 8, 12), ('Mesh_2E2F54', 8, 12), ('Mesh_A7A7A6', 8, 12), ('Mesh_A89EE8', 8, 12), ('Mesh_A9E055', 8, 12), ('Mesh_B19194', 8, 12), ('Mesh_097A63', 8, 12)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "10489733eefc0d1ad9e0a02b2fe3bf3e5a504182ed7ad384a14df97ef67ee40d",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nD=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor o in s.objects:\n    if o.type!='MESH': continue\n    eo=o.evaluated_get(D); me=eo.to_mesh(); me.calc_loop_triangles()\n    mat=np.array(eo.matrix_world,dtype=np.float64)\n    verts=np.array([tuple(v.co) for v in me.vertices],dtype=np.float64)\n    verts=verts@mat[:3,:3].T+mat[:3,3]\n    faces=np.array([tuple(t.vertices) for t in me.loop_triangles],dtype=np.int64)\n    geom[o.name]=(verts,faces,verts[faces])\n    eo.to_mesh_clear()\n    print(o.name,'triangles',len(faces),'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type,m.show_viewport) for m in o.modifiers])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "12def553d684e7a660b4e5e34ec3ff001e95281f419bd7bb9635542d06285ed2",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nD=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor o in s.objects:\n    if o.type!='MESH': continue\n    eo=o.evaluated_get(D); me=eo.to_mesh(); me.calc_loop_triangles()\n    mat=np.array(eo.matrix_world,dtype=np.float64)\n    verts=np.array([tuple(v.co) for v in me.vertices],dtype=np.float64)\n    verts=verts@mat[:3,:3].T+mat[:3,3]\n    faces=np.array([tuple(t.vertices) for t in me.loop_triangles],dtype=np.int64)\n    geom[o.name]=(verts,faces,verts[faces])\n    eo.to_mesh_clear()\n    print(o.name,'triangles',len(faces),'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type,m.show_viewport) for m in o.modifiers])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_3307B2 triangles 12 world_bounds [0.9375, 0.8125, -0.125] [1.0625, 0.9375, 0.125] modifiers []\\nMesh_D17AB2 triangles 112 world_bounds [0.0, 0.0, -0.25] [2.0, 1.75, 0.25] modifiers []\\nMesh_662CF6 triangles 12 world_bounds [0.51171875, 0.5, -0.125] [0.625, 0.75, 0.125] modifiers []\\nMesh_2E2F54 triangles 12 world_bounds [2.0078125, 0.26171875, -0.125] [2.125, 0.375, 0.125] modifiers []\\nMesh_A7A7A6 triangles 12 world_bounds [-0.125, 0.5, -0.125] [-0.01953125, 0.75, 0.125] modifiers []\\nMesh_A89EE8 triangles 12 world_bounds [0.75, 1.765625, -0.125] [1.0, 1.875, 0.125] modifiers []\\nMesh_A9E055 triangles 12 world_bounds [0.125, 0.75, 0.2734375] [0.375, 1.0, 0.375] modifiers []\\nMesh_B19194 triangles 12 world_bounds [0.75, 0.2578125, -0.125] [1.0, 0.375, 0.125] modifiers []\\nMesh_097A63 triangles 12 world_bounds [2.00390625, 0.0625, -0.125] [2.25, 0.1875, 0.125] modifiers []\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "6775337b74765b9658ea054026ee40e734354262298f6a5191543f5c899ef757",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef triangle_pair_distances(ta,tb):\n    count_a,count_b=len(ta),len(tb)\n    aa=np.repeat(ta,count_b,axis=0); bb=np.tile(tb,(count_a,1,1))\n    n=len(aa); best=np.full(n,np.inf); pa=np.zeros((n,3)); pb=np.zeros((n,3)); hit=np.zeros(n,dtype=bool)\n    def update(x,y,valid=None):\n        dd=dot(x-y,x-y)\n        mask=dd<best\n        if valid is not None: mask &= valid\n        best[mask]=dd[mask]; pa[mask]=x[mask]; pb[mask]=y[mask]\n    for rev in (False,True):\n        src,dst=(bb,aa) if rev else (aa,bb)\n        base=dst[:,0]; u=dst[:,1]-base; v=dst[:,2]-base\n        norm=np.cross(u,v); norm2=dot(norm,norm)\n        uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); det=uu*vv-uv*uv\n        for k in range(3):\n            point=src[:,k]\n            offset=point-base\n            projected=point-(dot(offset,norm)/norm2)[:,None]*norm\n            rel=projected-base\n            pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            update(projected,point,valid) if rev else update(point,projected,valid)\n            end=src[:,(k+1)%3]; direction=end-point\n            denom=dot(direction,norm)\n            good=np.abs(denom)>1e-15\n            frac=np.divide(dot(base-point,norm),denom,out=np.zeros(n),where=good)\n            crossing=point+frac[:,None]*direction\n            rel=crossing-base; pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=good&(frac>=0)&(frac<=1)&(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            hit |= valid\n            update(crossing,crossing,valid)\n    for i in range(3):\n        p=aa[:,i]; u=aa[:,(i+1)%3]-p; uu=dot(u,u)\n        for j in range(3):\n            q=bb[:,j]; v=bb[:,(j+1)%3]-q; vv=dot(v,v)\n            w=p-q; uv=dot(u,v); uw=dot(u,w); vw=dot(v,w)\n            for fraction in (0.,1.):\n                x=p+fraction*u\n                t=np.clip(dot(x-q,v)/vv,0,1)\n                update(x,q+t[:,None]*v)\n                y=q+fraction*v\n                t=np.clip(dot(y-p,u)/uu,0,1)\n                update(p+t[:,None]*u,y)\n            det=uu*vv-uv*uv\n            good=det>1e-14*uu*vv\n            ss=np.divide(uv*vw-vv*uw,det,out=np.zeros(n),where=good)\n            tt=np.divide(uu*vw-uv*uw,det,out=np.zeros(n),where=good)\n            valid=good&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n            update(p+ss[:,None]*u,q+tt[:,None]*v,valid)\n    idx=int(np.argmin(best))\n    return {'distance':float(np.sqrt(best[idx])),'point_target':pa[idx].tolist(),'point_other':pb[idx].tolist(),'triangle_target':idx//count_b,'triangle_other':idx%count_b,'intersection_pairs':int(hit.sum())}\nresults={}\nfor name,(_,_,tri) in geom.items():\n    if name=='Mesh_D17AB2': continue\n    results[name]=triangle_pair_distances(geom['Mesh_D17AB2'][2],tri)\nfor name,r in sorted(results.items(),key=lambda x:x[1]['distance']):\n    print(name,'distance_mm',format(r['distance']*s.unit_settings.scale_length*1000,'.12f'),r)\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "a7d70e195fd3a2e2d5944925ec0bb21bc9fb71fabd3e2542dac622c633963e90",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef triangle_pair_distances(ta,tb):\n    count_a,count_b=len(ta),len(tb)\n    aa=np.repeat(ta,count_b,axis=0); bb=np.tile(tb,(count_a,1,1))\n    n=len(aa); best=np.full(n,np.inf); pa=np.zeros((n,3)); pb=np.zeros((n,3)); hit=np.zeros(n,dtype=bool)\n    def update(x,y,valid=None):\n        dd=dot(x-y,x-y)\n        mask=dd<best\n        if valid is not None: mask &= valid\n        best[mask]=dd[mask]; pa[mask]=x[mask]; pb[mask]=y[mask]\n    for rev in (False,True):\n        src,dst=(bb,aa) if rev else (aa,bb)\n        base=dst[:,0]; u=dst[:,1]-base; v=dst[:,2]-base\n        norm=np.cross(u,v); norm2=dot(norm,norm)\n        uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); det=uu*vv-uv*uv\n        for k in range(3):\n            point=src[:,k]\n            offset=point-base\n            projected=point-(dot(offset,norm)/norm2)[:,None]*norm\n            rel=projected-base\n            pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            update(projected,point,valid) if rev else update(point,projected,valid)\n            end=src[:,(k+1)%3]; direction=end-point\n            denom=dot(direction,norm)\n            good=np.abs(denom)>1e-15\n            frac=np.divide(dot(base-point,norm),denom,out=np.zeros(n),where=good)\n            crossing=point+frac[:,None]*direction\n            rel=crossing-base; pu=dot(rel,u); pv=dot(rel,v)\n            alpha=(vv*pu-uv*pv)/det; beta=(uu*pv-uv*pu)/det\n            valid=good&(frac>=0)&(frac<=1)&(alpha>=-1e-13)&(beta>=-1e-13)&(alpha+beta<=1+1e-13)\n            hit |= valid\n            update(crossing,crossing,valid)\n    for i in range(3):\n        p=aa[:,i]; u=aa[:,(i+1)%3]-p; uu=dot(u,u)\n        for j in range(3):\n            q=bb[:,j]; v=bb[:,(j+1)%3]-q; vv=dot(v,v)\n            w=p-q; uv=dot(u,v); uw=dot(u,w); vw=dot(v,w)\n            for fraction in (0.,1.):\n                x=p+fraction*u\n                t=np.clip(dot(x-q,v)/vv,0,1)\n                update(x,q+t[:,None]*v)\n                y=q+fraction*v\n                t=np.clip(dot(y-p,u)/uu,0,1)\n                update(p+t[:,None]*u,y)\n            det=uu*vv-uv*uv\n            good=det>1e-14*uu*vv\n            ss=np.divide(uv*vw-vv*uw,det,out=np.zeros(n),where=good)\n            tt=np.divide(uu*vw-uv*uw,det,out=np.zeros(n),where=good)\n            valid=good&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n            update(p+ss[:,None]*u,q+tt[:,None]*v,valid)\n    idx=int(np.argmin(best))\n    return {'distance':float(np.sqrt(best[idx])),'point_target':pa[idx].tolist(),'point_other':pb[idx].tolist(),'triangle_target':idx//count_b,'triangle_other':idx%count_b,'intersection_pairs':int(hit.sum())}\nresults={}\nfor name,(_,_,tri) in geom.items():\n    if name=='Mesh_D17AB2': continue\n    results[name]=triangle_pair_distances(geom['Mesh_D17AB2'][2],tri)\nfor name,r in sorted(results.items(),key=lambda x:x[1]['distance']):\n    print(name,'distance_mm',format(r['distance']*s.unit_settings.scale_length*1000,'.12f'),r)\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_097A63 distance_mm 3.906250000000 {'distance': 0.00390625, 'point_target': [2.0, 0.125, 0.0], 'point_other': [2.00390625, 0.125, 0.0], 'triangle_target': 11, 'triangle_other': 5, 'intersection_pairs': 0}\\nMesh_B19194 distance_mm 7.812500000000 {'distance': 0.0078125, 'point_target': [0.75, 0.25, -0.125], 'point_other': [0.75, 0.2578125, -0.125], 'triangle_target': 15, 'triangle_other': 1, 'intersection_pairs': 0}\\nMesh_662CF6 distance_mm 11.718750000000 {'distance': 0.01171875, 'point_target': [0.5, 0.75, 0.125], 'point_other': [0.51171875, 0.75, 0.125], 'triangle_target': 35, 'triangle_other': 0, 'intersection_pairs': 0}\\nMesh_2E2F54 distance_mm 14.084184669781 {'distance': 0.014084184669781208, 'point_target': [2.0, 0.25, 0.0], 'point_other': [2.0078125, 0.26171875, 0.0], 'triangle_target': 36, 'triangle_other': 8, 'intersection_pairs': 0}\\nMesh_A89EE8 distance_mm 15.625000000000 {'distance': 0.015625, 'point_target': [0.75, 1.75, 0.0], 'point_other': [0.75, 1.765625, 0.0], 'triangle_target': 13, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_A7A7A6 distance_mm 19.531250000000 {'distance': 0.01953125, 'point_target': [0.0, 0.75, 0.125], 'point_other': [-0.01953125, 0.75, 0.125], 'triangle_target': 76, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_A9E055 distance_mm 23.437500000000 {'distance': 0.0234375, 'point_target': [0.25, 1.0, 0.25], 'point_other': [0.25, 1.0, 0.2734375], 'triangle_target': 4, 'triangle_other': 2, 'intersection_pairs': 0}\\nMesh_3307B2 distance_mm 437.500000000000 {'distance': 0.4375, 'point_target': [0.5, 0.875, 0.0], 'point_other': [0.9375, 0.875, 0.0], 'triangle_target': 35, 'triangle_other': 0, 'intersection_pairs': 0}\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "9e7241d7ba288cc83ccf95b2714494ee2501cf0fa23e723e495e8b1540576682",
+      "source_sha256": "38d1958eec792ef95c86febcc61d396d63b56836a0d855e8b85010e9b98fb53f"
+    }
+  ]
+}

@@ -1,0 +1,271 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in scene.objects if o.type=='MESH'])\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmeshes [('Mesh_3307B2', 8, 12), ('Mesh_D17AB2', 58, 112), ('Mesh_662CF6', 8, 12), ('Mesh_2E2F54', 8, 12), ('Mesh_A7A7A6', 8, 12), ('Mesh_A89EE8', 8, 12), ('Mesh_A9E055', 8, 12), ('Mesh_B19194', 8, 12), ('Mesh_097A63', 8, 12)]\\ntarget <bpy_struct, Object(\\\"Mesh_D17AB2\\\") at 0x000001C4BB253920>\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "4f3c7de8a3e01066579fe65a7a54443da19c3e7e213bcfe44911a4159fc8b800"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "a685be4b8b231cb1a2c1db3ed9b143df06996fb42c7d93f836ae789d506ae728"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "10642ef958b2d1b060143aa92a955f7b79333f8b777c5ce4d00e722cb4a5d0a7"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeo={}\nfor obj in scene.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(dg); mesh=ev.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n    mat=np.array(ev.matrix_world,dtype=np.float64)\n    verts=local @ mat[:3,:3].T + mat[:3,3]\n    tris=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64)\n    edges=np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\n    geo[obj.name]={'v':verts,'t':tris,'e':edges}\n    print(obj.name,'evaluated',len(verts),len(tris),'bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n    ev.to_mesh_clear()\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_3307B2 evaluated 8 12 bounds [0.9375, 0.8125, -0.125] [1.0625, 0.9375, 0.125] modifiers []\\nMesh_D17AB2 evaluated 58 112 bounds [0.0, 0.0, -0.25] [2.0, 1.75, 0.25] modifiers []\\nMesh_662CF6 evaluated 8 12 bounds [0.51171875, 0.5, -0.125] [0.625, 0.75, 0.125] modifiers []\\nMesh_2E2F54 evaluated 8 12 bounds [2.0078125, 0.26171875, -0.125] [2.125, 0.375, 0.125] modifiers []\\nMesh_A7A7A6 evaluated 8 12 bounds [-0.125, 0.5, -0.125] [-0.01953125, 0.75, 0.125] modifiers []\\nMesh_A89EE8 evaluated 8 12 bounds [0.75, 1.765625, -0.125] [1.0, 1.875, 0.125] modifiers []\\nMesh_A9E055 evaluated 8 12 bounds [0.125, 0.75, 0.2734375] [0.375, 1.0, 0.375] modifiers []\\nMesh_B19194 evaluated 8 12 bounds [0.75, 0.2578125, -0.125] [1.0, 0.375, 0.125] modifiers []\\nMesh_097A63 evaluated 8 12 bounds [2.00390625, 0.0625, -0.125] [2.25, 0.1875, 0.125] modifiers []\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "bb03e26be3d7ccda1abae1d02cf4e590fb19d6a4d7766f8efdf540fbb31ca6bf"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "57107e54f4ffe387adb57f24a06cee20050c6796c338ad6821cb85f9d41a55dd"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "257043450e97c5a9fb2bd6a7ef92fa7276c7cf4a9d56e6ad6edf339bb93d3e2b"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def point_triangle_min(points,triangles):\n    p=points[:,None,:]; a=triangles[None,:,0,:]; b=triangles[None,:,1,:]; c=triangles[None,:,2,:]\n    ab=b-a; ac=c-a; normal=np.cross(ab,ac); nn=np.sum(normal*normal,axis=-1)\n    offset=np.sum((p-a)*normal,axis=-1)/nn\n    q=p-offset[...,None]*normal\n    aq=q-a; d00=np.sum(ab*ab,axis=-1); d01=np.sum(ab*ac,axis=-1); d11=np.sum(ac*ac,axis=-1)\n    d20=np.sum(aq*ab,axis=-1); d21=np.sum(aq*ac,axis=-1); denom=d00*d11-d01*d01\n    u=(d11*d20-d01*d21)/denom; v=(d00*d21-d01*d20)/denom\n    inside=(u>=-1e-13)&(v>=-1e-13)&(u+v<=1+1e-13)\n    dd=np.sum((p-q)**2,axis=-1); dd[~inside]=np.inf\n    idx=np.unravel_index(np.argmin(dd),dd.shape)\n    best=(float(dd[idx]),points[idx[0]].copy(),q[idx].copy(),'vertex-face')\n    for start,end in [(a,b),(b,c),(c,a)]:\n        edge=end-start; t=np.sum((p-start)*edge,axis=-1)/np.sum(edge*edge,axis=-1)\n        r=start+np.clip(t,0,1)[...,None]*edge\n        dd=np.sum((p-r)**2,axis=-1); idx=np.unravel_index(np.argmin(dd),dd.shape)\n        if dd[idx]<best[0]: best=(float(dd[idx]),points[idx[0]].copy(),r[idx].copy(),'vertex-edge')\n    return best\n\ndef edge_edge_min(edges_a,edges_b):\n    p=edges_a[:,None,0,:]; q=edges_b[None,:,0,:]\n    u=edges_a[:,None,1,:]-p; v=edges_b[None,:,1,:]-q; w=p-q\n    aa=np.sum(u*u,axis=-1); bb=np.sum(u*v,axis=-1); cc=np.sum(v*v,axis=-1)\n    dd=np.sum(u*w,axis=-1); ee=np.sum(v*w,axis=-1); denom=aa*cc-bb*bb\n    valid=denom>1e-25\n    s=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=valid)\n    t=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=valid)\n    valid &= (s>=0)&(s<=1)&(t>=0)&(t<=1)\n    pa=p+s[...,None]*u; pb=q+t[...,None]*v\n    dist=np.sum((pa-pb)**2,axis=-1); dist[~valid]=np.inf\n    idx=np.unravel_index(np.argmin(dist),dist.shape)\n    return float(dist[idx]),pa[idx].copy(),pb[idx].copy(),'edge-edge'\n\ndef segment_triangle_hit(edges,triangles):\n    p=edges[:,None,0,:]; direction=edges[:,None,1,:]-p\n    a=triangles[None,:,0,:]; ab=triangles[None,:,1,:]-a; ac=triangles[None,:,2,:]-a\n    h=np.cross(direction,ac); det=np.sum(ab*h,axis=-1); valid=np.abs(det)>1e-18\n    inv=np.divide(1.,det,out=np.zeros_like(det),where=valid)\n    s=p-a; u=inv*np.sum(s*h,axis=-1); q=np.cross(s,ab)\n    v=inv*np.sum(direction*q,axis=-1); t=inv*np.sum(ac*q,axis=-1)\n    hit=valid&(u>=-1e-12)&(v>=-1e-12)&(u+v<=1+1e-12)&(t>=-1e-12)&(t<=1+1e-12)\n    if hit.any():\n        idx=tuple(np.argwhere(hit)[0]); point=(p+t[...,None]*direction)[idx]\n        return (0.,point.copy(),point.copy(),'intersection')\n    return None\n\ntarget=geo['Mesh_D17AB2']; results={}\nfor name,other in geo.items():\n    if name=='Mesh_D17AB2': continue\n    va=target['v']; vb=other['v']; ta=va[target['t']]; tb=vb[other['t']]; ea=va[target['e']]; eb=vb[other['e']]\n    candidates=[point_triangle_min(va,tb),edge_edge_min(ea,eb)]\n    rev=point_triangle_min(vb,ta); candidates.append((rev[0],rev[2],rev[1],rev[3]+' reversed'))\n    for hit in [segment_triangle_hit(ea,tb),segment_triangle_hit(eb,ta)]:\n        if hit is not None: candidates.append(hit)\n    best=min(candidates,key=lambda value:value[0]); results[name]=best\nfor name,best in sorted(results.items(),key=lambda item:item[1][0]):\n    print(name,'distance_mm',format(math.sqrt(best[0])*scene.unit_settings.scale_length*1000,'.12f'),'target_point_m',best[1].tolist(),'other_point_m',best[2].tolist(),'feature',best[3])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_097A63 distance_mm 3.906250000000 target_point_m [2.0, 0.125, 0.0] other_point_m [2.00390625, 0.125, 0.0] feature vertex-face\\nMesh_B19194 distance_mm 7.812500000000 target_point_m [0.875, 0.25, -0.125] other_point_m [0.875, 0.2578125, -0.125] feature edge-edge\\nMesh_662CF6 distance_mm 11.718750000000 target_point_m [0.5, 0.6964285714285714, -0.07142857142857142] other_point_m [0.51171875, 0.6964285714285714, -0.07142857142857142] feature edge-edge\\nMesh_2E2F54 distance_mm 14.084184669781 target_point_m [2.0, 0.25, 0.0] other_point_m [2.0078125, 0.26171875, 0.0] feature vertex-edge\\nMesh_A89EE8 distance_mm 15.625000000000 target_point_m [0.75, 1.75, 0.0] other_point_m [0.75, 1.765625, 0.0] feature vertex-face\\nMesh_A7A7A6 distance_mm 19.531250000000 target_point_m [0.0, 0.6805555555555556, 0.05555555555555555] other_point_m [-0.01953125, 0.6805555555555556, 0.05555555555555555] feature edge-edge\\nMesh_A9E055 distance_mm 23.437500000000 target_point_m [0.25, 1.0, 0.25] other_point_m [0.25, 1.0, 0.2734375] feature vertex-face\\nMesh_3307B2 distance_mm 437.500000000000 target_point_m [0.5, 0.875, 0.0] other_point_m [0.9375, 0.875, 0.0] feature vertex-face\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "f6356851f980a782f1edb473adf047aa9d88a40a2ab6643ed87e3d5f59684354"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "40227f4fa35788f63f2785274d24cf7c2d2b80bfa1b7abe20692241ce63fa3c2"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "febd4bf7b0dec991697702bf76306d74e724758195f832ef0f3b83171da5233a"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in scene.objects if o.type=='MESH'])\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "ad977996837389b832c179599e6519ccf3e00800782aabd5d31c7650e73c9e48",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in scene.objects if o.type=='MESH'])\nprint('target',bpy.data.objects.get('Mesh_D17AB2'))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmeshes [('Mesh_3307B2', 8, 12), ('Mesh_D17AB2', 58, 112), ('Mesh_662CF6', 8, 12), ('Mesh_2E2F54', 8, 12), ('Mesh_A7A7A6', 8, 12), ('Mesh_A89EE8', 8, 12), ('Mesh_A9E055', 8, 12), ('Mesh_B19194', 8, 12), ('Mesh_097A63', 8, 12)]\\ntarget <bpy_struct, Object(\\\"Mesh_D17AB2\\\") at 0x000001C4BB253920>\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "d8dbd982cd4066301d2ed3c3013abe8a20303183f45c4c0ec356f8a5c597619f",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeo={}\nfor obj in scene.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(dg); mesh=ev.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n    mat=np.array(ev.matrix_world,dtype=np.float64)\n    verts=local @ mat[:3,:3].T + mat[:3,3]\n    tris=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64)\n    edges=np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\n    geo[obj.name]={'v':verts,'t':tris,'e':edges}\n    print(obj.name,'evaluated',len(verts),len(tris),'bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n    ev.to_mesh_clear()\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "4313613b1d1369061e6d44f6063a4d3fc353d0a82989652022bd420abefd980e",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeo={}\nfor obj in scene.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(dg); mesh=ev.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n    mat=np.array(ev.matrix_world,dtype=np.float64)\n    verts=local @ mat[:3,:3].T + mat[:3,3]\n    tris=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64)\n    edges=np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\n    geo[obj.name]={'v':verts,'t':tris,'e':edges}\n    print(obj.name,'evaluated',len(verts),len(tris),'bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n    ev.to_mesh_clear()\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_3307B2 evaluated 8 12 bounds [0.9375, 0.8125, -0.125] [1.0625, 0.9375, 0.125] modifiers []\\nMesh_D17AB2 evaluated 58 112 bounds [0.0, 0.0, -0.25] [2.0, 1.75, 0.25] modifiers []\\nMesh_662CF6 evaluated 8 12 bounds [0.51171875, 0.5, -0.125] [0.625, 0.75, 0.125] modifiers []\\nMesh_2E2F54 evaluated 8 12 bounds [2.0078125, 0.26171875, -0.125] [2.125, 0.375, 0.125] modifiers []\\nMesh_A7A7A6 evaluated 8 12 bounds [-0.125, 0.5, -0.125] [-0.01953125, 0.75, 0.125] modifiers []\\nMesh_A89EE8 evaluated 8 12 bounds [0.75, 1.765625, -0.125] [1.0, 1.875, 0.125] modifiers []\\nMesh_A9E055 evaluated 8 12 bounds [0.125, 0.75, 0.2734375] [0.375, 1.0, 0.375] modifiers []\\nMesh_B19194 evaluated 8 12 bounds [0.75, 0.2578125, -0.125] [1.0, 0.375, 0.125] modifiers []\\nMesh_097A63 evaluated 8 12 bounds [2.00390625, 0.0625, -0.125] [2.25, 0.1875, 0.125] modifiers []\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "47ea2ca5b33101b0847c5773aec34840da877883a882b8b507787e219deb68ef",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def point_triangle_min(points,triangles):\n    p=points[:,None,:]; a=triangles[None,:,0,:]; b=triangles[None,:,1,:]; c=triangles[None,:,2,:]\n    ab=b-a; ac=c-a; normal=np.cross(ab,ac); nn=np.sum(normal*normal,axis=-1)\n    offset=np.sum((p-a)*normal,axis=-1)/nn\n    q=p-offset[...,None]*normal\n    aq=q-a; d00=np.sum(ab*ab,axis=-1); d01=np.sum(ab*ac,axis=-1); d11=np.sum(ac*ac,axis=-1)\n    d20=np.sum(aq*ab,axis=-1); d21=np.sum(aq*ac,axis=-1); denom=d00*d11-d01*d01\n    u=(d11*d20-d01*d21)/denom; v=(d00*d21-d01*d20)/denom\n    inside=(u>=-1e-13)&(v>=-1e-13)&(u+v<=1+1e-13)\n    dd=np.sum((p-q)**2,axis=-1); dd[~inside]=np.inf\n    idx=np.unravel_index(np.argmin(dd),dd.shape)\n    best=(float(dd[idx]),points[idx[0]].copy(),q[idx].copy(),'vertex-face')\n    for start,end in [(a,b),(b,c),(c,a)]:\n        edge=end-start; t=np.sum((p-start)*edge,axis=-1)/np.sum(edge*edge,axis=-1)\n        r=start+np.clip(t,0,1)[...,None]*edge\n        dd=np.sum((p-r)**2,axis=-1); idx=np.unravel_index(np.argmin(dd),dd.shape)\n        if dd[idx]<best[0]: best=(float(dd[idx]),points[idx[0]].copy(),r[idx].copy(),'vertex-edge')\n    return best\n\ndef edge_edge_min(edges_a,edges_b):\n    p=edges_a[:,None,0,:]; q=edges_b[None,:,0,:]\n    u=edges_a[:,None,1,:]-p; v=edges_b[None,:,1,:]-q; w=p-q\n    aa=np.sum(u*u,axis=-1); bb=np.sum(u*v,axis=-1); cc=np.sum(v*v,axis=-1)\n    dd=np.sum(u*w,axis=-1); ee=np.sum(v*w,axis=-1); denom=aa*cc-bb*bb\n    valid=denom>1e-25\n    s=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=valid)\n    t=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=valid)\n    valid &= (s>=0)&(s<=1)&(t>=0)&(t<=1)\n    pa=p+s[...,None]*u; pb=q+t[...,None]*v\n    dist=np.sum((pa-pb)**2,axis=-1); dist[~valid]=np.inf\n    idx=np.unravel_index(np.argmin(dist),dist.shape)\n    return float(dist[idx]),pa[idx].copy(),pb[idx].copy(),'edge-edge'\n\ndef segment_triangle_hit(edges,triangles):\n    p=edges[:,None,0,:]; direction=edges[:,None,1,:]-p\n    a=triangles[None,:,0,:]; ab=triangles[None,:,1,:]-a; ac=triangles[None,:,2,:]-a\n    h=np.cross(direction,ac); det=np.sum(ab*h,axis=-1); valid=np.abs(det)>1e-18\n    inv=np.divide(1.,det,out=np.zeros_like(det),where=valid)\n    s=p-a; u=inv*np.sum(s*h,axis=-1); q=np.cross(s,ab)\n    v=inv*np.sum(direction*q,axis=-1); t=inv*np.sum(ac*q,axis=-1)\n    hit=valid&(u>=-1e-12)&(v>=-1e-12)&(u+v<=1+1e-12)&(t>=-1e-12)&(t<=1+1e-12)\n    if hit.any():\n        idx=tuple(np.argwhere(hit)[0]); point=(p+t[...,None]*direction)[idx]\n        return (0.,point.copy(),point.copy(),'intersection')\n    return None\n\ntarget=geo['Mesh_D17AB2']; results={}\nfor name,other in geo.items():\n    if name=='Mesh_D17AB2': continue\n    va=target['v']; vb=other['v']; ta=va[target['t']]; tb=vb[other['t']]; ea=va[target['e']]; eb=vb[other['e']]\n    candidates=[point_triangle_min(va,tb),edge_edge_min(ea,eb)]\n    rev=point_triangle_min(vb,ta); candidates.append((rev[0],rev[2],rev[1],rev[3]+' reversed'))\n    for hit in [segment_triangle_hit(ea,tb),segment_triangle_hit(eb,ta)]:\n        if hit is not None: candidates.append(hit)\n    best=min(candidates,key=lambda value:value[0]); results[name]=best\nfor name,best in sorted(results.items(),key=lambda item:item[1][0]):\n    print(name,'distance_mm',format(math.sqrt(best[0])*scene.unit_settings.scale_length*1000,'.12f'),'target_point_m',best[1].tolist(),'other_point_m',best[2].tolist(),'feature',best[3])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "c111251bac5099240c634f58144decc7f2ccfaa8817c44e31ada79140e5e506d",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def point_triangle_min(points,triangles):\n    p=points[:,None,:]; a=triangles[None,:,0,:]; b=triangles[None,:,1,:]; c=triangles[None,:,2,:]\n    ab=b-a; ac=c-a; normal=np.cross(ab,ac); nn=np.sum(normal*normal,axis=-1)\n    offset=np.sum((p-a)*normal,axis=-1)/nn\n    q=p-offset[...,None]*normal\n    aq=q-a; d00=np.sum(ab*ab,axis=-1); d01=np.sum(ab*ac,axis=-1); d11=np.sum(ac*ac,axis=-1)\n    d20=np.sum(aq*ab,axis=-1); d21=np.sum(aq*ac,axis=-1); denom=d00*d11-d01*d01\n    u=(d11*d20-d01*d21)/denom; v=(d00*d21-d01*d20)/denom\n    inside=(u>=-1e-13)&(v>=-1e-13)&(u+v<=1+1e-13)\n    dd=np.sum((p-q)**2,axis=-1); dd[~inside]=np.inf\n    idx=np.unravel_index(np.argmin(dd),dd.shape)\n    best=(float(dd[idx]),points[idx[0]].copy(),q[idx].copy(),'vertex-face')\n    for start,end in [(a,b),(b,c),(c,a)]:\n        edge=end-start; t=np.sum((p-start)*edge,axis=-1)/np.sum(edge*edge,axis=-1)\n        r=start+np.clip(t,0,1)[...,None]*edge\n        dd=np.sum((p-r)**2,axis=-1); idx=np.unravel_index(np.argmin(dd),dd.shape)\n        if dd[idx]<best[0]: best=(float(dd[idx]),points[idx[0]].copy(),r[idx].copy(),'vertex-edge')\n    return best\n\ndef edge_edge_min(edges_a,edges_b):\n    p=edges_a[:,None,0,:]; q=edges_b[None,:,0,:]\n    u=edges_a[:,None,1,:]-p; v=edges_b[None,:,1,:]-q; w=p-q\n    aa=np.sum(u*u,axis=-1); bb=np.sum(u*v,axis=-1); cc=np.sum(v*v,axis=-1)\n    dd=np.sum(u*w,axis=-1); ee=np.sum(v*w,axis=-1); denom=aa*cc-bb*bb\n    valid=denom>1e-25\n    s=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=valid)\n    t=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=valid)\n    valid &= (s>=0)&(s<=1)&(t>=0)&(t<=1)\n    pa=p+s[...,None]*u; pb=q+t[...,None]*v\n    dist=np.sum((pa-pb)**2,axis=-1); dist[~valid]=np.inf\n    idx=np.unravel_index(np.argmin(dist),dist.shape)\n    return float(dist[idx]),pa[idx].copy(),pb[idx].copy(),'edge-edge'\n\ndef segment_triangle_hit(edges,triangles):\n    p=edges[:,None,0,:]; direction=edges[:,None,1,:]-p\n    a=triangles[None,:,0,:]; ab=triangles[None,:,1,:]-a; ac=triangles[None,:,2,:]-a\n    h=np.cross(direction,ac); det=np.sum(ab*h,axis=-1); valid=np.abs(det)>1e-18\n    inv=np.divide(1.,det,out=np.zeros_like(det),where=valid)\n    s=p-a; u=inv*np.sum(s*h,axis=-1); q=np.cross(s,ab)\n    v=inv*np.sum(direction*q,axis=-1); t=inv*np.sum(ac*q,axis=-1)\n    hit=valid&(u>=-1e-12)&(v>=-1e-12)&(u+v<=1+1e-12)&(t>=-1e-12)&(t<=1+1e-12)\n    if hit.any():\n        idx=tuple(np.argwhere(hit)[0]); point=(p+t[...,None]*direction)[idx]\n        return (0.,point.copy(),point.copy(),'intersection')\n    return None\n\ntarget=geo['Mesh_D17AB2']; results={}\nfor name,other in geo.items():\n    if name=='Mesh_D17AB2': continue\n    va=target['v']; vb=other['v']; ta=va[target['t']]; tb=vb[other['t']]; ea=va[target['e']]; eb=vb[other['e']]\n    candidates=[point_triangle_min(va,tb),edge_edge_min(ea,eb)]\n    rev=point_triangle_min(vb,ta); candidates.append((rev[0],rev[2],rev[1],rev[3]+' reversed'))\n    for hit in [segment_triangle_hit(ea,tb),segment_triangle_hit(eb,ta)]:\n        if hit is not None: candidates.append(hit)\n    best=min(candidates,key=lambda value:value[0]); results[name]=best\nfor name,best in sorted(results.items(),key=lambda item:item[1][0]):\n    print(name,'distance_mm',format(math.sqrt(best[0])*scene.unit_settings.scale_length*1000,'.12f'),'target_point_m',best[1].tolist(),'other_point_m',best[2].tolist(),'feature',best[3])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_097A63 distance_mm 3.906250000000 target_point_m [2.0, 0.125, 0.0] other_point_m [2.00390625, 0.125, 0.0] feature vertex-face\\nMesh_B19194 distance_mm 7.812500000000 target_point_m [0.875, 0.25, -0.125] other_point_m [0.875, 0.2578125, -0.125] feature edge-edge\\nMesh_662CF6 distance_mm 11.718750000000 target_point_m [0.5, 0.6964285714285714, -0.07142857142857142] other_point_m [0.51171875, 0.6964285714285714, -0.07142857142857142] feature edge-edge\\nMesh_2E2F54 distance_mm 14.084184669781 target_point_m [2.0, 0.25, 0.0] other_point_m [2.0078125, 0.26171875, 0.0] feature vertex-edge\\nMesh_A89EE8 distance_mm 15.625000000000 target_point_m [0.75, 1.75, 0.0] other_point_m [0.75, 1.765625, 0.0] feature vertex-face\\nMesh_A7A7A6 distance_mm 19.531250000000 target_point_m [0.0, 0.6805555555555556, 0.05555555555555555] other_point_m [-0.01953125, 0.6805555555555556, 0.05555555555555555] feature edge-edge\\nMesh_A9E055 distance_mm 23.437500000000 target_point_m [0.25, 1.0, 0.25] other_point_m [0.25, 1.0, 0.2734375] feature vertex-face\\nMesh_3307B2 distance_mm 437.500000000000 target_point_m [0.5, 0.875, 0.0] other_point_m [0.9375, 0.875, 0.0] feature vertex-face\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "db1bb5a912327013f7ef9f501e8ee7767fc074c50082bb47dff1aa453d5f608a",
+      "source_sha256": "feed466df07fb12a2ce40bb351503c4977bbcaee49a163b3d98cb0bab09026ce"
+    }
+  ]
+}

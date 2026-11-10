@@ -1,0 +1,271 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n obj=bpy.data.objects.get(name)\n print(name, None if obj is None else (obj.type,len(obj.data.vertices),len(obj.data.polygons),tuple(obj.dimensions),[list(row) for row in obj.matrix_world]))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nPart_49 ('MESH', 58, 112, (0.125, 0.09375, 0.03125), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.0703125], [0.0, 1.0, -4.371138828673793e-08, 0.0390625], [0.0, 0.0, 0.0, 1.0]])\\nPart_17 ('MESH', 26, 48, (0.0234375, 0.0234375, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.10546875], [0.0, 1.0, -4.371138828673793e-08, 0.04296875], [0.0, 0.0, 0.0, 1.0]])\\nPart_26 ('MESH', 26, 48, (0.015625, 0.015625, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, 0.0078125], [0.0, 1.0, -4.371138828673793e-08, 0.0390625], [0.0, 0.0, 0.0, 1.0]])\\nPart_38 ('MESH', 26, 48, (0.03125, 0.03125, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.0703125], [0.0, 1.0, -4.371138828673793e-08, 0.0546875], [0.0, 0.0, 0.0, 1.0]])\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "d12526f5beac4e6819c36df00977e5ae8c5c4b2148d92996a76f048850b399d6"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "a32f29e6e7ca92ffd02a1d4dec0cd92d949f8f060d29ed2e68c95a8b6c6e1dc5"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "96885e589a31890ba33e6252f9c6d452e3a2e853edd77e12421f2d06471d663e"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n vertices=local@matrix[:3,:3].T+matrix[:3,3]\n triangles=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.unique(np.sort(np.concatenate([triangles[:,[0,1]],triangles[:,[1,2]],triangles[:,[2,0]]]),axis=1),axis=0)\n geom[name]={'v':vertices,'f':triangles,'e':edges,'tri':vertices[triangles]}\n print(name,'bbox_mm',vertices.min(axis=0)*1000,vertices.max(axis=0)*1000,'triangles',len(triangles),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n obj.to_mesh_clear()\ndef solid_angles(points,tris):\n rel=tris[None,:,:,:]-points[:,None,None,:]\n lengths=np.linalg.norm(rel,axis=-1)\n numerator=np.einsum('pti,pti->pt',rel[:,:,0],np.cross(rel[:,:,1],rel[:,:,2]))\n denominator=lengths.prod(axis=-1)+np.einsum('pti,pti->pt',rel[:,:,0],rel[:,:,1])*lengths[:,:,2]+np.einsum('pti,pti->pt',rel[:,:,1],rel[:,:,2])*lengths[:,:,0]+np.einsum('pti,pti->pt',rel[:,:,2],rel[:,:,0])*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denominator),axis=1)/(4*np.pi)\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n print(name,'vertex_winding_in_target',np.round(solid_angles(candidate['v'],target['tri']),5).tolist())\n print(name,'target_winding_range',np.min(solid_angles(target['v'],candidate['tri'])),np.max(solid_angles(target['v'],candidate['tri'])))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Part_49 bbox_mm [  85.93749522 -132.81250068   -7.81250068] [117.18750478  -7.81249932  85.93750068] triangles 112 modifiers []\\nPart_17 bbox_mm [  93.74999898 -117.18750034   31.24999966] [109.37500102 -93.74999966  54.68750034] triangles 48 modifiers []\\nPart_26 bbox_mm [ 9.37499993e+01 -3.41495237e-07  3.12499997e+01] [109.37500068  15.62500034  46.87500034] triangles 48 modifiers []\\nPart_38 bbox_mm [ 93.74999863 -85.93750034  39.06249966] [109.37500137 -54.68749966  70.31250034] triangles 48 modifiers []\\nPart_17 vertex_winding_in_target [1.0, 0.0, -0.0, 1.0, 1.0, 0.0, 0.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, -0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, -0.0, 0.0, 1.0, 1.0, 1.0]\\nPart_17 target_winding_range -1.5461029701558764e-17 3.533949646070574e-17\\nPart_26 vertex_winding_in_target [-0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0]\\nPart_26 target_winding_range -7.454425034680117e-18 5.659841230034904e-18\\nPart_38 vertex_winding_in_target [0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0]\\nPart_38 target_winding_range -1.3252311172764653e-17 1.3252311172764653e-17\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "83fd0b66430abb4cb714b46312b8f745d7d578ecb5b1a9dcab5cf489ca44e097"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "fff4b1d727f9a7fda5afe01a996a27d96ed2316b60f56037986685901554fdc2"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "24b42b356a836a5904b22984476e1d31043c43cdda8e0412ad3842fa5a349130"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def vertex_face_min(points,tris):\n origin=tris[:,0]; side1=tris[:,1]-origin; side2=tris[:,2]-origin\n normals=np.cross(side1,side2); normal2=np.sum(normals*normals,axis=1)\n displacement=points[:,None,:]-origin[None,:,:]\n height=np.einsum('pfi,fi->pf',displacement,normals)/normal2[None,:]\n projected=points[:,None,:]-height[:,:,None]*normals[None,:,:]\n offset=projected-origin[None,:,:]\n aa=np.sum(side1*side1,axis=1); bb=np.sum(side1*side2,axis=1); cc=np.sum(side2*side2,axis=1)\n dd=np.einsum('pfi,fi->pf',offset,side1); ee=np.einsum('pfi,fi->pf',offset,side2)\n denom=aa*cc-bb*bb\n uu=(cc*dd-bb*ee)/denom; vv=(aa*ee-bb*dd)/denom\n valid=(uu>=-1e-12)&(vv>=-1e-12)&(uu+vv<=1+1e-12)\n dist2=np.where(valid,height*height*normal2,np.inf)\n point_index,face_index=np.unravel_index(np.argmin(dist2),dist2.shape)\n return float(dist2[point_index,face_index]),points[point_index],projected[point_index,face_index]\ndef edge_edge_min(first,second):\n first_start=first[:,0,None,:]; second_start=second[None,:,0,:]\n first_dir=(first[:,1]-first[:,0])[:,None,:]; second_dir=(second[:,1]-second[:,0])[None,:,:]\n offset=first_start-second_start\n aa=np.sum(first_dir*first_dir,axis=-1); bb=np.sum(first_dir*second_dir,axis=-1); cc=np.sum(second_dir*second_dir,axis=-1)\n dd=np.sum(first_dir*offset,axis=-1); ee=np.sum(second_dir*offset,axis=-1)\n denom=aa*cc-bb*bb\n safe=np.where(denom>1e-30,denom,1.)\n ss=(bb*ee-cc*dd)/safe; tt=(aa*ee-bb*dd)/safe\n options=[(ss,tt,(denom>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(ee),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(ee),True)]\n best=(float('inf'),None,None)\n for ss,tt,valid in options:\n  point1=first_start+ss[:,:,None]*first_dir; point2=second_start+tt[:,:,None]*second_dir\n  dist2=np.where(valid,np.sum((point1-point2)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),point1[idx],point2[idx])\n return best\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n results=[vertex_face_min(candidate['v'],target['tri']),vertex_face_min(target['v'],candidate['tri']),edge_edge_min(candidate['v'][candidate['e']],target['v'][target['e']])]\n best=min(results,key=lambda item:item[0])\n print(name,'feature_distances_mm',[math.sqrt(item[0])*1000 for item in results],'best_points_mm',best[1]*1000,best[2]*1000)\n # Manifold check and surface-crossing broad phase, with solid-angle evidence above identifying penetration.\n for label,geometry in [('target',target),('candidate',candidate)]:\n  all_edges=np.sort(np.concatenate([geometry['f'][:,[0,1]],geometry['f'][:,[1,2]],geometry['f'][:,[2,0]]]),axis=1)\n  counts=np.unique(all_edges,axis=0,return_counts=True)[1]\n  print(label,'edge_incidence',np.unique(counts,return_counts=True))\n tree_target=BVHTree.FromPolygons(target['v'].tolist(),target['f'].tolist(),all_triangles=True,epsilon=0.0)\n tree_candidate=BVHTree.FromPolygons(candidate['v'].tolist(),candidate['f'].tolist(),all_triangles=True,epsilon=0.0)\n print('surface_overlap_pairs',len(tree_target.overlap(tree_candidate)))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Part_17 feature_distances_mm [3.906249999999929, 7.463615101382674e-14, 6.938893903907228e-14] best_points_mm [  98.95833367 -101.56250011   54.68750011] [  98.95833367 -101.56250011   54.68750011]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 19\\nPart_26 feature_distances_mm [7.812499999999856, 7.812499999999858, 7.812499999999857] best_points_mm [ 1.01562500e+02 -1.56125113e-14  3.12500000e+01] [101.56250034  -7.8125      31.25      ]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 0\\nPart_38 feature_distances_mm [15.624999999999984, 15.624999999999984, 15.624999999999982] best_points_mm [ 93.75       -85.93749898  39.06250034] [ 93.74999932 -85.93749898  23.43750034]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 0\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "806f9aacffd50c74cc05b7d3d9dd544936583ac60de60d7476af4872b4188748"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "f0a1e21d9a04c6b492646edea73e5f1393ffdc1407e73ba06967c533c432feaf"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "6de647cc90f9c34515b4076dc8b9e5f54aaca1be2a9967505123a26d3b2d57b6"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n obj=bpy.data.objects.get(name)\n print(name, None if obj is None else (obj.type,len(obj.data.vertices),len(obj.data.polygons),tuple(obj.dimensions),[list(row) for row in obj.matrix_world]))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "9440fa309bd82feb13af4e819dbe60bf714484707cc28f847016d8e0f38f1f4a",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n obj=bpy.data.objects.get(name)\n print(name, None if obj is None else (obj.type,len(obj.data.vertices),len(obj.data.polygons),tuple(obj.dimensions),[list(row) for row in obj.matrix_world]))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nPart_49 ('MESH', 58, 112, (0.125, 0.09375, 0.03125), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.0703125], [0.0, 1.0, -4.371138828673793e-08, 0.0390625], [0.0, 0.0, 0.0, 1.0]])\\nPart_17 ('MESH', 26, 48, (0.0234375, 0.0234375, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.10546875], [0.0, 1.0, -4.371138828673793e-08, 0.04296875], [0.0, 0.0, 0.0, 1.0]])\\nPart_26 ('MESH', 26, 48, (0.015625, 0.015625, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, 0.0078125], [0.0, 1.0, -4.371138828673793e-08, 0.0390625], [0.0, 0.0, 0.0, 1.0]])\\nPart_38 ('MESH', 26, 48, (0.03125, 0.03125, 0.015625), [[-4.371138828673793e-08, 4.371138828673793e-08, 1.0, 0.1015625], [1.0, 1.910685676922942e-15, 4.371138828673793e-08, -0.0703125], [0.0, 1.0, -4.371138828673793e-08, 0.0546875], [0.0, 0.0, 0.0, 1.0]])\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "4785d428848b666c7be767ed0a01eff7d6a33ea3f57f0fa27185d9345a1f6891",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n vertices=local@matrix[:3,:3].T+matrix[:3,3]\n triangles=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.unique(np.sort(np.concatenate([triangles[:,[0,1]],triangles[:,[1,2]],triangles[:,[2,0]]]),axis=1),axis=0)\n geom[name]={'v':vertices,'f':triangles,'e':edges,'tri':vertices[triangles]}\n print(name,'bbox_mm',vertices.min(axis=0)*1000,vertices.max(axis=0)*1000,'triangles',len(triangles),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n obj.to_mesh_clear()\ndef solid_angles(points,tris):\n rel=tris[None,:,:,:]-points[:,None,None,:]\n lengths=np.linalg.norm(rel,axis=-1)\n numerator=np.einsum('pti,pti->pt',rel[:,:,0],np.cross(rel[:,:,1],rel[:,:,2]))\n denominator=lengths.prod(axis=-1)+np.einsum('pti,pti->pt',rel[:,:,0],rel[:,:,1])*lengths[:,:,2]+np.einsum('pti,pti->pt',rel[:,:,1],rel[:,:,2])*lengths[:,:,0]+np.einsum('pti,pti->pt',rel[:,:,2],rel[:,:,0])*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denominator),axis=1)/(4*np.pi)\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n print(name,'vertex_winding_in_target',np.round(solid_angles(candidate['v'],target['tri']),5).tolist())\n print(name,'target_winding_range',np.min(solid_angles(target['v'],candidate['tri'])),np.max(solid_angles(target['v'],candidate['tri'])))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "ce3f0b2e61cfaa4e83ff24a84112cff1269c06dad44ca8fc3a3a585d63d2d489",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n vertices=local@matrix[:3,:3].T+matrix[:3,3]\n triangles=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.unique(np.sort(np.concatenate([triangles[:,[0,1]],triangles[:,[1,2]],triangles[:,[2,0]]]),axis=1),axis=0)\n geom[name]={'v':vertices,'f':triangles,'e':edges,'tri':vertices[triangles]}\n print(name,'bbox_mm',vertices.min(axis=0)*1000,vertices.max(axis=0)*1000,'triangles',len(triangles),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n obj.to_mesh_clear()\ndef solid_angles(points,tris):\n rel=tris[None,:,:,:]-points[:,None,None,:]\n lengths=np.linalg.norm(rel,axis=-1)\n numerator=np.einsum('pti,pti->pt',rel[:,:,0],np.cross(rel[:,:,1],rel[:,:,2]))\n denominator=lengths.prod(axis=-1)+np.einsum('pti,pti->pt',rel[:,:,0],rel[:,:,1])*lengths[:,:,2]+np.einsum('pti,pti->pt',rel[:,:,1],rel[:,:,2])*lengths[:,:,0]+np.einsum('pti,pti->pt',rel[:,:,2],rel[:,:,0])*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denominator),axis=1)/(4*np.pi)\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n print(name,'vertex_winding_in_target',np.round(solid_angles(candidate['v'],target['tri']),5).tolist())\n print(name,'target_winding_range',np.min(solid_angles(target['v'],candidate['tri'])),np.max(solid_angles(target['v'],candidate['tri'])))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Part_49 bbox_mm [  85.93749522 -132.81250068   -7.81250068] [117.18750478  -7.81249932  85.93750068] triangles 112 modifiers []\\nPart_17 bbox_mm [  93.74999898 -117.18750034   31.24999966] [109.37500102 -93.74999966  54.68750034] triangles 48 modifiers []\\nPart_26 bbox_mm [ 9.37499993e+01 -3.41495237e-07  3.12499997e+01] [109.37500068  15.62500034  46.87500034] triangles 48 modifiers []\\nPart_38 bbox_mm [ 93.74999863 -85.93750034  39.06249966] [109.37500137 -54.68749966  70.31250034] triangles 48 modifiers []\\nPart_17 vertex_winding_in_target [1.0, 0.0, -0.0, 1.0, 1.0, 0.0, 0.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, -0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, -0.0, 0.0, 1.0, 1.0, 1.0]\\nPart_17 target_winding_range -1.5461029701558764e-17 3.533949646070574e-17\\nPart_26 vertex_winding_in_target [-0.0, -0.0, -0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0]\\nPart_26 target_winding_range -7.454425034680117e-18 5.659841230034904e-18\\nPart_38 vertex_winding_in_target [0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0]\\nPart_38 target_winding_range -1.3252311172764653e-17 1.3252311172764653e-17\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "cdef4d342fbfabb5d39b84ecbd17eaf9b7ae32627c96d535df011a19a1a28beb",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def vertex_face_min(points,tris):\n origin=tris[:,0]; side1=tris[:,1]-origin; side2=tris[:,2]-origin\n normals=np.cross(side1,side2); normal2=np.sum(normals*normals,axis=1)\n displacement=points[:,None,:]-origin[None,:,:]\n height=np.einsum('pfi,fi->pf',displacement,normals)/normal2[None,:]\n projected=points[:,None,:]-height[:,:,None]*normals[None,:,:]\n offset=projected-origin[None,:,:]\n aa=np.sum(side1*side1,axis=1); bb=np.sum(side1*side2,axis=1); cc=np.sum(side2*side2,axis=1)\n dd=np.einsum('pfi,fi->pf',offset,side1); ee=np.einsum('pfi,fi->pf',offset,side2)\n denom=aa*cc-bb*bb\n uu=(cc*dd-bb*ee)/denom; vv=(aa*ee-bb*dd)/denom\n valid=(uu>=-1e-12)&(vv>=-1e-12)&(uu+vv<=1+1e-12)\n dist2=np.where(valid,height*height*normal2,np.inf)\n point_index,face_index=np.unravel_index(np.argmin(dist2),dist2.shape)\n return float(dist2[point_index,face_index]),points[point_index],projected[point_index,face_index]\ndef edge_edge_min(first,second):\n first_start=first[:,0,None,:]; second_start=second[None,:,0,:]\n first_dir=(first[:,1]-first[:,0])[:,None,:]; second_dir=(second[:,1]-second[:,0])[None,:,:]\n offset=first_start-second_start\n aa=np.sum(first_dir*first_dir,axis=-1); bb=np.sum(first_dir*second_dir,axis=-1); cc=np.sum(second_dir*second_dir,axis=-1)\n dd=np.sum(first_dir*offset,axis=-1); ee=np.sum(second_dir*offset,axis=-1)\n denom=aa*cc-bb*bb\n safe=np.where(denom>1e-30,denom,1.)\n ss=(bb*ee-cc*dd)/safe; tt=(aa*ee-bb*dd)/safe\n options=[(ss,tt,(denom>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(ee),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(ee),True)]\n best=(float('inf'),None,None)\n for ss,tt,valid in options:\n  point1=first_start+ss[:,:,None]*first_dir; point2=second_start+tt[:,:,None]*second_dir\n  dist2=np.where(valid,np.sum((point1-point2)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),point1[idx],point2[idx])\n return best\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n results=[vertex_face_min(candidate['v'],target['tri']),vertex_face_min(target['v'],candidate['tri']),edge_edge_min(candidate['v'][candidate['e']],target['v'][target['e']])]\n best=min(results,key=lambda item:item[0])\n print(name,'feature_distances_mm',[math.sqrt(item[0])*1000 for item in results],'best_points_mm',best[1]*1000,best[2]*1000)\n # Manifold check and surface-crossing broad phase, with solid-angle evidence above identifying penetration.\n for label,geometry in [('target',target),('candidate',candidate)]:\n  all_edges=np.sort(np.concatenate([geometry['f'][:,[0,1]],geometry['f'][:,[1,2]],geometry['f'][:,[2,0]]]),axis=1)\n  counts=np.unique(all_edges,axis=0,return_counts=True)[1]\n  print(label,'edge_incidence',np.unique(counts,return_counts=True))\n tree_target=BVHTree.FromPolygons(target['v'].tolist(),target['f'].tolist(),all_triangles=True,epsilon=0.0)\n tree_candidate=BVHTree.FromPolygons(candidate['v'].tolist(),candidate['f'].tolist(),all_triangles=True,epsilon=0.0)\n print('surface_overlap_pairs',len(tree_target.overlap(tree_candidate)))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "70a0bc60d3e54ab4bd16c2f0287d6d5e1c64894d7aa9b1065356fca36b513d69",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def vertex_face_min(points,tris):\n origin=tris[:,0]; side1=tris[:,1]-origin; side2=tris[:,2]-origin\n normals=np.cross(side1,side2); normal2=np.sum(normals*normals,axis=1)\n displacement=points[:,None,:]-origin[None,:,:]\n height=np.einsum('pfi,fi->pf',displacement,normals)/normal2[None,:]\n projected=points[:,None,:]-height[:,:,None]*normals[None,:,:]\n offset=projected-origin[None,:,:]\n aa=np.sum(side1*side1,axis=1); bb=np.sum(side1*side2,axis=1); cc=np.sum(side2*side2,axis=1)\n dd=np.einsum('pfi,fi->pf',offset,side1); ee=np.einsum('pfi,fi->pf',offset,side2)\n denom=aa*cc-bb*bb\n uu=(cc*dd-bb*ee)/denom; vv=(aa*ee-bb*dd)/denom\n valid=(uu>=-1e-12)&(vv>=-1e-12)&(uu+vv<=1+1e-12)\n dist2=np.where(valid,height*height*normal2,np.inf)\n point_index,face_index=np.unravel_index(np.argmin(dist2),dist2.shape)\n return float(dist2[point_index,face_index]),points[point_index],projected[point_index,face_index]\ndef edge_edge_min(first,second):\n first_start=first[:,0,None,:]; second_start=second[None,:,0,:]\n first_dir=(first[:,1]-first[:,0])[:,None,:]; second_dir=(second[:,1]-second[:,0])[None,:,:]\n offset=first_start-second_start\n aa=np.sum(first_dir*first_dir,axis=-1); bb=np.sum(first_dir*second_dir,axis=-1); cc=np.sum(second_dir*second_dir,axis=-1)\n dd=np.sum(first_dir*offset,axis=-1); ee=np.sum(second_dir*offset,axis=-1)\n denom=aa*cc-bb*bb\n safe=np.where(denom>1e-30,denom,1.)\n ss=(bb*ee-cc*dd)/safe; tt=(aa*ee-bb*dd)/safe\n options=[(ss,tt,(denom>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(ee),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(ee),True)]\n best=(float('inf'),None,None)\n for ss,tt,valid in options:\n  point1=first_start+ss[:,:,None]*first_dir; point2=second_start+tt[:,:,None]*second_dir\n  dist2=np.where(valid,np.sum((point1-point2)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),point1[idx],point2[idx])\n return best\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n results=[vertex_face_min(candidate['v'],target['tri']),vertex_face_min(target['v'],candidate['tri']),edge_edge_min(candidate['v'][candidate['e']],target['v'][target['e']])]\n best=min(results,key=lambda item:item[0])\n print(name,'feature_distances_mm',[math.sqrt(item[0])*1000 for item in results],'best_points_mm',best[1]*1000,best[2]*1000)\n # Manifold check and surface-crossing broad phase, with solid-angle evidence above identifying penetration.\n for label,geometry in [('target',target),('candidate',candidate)]:\n  all_edges=np.sort(np.concatenate([geometry['f'][:,[0,1]],geometry['f'][:,[1,2]],geometry['f'][:,[2,0]]]),axis=1)\n  counts=np.unique(all_edges,axis=0,return_counts=True)[1]\n  print(label,'edge_incidence',np.unique(counts,return_counts=True))\n tree_target=BVHTree.FromPolygons(target['v'].tolist(),target['f'].tolist(),all_triangles=True,epsilon=0.0)\n tree_candidate=BVHTree.FromPolygons(candidate['v'].tolist(),candidate['f'].tolist(),all_triangles=True,epsilon=0.0)\n print('surface_overlap_pairs',len(tree_target.overlap(tree_candidate)))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Part_17 feature_distances_mm [3.906249999999929, 7.463615101382674e-14, 6.938893903907228e-14] best_points_mm [  98.95833367 -101.56250011   54.68750011] [  98.95833367 -101.56250011   54.68750011]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 19\\nPart_26 feature_distances_mm [7.812499999999856, 7.812499999999858, 7.812499999999857] best_points_mm [ 1.01562500e+02 -1.56125113e-14  3.12500000e+01] [101.56250034  -7.8125      31.25      ]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 0\\nPart_38 feature_distances_mm [15.624999999999984, 15.624999999999984, 15.624999999999982] best_points_mm [ 93.75       -85.93749898  39.06250034] [ 93.74999932 -85.93749898  23.43750034]\\ntarget edge_incidence (array([2]), array([168]))\\ncandidate edge_incidence (array([2]), array([72]))\\nsurface_overlap_pairs 0\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "391f4880d9b6d1e785dce230bdb40707f905d4b003d9c96015943a8aec6e2e36",
+      "source_sha256": "b28ce7965aaf02b609b7f6c4d4af5e5af2783ad0b000d585b647f111f844e9e8"
+    }
+  ]
+}

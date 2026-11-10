@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_d75075748ca048b9a8e54298e197be8c",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c661-28bc-7550-a17c-a378d4b9f9ff",
+        "thread_id": "01a1c661-28bc-7550-a17c-a378d4b9f9ff",
+        "turn_started_at_unix_ms": 1794329618808,
+        "turn_id": "01a1c661-2965-7730-8601-dfaf4a593b52",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "81dcafec303bb867795f4474f5fe9bca2aa85c8e",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c661-28bc-7550-a17c-a378d4b9f9ff",
+      "itemId": "fc_0a9e52ea1ae1094d016af34c285a9087d08495ee37d2eab632",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n vertices=local@matrix[:3,:3].T+matrix[:3,3]\n triangles=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.unique(np.sort(np.concatenate([triangles[:,[0,1]],triangles[:,[1,2]],triangles[:,[2,0]]]),axis=1),axis=0)\n geom[name]={'v':vertices,'f':triangles,'e':edges,'tri':vertices[triangles]}\n print(name,'bbox_mm',vertices.min(axis=0)*1000,vertices.max(axis=0)*1000,'triangles',len(triangles),'modifiers',[(m.name,m.type) for m in obj.modifiers])\n obj.to_mesh_clear()\ndef solid_angles(points,tris):\n rel=tris[None,:,:,:]-points[:,None,None,:]\n lengths=np.linalg.norm(rel,axis=-1)\n numerator=np.einsum('pti,pti->pt',rel[:,:,0],np.cross(rel[:,:,1],rel[:,:,2]))\n denominator=lengths.prod(axis=-1)+np.einsum('pti,pti->pt',rel[:,:,0],rel[:,:,1])*lengths[:,:,2]+np.einsum('pti,pti->pt',rel[:,:,1],rel[:,:,2])*lengths[:,:,0]+np.einsum('pti,pti->pt',rel[:,:,2],rel[:,:,0])*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denominator),axis=1)/(4*np.pi)\nfor name in names[1:]:\n target=geom['Part_49']; candidate=geom[name]\n print(name,'vertex_winding_in_target',np.round(solid_angles(candidate['v'],target['tri']),5).tolist())\n print(name,'target_winding_range',np.min(solid_angles(target['v'],candidate['tri'])),np.max(solid_angles(target['v'],candidate['tri'])))"
+    }
+  }
+}

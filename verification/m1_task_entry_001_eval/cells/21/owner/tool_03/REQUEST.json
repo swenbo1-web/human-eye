@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_2f80aef874384367b17a1e85937321a5",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c672-9fdf-7cc3-961a-18223aeae56f",
+        "thread_id": "01a1c672-9fdf-7cc3-961a-18223aeae56f",
+        "turn_started_at_unix_ms": 1794330763400,
+        "turn_id": "01a1c672-a081-7140-be5d-0541cd9ec7e0",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "81dcafec303bb867795f4474f5fe9bca2aa85c8e",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c672-9fdf-7cc3-961a-18223aeae56f",
+      "itemId": "fc_0286b0f636b339cb016af350a893f487d0994c0b438dbe7144",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def projected_vertex_faces(vertices, triangles):\n    base=triangles[:,0]; side1=triangles[:,1]-base; side2=triangles[:,2]-base\n    normal=np.cross(side1,side2); norm2=np.einsum('ij,ij->i',normal,normal)\n    delta=vertices[:,None,:]-base[None,:,:]\n    signed=np.einsum('vti,ti->vt',delta,normal)\n    projected=vertices[:,None,:]-np.divide(signed,norm2[None,:],out=np.zeros_like(signed),where=norm2[None,:]>0)[:,:,None]*normal[None,:,:]\n    rel=projected-base[None,:,:]\n    aa=np.einsum('ij,ij->i',side1,side1); ab=np.einsum('ij,ij->i',side1,side2); bb=np.einsum('ij,ij->i',side2,side2)\n    ra=np.einsum('vti,ti->vt',rel,side1); rb=np.einsum('vti,ti->vt',rel,side2)\n    det=aa*bb-ab*ab\n    u=np.divide(bb*ra-ab*rb,det[None,:],out=np.zeros_like(ra),where=det[None,:]>0)\n    v=np.divide(aa*rb-ab*ra,det[None,:],out=np.zeros_like(rb),where=det[None,:]>0)\n    valid=(norm2[None,:]>0)&(u>=0)&(v>=0)&(u+v<=1)\n    dist2=np.where(valid,np.sum((vertices[:,None,:]-projected)**2,axis=2),np.inf)\n    index=np.unravel_index(np.argmin(dist2),dist2.shape)\n    return float(dist2[index]),vertices[index[0]].copy(),projected[index].copy(),('vertex-face',int(index[0]),int(index[1]))\ndef vertex_edges(vertices, edges):\n    direction=edges[:,1]-edges[:,0]; denom=np.sum(direction*direction,axis=1)\n    rel=vertices[:,None,:]-edges[None,:,0,:]\n    t=np.clip(np.divide(np.einsum('vei,ei->ve',rel,direction),denom[None,:],out=np.zeros(rel.shape[:2]),where=denom[None,:]>0),0,1)\n    q=edges[None,:,0,:]+t[:,:,None]*direction[None,:,:]\n    d2=np.sum((vertices[:,None,:]-q)**2,axis=2)\n    idx=np.unravel_index(np.argmin(d2),d2.shape)\n    return float(d2[idx]),vertices[idx[0]].copy(),q[idx].copy(),('vertex-edge',int(idx[0]),int(idx[1]))\ndef interior_edges(edges_a,edges_b):\n    first=edges_a[:,1]-edges_a[:,0]; second=edges_b[:,1]-edges_b[:,0]\n    delta=edges_a[:,None,0,:]-edges_b[None,:,0,:]\n    aa=np.sum(first*first,axis=1)[:,None]; bb=first@second.T; cc=np.sum(second*second,axis=1)[None,:]\n    dd=np.einsum('abi,ai->ab',delta,first); ee=np.einsum('abi,bi->ab',delta,second)\n    determinant=aa*cc-bb*bb\n    s=np.divide(bb*ee-cc*dd,determinant,out=np.zeros_like(dd),where=determinant>0)\n    t=np.divide(aa*ee-bb*dd,determinant,out=np.zeros_like(dd),where=determinant>0)\n    valid=(determinant>0)&(s>=0)&(s<=1)&(t>=0)&(t<=1)\n    p=edges_a[:,None,0,:]+s[:,:,None]*first[:,None,:]\n    q=edges_b[None,:,0,:]+t[:,:,None]*second[None,:,:]\n    dist2=np.where(valid,np.sum((p-q)**2,axis=2),np.inf)\n    idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n    return float(dist2[idx]),p[idx].copy(),q[idx].copy(),('edge-edge',int(idx[0]),int(idx[1]),float(s[idx]),float(t[idx]))\ndef unique_edges(faces):\n    return np.unique(np.sort(np.concatenate([faces[:,[0,1]],faces[:,[1,2]],faces[:,[2,0]]]),axis=1),axis=0)\n_target_vertices,_target_faces=_geo['Mesh_DDBB95']\n_target_triangles=_target_vertices[_target_faces]\n_target_edgeids=unique_edges(_target_faces)\n_target_edges=_target_vertices[_target_edgeids]\n_results={}\nfor name,(vertices,faces) in _geo.items():\n    if name=='Mesh_DDBB95': continue\n    triangles=vertices[faces]; edgeids=unique_edges(faces); edges=vertices[edgeids]\n    candidates=[projected_vertex_faces(_target_vertices,triangles),vertex_edges(_target_vertices,edges),interior_edges(_target_edges,edges)]\n    for fn,args in [(projected_vertex_faces,(vertices,_target_triangles)),(vertex_edges,(vertices,_target_edges))]:\n        distance2,point_other,point_target,feature=fn(*args)\n        candidates.append((distance2,point_target,point_other,('reversed',feature)))\n    best=min(candidates,key=lambda item:item[0]); _results[name]=best\n    print(name,'distance_mm',format(math.sqrt(best[0])*1000,'.12f'),'target_point_m',best[1].tolist(),'other_point_m',best[2].tolist(),'feature',best[3], 'unique_edges',len(edgeids))\nprint('bbox_z_separation_mm',min(v[:,2].min() for name,(v,f) in _geo.items() if name!='Mesh_DDBB95')*1000-_target_vertices[:,2].max()*1000)\n"
+    }
+  }
+}

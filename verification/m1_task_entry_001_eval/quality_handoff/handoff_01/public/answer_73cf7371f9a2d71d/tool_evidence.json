@@ -1,0 +1,446 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy\nobjs=[o for o in bpy.context.scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nprint('target',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs if o.name=='Mesh_DDBB95'])\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"mesh_count 6\\ntarget [('Mesh_DDBB95', 40, 56)]\\nunits METRIC 1.0\\nmeshes [('Mesh_8CC127', 40, 56), ('Mesh_DDBB95', 40, 56), ('Mesh_A83E57', 40, 56), ('Mesh_79F58B', 40, 56), ('Mesh_879214', 40, 56), ('Mesh_696772', 40, 56)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "fa0273f55c534ef5b8212987b04a226a6327b59c5f2e54c867027717f20e2a43"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "28c32b5ebcb2e41287cb59b25ddd7f6a0060526ca3e3c8e490f5b3e117a7b80c"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "8be307c3772eca30210d42e5046e51027846ebe0e93e0d560905814761a35e4e"
+        }
+      ]
+    },
+    {
+      "is_error": true,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "candidates": [
+                {
+                  "name": "Mesh_8CC127"
+                },
+                {
+                  "name": "Mesh_A83E57"
+                },
+                {
+                  "name": "Mesh_79F58B"
+                },
+                {
+                  "name": "Mesh_879214"
+                },
+                {
+                  "name": "Mesh_696772"
+                }
+              ],
+              "max_exact_pairs": 5,
+              "mode": "task",
+              "requested_facts": [
+                "surface_proximity",
+                "nearest_witness"
+              ],
+              "target": {
+                "name": "Mesh_DDBB95"
+              }
+            },
+            "response_detail": "full"
+          },
+          "name": "human_eye_scene_observe"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"status\": \"error\", \"error\": \"task query requires only mode, objects and requested_facts\", \"tool_outcome\": \"unknown\", \"automatic_retry\": false, \"executed\": false, \"verified\": false, \"execution_verified\": false, \"execution_status\": \"not_executed\", \"host_mutation_started\": false, \"allow_action\": false, \"execution_authority\": false, \"retry_authorized\": false, \"connector_state_write_attempted\": false, \"connector_state_write_committed\": false, \"connector_state_write_status\": \"not_attempted\", \"connector_state_write_attempts\": 0, \"connector_state_write_commits\": 0, \"connector_state_write_unknown\": false, \"state_write_scope\": \"connector_state_json_not_audit_or_lock_sidecars\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": true
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "37eb1d068756a11cf01ee48eb576781a32d30c3845915cac16354282e1ab4fd5"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "28cf26eb246d925e151534f915190f7395ac56cc96fa21ae809373b969ba9f99"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "2b267947f7ba7477692fc750460613b380b088cdb4842dde705269756d8a24d0"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import numpy as np\nfrom math import sqrt\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ntriangles={}\nfor obj in objs:\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64)\n    matrix=np.array(obj.evaluated_get(depsgraph).matrix_world,dtype=np.float64)\n    world=local@matrix[:3,:3].T+matrix[:3,3]\n    triangles[obj.name]=world[np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles])]\n    evaluated.to_mesh_clear()\nprint('evaluated_triangle_counts', {name:len(tris) for name,tris in triangles.items()})\ndef vertex_face_candidates(points,faces):\n    starts=faces[:,0]; first=faces[:,1]-starts; second=faces[:,2]-starts\n    normals=np.cross(first,second); normal_squared=np.einsum('ij,ij->i',normals,normals)\n    offsets=points[:,None,:]-starts[None,:,:]\n    signed=np.einsum('pfi,fi->pf',offsets,normals)/normal_squared\n    projection=points[:,None,:]-signed[:,:,None]*normals[None,:,:]\n    relative=projection-starts[None,:,:]\n    dot00=np.einsum('fi,fi->f',first,first); dot01=np.einsum('fi,fi->f',first,second); dot11=np.einsum('fi,fi->f',second,second)\n    dot20=np.einsum('pfi,fi->pf',relative,first); dot21=np.einsum('pfi,fi->pf',relative,second)\n    denominator=dot00*dot11-dot01*dot01\n    bary_first=(dot11*dot20-dot01*dot21)/denominator\n    bary_second=(dot00*dot21-dot01*dot20)/denominator\n    valid=(bary_first>=-1e-13)&(bary_second>=-1e-13)&(bary_first+bary_second<=1+1e-13)&(normal_squared[None,:]>0)\n    squared=np.sum((points[:,None,:]-projection)**2,axis=2)\n    squared[~valid]=np.inf\n    index=np.unravel_index(np.argmin(squared),squared.shape)\n    return float(squared[index]), points[index[0]],projection[index]\ndef edge_candidates(faces):\n    return np.concatenate([faces[:,[0,1]],faces[:,[1,2]],faces[:,[2,0]]],axis=0)\ndef surface_distance(left,right):\n    candidates=[]\n    candidates.append(vertex_face_candidates(left.reshape(-1,3),right))\n    reverse=vertex_face_candidates(right.reshape(-1,3),left)\n    candidates.append((reverse[0],reverse[2],reverse[1]))\n    left_edges=edge_candidates(left); right_edges=edge_candidates(right)\n    for edge in left_edges:\n        origin=edge[0]; direction=edge[1]-edge[0]\n        other_origins=right_edges[:,0]; other_directions=right_edges[:,1]-other_origins\n        offset=origin-other_origins\n        aa=float(direction@direction); bb=other_directions@direction; cc=np.einsum('ij,ij->i',other_directions,other_directions)\n        dd=offset@direction; ee=np.einsum('ij,ij->i',other_directions,offset)\n        denom=aa*cc-bb*bb\n        first=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        second=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        valid=(first>=0)&(first<=1)&(second>=0)&(second<=1)&(abs(denom)>1e-28)\n        first_points=origin+first[:,None]*direction\n        second_points=other_origins+second[:,None]*other_directions\n        squared=np.sum((first_points-second_points)**2,axis=1); squared[~valid]=np.inf\n        idx=np.argmin(squared)\n        candidates.append((float(squared[idx]),first_points[idx],second_points[idx]))\n        for endpoint in edge:\n            parameters=np.clip(np.einsum('ij,ij->i',endpoint-other_origins,other_directions)/cc,0,1)\n            projections=other_origins+parameters[:,None]*other_directions\n            distances=np.sum((endpoint-projections)**2,axis=1); idx=np.argmin(distances)\n            candidates.append((float(distances[idx]),endpoint,projections[idx]))\n        parameters=np.clip((other_origins-origin)@direction/aa,0,1)\n        projections=origin+parameters[:,None]*direction\n        distances=np.sum((other_origins-projections)**2,axis=1); idx=np.argmin(distances)\n        candidates.append((float(distances[idx]),projections[idx],other_origins[idx]))\n    best=min(candidates,key=lambda candidate:candidate[0])\n    return sqrt(best[0]),best[1],best[2]\nresults={}\nfor name,tris in triangles.items():\n    if name!='Mesh_DDBB95':\n        result=surface_distance(triangles['Mesh_DDBB95'],tris)\n        results[name]=result\n        print(name,'distance_mm',format(result[0]*1000,'.12f'),'witness_target_m',result[1].tolist(),'witness_other_m',result[2].tolist())\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"evaluated_triangle_counts {'Mesh_8CC127': 56, 'Mesh_DDBB95': 56, 'Mesh_A83E57': 56, 'Mesh_79F58B': 56, 'Mesh_879214': 56, 'Mesh_696772': 56}\\nMesh_8CC127 distance_mm 7.812500000000 witness_target_m [0.0, 0.0, 0.0] witness_other_m [0.0, 0.0, 0.0078125]\\nMesh_A83E57 distance_mm 11.718750000000 witness_target_m [0.0, 0.0, 0.0] witness_other_m [0.0, 0.0, 0.01171875]\\nMesh_79F58B distance_mm 9.765625000000 witness_target_m [-0.25, 0.0, 0.0] witness_other_m [-0.255859375, 0.0, 0.0078125]\\nMesh_879214 distance_mm 8.734640537109 witness_target_m [0.25, 0.0, 0.0] witness_other_m [0.25390625, 0.0, 0.0078125]\\nMesh_696772 distance_mm 8.734640537109 witness_target_m [0.125, 0.0, 0.0] witness_other_m [0.125, 0.00390625, 0.0078125]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "69c9d03d2cc041f3c496fdebf7359bacee887d57d0fd3dc59f3bb29962a5d267"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "980038b342045634864aa897e9a0c5a29b5ddf2b63e709d11ffd7826f8eea4af"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "860e58f1c801711cf8b251ae1df8a1ff4566c036e25478781a3c8f8570a6b308"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def edge_face_crossings(source,destination):\n    edges=edge_candidates(source)\n    edge_directions=edges[:,1]-edges[:,0]\n    first=destination[:,1]-destination[:,0]\n    second=destination[:,2]-destination[:,0]\n    normals=np.cross(first,second)\n    denominators=edge_directions@normals.T\n    offsets=destination[None,:,0,:]-edges[:,None,0,:]\n    numerators=np.einsum('efi,fi->ef',offsets,normals)\n    parameter=np.divide(numerators,denominators,out=np.full_like(numerators,np.inf),where=abs(denominators)>1e-20)\n    possible=np.argwhere((parameter>=0)&(parameter<=1))\n    count=0\n    for edge_index,face_index in possible:\n        point=edges[edge_index,0]+parameter[edge_index,face_index]*edge_directions[edge_index]\n        relative=point-destination[face_index,0]\n        axis1=first[face_index]; axis2=second[face_index]\n        dot00=axis1@axis1; dot01=axis1@axis2; dot11=axis2@axis2\n        denom=dot00*dot11-dot01*dot01\n        bary1=(dot11*(relative@axis1)-dot01*(relative@axis2))/denom\n        bary2=(dot00*(relative@axis2)-dot01*(relative@axis1))/denom\n        if bary1>=-1e-12 and bary2>=-1e-12 and bary1+bary2<=1+1e-12:\n            count+=1\n    return count\nfor name,tris in triangles.items():\n    areas=np.linalg.norm(np.cross(tris[:,1]-tris[:,0],tris[:,2]-tris[:,0]),axis=1)\n    print(name,'min_double_area_m2',float(areas.min()),'bounds_m',tris.reshape(-1,3).min(axis=0).tolist(),tris.reshape(-1,3).max(axis=0).tolist())\n    if name!='Mesh_DDBB95':\n        print('edge_face_intersections',edge_face_crossings(triangles['Mesh_DDBB95'],tris)+edge_face_crossings(tris,triangles['Mesh_DDBB95']))\nprint('scene_geometry_float64_coordinate_max_m',max(float(np.max(np.abs(tris))) for tris in triangles.values()))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_8CC127 min_double_area_m2 0.008734640537108554 bounds_m [0.0, -0.25, 0.0078125] [0.5, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_DDBB95 min_double_area_m2 0.008734640537108554 bounds_m [-0.25, -0.5, -0.375] [0.25, 0.0, 0.0]\\nMesh_A83E57 min_double_area_m2 0.008734640537108554 bounds_m [0.0, -0.25, 0.01171875] [0.5, 0.25, 0.38671875]\\nedge_face_intersections 0\\nMesh_79F58B min_double_area_m2 0.008734640537108554 bounds_m [-0.755859375, -0.25, 0.0078125] [-0.255859375, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_879214 min_double_area_m2 0.008734640537108554 bounds_m [0.25390625, -0.25, 0.0078125] [0.75390625, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_696772 min_double_area_m2 0.008734640537108554 bounds_m [-0.25, 0.00390625, 0.0078125] [0.25, 0.50390625, 0.3828125]\\nedge_face_intersections 0\\nscene_geometry_float64_coordinate_max_m 0.755859375\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "2ef16a8d66736ec3b7fcf15749f126e12db17f54c1b559bd37e47f5d87b060a7"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "46a3d1a11ac9166521b9fb4ae1a997fe720c7bed415ae49cb14f1bd19345ef4f"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "af17f6e3d290b8071e6ad196e6ce511f994a32f3fbbc4b6f1ac9846d096dfc4e"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy\nobjs=[o for o in bpy.context.scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nprint('target',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs if o.name=='Mesh_DDBB95'])\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "54a9e96d74ed5396adf4c697263d0cad3171523b5ffcbf9029d7ea9e610bf9e2",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy\nobjs=[o for o in bpy.context.scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nprint('target',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs if o.name=='Mesh_DDBB95'])\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nprint('meshes',[(o.name,len(o.data.vertices),len(o.data.polygons)) for o in objs])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"mesh_count 6\\ntarget [('Mesh_DDBB95', 40, 56)]\\nunits METRIC 1.0\\nmeshes [('Mesh_8CC127', 40, 56), ('Mesh_DDBB95', 40, 56), ('Mesh_A83E57', 40, 56), ('Mesh_79F58B', 40, 56), ('Mesh_879214', 40, 56), ('Mesh_696772', 40, 56)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "27337b62c11ea932131fd0691b6a512845a8e2a40537d56f0307f83fe33e910e",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Mesh_8CC127"
+              },
+              {
+                "name": "Mesh_A83E57"
+              },
+              {
+                "name": "Mesh_79F58B"
+              },
+              {
+                "name": "Mesh_879214"
+              },
+              {
+                "name": "Mesh_696772"
+              }
+            ],
+            "max_exact_pairs": 5,
+            "mode": "task",
+            "requested_facts": [
+              "surface_proximity",
+              "nearest_witness"
+            ],
+            "target": {
+              "name": "Mesh_DDBB95"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "525d1df041fcace2ded7f521e8e9664dd244ffe67a6111bb890197a8898c7e71",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Mesh_8CC127"
+              },
+              {
+                "name": "Mesh_A83E57"
+              },
+              {
+                "name": "Mesh_79F58B"
+              },
+              {
+                "name": "Mesh_879214"
+              },
+              {
+                "name": "Mesh_696772"
+              }
+            ],
+            "max_exact_pairs": 5,
+            "mode": "task",
+            "requested_facts": [
+              "surface_proximity",
+              "nearest_witness"
+            ],
+            "target": {
+              "name": "Mesh_DDBB95"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"status\": \"error\", \"error\": \"task query requires only mode, objects and requested_facts\", \"tool_outcome\": \"unknown\", \"automatic_retry\": false, \"executed\": false, \"verified\": false, \"execution_verified\": false, \"execution_status\": \"not_executed\", \"host_mutation_started\": false, \"allow_action\": false, \"execution_authority\": false, \"retry_authorized\": false, \"connector_state_write_attempted\": false, \"connector_state_write_committed\": false, \"connector_state_write_status\": \"not_attempted\", \"connector_state_write_attempts\": 0, \"connector_state_write_commits\": 0, \"connector_state_write_unknown\": false, \"state_write_scope\": \"connector_state_json_not_audit_or_lock_sidecars\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "failed",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "d40ff9c6ee881581ecc3a1707475bda53bafe5c4dc500febd202ca7acec74bc8",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nfrom math import sqrt\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ntriangles={}\nfor obj in objs:\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64)\n    matrix=np.array(obj.evaluated_get(depsgraph).matrix_world,dtype=np.float64)\n    world=local@matrix[:3,:3].T+matrix[:3,3]\n    triangles[obj.name]=world[np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles])]\n    evaluated.to_mesh_clear()\nprint('evaluated_triangle_counts', {name:len(tris) for name,tris in triangles.items()})\ndef vertex_face_candidates(points,faces):\n    starts=faces[:,0]; first=faces[:,1]-starts; second=faces[:,2]-starts\n    normals=np.cross(first,second); normal_squared=np.einsum('ij,ij->i',normals,normals)\n    offsets=points[:,None,:]-starts[None,:,:]\n    signed=np.einsum('pfi,fi->pf',offsets,normals)/normal_squared\n    projection=points[:,None,:]-signed[:,:,None]*normals[None,:,:]\n    relative=projection-starts[None,:,:]\n    dot00=np.einsum('fi,fi->f',first,first); dot01=np.einsum('fi,fi->f',first,second); dot11=np.einsum('fi,fi->f',second,second)\n    dot20=np.einsum('pfi,fi->pf',relative,first); dot21=np.einsum('pfi,fi->pf',relative,second)\n    denominator=dot00*dot11-dot01*dot01\n    bary_first=(dot11*dot20-dot01*dot21)/denominator\n    bary_second=(dot00*dot21-dot01*dot20)/denominator\n    valid=(bary_first>=-1e-13)&(bary_second>=-1e-13)&(bary_first+bary_second<=1+1e-13)&(normal_squared[None,:]>0)\n    squared=np.sum((points[:,None,:]-projection)**2,axis=2)\n    squared[~valid]=np.inf\n    index=np.unravel_index(np.argmin(squared),squared.shape)\n    return float(squared[index]), points[index[0]],projection[index]\ndef edge_candidates(faces):\n    return np.concatenate([faces[:,[0,1]],faces[:,[1,2]],faces[:,[2,0]]],axis=0)\ndef surface_distance(left,right):\n    candidates=[]\n    candidates.append(vertex_face_candidates(left.reshape(-1,3),right))\n    reverse=vertex_face_candidates(right.reshape(-1,3),left)\n    candidates.append((reverse[0],reverse[2],reverse[1]))\n    left_edges=edge_candidates(left); right_edges=edge_candidates(right)\n    for edge in left_edges:\n        origin=edge[0]; direction=edge[1]-edge[0]\n        other_origins=right_edges[:,0]; other_directions=right_edges[:,1]-other_origins\n        offset=origin-other_origins\n        aa=float(direction@direction); bb=other_directions@direction; cc=np.einsum('ij,ij->i',other_directions,other_directions)\n        dd=offset@direction; ee=np.einsum('ij,ij->i',other_directions,offset)\n        denom=aa*cc-bb*bb\n        first=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        second=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        valid=(first>=0)&(first<=1)&(second>=0)&(second<=1)&(abs(denom)>1e-28)\n        first_points=origin+first[:,None]*direction\n        second_points=other_origins+second[:,None]*other_directions\n        squared=np.sum((first_points-second_points)**2,axis=1); squared[~valid]=np.inf\n        idx=np.argmin(squared)\n        candidates.append((float(squared[idx]),first_points[idx],second_points[idx]))\n        for endpoint in edge:\n            parameters=np.clip(np.einsum('ij,ij->i',endpoint-other_origins,other_directions)/cc,0,1)\n            projections=other_origins+parameters[:,None]*other_directions\n            distances=np.sum((endpoint-projections)**2,axis=1); idx=np.argmin(distances)\n            candidates.append((float(distances[idx]),endpoint,projections[idx]))\n        parameters=np.clip((other_origins-origin)@direction/aa,0,1)\n        projections=origin+parameters[:,None]*direction\n        distances=np.sum((other_origins-projections)**2,axis=1); idx=np.argmin(distances)\n        candidates.append((float(distances[idx]),projections[idx],other_origins[idx]))\n    best=min(candidates,key=lambda candidate:candidate[0])\n    return sqrt(best[0]),best[1],best[2]\nresults={}\nfor name,tris in triangles.items():\n    if name!='Mesh_DDBB95':\n        result=surface_distance(triangles['Mesh_DDBB95'],tris)\n        results[name]=result\n        print(name,'distance_mm',format(result[0]*1000,'.12f'),'witness_target_m',result[1].tolist(),'witness_other_m',result[2].tolist())\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "c161692842d947a6f124e8f879055ae0b8aa6511b19a7684f30fc3dc47311c2a",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nfrom math import sqrt\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ntriangles={}\nfor obj in objs:\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64)\n    matrix=np.array(obj.evaluated_get(depsgraph).matrix_world,dtype=np.float64)\n    world=local@matrix[:3,:3].T+matrix[:3,3]\n    triangles[obj.name]=world[np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles])]\n    evaluated.to_mesh_clear()\nprint('evaluated_triangle_counts', {name:len(tris) for name,tris in triangles.items()})\ndef vertex_face_candidates(points,faces):\n    starts=faces[:,0]; first=faces[:,1]-starts; second=faces[:,2]-starts\n    normals=np.cross(first,second); normal_squared=np.einsum('ij,ij->i',normals,normals)\n    offsets=points[:,None,:]-starts[None,:,:]\n    signed=np.einsum('pfi,fi->pf',offsets,normals)/normal_squared\n    projection=points[:,None,:]-signed[:,:,None]*normals[None,:,:]\n    relative=projection-starts[None,:,:]\n    dot00=np.einsum('fi,fi->f',first,first); dot01=np.einsum('fi,fi->f',first,second); dot11=np.einsum('fi,fi->f',second,second)\n    dot20=np.einsum('pfi,fi->pf',relative,first); dot21=np.einsum('pfi,fi->pf',relative,second)\n    denominator=dot00*dot11-dot01*dot01\n    bary_first=(dot11*dot20-dot01*dot21)/denominator\n    bary_second=(dot00*dot21-dot01*dot20)/denominator\n    valid=(bary_first>=-1e-13)&(bary_second>=-1e-13)&(bary_first+bary_second<=1+1e-13)&(normal_squared[None,:]>0)\n    squared=np.sum((points[:,None,:]-projection)**2,axis=2)\n    squared[~valid]=np.inf\n    index=np.unravel_index(np.argmin(squared),squared.shape)\n    return float(squared[index]), points[index[0]],projection[index]\ndef edge_candidates(faces):\n    return np.concatenate([faces[:,[0,1]],faces[:,[1,2]],faces[:,[2,0]]],axis=0)\ndef surface_distance(left,right):\n    candidates=[]\n    candidates.append(vertex_face_candidates(left.reshape(-1,3),right))\n    reverse=vertex_face_candidates(right.reshape(-1,3),left)\n    candidates.append((reverse[0],reverse[2],reverse[1]))\n    left_edges=edge_candidates(left); right_edges=edge_candidates(right)\n    for edge in left_edges:\n        origin=edge[0]; direction=edge[1]-edge[0]\n        other_origins=right_edges[:,0]; other_directions=right_edges[:,1]-other_origins\n        offset=origin-other_origins\n        aa=float(direction@direction); bb=other_directions@direction; cc=np.einsum('ij,ij->i',other_directions,other_directions)\n        dd=offset@direction; ee=np.einsum('ij,ij->i',other_directions,offset)\n        denom=aa*cc-bb*bb\n        first=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        second=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=abs(denom)>1e-28)\n        valid=(first>=0)&(first<=1)&(second>=0)&(second<=1)&(abs(denom)>1e-28)\n        first_points=origin+first[:,None]*direction\n        second_points=other_origins+second[:,None]*other_directions\n        squared=np.sum((first_points-second_points)**2,axis=1); squared[~valid]=np.inf\n        idx=np.argmin(squared)\n        candidates.append((float(squared[idx]),first_points[idx],second_points[idx]))\n        for endpoint in edge:\n            parameters=np.clip(np.einsum('ij,ij->i',endpoint-other_origins,other_directions)/cc,0,1)\n            projections=other_origins+parameters[:,None]*other_directions\n            distances=np.sum((endpoint-projections)**2,axis=1); idx=np.argmin(distances)\n            candidates.append((float(distances[idx]),endpoint,projections[idx]))\n        parameters=np.clip((other_origins-origin)@direction/aa,0,1)\n        projections=origin+parameters[:,None]*direction\n        distances=np.sum((other_origins-projections)**2,axis=1); idx=np.argmin(distances)\n        candidates.append((float(distances[idx]),projections[idx],other_origins[idx]))\n    best=min(candidates,key=lambda candidate:candidate[0])\n    return sqrt(best[0]),best[1],best[2]\nresults={}\nfor name,tris in triangles.items():\n    if name!='Mesh_DDBB95':\n        result=surface_distance(triangles['Mesh_DDBB95'],tris)\n        results[name]=result\n        print(name,'distance_mm',format(result[0]*1000,'.12f'),'witness_target_m',result[1].tolist(),'witness_other_m',result[2].tolist())\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"evaluated_triangle_counts {'Mesh_8CC127': 56, 'Mesh_DDBB95': 56, 'Mesh_A83E57': 56, 'Mesh_79F58B': 56, 'Mesh_879214': 56, 'Mesh_696772': 56}\\nMesh_8CC127 distance_mm 7.812500000000 witness_target_m [0.0, 0.0, 0.0] witness_other_m [0.0, 0.0, 0.0078125]\\nMesh_A83E57 distance_mm 11.718750000000 witness_target_m [0.0, 0.0, 0.0] witness_other_m [0.0, 0.0, 0.01171875]\\nMesh_79F58B distance_mm 9.765625000000 witness_target_m [-0.25, 0.0, 0.0] witness_other_m [-0.255859375, 0.0, 0.0078125]\\nMesh_879214 distance_mm 8.734640537109 witness_target_m [0.25, 0.0, 0.0] witness_other_m [0.25390625, 0.0, 0.0078125]\\nMesh_696772 distance_mm 8.734640537109 witness_target_m [0.125, 0.0, 0.0] witness_other_m [0.125, 0.00390625, 0.0078125]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "aa7df338dc1290f20efdc9839eef4675bd45c46c35812193b1a9f5a1cf56d8db",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def edge_face_crossings(source,destination):\n    edges=edge_candidates(source)\n    edge_directions=edges[:,1]-edges[:,0]\n    first=destination[:,1]-destination[:,0]\n    second=destination[:,2]-destination[:,0]\n    normals=np.cross(first,second)\n    denominators=edge_directions@normals.T\n    offsets=destination[None,:,0,:]-edges[:,None,0,:]\n    numerators=np.einsum('efi,fi->ef',offsets,normals)\n    parameter=np.divide(numerators,denominators,out=np.full_like(numerators,np.inf),where=abs(denominators)>1e-20)\n    possible=np.argwhere((parameter>=0)&(parameter<=1))\n    count=0\n    for edge_index,face_index in possible:\n        point=edges[edge_index,0]+parameter[edge_index,face_index]*edge_directions[edge_index]\n        relative=point-destination[face_index,0]\n        axis1=first[face_index]; axis2=second[face_index]\n        dot00=axis1@axis1; dot01=axis1@axis2; dot11=axis2@axis2\n        denom=dot00*dot11-dot01*dot01\n        bary1=(dot11*(relative@axis1)-dot01*(relative@axis2))/denom\n        bary2=(dot00*(relative@axis2)-dot01*(relative@axis1))/denom\n        if bary1>=-1e-12 and bary2>=-1e-12 and bary1+bary2<=1+1e-12:\n            count+=1\n    return count\nfor name,tris in triangles.items():\n    areas=np.linalg.norm(np.cross(tris[:,1]-tris[:,0],tris[:,2]-tris[:,0]),axis=1)\n    print(name,'min_double_area_m2',float(areas.min()),'bounds_m',tris.reshape(-1,3).min(axis=0).tolist(),tris.reshape(-1,3).max(axis=0).tolist())\n    if name!='Mesh_DDBB95':\n        print('edge_face_intersections',edge_face_crossings(triangles['Mesh_DDBB95'],tris)+edge_face_crossings(tris,triangles['Mesh_DDBB95']))\nprint('scene_geometry_float64_coordinate_max_m',max(float(np.max(np.abs(tris))) for tris in triangles.values()))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "b7914e098f419f4c9fd5f96e322a6dc83172343442ae3d0aa0f0cddab00e8243",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def edge_face_crossings(source,destination):\n    edges=edge_candidates(source)\n    edge_directions=edges[:,1]-edges[:,0]\n    first=destination[:,1]-destination[:,0]\n    second=destination[:,2]-destination[:,0]\n    normals=np.cross(first,second)\n    denominators=edge_directions@normals.T\n    offsets=destination[None,:,0,:]-edges[:,None,0,:]\n    numerators=np.einsum('efi,fi->ef',offsets,normals)\n    parameter=np.divide(numerators,denominators,out=np.full_like(numerators,np.inf),where=abs(denominators)>1e-20)\n    possible=np.argwhere((parameter>=0)&(parameter<=1))\n    count=0\n    for edge_index,face_index in possible:\n        point=edges[edge_index,0]+parameter[edge_index,face_index]*edge_directions[edge_index]\n        relative=point-destination[face_index,0]\n        axis1=first[face_index]; axis2=second[face_index]\n        dot00=axis1@axis1; dot01=axis1@axis2; dot11=axis2@axis2\n        denom=dot00*dot11-dot01*dot01\n        bary1=(dot11*(relative@axis1)-dot01*(relative@axis2))/denom\n        bary2=(dot00*(relative@axis2)-dot01*(relative@axis1))/denom\n        if bary1>=-1e-12 and bary2>=-1e-12 and bary1+bary2<=1+1e-12:\n            count+=1\n    return count\nfor name,tris in triangles.items():\n    areas=np.linalg.norm(np.cross(tris[:,1]-tris[:,0],tris[:,2]-tris[:,0]),axis=1)\n    print(name,'min_double_area_m2',float(areas.min()),'bounds_m',tris.reshape(-1,3).min(axis=0).tolist(),tris.reshape(-1,3).max(axis=0).tolist())\n    if name!='Mesh_DDBB95':\n        print('edge_face_intersections',edge_face_crossings(triangles['Mesh_DDBB95'],tris)+edge_face_crossings(tris,triangles['Mesh_DDBB95']))\nprint('scene_geometry_float64_coordinate_max_m',max(float(np.max(np.abs(tris))) for tris in triangles.values()))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Mesh_8CC127 min_double_area_m2 0.008734640537108554 bounds_m [0.0, -0.25, 0.0078125] [0.5, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_DDBB95 min_double_area_m2 0.008734640537108554 bounds_m [-0.25, -0.5, -0.375] [0.25, 0.0, 0.0]\\nMesh_A83E57 min_double_area_m2 0.008734640537108554 bounds_m [0.0, -0.25, 0.01171875] [0.5, 0.25, 0.38671875]\\nedge_face_intersections 0\\nMesh_79F58B min_double_area_m2 0.008734640537108554 bounds_m [-0.755859375, -0.25, 0.0078125] [-0.255859375, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_879214 min_double_area_m2 0.008734640537108554 bounds_m [0.25390625, -0.25, 0.0078125] [0.75390625, 0.25, 0.3828125]\\nedge_face_intersections 0\\nMesh_696772 min_double_area_m2 0.008734640537108554 bounds_m [-0.25, 0.00390625, 0.0078125] [0.25, 0.50390625, 0.3828125]\\nedge_face_intersections 0\\nscene_geometry_float64_coordinate_max_m 0.755859375\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "52161c31201c2800f81e0057cd83f6870ac030c61a54717d4b540aaf810612a1",
+      "source_sha256": "bd06beaaacf2d6e5748e94bc71dbfe70842e74da2432f524c86cdae4e7e37e95"
+    }
+  ]
+}

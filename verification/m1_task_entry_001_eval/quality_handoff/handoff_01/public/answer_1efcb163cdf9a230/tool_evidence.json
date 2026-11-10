@@ -1,0 +1,359 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np, time\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n o=bpy.data.objects.get(name)\n print(name, None if o is None else (o.type,len(o.data.vertices),len(o.data.polygons),list(o.matrix_world.translation),list(o.dimensions)))\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nPart_49 ('MESH', 58, 112, [0.1015625, -0.0703125, 0.0390625], [0.125, 0.09375, 0.03125])\\nPart_17 ('MESH', 26, 48, [0.1015625, -0.10546875, 0.04296875], [0.0234375, 0.0234375, 0.015625])\\nPart_26 ('MESH', 26, 48, [0.1015625, 0.0078125, 0.0390625], [0.015625, 0.015625, 0.015625])\\nPart_38 ('MESH', 26, 48, [0.1015625, -0.0703125, 0.0546875], [0.03125, 0.03125, 0.015625])\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "8c9f10df783b2f68ddd9c6e3bfcb74ccbb657089956609baa151b6c13e666488"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "6b70e3b29ecd773f873020156fa4ac2012909c79d9cca91ebfd13664ebee3087"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "b1064654278b594ea236e5bc04a6f455d0c8287b5e92b7a477f1fbe5936f521c"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "dg=bpy.context.evaluated_depsgraph_get()\nmeshes={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(obj.matrix_world @ vert.co) for vert in mesh.vertices],dtype=np.float64)\n tris=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int)\n meshes[name]=(verts,tris)\n obj.to_mesh_clear()\n print(name,'bounds',verts.min(axis=0),verts.max(axis=0),'tris',len(tris),'unique verts',len(np.unique(verts,axis=0)))\n print('coordinates',*[np.unique(verts[:,axis]).tolist() for axis in range(3)])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Part_49 bounds [ 0.08593749 -0.1328125  -0.0078125 ] [ 0.11718751 -0.0078125   0.0859375 ] tris 112 unique verts 58\\ncoordinates [0.0859374925494194, 0.0859375, 0.0859375074505806, 0.1015624925494194, 0.1015625, 0.1015625074505806, 0.1171874925494194, 0.1171875, 0.1171875074505806] [-0.1328125, -0.1171875, -0.1015625, -0.0859375, -0.0703125, -0.0390625, -0.0234375, -0.007812500931322575, -0.0078125, -0.007812499534338713] [-0.007812500931322575, -0.0078125, -0.007812499534338713, 0.007812499534338713, 0.007812500931322575, 0.0234375, 0.0390625, 0.0546875, 0.0859375]\\nPart_17 bounds [ 0.09375   -0.1171875  0.03125  ] [ 0.109375  -0.09375    0.0546875] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-0.1171875, -0.10546875, -0.09375] [0.03125, 0.04296875, 0.0546875]\\nPart_26 bounds [ 9.37500000e-02 -3.41495249e-10  3.12500000e-02] [0.109375 0.015625 0.046875] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-3.414952487457157e-10, -3.4149522099014007e-10, -1.5612511283791264e-17, 0.0, 1.474514954580286e-17, 3.4149519323456445e-10, 3.4149522099014007e-10, 3.414952487457157e-10, 0.007812499534338713, 0.0078125, 0.015625] [0.03125, 0.0390625, 0.046875]\\nPart_38 bounds [ 0.09375   -0.0859375  0.0390625] [ 0.109375  -0.0546875  0.0703125] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-0.0859375, -0.0703125, -0.0546875] [0.0390625, 0.0546875, 0.0703125]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "4fed8e87c123bb7dbfb2b43072f6be3f0216973bfd5723cd5b901f237034713e"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "be0214a7a449e955084c2f8f1a6300317cdc2db9a2e63462c6834ab027ae0537"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "9612d114cf5a5603dbe9fdbf412ce88bdf39521aa883cf41ebd680d3d6bf48bf"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def winding(points,verts,tris):\n vectors=verts[tris][None,:,:,:]-np.asarray(points)[:,None,None,:]\n lengths=np.linalg.norm(vectors,axis=-1)\n aa,bb,cc=vectors[:,:,0],vectors[:,:,1],vectors[:,:,2]\n numerator=np.einsum('pij,pij->pi',aa,np.cross(bb,cc))\n denom=lengths[:,:,0]*lengths[:,:,1]*lengths[:,:,2]+np.einsum('pij,pij->pi',aa,bb)*lengths[:,:,2]+np.einsum('pij,pij->pi',bb,cc)*lengths[:,:,0]+np.einsum('pij,pij->pi',cc,aa)*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denom),axis=1)/(4*np.pi)\nbasev,baset=meshes['Part_49']\nbasebvh=BVHTree.FromPolygons(basev.tolist(),baset.tolist(),all_triangles=True,epsilon=0.0)\nfor name in names[1:]:\n verts,tris=meshes[name]\n bvh=BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True,epsilon=0.0)\n weights=winding(np.concatenate([verts,verts[tris].mean(axis=1),verts.mean(axis=0)[None,:]]),basev,baset)\n print(name,'bvh overlaps',len(basebvh.overlap(bvh)),'winding range',weights.min(),weights.max(),'vertex windings',np.round(weights[:len(verts)],5).tolist(),'center',weights[-1])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Part_17 bvh overlaps 19 winding range -8.834874115176436e-17 1.0000000000000002 vertex windings [1.0, -0.0, 0.0, 1.0, 1.0, -0.0, 0.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, -0.0, 1.0, 1.0, 1.0] center 1.0\\nPart_26 bvh overlaps 0 winding range -8.834874115176436e-17 4.8591807633470396e-17 vertex windings [-0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0] center -8.834874115176436e-18\\nPart_38 bvh overlaps 0 winding range -3.975693351829396e-17 4.638308910467629e-17 vertex windings [0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0] center 2.4295903816735198e-17\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "c71b994309d58c12c2d19db85e915484e19141ce0c35ec49dde68174403f2b11"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "713b4e3b65f6d76e7304f3a6cfcbbea833e455918cd071b3879b33eef02486e4"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "7993b29eead05cf65ff0d0b2dbb2c12597a4f023d07513baeb2b16644c66d644"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def point_tri_min(points, verts, tris):\n triangles=verts[tris]; start=triangles[:,0]; edge1=triangles[:,1]-start; edge2=triangles[:,2]-start\n normal=np.cross(edge1,edge2); normal_sq=np.sum(normal*normal,axis=1)\n offset=points[:,None,:]-start[None,:,:]\n height=np.einsum('pti,ti->pt',offset,normal)/normal_sq\n projected=points[:,None,:]-height[:,:,None]*normal[None,:,:]\n rel=projected-start\n d00=np.sum(edge1*edge1,axis=1);d01=np.sum(edge1*edge2,axis=1);d11=np.sum(edge2*edge2,axis=1)\n d20=np.einsum('pti,ti->pt',rel,edge1);d21=np.einsum('pti,ti->pt',rel,edge2)\n denom=d00*d11-d01*d01\n bary1=(d11*d20-d01*d21)/denom;bary2=(d00*d21-d01*d20)/denom\n good=(bary1>=-1e-12)&(bary2>=-1e-12)&(bary1+bary2<=1+1e-12)\n distances=np.where(good,height*height*normal_sq,np.inf)\n idx=np.unravel_index(np.argmin(distances),distances.shape)\n return float(distances[idx]),points[idx[0]],projected[idx]\ndef edges_of(tris):\n return np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\ndef edge_min(verts1,tris1,verts2,tris2):\n edges1=verts1[edges_of(tris1)]; edges2=verts2[edges_of(tris2)]\n start1=edges1[:,0,None,:];start2=edges2[None,:,0,:]\n direction1=(edges1[:,1]-edges1[:,0])[:,None,:];direction2=(edges2[:,1]-edges2[:,0])[None,:,:]\n offset=start1-start2\n aa=np.sum(direction1*direction1,axis=-1);bb=np.sum(direction1*direction2,axis=-1);cc=np.sum(direction2*direction2,axis=-1)\n dd=np.sum(direction1*offset,axis=-1);ee=np.sum(direction2*offset,axis=-1)\n denominator=aa*cc-bb*bb\n safe=np.where(denominator>1e-30,denominator,1)\n ss=(bb*ee-cc*dd)/safe;tt=(aa*ee-bb*dd)/safe\n interior=(denominator>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n choices=[(ss,tt,interior),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(dd),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(dd),True)]\n best=(np.inf,None,None)\n for ss,tt,valid in choices:\n  first=start1+ss[:,:,None]*direction1;second=start2+tt[:,:,None]*direction2\n  dist=np.where(valid,np.sum((first-second)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist),dist.shape)\n  if dist[idx]<best[0]:best=(float(dist[idx]),first[idx],second[idx])\n return best\nfor name in ['Part_26','Part_38']:\n verts,tris=meshes[name]\n candidates=[point_tri_min(verts,basev,baset),point_tri_min(basev,verts,tris),edge_min(verts,tris,basev,baset)]\n best=min(candidates,key=lambda item:item[0])\n print(name,'minimum_mm',np.sqrt(best[0])*1000,'witness_world_m',best[1].tolist(),best[2].tolist(),'method_distances_mm',[np.sqrt(item[0])*1000 for item in candidates])\n# Strictly interior witness for both overlapping solids, away from their boundaries.\nverts,tris=meshes['Part_17']; witness=verts.mean(axis=0)\nprint('Part_17 interior witness m',witness.tolist(),'windings',winding([witness],verts,tris).tolist(),winding([witness],basev,baset).tolist())\nprint('Part_17 witness boundary distances mm',basebvh.find_nearest(witness)[3]*1000,BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True).find_nearest(witness)[3]*1000)\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Part_26 minimum_mm 7.812499999999922 witness_world_m [0.10156249841674134, -8.481894806844869e-17, 0.03125] [0.10156249875823657, -0.0078125, 0.031249999999999944] method_distances_mm [np.float64(7.812499999999945), np.float64(7.812499999999992), np.float64(7.812499999999922)]\\nPart_38 minimum_mm 15.625 witness_world_m [0.09375, -0.0859375, 0.0390625] [0.09375, -0.0859375, 0.0234375] method_distances_mm [np.float64(15.625), np.float64(15.625), np.float64(15.625)]\\nPart_17 interior witness m [0.1015625, -0.10546875, 0.04296875] windings [1.0000000000000002] [1.0]\\nPart_17 witness boundary distances mm 3.90625 7.8125\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "a21946466e7f3c1e28d109dd54f36b4c5bd86bfe685a35ea670c68bbb9559986"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "94c34ebfd9b10bb5b0e6dfca43148931d93f7b55104913731668e1a2888bc971"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "98d5e45c17823d241c0b8f24299a3424985f7ff50ba1cea320285d634f4d859a"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, time\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n o=bpy.data.objects.get(name)\n print(name, None if o is None else (o.type,len(o.data.vertices),len(o.data.polygons),list(o.matrix_world.translation),list(o.dimensions)))\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "8c0ec276dd916bff1bb452afa50ec44e7cb11d1dcb83993dc0df76234dcc84fd",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, time\nfrom mathutils.bvhtree import BVHTree\nnames=['Part_49','Part_17','Part_26','Part_38']\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in names:\n o=bpy.data.objects.get(name)\n print(name, None if o is None else (o.type,len(o.data.vertices),len(o.data.polygons),list(o.matrix_world.translation),list(o.dimensions)))\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nPart_49 ('MESH', 58, 112, [0.1015625, -0.0703125, 0.0390625], [0.125, 0.09375, 0.03125])\\nPart_17 ('MESH', 26, 48, [0.1015625, -0.10546875, 0.04296875], [0.0234375, 0.0234375, 0.015625])\\nPart_26 ('MESH', 26, 48, [0.1015625, 0.0078125, 0.0390625], [0.015625, 0.015625, 0.015625])\\nPart_38 ('MESH', 26, 48, [0.1015625, -0.0703125, 0.0546875], [0.03125, 0.03125, 0.015625])\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "7115eab2f8c5cd8ca8406a4aafa8afec8cbac4c8725fbb46504fbdb13ab448d8",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\nmeshes={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(obj.matrix_world @ vert.co) for vert in mesh.vertices],dtype=np.float64)\n tris=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int)\n meshes[name]=(verts,tris)\n obj.to_mesh_clear()\n print(name,'bounds',verts.min(axis=0),verts.max(axis=0),'tris',len(tris),'unique verts',len(np.unique(verts,axis=0)))\n print('coordinates',*[np.unique(verts[:,axis]).tolist() for axis in range(3)])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "dcd0caef1a3231829ed8e9591f789156701d9c9b4378e3495765d9c8500b9ae5",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "dg=bpy.context.evaluated_depsgraph_get()\nmeshes={}\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(dg); mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(obj.matrix_world @ vert.co) for vert in mesh.vertices],dtype=np.float64)\n tris=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int)\n meshes[name]=(verts,tris)\n obj.to_mesh_clear()\n print(name,'bounds',verts.min(axis=0),verts.max(axis=0),'tris',len(tris),'unique verts',len(np.unique(verts,axis=0)))\n print('coordinates',*[np.unique(verts[:,axis]).tolist() for axis in range(3)])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Part_49 bounds [ 0.08593749 -0.1328125  -0.0078125 ] [ 0.11718751 -0.0078125   0.0859375 ] tris 112 unique verts 58\\ncoordinates [0.0859374925494194, 0.0859375, 0.0859375074505806, 0.1015624925494194, 0.1015625, 0.1015625074505806, 0.1171874925494194, 0.1171875, 0.1171875074505806] [-0.1328125, -0.1171875, -0.1015625, -0.0859375, -0.0703125, -0.0390625, -0.0234375, -0.007812500931322575, -0.0078125, -0.007812499534338713] [-0.007812500931322575, -0.0078125, -0.007812499534338713, 0.007812499534338713, 0.007812500931322575, 0.0234375, 0.0390625, 0.0546875, 0.0859375]\\nPart_17 bounds [ 0.09375   -0.1171875  0.03125  ] [ 0.109375  -0.09375    0.0546875] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-0.1171875, -0.10546875, -0.09375] [0.03125, 0.04296875, 0.0546875]\\nPart_26 bounds [ 9.37500000e-02 -3.41495249e-10  3.12500000e-02] [0.109375 0.015625 0.046875] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-3.414952487457157e-10, -3.4149522099014007e-10, -1.5612511283791264e-17, 0.0, 1.474514954580286e-17, 3.4149519323456445e-10, 3.4149522099014007e-10, 3.414952487457157e-10, 0.007812499534338713, 0.0078125, 0.015625] [0.03125, 0.0390625, 0.046875]\\nPart_38 bounds [ 0.09375   -0.0859375  0.0390625] [ 0.109375  -0.0546875  0.0703125] tris 48 unique verts 26\\ncoordinates [0.09375, 0.1015625, 0.109375] [-0.0859375, -0.0703125, -0.0546875] [0.0390625, 0.0546875, 0.0703125]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "af2ff95d3ed527b533eef98ceb466ad8e0181e57f904572af8b0337b7aae8e6b",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def winding(points,verts,tris):\n vectors=verts[tris][None,:,:,:]-np.asarray(points)[:,None,None,:]\n lengths=np.linalg.norm(vectors,axis=-1)\n aa,bb,cc=vectors[:,:,0],vectors[:,:,1],vectors[:,:,2]\n numerator=np.einsum('pij,pij->pi',aa,np.cross(bb,cc))\n denom=lengths[:,:,0]*lengths[:,:,1]*lengths[:,:,2]+np.einsum('pij,pij->pi',aa,bb)*lengths[:,:,2]+np.einsum('pij,pij->pi',bb,cc)*lengths[:,:,0]+np.einsum('pij,pij->pi',cc,aa)*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denom),axis=1)/(4*np.pi)\nbasev,baset=meshes['Part_49']\nbasebvh=BVHTree.FromPolygons(basev.tolist(),baset.tolist(),all_triangles=True,epsilon=0.0)\nfor name in names[1:]:\n verts,tris=meshes[name]\n bvh=BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True,epsilon=0.0)\n weights=winding(np.concatenate([verts,verts[tris].mean(axis=1),verts.mean(axis=0)[None,:]]),basev,baset)\n print(name,'bvh overlaps',len(basebvh.overlap(bvh)),'winding range',weights.min(),weights.max(),'vertex windings',np.round(weights[:len(verts)],5).tolist(),'center',weights[-1])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "993c43060136449ea7dd978a2d12b70bf8d5b844328ab09df14209355b0affd5",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def winding(points,verts,tris):\n vectors=verts[tris][None,:,:,:]-np.asarray(points)[:,None,None,:]\n lengths=np.linalg.norm(vectors,axis=-1)\n aa,bb,cc=vectors[:,:,0],vectors[:,:,1],vectors[:,:,2]\n numerator=np.einsum('pij,pij->pi',aa,np.cross(bb,cc))\n denom=lengths[:,:,0]*lengths[:,:,1]*lengths[:,:,2]+np.einsum('pij,pij->pi',aa,bb)*lengths[:,:,2]+np.einsum('pij,pij->pi',bb,cc)*lengths[:,:,0]+np.einsum('pij,pij->pi',cc,aa)*lengths[:,:,1]\n return np.sum(2*np.arctan2(numerator,denom),axis=1)/(4*np.pi)\nbasev,baset=meshes['Part_49']\nbasebvh=BVHTree.FromPolygons(basev.tolist(),baset.tolist(),all_triangles=True,epsilon=0.0)\nfor name in names[1:]:\n verts,tris=meshes[name]\n bvh=BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True,epsilon=0.0)\n weights=winding(np.concatenate([verts,verts[tris].mean(axis=1),verts.mean(axis=0)[None,:]]),basev,baset)\n print(name,'bvh overlaps',len(basebvh.overlap(bvh)),'winding range',weights.min(),weights.max(),'vertex windings',np.round(weights[:len(verts)],5).tolist(),'center',weights[-1])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Part_17 bvh overlaps 19 winding range -8.834874115176436e-17 1.0000000000000002 vertex windings [1.0, -0.0, 0.0, 1.0, 1.0, -0.0, 0.0, 1.0, -0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, -0.0, 1.0, 1.0, 1.0] center 1.0\\nPart_26 bvh overlaps 0 winding range -8.834874115176436e-17 4.8591807633470396e-17 vertex windings [-0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0] center -8.834874115176436e-18\\nPart_38 bvh overlaps 0 winding range -3.975693351829396e-17 4.638308910467629e-17 vertex windings [0.0, -0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0] center 2.4295903816735198e-17\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "6130ca2cff8e64b38e3244d1c96e715baf01efeebe47dc6c79e1d85d10cc4ddd",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def point_tri_min(points, verts, tris):\n triangles=verts[tris]; start=triangles[:,0]; edge1=triangles[:,1]-start; edge2=triangles[:,2]-start\n normal=np.cross(edge1,edge2); normal_sq=np.sum(normal*normal,axis=1)\n offset=points[:,None,:]-start[None,:,:]\n height=np.einsum('pti,ti->pt',offset,normal)/normal_sq\n projected=points[:,None,:]-height[:,:,None]*normal[None,:,:]\n rel=projected-start\n d00=np.sum(edge1*edge1,axis=1);d01=np.sum(edge1*edge2,axis=1);d11=np.sum(edge2*edge2,axis=1)\n d20=np.einsum('pti,ti->pt',rel,edge1);d21=np.einsum('pti,ti->pt',rel,edge2)\n denom=d00*d11-d01*d01\n bary1=(d11*d20-d01*d21)/denom;bary2=(d00*d21-d01*d20)/denom\n good=(bary1>=-1e-12)&(bary2>=-1e-12)&(bary1+bary2<=1+1e-12)\n distances=np.where(good,height*height*normal_sq,np.inf)\n idx=np.unravel_index(np.argmin(distances),distances.shape)\n return float(distances[idx]),points[idx[0]],projected[idx]\ndef edges_of(tris):\n return np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\ndef edge_min(verts1,tris1,verts2,tris2):\n edges1=verts1[edges_of(tris1)]; edges2=verts2[edges_of(tris2)]\n start1=edges1[:,0,None,:];start2=edges2[None,:,0,:]\n direction1=(edges1[:,1]-edges1[:,0])[:,None,:];direction2=(edges2[:,1]-edges2[:,0])[None,:,:]\n offset=start1-start2\n aa=np.sum(direction1*direction1,axis=-1);bb=np.sum(direction1*direction2,axis=-1);cc=np.sum(direction2*direction2,axis=-1)\n dd=np.sum(direction1*offset,axis=-1);ee=np.sum(direction2*offset,axis=-1)\n denominator=aa*cc-bb*bb\n safe=np.where(denominator>1e-30,denominator,1)\n ss=(bb*ee-cc*dd)/safe;tt=(aa*ee-bb*dd)/safe\n interior=(denominator>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n choices=[(ss,tt,interior),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(dd),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(dd),True)]\n best=(np.inf,None,None)\n for ss,tt,valid in choices:\n  first=start1+ss[:,:,None]*direction1;second=start2+tt[:,:,None]*direction2\n  dist=np.where(valid,np.sum((first-second)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist),dist.shape)\n  if dist[idx]<best[0]:best=(float(dist[idx]),first[idx],second[idx])\n return best\nfor name in ['Part_26','Part_38']:\n verts,tris=meshes[name]\n candidates=[point_tri_min(verts,basev,baset),point_tri_min(basev,verts,tris),edge_min(verts,tris,basev,baset)]\n best=min(candidates,key=lambda item:item[0])\n print(name,'minimum_mm',np.sqrt(best[0])*1000,'witness_world_m',best[1].tolist(),best[2].tolist(),'method_distances_mm',[np.sqrt(item[0])*1000 for item in candidates])\n# Strictly interior witness for both overlapping solids, away from their boundaries.\nverts,tris=meshes['Part_17']; witness=verts.mean(axis=0)\nprint('Part_17 interior witness m',witness.tolist(),'windings',winding([witness],verts,tris).tolist(),winding([witness],basev,baset).tolist())\nprint('Part_17 witness boundary distances mm',basebvh.find_nearest(witness)[3]*1000,BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True).find_nearest(witness)[3]*1000)\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "fae5631c10d29083154a3a8adbc44997815f35bc5b78f273d909bdd88cf182de",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def point_tri_min(points, verts, tris):\n triangles=verts[tris]; start=triangles[:,0]; edge1=triangles[:,1]-start; edge2=triangles[:,2]-start\n normal=np.cross(edge1,edge2); normal_sq=np.sum(normal*normal,axis=1)\n offset=points[:,None,:]-start[None,:,:]\n height=np.einsum('pti,ti->pt',offset,normal)/normal_sq\n projected=points[:,None,:]-height[:,:,None]*normal[None,:,:]\n rel=projected-start\n d00=np.sum(edge1*edge1,axis=1);d01=np.sum(edge1*edge2,axis=1);d11=np.sum(edge2*edge2,axis=1)\n d20=np.einsum('pti,ti->pt',rel,edge1);d21=np.einsum('pti,ti->pt',rel,edge2)\n denom=d00*d11-d01*d01\n bary1=(d11*d20-d01*d21)/denom;bary2=(d00*d21-d01*d20)/denom\n good=(bary1>=-1e-12)&(bary2>=-1e-12)&(bary1+bary2<=1+1e-12)\n distances=np.where(good,height*height*normal_sq,np.inf)\n idx=np.unravel_index(np.argmin(distances),distances.shape)\n return float(distances[idx]),points[idx[0]],projected[idx]\ndef edges_of(tris):\n return np.unique(np.sort(np.concatenate([tris[:,[0,1]],tris[:,[1,2]],tris[:,[2,0]]]),axis=1),axis=0)\ndef edge_min(verts1,tris1,verts2,tris2):\n edges1=verts1[edges_of(tris1)]; edges2=verts2[edges_of(tris2)]\n start1=edges1[:,0,None,:];start2=edges2[None,:,0,:]\n direction1=(edges1[:,1]-edges1[:,0])[:,None,:];direction2=(edges2[:,1]-edges2[:,0])[None,:,:]\n offset=start1-start2\n aa=np.sum(direction1*direction1,axis=-1);bb=np.sum(direction1*direction2,axis=-1);cc=np.sum(direction2*direction2,axis=-1)\n dd=np.sum(direction1*offset,axis=-1);ee=np.sum(direction2*offset,axis=-1)\n denominator=aa*cc-bb*bb\n safe=np.where(denominator>1e-30,denominator,1)\n ss=(bb*ee-cc*dd)/safe;tt=(aa*ee-bb*dd)/safe\n interior=(denominator>1e-30)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n choices=[(ss,tt,interior),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(dd),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(dd),True)]\n best=(np.inf,None,None)\n for ss,tt,valid in choices:\n  first=start1+ss[:,:,None]*direction1;second=start2+tt[:,:,None]*direction2\n  dist=np.where(valid,np.sum((first-second)**2,axis=-1),np.inf)\n  idx=np.unravel_index(np.argmin(dist),dist.shape)\n  if dist[idx]<best[0]:best=(float(dist[idx]),first[idx],second[idx])\n return best\nfor name in ['Part_26','Part_38']:\n verts,tris=meshes[name]\n candidates=[point_tri_min(verts,basev,baset),point_tri_min(basev,verts,tris),edge_min(verts,tris,basev,baset)]\n best=min(candidates,key=lambda item:item[0])\n print(name,'minimum_mm',np.sqrt(best[0])*1000,'witness_world_m',best[1].tolist(),best[2].tolist(),'method_distances_mm',[np.sqrt(item[0])*1000 for item in candidates])\n# Strictly interior witness for both overlapping solids, away from their boundaries.\nverts,tris=meshes['Part_17']; witness=verts.mean(axis=0)\nprint('Part_17 interior witness m',witness.tolist(),'windings',winding([witness],verts,tris).tolist(),winding([witness],basev,baset).tolist())\nprint('Part_17 witness boundary distances mm',basebvh.find_nearest(witness)[3]*1000,BVHTree.FromPolygons(verts.tolist(),tris.tolist(),all_triangles=True).find_nearest(witness)[3]*1000)\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Part_26 minimum_mm 7.812499999999922 witness_world_m [0.10156249841674134, -8.481894806844869e-17, 0.03125] [0.10156249875823657, -0.0078125, 0.031249999999999944] method_distances_mm [np.float64(7.812499999999945), np.float64(7.812499999999992), np.float64(7.812499999999922)]\\nPart_38 minimum_mm 15.625 witness_world_m [0.09375, -0.0859375, 0.0390625] [0.09375, -0.0859375, 0.0234375] method_distances_mm [np.float64(15.625), np.float64(15.625), np.float64(15.625)]\\nPart_17 interior witness m [0.1015625, -0.10546875, 0.04296875] windings [1.0000000000000002] [1.0]\\nPart_17 witness boundary distances mm 3.90625 7.8125\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "6ce7719b17e8921bc6eb90931484407681d787279730b2df75234be2fbc0df1d",
+      "source_sha256": "208c0230b914e2e90c5152adb347f12f9ec0b44fcc03432ea4913a3600c49263"
+    }
+  ]
+}

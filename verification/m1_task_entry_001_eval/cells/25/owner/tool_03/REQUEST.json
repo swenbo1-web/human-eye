@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_ab7899dbb94a43b08cf9988774287cac",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c676-6123-7091-9673-77358105943c",
+        "thread_id": "01a1c676-6123-7091-9673-77358105943c",
+        "turn_started_at_unix_ms": 1794331009478,
+        "turn_id": "01a1c676-61be-79d3-86b7-420dec3299ac",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "81dcafec303bb867795f4474f5fe9bca2aa85c8e",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c676-6123-7091-9673-77358105943c",
+      "itemId": "fc_0a1ae85fbd515adb016af351a36f0087d0b7e57301d9211e0a",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def closest_on_triangle(point, tri):\n    aa, bb, cc=tri\n    ab=bb-aa; ac=cc-aa; ap=point-aa\n    d1=np.dot(ab,ap); d2=np.dot(ac,ap)\n    if d1<=0 and d2<=0: return aa\n    bp=point-bb; d3=np.dot(ab,bp); d4=np.dot(ac,bp)\n    if d3>=0 and d4<=d3: return bb\n    vc=d1*d4-d3*d2\n    if vc<=0 and d1>=0 and d3<=0: return aa+(d1/(d1-d3))*ab\n    cp=point-cc; d5=np.dot(ab,cp); d6=np.dot(ac,cp)\n    if d6>=0 and d5<=d6: return cc\n    vb=d5*d2-d1*d6\n    if vb<=0 and d2>=0 and d6<=0: return aa+(d2/(d2-d6))*ac\n    va=d3*d6-d5*d4\n    if va<=0 and d4-d3>=0 and d5-d6>=0: return bb+((d4-d3)/((d4-d3)+(d5-d6)))*(cc-bb)\n    denominator=1/(va+vb+vc)\n    return aa+ab*(vb*denominator)+ac*(vc*denominator)\ndef closest_segments(p1,q1,p2,q2):\n    first=q1-p1; second=q2-p2; offset=p1-p2\n    aa=np.dot(first,first); ee=np.dot(second,second); ff=np.dot(second,offset)\n    if aa==0 and ee==0: return p1,p2\n    if aa==0: ss=0.; tt=np.clip(ff/ee,0,1)\n    else:\n        cc=np.dot(first,offset)\n        if ee==0: tt=0.; ss=np.clip(-cc/aa,0,1)\n        else:\n            bb=np.dot(first,second); denominator=aa*ee-bb*bb\n            ss=np.clip((bb*ff-cc*ee)/denominator,0,1) if denominator>0 else 0.\n            tt=(bb*ss+ff)/ee\n            if tt<0: tt=0.; ss=np.clip(-cc/aa,0,1)\n            elif tt>1: tt=1.; ss=np.clip((bb-cc)/aa,0,1)\n    return p1+ss*first,p2+tt*second\ndef segment_triangle_hit(start,end,tri):\n    edge1=tri[1]-tri[0]; edge2=tri[2]-tri[0]; direction=end-start\n    h=np.cross(direction,edge2); det=np.dot(edge1,h)\n    if det==0: return None\n    inv=1/det; rel=start-tri[0]; uu=np.dot(rel,h)*inv\n    if uu<0 or uu>1: return None\n    cross=np.cross(rel,edge1); vv=np.dot(direction,cross)*inv\n    if vv<0 or uu+vv>1: return None\n    tt=np.dot(edge2,cross)*inv\n    if 0<=tt<=1: return start+tt*direction\n    return None\nedges=[(0,1),(1,2),(2,0)]\ndef triangle_distance(first,second):\n    best=(float('inf'),None,None)\n    for start,end in edges:\n        hit=segment_triangle_hit(first[start],first[end],second)\n        if hit is not None: return (0.,hit,hit)\n        hit=segment_triangle_hit(second[start],second[end],first)\n        if hit is not None: return (0.,hit,hit)\n    for point in first:\n        other=closest_on_triangle(point,second); delta=point-other; dist=np.dot(delta,delta)\n        if dist<best[0]: best=(dist,point,other)\n    for point in second:\n        other=closest_on_triangle(point,first); delta=point-other; dist=np.dot(delta,delta)\n        if dist<best[0]: best=(dist,other,point)\n    for aa,bb in edges:\n        for cc,dd in edges:\n            point,other=closest_segments(first[aa],first[bb],second[cc],second[dd]); delta=point-other; dist=np.dot(delta,delta)\n            if dist<best[0]: best=(dist,point,other)\n    return best\nstarted=time.time()\ntarget=geo['Mesh_D17AB2']['tri']\nresults={}\nfor name,data in geo.items():\n    if name=='Mesh_D17AB2': continue\n    best=(float('inf'),None,None,None,None)\n    tested=0\n    for first_index,first in enumerate(target):\n        for second_index,second in enumerate(data['tri']):\n            separation=np.maximum(np.maximum(first.min(axis=0)-second.max(axis=0),second.min(axis=0)-first.max(axis=0)),0)\n            if np.dot(separation,separation)>best[0]: continue\n            candidate=triangle_distance(first,second); tested+=1\n            if candidate[0]<best[0]: best=(*candidate,first_index,second_index)\n    results[name]=best\n    print(name,'mm',math.sqrt(best[0])*1000,'points_world',best[1].tolist(),best[2].tolist(),'triangles',best[3:],'tested',tested)\nprint('seconds',time.time()-started)\n"
+    }
+  }
+}
