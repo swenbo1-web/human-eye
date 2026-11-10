@@ -1,0 +1,13 @@
+# 准备衔接只读复查
+
+结论：未发现需要修改的衔接问题。仅阅读实际源码、diff、评分合同和已保存合成结果；未导入或执行运行器、产品、测试、CLI、模型或Blender。PLAN当前仍为待冻结草稿，未填摘要不作为缺陷；此复查不代替正式GO。
+
+actor与consumer_transport分别逐字节等于上一批原件，SHA为 `d1b71de84efb57d6c5df6301789817327b8c1669e1f945d817991db78b5b7f7e`、`69e5fdbc701b95ae9af02b4039c465a6818d42e03178fb86ccab5c7c895cbb31`。driver SHA为 `95444b8f7d437d82adc781bebd6b4143785155e6ca7e6da5b26958f251041098`；read/save/load/finish/snapshot_binding五函数AST与原件相同。diff只适配外部分组、安装/schema选择和固定九格授权；570秒首次起点、40秒启动上限、450秒消费、收尾、停止及失败计量核心保持。新的arm映射计算也位于原整格计时之内。
+
+外部N/P0/P1映射为内部N/P/P。P0/P1分别固定旧/新安装和source，N只复用共同依赖Python、不启动插件。内部slot为新副本，保留external_group；原CONSUMER仍记录内部group，外层RUN_RESULT与匿名映射使用外部group，打包器同时校验二者及cell/task/round，避免把P0/P1混同。lrc01..lrc09在不删除旧工作目录的情况下避开原transport的旧批次路径。新cycle、PLAN摘要、max9、固定九格顺序均由go_contract限定；旧六格GO不适用。
+
+打包器SHA为 `90f07a6b78457bb7ca9a5b93fbb7d78bf3439b547cfb21ff4fbae0b0c76ab0d4`。原九个解析、投影、原件归档和来源一致性helper的AST不变；仅修改cycle、九格数量和双重group绑定。JSON字符串、原生stdout、请求代码、unknown及原答案保真逻辑没有退回递归清洗。已读三项纯分组测试的通过日志，以及synthetic/run_03的231项通过记录；实际保存的停止前缀包固定含九格，其中四格not_run、一格failed_before_consumer，未被补齐或替换。合成过程记录外部socket/subprocess尝试为0；本代理未重跑这些测试。此前run_01/run_02原件仍保留。
+
+新评分SHA为 `ec5cf22a41e0318e908016e2dff4d9e4aca6e49341cd5252deda88857dbc9491`。本复查直接解析旧/新合同，差异仅cycle_id、scope、fixed_sample_policy三项外层元数据及新增sample_metadata；其余目标、角色、分类、局部依据、自然语义、complete_correct和unknown规则完全相等。旧合同副本及TRUTH原字节一致；样本元数据绑定新sequence和匿名map摘要。未解析或公布匿名组别映射，不评分。
+
+该结论只支持当前静态准备衔接。当前Pro认证、额度、provider状态、resolved model/effort、九格实际身份与图片接收均未测；旧登录和图片capability记录不能代替本轮运行回执。没有正式GO或STARTED，保持准备阶段消费者0。正式执行仍需根完成固定摘要并另发本cycle九格GO。

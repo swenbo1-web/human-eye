@@ -1,0 +1,202 @@
+--- historical_SCORING_CONTRACT.json
++++ new_SCORING_CONTRACT.json
+@@ -1,69 +1,141 @@
+ {
+-  "schema": "M4-observation-natural-semantic-scoring-v1",
+-  "cycle_id": "M4-OBSERVATION-BASELINE-001",
++  "complete_correct": "Correct target and all three public-position explanations, correct identities for all three roles, all three supported relation classes and pair-local sufficient evidence, with no material contradiction. Individual stage counts are still reported; correct guesses without evidence and unknown do not pass the full task. Valid analytic shortcuts and equivalent evidence are accepted without prescribing a tool or algorithm.",
++  "cycle_id": "M4-LOCAL-RELATION-CONSUMPTION-001",
++  "evidence_policy": {
++    "authenticity_and_sufficiency_separate": true,
++    "computed_from_observed_geometry": "Reasonable native computations and mathematically valid shortcuts are accepted. Evidence need not be a literal copied substring when it can be checked against genuinely observed geometry and the recorded calculation.",
++    "freshness": "Evidence must concern the same unchanged scene/correct pair; a preserved returned source-bound fact may be used without a mandatory duplicate read.",
++    "initial_image_limit": "INITIAL.png may support layout/appearance and candidate localization. It cannot alone prove a hidden common interior, distinguish the approximately0.100007mm gap or establish exact touching. No new or local image is required or permitted in this phase.",
++    "no_forced_route": "No compulsory plugin/nearest call, call count, universal full mesh recomputation, view change or trust instruction. Necessary supplements and redundant full re-solves are attributed separately after quality judgment.",
++    "no_plugin_truth": "Plugin output is a candidate observation checked against independent truth, never used to generate expectations.",
++    "source_binding_by_executor": "scene/image/catalogue/camera and actual exposed observations are independently hash/receipt bound. A correct answer need not repeat these hashes or exact reference strings."
++  },
++  "fixed_sample_policy": "One scene, N/P0/P1 each3, nine fixed slots, no replacement for failure/unknown/no-attempt/slow/incomplete samples. Frozen stop tails are not_run, distinct from entered failures. No extra task introduced here. The earlier six-cell baseline remains historical and is not pooled with this batch.",
+   "frozen_before_model_consumers": true,
+-  "scope": "One unchanged historical scene; N/P each three planned fresh consumers. This file is private scoring material, never consumer input.",
+-  "truth": "scoring/TRUTH.json",
+-  "source_replay": "scoring/REFERENCE_REPLAY.json",
++  "image_use_attribution": "An actual image-receipt proves exposure, not cognitive use. Distinguish native/catalogue geometric discovery, image-assisted reasoning and genuine use of the newly exposed nearest witness; do not credit a present capability that was not used.",
+   "input_binding": "scoring/INPUT_BINDING.json",
+-  "primary_fixed_denominators": {"target": 1, "relations": 3, "local_evidence": 3},
+-  "separate_stage_denominators": {"target_condition_explanations": 3, "neighbor_role_identifications": 3},
+-  "no_weighted_compensation": true,
+-  "target": {
+-    "expected_id": "N16",
+-    "center_definition": "world-axis-aligned bounds of actual vertices, not origin, mass centroid or apparent screen center",
+-    "three_conditions": ["center Z strictly below lower/upper hollow-rail center-Z midpoint", "center Y strictly beyond the front solid crossbeam rear/max-Y surface", "center XY within closed radius 0.70m of the dual-pipe-axis XY midpoint"],
+-    "all_conditions_required": true,
+-    "conditions_do_not_mean_argmin_or_contact": true,
+-    "accepted_reasoning": "Equivalent geometric descriptions, valid bounds or numerical checks that establish all three conditions; no prescribed calculation algorithm or exhaustive face enumeration.",
+-    "expected_reference_ids_private_only": {"lower_rail": "N24", "upper_rail": "N12", "front_crossbeam": "N10", "dual_pipes": ["N04", "N19"]}
+-  },
+-  "roles": [
+-    {"role": "near_right_upright_separator", "natural_role": "目标近右侧竖直窄隔片", "expected_id": "N13", "expected_relation": "solid_overlap", "distance_not_penetration_depth": true,
+-     "independent_basis": "strict common-interior point on the actual original closed meshes; positive exact material intersection volume",
+-     "acceptable_local_evidence": "Pair-bound strict interior witness with its geometric meaning, independently checkable material-region intersection, or a source-bound exact solid-interior certificate accompanied by a local location/feature identifying the shared material region.",
+-     "insufficient_alone": ["AABB overlap", "zero unsigned surface distance", "rod/frame silhouette crossing", "an unlocated assertion that a tool says overlap"]},
+-    {"role": "left_short_locator_block", "natural_role": "目标左侧短定位块", "expected_id": "N08", "expected_relation": "within_contact_tolerance", "nominal_distance_m": 0.00010000728070735931,
+-     "independent_basis": "exact absence of common interior; attained shortest surface distance is below 0.00025m",
+-     "acceptable_local_evidence": "Exclusion of interior overlap plus an attained surface gap or sufficiently tight geometric bounds lying entirely at or below the class tolerance, with pair-local points/features or corresponding measurement.",
+-     "insufficient_alone": ["looks flush in INITIAL.png", "exact physical touching inferred from tolerance", "small unsigned distance with no solid-overlap exclusion"]},
+-    {"role": "through_opening_probe_rod", "natural_role": "穿过目标开口的直探杆", "expected_id": "N28", "expected_relation": "separated", "nominal_distance_m": 0.023000000044703484,
+-     "independent_basis": "rod occupies the opening void, not frame material; exact zero material intersection and an attained positive surface gap above tolerance",
+-     "acceptable_local_evidence": "Source-bound opening/material containment or disjointness argument and sufficiently tight gap/witness evidence above tolerance. The visible opening alone does not establish all hidden geometry.",
+-     "insufficient_alone": ["AABB intersects, so penetrating", "a visible hole with no account of the rod's actual extent", "surface separation value used to infer absence of containment without a solid/material argument"]}
+-  ],
+-  "relation_semantics": {
+-    "contact_tolerance_m": 0.00025,
+-    "solid_overlap": "positive common solid interior, including equivalent terms such as internal interpenetration",
+-    "within_contact_tolerance": "interior overlap excluded and shortest surface distance <=0.00025m",
+-    "separated": "interior overlap excluded and shortest surface distance >0.00025m",
+-    "unknown": "evidence insufficient or error bounds do not determine a class; honest abstention is separately recorded and does not complete the relation",
+-    "unknown_vs_wrong": "Do not merge explicit unknown, refusal, missing output, wrong assertion or infrastructure block.",
+-    "penetration_depth": "not requested; solid-set distance 0 and a positive overlap volume are neither a global penetration depth nor an escape distance"
+-  },
+   "natural_language_policy": {
++    "additional_material": "Score the three requested pairs only. Extra correct description has no additional credit; materially false or contradictory geometric claims are separately flagged. Do not reject an otherwise correct answer merely for extra harmless prose.",
++    "contact_wording": "A natural-language contact label is accepted only when it unambiguously means the disclosed 0.25mm tolerance, not a contradictory claim of proven exact touching.",
++    "equivalent_unambiguous_names_or_scene_bound_IDs_accepted": true,
++    "equivalent_units_accepted": true,
++    "no_new_0_001mm_answer_precision_gate": true,
+     "no_required_JSON_or_field_spelling": true,
+     "no_required_file_SHA_or_manual_source_refs": true,
+     "no_required_triangle_index_list": true,
+-    "equivalent_units_accepted": true,
+-    "equivalent_unambiguous_names_or_scene_bound_IDs_accepted": true,
+-    "no_new_0_001mm_answer_precision_gate": true,
+-    "numeric_claims": "Judge supplied values with stated units, approximation/rounding and evidence. The task asks classifications at 0.25mm, not 1e-6m numerical answers. About 0.1mm and about 23mm can be valid; a claim of exact zero or unsupported exact contact cannot be rescued by coarse rounding.",
+-    "contact_wording": "A natural-language contact label is accepted only when it unambiguously means the disclosed 0.25mm tolerance, not a contradictory claim of proven exact touching.",
+-    "additional_material": "Score the three requested pairs only. Extra correct description has no additional credit; materially false or contradictory geometric claims are separately flagged. Do not reject an otherwise correct answer merely for extra harmless prose."
++    "numeric_claims": "Judge supplied values with stated units, approximation/rounding and evidence. The task asks classifications at 0.25mm, not 1e-6m numerical answers. About 0.1mm and about 23mm can be valid; a claim of exact zero or unsupported exact contact cannot be rescued by coarse rounding."
+   },
+-  "evidence_policy": {
+-    "authenticity_and_sufficiency_separate": true,
+-    "source_binding_by_executor": "scene/image/catalogue/camera and actual exposed observations are independently hash/receipt bound. A correct answer need not repeat these hashes or exact reference strings.",
+-    "freshness": "Evidence must concern the same unchanged scene/correct pair; a preserved returned source-bound fact may be used without a mandatory duplicate read.",
+-    "computed_from_observed_geometry": "Reasonable native computations and mathematically valid shortcuts are accepted. Evidence need not be a literal copied substring when it can be checked against genuinely observed geometry and the recorded calculation.",
+-    "initial_image_limit": "INITIAL.png may support layout/appearance and candidate localization. It cannot alone prove a hidden common interior, distinguish the approximately0.100007mm gap or establish exact touching. No new or local image is required or permitted in this phase.",
+-    "no_plugin_truth": "Plugin output is a candidate observation checked against independent truth, never used to generate expectations.",
+-    "no_forced_route": "No compulsory plugin/nearest call, call count, universal full mesh recomputation, view change or trust instruction. Necessary supplements and redundant full re-solves are attributed separately after quality judgment."
++  "no_weighted_compensation": true,
++  "primary_fixed_denominators": {
++    "local_evidence": 3,
++    "relations": 3,
++    "target": 1
+   },
+-  "complete_correct": "Correct target and all three public-position explanations, correct identities for all three roles, all three supported relation classes and pair-local sufficient evidence, with no material contradiction. Individual stage counts are still reported; correct guesses without evidence and unknown do not pass the full task. Valid analytic shortcuts and equivalent evidence are accepted without prescribing a tool or algorithm.",
+-  "image_use_attribution": "An actual image-receipt proves exposure, not cognitive use. Distinguish native/catalogue geometric discovery, image-assisted reasoning and genuine use of the newly exposed nearest witness; do not credit a present capability that was not used.",
++  "product_and_models_in_this_subtask": {
++    "Blender_sessions": 0,
++    "model_consumers": 0,
++    "new_assets": 0,
++    "new_images": 0,
++    "product_calls": 0
++  },
+   "quality_before_cost": "Judge anonymous original answers and necessary evidence before arm/cost unblinding. Route wording and tool/code semantics may reveal the arm; do not claim perfect double blinding.",
+-  "fixed_sample_policy": "One scene, N/P each3, no replacement for failure/unknown/no-attempt/slow/incomplete samples. Frozen stop tails are not_run, distinct from entered failures. No third arm or extra task introduced here.",
+-  "product_and_models_in_this_subtask": {"product_calls": 0, "Blender_sessions": 0, "new_assets": 0, "new_images": 0, "model_consumers": 0}
++  "relation_semantics": {
++    "contact_tolerance_m": 0.00025,
++    "penetration_depth": "not requested; solid-set distance 0 and a positive overlap volume are neither a global penetration depth nor an escape distance",
++    "separated": "interior overlap excluded and shortest surface distance >0.00025m",
++    "solid_overlap": "positive common solid interior, including equivalent terms such as internal interpenetration",
++    "unknown": "evidence insufficient or error bounds do not determine a class; honest abstention is separately recorded and does not complete the relation",
++    "unknown_vs_wrong": "Do not merge explicit unknown, refusal, missing output, wrong assertion or infrastructure block.",
++    "within_contact_tolerance": "interior overlap excluded and shortest surface distance <=0.00025m"
++  },
++  "roles": [
++    {
++      "acceptable_local_evidence": "Pair-bound strict interior witness with its geometric meaning, independently checkable material-region intersection, or a source-bound exact solid-interior certificate accompanied by a local location/feature identifying the shared material region.",
++      "distance_not_penetration_depth": true,
++      "expected_id": "N13",
++      "expected_relation": "solid_overlap",
++      "independent_basis": "strict common-interior point on the actual original closed meshes; positive exact material intersection volume",
++      "insufficient_alone": [
++        "AABB overlap",
++        "zero unsigned surface distance",
++        "rod/frame silhouette crossing",
++        "an unlocated assertion that a tool says overlap"
++      ],
++      "natural_role": "目标近右侧竖直窄隔片",
++      "role": "near_right_upright_separator"
++    },
++    {
++      "acceptable_local_evidence": "Exclusion of interior overlap plus an attained surface gap or sufficiently tight geometric bounds lying entirely at or below the class tolerance, with pair-local points/features or corresponding measurement.",
++      "expected_id": "N08",
++      "expected_relation": "within_contact_tolerance",
++      "independent_basis": "exact absence of common interior; attained shortest surface distance is below 0.00025m",
++      "insufficient_alone": [
++        "looks flush in INITIAL.png",
++        "exact physical touching inferred from tolerance",
++        "small unsigned distance with no solid-overlap exclusion"
++      ],
++      "natural_role": "目标左侧短定位块",
++      "nominal_distance_m": 0.00010000728070735931,
++      "role": "left_short_locator_block"
++    },
++    {
++      "acceptable_local_evidence": "Source-bound opening/material containment or disjointness argument and sufficiently tight gap/witness evidence above tolerance. The visible opening alone does not establish all hidden geometry.",
++      "expected_id": "N28",
++      "expected_relation": "separated",
++      "independent_basis": "rod occupies the opening void, not frame material; exact zero material intersection and an attained positive surface gap above tolerance",
++      "insufficient_alone": [
++        "AABB intersects, so penetrating",
++        "a visible hole with no account of the rod's actual extent",
++        "surface separation value used to infer absence of containment without a solid/material argument"
++      ],
++      "natural_role": "穿过目标开口的直探杆",
++      "nominal_distance_m": 0.023000000044703484,
++      "role": "through_opening_probe_rod"
++    }
++  ],
++  "sample_metadata": {
++    "anonymous_mapping": "private/ANON_MAP.json",
++    "anonymous_mapping_scope": "new pre-consumer fixed nine-row mapping; private, not a consumer input",
++    "anonymous_mapping_sha256": "d0535e412c89339c095edcd0e82a0eb6430b3aa979be19f982fd2972ba1193d8",
++    "groups": [
++      "N",
++      "P0",
++      "P1"
++    ],
++    "historical_baseline_pooling": "The earlier N/P six-cell batch is not pooled into this batch.",
++    "logical_denominator": 9,
++    "per_group": 3,
++    "rounds": 3,
++    "sequence": "SEQUENCE.json",
++    "sequence_sha256": "9ded7fc2ca8707bc2355092e6ce333f458da5d6c9ebcbc1808836b7e2a34445f"
++  },
++  "schema": "M4-observation-natural-semantic-scoring-v1",
++  "scope": "One unchanged historical scene; N/P0/P1 each three planned fresh consumers. This file is private scoring material, never consumer input.",
++  "separate_stage_denominators": {
++    "neighbor_role_identifications": 3,
++    "target_condition_explanations": 3
++  },
++  "source_replay": "scoring/REFERENCE_REPLAY.json",
++  "target": {
++    "accepted_reasoning": "Equivalent geometric descriptions, valid bounds or numerical checks that establish all three conditions; no prescribed calculation algorithm or exhaustive face enumeration.",
++    "all_conditions_required": true,
++    "center_definition": "world-axis-aligned bounds of actual vertices, not origin, mass centroid or apparent screen center",
++    "conditions_do_not_mean_argmin_or_contact": true,
++    "expected_id": "N16",
++    "expected_reference_ids_private_only": {
++      "dual_pipes": [
++        "N04",
++        "N19"
++      ],
++      "front_crossbeam": "N10",
++      "lower_rail": "N24",
++      "upper_rail": "N12"
++    },
++    "three_conditions": [
++      "center Z strictly below lower/upper hollow-rail center-Z midpoint",
++      "center Y strictly beyond the front solid crossbeam rear/max-Y surface",
++      "center XY within closed radius 0.70m of the dual-pipe-axis XY midpoint"
++    ]
++  },
++  "truth": "scoring/TRUTH.json"
+ }

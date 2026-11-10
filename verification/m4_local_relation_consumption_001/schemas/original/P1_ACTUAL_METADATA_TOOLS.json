@@ -1,0 +1,134 @@
+{
+  "id": "metadata-list",
+  "jsonrpc": "2.0",
+  "result": {
+    "tools": [
+      {
+        "description": "Read current solid relations and surface distances from a target to 1..3 explicit candidates in one capture. Returns each pair, penetrating candidates and nearest separated ties; unknowns and incomplete sets stay explicit. Surface distance is not penetration depth. A supported transverse crossing includes its captured triangles and an approximate boundary location when publishable. Read-only: no images or actions.",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "candidates": {
+              "items": {
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "required": [
+                      "id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "id": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "maxItems": 3,
+              "minItems": 1,
+              "type": "array"
+            },
+            "include_aabb": {
+              "default": false,
+              "type": "boolean"
+            },
+            "target": {
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ],
+              "properties": {
+                "id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "target",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        "name": "human_eye_spatial_relations"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        },
+        "description": "Find the nearest triangle surfaces, in metres, from one current Blender mesh to all other meshes in the scene. Complete results give global nearest ties; partial results give best-known candidates and unresolved coverage. Surface distance is unsigned, not penetration depth. Includes available closest points in world metres and independent witness/direction status for each best-known candidate. Read-only: no images or actions. Example: {\"target\":{\"name\":\"Bracket\"}}.",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "target": {
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ],
+              "properties": {
+                "id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "target"
+          ],
+          "type": "object"
+        },
+        "name": "human_eye_surface_nearest"
+      }
+    ]
+  }
+}

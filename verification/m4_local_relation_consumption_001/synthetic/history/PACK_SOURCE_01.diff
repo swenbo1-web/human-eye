@@ -1,0 +1,59 @@
+--- historical_pack_quality.py
++++ new_pack_quality.py
+@@ -13,7 +13,7 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ EVAL = HERE.parent
+-CYCLE = 'M4-OBSERVATION-BASELINE-001'
++CYCLE = 'M4-LOCAL-RELATION-CONSUMPTION-001'
+ sha = lambda raw: hashlib.sha256(raw).hexdigest()
+ KEYS = ('cell', 'task', 'round', 'group')
+ TOOL_TYPES = {'command_execution', 'mcp_tool_call', 'custom_tool_call', 'function_call',
+@@ -184,7 +184,9 @@
+     consumer = None
+     if 'CONSUMER.json' in sources:
+         consumer = decode(sources['CONSUMER.json'])
+-        assert all(consumer.get(key)==slot[key] for key in KEYS), 'consumer slot binding mismatch'
++        assert all(consumer.get(key)==slot[key] for key in ('cell','task','round')), 'consumer slot binding mismatch'
++        expected_group={'N':'N','P0':'P','P1':'P'}[slot['group']]
++        assert consumer.get('group')==expected_group and consumer.get('external_group')==slot['group'], 'consumer external/internal group binding mismatch'
+     entered = record is not None
+     if not entered:
+         assert not sources, 'unrecorded material cannot be silently labelled not_run'
+@@ -317,14 +319,15 @@
+     assert sha(control['PLAN.json'])==freeze['plan_sha256'], 'execution PLAN not frozen'
+     assert sha(control['private/ANON_MAP.json'])==plan['private_anonymous_map_sha256'], 'anonymous map drift'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE, 'wrong observation cycle'
++    assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','P0','P1'}, 'wrong fixed nine-slot sample metadata'
+     assert plan['image_count']==1 and plan['new_images']==0, 'wrong shared-image contract'
+     sequence, rows, records=plan['sequence'],mapping['rows'],run['records']
+-    assert len(sequence)==len(rows)==6 and len({row['cell'] for row in sequence})==6
++    assert len(sequence)==len(rows)==9 and len({row['cell'] for row in sequence})==6
+     assert len({row['anonymous_id'] for row in rows})==6
+     assert all(re.fullmatch(r'answer_[0-9a-f]{16}',row['anonymous_id']) for row in rows)
+-    assert len(records)<=6 and len({row['cell'] for row in records})==len(records)
++    assert len(records)<=9 and len({row['cell'] for row in records})==len(records)
+     assert type(run.get('batch_ended_ns')) is int and run['batch_ended_ns']>0, 'terminal batch record required'
+-    assert len(records)==6 or run.get('stop'), 'partial run needs its preserved stop reason'
++    assert len(records)==9 or run.get('stop'), 'partial run needs its preserved stop reason'
+     assert any(isinstance(record.get('consumer'),dict)
+         and type(record['consumer'].get('consumer_pid')) is int and record['consumer']['consumer_pid']>0
+         for record in records), 'at least one recorded consumer launcher is required; preparation is not a quality run'
+@@ -359,7 +362,7 @@
+         answer,details=handoff_one(slot,row,by_cell.get(cell),sources,public/row['anonymous_id'])
+         answer['directory']=row['anonymous_id']
+         answers.append(answer);audit.append({'mapping':row,**details})
+-    put(public/'INDEX.json',encoded({'tasks':tasks,'answers':answers,'fixed_slots':6,'scoring_performed':False}))
++    put(public/'INDEX.json',encoded({'tasks':tasks,'answers':answers,'fixed_slots':9,'scoring_performed':False}))
+     # Refuse a moving source rather than silently packaging a mixed-time run.
+     for folder,expected in snapshots:
+         current={path.relative_to(folder).as_posix():sha(path.read_bytes()) for path in folder.rglob('*') if path.is_file()} if folder.exists() else {}
+@@ -370,7 +373,7 @@
+         'public_files_sha256':{path.relative_to(public).as_posix():sha(path.read_bytes()) for path in public.rglob('*') if path.is_file()},
+         'model_calls':0,'product_calls':0,'Blender_calls':0,'scoring_calls':0}
+     put(private/'PROVENANCE.json',encoded(receipt))
+-    print(json.dumps({'packaged_slots':6,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
++    print(json.dumps({'packaged_slots':9,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
+ 
+ 
+ if __name__=='__main__': main()
