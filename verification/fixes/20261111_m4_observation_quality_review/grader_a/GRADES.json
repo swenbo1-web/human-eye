@@ -1,0 +1,915 @@
+{
+  "schema": "M4-blind-quality-grader-A-v1",
+  "cycle_id": "M4-OBSERVATION-BASELINE-001",
+  "independent_grader": "A",
+  "quality_frozen_before_unblinding": true,
+  "read_scope": "public handoff, frozen scoring contract/truth; no group mapping, costs, RUN_RESULT, cells/private, author grades or other grader results",
+  "limited_blinding": "tool names and content may expose method; no arm mapping inferred or recorded",
+  "source_root": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_observation_baseline_001\\quality_handoff\\handoff_01\\public",
+  "input_bindings": {
+    "INDEX.json": "e950da63c0b61ddf2b3938b92a7ac443ead08524797330ced86f7e876be861cf",
+    "SCORING_CONTRACT.json": "1c4a88d7018426c1a68ae7f770acb8f1eb90faee50ee46ca616dd0ea703cdbcc",
+    "TRUTH.json": "2bb917d6d96bfec4b8dffbdbc437f70185f532877e9bcb45855ea2d988e6a1b2",
+    "tasks/T1.txt": "c443f907474a78ebb2491127d0064ea301d6c4ecbc6d60f1d91adc33fe1f9757",
+    "tasks/INITIAL.png": "42466e241a4239552fa418b7f79bf1fd73c10092f174c3e87444ed5e93cbed0a"
+  },
+  "policy_notes": [
+    "按公开0.25mm分类容差和原自然语义合同，不追加固定字段、源面索引、通用求解或重复读取要求。",
+    "源绑定的精确闭体证书加局部材料位置/点特征可以充分；零无符号表面距离本身不证明内部重叠。",
+    "原生 matrix_world@v.co 路径读值给N08间隙0.00010000914335250854m；冻结真值为0.00010000728070735931m，约1.862645149e-9m差异不影响本题分类及合理近似回答，不新增隐藏精度门槛。",
+    "图像提交/线程开始与模型实际接收或理解分开；所有样本的provider/model-view证据仍未知，不以此推断视觉收益。"
+  ],
+  "answers": [
+    {
+      "answer_id": "answer_07229f7fac18446d",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1",
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "见证点 (0.245, 0.100, 0.360) 严格处于两者实体内部",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第2次实际读取 N16/N13/N08/N28 完整顶点和面连接，同时读取中空导轨几何并计算四框架三条件。N16 面连接明确右侧材料框边及贯通孔，允许直接用局部实体区间与共同内点证明重叠。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "最短距离约为 **0.100009 mm**",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "截面始终位于孔内，没有进入框架实体",
+          "evidence": [
+            "answer_07229f7fac18446d/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "b0ae55a503c741e2d6a780a1250053dc8d9a01d8e9f5c77eb37b71cf88f49063",
+        "tool_evidence.json": "01da2685c921b9852103a32fa33ce80edc9fde734c1d20c655bc9649d8fe9dcf",
+        "source_consistency.json": "1c962f6b491ce2be32b2338b83b32651a9fc29a3a8c49277a89b9f60a6b0fb63"
+      }
+    },
+    {
+      "answer_id": "answer_16cc0a01c1667547",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2",
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2",
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "点 **(0.245, 0.100, 0.360)** 严格位于右侧框边实体内部",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2",
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第1次全目录世界范围用于发现；第3次顶点与条件计算定位框架右边和开孔。第2次同对象闭体证书确认 N13 penetrating、N08/N28 separated，且附距离/见证和场景来源，支撑局部解释；无需额外穷举。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "最短表面距离约为 **0.100007 毫米**",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2",
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "完整处于孔内，没有进入框边实体",
+          "evidence": [
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/2",
+            "answer_16cc0a01c1667547/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "9c8ccd7a633cca543bf1197a3c0bf71a7cd67335f252fc21fba1b19c9a36c0cb",
+        "tool_evidence.json": "6610062cbfaa4fa1ed463bf389dab0703249a1dc1c13a07bd7a1d1bd6434b582",
+        "source_consistency.json": "f29a5f8231260bf712b6cf94ba05b07c6abf665e543d352f72ee65af7e420539"
+      }
+    },
+    {
+      "answer_id": "answer_635fcb52c8009303",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2",
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2",
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "点 **(0.245, 0.100, 0.360)** 严格位于两者实体内部",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2",
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第1次当前世界范围给全目录；第2次同对象 exact solid 证书及见证给出三关系；第3次实际顶点/导轨/双管数据和距离计算支撑目标条件、框边与开孔局部解释。将双管中点近似为(0.43,0.155)不改变本题任何条件。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "最短距离约为 **0.100007 毫米**",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2",
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "完整位于开口内，没有穿入框架实体",
+          "evidence": [
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/2",
+            "answer_635fcb52c8009303/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "04b69e693fa8d001b9790373a8d1d042ecfb62ca27c2e0d6353d1a0072181bd0",
+        "tool_evidence.json": "f8f248e13bd35ff938ab6c0d637c61a499eb2346659ec9d30c09bb67825cb9dc",
+        "source_consistency.json": "74fa0fad389f7232d3d8707ba104fbe1a1f271de6a7cc87dd579ea886d76a9c1"
+      }
+    },
+    {
+      "answer_id": "answer_69cc9ae597e60afa",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1",
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "内部见证点为 **(0.245, 0.100, 0.360)**",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第2次实际读取四相关对象完整顶点、面和矩阵，已足以识别实心盒体、矩形通孔和挤出杆；第3次打印正X间隙、孔四侧间隙及位置阈值，未把打印的整体AABB重叠单独当作实体证明，答案另给材料框边和严格共同内点。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "最短表面距离约为 **0.100009 mm**",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "但其整个截面均在孔内",
+          "evidence": [
+            "answer_69cc9ae597e60afa/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [
+        {
+          "kind": "non_material_wording",
+          "quote": "探杆上侧顶点 **(0.180, 0.100, 0.372)**",
+          "assessment": "该位置是所选 Y=0.1 截面上端的表面/纵向边点，非原网格端面的离散顶点；作为近似最近表面点有效。题目不要求源顶点索引，该称谓不改变实体关系或最近距，未作为实质矛盾扣分。"
+        }
+      ],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "2c2fab9cd1a8ca395cee74a5acf5c47cdb1815ea28c322b495fe3358ac339b60",
+        "tool_evidence.json": "34ba9adfb49c09b9028e2861a6cf82855da8e93b719b7c97a072aa7d93ecbb77",
+        "source_consistency.json": "b674d10407c74264dcc808c00fdac04d49d84e95781a3fc25b7d181cd6c82b78"
+      }
+    },
+    {
+      "answer_id": "answer_ae6684a89ddc7a0e",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1",
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "见证点 **(0.245, 0.100, 0.360)** 严格位于两者实体内部",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第2次按十位小数打印 N16/N13/N08/N28 全部顶点与多边形面，并计算框架三条件。框边材料、实心定位块和完整十二边形杆截面可由这些实际记录解析，AABB正分离界和孔内包含是合法快捷依据。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "距离约 **0.100009 毫米**",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "其整个十二边形截面均处于该孔内",
+          "evidence": [
+            "answer_ae6684a89ddc7a0e/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "4fe138e45f3b5e1e0c1f24d0882394719941562a94e199b56b618257c904a1c8",
+        "tool_evidence.json": "6202259d08d518e22b117cce647e37ea8a3fe5ac4bd25260766abebf18c5c292",
+        "source_consistency.json": "6469043c8aaac86f03a2348dc07dfb380d66f4a76925b4d0055a26e04f42bad9"
+      }
+    },
+    {
+      "answer_id": "answer_e85f06af4348d600",
+      "complete_correct": true,
+      "scores": {
+        "target": {
+          "correct": 1,
+          "total": 1
+        },
+        "target_conditions": {
+          "correct": 3,
+          "total": 3
+        },
+        "neighbor_roles": {
+          "correct": 3,
+          "total": 3
+        },
+        "relation_classes": {
+          "correct": 3,
+          "total": 3
+        },
+        "sufficient_local_evidence": {
+          "correct": 3,
+          "total": 3
+        }
+      },
+      "criteria": [
+        {
+          "id": "target",
+          "status": "correct_supported",
+          "answer": "N16",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "四同形框架中唯 N16 满足三条件；不是 nearest 选择。"
+        },
+        {
+          "id": "lower_band",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N12/N24 中心Z约0.645/0.275，中间0.460；N16约0.360严格更低。"
+        },
+        {
+          "id": "behind_front_beam",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2",
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/0"
+          ],
+          "reason": "前实体横梁N10 maxY约-0.1025；N16 centerY约0.100，方向+Y正确。"
+        },
+        {
+          "id": "pipe_neighborhood",
+          "status": "correct_supported",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2"
+          ],
+          "reason": "N04/N19轴心XY中点约(0.43,0.155)，N16约0.25598m≤0.70m。"
+        },
+        {
+          "id": "roles",
+          "status": "correct_supported",
+          "answer": [
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2",
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "分别在世界+X近侧、框架左侧、沿Y穿过贯通孔，角色没有随屏幕重定义。"
+        }
+      ],
+      "relations": [
+        {
+          "object": "N13",
+          "expected": "solid_overlap",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "点 **(0.245, 0.100, 0.360)** 严格位于两者实体内部",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2",
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "第1次当前全目录用于发现；第2次同对象闭体证书与最近表面见证支持三关系；第3次用双精度矩阵展开原顶点、打印 N16 面连接/各对象坐标层和框架条件，支撑右框边材料和杆开孔局部论证。 见证(0.245,0.100,0.360)在右材料框边与N13内部，避开孔空隙；没有把零表面距当作穿透深度。"
+        },
+        {
+          "object": "N08",
+          "expected": "within_contact_tolerance",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "最短间隙约 **0.100007 毫米**",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2",
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "定位块最大X小于框架最小X，排除实体重叠；Y/Z相对表面有共同覆盖，点对取到正X间隙，约0.100007或0.100009mm均显著低于0.25mm。答案明确不等同精确物理接触。"
+        },
+        {
+          "object": "N28",
+          "expected": "separated",
+          "classification_status": "correct",
+          "local_evidence_status": "sufficient",
+          "answer_quote": "经过框架厚度时仍完整处于孔内",
+          "evidence": [
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/2",
+            "answer_e85f06af4348d600/tool_evidence.json#/owner_attempts/1"
+          ],
+          "reason": "实际杆截面X约[0.168,0.192]、Z约[0.348,0.372]全部在孔X(0.135,0.225)、Z(0.325,0.395)内，沿Y贯通段不进材料；孔上下最近表面点取到约23mm间隙，超过容差。不是用整框AABB重叠判断。"
+        }
+      ],
+      "outcome_counts": {
+        "unknown": 0,
+        "missing": 0,
+        "wrong": 0,
+        "unsupported": 0,
+        "material_contradictions": 0,
+        "refusal": 0,
+        "infrastructure_block": 0
+      },
+      "non_material_notes": [],
+      "evidence_delivery": {
+        "owner_completed_public_arguments_and_content_equal": true,
+        "scope": "public package producer responses corroborated by corresponding completed consumer tool events; no inference from an owner response alone"
+      },
+      "readonly_current_state": {
+        "recorded_requests_readonly": true,
+        "recorded_source_and_initial_final_match": true,
+        "observed_geometry_or_camera_write": false,
+        "scope": "review of recorded code and producer closure; not a claim that endpoint equality alone excludes every unrecorded transient operation"
+      },
+      "image_use": {
+        "common_image_hash_bound": true,
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null,
+        "no_cognitive_visual_use_credit": true
+      },
+      "input_sha256": {
+        "answer.txt": "8a034d32e55f613ae42b220f0c2c39c8ee98cfcb97c9d793e33012c58da86bb5",
+        "tool_evidence.json": "00ff3d04a20f7af5f4c490e6841d128a41a31470eb1cd7bd26c7cd534c7b6e11",
+        "source_consistency.json": "1abfa8de151fdcaeb222b19a25172bcf6f93f48d80b4000cb7c13a2d2c00be6e"
+      }
+    }
+  ],
+  "totals": {
+    "complete_correct": 6,
+    "total_answers": 6,
+    "target_correct": 6,
+    "target_total": 6,
+    "target_conditions_correct": 18,
+    "target_conditions_total": 18,
+    "neighbor_roles_correct": 18,
+    "neighbor_roles_total": 18,
+    "relation_classes_correct": 18,
+    "relation_classes_total": 18,
+    "sufficient_local_evidence_correct": 18,
+    "sufficient_local_evidence_total": 18,
+    "unknown": 0,
+    "missing": 0,
+    "wrong": 0,
+    "unsupported": 0,
+    "material_contradictions": 0,
+    "refusal": 0,
+    "infrastructure_block": 0
+  },
+  "execution_in_review": {
+    "model_calls": 0,
+    "Blender_calls": 0,
+    "product_calls": 0,
+    "arithmetic_and_json_parsing_only": true
+  }
+}
