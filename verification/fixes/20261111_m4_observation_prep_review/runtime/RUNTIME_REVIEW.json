@@ -1,0 +1,133 @@
+{
+  "cycle_id": "M4-OBSERVATION-BASELINE-001",
+  "reviewed_preparation_commit": "9c85ab9a0518e1fe2369113f59ce308a2d97b8d3",
+  "verdict": "GO for runtime/image-attachment/cost-fairness preparation subreview; no blocking discrepancy identified",
+  "scope": "Source, document and saved metadata review plus four fake adapter tests only; no formal driver, model, Blender, installation, serve, or private ANON_MAP execution/read",
+  "fake_tests": {
+    "scope": "root independent four fake adapter tests; original files loaded read-only with -I -B; temporary and persistent outputs rooted in this review directory; external Popen/run/socket blocked",
+    "test_sha256": "35d995860d740ad3b3abcd47261f55eff39a67f21b00ef9f07c9046c48a9d416",
+    "tests": 4,
+    "successful": true,
+    "failures": [],
+    "errors": [],
+    "external_operations_attempted": [],
+    "model_consumers": 0,
+    "Blender_sessions": 0,
+    "product_processes": 0
+  },
+  "reused_AST_equal": {
+    "driver.py": {
+      "finish": true,
+      "snapshot_binding": true
+    },
+    "consumer_transport.py": {
+      "settings": true,
+      "safe_environment": true,
+      "kill_owned_tree": true,
+      "wait_bridge_closed": true
+    }
+  },
+  "frozen_files_verified": {
+    "runtime/actor.py": {
+      "sha256": "d1b71de84efb57d6c5df6301789817327b8c1669e1f945d817991db78b5b7f7e",
+      "bytes": 16617
+    },
+    "runtime/consumer_transport.py": {
+      "sha256": "69e5fdbc701b95ae9af02b4039c465a6818d42e03178fb86ccab5c7c895cbb31",
+      "bytes": 19855
+    },
+    "runtime/driver.py": {
+      "sha256": "03ca3824b5154c47fdeaae4ab055faec370683db1e25c03f01079e81cc68ab06",
+      "bytes": 14152
+    },
+    "runtime/test_runtime_contract.py": {
+      "sha256": "35d995860d740ad3b3abcd47261f55eff39a67f21b00ef9f07c9046c48a9d416",
+      "bytes": 4716
+    },
+    "PLAN.json": {
+      "sha256": "a3be58d51b274470ddbbb46ae07b2706328606bf9a09823c6e09dbe757d37ac2",
+      "bytes": 12596
+    },
+    "BENEFIT_CONTRACT.json": {
+      "sha256": "d18beb21f7aef8a201685b80d2b7cf5649819c195fdc0d3b002f66f93e39ad54",
+      "bytes": 3287
+    },
+    "CAPABILITIES.md": {
+      "sha256": "1b97db49529a679649399b8d5644e1aac89f0b233e38c4f8660401c716464100",
+      "bytes": 3388
+    },
+    "runtime/REUSE_BINDINGS.json": {
+      "sha256": "aa99dae7b0240b27f37d181895648ced65d68e407d612ed3ca5dbc98789cedd5",
+      "bytes": 1711
+    },
+    "runtime/NO_MODEL_TEST_RESULT.json": {
+      "sha256": "aabf2cca992db09c1d4c8806808244750a1c263482db0af404e24032adf8fd6f",
+      "bytes": 220
+    },
+    "runtime/PREPARED_INPUT.json": {
+      "sha256": "890217281771b14a1f49136954d6ec75b30b086194dda68612c371f1e183c8dc",
+      "bytes": 862
+    },
+    "runtime/CLI_IMAGE_CAPABILITY.json": {
+      "sha256": "d9e9a7fbb2b14e732caa78b95a5d6a5b88ff6beb73c3994d5e471b6c0ad490ba",
+      "bytes": 654
+    },
+    "input/INITIAL.png": {
+      "sha256": "42466e241a4239552fa418b7f79bf1fd73c10092f174c3e87444ed5e93cbed0a",
+      "bytes": 1185069
+    },
+    "input/PROMPT.txt": {
+      "sha256": "c443f907474a78ebb2491127d0064ea301d6c4ecbc6d60f1d91adc33fe1f9757",
+      "bytes": 13998
+    },
+    "verification/native_plugin_complex_003/actor.py": {
+      "sha256": "f8fcb8f3afa44fccbbd3af33cba70bba20700cb8b05999f12d72fe02ebe4b85c",
+      "bytes": 9443
+    },
+    "verification/native_plugin_complex_003/reused/accepted_native.py": {
+      "sha256": "13887e30d9f08309102e17704b91603325df13c490bdcc6bcda8b74ac01c59b8",
+      "bytes": 39100
+    },
+    "verification/native_plugin_complex_003/reused/stdio_attach.py": {
+      "sha256": "210539d6a728fd63cc8f8b3925bb866e1929dce4a8e5db85a7ceece7c183cb00",
+      "bytes": 3569
+    }
+  },
+  "findings": [
+    {
+      "topic": "common_image",
+      "result": "One identical actual --image PNG argument; 1200x900, 1185069 bytes, input hash checked before/after; initial image separately counted from tool response budget. Provider delivery/cognitive use/image tokens remain unknown."
+    },
+    {
+      "topic": "common_native",
+      "result": "Same COMPLEX003 NATIVE schema, persistent helper/interpreter/scene and code capability in both arms. condition N/P is metadata, not a compute restriction. P adds only real installed compact tools through fixed serve --spatial-task-only; no rewritten tool answers or privileged geometry warmup."
+    },
+    {
+      "topic": "budgets",
+      "result": "Six frozen cells N/P each3; 450 second consumer timer, original570 second worker deadline, 40 second actor startup capped by original deadline,32 tool attempts including failures,128 worker execute RPC budget,256KiB code,30 second calls,1MiB owner serialized tool-response budget. Metadata handshakes/catalogue are separate recorded costs, not tool-result-budget records."
+    },
+    {
+      "topic": "time",
+      "result": "Cell starts before repeated dispatch-input/image/snapshot validation, includes prepare, real plugin/native startup, CLI, cleanup and owner close. Consumer setup before its timer belongs to pre_consumer_setup; full cell is not a sum of overlapping spans. Batch includes batch input checks and per-cell publication; final batch timing publication/caller overhead excluded by explicit label. Cleanup may pass deadline; actual elapsed retained and within_570s false, no deadline reset."
+    },
+    {
+      "topic": "authorization_failure_denominator",
+      "result": "Current cycle + exact PLAN SHA + max6 and source/file pins precede exclusive STARTED; previous-cycle GO rejected by fake test before Popen. Errors and timeouts retained; no replacement/retry loop; interrupted tail recoverable from fixed six-cell plan and all_planned_dispatched=false."
+    },
+    {
+      "topic": "images",
+      "result": "Observed render events or changed workspace PNGs reject current tool and block further tools, count the attempt and prevent successful close. Missing ledger remains unknown. Arbitrary native Python is not a strong sandbox; transient/outside-workspace actions not universally observed."
+    },
+    {
+      "topic": "cost_unknowns",
+      "result": "Raw usage rows recorded without estimating missing image/reasoning/provider/dollar counts. cached/reasoning subsets must not be added again to totals. Owner tool-response serialization distinct from public MCP frames, catalogue, private product RPC and backend RPC. Prepare/install/qualification failures separate from prospective six-cell model window."
+    }
+  ],
+  "qualification_limits": [
+    "No formal consumer image delivery, correct answers, performance or fee benefit established in preparation.",
+    "One geometry task repeated3 times each; no scene-population significance; nearest source rejection remains a real possible P cost.",
+    "Thin-client missing EXIT is unknown, not graceful-exit evidence; actual independent owner/backend closure separately required.",
+    "README phrase runtime never reads oracle/scoring files means no semantic use; driver hashes those frozen files for binding. No answer data is routed to consumer from that step."
+  ],
+  "new_required_changes": []
+}
