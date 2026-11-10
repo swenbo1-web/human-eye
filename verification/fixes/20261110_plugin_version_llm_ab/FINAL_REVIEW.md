@@ -19,7 +19,8 @@ Each column contains six sessions. Durations include all observed task activity 
 
 | Metric | A | B | Observed B change |
 | --- | ---: | ---: | ---: |
-| Model answer quality | 6/6 | 6/6 | same |
+| Independent semantic answer correctness | 6/6 | 6/6 | same |
+| Author's frozen strict information-completeness score | 29/36 | 30/36 | one-point difference |
 | Actual geometry / correct no-op or unreachable outcome | 6/6 | 6/6 | same |
 | Prompt submission through complete final answer, median | 19.7645 s | 19.9394 s | +0.89% |
 | Session start through confirmed cleanup, median | 22.7791 s | 23.4558 s | +2.97% |
@@ -36,6 +37,8 @@ Each column contains six sessions. Durations include all observed task activity 
 Both versions invoke two tools per task and deliver essentially the same facts. The new code therefore does not remove a model round or materially reduce its context. There is no demonstrated user-visible gain from this particular change.
 
 All four actual corrections met the area-loss target, and all eight no-op/unreachable cases correctly avoided candidate writes. The independent blind reviewer passed all twelve answers, 72/72 semantic criteria. Some no-op answers leave the unmeasured after-value null; others explicitly reuse the unchanged before-value. Neither is a false independent after-measurement. No false execution or achievement claim was found.
+
+The author's separate frozen grader gives 59/72 information-completeness points (A 29/36, B 30/36), with 4/12 answers meeting every strict item. It withholds points for five null after-values and eight limitations that do not explicitly repeat the three-bone/LBS domain. These original scores remain unchanged. Root's predeclared semantic review accepts justified unknown/null values as the actual prompt permits, and recognizes a task-limited statement without requiring particular keywords. Thus 72/72 semantic correctness is not a replacement for the author's strict completeness score. The one-point A/B completeness difference does not establish better geometric reasoning or useful new capability.
 
 The earlier +3.6% record measured hot entries in one sequential eight-task process. This experiment uses a fresh process/ledger for every consumer; the new entry measurements are not directly comparable to that old hot-entry absolute timing.
 
