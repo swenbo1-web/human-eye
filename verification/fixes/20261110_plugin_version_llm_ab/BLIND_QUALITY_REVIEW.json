@@ -1,0 +1,624 @@
+{
+  "review_scope": {
+    "source": "D:/hefe/verification/fixes/20261110_plugin_version_llm_ab/BLIND_ANSWERS.json",
+    "method": "独立模型逐份语义审阅，未获知版本标签或耗时；仅依据所给事实与回执，不追加测试消费者或Blender执行",
+    "numeric_absolute_tolerance": 0.00002,
+    "overall_pass_rule": "六项均通过。合理且有解释的null通过；无写入后的初值沿用只要说明依据、无虚假后测声明即可通过；限制范围按语义判定，不强制出现三骨等字样。",
+    "evidence_distinction": "外部独立几何核查用于判定事实；不把仅评审可见的独立核查冒充模型实际收到的回执。保全true需要证据，保全null在产品回执缺失相关核验时合理。"
+  },
+  "reviews": [
+    {
+      "review_id": "answer_01",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=satisfied、task_succeeded=true，均与actual字段及产品回执一致。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=0.250000190838788，与独立核查差约1.11e-16，小于2e-5，且来自actual_after_capture而非预览。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=2、setter_returns=2，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=true有实际后采样、actual_goal_and_preservation_verified回执和geometry_passed=true支持；完整姿态、保护点与外部物体的保持声明与反馈一致。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定独立测试副本、登记三骨LBS任务、第1帧及登记容差，并明确不能推广至其他帧或场景；未将截面面积指标说成通用角色或体积保证。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    },
+    {
+      "review_id": "answer_02",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=no_op、task_succeeded=true，均与actual字段及产品回执一致。已满足目标而不写入，task_succeeded=true不等于executed=true。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.25000012398972327，与独立核查相同；after=null并解释回执没有独立修改后采样。按允许合理null的规则通过，不视为伪造或解释缺失。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理：模型收到的回执只含actual_before_no_write，未含完整保全核验；明确未修改场景，未把已满足目标误称为已执行修改。独立几何通过不要求模型假称取得未收到的证据。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定登记独立副本、固定帧和选区；没有三骨字样，但语义已限定本次登记任务，没有推广至通用角色或体积。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "no-op后值选择保留未知，比沿用未写入初值更保守；少一个已知状态数值，但解释完整，不扣通过分。"
+      ]
+    },
+    {
+      "review_id": "answer_03",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=unreachable、task_succeeded=false，均与actual字段及产品回执一致。独立几何检查通过不等于优化目标成功。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=null合理，未写入且回执没有实际后采样。明确区分预览预测与实际后测，没有把预览0.6710100716628336冒充独立后值0.7500000252158905。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理，回执未提供后测保全核验；未修改、未调用setter或未执行修改的陈述与executed=false及0/0一致，没有错误成功声明。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定当前登记独立测试副本、固定帧和允许范围；不可达是允许范围内的结论，没有泛化为普遍不可解或体积保证。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    },
+    {
+      "review_id": "answer_04",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=satisfied、task_succeeded=true，均与actual字段及产品回执一致。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=0.250000190838788，与独立核查差约1.11e-16，小于2e-5，且来自actual_after_capture而非预览。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=2、setter_returns=2，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=true有实际后采样、actual_goal_and_preservation_verified回执和geometry_passed=true支持；完整姿态、保护点与外部物体的保持声明与反馈一致。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定独立测试副本、登记固定帧三骨LBS任务及其容差；没有外推到其他场景、通用角色或体积。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    },
+    {
+      "review_id": "answer_05",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=no_op、task_succeeded=true，均与actual字段及产品回执一致。已满足目标而不写入，task_succeeded=true不等于executed=true。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before和after均为0.25000012398972327，与独立前后核查相同。说明因未写入所以前后相同，属于有依据的状态沿用，没有宣称另做后测。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理：模型收到的回执只含actual_before_no_write，未含完整保全核验；明确未修改场景，未把已满足目标误称为已执行修改。独立几何通过不要求模型假称取得未收到的证据。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定本次独立副本、登记选择和固定帧；没有跨任务、通用角色或体积外推。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "以未写入解释前后数值相同是充分依据；不像answer_08/11那样明确写出并非独立后测，证据来源表达略弱，但不构成误报。"
+      ]
+    },
+    {
+      "review_id": "answer_06",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=unreachable、task_succeeded=false，均与actual字段及产品回执一致。独立几何检查通过不等于优化目标成功。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=null合理，未写入且回执没有实际后采样。明确区分预览预测与实际后测，没有把预览0.6710100716628336冒充独立后值0.7500000252158905。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理，回执未提供后测保全核验；未修改、未调用setter或未执行修改的陈述与executed=false及0/0一致，没有错误成功声明。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定当前独立测试副本、登记帧及许可范围；最优预览仍超过0.4的说明与0.6710100716628336一致，没有把不可达泛化到其他任务。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "额外说明允许范围内最优预览仍超过目标0.4，较仅给状态更清楚地解释不可达原因。"
+      ]
+    },
+    {
+      "review_id": "answer_07",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=satisfied、task_succeeded=true，均与actual字段及产品回执一致。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=0.250000190838788，与独立核查差约1.11e-16，小于2e-5，且来自actual_after_capture而非预览。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=2、setter_returns=2，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=true有实际后采样、actual_goal_and_preservation_verified回执和geometry_passed=true支持；完整姿态、保护点与外部物体的保持声明与反馈一致。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定独立测试副本中的登记固定帧三骨LBS任务及登记容差；没有通用角色或体积保证。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    },
+    {
+      "review_id": "answer_08",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=no_op、task_succeeded=true，均与actual字段及产品回执一致。已满足目标而不写入，task_succeeded=true不等于executed=true。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before和after均为0.25000012398972327，与独立前后核查相同；明确after来自无写入结果，并非独立后测，证据来源解释充分。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理：模型收到的回执只含actual_before_no_write，未含完整保全核验；明确未修改场景，未把已满足目标误称为已执行修改。独立几何通过不要求模型假称取得未收到的证据。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "本次登记场景与固定帧已构成具体任务限制；虽然未使用独立副本或三骨字样，也未作跨场景、跨帧或体积推广。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "既提供未变的后值，又明确区分状态沿用与独立后测，no-op数值来源表述清楚。"
+      ]
+    },
+    {
+      "review_id": "answer_09",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=unreachable、task_succeeded=false，均与actual字段及产品回执一致。独立几何检查通过不等于优化目标成功。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=null合理，未写入且回执没有实际后采样。明确区分预览预测与实际后测，没有把预览0.6710100716628336冒充独立后值0.7500000252158905。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理，回执未提供后测保全核验；未修改、未调用setter或未执行修改的陈述与executed=false及0/0一致，没有错误成功声明。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "限定当前登记的独立测试场景和允许范围，语义仍限定本次任务；未显式写固定帧或三骨，范围表述较弱，但没有全帧、通用角色或体积外推，按语义通过。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "未明说固定帧，范围说明不如其他不可达回答具体；未声明未保存文件，但该遗漏不属于本次六项中的错误声明。",
+        "没有独立验证的表述应理解为模型回执缺少独立后测证据；不代表外部评审没有实施geometry_passed核查。"
+      ]
+    },
+    {
+      "review_id": "answer_10",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=satisfied、task_succeeded=true，均与actual字段及产品回执一致。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=0.250000190838788，与独立核查差约1.11e-16，小于2e-5，且来自actual_after_capture而非预览。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=2、setter_returns=2，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=true有实际后采样、actual_goal_and_preservation_verified回执和geometry_passed=true支持；完整姿态、保护点与外部物体的保持声明与反馈一致。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定独立测试副本、当前登记三骨LBS任务、第1帧和登记容差；没有跨场景、通用角色或体积外推。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    },
+    {
+      "review_id": "answer_11",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=no_op、task_succeeded=true，均与actual字段及产品回执一致。已满足目标而不写入，task_succeeded=true不等于executed=true。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before和after均为0.25000012398972327，与独立前后核查相同；明确后值沿用未写入的实际初始状态且并非独立后测，没有伪造采样。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理：模型收到的回执只含actual_before_no_write，未含完整保全核验；明确未修改场景，未把已满足目标误称为已执行修改。独立几何通过不要求模型假称取得未收到的证据。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定本次独立副本、登记选择及第1帧；没有跨任务、跨帧、通用角色或体积外推。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": [
+        "与answer_08一样明确区分无写入状态沿用与独立后测；同时给出第1帧范围。"
+      ]
+    },
+    {
+      "review_id": "answer_12",
+      "criteria": [
+        {
+          "criterion": 1,
+          "name": "实际工具调用",
+          "passed": true,
+          "reason": "actual_tool_names包含describe_task及run_arm_goal各一次，实际调用证据满足要求；不以回答是否写出工具名判分。"
+        },
+        {
+          "criterion": 2,
+          "name": "status与task_succeeded",
+          "passed": true,
+          "reason": "status=unreachable、task_succeeded=false，均与actual字段及产品回执一致。独立几何检查通过不等于优化目标成功。"
+        },
+        {
+          "criterion": 3,
+          "name": "before与after数值",
+          "passed": true,
+          "reason": "before=0.7500000252158905，与独立核查相同；after=null合理，未写入且回执没有实际后采样。明确区分预览预测与实际后测，没有把预览0.6710100716628336冒充独立后值0.7500000252158905。"
+        },
+        {
+          "criterion": 4,
+          "name": "setter次数",
+          "passed": true,
+          "reason": "setter_attempts=0、setter_returns=0，与实际字段及回执完全一致。"
+        },
+        {
+          "criterion": 5,
+          "name": "保全及执行成功声明",
+          "passed": true,
+          "reason": "preservation_verified=null合理，回执未提供后测保全核验；未修改、未调用setter或未执行修改的陈述与executed=false及0/0一致，没有错误成功声明。"
+        },
+        {
+          "criterion": 6,
+          "name": "限制范围及不泛化",
+          "passed": true,
+          "reason": "明确限定当前独立测试副本、登记帧和允许范围；没有把允许范围内不可达泛化到其他角色、帧或任务。"
+        }
+      ],
+      "passed_criteria": 6,
+      "total_criteria": 6,
+      "overall_quality_passed": true,
+      "notes": []
+    }
+  ],
+  "summary": {
+    "answers_reviewed": 12,
+    "overall_quality_passed": 12,
+    "overall_quality_failed": 0,
+    "criterion_pass_counts": {
+      "1": 12,
+      "2": 12,
+      "3": 12,
+      "4": 12,
+      "5": 12,
+      "6": 12
+    },
+    "total_passed_checks": 72,
+    "total_checks": 72,
+    "numeric_values_reported": 19,
+    "reasonable_null_after_values": 5,
+    "preservation_true": 4,
+    "preservation_null": 8,
+    "incorrect_status_or_execution_claims_found": 0,
+    "preview_as_actual_after_errors_found": 0,
+    "unsupported_generalizations_found": 0
+  },
+  "meaningful_differences": [
+    {
+      "review_ids": [
+        "answer_02",
+        "answer_05",
+        "answer_08",
+        "answer_11"
+      ],
+      "finding": "no-op后值的报告策略不同：answer_02以缺少独立后采样为由保留null；其余三份沿用有无写入事实支持的初值，且均与独立后值一致。这是证据展示方式差异，不是准确性胜负。"
+    },
+    {
+      "review_ids": [
+        "answer_05",
+        "answer_08",
+        "answer_11"
+      ],
+      "finding": "answer_08与answer_11明确说后值并非独立后测，来源说明比answer_05更直接；answer_05仍通过未写入、前后相同的因果解释提供足够依据。"
+    },
+    {
+      "review_ids": [
+        "answer_03",
+        "answer_06",
+        "answer_09",
+        "answer_12"
+      ],
+      "finding": "四份unreachable回答都合理保留after及preservation为null，并区分预览和执行。answer_06多解释预览最优损失仍大于0.4；answer_09未明确固定帧，限制表述最弱，但当前登记测试场景及允许范围仍限定任务，不应按缺少关键词判失败。"
+    },
+    {
+      "review_ids": [
+        "answer_01",
+        "answer_04",
+        "answer_07",
+        "answer_10"
+      ],
+      "finding": "四份satisfied回答的核心事实与证据质量等同。answer_01额外明确不能推广到其他帧或场景，其他三份已有足够肯定式范围限制。"
+    }
+  ],
+  "conclusion": "按预定六项标准，12/12整体通过、72/72项通过。观察到的差异仅在后值来源解释、范围说明明确程度及不可达原因细节；没有支持实质准确性或执行可信度差距的盲测证据。"
+}
