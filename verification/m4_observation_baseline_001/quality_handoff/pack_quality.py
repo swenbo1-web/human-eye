@@ -16,26 +16,6 @@ EVAL = HERE.parent
 CYCLE = 'M4-OBSERVATION-BASELINE-001'
 sha = lambda raw: hashlib.sha256(raw).hexdigest()
 KEYS = ('cell', 'task', 'round', 'group')
-PROTECTED = {'arguments', 'query', 'code', 'command'}
-FACTS = {'binding', 'context', 'facts', 'coverage', 'unresolved', 'measurement_contracts',
-    'limits', 'geometry_budget', 'budgets', 'candidate_acquisition', 'certificate'}
-ADMIN = {'group', 'arm', 'profile', 'condition', 'cell', 'round', 'thread_id', 'pid',
-    'actor_pid', 'actor_parent_pid', 'consumer_pid', 'launcher_pid', 'runtime_pid',
-    'port', 'host', 'endpoint', 'argv', 'command_line', 'trace_id', 'request_id',
-    'request_trace', 'execution_trace', 'runtime_identity', 'traceback', '_meta',
-    'usage', 'usage_rows', 'token_usage', 'input_tokens', 'output_tokens',
-    'cached_input_tokens', 'total_tokens', 'reasoning_tokens', 'fees', 'cost', 'costs',
-    'started_ns', 'ended_ns', 'elapsed_ns', 'elapsed_s', 'elapsed_seconds',
-    'wall_ns', 'duration_ns', 'duration_ms', 'duration_s', 'execution_time',
-    'prompt_to_final_ns', 'total_task_wall_ns', 'full_cell_wall_ns', 'pre_consumer_setup_ns',
-    'popen_ns', 'prompt_submitted_ns', 'final_received_ns', 'turn_completed_ns',
-    'process_exit_ns', 'cleanup_end_ns', 'startup_ns', 'perf_ns', 'timings',
-    'closed_ns', 'original_deadline_ns', 'deadline_ns',
-    'wire_tool_bytes', 'response_bytes', 'produced_response_bytes',
-    'closed_ns', 'deadline_ns', 'original_deadline_ns', 'chain_deadline_ns',
-    'worker_deadline_ns', 'cell_started_ns', 'cell_ended_ns', 'batch_started_ns',
-    'batch_ended_ns', 'batch_wall_ns'}
-PATH = re.compile(r'(?<![A-Za-z0-9_])(?:[A-Za-z]:[\\/]|\\\\)[^\s"<>]+')
 TOOL_TYPES = {'command_execution', 'mcp_tool_call', 'custom_tool_call', 'function_call',
     'web_search', 'image_view', 'file_change', 'todo_list', 'collab_tool_call'}
 
@@ -63,43 +43,28 @@ def put(path, raw):
 
 
 def audit_projection(value, source, removals, pointer='$', semantic=False):
-    """Exact key rules only. No numeric/text keyword scrub of model content."""
-    def note(rule, original, at=pointer):
-        removals.append({'source_sha256':sha(source), 'pointer':at, 'rule':rule,
-            'original_value_sha256':sha(encoded(original))})
-    if isinstance(value, dict):
-        result = {}
-        for key, item in value.items():
-            at = pointer+'/'+key.replace('~','~0').replace('/','~1')
-            if key in PROTECTED:
-                result[key] = item
-            elif not semantic and key in ADMIN:
-                note('administrative_envelope_field', item, at)
-            else:
-                result[key] = audit_projection(item, source, removals, at, semantic or key in FACTS)
+    """Copy a payload unchanged; field names and text never imply an envelope.
+
+    The prior signature remains available for replaying archived counterexamples.
+    Administrative removal requires an explicit known envelope at its caller.
+    JSON-looking strings, native stdout and path-like text are not interpreted.
+    """
+    return copy.deepcopy(value)
+
+
+def without_admin_fields(value, raw, removals, *, pointer, fields):
+    """Remove only named direct fields of a caller-identified producer envelope."""
+    result = copy.deepcopy(value)
+    if not isinstance(result, dict):
         return result
-    if isinstance(value, list):
-        return [audit_projection(item, source, removals, pointer+'/'+str(i), semantic)
-            for i, item in enumerate(value)]
-    if isinstance(value, str):
-        # Structured text results are decoded only to apply the same explicit
-        # envelope rules. Facts, budgets, unknowns and source-binding keys stay.
-        if value.strip().startswith(('{','[')):
-            try:
-                parsed = decode(value)
-            except (ValueError, UnicodeError):
-                pass
-            else:
-                projected = audit_projection(parsed, source, removals, pointer+'/decoded_json', semantic)
-                if projected != parsed:
-                    return json.dumps(projected, ensure_ascii=False, separators=(',',':'), allow_nan=False)
-                return value
-        def alias(match):
-            original = match.group()
-            note('absolute_diagnostic_or_source_path_stable_alias', original)
-            return '<path_'+sha(original.encode('utf8'))[:16]+'>'
-        return PATH.sub(alias, value)
-    return value
+    for key in fields:
+        if key in result:
+            original = result.pop(key)
+            removals.append({'source_sha256':sha(raw),
+                'pointer':pointer+'/'+key.replace('~','~0').replace('/','~1'),
+                'rule':'known_administrative_envelope_field',
+                'original_value_sha256':sha(encoded(original))})
+    return result
 
 
 def without_rpc_envelope(value, raw, removals):
@@ -169,7 +134,10 @@ def source_consistency(sources, removals):
     delivery = consumer.get('image_delivery') if isinstance(consumer,dict) else None
     # Read nested values from the original object, not the projected copy.
     original_native = close.get('native_close') if isinstance(close,dict) else None
-    worker = field('owner/CLOSE.json', close, 'worker_closed', '$/worker_closed')
+    worker = without_admin_fields(
+        field('owner/CLOSE.json', close, 'worker_closed', '$/worker_closed'),
+        sources.get('owner/CLOSE.json', b''), removals, pointer='$/worker_closed',
+        fields=('pid','closed_ns','original_deadline_ns'))
     original_worker = close.get('worker_closed') if isinstance(close,dict) else None
     evidence = {
         'ACTOR_CONFIG':{'asset_sha256':field('ACTOR_CONFIG.json',config,'asset_sha256','$/asset_sha256')},
@@ -253,7 +221,7 @@ def handoff_one(slot, mapping, record, sources, destination):
                 # requests or infer delivery from an owner-produced response.
                 projected = {key:copy.deepcopy(item[key]) for key in ('type','tool','server','arguments','result','error','status','command') if key in item}
                 events.append({'order':len(events)+1, 'phase':event['type'],
-                    'event':audit_projection(projected, raw_events, removals),
+                    'event':projected,
                     'source_sha256':sha(raw_events), 'source_line_sha256':sha(line)})
     # Retain record-only text as explicitly unconfirmed, never fill a missing
     # final, never replace null with an invented answer such as "unknown".
@@ -277,10 +245,11 @@ def handoff_one(slot, mapping, record, sources, destination):
                 call['request'] = request_projection(data, raw, removals)
             elif filename=='ATTEMPT.json':
                 call['is_error'] = data.get('is_error')
-                call['owner_exception'] = audit_projection(data.get('exception'), raw, removals)
+                call['owner_exception'] = without_admin_fields(data.get('exception'), raw, removals,
+                    pointer='$/exception', fields=('traceback',))
             else:
                 call['responses'].append({'kind':filename,
-                    'value':audit_projection(without_rpc_envelope(data, raw, removals), raw, removals)})
+                    'value':copy.deepcopy(without_rpc_envelope(data, raw, removals))})
         call['request_missing'] = call['request'] is None
         call['response_missing'] = not call['responses']
         attempts.append(call)
@@ -307,9 +276,12 @@ answer.txt preserves PUBLIC_FINAL bytes exactly; its binding state states
 whether consumer.final agrees. CLI output and decoded unconfirmed messages
 are separate corroboration, never a substitute final. Tool requests retain
 original decoded arguments/query/code. Facts, unknowns, geometry budgets and
-source-binding fields remain; administrative envelopes omit route mapping,
-process/request IDs and measured usage/timing. Absolute diagnostic/source
-paths may use stable aliases. Private originals and pointer/rule/value hashes
+source-binding fields remain. Only known RPC/event or producer-envelope
+positions omit their explicit administrative fields. Entire tool result/error
+payloads, native stdout, nested facts and JSON strings are preserved, including
+their original whitespace and path-like text. No field-name whitelist or
+recursive text parsing is used to decide what counts as a fact.
+Private originals and pointer/rule/value hashes
 make every projection auditable. Tool results are decoded/re-encoded JSON
 projections, not claimed to be original network-frame bytes.
 

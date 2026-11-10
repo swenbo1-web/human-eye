@@ -1,3 +1,5 @@
+> 本报告保留 9c85ab9a 准备阶段的内容。质量投影缺陷及其修正由 [M4-PREP-001](revisions/M4_PREP_001/REPORT.md) 明确 supersede；原脚本、PLAN、FREEZE、INDEX 和本报告原字节已另存。修正状态为 PREP_FIX_READY，消费者仍为 0，尚无正式 GO。
+
 # M4-OBSERVATION-BASELINE-001：PREP_READY
 
 本批完成一项完整观察任务、N/P 各三次的准备包。正式模型消费者仍为 **0**，没有本批 `GO.json`、`STARTED.json` 或正式结果。独立管理员选择保留原资产和真实两工具目录，已记录决定 A；此决定不代替准备包审核或正式 GO。
