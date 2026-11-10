@@ -1,0 +1,81 @@
+{
+  "baseline_commit": "d341bb68a4747d1076d5e332789bee1d5f217cd7",
+  "baseline_product_commit": "df016079b0265ee327f884c90dd4815c392016b6",
+  "method": "Read exact Git blob bytes with git show, inspect existing contract text; no product execution or historical test rewrite.",
+  "files": {
+    "human_eye_plugin/telemetry.py": {
+      "baseline_sha256": "837739949beeab661b70035c5df7e95b4d0d316fffcc3c2e9bd11def5c965904",
+      "current_sha256": "837739949beeab661b70035c5df7e95b4d0d316fffcc3c2e9bd11def5c965904",
+      "byte_identical": true
+    },
+    "human_eye_plugin/live_service.py": {
+      "baseline_sha256": "fa5b4775b99d0691720a58212732c3aa2b60819cfe21d7df5ffe4bc9bf9d5986",
+      "current_sha256": "fa5b4775b99d0691720a58212732c3aa2b60819cfe21d7df5ffe4bc9bf9d5986",
+      "byte_identical": true
+    },
+    "human_eye_plugin/task_query.py": {
+      "baseline_sha256": "aa61aa172efc2cf50cb808757661e4daa19aab793b5a06790d2203714647b179",
+      "current_sha256": "aa61aa172efc2cf50cb808757661e4daa19aab793b5a06790d2203714647b179",
+      "byte_identical": true
+    },
+    "human_eye_plugin/live_spatial_mcp.py": {
+      "baseline_sha256": "d85526448816daf9180d07e18f78c347796ac4f65508e6758297aa0ac727b992",
+      "current_sha256": "3748b57d63f8a1ebe901b3e2cb555b658ad7673ad7318431155af6a29d9e73d9",
+      "byte_identical": false
+    }
+  },
+  "corrections": [
+    {
+      "test": "test_new_trace_is_observe_without_image_under_actual_rpc_id",
+      "original_wrong_expectation": "session_id inside trace.annotations",
+      "existing_contract": "session_id is explicitly allowlisted as correlation and annotate dispatches it into correlation.",
+      "basis": [
+        {
+          "path": "human_eye_plugin/telemetry.py",
+          "line": 37,
+          "excerpt": "_CORRELATIONS = frozenset({\"experiment_id\", \"trial_id\", \"session_id\", \"observation_id\", \"turn_id\", \"tool_use_id\",\n                           \"scene_revision\", \"implementation_revision\", \"aggregation_key\",\n                           \"goal_id\", \"segment_id\", \"step_id\", \"task_id\", \"task_run_id\"})"
+        },
+        {
+          "path": "human_eye_plugin/telemetry.py",
+          "line": 328,
+          "excerpt": "                if key in _CORRELATIONS:\n                    prepared.append((\"correlation\", key, _identifier(value, key)))\n                elif key in _ANNOTATIONS:"
+        }
+      ],
+      "existing_test_reference": "verification/test_telemetry.py:213"
+    },
+    {
+      "test": "test_original_request_deadline_survives_new_alias_encoding",
+      "original_wrong_expectation": "status=error for deadline exhaustion",
+      "existing_contract": "RequestBudgetError stores status=kind with expired as an allowed kind; MCP merges its to_error_fields into error payload.",
+      "basis": [
+        {
+          "path": "human_eye_plugin/live_service.py",
+          "line": 101,
+          "excerpt": "class RequestBudgetError(ValueError):\n    \"\"\"A cooperative deadline refusal retaining completed or uncertain effects.\"\"\"\n\n    def __init__(self, kind, stage):\n        if kind not in {'busy', 'expired'}:\n            raise ValueError('Invalid request budget error kind')\n        self.code = 'live_request_' + kind\n        self.diagnostic = {\n            'status': kind, 'code': self.code, 'reason_codes': [self.code],\n            'budget_stage': stage,\n            'budget_scope': _REQUEST_BUDGET_SCOPE,\n            **_request_error_fields(),\n        }\n        super().__init__('[' + self.code + '] Local request budget exhausted at ' + stage)\n\n    def to_error_fields(self):\n        return {**copy.deepcopy(self.diagnostic), **_request_error_fields(self)}\n\n"
+        },
+        {
+          "path": "human_eye_plugin/live_spatial_mcp.py",
+          "line": 769,
+          "excerpt": "    def _error_result(self, exc):\n        metadata = {'status': 'error', 'error': str(exc),\n            'tool_outcome': 'unknown', 'automatic_retry': False,\n            **self.request_error_fields(exc)}\n        from .live_service import StateBindingError, RequestBudgetError\n        if isinstance(exc, (StateBindingError, RequestBudgetError)):\n            metadata.update(exc.to_error_fields())\n            metadata['allow_action'] = False\n        return _tool_result(metadata, is_error=True)\n"
+        }
+      ]
+    },
+    {
+      "test": "test_relations_partial_keeps_missing_and_ambiguous_rows",
+      "original_wrong_expectation": "missing target yields status=partial",
+      "existing_contract": "Without measurable pair facts or requested AABB, available is false; original task set status is unknown. An ambiguous candidate alongside a measured candidate remains partial.",
+      "basis": [
+        {
+          "path": "human_eye_plugin/task_query.py",
+          "line": 354,
+          "excerpt": "    complete = (nearest_complete and all(all(f['status']=='measured' for f in row['facts'].values()) for row in pairs))\n    boxes = ([_aabb_fact(by_id[oid]) if oid is not None else _aabb_fact(None) for oid in ids]\n             if 'aabb' in query['requested_facts'] else None)\n    if boxes is not None:\n        complete = complete and all(box['status'] == 'measured' for box in boxes)\n    available = (any(row['facts']['closed_solid_relation']['status'] == 'measured'\n        or (row['facts']['surface_proximity']['value'] is not None\n            and finite_metric(row['facts']['surface_proximity']['value'].get('distance_m')))\n        for row in pairs) or boxes is not None and any(box['status'] == 'measured' for box in boxes))\n    binding = {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,\n        'source': scene['source'], 'objects': bindings, 'currentness': 'capture_snapshot',\n        'capture_scope': scene.get('capture_scope', 'complete_scene_meshes')}\n    if 'host_identity' in scene:\n        binding['host_identity'] = scene['host_identity']\n    if scene.get('capture_scope') == 'selected_objects':\n        binding.update(candidate_count=scene['task_selection']['candidate_count'], selected_count=len(meshes))\n    checkpoint('task_set_complete')\n    return {'result_kind': 'task_query', 'schema_version': 'task-query-set-v1', 'scope': SET_SCOPE,\n        'status': 'observed' if complete else 'partial' if available else 'unknown',\n        'binding': binding, 'unit': 'm', 'coordinate_frame': 'world', 'pair_order': 'target_to_candidate',\n        'facts': {'aabb': boxes} if boxes is not None else {},"
+        }
+      ]
+    }
+  ],
+  "first_bootstrap": "offline_01: original guard rejected __main__ before tests; preserved BOOTSTRAP_FAILURE.txt",
+  "first_suite": "offline_02: 14 run, 11 pass, 2 failures and 1 error from those new test assumptions; original output preserved",
+  "final_suite": "offline_03: 14 pass, unchanged 137-product-source SHA; corrected only new tests, no product changes",
+  "final_test_sha256": "bff257e4e1f762a830b8350a8f067fa265348e1ea54d8282e8ffa41096bcff65",
+  "snapshot_identity_scope": "No pyproject marker was copied into engine. This exact-byte snapshot is not an installed package; runtime _distribution fallback is unregistered_runtime. No installation acceptance claimed."
+}

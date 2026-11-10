@@ -1,0 +1,9 @@
+{
+  "request": {
+    "params": {
+      "code": "import json as _j\nprint(_j.dumps({'unit_scale_m':bpy.context.scene.unit_settings.scale_length,'objects':[{'name':o.name,\n'vertices_local':[list(v.co) for v in o.data.vertices],'matrix_world':[list(r) for r in o.matrix_world],\n'faces':[list(p.vertices) for p in o.data.polygons]} for o in sorted(bpy.context.scene.objects,key=lambda x:x.name) if o.type=='MESH']},allow_nan=False))"
+    },
+    "type": "execute_code"
+  },
+  "timeout_s": 30
+}

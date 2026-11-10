@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
     mode.add_argument("--config", help="Trusted local live-service configuration JSON")
     mode.add_argument("--demo", action="store_true", help="Explicit legacy synthetic-scene demonstration")
     parser.add_argument('--spatial-task-only', action='store_true', default=spatial_task_only,
-                        help='Expose only the live read-only spatial relations task')
+                        help='Expose only live read-only spatial relations and global surface-nearest tasks')
     args = parser.parse_args(argv)
     if args.demo and args.spatial_task_only:
         parser.error('--spatial-task-only cannot be combined with --demo')

@@ -276,13 +276,28 @@ SPATIAL_TASK_TOOLS_SCHEMA = [{
         'target': copy.deepcopy(SELECTOR_SCHEMA),
         'candidates': {'type': 'array', 'items': copy.deepcopy(SELECTOR_SCHEMA), 'minItems': 1, 'maxItems': 3},
         'include_aabb': {'type': 'boolean', 'default': False}},
-        'required': ['target', 'candidates'], 'additionalProperties': False}}]
+        'required': ['target', 'candidates'], 'additionalProperties': False}}, {
+    'name': 'human_eye_surface_nearest',
+    'description': ('Find the nearest triangle surfaces, in metres, from one current Blender mesh '
+        'to all other meshes in the scene. Complete results give global nearest ties; partial '
+        'results give best-known candidates and unresolved coverage. Surface distance is unsigned, '
+        'not penetration depth. Read-only: no images or actions. '
+        'Example: {"target":{"name":"Bracket"}}.'),
+    'annotations': {'readOnlyHint': True, 'destructiveHint': False,
+                    'idempotentHint': True, 'openWorldHint': False},
+    'inputSchema': {'type': 'object', 'properties': {
+        'target': copy.deepcopy(SELECTOR_SCHEMA)},
+        'required': ['target'], 'additionalProperties': False}}]
 
 
 def _spatial_task_query(arguments):
     return {'mode': 'task', 'target': arguments.get('target'), 'candidates': arguments.get('candidates'),
         'requested_facts': ['closed_solid_relation', 'surface_proximity']
             + (['aabb'] if arguments.get('include_aabb', False) else [])}
+
+
+def _surface_nearest_task_query(arguments):
+    return {'mode': 'surface_nearest', 'objects': [arguments.get('target')]}
 
 
 def _rpc_error(request_id: Any, code: int, message: str) -> dict:
@@ -323,6 +338,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         raise ValueError("arguments must be an object")
     allowed = {
         'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb'},
+        'human_eye_surface_nearest': {'target'},
         'human_eye_arm_twist_observe': {'selection', 'session_id', 'task_context'},
         "human_eye_scene_observe": {"task_instruction", "focal_id", "reference_id", "session_id", "goal", "query", 'task_context', 'scene_delta', 'response_detail', 'include_image'},
         "human_eye_transform": {"action", "session_id", "goal", 'task_context'},
@@ -337,6 +353,9 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         if type(arguments.get('include_aabb', False)) is not bool:
             raise ValueError('include_aabb must be boolean')
         validate_query(_spatial_task_query(arguments))
+        return
+    if name == 'human_eye_surface_nearest':
+        validate_query(_surface_nearest_task_query(arguments))
         return
     for field in ("session_id", "focal_id", "reference_id"):
         if field in arguments and (not isinstance(arguments[field], str) or not arguments[field].strip()):
@@ -731,6 +750,7 @@ class LiveSpatialMCPServer:
             return
         operations = {'human_eye_scene_observe': 'mcp.observe',
                       'human_eye_spatial_relations': 'mcp.observe',
+                      'human_eye_surface_nearest': 'mcp.observe',
                       'human_eye_arm_twist_observe': 'mcp.arm_twist_observe',
                       'human_eye_transform': 'mcp.transform',
                       'human_eye_clearance_segment': 'mcp.clearance_segment',
@@ -739,7 +759,7 @@ class LiveSpatialMCPServer:
         operation = operations.get(name, 'mcp.invalid') if isinstance(name, str) else 'mcp.invalid'
         with factory(operation,
                      session_id=args.get('session_id', self.default_session_id)) as trace:
-            set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_arm_twist_observe'} else
+            set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_surface_nearest', 'human_eye_arm_twist_observe'} else
                               args.get('include_image', False) if name == 'human_eye_clearance_segment' else
                               args.get('include_image', True) if name == 'human_eye_scene_observe' else
                               True if name == 'human_eye_transform' else None,
@@ -777,12 +797,16 @@ class LiveSpatialMCPServer:
         return _tool_result(metadata, is_error=True)
 
     def _dispatch_tool(self, name: str, arguments: dict) -> dict:
-        if (name == 'human_eye_spatial_relations') != self.spatial_task_only:
+        spatial_task = name in {tool['name'] for tool in SPATIAL_TASK_TOOLS_SCHEMA}
+        if spatial_task != self.spatial_task_only:
             raise ValueError('Tool not exposed by this server mode: ' + name)
         _validate_arguments(name, arguments)
         spatial_relations = name == 'human_eye_spatial_relations'
         if spatial_relations:
             arguments = {'query': _spatial_task_query(arguments), 'include_image': False}
+            name = 'human_eye_scene_observe'
+        elif name == 'human_eye_surface_nearest':
+            arguments = {'query': _surface_nearest_task_query(arguments), 'include_image': False}
             name = 'human_eye_scene_observe'
         bind_task_context(current_trace(), arguments.get('task_context'))
         # A service must not retain or mutate the incoming protocol message.
@@ -954,7 +978,7 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
     parser = argparse.ArgumentParser(description="Serve the live Human Eye Blender connection over MCP stdio")
     parser.add_argument("--config", required=True, help="Trusted local live-service configuration JSON")
     parser.add_argument('--spatial-task-only', action='store_true', default=spatial_task_only,
-                        help='Expose only the read-only spatial relations task')
+                        help='Expose only read-only spatial relations and global surface-nearest tasks')
     args = parser.parse_args(argv)
     from .live_service import LiveSpatialService
     try:
