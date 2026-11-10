@@ -1,0 +1,60 @@
+{
+  "cycle_id": "M4-LOCAL-RELATION-CONSUMPTION-001",
+  "fix_id": "LRC-PREP-001",
+  "previous_commit": "169b0be061e91b126f46313478690564ccb2bd60",
+  "previous_path": "verification/m4_local_relation_consumption_001/revisions/LRC_PREP_001/original_169b0be0/quality_handoff/pack_quality.py",
+  "previous_sha256": "90f07a6b78457bb7ca9a5b93fbb7d78bf3439b547cfb21ff4fbae0b0c76ab0d4",
+  "source_path": "verification/m4_local_relation_consumption_001/quality_handoff/pack_quality.py",
+  "new_sha256": "3b960695d5308ac64c5512191d7c0dc4e854a72b5fa07b97ccb5dfe0c0b3c365",
+  "changed_existing_functions": [
+    "main"
+  ],
+  "added_functions": [
+    "validate_zero_launch_failure"
+  ],
+  "existing_functions_AST_unchanged": {
+    "decode": true,
+    "encoded": true,
+    "put": true,
+    "audit_projection": true,
+    "without_admin_fields": true,
+    "without_rpc_envelope": true,
+    "request_projection": true,
+    "capture_cell": true,
+    "source_consistency": true,
+    "handoff_one": true
+  },
+  "positive_PID_predicate_AST_unchanged": true,
+  "positive_PID_requires_new_controls": false,
+  "zero_PID_controls": [
+    "GO.json",
+    "STARTED.json"
+  ],
+  "zero_PID_control_archive": "private/control original bytes; private/PROVENANCE.json control_sha256; original final moving-control check",
+  "zero_PID_scope": "one planned first-cell failure, current-cycle GO/STARTED bound to frozen PLAN and terminal counts/times; preserves null or missing PID, failure evidence and eight not_run slots",
+  "payload_projection_helpers_unchanged": true,
+  "static_checks": [
+    "AST parse",
+    "compile without execution",
+    "all pre-existing functions except main AST equal",
+    "positive PID predicate AST equal"
+  ],
+  "static_check_history": [
+    {
+      "attempt": 1,
+      "status": "failed_before_any_write",
+      "reason": "metadata script mistakenly read ast.Assert.value; AttributeError; no target code executed"
+    },
+    {
+      "attempt": 2,
+      "status": "passed",
+      "correction": "read ast.Assert.test"
+    }
+  ],
+  "tests_run_by_implementation_agent": false,
+  "model_consumers": 0,
+  "product_calls": 0,
+  "Blender_sessions": 0,
+  "runtime_actor_transport_scoring_inputs_installations_edited": false,
+  "diff_sha256": "fd1bccfb934178d00a9efeec5b8d6bf35fda7e3d1204cde9e54487310aa2a679"
+}

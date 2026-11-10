@@ -307,6 +307,44 @@ complete source archives and audit details.
 """
 
 
+def validate_zero_launch_failure(run, control):
+    """Accept only this cycle's started, terminal first-cell failure receipt."""
+    go, started = (decode(control[name]) for name in ('GO.json','STARTED.json'))
+    plan_sha256 = sha(control['PLAN.json'])
+    assert (go.get('task')==CYCLE and go.get('authorized') is True
+        and go.get('max_consumers')==9 and go.get('plan_sha256')==plan_sha256), 'zero-launch GO binding mismatch'
+    assert (started.get('max_consumers')==9 and started.get('plan_sha256')==plan_sha256
+        and type(started.get('started_ns')) is int and started['started_ns']>0), 'zero-launch STARTED binding mismatch'
+    assert (len(run['records'])==1 and type(run.get('started_cells')) is int
+        and run['started_cells']==1 and run.get('maximum_consumers')==9
+        and run.get('all_planned_dispatched') is False
+        and run.get('no_replacements') is True), 'zero-launch terminal counts mismatch'
+    assert isinstance(run.get('stop'),str) and run['stop'].strip(), 'zero-launch failed prefix required'
+    row = run['records'][0]
+    assert all(type(run.get(key)) is int and run[key]>0
+        for key in ('batch_started_ns','batch_ended_ns')), 'zero-launch timing mismatch'
+    assert all(type(row.get(key)) is int and row[key]>0
+        for key in ('cell_started_ns','cell_ended_ns')), 'zero-launch timing mismatch'
+    assert (run['batch_started_ns']<=started['started_ns']<=row['cell_started_ns']
+        <=row['cell_ended_ns']<=run['batch_ended_ns']), 'zero-launch timing mismatch'
+    assert (type(run.get('batch_wall_ns')) is int
+        and run['batch_wall_ns']==run['batch_ended_ns']-run['batch_started_ns']
+        and type(row.get('full_cell_wall_ns')) is int
+        and row['full_cell_wall_ns']==row['cell_ended_ns']-row['cell_started_ns']
+        and row.get('within_570s') is (row['full_cell_wall_ns']<570*10**9)), 'zero-launch timing mismatch'
+    consumer = row.get('consumer')
+    if consumer is None:
+        errors = row.get('errors')
+    else:
+        assert (isinstance(consumer,dict) and consumer.get('consumer_pid') is None
+            and consumer.get('status')=='failed' and consumer.get('valid_completion') is False
+            and consumer.get('thread_id') is None and consumer.get('final') is None), 'zero-launch failed prefix required'
+        errors = consumer.get('errors')
+    assert (isinstance(errors,list) and errors and any(isinstance(error,dict)
+        and isinstance(error.get('type'),str) and isinstance(error.get('message'),str)
+        for error in errors)), 'zero-launch failed prefix required'
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('output',help='new immediate child of quality_handoff, e.g. handoff_01')
@@ -328,9 +366,12 @@ def main():
     assert len(records)<=9 and len({row['cell'] for row in records})==len(records)
     assert type(run.get('batch_ended_ns')) is int and run['batch_ended_ns']>0, 'terminal batch record required'
     assert len(records)==9 or run.get('stop'), 'partial run needs its preserved stop reason'
-    assert any(isinstance(record.get('consumer'),dict)
+    launched = any(isinstance(record.get('consumer'),dict)
         and type(record['consumer'].get('consumer_pid')) is int and record['consumer']['consumer_pid']>0
-        for record in records), 'at least one recorded consumer launcher is required; preparation is not a quality run'
+        for record in records)
+    if not launched:
+        control.update({name:(EVAL/name).read_bytes() for name in ('GO.json','STARTED.json')})
+        validate_zero_launch_failure(run,control)
     for slot,row in zip(sequence,rows,strict=True):
         assert all(slot[key]==row[key] for key in KEYS), 'frozen map/plan mismatch'
     for slot,record in zip(sequence[:len(records)],records,strict=True):

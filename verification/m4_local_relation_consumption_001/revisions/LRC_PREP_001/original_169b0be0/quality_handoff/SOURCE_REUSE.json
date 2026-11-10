@@ -1,0 +1,65 @@
+{
+  "Blender_sessions": 0,
+  "all_payload_and_assembly_helpers_AST_unchanged": {
+    "audit_projection": true,
+    "capture_cell": true,
+    "decode": true,
+    "encoded": true,
+    "put": true,
+    "request_projection": true,
+    "source_consistency": true,
+    "without_admin_fields": true,
+    "without_rpc_envelope": true
+  },
+  "changed_constant": "CYCLE",
+  "changed_functions": [
+    "main",
+    "handoff_one"
+  ],
+  "consumer_group_binding_delta": {
+    "after": "        assert all(consumer.get(key)==slot[key] for key in ('cell','task','round')), 'consumer slot binding mismatch'\n        expected_group={'N':'N','P0':'P','P1':'P'}[slot['group']]\n        assert consumer.get('group')==expected_group and consumer.get('external_group')==slot['group'], 'consumer external/internal group binding mismatch'",
+    "before": "        assert all(consumer.get(key)==slot[key] for key in KEYS), 'consumer slot binding mismatch'",
+    "reason": "Original transport remains N/P internally; new driver records external_group=N/P0/P1. Both identities must match the frozen external slot."
+  },
+  "exact_text_replacements": [
+    {
+      "after": "CYCLE = 'M4-LOCAL-RELATION-CONSUMPTION-001'",
+      "before": "CYCLE = 'M4-OBSERVATION-BASELINE-001'"
+    },
+    {
+      "after": "assert len(sequence)==len(rows)==9 and",
+      "before": "assert len(sequence)==len(rows)==6 and"
+    },
+    {
+      "after": "len({row['cell'] for row in sequence})==9",
+      "before": "len({row['cell'] for row in sequence})==6"
+    },
+    {
+      "after": "len({row['anonymous_id'] for row in rows})==9",
+      "before": "len({row['anonymous_id'] for row in rows})==6"
+    },
+    {
+      "after": "assert len(records)<=9 and",
+      "before": "assert len(records)<=6 and"
+    },
+    {
+      "after": "assert len(records)==9 or",
+      "before": "assert len(records)==6 or"
+    },
+    {
+      "after": "'fixed_slots':9",
+      "before": "'fixed_slots':6"
+    },
+    {
+      "after": "'packaged_slots':9",
+      "before": "'packaged_slots':6"
+    }
+  ],
+  "model_consumers": 0,
+  "new_main_metadata_assertion": "assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','P0','P1'}, 'wrong fixed nine-slot sample metadata'",
+  "new_sha256": "90f07a6b78457bb7ca9a5b93fbb7d78bf3439b547cfb21ff4fbae0b0c76ab0d4",
+  "product_calls": 0,
+  "semantic_projection_unchanged": true,
+  "source_path": "verification/m4_observation_baseline_001/quality_handoff/pack_quality.py",
+  "source_sha256": "afa802bdb085ad9e174f04c4ba91ff05bdacdbc7b0bb892162a7b7e14d580cbc"
+}

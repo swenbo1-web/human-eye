@@ -79,13 +79,14 @@ def main():
     assert sha(HERE/'scoring/SCORING_CONTRACT.json') == plan['scoring_contract_sha256']
     assert sha(HERE/'BENEFIT_CONTRACT.json') == plan['benefit_contract_sha256']
     paths = sorted(p for p in HERE.rglob('*') if p.is_file() and '__pycache__' not in p.parts
-                   and p.name not in ('ARTIFACT_INDEX.json','FREEZE.json','PREP_READY.json'))
+                   and not (p.parent == HERE and p.name in
+                            ('ARTIFACT_INDEX.json','FREEZE.json','PREP_READY.json','FIX_READY.json')))
     for path in paths:
         assert not path.is_symlink()
         if path.suffix == '.py': compile(path.read_bytes(), str(path), 'exec', dont_inherit=True)
     rows = [dict(path=p.relative_to(ROOT).as_posix(), bytes=p.stat().st_size, sha256=sha(p)) for p in paths]
     save(HERE/'ARTIFACT_INDEX.json', dict(cycle_id=CYCLE, files=rows, file_count=len(rows),
-        bytes=sum(r['bytes'] for r in rows), exclusions='Self-referential seal/index/readiness files and disposable bytecode only; all synthetic failures and scripts retained'))
+        bytes=sum(r['bytes'] for r in rows), exclusions='Root-level ARTIFACT_INDEX/FREEZE/PREP_READY/FIX_READY and disposable bytecode only; all nested same-name metadata and synthetic failures/scripts included'))
     freeze = dict(cycle_id=CYCLE, status='PREP_READY', formal_GO=False, model_consumers=0,
         product_processes=0, Blender_sessions=0, CLI_processes=0, formal_consumers_planned=9,
         repetitions_each_arm=3, independent_scene_count=1, plan_sha256=sha(HERE/'PLAN.json'),
