@@ -14,7 +14,11 @@ The historical baseline is the exact previously installed source, not a moving m
 
 Keep the public native tool identical in all arms. H and C receive their actual version-specific task-relevant read-only tools and unmodified schemas. Inspect original catalogs first to ensure a wrapper does not hide a necessary existing read/report/evidence capability from H. Exclude write tools outside this read-only trial. There is no requirement that H and C schemas match; their actual interface difference is part of the product comparison. Do not add new task/global modes, transform an error into an answer, or supply model-specific corrective routing advice.
 
-Root will confirm the small catalog exposure list before the final plan freeze. No unrelated product/API cleanup or broader benchmark framework rewrite is authorized by this comparison.
+Root approved the exposure list after independent static catalog inspection: N exposes the common native tool; H/C expose that tool plus their own unchanged `human_eye_scene_observe` and `human_eye_connection_status`. The historical ordinary server has no other task-relevant standalone report/evidence-read interface. Retain all of H's original overview/exact_pairs/nearest/top1/mesh_structure/mesh_surface query forms. C's separately activated spatial-task-only interface and unrelated arm expert are outside both task descriptions. Model-initiated status queries count like any other tool attempt. The actual ordinary-server preflight must confirm this static catalog finding before freeze.
+
+No unrelated product/API cleanup or broader benchmark framework rewrite is authorized by this comparison.
+
+Independent baseline verification binds H's 125 installed runtime files byte-for-byte to `001743bb4700719bda1448a49fbb4601bbde24b2`, with entry SHA `dcdbb83011bdb80ba75dd2e442ff8e8ca334443424646dc999563b76a11a93ae` and binding SHA `3f4671ae4cc9c22a3e1d152b44f1ec3647db2ebea0dd5b0bad866cd8a3199d3e`. See `INSTALLED_BASELINE_REVIEW.json` (SHA `ad38e5dc7d50d2e3c5262c2a7d1ad61bbec58308b513de97d051de27f651b6a8`). Both versions use their actual entry and the same existing dependency interpreter. Static inspection launched no product/Blender process.
 
 ## Tasks, sample count and grading
 
