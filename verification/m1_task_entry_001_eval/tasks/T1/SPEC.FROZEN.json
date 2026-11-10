@@ -1,0 +1,52 @@
+{
+  "schema": "m1-unseen-T1-spec-v1",
+  "task": "T1",
+  "fixed_product_commit": "7411ac7aa9338f17355ffe5cdf4df113ce862aed",
+  "fixed_product_canonical": "0005ab437c8f330ed277bd49133348389fe7222bda3087f16450dce55ec9c05a",
+  "product_execution_permitted_in_asset_preparation": false,
+  "seed": 202611101,
+  "seed_algorithm": "Python random.Random(seed): shuffle four names; then shuffle role creation order; then shuffle three candidate prompt roles. Explicit frozen outputs below are authoritative and checked before construction.",
+  "roles_in_seed_order": ["target", "inner", "penetrating", "outer"],
+  "neutral_names_before_shuffle": ["Part_17", "Part_26", "Part_38", "Part_49"],
+  "names": {"target": "Part_49", "inner": "Part_38", "penetrating": "Part_17", "outer": "Part_26"},
+  "creation_order": ["target", "inner", "outer", "penetrating"],
+  "prompt_candidate_order": ["penetrating", "outer", "inner"],
+  "unit_scale_m": 1,
+  "coordinate_scale_m": [1, 128],
+  "common_rigid_rotation_rows": [[0, 0, 1], [1, 0, 0], [0, 1, 0]],
+  "common_translation_assembly_units": [13, -9, 5],
+  "target_outline_ccw": [[-8, -6], [8, -6], [8, 6], [4, 6], [4, -2], [-4, -2], [-4, 6], [-8, 6]],
+  "target_z_bounds": [-2, 2],
+  "target_cap_triangles_ccw": [[0, 1, 4], [0, 4, 5], [1, 2, 3], [1, 3, 4], [0, 5, 7], [5, 6, 7]],
+  "target_solid_rectangular_partition": [
+    {"lower": [-8, -6, -2], "upper": [8, -2, 2]},
+    {"lower": [-8, -2, -2], "upper": [-4, 6, 2]},
+    {"lower": [4, -2, -2], "upper": [8, 6, 2]}
+  ],
+  "candidate_boxes": {
+    "inner": {"lower": [-2, 0, -1], "upper": [2, 4, 1]},
+    "penetrating": {"lower": [-6, -1, -1], "upper": [-3, 2, 1]},
+    "outer": {"lower": [9, -1, -1], "upper": [11, 1, 1]}
+  },
+  "origin_policy": "Target origin is the assembly origin. Each candidate origin is its box center. All object scales are one and the common rotation is an exact orientation-preserving signed permutation.",
+  "tessellation": "One conforming shared-edge midpoint refinement of every base triangle, preserving the exact analytic boundary. This raises real surface work but is not claimed to add geometric mechanisms.",
+  "expected_mesh_counts": {
+    "target": {"vertices": 58, "triangles": 112},
+    "inner": {"vertices": 26, "triangles": 48},
+    "penetrating": {"vertices": 26, "triangles": 48},
+    "outer": {"vertices": 26, "triangles": 48}
+  },
+  "expected_total": {"mesh_objects": 4, "vertices": 136, "triangles": 256, "target_candidate_pairs": 3, "potential_triangle_pairs_per_candidate": 5376, "potential_triangle_pairs_total": 16128},
+  "expected_facts_in_assembly_units": {
+    "inner": {"relation": "separated", "gap": [2, 1], "distance_witness_target": [0, -2, 0], "distance_witness_candidate": [0, 0, 0]},
+    "penetrating": {"relation": "penetrating", "strict_shared_interior_witness": [-5, 0, 0], "strict_margin_at_least": [1, 1], "target_only_witness": [-7, 0, 0], "candidate_only_witness": [-3.5, 0, 0]},
+    "outer": {"relation": "separated", "gap": [1, 1], "distance_witness_target": [8, 0, 0], "distance_witness_candidate": [9, 0, 0]}
+  },
+  "unique_nearest_separated_role": "outer",
+  "misleading_coarse_geometry": "The inner separated object and penetrating object both lie wholly inside the target AABB. Candidate AABB centers rank inner before outer, but the outer separated surface is closer. The target itself is a new connected deep U-slot, not an old asset renamed or translated.",
+  "independent_oracle": "Read the saved file in a fresh background Blender, convert every actual vertex and matrix binary float to Fraction, prove exact oriented manifold boundary coverage against analytic rectangular patches using independent rational clipping, prove each solid equals the registered U/box region, and derive gaps from rectangular partitions plus attained surface witnesses. Replay never imports production code or a production geometry solver.",
+  "answer_tolerance_m": 0.000001,
+  "distance_answer_rule": "Correct separated-candidate distances must differ from the certified singleton interval by at most 1e-6 m; relations and the complete unique nearest-separated set must be correct. Penetrating is not a penetration-depth measurement.",
+  "preparation_limits": {"total_window_s": 180, "each_background_blender_s": 60, "oracle_subprocess_s": 30, "asset_max_bytes": 4194304, "snapshot_max_bytes": 131072, "each_process_log_max_bytes": 1048576},
+  "unseen_policy": "Freeze before generating, do not use production preflight or model feedback to revise this task. Preserve any failure; no replacement asset, silent retries, shared GUI access, formal configuration changes or model calls. Consumer access excludes this specification, generator, snapshots, oracle, truth and preparation logs."
+}

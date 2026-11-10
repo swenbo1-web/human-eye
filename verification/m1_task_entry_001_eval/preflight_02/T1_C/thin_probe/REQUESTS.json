@@ -1,0 +1,77 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "no-model-m1-preflight",
+        "version": "001"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "method": "notifications/initialized"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "execute_blender_code",
+      "arguments": null
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "execute_blender_code",
+      "arguments": {
+        "code": "import json\nprint(json.dumps({'unit_scale_m':bpy.context.scene.unit_settings.scale_length,'objects':[{'name':o.name,'vertices':len(o.data.vertices),'faces':len(o.data.polygons)} for o in bpy.context.scene.objects if o.type=='MESH']}))"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_scene_observe",
+      "arguments": {
+        "session_id": "current-scene",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "target": {
+            "name": "Part_49"
+          },
+          "candidates": [
+            {
+              "name": "Part_17"
+            },
+            {
+              "name": "Part_26"
+            },
+            {
+              "name": "Part_38"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ]
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import json\nprint(json.dumps({'unit_scale_m':bpy.context.scene.unit_settings.scale_length,'objects':[{'name':o.name,'vertices':len(o.data.vertices),'faces':len(o.data.polygons)} for o in bpy.context.scene.objects if o.type=='MESH']}))"
+    }
+  }
+}
