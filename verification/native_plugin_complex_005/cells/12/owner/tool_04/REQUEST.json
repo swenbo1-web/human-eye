@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_c82bc586e8f14683a61ec6c710d94b2c",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c578-8872-74b1-86f3-be2f12435ccc",
+        "thread_id": "01a1c578-8872-74b1-86f3-be2f12435ccc",
+        "turn_started_at_unix_ms": 1794314373431,
+        "turn_id": "01a1c578-892f-79d3-ae7d-dab15d9e0b4d",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "52f583098b81cc4ee647dcaa71b88eb706f6b946",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c578-8872-74b1-86f3-be2f12435ccc",
+      "itemId": "fc_093f397e6f56a37f016af310c1c31087d091ea7170344679f2",
+      "progressToken": 4
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "# Validate cached geometry against the current scene before further use.\nprint('cache_current',all(np.array_equal(np.array(obs[name].matrix_world,dtype=float),geo[name][3]) and np.array_equal(np.array([v.co[:] for v in obs[name].data.vertices],dtype=float),geo[name][2]) for name in geo))\ndef winding_number(point, vertices, triangles):\n offsets=vertices[triangles]-point\n lengths=np.linalg.norm(offsets,axis=2)\n numerator=np.einsum('ij,ij->i',offsets[:,0],np.cross(offsets[:,1],offsets[:,2]))\n denominator=lengths.prod(axis=1)+np.einsum('ij,ij->i',offsets[:,0],offsets[:,1])*lengths[:,2]+np.einsum('ij,ij->i',offsets[:,1],offsets[:,2])*lengths[:,0]+np.einsum('ij,ij->i',offsets[:,2],offsets[:,0])*lengths[:,1]\n return np.sum(2*np.arctan2(numerator,denominator))/(4*np.pi)\nworld03,tris03,_,_=geo['Object_03']\nwitness=world03.mean(axis=0)\nprint('interior witness world',witness.tolist(),'target local',(inv_target[:3,:3]@witness+inv_target[:3,3]).tolist(),'winding target',winding_number(witness,target_world,target_tris),'winding candidate',winding_number(witness,world03,tris03))\nprint('witness distances to target and Object_03 surface',math.sqrt(point_triangle_batch(witness[None,:],target_world[target_tris])[0]),math.sqrt(point_triangle_batch(witness[None,:],world03[tris03])[0]))\n# Moller-Trumbore proper edge/triangle intersections (excluding endpoints).\nedges=world03[unique_edges(tris03)]; starts=edges[:,None,0]; directions=edges[:,None,1]-starts\ntriangles=target_world[target_tris];origin=triangles[None,:,0];edge1=triangles[None,:,1]-origin;edge2=triangles[None,:,2]-origin\ncross=np.cross(directions,edge2);det=np.sum(edge1*cross,axis=-1);nonparallel=np.abs(det)>1e-14\ninverse=np.divide(1.,det,out=np.zeros_like(det),where=nonparallel);relative=starts-origin\nbary1=np.sum(relative*cross,-1)*inverse;cross2=np.cross(relative,edge1);bary2=np.sum(directions*cross2,-1)*inverse;parameter=np.sum(edge2*cross2,-1)*inverse\nhits=nonparallel&(bary1>=-1e-10)&(bary2>=-1e-10)&(bary1+bary2<=1+1e-10)&(parameter>1e-8)&(parameter<1-1e-8)\nhit_indices=np.argwhere(hits)\nprint('proper edge triangle intersections',len(hit_indices))\nfor edge_index,triangle_index in hit_indices[:3]:\n point=starts[edge_index,0]+parameter[edge_index,triangle_index]*directions[edge_index,0]\n print('intersection world',point.tolist(),'target local',(inv_target[:3,:3]@point+inv_target[:3,3]).tolist())\n"
+    }
+  }
+}

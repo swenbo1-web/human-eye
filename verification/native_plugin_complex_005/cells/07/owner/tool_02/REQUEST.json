@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_ee5c3fa7d18c49c3833d1c02e1f44b54",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c571-a528-7302-b14d-8fda83aea7af",
+        "thread_id": "01a1c571-a528-7302-b14d-8fda83aea7af",
+        "turn_started_at_unix_ms": 1794313921995,
+        "turn_id": "01a1c571-a5c3-74a0-a12b-0b02f530d2d4",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "52f583098b81cc4ee647dcaa71b88eb706f6b946",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c571-a528-7302-b14d-8fda83aea7af",
+      "itemId": "fc_0477f97a687fe9b1016af30ed8c11887d09b55464b7940554f",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import hashlib\nstart=time.perf_counter()\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ndef capture_geom(obj):\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    try:\n        mesh.calc_loop_triangles()\n        local=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n        matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n        verts=local@matrix[:3,:3].T+matrix[:3,3]\n        faces=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64)\n        edges=np.unique(np.sort(np.concatenate([faces[:,[0,1]],faces[:,[1,2]],faces[:,[2,0]]]),axis=1),axis=0)\n        return {'v':verts,'f':faces,'e':edges,'tri':verts[faces],'seg':verts[edges]}\n    finally:\n        evaluated.to_mesh_clear()\ngeoms={obj.name:capture_geom(obj) for obj in objs}\nfingerprint=hashlib.sha256(b''.join(name.encode()+g['v'].tobytes()+g['f'].tobytes() for name,g in sorted(geoms.items()))).hexdigest()\nprint('world_evaluated_mesh_fingerprint',fingerprint)\nprint('evaluated_counts',[(name,len(g['v']),len(g['f']),len(g['e'])) for name,g in geoms.items()][:4])\ndef point_faces(points,triangles):\n    point=points[:,None,:]; a=triangles[None,:,0]; b=triangles[None,:,1]; c=triangles[None,:,2]\n    ab=b-a; ac=c-a; ap=point-a\n    normal=np.cross(ab,ac); norm2=np.sum(normal*normal,axis=-1)\n    signed=np.sum(ap*normal,axis=-1)\n    projected=point-normal*np.divide(signed,norm2,out=np.zeros_like(signed),where=norm2>0)[...,None]\n    relative=projected-a\n    aa=np.sum(ab*ab,axis=-1); bb=np.sum(ab*ac,axis=-1); cc=np.sum(ac*ac,axis=-1)\n    ra=np.sum(relative*ab,axis=-1); rc=np.sum(relative*ac,axis=-1)\n    den=aa*cc-bb*bb\n    u=np.divide(cc*ra-bb*rc,den,out=np.zeros_like(ra),where=den>0)\n    v=np.divide(aa*rc-bb*ra,den,out=np.zeros_like(rc),where=den>0)\n    inside=(u>=0)&(v>=0)&(u+v<=1)&(den>0)\n    d2=np.where(inside,np.sum((point-projected)**2,axis=-1),np.inf)\n    idx=np.unravel_index(np.argmin(d2),d2.shape)\n    return float(d2[idx]),points[idx[0]].copy(),projected[idx].copy(),int(idx[1])\ndef edge_edges(seg1,seg2):\n    p=seg1[:,None,0]; q=seg2[None,:,0]; u=seg1[:,None,1]-p; v=seg2[None,:,1]-q; w=p-q\n    aa=np.sum(u*u,axis=-1); bb=np.sum(u*v,axis=-1); cc=np.sum(v*v,axis=-1); dd=np.sum(u*w,axis=-1); ee=np.sum(v*w,axis=-1)\n    denom=aa*cc-bb*bb\n    s=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(dd),where=denom>1e-28)\n    t=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(dd),where=denom>1e-28)\n    valid=(denom>1e-28)&(s>=0)&(s<=1)&(t>=0)&(t<=1)\n    candidates=[(s,t,valid),(np.zeros_like(dd),np.clip(ee/cc,0,1),True),(np.ones_like(dd),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(dd),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(dd),True)]\n    best=(np.inf,None,None,None)\n    for s,t,valid in candidates:\n        first=p+s[...,None]*u; second=q+t[...,None]*v\n        d2=np.where(valid,np.sum((first-second)**2,axis=-1),np.inf)\n        idx=np.unravel_index(np.argmin(d2),d2.shape)\n        if d2[idx]<best[0]: best=(float(d2[idx]),first[idx].copy(),second[idx].copy(),tuple(map(int,idx)))\n    return best\ndef piercing(segments,triangles):\n    origin=segments[:,None,0]; direction=segments[:,None,1]-origin\n    a=triangles[None,:,0]; ab=triangles[None,:,1]-a; ac=triangles[None,:,2]-a\n    h=np.cross(direction,ac); det=np.sum(ab*h,axis=-1)\n    inverse=np.divide(1.0,det,out=np.zeros_like(det),where=np.abs(det)>1e-18)\n    offset=origin-a\n    u=np.sum(offset*h,axis=-1)*inverse\n    cross=np.cross(offset,ab)\n    v=np.sum(direction*cross,axis=-1)*inverse\n    t=np.sum(ac*cross,axis=-1)*inverse\n    hits=(np.abs(det)>1e-18)&(u>=0)&(v>=0)&(u+v<=1)&(t>=0)&(t<=1)\n    if np.any(hits):\n        idx=tuple(np.argwhere(hits)[0]); pt=(origin+direction*t[...,None])[idx]\n        return (0.0,pt,pt,tuple(map(int,idx)))\n    return None\nresults=[]\ntarget_geom=geoms['Target']\nfor name,g in geoms.items():\n    if name=='Target': continue\n    intersect=piercing(target_geom['seg'],g['tri']) or piercing(g['seg'],target_geom['tri'])\n    if intersect is not None:\n        best=intersect; kind='intersection'\n    else:\n        first=point_faces(target_geom['v'],g['tri'])\n        other=point_faces(g['v'],target_geom['tri'])\n        second=(other[0],other[2],other[1],other[3])\n        third=edge_edges(target_geom['seg'],g['seg'])\n        best,kind=min([(first,'target vertex / face'),(second,'face / candidate vertex'),(third,'edge / edge')],key=lambda entry:entry[0][0])\n    results.append({'name':name,'distance':float(np.sqrt(best[0])),'kind':kind,'target_point':best[1].tolist(),'candidate_point':best[2].tolist(),'feature_indices':best[3]})\nresults.sort(key=lambda row:row['distance'])\nprint('examined_candidates',len(results),'elapsed_seconds',time.perf_counter()-start)\nprint('ranked_distances',[(r['name'],r['distance'],r['kind']) for r in results])\nprint('nearest_witness',results[0])"
+    }
+  }
+}

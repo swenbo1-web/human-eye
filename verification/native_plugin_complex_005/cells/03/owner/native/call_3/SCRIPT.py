@@ -1,0 +1,2 @@
+import bpy, json
+print(json.dumps([{'name':obj.name,'matrix_world':[list(row) for row in obj.matrix_world], 'vertices':len(obj.data.vertices),'polygons':len(obj.data.polygons)} for obj in (bpy.data.objects.get(name) for name in ['Object_01','Object_02','Object_03','Object_04'])],ensure_ascii=False))

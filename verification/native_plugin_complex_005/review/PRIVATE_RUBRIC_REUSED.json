@@ -1,0 +1,251 @@
+{
+  "schema": "human-eye.complex004.private-quality-rubric.v1",
+  "created_utc": "2026-11-10T10:07:33.187604+00:00",
+  "visibility": "ROOT_REVIEW_ONLY: contains private truth. Never provide to implementation consumers, their tool roots or prompts.",
+  "purpose": "Pre-outcome quality rubric for 18 fresh consumers: 2 tasks x 3 arms x 3 repeats. Quality is assessed independently of elapsed time, tokens and arm identity.",
+  "prompt_binding": {
+    "status": "Root plan reviewed; final COMPLEX-004 consumer prompt/freeze was not present at rubric preparation.",
+    "assembly": "Use the unchanged task requirements in COMPLEX-003 PROMPT.txt plus the same common readonly/current-state instructions.",
+    "D48": "Use ROOT_PLAN.md suggested second prompt asking Target versus every other mesh, global minimum unsigned surface distance, <=1e-6 m absolute error, coverage and necessary evidence.",
+    "before_scoring": "Root must compare frozen prompts to these requirements. If wording changes substantively, revise and freeze this rubric before consumers run; do not add new requirements after seeing answers.",
+    "formal_proof_required": false
+  },
+  "provenance": {
+    "root_plan": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_004\\ROOT_PLAN.md",
+      "sha256": "5c6d352d24cec17c768a590b93aebf1f1a283b5bc95dd94323ad255e82e2bc42"
+    },
+    "assembly_original_prompt": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\PROMPT.txt",
+      "sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159"
+    },
+    "assembly_scene": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\scene.blend",
+      "sha256": "a1a593fc1591365bbbff0c62c535af90ab8b1cdd2dc5ce560d3922252c4e1fcb"
+    },
+    "assembly_previously_independent_quality_review": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_complex\\BLIND_QUALITY_REVIEW.json",
+      "sha256": "dc4d468e8b17b88423480c38fc12c4c84099e6d7b722c795f2c2faa4c8da452a"
+    },
+    "D48_fixture": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D48.json",
+      "sha256": "5d0dde58b8857481c68c8b894825573cd41e847f49ff530072802ce9e0254472"
+    },
+    "D48_scene": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D48.blend",
+      "sha256": "8729d98bcbcc774b36b69e7df73ac48c5ec09553df27e55bb24b6fbce28bc431"
+    },
+    "D48_oracle": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\ORACLE.json",
+      "sha256": "4c6d45ddc087e2c9c38864890a4f99333e3c6cda40c6f36397b1768791509720"
+    },
+    "D48_snapshot_geometry_sha256": "c328f5aec7d23d5cd3b8ba4bf887489de5216ac34a51de0df3461f2aa61d7b94",
+    "oracle_status": "Reuse prior independent 47-pair outward support-plane lower / final-world-mesh triangle upper certificate review. This task only reads exact frozen data; it does not rerun Blender, producer, oracle or model.",
+    "not_inspected": "No COMPLEX-004 future outcomes, cost metrics or blind-label mapping."
+  },
+  "common_scoring": {
+    "evidence_sources": [
+      "Unmodified final answer",
+      "Actual same-cell tool responses",
+      "Actual executed native code and stdout/errors",
+      "Current-scene/source identity and readonly execution record"
+    ],
+    "judgement_fields": [
+      "core_facts_correct",
+      "requested_answer_complete",
+      "evidence_supported",
+      "readonly_current_state",
+      "full_pass",
+      "unknown_or_unresolved_scope",
+      "specific_failure_or_limit"
+    ],
+    "full_pass": "All required task facts and requested explanation are correct, sufficiently supported by the actual current-scene tools/code, with no contradictory material assertion, stale scene use, prohibited truth access or scene mutation.",
+    "unknown": "Unknown, unresolved candidates or a missing required result are incomplete, never converted to success. A truthful partial answer remains distinguishable from a false assertion.",
+    "method_fairness": "Apply the same geometric semantics and coverage to every arm. Valid plugin facts can directly support an answer. Do not require redundant native verification, a specific algorithm, an extra call count or a formal proof transcript.",
+    "practical_evidence": "A correct practical surface algorithm or supported tool result with complete candidate coverage suffices. Inspect implementation and intermediate results for obvious semantic shortcuts or omissions; do not demand arbitrary-precision certification from the consumer.",
+    "unsupported_correct_guess": "Record factual correctness separately, but do not award full_pass when the result is a lucky match justified only by centers, raw AABB overlap/distance or an unresolved subset.",
+    "AABB_use": "AABB/center operations may select work or provide conservative lower bounds. They do not by themselves establish actual mesh surface distance or solid penetration. A valid lower-bound exclusion together with surface evidence for the incumbent can establish full coverage.",
+    "extra_claims": "Do not require unasked claims or disclaimers. Material false extra geometry claims count against completeness; unverifiable optional detail is labeled unverified rather than presumed false.",
+    "units_and_precision": "Normalize clear equivalent units. Judge all numerical assertions in the final answer, including tables and prose; a contradictory wrong distance cannot be rescued by another correct line. Rounded 0.01/0.04 m and 3 mm are acceptable if they satisfy the fixed error rule.",
+    "denominator": "Keep all 18 planned cells: task-specific denominators are 9, each arm/task denominator is 3. Failure, unknown and unrun are explicit; no post-hoc replacement or dropped slow/error cell.",
+    "blindness": "Score blind labels first, with native code/tool evidence when needed. Tool wording may reveal the arm, so do not claim perfect blinding.",
+    "read_only": "Check actual scene mutation/save and source validity in tool logs/code. Persistent model-written read-only computation/cache is allowed. Cache use needs applicable same-cell current-scene evidence, not a mandated redundant API call.",
+    "truth_access": "Any consumer access to author fixture/oracle, historic answers, other cells or experiment administration is a protocol violation; record it separately and do not call the run an eligible full pass."
+  },
+  "tasks": {
+    "assembly.initial": {
+      "target": "Object_01",
+      "candidate_count": 3,
+      "relations": {
+        "Object_02": "separated",
+        "Object_03": "penetrating_positive_volume",
+        "Object_04": "separated"
+      },
+      "penetrating_set": [
+        "Object_03"
+      ],
+      "nearest_separated": "Object_02",
+      "distance_truth_m": {
+        "Object_02": {
+          "ideal_m": 0.010000000000000009,
+          "bound_m": 2.0446606626675212e-07
+        },
+        "Object_04": {
+          "ideal_m": 0.040000000000000036,
+          "bound_m": 3.0142333402758355e-07
+        }
+      },
+      "distance_acceptance": "For both separated pairs, abs(answer_m - ideal_m) + bound_m <= 1e-6. This preserves the previously reviewed nonzero geometry/error allowance.",
+      "required_criteria": [
+        {
+          "id": "A1_relations",
+          "pass": "Correctly classify all three candidates; Object_03 is penetrating, not merely possibly touching or AABB-overlapping."
+        },
+        {
+          "id": "A2_two_surface_gaps",
+          "pass": "Report both separated-pair 3D minimum surface gaps satisfying distance_acceptance; center/AABB distances are insufficient."
+        },
+        {
+          "id": "A3_full_penetrating_set",
+          "pass": "Identify exactly Object_03 as the full penetrating set among the three candidates, with no missing or extra object."
+        },
+        {
+          "id": "A4_nearest_separated",
+          "pass": "Name Object_02 as nearest among the genuinely separated candidates."
+        },
+        {
+          "id": "A5_rotation_AABB_geometry",
+          "pass": "Explain that rotation and overlapping bounding boxes do not determine true solid contact/penetration or minimum surface gap, and ground conclusions in actual geometry/tool evidence. Hole-aware treatment may be evident from the method or result.",
+          "not_required": "A separate sentence naming the hole, a prescribed witness coordinate, a full mesh dump or formal geometric proof. The original prompt did not separately demand hole vocabulary."
+        },
+        {
+          "id": "A6_no_invented_depth",
+          "pass": "Do not mistake interior-point-to-surface distance, AABB overlap or a local witness for global penetration depth/minimum escape. Any volunteered quantitative penetration claim must be supported.",
+          "not_required": "No obligation to compute an escape vector, penetration depth or include an unrequested disclaimer."
+        },
+        {
+          "id": "A7_current_readonly",
+          "pass": "Answer uses the current fixed initial scene, has actual tool/code support, and preserves readonly/no-save requirements."
+        }
+      ],
+      "core_facts_correct": "A1, A2, A3 and A4 pass.",
+      "full_pass": "All seven criteria pass under common_scoring."
+    },
+    "D_mid48": {
+      "snapshot_id": "D48",
+      "target_name": "Target",
+      "target_logical_id_private": "target",
+      "best_name": "Peer_000",
+      "best_logical_id_private": "peer",
+      "directory_mesh_count": 48,
+      "candidate_count_excluding_target": 47,
+      "candidate_names_private": [
+        "Competing_001",
+        "Near_003",
+        "Near_004",
+        "Near_005",
+        "Near_006",
+        "Near_007",
+        "Near_008",
+        "Near_009",
+        "Near_010",
+        "Near_011",
+        "Near_012",
+        "Near_013",
+        "Near_014",
+        "Near_015",
+        "Near_016",
+        "Near_017",
+        "Near_018",
+        "Near_019",
+        "Near_020",
+        "Near_021",
+        "Near_022",
+        "Near_023",
+        "Near_024",
+        "Near_025",
+        "Near_026",
+        "Near_027",
+        "Near_028",
+        "Near_029",
+        "Near_030",
+        "Near_031",
+        "Near_032",
+        "Near_033",
+        "Near_034",
+        "Near_035",
+        "Near_036",
+        "Near_037",
+        "Near_038",
+        "Near_039",
+        "Near_040",
+        "Near_041",
+        "Near_042",
+        "Near_043",
+        "Near_044",
+        "Near_045",
+        "Near_046",
+        "Near_047",
+        "Peer_000"
+      ],
+      "distance_semantics": "Global minimum unsigned Euclidean distance between actual world-space mesh triangle surfaces of Target and every other mesh. This is neither nearest center nor nearest separated-solid classification.",
+      "certified_distance_interval_m": {
+        "lower": 0.0030000059049561864,
+        "upper": 0.0030000059049562497
+      },
+      "distance_acceptance": "For finite nonnegative answer d in meters: max(abs(d - lower), abs(d - upper)) <= 1e-6.",
+      "interval_rule": "Use the outward lower and upper values verbatim. Do not substitute the historical rounded midpoint +/- half-width field: that field can understate an endpoint by half an ulp.",
+      "unique_winner": "The certified Peer_000 upper is below every other candidate lower. This is a unique winner, not an unresolved tie.",
+      "fixture_property_private": "All 47 target/candidate world AABBs overlap. AABB overlap or center ordering alone cannot resolve this task.",
+      "required_criteria": [
+        {
+          "id": "D1_target_and_winner",
+          "pass": "Identify Target as the query target and Peer_000 as the unique globally nearest mesh object."
+        },
+        {
+          "id": "D2_true_surface_distance",
+          "pass": "Report the minimum unsigned surface distance satisfying distance_acceptance, with clear units and correct surface-distance semantics."
+        },
+        {
+          "id": "D3_complete_scope",
+          "pass": "State whether all candidate meshes were covered and support full coverage of 47 target-excluding candidates. Actual directory/search/tool evidence must account for all candidates through evaluated geometry or valid exclusions, with no unresolved closer candidate.",
+          "not_required": "The final prose need not enumerate 47 names, list 47 distances or print the number 47 if its full-coverage statement is unambiguous and actual evidence establishes the count."
+        },
+        {
+          "id": "D4_geometric_support",
+          "pass": "Actual tool evidence or executed code supports surface distance and full search; a sane complete triangle/edge/face surface algorithm, or trustworthy completed plugin surface search, suffices. A bbox/center-only numerical guess does not.",
+          "not_required": "Formal lower/upper certificates, a particular BVH implementation, witness coordinates, independent native verification of plugin results or any prescribed call count."
+        },
+        {
+          "id": "D5_current_readonly",
+          "pass": "Use current D48 scene evidence without mutation/save, truth-file reads, stale results or unjustified cached answers."
+        }
+      ],
+      "example_sufficient_plugin_evidence": "Current-scene completed surface_nearest result for Target with matching directory/coverage: 47 target-excluding candidates accounted for by valid distances and strict exclusions, unresolved=0, nearest Peer_000 and supporting surface distance. Equivalent schema-specific evidence is acceptable.",
+      "example_sufficient_native_evidence": "Actual scene directory plus model-authored world-space geometry calculation/search covering all 47 candidates (possibly with sound pruning), yielding Peer_000 and the stated surface distance. Review code/results for omitted candidates or substitution of centers/AABBs/vertex-only distances when face/edge interiors matter.",
+      "core_facts_correct": "D1 and D2 pass; record D3 coverage separately even if a guessed answer happens to match truth.",
+      "full_pass": "All five criteria pass under common_scoring.",
+      "not_requested": [
+        "Classify penetration/contact of all pairs",
+        "Find nearest separated solid",
+        "Prove every pair separated",
+        "Explain rotated holes",
+        "Return all 47 distances",
+        "Reproduce oracle precision or geometry hashes in final prose"
+      ]
+    }
+  },
+  "review_record_template": {
+    "blind_cell_id": null,
+    "task": null,
+    "criterion_results": {},
+    "core_facts_correct": null,
+    "requested_answer_complete": null,
+    "evidence_supported": null,
+    "readonly_current_state": null,
+    "full_pass": null,
+    "unknown_or_unresolved_scope": [],
+    "protocol_violations": [],
+    "notes_with_raw_evidence_refs": []
+  }
+}

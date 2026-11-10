@@ -1,0 +1,347 @@
+{
+  "group": "H",
+  "task": "assembly",
+  "output": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\10\\owner",
+  "endpoint": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\10\\ENDPOINT.json",
+  "asset": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\scene.blend",
+  "asset_sha256": "a1a593fc1591365bbbff0c62c535af90ab8b1cdd2dc5ce560d3922252c4e1fcb",
+  "blender": "D:/Tools/blender5.2/blender.exe",
+  "worker_deadline_ns": 423517887208800,
+  "dependency_python": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+  "read_schemas": [
+    {
+      "name": "human_eye_scene_observe",
+      "description": "Read the current Blender scene and obtain a measured spatial observation. Use returned object IDs to select focal and reference objects. Observations describe the live scene and may expire when it changes. An optional caller-supplied goal checks current task criteria separately. mesh_structure consumes an explicitly registered single-object read task; diagnose returns facts and patch references, then patch can request fresh local images.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_instruction": {
+            "type": "string"
+          },
+          "focal_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reference_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goal": {
+            "type": "object",
+            "description": "Optional caller-supplied task criteria, evaluated separately from execution. Omitted object IDs bind to the selected observation/action pair. These criteria are not independently verified as the human user's intent.",
+            "properties": {
+              "focal_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reference_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target_clearance_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "clearance_tolerance_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "target_focal_pivot_world_m": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "position_tolerance_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "max_contact_normal_angle_deg": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 180
+              },
+              "max_tangent_yaw_mismatch_deg": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 180
+              },
+              "yaw_symmetry_order": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2,
+                  4
+                ]
+              }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "target_clearance_m"
+                ]
+              },
+              {
+                "required": [
+                  "target_focal_pivot_world_m"
+                ]
+              },
+              {
+                "required": [
+                  "max_contact_normal_angle_deg"
+                ]
+              },
+              {
+                "required": [
+                  "max_tangent_yaw_mismatch_deg"
+                ]
+              }
+            ],
+            "dependentRequired": {
+              "target_clearance_m": [
+                "clearance_tolerance_m"
+              ],
+              "clearance_tolerance_m": [
+                "target_clearance_m"
+              ],
+              "target_focal_pivot_world_m": [
+                "position_tolerance_m"
+              ],
+              "position_tolerance_m": [
+                "target_focal_pivot_world_m"
+              ]
+            },
+            "additionalProperties": false
+          },
+          "query": {
+            "type": "object",
+            "description": "Observation precision request; never an execution permission. nearest requires complete exact nonpenetrating order; top1 may exclude supported distant objects by strict outward bounds and reports equal-distance ties. Unknown or budget-limited proofs return no nearest result.",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "overview",
+                  "exact_pairs",
+                  "nearest",
+                  "top1",
+                  "mesh_structure",
+                  "mesh_surface"
+                ]
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "diagnose",
+                  "patch",
+                  "reference",
+                  "restore_preview",
+                  "reference_patch"
+                ],
+                "description": "Registered single-target reads. mesh_structure: diagnose text or patch images. mesh_surface: local opt-in; diagnose/reference/restore_preview require include_image=false. reference_patch uses a returned opaque feature patch_ref and may request useful native images under the original task budget. Reference input is locally trusted; previews never execute. Caller labels never reset budgets."
+              },
+              "request_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "near_m": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.001
+              },
+              "threshold_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 0.01
+              },
+              "reference_ref": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              },
+              "indices": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4095
+                },
+                "minItems": 1,
+                "maxItems": 64,
+                "uniqueItems": true
+              },
+              "patch_ref": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              },
+              "task_ref": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$",
+                "description": "Required in locally controlled lifecycle mode; use the trusted begin handoff. Selects the active registered generation and never creates or renews a task."
+              },
+              "object_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "maxItems": 255,
+                "uniqueItems": true
+              },
+              "label_object_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "maxItems": 6,
+                "uniqueItems": true,
+                "description": "Optional current full object IDs to prioritize in paired image observations. Separate from measurement object_ids; expands only the related annotation budget, up to six related labels plus A/B. Missing pair, unrequested image, occlusion or undersampling is reported explicitly; never an action permission."
+              },
+              "max_exact_pairs": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 255
+              },
+              "alignment_evidence": {
+                "type": "boolean",
+                "default": true,
+                "description": "False explicitly requests strict distance evidence without optional face-alignment angles; requires include_image=false. Host rigid-frame and all action checks remain independent."
+              },
+              "support_plane_discovery": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Read-only discovery of bounded original support-plane selectors for the current focal/reference pair. Omit direction for geometry only; no action direction is invented.",
+                "properties": {
+                  "direction_world": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "max_candidates": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6,
+                    "default": 4
+                  }
+                }
+              },
+              "native_visual": {
+                "type": "object",
+                "description": "Display policy only; never execution permission. Auto uses a negotiated read-only native host, otherwise the analytical projection. Projection skips negotiation; multiscale requires support. Labels and contact sections require projection.",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "projection",
+                      "multiscale"
+                    ]
+                  },
+                  "view": {
+                    "type": "string",
+                    "enum": [
+                      "SCENE",
+                      "XY",
+                      "XZ"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "visual_diagnostic": {
+                "type": "string",
+                "enum": [
+                  "contact_section"
+                ],
+                "description": "Append an analytical full-mesh contact section beside the natural views; not natural visibility or an action permission."
+              }
+            },
+            "additionalProperties": false
+          },
+          "include_image": {
+            "type": "boolean",
+            "default": true,
+            "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."
+          },
+          "task_context": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "task_run_id"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "task_run_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          },
+          "scene_delta": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Optional observation-only snapshot transport. Empty object asks for full resync; a complete base revision and SHA256 enables a delta when worthwhile.",
+            "properties": {
+              "base_revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "base_fingerprint": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "dependentRequired": {
+              "base_revision": [
+                "base_fingerprint"
+              ],
+              "base_fingerprint": [
+                "base_revision"
+              ]
+            }
+          },
+          "response_detail": {
+            "type": "string",
+            "enum": [
+              "full",
+              "brief"
+            ],
+            "default": "full",
+            "description": "Optional display projection. Brief preserves measurements, scopes, unknowns and native image bytes while omitting named camera/raster diagnostics. Full is a new current observation, not retrieval of a previous observation. Errors and insufficient savings keep full."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "human_eye_connection_status",
+      "description": "Read the live service configuration and connection status without changing the scene.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  ],
+  "entry": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261103.scene.trace.r1\\admin\\target_runtime_entry.py",
+  "install_root": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261103.scene.trace.r1\\site-packages",
+  "source_sha256": "a045a800256f4767271308d239c735177f992ce3408d927d42bde5f1d4b60d8f"
+}

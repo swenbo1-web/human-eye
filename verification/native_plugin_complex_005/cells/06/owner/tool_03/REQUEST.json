@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_978287da46e74989a0fa3ecd56e54019",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c56f-ff64-7370-87ea-86919e9ca4d1",
+        "thread_id": "01a1c56f-ff64-7370-87ea-86919e9ca4d1",
+        "turn_started_at_unix_ms": 1794313814043,
+        "turn_id": "01a1c570-0014-72c0-98ef-5df3903439b8",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "52f583098b81cc4ee647dcaa71b88eb706f6b946",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c56f-ff64-7370-87ea-86919e9ca4d1",
+      "itemId": "fc_0bc291707e98102e016af30e792adc87d0b1537f561847bd52",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def dot(a,b): return np.sum(a*b,axis=-1)\ndef point_face(points,triangles):\n p=points[:,None,:]; a=triangles[None,:,0,:]; u=triangles[None,:,1,:]-a; v=triangles[None,:,2,:]-a\n w=p-a; uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); wu=dot(w,u); wv=dot(w,v); den=uu*vv-uv*uv\n s=np.divide(vv*wu-uv*wv,den,out=np.zeros_like(wu),where=den>1e-30)\n t=np.divide(uu*wv-uv*wu,den,out=np.zeros_like(wu),where=den>1e-30)\n q=a+s[...,None]*u+t[...,None]*v\n d2=dot(p-q,p-q); d2=np.where((den>1e-30)&(s>=0)&(t>=0)&(s+t<=1),d2,np.inf)\n ix=np.unravel_index(np.argmin(d2),d2.shape)\n return float(d2[ix]), points[ix[0]],q[ix],('vertex_face',int(ix[0]),int(ix[1]))\ndef edge_edge(edges1,edges2):\n a=edges1[:,None,0,:]; b=edges2[None,:,0,:]; u=edges1[:,None,1,:]-a; v=edges2[None,:,1,:]-b; w=a-b\n aa=dot(u,u); bb=dot(u,v); cc=dot(v,v); dd=dot(u,w); ee=dot(v,w); den=aa*cc-bb*bb\n shape=den.shape\n safea=np.where(aa>0,aa,1); safec=np.where(cc>0,cc,1)\n s0=np.divide(bb*ee-cc*dd,den,out=np.zeros(shape),where=den>1e-30)\n t0=np.divide(aa*ee-bb*dd,den,out=np.zeros(shape),where=den>1e-30)\n choices=[(s0,t0,(den>1e-30)&(s0>=0)&(s0<=1)&(t0>=0)&(t0<=1)),(np.zeros(shape),np.clip(ee/safec,0,1),True),(np.ones(shape),np.clip((ee+bb)/safec,0,1),True),(np.clip(-dd/safea,0,1),np.zeros(shape),True),(np.clip((bb-dd)/safea,0,1),np.ones(shape),True)]\n best=(np.inf,None,None,None)\n for s,t,valid in choices:\n  p=a+s[...,None]*u; q=b+t[...,None]*v; d2=np.where(valid,dot(p-q,p-q),np.inf); ix=np.unravel_index(np.argmin(d2),shape)\n  if d2[ix]<best[0]: best=(float(d2[ix]),p[ix],q[ix],('edge_edge',int(ix[0]),int(ix[1]),float(s[ix]),float(t[ix])))\n return best\ndef crossing(edges,triangles):\n p=edges[:,None,0,:]; direction=edges[:,None,1,:]-p; a=triangles[None,:,0,:]; u=triangles[None,:,1,:]-a; v=triangles[None,:,2,:]-a\n h=np.cross(direction,v); determinant=dot(u,h); valid=np.abs(determinant)>1e-25\n inv=np.divide(1.,determinant,out=np.zeros_like(determinant),where=valid); w=p-a\n s=dot(w,h)*inv; q=np.cross(w,u); t=dot(direction,q)*inv; r=dot(v,q)*inv\n hits=valid&(s>=0)&(t>=0)&(s+t<=1)&(r>=0)&(r<=1)\n inds=np.argwhere(hits)\n if len(inds):\n  i,j=inds[0]; pt=p[i,0]+r[i,j]*direction[i,0];return (0.,pt,pt,('intersection',int(i),int(j),float(r[i,j])))\n return None\ndef mesh_distance(g1,g2):\n v1=g1['v']; v2=g2['v']; tri1=v1[g1['t']];tri2=v2[g2['t']];ed1=v1[g1['e']];ed2=v2[g2['e']]\n hit=crossing(ed1,tri2)\n if hit is not None:return hit\n hit=crossing(ed2,tri1)\n if hit is not None:return (hit[0],hit[2],hit[1],('reverse',hit[3]))\n choices=[point_face(v1,tri2),edge_edge(ed1,ed2)]\n rev=point_face(v2,tri1); choices.append((rev[0],rev[2],rev[1],('reverse',rev[3])))\n return min(choices,key=lambda x:x[0])\nresults={}\nfor name,g in geom.items():\n if name!='Target':results[name]=mesh_distance(tg,g)\nranking=sorted(results,key=lambda n:results[n][0])\nfor name in ranking:print(name,'distance',format(np.sqrt(results[name][0]),'.15g'),'feature',results[name][3])\nprint('elapsed',time.time()-start)"
+    }
+  }
+}

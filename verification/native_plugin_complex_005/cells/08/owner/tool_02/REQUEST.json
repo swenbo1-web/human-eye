@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_c0dba8253f4045b29b54dfb09eaaf1b2",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c572-ba32-7653-ac25-1ee04ecea018",
+        "thread_id": "01a1c572-ba32-7653-ac25-1ee04ecea018",
+        "turn_started_at_unix_ms": 1794313992950,
+        "turn_id": "01a1c572-baee-7d01-92f7-7064c8c1053c",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "52f583098b81cc4ee647dcaa71b88eb706f6b946",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c572-ba32-7653-ac25-1ee04ecea018",
+      "itemId": "fc_0f8357ec1a976d79016af30f26305487d09ccc7eace6dc60c5",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "depsgraph=bpy.context.evaluated_depsgraph_get()\ngeometry={}\nfor obj in meshes:\n    ev=obj.evaluated_get(depsgraph); mesh=ev.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n    matrix=np.array(ev.matrix_world,dtype=np.float64)\n    vertices=local@matrix[:3,:3].T+matrix[:3,3]\n    triangles=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64)\n    edges=np.unique(np.sort(np.concatenate([triangles[:,[0,1]],triangles[:,[1,2]],triangles[:,[2,0]]]),axis=1),axis=0)\n    geometry[obj.name]=(vertices,triangles,edges)\n    ev.to_mesh_clear()\nprint('evaluated',len(geometry),'triangle_counts',sorted(set(len(g[1]) for g in geometry.values())))\nprint('Target bounds',geometry['Target'][0].min(axis=0).tolist(),geometry['Target'][0].max(axis=0).tolist())\ndef point_face(vertices, other):\n    points,triangles,edges=other\n    tri=points[triangles]; base=tri[:,0]; u=tri[:,1]-base; v=tri[:,2]-base\n    normal=np.cross(u,v); norm2=np.einsum('ij,ij->i',normal,normal)\n    offset=vertices[:,None,:]-base[None,:,:]\n    height=np.einsum('ijk,jk->ij',offset,normal)/np.where(norm2>0,norm2,1)[None,:]\n    projected=vertices[:,None,:]-height[:,:,None]*normal[None,:,:]\n    rel=projected-base[None,:,:]\n    uu=np.einsum('ij,ij->i',u,u); uv=np.einsum('ij,ij->i',u,v); vv=np.einsum('ij,ij->i',v,v)\n    ru=np.einsum('ijk,jk->ij',rel,u); rv=np.einsum('ijk,jk->ij',rel,v)\n    den=uu*vv-uv*uv; safe=np.where(den>0,den,1)\n    alpha=(vv*ru-uv*rv)/safe; beta=(uu*rv-uv*ru)/safe\n    valid=(alpha>=0)&(beta>=0)&(alpha+beta<=1)&(den[None,:]>0)\n    dist2=height*height*norm2[None,:]; dist2=np.where(valid,dist2,np.inf)\n    idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n    return float(dist2[idx]),vertices[idx[0]],projected[idx]\ndef edge_face_hit(first,second):\n    verts,tris,edges=first; verts2,tris2,edges2=second\n    origin=verts[edges[:,0]]; direction=verts[edges[:,1]]-origin\n    tri=verts2[tris2]; edge1=tri[:,1]-tri[:,0]; edge2=tri[:,2]-tri[:,0]\n    cross=np.cross(direction[:,None,:],edge2[None,:,:]); det=np.einsum('jk,ijk->ij',edge1,cross)\n    safe=np.where(det!=0,det,1); relative=origin[:,None,:]-tri[None,:,0,:]\n    alpha=np.einsum('ijk,ijk->ij',relative,cross)/safe\n    q=np.cross(relative,edge1[None,:,:]); beta=np.einsum('ik,ijk->ij',direction,q)/safe\n    param=np.einsum('jk,ijk->ij',edge2,q)/safe\n    hit=(det!=0)&(alpha>=0)&(beta>=0)&(alpha+beta<=1)&(param>=0)&(param<=1)\n    indices=np.argwhere(hit)\n    if len(indices):\n        edge_idx,tri_idx=indices[0]; return origin[edge_idx]+param[edge_idx,tri_idx]*direction[edge_idx]\n    return None\ndef edge_edge(first,second):\n    verts,tris,edges=first; verts2,tris2,edges2=second\n    p=verts[edges[:,0]][:,None,:]; u=(verts[edges[:,1]]-verts[edges[:,0]])[:,None,:]\n    q=verts2[edges2[:,0]][None,:,:]; v=(verts2[edges2[:,1]]-verts2[edges2[:,0]])[None,:,:]\n    w=p-q; aa=np.sum(u*u,axis=2); bb=np.sum(u*v,axis=2); cc=np.sum(v*v,axis=2); dd=np.sum(u*w,axis=2); ee=np.sum(v*w,axis=2)\n    determinant=aa*cc-bb*bb\n    ss=(bb*ee-cc*dd)/np.where(determinant>0,determinant,1)\n    tt=(aa*ee-bb*dd)/np.where(determinant>0,determinant,1)\n    candidates=[(ss,tt,(determinant>0)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)),(np.zeros_like(bb),np.clip(ee/cc,0,1),True),(np.ones_like(bb),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(bb),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(bb),True)]\n    best=(float('inf'),None,None)\n    for s,t,valid in candidates:\n        pp=p+s[:,:,None]*u; qq=q+t[:,:,None]*v\n        distances=np.where(valid,np.sum((pp-qq)**2,axis=2),np.inf)\n        idx=np.unravel_index(np.argmin(distances),distances.shape)\n        if distances[idx]<best[0]: best=(float(distances[idx]),pp[idx],qq[idx])\n    return best\ndef surface_distance(first,second):\n    hit=edge_face_hit(first,second)\n    if hit is None: hit=edge_face_hit(second,first)\n    if hit is not None: return (0.,hit,hit,'intersection')\n    a=point_face(first[0],second); b=point_face(second[0],first); c=edge_edge(first,second)\n    options=[(*a,'Target vertex / candidate face'),(b[0],b[2],b[1],'Target face / candidate vertex'),(*c,'edge / edge')]\n    return min(options,key=lambda item:item[0])\nresults=[]\ncalculation_start=time.time()\nfor name,geom in geometry.items():\n    if name=='Target': continue\n    res=surface_distance(geometry['Target'],geom)\n    results.append((name,math.sqrt(res[0]),res[1].tolist(),res[2].tolist(),res[3]))\nresults.sort(key=lambda item:item[1])\nprint('elapsed_seconds',time.time()-calculation_start)\nfor result in results: print(result)"
+    }
+  }
+}

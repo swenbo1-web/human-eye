@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_fa9ed57ba11c452fb7ad57454e9d51b0",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c574-51f1-7242-b2c5-c5162b4ee5fe",
+        "thread_id": "01a1c574-51f1-7242-b2c5-c5162b4ee5fe",
+        "turn_started_at_unix_ms": 1794314097324,
+        "turn_id": "01a1c574-52a5-71d2-8326-677b5824ad5c",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "52f583098b81cc4ee647dcaa71b88eb706f6b946",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c574-51f1-7242-b2c5-c5162b4ee5fe",
+      "itemId": "fc_09ac55b28c5545e1016af30f8dc61887d08d3586fd77643f29",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import hashlib\n\ndef read_geom(obj):\n    ev=obj.evaluated_get(bpy.context.evaluated_depsgraph_get())\n    mesh=ev.to_mesh()\n    try:\n        mesh.calc_loop_triangles()\n        verts=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n        mat=np.array(ev.matrix_world,dtype=np.float64)\n        verts=verts@mat[:3,:3].T+mat[:3,3]\n        faces=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n        return verts,faces\n    finally: ev.to_mesh_clear()\n\ndef signature(geoms):\n    digest=hashlib.sha256()\n    for name,(verts,faces) in sorted(geoms.items()):\n        digest.update(name.encode());digest.update(verts.tobytes());digest.update(faces.tobytes())\n    return digest.hexdigest()\n\ngeoms={o.name:read_geom(o) for o in bpy.context.scene.objects if o.type=='MESH'}\ngeom_sig=signature(geoms)\nprint('scene_signature',geom_sig)\nprint('evaluated_counts',[(n,len(v),len(f)) for n,(v,f) in geoms.items()])\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('target_world_bounds',geoms['Target'][0].min(axis=0).tolist(),geoms['Target'][0].max(axis=0).tolist())\n\ndef edges_from(v,f):\n    indices=np.unique(np.sort(np.concatenate([f[:,[0,1]],f[:,[1,2]],f[:,[2,0]]]),axis=1),axis=0)\n    return v[indices[:,0]],v[indices[:,1]]\n\ndef dot(a,b): return np.sum(a*b,axis=-1)\n\ndef point_face(vertices,triangles):\n    p=vertices[:,None,:]; a=triangles[None,:,0,:]; u=triangles[None,:,1,:]-a; w=triangles[None,:,2,:]-a\n    n=np.cross(u,w); nn=dot(n,n); rel=p-a\n    signed=dot(rel,n)\n    projection=p-n*np.divide(signed,nn,out=np.zeros_like(signed),where=nn>0)[...,None]\n    r=projection-a\n    uu=dot(u,u); uw=dot(u,w); ww=dot(w,w); ru=dot(r,u); rw=dot(r,w)\n    den=uu*ww-uw*uw\n    s=np.divide(ww*ru-uw*rw,den,out=np.full_like(ru,np.nan),where=den>0)\n    t=np.divide(uu*rw-uw*ru,den,out=np.full_like(ru,np.nan),where=den>0)\n    ok=(s>=0)&(t>=0)&(s+t<=1)&(nn>0)\n    distances=np.where(ok,dot(p-projection,p-projection),np.inf)\n    index=np.unravel_index(np.argmin(distances),distances.shape)\n    return float(distances[index]),vertices[index[0]],projection[index]\n\ndef edge_edge(a,b,c,d):\n    a=a[:,None,:]; b=b[:,None,:]; c=c[None,:,:]; d=d[None,:,:]\n    u=b-a; v=d-c; w=a-c\n    aa=dot(u,u); bb=dot(u,v); cc=dot(v,v); dd=dot(u,w); ee=dot(v,w)\n    candidates=[]\n    for p,base,direction,length,flip in [(a,c,v,cc,False),(b,c,v,cc,False),(c,a,u,aa,True),(d,a,u,aa,True)]:\n        fraction=np.clip(np.divide(dot(p-base,direction),length,out=np.zeros_like(dot(p-base,direction)),where=length>0),0,1)\n        q=base+fraction[...,None]*direction\n        diff=p-q; distances=dot(diff,diff)\n        ix=np.unravel_index(np.argmin(distances),distances.shape)\n        pp=np.broadcast_to(p,q.shape)[ix]; qq=q[ix]\n        candidates.append((float(distances[ix]),qq if flip else pp,pp if flip else qq))\n    den=aa*cc-bb*bb\n    s=np.divide(bb*ee-cc*dd,den,out=np.full_like(den,np.nan),where=den>0)\n    t=np.divide(aa*ee-bb*dd,den,out=np.full_like(den,np.nan),where=den>0)\n    pp=a+s[...,None]*u; qq=c+t[...,None]*v\n    ds=np.where((s>=0)&(s<=1)&(t>=0)&(t<=1),dot(pp-qq,pp-qq),np.inf)\n    ix=np.unravel_index(np.argmin(ds),ds.shape)\n    candidates.append((float(ds[ix]),pp[ix],qq[ix]))\n    return min(candidates,key=lambda x:x[0])\n\ndef crossing(a,b,triangles):\n    a=a[:,None,:]; direction=(b[:,None,:]-a)\n    v0=triangles[None,:,0,:]; e1=triangles[None,:,1,:]-v0; e2=triangles[None,:,2,:]-v0\n    h=np.cross(direction,e2); det=dot(e1,h)\n    inv=np.divide(1.,det,out=np.zeros_like(det),where=det!=0)\n    offset=a-v0; s=dot(offset,h)*inv; q=np.cross(offset,e1); t=dot(direction,q)*inv; ray=dot(e2,q)*inv\n    ok=(det!=0)&(s>=0)&(t>=0)&(s+t<=1)&(ray>=0)&(ray<=1)\n    ids=np.argwhere(ok)\n    if len(ids):\n        ii,jj=ids[0]; p=a[ii,0]+ray[ii,jj]*direction[ii,0]\n        return (0.,p,p)\n    return None\n\ndef surface_distance(g1,g2):\n    v1,f1=g1; v2,f2=g2\n    a,b=edges_from(v1,f1); c,d=edges_from(v2,f2)\n    tri1=v1[f1]; tri2=v2[f2]\n    for cross in [crossing(a,b,tri2),crossing(c,d,tri1)]:\n        if cross is not None:return cross\n    first=point_face(v1,tri2); reverse=point_face(v2,tri1)\n    return min([first,(reverse[0],reverse[2],reverse[1]),edge_edge(a,b,c,d)],key=lambda x:x[0])\n\nstart=time.time()\nresults=[]\nfor name,geometry in geoms.items():\n    if name=='Target':continue\n    ds,p,q=surface_distance(geoms['Target'],geometry)\n    results.append((float(np.sqrt(max(0,ds))),name,p.tolist(),q.tolist()))\nresults.sort()\nprint('elapsed_seconds',time.time()-start)\nprint('all_surface_distances',[(name,dist) for dist,name,p,q in results])\nprint('closest_witnesses',results[:3])"
+    }
+  }
+}

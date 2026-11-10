@@ -1,0 +1,123 @@
+{
+  "task_id": "assembly",
+  "answer_id": "d1cd1ba7aba74f038acd213d7b0dd67f",
+  "calls": [
+    {
+      "sequence": 1,
+      "method": "execute_blender_code",
+      "arguments": {
+        "code": "import bpy, math, numpy as np, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nprint('scene',bpy.context.scene.name,'units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor ob in bpy.context.scene.objects:\n print(ob.name, ob.type, 'verts',len(ob.data.vertices) if ob.type=='MESH' else None,'polys',len(ob.data.polygons) if ob.type=='MESH' else None,'matrix', [list(r) for r in ob.matrix_world], 'mods',[(m.name,m.type) for m in ob.modifiers])"
+      },
+      "response": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result\":{\"executed\":true,\"result\":\"scene Scene units METRIC 1.0\\nObject_01 MESH verts 48 polys 96 matrix [[0.3333333134651184, 0.666666567325592, -0.6666667461395264, 0.0], [0.6666666865348816, 0.33333340287208557, 0.6666666269302368, 0.0], [0.6666666269302368, -0.6666666865348816, -0.333333283662796, 0.0], [0.0, 0.0, 0.0, 1.0]] mods []\\nObject_02 MESH verts 8 polys 12 matrix [[0.3333333134651184, 0.666666567325592, -0.6666667461395264, 0.0], [0.6666666865348816, 0.33333340287208557, 0.6666666269302368, 0.0], [0.6666666269302368, -0.6666666865348816, -0.333333283662796, 0.0], [0.0, 0.0, 0.0, 1.0]] mods []\\nObject_03 MESH verts 8 polys 12 matrix [[0.7333332896232605, 0.13333331048488617, -0.6666667461395264, -0.2016666680574417], [0.6666667461395264, -0.33333322405815125, 0.6666666865348816, -0.4033333361148834], [-0.13333329558372498, -0.9333333969116211, -0.33333322405815125, -0.4033333361148834], [0.0, 0.0, 0.0, 1.0]] mods []\\nObject_04 MESH verts 8 polys 12 matrix [[0.3333333134651184, 0.666666567325592, -0.6666667461395264, 0.0], [0.6666666865348816, 0.33333340287208557, 0.6666666269302368, 0.0], [0.6666666269302368, -0.6666666865348816, -0.333333283662796, 0.0], [0.0, 0.0, 0.0, 1.0]] mods []\\n\"},\"status\":\"success\"}"
+          }
+        ],
+        "isError": false
+      },
+      "model_call_status": "completed",
+      "model_call_error": null,
+      "actual_is_error": false,
+      "owner_exception": null
+    },
+    {
+      "sequence": 2,
+      "method": "execute_blender_code",
+      "arguments": {
+        "code": "obs={name:bpy.data.objects[name] for name in ['Object_01','Object_02','Object_03','Object_04']}\ngeo={}\nfor name,ob in obs.items():\n me=ob.data; me.calc_loop_triangles()\n local=np.array([v.co[:] for v in me.vertices],dtype=float)\n mat=np.array(ob.matrix_world,dtype=float)\n world=local@mat[:3,:3].T+mat[:3,3]\n tris=np.array([t.vertices[:] for t in me.loop_triangles],dtype=int)\n geo[name]=(world,tris,local,mat)\n edges={}\n for face in tris:\n  for idx in range(3):\n   edge=tuple(sorted((int(face[idx]),int(face[(idx+1)%3]))));edges[edge]=edges.get(edge,0)+1\n print(name,'local vertices',local.tolist(),'triangles',tris.tolist() if name=='Object_01' else '', 'edge incidence', sorted(set(edges.values())), 'AABB',world.min(0).tolist(),world.max(0).tolist())\n"
+      },
+      "response": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result\":{\"executed\":true,\"result\":\"Object_01 local vertices [[1.0, 0.2679491937160492, -0.10000000149011612], [0.7320508360862732, 0.7320508360862732, -0.10000000149011612], [0.2679491937160492, 1.0, -0.10000000149011612], [-0.2679491937160492, 1.0, -0.10000000149011612], [-0.7320508360862732, 0.7320508360862732, -0.10000000149011612], [-1.0, 0.2679491937160492, -0.10000000149011612], [-1.0, -0.2679491937160492, -0.10000000149011612], [-0.7320508360862732, -0.7320508360862732, -0.10000000149011612], [-0.2679491937160492, -1.0, -0.10000000149011612], [0.2679491937160492, -1.0, -0.10000000149011612], [0.7320508360862732, -0.7320508360862732, -0.10000000149011612], [1.0, -0.2679491937160492, -0.10000000149011612], [0.6000000238418579, 0.160769522190094, -0.10000000149011612], [0.43923047184944153, 0.43923047184944153, -0.10000000149011612], [0.160769522190094, 0.6000000238418579, -0.10000000149011612], [-0.160769522190094, 0.6000000238418579, -0.10000000149011612], [-0.43923047184944153, 0.43923047184944153, -0.10000000149011612], [-0.6000000238418579, 0.160769522190094, -0.10000000149011612], [-0.6000000238418579, -0.160769522190094, -0.10000000149011612], [-0.43923047184944153, -0.43923047184944153, -0.10000000149011612], [-0.160769522190094, -0.6000000238418579, -0.10000000149011612], [0.160769522190094, -0.6000000238418579, -0.10000000149011612], [0.43923047184944153, -0.43923047184944153, -0.10000000149011612], [0.6000000238418579, -0.160769522190094, -0.10000000149011612], [1.0, 0.2679491937160492, 0.10000000149011612], [0.7320508360862732, 0.7320508360862732, 0.10000000149011612], [0.2679491937160492, 1.0, 0.10000000149011612], [-0.2679491937160492, 1.0, 0.10000000149011612], [-0.7320508360862732, 0.7320508360862732, 0.10000000149011612], [-1.0, 0.2679491937160492, 0.10000000149011612], [-1.0, -0.2679491937160492, 0.10000000149011612], [-0.7320508360862732, -0.7320508360862732, 0.10000000149011612], [-0.2679491937160492, -1.0, 0.10000000149011612], [0.2679491937160492, -1.0, 0.10000000149011612], [0.7320508360862732, -0.7320508360862732, 0.10000000149011612], [1.0, -0.2679491937160492, 0.10000000149011612], [0.6000000238418579, 0.160769522190094, 0.10000000149011612], [0.43923047184944153, 0.43923047184944153, 0.10000000149011612], [0.160769522190094, 0.6000000238418579, 0.10000000149011612], [-0.160769522190094, 0.6000000238418579, 0.10000000149011612], [-0.43923047184944153, 0.43923047184944153, 0.10000000149011612], [-0.6000000238418579, 0.160769522190094, 0.10000000149011612], [-0.6000000238418579, -0.160769522190094, 0.10000000149011612], [-0.43923047184944153, -0.43923047184944153, 0.10000000149011612], [-0.160769522190094, -0.6000000238418579, 0.10000000149011612], [0.160769522190094, -0.6000000238418579, 0.10000000149011612], [0.43923047184944153, -0.43923047184944153, 0.10000000149011612], [0.6000000238418579, -0.160769522190094, 0.10000000149011612]] triangles [[0, 1, 25], [0, 25, 24], [12, 36, 37], [12, 37, 13], [1, 0, 12], [1, 12, 13], [24, 25, 37], [24, 37, 36], [1, 2, 26], [1, 26, 25], [13, 37, 38], [13, 38, 14], [2, 1, 13], [2, 13, 14], [25, 26, 38], [25, 38, 37], [2, 3, 27], [2, 27, 26], [14, 38, 39], [14, 39, 15], [3, 2, 14], [3, 14, 15], [26, 27, 39], [26, 39, 38], [3, 4, 28], [3, 28, 27], [15, 39, 40], [15, 40, 16], [4, 3, 15], [4, 15, 16], [27, 28, 40], [27, 40, 39], [4, 5, 29], [4, 29, 28], [16, 40, 41], [16, 41, 17], [5, 4, 16], [5, 16, 17], [28, 29, 41], [28, 41, 40], [5, 6, 30], [5, 30, 29], [17, 41, 42], [17, 42, 18], [6, 5, 17], [6, 17, 18], [29, 30, 42], [29, 42, 41], [6, 7, 31], [6, 31, 30], [18, 42, 43], [18, 43, 19], [7, 6, 18], [7, 18, 19], [30, 31, 43], [30, 43, 42], [7, 8, 32], [7, 32, 31], [19, 43, 44], [19, 44, 20], [8, 7, 19], [8, 19, 20], [31, 32, 44], [31, 44, 43], [8, 9, 33], [8, 33, 32], [20, 44, 45], [20, 45, 21], [9, 8, 20], [9, 20, 21], [32, 33, 45], [32, 45, 44], [9, 10, 34], [9, 34, 33], [21, 45, 46], [21, 46, 22], [10, 9, 21], [10, 21, 22], [33, 34, 46], [33, 46, 45], [10, 11, 35], [10, 35, 34], [22, 46, 47], [22, 47, 23], [11, 10, 22], [11, 22, 23], [34, 35, 47], [34, 47, 46], [11, 0, 24], [11, 24, 35], [23, 47, 36], [23, 36, 12], [0, 11, 23], [0, 23, 12], [35, 24, 36], [35, 36, 47]] edge incidence [2] AABB [-0.8226496355146331, -0.8226497667595183, -1.0094010957668058] [0.8226496355146331, 0.8226497667595183, 1.0094010957668058]\\nObject_02 local vertices [[0.550000011920929, -0.019999999552965164, -0.02500000037252903], [0.5899999737739563, -0.019999999552965164, -0.02500000037252903], [0.5899999737739563, 0.019999999552965164, -0.02500000037252903], [0.550000011920929, 0.019999999552965164, -0.02500000037252903], [0.550000011920929, -0.019999999552965164, 0.02500000037252903], [0.5899999737739563, -0.019999999552965164, 0.02500000037252903], [0.5899999737739563, 0.019999999552965164, 0.02500000037252903], [0.550000011920929, 0.019999999552965164, 0.02500000037252903]] triangles  edge incidence [2] AABB [0.15333332642912834, 0.3433333517114324, 0.3449999871104951] [0.22666664615273535, 0.41666666140158914, 0.41499995805323225]\\nObject_03 local vertices [[-0.019999999552965164, -0.009999999776482582, -0.02500000037252903], [0.019999999552965164, -0.009999999776482582, -0.02500000037252903], [0.019999999552965164, 0.009999999776482582, -0.02500000037252903], [-0.019999999552965164, 0.009999999776482582, -0.02500000037252903], [-0.019999999552965164, -0.009999999776482582, 0.02500000037252903], [0.019999999552965164, -0.009999999776482582, 0.02500000037252903], [0.019999999552965164, 0.009999999776482582, 0.02500000037252903], [-0.019999999552965164, 0.009999999776482582, 0.02500000037252903]] triangles  edge incidence [2] AABB [-0.23433333549896881, -0.43666667031745116, -0.4236666664530833] [-0.1690000006159146, -0.3700000019123157, -0.3830000057766835]\\nObject_04 local vertices [[-0.02500000037252903, 1.0399999618530273, -0.02500000037252903], [0.02500000037252903, 1.0399999618530273, -0.02500000037252903], [0.02500000037252903, 1.0800000429153442, -0.02500000037252903], [-0.02500000037252903, 1.0800000429153442, -0.02500000037252903], [-0.02500000037252903, 1.0399999618530273, 0.02500000037252903], [0.02500000037252903, 1.0399999618530273, 0.02500000037252903], [0.02500000037252903, 1.0800000429153442, 0.02500000037252903], [-0.02500000037252903, 1.0800000429153442, 0.02500000037252903]] triangles  edge incidence [2] AABB [0.6683332027246592, 0.31333339293797546, -0.7450000482052572] [0.7449999231845098, 0.3933334227403035, -0.6683333304276062]\\n\"},\"status\":\"success\"}"
+          }
+        ],
+        "isError": false
+      },
+      "model_call_status": "completed",
+      "model_call_error": null,
+      "actual_is_error": false,
+      "owner_exception": null
+    },
+    {
+      "sequence": 3,
+      "method": "execute_blender_code",
+      "arguments": {
+        "code": "target_world,target_tris,target_local,target_mat=geo['Object_01']\ninv_target=np.linalg.inv(target_mat)\nfor name in ['Object_02','Object_03','Object_04']:\n world=geo[name][0]\n in_target=world@inv_target[:3,:3].T+inv_target[:3,3]\n print(name,'vertices in target frame',in_target.tolist())\n# Point-triangle distances: projection inside triangle, otherwise closest point on its three edges.\ndef point_triangle_batch(points, triangles):\n point=points[:,None,:]; first=triangles[None,:,0,:]; second=triangles[None,:,1,:]; third=triangles[None,:,2,:]\n side1=second-first; side2=third-first; relative=point-first\n aa=np.sum(side1*side1,-1); ab=np.sum(side1*side2,-1); bb=np.sum(side2*side2,-1)\n ra=np.sum(relative*side1,-1); rb=np.sum(relative*side2,-1); denominator=aa*bb-ab*ab\n coord1=(bb*ra-ab*rb)/denominator; coord2=(aa*rb-ab*ra)/denominator\n projected=first+coord1[...,None]*side1+coord2[...,None]*side2\n inside=(coord1>=0)&(coord2>=0)&(coord1+coord2<=1)\n distances=np.where(inside,np.sum((point-projected)**2,-1),np.inf)\n closest=projected.copy()\n for begin,end in [(first,second),(second,third),(third,first)]:\n  direction=end-begin\n  parameter=np.clip(np.sum((point-begin)*direction,-1)/np.sum(direction*direction,-1),0,1)\n  candidate=begin+parameter[...,None]*direction\n  square=np.sum((point-candidate)**2,-1); improve=square<distances\n  distances=np.where(improve,square,distances); closest=np.where(improve[...,None],candidate,closest)\n index=np.unravel_index(np.argmin(distances),distances.shape)\n return float(distances[index]),points[index[0]],closest[index],index\n\ndef unique_edges(tris):\n return np.array(sorted({tuple(sorted((int(face[idx]),int(face[(idx+1)%3])))) for face in tris for idx in range(3)}))\n\ndef edge_edge_batch(vertices_a,tris_a,vertices_b,tris_b):\n edges_a=vertices_a[unique_edges(tris_a)];edges_b=vertices_b[unique_edges(tris_b)]\n start_a=edges_a[:,None,0];start_b=edges_b[None,:,0]\n dir_a=edges_a[:,None,1]-start_a;dir_b=edges_b[None,:,1]-start_b; relative=start_a-start_b\n aa=np.sum(dir_a*dir_a,-1);bb=np.sum(dir_a*dir_b,-1);cc=np.sum(dir_b*dir_b,-1)\n dd=np.sum(dir_a*relative,-1);ee=np.sum(dir_b*relative,-1);denom=aa*cc-bb*bb\n valid=denom>1e-25\n para_a=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=valid)\n para_b=np.divide(aa*ee-bb*dd,denom,out=np.zeros_like(denom),where=valid)\n valid=valid&(para_a>=0)&(para_a<=1)&(para_b>=0)&(para_b<=1)\n pairs=[(para_a,para_b,valid)]\n for fixed in [0.,1.]:\n  pairs.append((np.full_like(denom,fixed),np.clip((ee+bb*fixed)/cc,0,1),np.ones_like(valid)))\n  pairs.append((np.clip((bb*fixed-dd)/aa,0,1),np.full_like(denom,fixed),np.ones_like(valid)))\n best=(np.inf,None,None)\n for para_a,para_b,valid in pairs:\n  point_a=start_a+para_a[...,None]*dir_a;point_b=start_b+para_b[...,None]*dir_b\n  square=np.where(valid,np.sum((point_a-point_b)**2,-1),np.inf)\n  index=np.unravel_index(np.argmin(square),square.shape)\n  if square[index]<best[0]:best=(float(square[index]),point_a[index],point_b[index])\n return best\nfor name in ['Object_02','Object_03','Object_04']:\n world,tris,_,_=geo[name]\n result_a=point_triangle_batch(world,target_world[target_tris])\n result_b=point_triangle_batch(target_world,world[tris])\n result_c=edge_edge_batch(target_world,target_tris,world,tris)\n best=min([(result_a[0],result_a[2],result_a[1]),result_b[:3],result_c],key=lambda result:result[0])\n print('DISTANCE',name,math.sqrt(best[0]),'target point',best[1].tolist(),'candidate point',best[2].tolist(),'feature distances',*[math.sqrt(result[0]) for result in [result_a,result_b,result_c]])\n"
+      },
+      "response": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result\":{\"executed\":true,\"result\":\"Object_02 vertices in target frame [[0.550000011920929, -0.01999999955296511, -0.025000000372529044], [0.5899999737739563, -0.019999999552965164, -0.025000000372529002], [0.5899999737739563, 0.019999999552965164, -0.02500000037252903], [0.550000011920929, 0.019999999552965192, -0.025000000372529016], [0.550000011920929, -0.019999999552965136, 0.025000000372529058], [0.5899999737739563, -0.019999999552965164, 0.025000000372529058], [0.5899999737739563, 0.01999999955296522, 0.025000000372529016], [0.550000011920929, 0.019999999552965192, 0.025000000372529058]]\\nObject_03 vertices in target frame [[-0.6090000196695327, -0.021999987646934227, -0.02499997653067204], [-0.5850000171860058, 0.010000011002026854, -0.024999978517493526], [-0.6010000166893004, 0.022000012680891134, -0.024999977126718725], [-0.6250000191728273, -0.009999985968069947, -0.024999975139897268], [-0.6090000156958895, -0.021999988640345025, 0.02500002520779676], [-0.5850000132123627, 0.010000010008616111, 0.025000023220975276], [-0.6010000127156572, 0.022000011687480392, 0.025000024611750077], [-0.6250000151991841, -0.009999986961480745, 0.025000026598571506]]\\nObject_04 vertices in target frame [[-0.02500000037252892, 1.0399999618530273, -0.025000000372529085], [0.025000000372529085, 1.0399999618530273, -0.025000000372529058], [0.02500000037252914, 1.0800000429153442, -0.025000000372529058], [-0.02500000037252892, 1.0800000429153442, -0.025000000372529085], [-0.025000000372528863, 1.0399999618530273, 0.025000000372529002], [0.02500000037252914, 1.0399999618530273, 0.025000000372529002], [0.02500000037252914, 1.0800000429153442, 0.025000000372529002], [-0.02500000037252892, 1.0800000429153442, 0.025000000372528947]]\\nDISTANCE Object_02 0.010000049869218451 target point [0.22999999597668602, 0.3900000296036397, 0.39499999103446803] candidate point [0.22666664615273535, 0.38333332955837196, 0.38833329118788346] feature distances 0.010000049869218451 0.15981570058501582 0.010000049869218451\\nDISTANCE Object_03 0.000999988853931433 target point [-0.20200000881486455, -0.37600000699526753, -0.4230000072237517] candidate point [-0.20233333841959636, -0.37666666624446715, -0.4236666664530833] feature distances 0.000999988853931433 0.15774337685180886 0.0009999919282768345\\nDISTANCE Object_04 0.03999996066093577 target point [0.6583332311196461, 0.3666667372650562, -0.6583333525641099] candidate point [0.6849998686462678, 0.3800000596046421, -0.6849999948590986] feature distances 0.03999996066093577 0.25738940215582373 0.03999996066093581\\n\"},\"status\":\"success\"}"
+          }
+        ],
+        "isError": false
+      },
+      "model_call_status": "completed",
+      "model_call_error": null,
+      "actual_is_error": false,
+      "owner_exception": null
+    },
+    {
+      "sequence": 4,
+      "method": "execute_blender_code",
+      "arguments": {
+        "code": "# Validate cached geometry against the current scene before further use.\nprint('cache_current',all(np.array_equal(np.array(obs[name].matrix_world,dtype=float),geo[name][3]) and np.array_equal(np.array([v.co[:] for v in obs[name].data.vertices],dtype=float),geo[name][2]) for name in geo))\ndef winding_number(point, vertices, triangles):\n offsets=vertices[triangles]-point\n lengths=np.linalg.norm(offsets,axis=2)\n numerator=np.einsum('ij,ij->i',offsets[:,0],np.cross(offsets[:,1],offsets[:,2]))\n denominator=lengths.prod(axis=1)+np.einsum('ij,ij->i',offsets[:,0],offsets[:,1])*lengths[:,2]+np.einsum('ij,ij->i',offsets[:,1],offsets[:,2])*lengths[:,0]+np.einsum('ij,ij->i',offsets[:,2],offsets[:,0])*lengths[:,1]\n return np.sum(2*np.arctan2(numerator,denominator))/(4*np.pi)\nworld03,tris03,_,_=geo['Object_03']\nwitness=world03.mean(axis=0)\nprint('interior witness world',witness.tolist(),'target local',(inv_target[:3,:3]@witness+inv_target[:3,3]).tolist(),'winding target',winding_number(witness,target_world,target_tris),'winding candidate',winding_number(witness,world03,tris03))\nprint('witness distances to target and Object_03 surface',math.sqrt(point_triangle_batch(witness[None,:],target_world[target_tris])[0]),math.sqrt(point_triangle_batch(witness[None,:],world03[tris03])[0]))\n# Moller-Trumbore proper edge/triangle intersections (excluding endpoints).\nedges=world03[unique_edges(tris03)]; starts=edges[:,None,0]; directions=edges[:,None,1]-starts\ntriangles=target_world[target_tris];origin=triangles[None,:,0];edge1=triangles[None,:,1]-origin;edge2=triangles[None,:,2]-origin\ncross=np.cross(directions,edge2);det=np.sum(edge1*cross,axis=-1);nonparallel=np.abs(det)>1e-14\ninverse=np.divide(1.,det,out=np.zeros_like(det),where=nonparallel);relative=starts-origin\nbary1=np.sum(relative*cross,-1)*inverse;cross2=np.cross(relative,edge1);bary2=np.sum(directions*cross2,-1)*inverse;parameter=np.sum(edge2*cross2,-1)*inverse\nhits=nonparallel&(bary1>=-1e-10)&(bary2>=-1e-10)&(bary1+bary2<=1+1e-10)&(parameter>1e-8)&(parameter<1-1e-8)\nhit_indices=np.argwhere(hits)\nprint('proper edge triangle intersections',len(hit_indices))\nfor edge_index,triangle_index in hit_indices[:3]:\n point=starts[edge_index,0]+parameter[edge_index,triangle_index]*directions[edge_index,0]\n print('intersection world',point.tolist(),'target local',(inv_target[:3,:3]@point+inv_target[:3,3]).tolist())\n"
+      },
+      "response": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result\":{\"executed\":true,\"result\":\"cache_current True\\ninterior witness world [-0.20166666805744174, -0.4033333361148835, -0.4033333361148834] target local [-0.605000016192595, 1.2020273054691444e-08, 2.404053900395553e-08] winding target 0.9999999999999984 winding candidate 1.0000000000000002\\nwitness distances to target and Object_03 surface 0.004999992251396209 0.00999999997516476\\nproper edge triangle intersections 6\\nintersection world [-0.1900000048345979, -0.42000001068744397, -0.38500000403159246] target local [-0.6000000238418579, -0.009999994958436509, -0.024999977275729612]\\nintersection world [-0.2024999991742257, -0.4075000209423373, -0.3912499971656784] target local [-0.6000000238418579, -0.009999997317785114, -0.0062499903608087826]\\nintersection world [-0.1691666660633767, -0.4095833375144534, -0.40583334659019354] target local [-0.6000000238418579, 0.021250017917098074, -0.0249999772136415]\\n\"},\"status\":\"success\"}"
+          }
+        ],
+        "isError": false
+      },
+      "model_call_status": "completed",
+      "model_call_error": null,
+      "actual_is_error": false,
+      "owner_exception": null
+    }
+  ],
+  "consumer_diagnostics": [
+    {
+      "type": "consumer_diagnostic",
+      "message": "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in <diagnostic-config>."
+    },
+    {
+      "type": "consumer_diagnostic",
+      "message": "Model metadata for `gpt-6.1-sol` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."
+    }
+  ],
+  "consumer_errors": [],
+  "code_access_and_write_review_flags": [],
+  "checks": {
+    "initial_matches_registered_frozen_mesh_exactly": true,
+    "initial_final_mesh_exactly_equal": true,
+    "actual_snapshot_receipts_match": true,
+    "registered_source_asset_bytes_unchanged": true,
+    "owner_close_receipt_bound": true,
+    "owner_close_confirmed": true,
+    "all_attached_backends_closed_and_reaped": true,
+    "worker_initial_final_geometry_fingerprint_equal": true,
+    "consumer_process_reaped": true,
+    "consumer_readers_stopped": true,
+    "no_reported_mutation_unknown": true,
+    "no_bridge_protocol_errors": true,
+    "root_protocol_prefinal_checks_agree": true,
+    "mesh_check_scope": "full ordered local vertices, world matrices, oriented triangle faces and units; no full-array duplication in this packet",
+    "readonly_limit": "unchanged final mesh and source asset do not by themselves prove absence of every transient in-memory operation",
+    "consumer_supplied_client_cleanup_confirmed_record": true,
+    "client_process_absence_confirmed_by_cleanup_snapshot": true,
+    "client_graceful_exit_receipt_present": false,
+    "client_normal_exit_attested_by_receipt": null,
+    "client_cleanup_scope": "Actual attachment STARTED PIDs matched with the final recorded cleanup snapshot; no inference about unobserved transient processes or graceful termination from PID absence.",
+    "client_cleanup_quality_policy": "Separate operational evidence; missing EXIT does not mean an owned backend is hanging and adds no quality gate.",
+    "model_requests_and_actual_returns_bound_to_public_events": true,
+    "all_tool_attempts_including_errors_retained": true
+  }
+}
