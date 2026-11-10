@@ -1,0 +1,55 @@
+test_final_request_code_error_state_and_duplicate_attempts_remain (__main__.ProjectionContractTests.test_final_request_code_error_state_and_duplicate_attempts_remain) ... ok
+test_handoff_owner_and_public_event_semantic_payloads_are_exact (__main__.ProjectionContractTests.test_handoff_owner_and_public_event_semantic_payloads_are_exact) ... FAIL
+test_known_administrative_envelopes_still_remove_only_documented_fields (__main__.ProjectionContractTests.test_known_administrative_envelopes_still_remove_only_documented_fields) ... ok
+test_root_condition_profile_counterexample_retains_exact_text (__main__.ProjectionContractTests.test_root_condition_profile_counterexample_retains_exact_text) ... FAIL
+
+======================================================================
+FAIL: test_handoff_owner_and_public_event_semantic_payloads_are_exact (__main__.ProjectionContractTests.test_handoff_owner_and_public_event_semantic_payloads_are_exact)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\hefe\verification\fixes\20261111_m4_observation_fix_review\quality\tests\run_projection_contract.py", line 199, in test_handoff_owner_and_public_event_semantic_payloads_are_exact
+    self.assertEqual(mismatches, [], "semantic_payload_corrupted:handoff")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['owner.RESPONSE.result', 'owner.ERROR_RES[281 chars]val'] != []
+
+First list contains 14 additional elements.
+First extra element 0:
+'owner.RESPONSE.result'
+
++ []
+- ['owner.RESPONSE.result',
+-  'owner.ERROR_RESPONSE.error',
+-  'owner.exception.semantic.1',
+-  'owner.exception.semantic.2',
+-  'public.result.0',
+-  'public.error.0',
+-  'public.result.1',
+-  'public.error.1',
+-  'public.result.2',
+-  'public.error.2',
+-  'source.worker.semantic',
+-  'source.CLOSE.errors',
+-  'arbitrary.payload',
+-  'arbitrary.payload.no_removal'] : semantic_payload_corrupted:handoff
+
+======================================================================
+FAIL: test_root_condition_profile_counterexample_retains_exact_text (__main__.ProjectionContractTests.test_root_condition_profile_counterexample_retains_exact_text)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\hefe\verification\fixes\20261111_m4_observation_fix_review\quality\tests\run_projection_contract.py", line 168, in test_root_condition_profile_counterexample_retains_exact_text
+    self.assertEqual(projected, {"result": response["result"]},
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "semantic_content_changed:root_condition_profile")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'res[42 chars]: '{"gap_m":0.00010000728070735931}'}], 'isError': False}} != {'res[42 chars]: '{"condition":{"lower_band":true,"behind_fro[138 chars]lse}}
+- {'result': {'content': [{'text': '{"gap_m":0.00010000728070735931}',
++ {'result': {'content': [{'text': '{"condition":{"lower_band":true,"behind_front_beam":true,"within_pipe_radius":true},"profile":"rectangular '
++                                  'frame with through '
++                                  'hole","gap_m":0.00010000728070735931}',
+                           'type': 'text'}],
+              'isError': False}} : semantic_content_changed:root_condition_profile
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.066s
+
+FAILED (failures=2)
