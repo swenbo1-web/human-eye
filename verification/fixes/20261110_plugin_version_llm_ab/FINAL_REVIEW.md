@@ -2,6 +2,8 @@
 
 2026-11-10 (Asia/Shanghai). Cycle `PLUGIN-VERSION-LLM-AB-001`.
 
+Implementation evidence is committed at `4d7801cf7072e9da0ba302710acd35ace1e1c645`. Root verified all 542 indexed members (36,799,162 bytes) against disk and that fixed Git commit; no runtime product paths changed, and the implementation worktree is clean. Evidence index SHA256: `689abd12242323d89681e1ff853171de7bf7bd51ea040e8233d48d96960dc093`.
+
 **Conclusion: both versions complete the same tasks correctly; this small optimization did not demonstrate an end-to-end speed or token benefit.** Six paired comparisons split evenly: B was faster in three and slower in three. Do not describe this as a native-tool comparison or an acceptance of the entire new architecture's benefit.
 
 ## What actually ran
