@@ -1,0 +1,818 @@
+{
+  "schema_version": "1.0",
+  "input_path": "D:/hefe/verification/fixes/20261110_native_plugin_complex/BLIND_INPUT.json",
+  "input_sha256": "BB33D9AD65DF5DE289AD4880FE99ADF942702D5B246A12F17A2030D22ECED9B1",
+  "assessment_scope": "仅据指定输入之任务、真值和最终文本盲评。未读取组别、成本、耗时、历史、仓库、场景或执行日志；未运行产品或联网。",
+  "scoring_policy": {
+    "core_facts_correct": "三项关系、两项非零误差界距离、全部穿插集合及最近分离件均正确。",
+    "complete_requested_answer": "核心正确，并有当前几何依据及原题所要求的旋转/AABB局限解释，且没有可识别的错误断言。",
+    "hole_coverage": "孔洞解释是否明确单列。原题未单独强制提及孔洞；不把真值每项背景描述增设为必答项。充分的一般旋转/AABB局限解释与真实实体几何依据可以满足完整性。",
+    "distance_rule": "abs(answer_m-ideal_m)+bound_m<=1e-6；同时检查主表值和正文细值。0.01/0.04满足精度，无须特定oracle见证点。",
+    "evidence_limits": "判断文本论据，不代替真实执行日志审核。具体见证点/面数/拓扑等细节若真值不足以复算，单列未独立验证；不能因此推断为假。",
+    "depth_escape": "不要求全局最小脱离向量或额外防御性免责声明。内部点到表面的距离不自动等同穿透深度。"
+  },
+  "distance_truth": {
+    "Object_02": {
+      "ideal_m": 0.010000000000000009,
+      "bound_m": 2.0446606626675212E-07
+    },
+    "Object_04": {
+      "ideal_m": 0.040000000000000036,
+      "bound_m": 3.0142333402758355E-07
+    }
+  },
+  "summary": {
+    "answer_count": 9,
+    "core_facts_correct_count": 9,
+    "complete_requested_answer_count": 9,
+    "explicit_hole_explanation": [
+      "Q02",
+      "Q03",
+      "Q05"
+    ],
+    "required_omissions_count": 0,
+    "requested_unknowns_count": 0,
+    "incorrect_depth_or_global_escape_assertion_count": 0
+  },
+  "answers": [
+    {
+      "id": "Q01",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | 分离 | **0.010000 m** |\n| Object_03 | **穿插** | 不适用 |\n| Object_04 | 分离 | **0.040000 m** |",
+        "set_nearest_touching": "**唯一穿插件是 Object_03；最近的分离件是 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "检测到边界面内部的横向交叉，确认是穿插而非相切。",
+        "separation_or_distance_evidence": "边界不相交，实体内外判定确认分离。",
+        "rotation": "旋转还会改变轴对齐包围盒的尺寸与空余区域，不能用其重叠量或坐标轴间距替代真实三维表面距离。",
+        "aabb": "**包围盒包含或重叠不能证明实体接触、穿插或包含**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    },
+    {
+      "id": "Q02",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": true,
+        "hole_correct_if_asserted": true,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前网格/变换、孔内与外侧定位及严格进入材料/共同内点、完整网格表面距离依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": []
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | **真实分离**，位于目标中央孔内 | **0.010000 m** |\n| Object_03 | **穿插**，跨入目标内孔侧壁 | — |\n| Object_04 | **真实分离**，位于目标外侧 | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件只有 Object_03；最近的分离件是 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "严格位于目标材料内部，同时也是候选盒体内部点，证明存在**非零体积重叠**，不是仅接触。",
+        "separation_or_distance_evidence": "分离件距离使用**世界坐标下全部表面三角形的顶点—三角形、边—边距离**求最小值",
+        "rotation": "最终距离已计入各对象完整世界变换，没有把局部轴差或旋转后的包围盒距离直接当作真实表面距离。",
+        "aabb": "**包围盒重叠只能筛出可能碰撞，不能证明接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m",
+        "hole": "即便采用定向包围盒，也不能表达目标中央孔洞。"
+      }
+    },
+    {
+      "id": "Q03",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000075,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.7946606625850045E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999961,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.4042333406256683E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": true,
+        "hole_correct_if_asserted": true,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前网格/变换、孔内与外侧定位及严格进入材料/共同内点、完整网格表面距离依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": []
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | 分离，位于目标中央孔内 | **0.010000 m** |\n| Object_03 | **穿插**，跨过目标内孔侧壁 | 不适用 |\n| Object_04 | 分离，位于目标外侧 | **0.040000 m** |",
+        "set_nearest_touching": "唯一穿插件是 **Object_03**；最近的分离件是 **Object_02**。没有仅接触的候选件。",
+        "penetration_evidence": "两者之间的实体跨过内壁，且高度处于目标厚度内部，故是实际穿插，而非仅贴面。",
+        "separation_or_distance_evidence": "完整网格距离计算确认这是三维最小值。",
+        "rotation": "共同刚体旋转不改变真实间隙，但会改变世界轴对齐包围盒。",
+        "aabb": "因此，包围盒重叠或包含均不能证明碰撞。",
+        "detailed_distance_02": "0.010000075 m",
+        "detailed_distance_04": "0.039999961 m",
+        "hole": "即使使用定向包围盒，也不能表达目标的中央孔，仍需检查真实表面与实体内外关系。"
+      }
+    },
+    {
+      "id": "Q04",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | **真实分离** | **0.010000 m** |\n| Object_03 | **穿插**，不是仅接触 | 不适用；相交表面的距离为 0 |\n| Object_04 | **真实分离** | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件：Object_03。最近的分离件：Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "检测到两实体边界内部的**横截相交**，因此可确认为穿插，而非仅凭零距离推断。",
+        "separation_or_distance_evidence": "边界不相交，实体内外奇偶判定确认分离。",
+        "rotation": "旋转会改变轴对齐包围盒的松紧，局部坐标轴距离或单轴投影距离也不能替代三维最小表面间隙。",
+        "aabb": "**包围盒包含或重叠并不能证明实体接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    },
+    {
+      "id": "Q05",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": true,
+        "hole_correct_if_asserted": true,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前网格/变换、孔内与外侧定位及严格进入材料/共同内点、完整网格表面距离依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "0.005000 m明确是共同内部点到目标表面的距离；没有误称穿透深度或全局脱离量。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": []
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | 真实分离，位于目标中央孔内 | **0.010000 m** |\n| Object_03 | **穿插**，跨越目标内孔侧壁 | — |\n| Object_04 | 真实分离，位于目标外缘之外 | **0.040000 m** |",
+        "set_nearest_touching": "**唯一穿插件是 Object_03；最近的分离件是 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "同时严格位于两实体内部（两者的立体角绕数均约为 1）。",
+        "separation_or_distance_evidence": "两者均无表面交叉，候选顶点均位于目标实体之外。",
+        "rotation": "旋转本身不代表碰撞；共同刚性旋转保持距离，但候选件的相对旋转会改变最近特征。",
+        "aabb": "包围盒重叠不能证明接触或穿插。",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m",
+        "hole": "目标包围盒也会覆盖中央孔这一空域，即使改用贴合旋转的定向包围盒，仍无法表达孔洞。",
+        "depth": "该点距目标表面约 **0.005000 m**，说明存在内部体积重叠，而非仅接触。"
+      }
+    },
+    {
+      "id": "Q06",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | **真实分离** | **0.010000 m** |\n| Object_03 | **穿插** | 不适用；相交表面距离为 0，不代表穿透深度 |\n| Object_04 | **真实分离** | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件为 Object_03；最近的分离件是 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "闭实体判定检测到**边界内部横向交叉**，因此不是仅相切。",
+        "separation_or_distance_evidence": "两组分离判定依据是边界不相交及闭实体内外奇偶判定",
+        "rotation": "旋转会改变轴对齐包围盒的松紧程度，局部轴上的距离也不能代替三维最小间隙",
+        "aabb": "**包围盒包含或重叠不能证明实体包含、接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    },
+    {
+      "id": "Q07",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | **真实分离** | **0.010000 m** |\n| Object_03 | **穿插**，不是仅接触 | 不适用；相交表面距离为 0 |\n| Object_04 | **真实分离** | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件为 Object_03；最近的分离件为 Object_02。三个候选件中没有仅接触件。**",
+        "penetration_evidence": "检测到边界内部的**横向相交**，因此判为穿插",
+        "separation_or_distance_evidence": "两者边界不相交，实体内外判定确认分离。",
+        "rotation": "旋转会改变世界 AABB 的尺寸与空余区域，也使局部轴向距离不能直接充当三维最短距离",
+        "aabb": "**AABB 包含或重叠不能证明实体接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    },
+    {
+      "id": "Q08",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | **分离** | **0.010000 m** |\n| Object_03 | **穿插** | 不适用；两者表面相交，表面距离为 0 |\n| Object_04 | **分离** | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件为 Object_03；最近的分离件为 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "检测到两者边界内部的**横向相交**，因此是穿插，而不是仅凭零距离判断为接触。",
+        "separation_or_distance_evidence": "闭合实体关系核查将两个分离件确认为边界不交且实体不重叠，三件均已完成分类，无 unknown。",
+        "rotation": "旋转后 AABB 还可能包含更多实体之外的空白区域",
+        "aabb": "**AABB 包含或重叠不能证明实体接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    },
+    {
+      "id": "Q09",
+      "core_facts_correct": true,
+      "complete_requested_answer": true,
+      "relations": {
+        "Object_02": {
+          "answer": "separated",
+          "correct": true
+        },
+        "Object_03": {
+          "answer": "penetrating",
+          "correct": true
+        },
+        "Object_04": {
+          "answer": "separated",
+          "correct": true
+        }
+      },
+      "distances": {
+        "Object_02": {
+          "answer_m": 0.01,
+          "detailed_answer_m": 0.010000049869,
+          "abs_error_plus_bound_m": 2.0446606627542573E-07,
+          "detailed_abs_error_plus_bound_m": 2.5433506625700397E-07,
+          "correct": true
+        },
+        "Object_04": {
+          "answer_m": 0.04,
+          "detailed_answer_m": 0.039999960661,
+          "abs_error_plus_bound_m": 3.01423334062278E-07,
+          "detailed_abs_error_plus_bound_m": 3.40762334064248E-07,
+          "correct": true
+        }
+      },
+      "penetrating_set": {
+        "answer": [
+          "Object_03"
+        ],
+        "correct": true
+      },
+      "nearest_separated": {
+        "answer": "Object_02",
+        "correct": true
+      },
+      "no_touching_pair": {
+        "answer": true,
+        "correct": true
+      },
+      "explanations": {
+        "rotation_adequate": true,
+        "aabb_limitations_adequate": true,
+        "hole_explicit": false,
+        "hole_correct_if_asserted": null,
+        "necessary_current_geometry_adequate": true,
+        "geometry_assessment": "提供当前世界坐标几何、两分离件最近点对及细距、边界不交与实体内外判定、穿插件边界内部横向交叉依据。"
+      },
+      "false_claims": {
+        "incorrect_penetration_depth": false,
+        "incorrect_global_escape": false,
+        "other_identified_errors": [],
+        "note": "没有将零距离/交点误称穿透深度，没有错误全局脱离断言。"
+      },
+      "omissions": {
+        "required": [],
+        "optional_context": [
+          "未明确解释孔洞；已有正确旋转/AABB局限与充分几何依据，不据此判原题回答不完整。"
+        ]
+      },
+      "unknowns": {
+        "answer_reported": [],
+        "requested_outcomes": [],
+        "auxiliary_unverified": [
+          "具体见证点坐标、拓扑/相交计数或局部几何细值未由本评审独立复算；实际执行另由日志审核。",
+          "真值确认AABB重叠但未给范围；文本进一步声称AABB完全包含，不能独立验证，亦无矛盾证据。其局限论证只需已知重叠事实。"
+        ]
+      },
+      "evidence_quotes": {
+        "relations_and_primary_distances": "| Object_02 | 分离 | **0.010000 m** |\n| Object_03 | **穿插** | 不适用 |\n| Object_04 | 分离 | **0.040000 m** |",
+        "set_nearest_touching": "**全部穿插件只有 Object_03；最近的分离件是 Object_02。没有仅接触的候选件。**",
+        "penetration_evidence": "检测到边界内部的横向交叉，证明为真实穿插，而非仅凭零距离推断。",
+        "separation_or_distance_evidence": "表面互不相交，闭合实体内外判定确认分离。",
+        "rotation": "旋转会改变世界轴对齐包围盒的范围；只看包围盒、物体中心或单轴间距也无法得到真实三维表面间隙。",
+        "aabb": "**包围盒重叠或包含不能证明实体接触或穿插**",
+        "detailed_distance_02": "0.010000049869 m",
+        "detailed_distance_04": "0.039999960661 m"
+      }
+    }
+  ]
+}

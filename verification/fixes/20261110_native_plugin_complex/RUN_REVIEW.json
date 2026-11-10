@@ -1,0 +1,826 @@
+{
+  "cycle": "NATIVE-PLUGIN-COMPLEX-003",
+  "method": "independent recomputation from raw events, transport RX/TX and owned worker records; no author grader or summary imported",
+  "freeze_passed": true,
+  "denominator": 9,
+  "observed_cells": 9,
+  "native_schemas_equal": true,
+  "common_cli_configs_equal": true,
+  "prompt_hashes_equal_to_plan": true,
+  "same_requested_model_and_effort": true,
+  "common_cli_config": {
+    "model": "\"gpt-6.1-sol\"",
+    "model_reasoning_effort": "\"medium\"",
+    "model_provider": "\"openai_http\"",
+    "service_tier": "\"default\"",
+    "model_providers.openai_http": "{\"name\"=\"OpenAI\",\"wire_api\"=\"responses\",\"requires_openai_auth\"=true,\"supports_websockets\"=false,\"supports_standalone_web_search\"=true,\"base_url\"=\"https://chatgpt.com/backend-api/codex\"}",
+    "forced_login_method": "\"chatgpt\"",
+    "hide_agent_reasoning": "true",
+    "show_raw_agent_reasoning": "false",
+    "web_search": "\"disabled\"",
+    "features.hooks": "false",
+    "features.apps": "false",
+    "features.memories": "false",
+    "memories.use_memories": "false",
+    "features.multi_agent": "false",
+    "features.multi_agent_v2": "false",
+    "features.goals": "false",
+    "features.remote_plugin": "false",
+    "features.plugins": "false",
+    "features.skip_host_skill_discovery": "true",
+    "skills.bundled.enabled": "false",
+    "skills.include_instructions": "false",
+    "project_doc_max_bytes": "0",
+    "features.shell_tool": "false",
+    "features.view_image": "false",
+    "sandbox_mode": "\"read-only\"",
+    "approval_policy": "\"never\"",
+    "plugins.\"codex-app-tools@openai-bundled\".enabled": "false",
+    "plugins.\"visualize@openai-bundled\".enabled": "false",
+    "plugins.\"documents@openai-primary-runtime\".enabled": "false",
+    "plugins.\"pdf@openai-primary-runtime\".enabled": "false",
+    "plugins.\"spreadsheets@openai-primary-runtime\".enabled": "false",
+    "plugins.\"presentations@openai-primary-runtime\".enabled": "false",
+    "plugins.\"template-creator@openai-primary-runtime\".enabled": "false",
+    "plugins.\"agent-learning@agent-learning-local\".enabled": "false"
+  },
+  "groups": {
+    "N": {
+      "n": 3,
+      "full_task_seconds": {
+        "median": 66.5466678,
+        "min": 64.8775481,
+        "max": 68.8603256,
+        "sum": 200.2845415
+      },
+      "prompt_to_final_seconds": {
+        "median": 62.4691819,
+        "min": 61.3659235,
+        "max": 65.7704836,
+        "sum": 189.605589
+      },
+      "tool_count": {
+        "median": 3,
+        "min": 3,
+        "max": 3,
+        "sum": 9
+      },
+      "model_total_input_output_tokens": {
+        "median": 36885,
+        "min": 34583,
+        "max": 38059,
+        "sum": 109527
+      },
+      "usage_sums": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 57728,
+        "input_tokens": 102778,
+        "output_tokens": 6749,
+        "reasoning_output_tokens": 320
+      },
+      "tool_counts": {
+        "execute_blender_code": 9
+      },
+      "catalog_bytes_sum": 1725,
+      "tool_response_wire_bytes_sum": 33012,
+      "all_mcp_request_wire_bytes_sum": 22958,
+      "all_mcp_response_wire_bytes_sum": 35202,
+      "worker_execute_code_rpc_count_including_initial_final_sum": 15,
+      "worker_rpc_count_including_initial_final_close_sum": 18
+    },
+    "A": {
+      "n": 3,
+      "full_task_seconds": {
+        "median": 29.3795176,
+        "min": 25.6036794,
+        "max": 30.1092783,
+        "sum": 85.0924753
+      },
+      "prompt_to_final_seconds": {
+        "median": 23.6275625,
+        "min": 21.3467183,
+        "max": 25.0442553,
+        "sum": 70.0185361
+      },
+      "tool_count": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "sum": 3
+      },
+      "model_total_input_output_tokens": {
+        "median": 13181,
+        "min": 13158,
+        "max": 13196,
+        "sum": 39535
+      },
+      "usage_sums": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 5248,
+        "input_tokens": 37342,
+        "output_tokens": 2193,
+        "reasoning_output_tokens": 44
+      },
+      "tool_counts": {
+        "human_eye_spatial_relations": 3
+      },
+      "catalog_bytes_sum": 4821,
+      "tool_response_wire_bytes_sum": 17496,
+      "all_mcp_request_wire_bytes_sum": 4455,
+      "all_mcp_response_wire_bytes_sum": 22782,
+      "worker_execute_code_rpc_count_including_initial_final_sum": 9,
+      "worker_rpc_count_including_initial_final_close_sum": 12
+    },
+    "B": {
+      "n": 3,
+      "full_task_seconds": {
+        "median": 26.7995032,
+        "min": 26.0334946,
+        "max": 34.7345126,
+        "sum": 87.5675104
+      },
+      "prompt_to_final_seconds": {
+        "median": 21.9834157,
+        "min": 21.3222046,
+        "max": 23.9111012,
+        "sum": 67.2167215
+      },
+      "tool_count": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "sum": 3
+      },
+      "model_total_input_output_tokens": {
+        "median": 13109,
+        "min": 13098,
+        "max": 13113,
+        "sum": 39320
+      },
+      "usage_sums": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 10496,
+        "input_tokens": 37339,
+        "output_tokens": 1981,
+        "reasoning_output_tokens": 0
+      },
+      "tool_counts": {
+        "human_eye_spatial_relations": 3
+      },
+      "catalog_bytes_sum": 4821,
+      "tool_response_wire_bytes_sum": 17496,
+      "all_mcp_request_wire_bytes_sum": 4455,
+      "all_mcp_response_wire_bytes_sum": 22782,
+      "worker_execute_code_rpc_count_including_initial_final_sum": 9,
+      "worker_rpc_count_including_initial_final_close_sum": 12
+    }
+  },
+  "cells": [
+    {
+      "cell": "01",
+      "round": 1,
+      "group": "N",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 64.8775481,
+      "prompt_to_final_seconds": 61.3659235,
+      "pre_consumer_setup_seconds": 0.9515278,
+      "owner_finish_seconds": 0.1962669,
+      "after_last_tool_to_final_seconds": 17.9540123,
+      "tool_counts": {
+        "execute_blender_code": 3
+      },
+      "tool_count": 3,
+      "tool_seconds_sum": 0.3703846,
+      "raw_usage": {
+        "input_tokens": 34734,
+        "cached_input_tokens": 18304,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2151,
+        "reasoning_output_tokens": 79
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 36885,
+      "catalog_bytes": 575,
+      "tool_response_wire_bytes": 11168,
+      "all_mcp_request_wire_bytes": 7746,
+      "all_mcp_response_wire_bytes": 11898,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 5,
+      "worker_rpc_count_including_initial_final_close": 6,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 21222200,
+          "render_events_before": 0,
+          "sequence": 6,
+          "started_ns": 390901493510900,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.3809658,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "45c17a0ba2e1739f11cf819b466355b3e1f39fa7377cd91456d37fc1485462d0",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 37176,
+      "actor_pid": 13180,
+      "blender_pid": 25496,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "02",
+      "round": 1,
+      "group": "A",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 30.1092783,
+      "prompt_to_final_seconds": 25.0442553,
+      "pre_consumer_setup_seconds": 1.1236674,
+      "owner_finish_seconds": 0.2121478,
+      "after_last_tool_to_final_seconds": 16.7322587,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.2742456,
+      "raw_usage": {
+        "input_tokens": 12444,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 752,
+        "reasoning_output_tokens": 0
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13196,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 21094000,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 390931587302800,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.0634322,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "8f092f2dc65f42a9e2a5d61cf2e9786530bdb991308ae319a868456d195e4b3e",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 24544,
+      "actor_pid": 29016,
+      "blender_pid": 38756,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "03",
+      "round": 1,
+      "group": "B",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 26.0334946,
+      "prompt_to_final_seconds": 21.3222046,
+      "pre_consumer_setup_seconds": 1.327077,
+      "owner_finish_seconds": 0.1678353,
+      "after_last_tool_to_final_seconds": 14.7399636,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.2677733,
+      "raw_usage": {
+        "input_tokens": 12447,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 666,
+        "reasoning_output_tokens": 0
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13113,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 128900,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 390957649460600,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.0474896,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "06eab0f8fe1a756032031a34cfce968ec9e20a054ca09698697ecb180abfdf91",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 37872,
+      "actor_pid": 32252,
+      "blender_pid": 29720,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "04",
+      "round": 2,
+      "group": "A",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 25.6036794,
+      "prompt_to_final_seconds": 21.3467183,
+      "pre_consumer_setup_seconds": 1.1239017,
+      "owner_finish_seconds": 0.1918041,
+      "after_last_tool_to_final_seconds": 14.7658487,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.276139,
+      "raw_usage": {
+        "input_tokens": 12443,
+        "cached_input_tokens": 5248,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 715,
+        "reasoning_output_tokens": 44
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13158,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 19075900,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 390983230538500,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.0463701,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "6da6e4367917cfb2b05c6f0606e14843d1a76e15750552dfaf6d62a2faca2300",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 29188,
+      "actor_pid": 19836,
+      "blender_pid": 25136,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "05",
+      "round": 2,
+      "group": "B",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 26.7995032,
+      "prompt_to_final_seconds": 21.9834157,
+      "pre_consumer_setup_seconds": 1.1222232,
+      "owner_finish_seconds": 0.1930968,
+      "after_last_tool_to_final_seconds": 14.1478666,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.2694676,
+      "raw_usage": {
+        "input_tokens": 12441,
+        "cached_input_tokens": 5248,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 657,
+        "reasoning_output_tokens": 0
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13098,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 9355200,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 391010029696700,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.0628024,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "777c392346678153398f5f877d7eeaffa2f5f65ec1771abfc841b23c97053747",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 19816,
+      "actor_pid": 38276,
+      "blender_pid": 39044,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "06",
+      "round": 2,
+      "group": "N",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 66.5466678,
+      "prompt_to_final_seconds": 62.4691819,
+      "pre_consumer_setup_seconds": 0.8702424,
+      "owner_finish_seconds": 0.2186572,
+      "after_last_tool_to_final_seconds": 22.0026146,
+      "tool_counts": {
+        "execute_blender_code": 3
+      },
+      "tool_count": 3,
+      "tool_seconds_sum": 1.4101367,
+      "raw_usage": {
+        "input_tokens": 35889,
+        "cached_input_tokens": 23936,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2170,
+        "reasoning_output_tokens": 120
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 38059,
+      "catalog_bytes": 575,
+      "tool_response_wire_bytes": 13053,
+      "all_mcp_request_wire_bytes": 7400,
+      "all_mcp_response_wire_bytes": 13783,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 5,
+      "worker_rpc_count_including_initial_final_close": 6,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 19672900,
+          "render_events_before": 0,
+          "sequence": 6,
+          "started_ns": 391076567294800,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 1.3924756,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "2e1be94dd2993a271607e6e8c8bc2fce1c39361fbcc086886ffa6786af83c621",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 27508,
+      "actor_pid": 17308,
+      "blender_pid": 41516,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "07",
+      "round": 3,
+      "group": "B",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 34.7345126,
+      "prompt_to_final_seconds": 23.9111012,
+      "pre_consumer_setup_seconds": 1.2281331,
+      "owner_finish_seconds": 0.2422976,
+      "after_last_tool_to_final_seconds": 14.6143559,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.2770915,
+      "raw_usage": {
+        "input_tokens": 12451,
+        "cached_input_tokens": 5248,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 658,
+        "reasoning_output_tokens": 0
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13109,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 20721900,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 391111282629000,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.071512,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "11a6479f637e0968ba5e31e148640a83b1122737c12a4a4f98aceb562a86a363",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 9776,
+      "actor_pid": 37572,
+      "blender_pid": 32396,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "08",
+      "round": 3,
+      "group": "N",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 68.8603256,
+      "prompt_to_final_seconds": 65.7704836,
+      "pre_consumer_setup_seconds": 1.0750153,
+      "owner_finish_seconds": 0.2248306,
+      "after_last_tool_to_final_seconds": 18.4626059,
+      "tool_counts": {
+        "execute_blender_code": 3
+      },
+      "tool_count": 3,
+      "tool_seconds_sum": 0.4111802,
+      "raw_usage": {
+        "input_tokens": 32155,
+        "cached_input_tokens": 15488,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2428,
+        "reasoning_output_tokens": 121
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 34583,
+      "catalog_bytes": 575,
+      "tool_response_wire_bytes": 8791,
+      "all_mcp_request_wire_bytes": 7812,
+      "all_mcp_response_wire_bytes": 9521,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 5,
+      "worker_rpc_count_including_initial_final_close": 6,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 19807000,
+          "render_events_before": 0,
+          "sequence": 6,
+          "started_ns": 391180163242100,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.4217274,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "d5eca8af000d851c1d6b0faeab2e6c6e0a4d2af5ac24d39aab9b714690217396",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 21992,
+      "actor_pid": 6604,
+      "blender_pid": 3340,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "09",
+      "round": 3,
+      "group": "A",
+      "status": "completed",
+      "valid_completion": true,
+      "full_task_seconds": 29.3795176,
+      "prompt_to_final_seconds": 23.6275625,
+      "pre_consumer_setup_seconds": 1.2265265,
+      "owner_finish_seconds": 0.2349686,
+      "after_last_tool_to_final_seconds": 15.0722057,
+      "tool_counts": {
+        "human_eye_spatial_relations": 1
+      },
+      "tool_count": 1,
+      "tool_seconds_sum": 0.2734385,
+      "raw_usage": {
+        "input_tokens": 12455,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 726,
+        "reasoning_output_tokens": 0
+      },
+      "usage_matches_raw": true,
+      "model_total_input_output_tokens": 13181,
+      "catalog_bytes": 1607,
+      "tool_response_wire_bytes": 5832,
+      "all_mcp_request_wire_bytes": 1485,
+      "all_mcp_response_wire_bytes": 7594,
+      "mcp_methods": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "worker_execute_code_rpc_count_including_initial_final": 3,
+      "worker_rpc_count_including_initial_final_close": 4,
+      "worker_non_script_events": [
+        {
+          "elapsed_ns": 21319900,
+          "render_events_before": 0,
+          "sequence": 4,
+          "started_ns": 391209523839300,
+          "status": "unknown"
+        }
+      ],
+      "worker_execution_seconds_including_initial_final": 0.0607096,
+      "native_calls_in_events_match_owner": true,
+      "public_tools": [
+        "execute_blender_code",
+        "human_eye_spatial_relations"
+      ],
+      "runtime_identity_passed": true,
+      "prompt_sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "final_sha256": "704f5883ce8305597fe2a9ed01591ced2dcb76416c5c7707b97271d01c3c694d",
+      "final_present_in_public_events": true,
+      "cli_final_matches": true,
+      "full_geometry_unchanged": true,
+      "owner_cleanup_confirmed": true,
+      "consumer_reaped": true,
+      "original_blend_unchanged": true,
+      "errors": [],
+      "unexpected_tools": [],
+      "provider_retry_observations": [],
+      "consumer_pid": 40188,
+      "actor_pid": 42836,
+      "blender_pid": 36568,
+      "native_code_mentions_plugin": false,
+      "fees": null,
+      "provider_requests": null,
+      "resolved_effort": null
+    }
+  ],
+  "cost_scope": "consumer usage is actual reported usage; setup/review/judge token usage, provider request counts and billed dollars are unmeasured; after-last-tool includes transport/orchestration and is not identified as pure reasoning"
+}
