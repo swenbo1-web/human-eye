@@ -1,0 +1,313 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nworldverts={name:np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]) for name,obj in meshes.items()}\nfor name,verts in sorted(worldverts.items()):\n print(name, 'mesh',meshes[name].data.name,'min',np.round(verts.min(0),7).tolist(),'max',np.round(verts.max(0),7).tolist(),'center',np.round((verts.min(0)+verts.max(0))/2,7).tolist())\nprint('unit',bpy.context.scene.unit_settings.scale_length)\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"N01 mesh G03 min [-0.5675, -0.27, 0.045] max [-0.5325, 0.35, 0.895] center [-0.55, 0.04, 0.47]\\nN02 mesh G16 min [-0.4716686, -0.0089951, 0.4211561] max [0.4316686, 0.0389951, 0.6088438] center [-0.02, 0.015, 0.515]\\nN03 mesh G24 min [0.2825, 0.125, 0.2125] max [0.3175, 0.185, 0.2475] center [0.3, 0.155, 0.23]\\nN04 mesh G12 min [0.372, 0.137, 0.23] max [0.408, 0.173, 0.75] center [0.39, 0.155, 0.49]\\nN05 mesh G23 min [0.465, 0.185, 0.795] max [0.515, 0.215, 0.845] center [0.49, 0.2, 0.82]\\nN06 mesh G22 min [-0.515, 0.185, 0.795] max [-0.465, 0.215, 0.845] center [-0.49, 0.2, 0.82]\\nN07 mesh G20 min [-0.185, 0.14, 0.465] max [-0.055, 0.22, 0.575] center [-0.12, 0.18, 0.52]\\nN08 mesh G10 min [0.0899, 0.075, 0.335] max [0.1099, 0.125, 0.385] center [0.0999, 0.1, 0.36]\\nN09 mesh G14 min [0.15, 0.137, 0.732] max [0.39, 0.173, 0.768] center [0.27, 0.155, 0.75]\\nN10 mesh G06 min [-0.44, -0.1375, 0.386] max [0.44, -0.1025, 0.424] center [0.0, -0.12, 0.405]\\nN11 mesh G07 min [-0.5, 0.21, 0.48] max [0.5, 0.25, 0.52] center [0.0, 0.23, 0.5]\\nN12 mesh G05 min [-0.51, 0.0675, 0.62] max [0.51, 0.1525, 0.67] center [0.0, 0.11, 0.645]\\nN13 mesh G09 min [0.24, 0.07, 0.33] max [0.26, 0.13, 0.39] center [0.25, 0.1, 0.36]\\nN14 mesh G04 min [0.5325, -0.27, 0.045] max [0.5675, 0.35, 0.895] center [0.55, 0.04, 0.47]\\nN15 mesh G08 min [-0.37, -0.05, 0.3] max [-0.23, -0.01, 0.42] center [-0.3, -0.03, 0.36]\\nN16 mesh G08 min [0.11, 0.08, 0.3] max [0.25, 0.12, 0.42] center [0.18, 0.1, 0.36]\\nN17 mesh G15 min [0.28, 0.137, 0.212] max [0.47, 0.173, 0.248] center [0.375, 0.155, 0.23]\\nN18 mesh G08 min [0.11, 0.14, 0.67] max [0.25, 0.18, 0.79] center [0.18, 0.16, 0.73]\\nN19 mesh G13 min [0.452, 0.137, 0.23] max [0.488, 0.173, 0.75] center [0.47, 0.155, 0.49]\\nN20 mesh G19 min [0.2825, -0.0575, 0.49] max [0.3175, -0.0225, 0.71] center [0.3, -0.04, 0.6]\\nN21 mesh G02 min [-0.57, -0.28, 0.025] max [0.57, 0.36, 0.085] center [0.0, 0.04, 0.055]\\nN22 mesh G01 min [-0.57, 0.2775, 0.025] max [0.57, 0.3025, 0.935] center [0.0, 0.29, 0.48]\\nN23 mesh G18 min [-0.41, -0.231, 0.465] max [-0.03, -0.209, 0.595] center [-0.22, -0.22, 0.53]\\nN24 mesh G05 min [-0.51, 0.0675, 0.25] max [0.51, 0.1525, 0.3] center [0.0, 0.11, 0.275]\\nN25 mesh G08 min [-0.13, -0.29, 0.3] max [0.01, -0.25, 0.42] center [-0.06, -0.27, 0.36]\\nN26 mesh G21 min [-0.17, 0.12, 0.49] max [-0.07, 0.134, 0.55] center [-0.12, 0.127, 0.52]\\nN27 mesh G17 min [-0.4522879, -0.0168388, 0.3832411] max [0.4222879, 0.1868389, 0.6367589] center [-0.015, 0.085, 0.51]\\nN28 mesh G11 min [0.168, -0.03, 0.348] max [0.192, 0.24, 0.372] center [0.18, 0.105, 0.36]\\nunit 1.0\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "3b612c153c44640bdcaf52462cfac02255aa9bbd5b8e4ebf69d8a517d662706c"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "e5b14eec768df95b8b33100f881ec9bdac4b65cc484d4703d33f255f4cc0cd4f"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "0508a340b14a45edba7398808a7537fc8f8edc233b51d9bf72d7837841be8806"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "candidates": [
+              {
+                "name": "N13"
+              },
+              {
+                "name": "N08"
+              },
+              {
+                "name": "N28"
+              }
+            ],
+            "include_aabb": true,
+            "target": {
+              "name": "N16"
+            }
+          },
+          "name": "human_eye_spatial_relations"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"spatial-relations-v1\",\"status\":\"observed\",\"target\":{\"object_id\":\"blender:d3f91492188a2ad6163705c33f9c11727e3afee34d473b79735b520165f7bbc5\",\"name\":\"N16\",\"instance_id\":\"175\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.11000000685453415,0.08000000193715096,0.30000001564621925],\"max\":[0.2500000074505806,0.12000000104308128,0.42000001296401024],\"dimensions\":[0.14000000059604645,0.03999999910593033,0.11999999731779099]}}},\"candidates\":[{\"object_id\":\"blender:bc2e50e049d2fd62537aa9dff8f96608f350fdc799725fcc6721d209ca01583e\",\"name\":\"N13\",\"instance_id\":\"172\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.24000000022351742,0.07000000216066837,0.330000014975667],\"max\":[0.2599999997764826,0.13000000081956387,0.3900000136345625],\"dimensions\":[0.019999999552965164,0.05999999865889549,0.05999999865889549]}},\"candidate_index\":0,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"penetrating\",\"certificate\":\"transverse_boundary_interiors\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.0,\"nearest_witness\":{\"a\":[0.2500000074505806,0.1100000012665987,0.3900000136345625],\"b\":[0.2500000074505806,0.1100000012665987,0.3900000136345625],\"direction_a_to_b\":null},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"not_applicable\",\"direction_reason\":\"undefined_zero_distance\"},\"separation_gap\":{\"status\":\"not_applicable\",\"value\":null,\"reason\":\"pair_is_not_separated\"}},{\"object_id\":\"blender:f772b46bd483bd412211b976b832e2af71e651dc1095ff2485850085fbe0fbec\",\"name\":\"N08\",\"instance_id\":\"167\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.08990000002086163,0.07500000111758709,0.3350000139325857],\"max\":[0.10989999957382679,0.12500000186264515,0.3850000146776438],\"dimensions\":[0.019999999552965164,0.05000000074505806,0.05000000074505806]}},\"candidate_index\":1,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.00010000728070735931,\"nearest_witness\":{\"a\":[0.11000000685453415,0.08000000193715096,0.3350000139325857],\"b\":[0.10989999957382679,0.08000000193715096,0.3350000139325857],\"direction_a_to_b\":[-1.0,0.0,0.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"separation_gap\":{\"status\":\"measured\",\"value\":0.00010000728070735931,\"semantics\":\"separated_surface_gap_m\"}},{\"object_id\":\"blender:776df02dac3d7ed20707eba5167bd572599bf6276df63d28c016f6f96072bf44\",\"name\":\"N28\",\"instance_id\":\"187\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.16800000704824924,-0.030000008642673492,0.3480000142008066],\"max\":[0.1920000072568655,0.24000000208616257,0.3720000144094229],\"dimensions\":[0.024000000208616257,0.27000001072883606,0.024000000208616257]}},\"candidate_index\":2,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.023000000044703484,\"nearest_witness\":{\"a\":[0.18000000715255737,0.08000000193715096,0.32500001415610313],\"b\":[0.18000000715255737,0.08000000193715096,0.3480000142008066],\"direction_a_to_b\":[0.0,0.0,1.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"separation_gap\":{\"status\":\"measured\",\"value\":0.023000000044703484,\"semantics\":\"separated_surface_gap_m\"}}],\"sets\":{\"penetrating\":{\"complete\":true,\"candidate_indices\":[0]},\"nearest_separated\":{\"complete\":true,\"candidate_indices\":[1],\"distance_m\":0.00010000728070735931}},\"coverage\":{\"requested_candidates\":3,\"resolved_candidates\":3,\"classified_candidates\":3,\"unresolved_candidates\":0},\"context\":{\"scene_revision\":\"blender:b31c93d428904a431f52ae4812e69418ed4e7ed11eca5efd2c588840f209870c\",\"scene_fingerprint\":\"d78978ddf07dc40d80310ee995bea8016ce78735faccdb04507360c08676b5ad\",\"source\":\"blender\",\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"candidate_count\":28,\"selected_count\":4,\"runtime_source_sha256\":\"7a3d108bc5658508d76d98fe24b8f3dee4feac2d50856202b2ea7395c3dc9cc1\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\",\"scope\":\"explicit_target_candidates\",\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"1c8dd17ce31b369fbb44450d3dd240f74423609ca84fbddc83db2e22233c1d6d\"},\"identity_scope\":\"Object and instance IDs belong to this captured document/snapshot.\",\"certificate_scope\":\"Proof category only; surface witnesses are not shared-interior proofs.\"},\"measurement_contracts\":{\"closed_solid_relation\":{\"method\":\"bounded_exact_closed_shell_v1\",\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"relation_tolerance_m\":0.0},\"surface_proximity\":{\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\"}},\"execution_authority\":false,\"trace_id\":\"3ab0e087c852484a8b2ba367beba1f42\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "64fd7edab81173310fc1a95d474d76d2643222f12224fdaaf778e1d53a9634c4"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "40885eefba26d7c7670f17e5bb6a2c64563c27eab792274c817edddd19e43cf3"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "4fb04d8e2dc8386e29ebee395f373e7af6442a86f732728ebaf4182b67fe4f41"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "for name in ['N16','N12','N24','N04','N19']:\n print(name,'world_vertices',np.round(worldverts[name],8).tolist())\ncenter=lambda name:(worldverts[name].min(0)+worldverts[name].max(0))/2\nmid=(center('N12')[2]+center('N24')[2])/2\npipes=(center('N04')[:2]+center('N19')[:2])/2\nback=worldverts['N10'][:,1].max()\nprint('rail_mid_z',mid,'beam_rear_y',back,'pipes_mid_xy',pipes.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name); print(name,'center',c.tolist(),'xy_distance',float(np.linalg.norm(c[:2]-pipes)),'conditions',[bool(c[2]<mid),bool(c[1]>back),bool(np.linalg.norm(c[:2]-pipes)<=.70)])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"N16 world_vertices [[0.11000001, 0.08, 0.30000001], [0.25, 0.08, 0.30000001], [0.25, 0.08, 0.42000002], [0.11000001, 0.08, 0.42000002], [0.13500001, 0.08, 0.32500002], [0.22500001, 0.08, 0.32500002], [0.22500001, 0.08, 0.39500001], [0.13500001, 0.08, 0.39500001], [0.11000001, 0.12, 0.30000001], [0.25, 0.12, 0.30000001], [0.25, 0.12, 0.42000002], [0.11000001, 0.12, 0.42000002], [0.13500001, 0.12, 0.32500002], [0.22500001, 0.12, 0.32500002], [0.22500001, 0.12, 0.39500001], [0.13500001, 0.12, 0.39500001]]\\nN12 world_vertices [[-0.50999999, 0.0675, 0.62], [-0.50999999, 0.1525, 0.62], [-0.50999999, 0.1525, 0.66999996], [-0.50999999, 0.0675, 0.66999996], [-0.50999999, 0.08, 0.63], [-0.50999999, 0.14, 0.63], [-0.50999999, 0.14, 0.65999997], [-0.50999999, 0.08, 0.65999997], [0.50999999, 0.0675, 0.62], [0.50999999, 0.1525, 0.62], [0.50999999, 0.1525, 0.66999996], [0.50999999, 0.0675, 0.66999996], [0.50999999, 0.08, 0.63], [0.50999999, 0.14, 0.63], [0.50999999, 0.14, 0.65999997], [0.50999999, 0.08, 0.65999997]]\\nN24 world_vertices [[-0.50999999, 0.0675, 0.25], [-0.50999999, 0.1525, 0.25], [-0.50999999, 0.1525, 0.30000001], [-0.50999999, 0.0675, 0.30000001], [-0.50999999, 0.08, 0.26000002], [-0.50999999, 0.14, 0.26000002], [-0.50999999, 0.14, 0.28999999], [-0.50999999, 0.08, 0.28999999], [0.50999999, 0.0675, 0.25], [0.50999999, 0.1525, 0.25], [0.50999999, 0.1525, 0.30000001], [0.50999999, 0.0675, 0.30000001], [0.50999999, 0.08, 0.26000002], [0.50999999, 0.14, 0.26000002], [0.50999999, 0.14, 0.28999999], [0.50999999, 0.08, 0.28999999]]\\nN04 world_vertices [[0.37199998, 0.155, 0.23000002], [0.37441152, 0.146, 0.23000002], [0.38099998, 0.13941154, 0.23000002], [0.38999999, 0.13699999, 0.23000002], [0.39899999, 0.13941154, 0.23000002], [0.40558845, 0.146, 0.23000002], [0.40799999, 0.155, 0.23000002], [0.40558845, 0.164, 0.23000002], [0.39899999, 0.17058846, 0.23000002], [0.38999999, 0.17300001, 0.23000002], [0.38099998, 0.17058846, 0.23000002], [0.37441152, 0.164, 0.23000002], [0.37199998, 0.155, 0.75], [0.37441152, 0.146, 0.75], [0.38099998, 0.13941154, 0.75], [0.38999999, 0.13699999, 0.75], [0.39899999, 0.13941154, 0.75], [0.40558845, 0.146, 0.75], [0.40799999, 0.155, 0.75], [0.40558845, 0.164, 0.75], [0.39899999, 0.17058846, 0.75], [0.38999999, 0.17300001, 0.75], [0.38099998, 0.17058846, 0.75], [0.37441152, 0.164, 0.75]]\\nN19 world_vertices [[0.45199999, 0.155, 0.23000002], [0.45441154, 0.146, 0.23000002], [0.461, 0.13941154, 0.23000002], [0.47, 0.13699999, 0.23000002], [0.479, 0.13941154, 0.23000002], [0.48558846, 0.146, 0.23000002], [0.48800001, 0.155, 0.23000002], [0.48558846, 0.164, 0.23000002], [0.479, 0.17058846, 0.23000002], [0.47, 0.17300001, 0.23000002], [0.461, 0.17058846, 0.23000002], [0.45441154, 0.164, 0.23000002], [0.45199999, 0.155, 0.75], [0.45441154, 0.146, 0.75], [0.461, 0.13941154, 0.75], [0.47, 0.13699999, 0.75], [0.479, 0.13941154, 0.75], [0.48558846, 0.146, 0.75], [0.48800001, 0.155, 0.75], [0.48558846, 0.164, 0.75], [0.479, 0.17058846, 0.75], [0.47, 0.17300001, 0.75], [0.461, 0.17058846, 0.75], [0.45441154, 0.164, 0.75]]\\nrail_mid_z 0.4599999934434891 beam_rear_y -0.10249999910593033 pipes_mid_xy [0.4299999922513962, 0.1550000011920929]\\nN15 center [-0.30000001192092896, -0.02999999839812517, 0.36000001430511475] xy_distance 0.7530770252371104 conditions [True, True, False]\\nN16 center [0.18000000342726707, 0.10000000149011612, 0.36000001430511475] xy_distance 0.2559785037445178 conditions [True, True, True]\\nN18 center [0.18000000342726707, 0.1599999964237213, 0.7300000190734863] xy_distance 0.25004998373201504 conditions [False, True, True]\\nN25 center [-0.05999999679625034, -0.27000001072883606, 0.36000001430511475] xy_distance 0.6486331778435971 conditions [True, False, True]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "e36c4d04752af082d2ddab5bce7a72d4f5b2cf2619ec82e12b178a2d3d83f652"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "cc24729c18555be326e1769755a330a4d35be1889d383ea7f00a4f8cf895944e"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "2f2629c383a2c49c7e86d6fbc8456cd0f6b5903fdaf87b1531eb712c0c7ff9b3"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nworldverts={name:np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]) for name,obj in meshes.items()}\nfor name,verts in sorted(worldverts.items()):\n print(name, 'mesh',meshes[name].data.name,'min',np.round(verts.min(0),7).tolist(),'max',np.round(verts.max(0),7).tolist(),'center',np.round((verts.min(0)+verts.max(0))/2,7).tolist())\nprint('unit',bpy.context.scene.unit_settings.scale_length)\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "c420d112a0dff05c1696b2a0bcc57df5b2671f18240524aa4d4e61f526a6f857",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nworldverts={name:np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]) for name,obj in meshes.items()}\nfor name,verts in sorted(worldverts.items()):\n print(name, 'mesh',meshes[name].data.name,'min',np.round(verts.min(0),7).tolist(),'max',np.round(verts.max(0),7).tolist(),'center',np.round((verts.min(0)+verts.max(0))/2,7).tolist())\nprint('unit',bpy.context.scene.unit_settings.scale_length)\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"N01 mesh G03 min [-0.5675, -0.27, 0.045] max [-0.5325, 0.35, 0.895] center [-0.55, 0.04, 0.47]\\nN02 mesh G16 min [-0.4716686, -0.0089951, 0.4211561] max [0.4316686, 0.0389951, 0.6088438] center [-0.02, 0.015, 0.515]\\nN03 mesh G24 min [0.2825, 0.125, 0.2125] max [0.3175, 0.185, 0.2475] center [0.3, 0.155, 0.23]\\nN04 mesh G12 min [0.372, 0.137, 0.23] max [0.408, 0.173, 0.75] center [0.39, 0.155, 0.49]\\nN05 mesh G23 min [0.465, 0.185, 0.795] max [0.515, 0.215, 0.845] center [0.49, 0.2, 0.82]\\nN06 mesh G22 min [-0.515, 0.185, 0.795] max [-0.465, 0.215, 0.845] center [-0.49, 0.2, 0.82]\\nN07 mesh G20 min [-0.185, 0.14, 0.465] max [-0.055, 0.22, 0.575] center [-0.12, 0.18, 0.52]\\nN08 mesh G10 min [0.0899, 0.075, 0.335] max [0.1099, 0.125, 0.385] center [0.0999, 0.1, 0.36]\\nN09 mesh G14 min [0.15, 0.137, 0.732] max [0.39, 0.173, 0.768] center [0.27, 0.155, 0.75]\\nN10 mesh G06 min [-0.44, -0.1375, 0.386] max [0.44, -0.1025, 0.424] center [0.0, -0.12, 0.405]\\nN11 mesh G07 min [-0.5, 0.21, 0.48] max [0.5, 0.25, 0.52] center [0.0, 0.23, 0.5]\\nN12 mesh G05 min [-0.51, 0.0675, 0.62] max [0.51, 0.1525, 0.67] center [0.0, 0.11, 0.645]\\nN13 mesh G09 min [0.24, 0.07, 0.33] max [0.26, 0.13, 0.39] center [0.25, 0.1, 0.36]\\nN14 mesh G04 min [0.5325, -0.27, 0.045] max [0.5675, 0.35, 0.895] center [0.55, 0.04, 0.47]\\nN15 mesh G08 min [-0.37, -0.05, 0.3] max [-0.23, -0.01, 0.42] center [-0.3, -0.03, 0.36]\\nN16 mesh G08 min [0.11, 0.08, 0.3] max [0.25, 0.12, 0.42] center [0.18, 0.1, 0.36]\\nN17 mesh G15 min [0.28, 0.137, 0.212] max [0.47, 0.173, 0.248] center [0.375, 0.155, 0.23]\\nN18 mesh G08 min [0.11, 0.14, 0.67] max [0.25, 0.18, 0.79] center [0.18, 0.16, 0.73]\\nN19 mesh G13 min [0.452, 0.137, 0.23] max [0.488, 0.173, 0.75] center [0.47, 0.155, 0.49]\\nN20 mesh G19 min [0.2825, -0.0575, 0.49] max [0.3175, -0.0225, 0.71] center [0.3, -0.04, 0.6]\\nN21 mesh G02 min [-0.57, -0.28, 0.025] max [0.57, 0.36, 0.085] center [0.0, 0.04, 0.055]\\nN22 mesh G01 min [-0.57, 0.2775, 0.025] max [0.57, 0.3025, 0.935] center [0.0, 0.29, 0.48]\\nN23 mesh G18 min [-0.41, -0.231, 0.465] max [-0.03, -0.209, 0.595] center [-0.22, -0.22, 0.53]\\nN24 mesh G05 min [-0.51, 0.0675, 0.25] max [0.51, 0.1525, 0.3] center [0.0, 0.11, 0.275]\\nN25 mesh G08 min [-0.13, -0.29, 0.3] max [0.01, -0.25, 0.42] center [-0.06, -0.27, 0.36]\\nN26 mesh G21 min [-0.17, 0.12, 0.49] max [-0.07, 0.134, 0.55] center [-0.12, 0.127, 0.52]\\nN27 mesh G17 min [-0.4522879, -0.0168388, 0.3832411] max [0.4222879, 0.1868389, 0.6367589] center [-0.015, 0.085, 0.51]\\nN28 mesh G11 min [0.168, -0.03, 0.348] max [0.192, 0.24, 0.372] center [0.18, 0.105, 0.36]\\nunit 1.0\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "df827960d32f4a276bce821a21ef1289278aecea4fe378af5cf21b234571d329",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "candidates": [
+            {
+              "name": "N13"
+            },
+            {
+              "name": "N08"
+            },
+            {
+              "name": "N28"
+            }
+          ],
+          "include_aabb": true,
+          "target": {
+            "name": "N16"
+          }
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "human_eye_spatial_relations",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "968764b1963c883d28823e44c560c42389dcec65bacad584f574d39654731ad0",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "candidates": [
+            {
+              "name": "N13"
+            },
+            {
+              "name": "N08"
+            },
+            {
+              "name": "N28"
+            }
+          ],
+          "include_aabb": true,
+          "target": {
+            "name": "N16"
+          }
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"spatial-relations-v1\",\"status\":\"observed\",\"target\":{\"object_id\":\"blender:d3f91492188a2ad6163705c33f9c11727e3afee34d473b79735b520165f7bbc5\",\"name\":\"N16\",\"instance_id\":\"175\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.11000000685453415,0.08000000193715096,0.30000001564621925],\"max\":[0.2500000074505806,0.12000000104308128,0.42000001296401024],\"dimensions\":[0.14000000059604645,0.03999999910593033,0.11999999731779099]}}},\"candidates\":[{\"object_id\":\"blender:bc2e50e049d2fd62537aa9dff8f96608f350fdc799725fcc6721d209ca01583e\",\"name\":\"N13\",\"instance_id\":\"172\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.24000000022351742,0.07000000216066837,0.330000014975667],\"max\":[0.2599999997764826,0.13000000081956387,0.3900000136345625],\"dimensions\":[0.019999999552965164,0.05999999865889549,0.05999999865889549]}},\"candidate_index\":0,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"penetrating\",\"certificate\":\"transverse_boundary_interiors\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.0,\"nearest_witness\":{\"a\":[0.2500000074505806,0.1100000012665987,0.3900000136345625],\"b\":[0.2500000074505806,0.1100000012665987,0.3900000136345625],\"direction_a_to_b\":null},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"not_applicable\",\"direction_reason\":\"undefined_zero_distance\"},\"separation_gap\":{\"status\":\"not_applicable\",\"value\":null,\"reason\":\"pair_is_not_separated\"}},{\"object_id\":\"blender:f772b46bd483bd412211b976b832e2af71e651dc1095ff2485850085fbe0fbec\",\"name\":\"N08\",\"instance_id\":\"167\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.08990000002086163,0.07500000111758709,0.3350000139325857],\"max\":[0.10989999957382679,0.12500000186264515,0.3850000146776438],\"dimensions\":[0.019999999552965164,0.05000000074505806,0.05000000074505806]}},\"candidate_index\":1,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.00010000728070735931,\"nearest_witness\":{\"a\":[0.11000000685453415,0.08000000193715096,0.3350000139325857],\"b\":[0.10989999957382679,0.08000000193715096,0.3350000139325857],\"direction_a_to_b\":[-1.0,0.0,0.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"separation_gap\":{\"status\":\"measured\",\"value\":0.00010000728070735931,\"semantics\":\"separated_surface_gap_m\"}},{\"object_id\":\"blender:776df02dac3d7ed20707eba5167bd572599bf6276df63d28c016f6f96072bf44\",\"name\":\"N28\",\"instance_id\":\"187\",\"aabb\":{\"status\":\"measured\",\"value\":{\"min\":[0.16800000704824924,-0.030000008642673492,0.3480000142008066],\"max\":[0.1920000072568655,0.24000000208616257,0.3720000144094229],\"dimensions\":[0.024000000208616257,0.27000001072883606,0.024000000208616257]}},\"candidate_index\":2,\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.023000000044703484,\"nearest_witness\":{\"a\":[0.18000000715255737,0.08000000193715096,0.32500001415610313],\"b\":[0.18000000715255737,0.08000000193715096,0.3480000142008066],\"direction_a_to_b\":[0.0,0.0,1.0]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"separation_gap\":{\"status\":\"measured\",\"value\":0.023000000044703484,\"semantics\":\"separated_surface_gap_m\"}}],\"sets\":{\"penetrating\":{\"complete\":true,\"candidate_indices\":[0]},\"nearest_separated\":{\"complete\":true,\"candidate_indices\":[1],\"distance_m\":0.00010000728070735931}},\"coverage\":{\"requested_candidates\":3,\"resolved_candidates\":3,\"classified_candidates\":3,\"unresolved_candidates\":0},\"context\":{\"scene_revision\":\"blender:b31c93d428904a431f52ae4812e69418ed4e7ed11eca5efd2c588840f209870c\",\"scene_fingerprint\":\"d78978ddf07dc40d80310ee995bea8016ce78735faccdb04507360c08676b5ad\",\"source\":\"blender\",\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"candidate_count\":28,\"selected_count\":4,\"runtime_source_sha256\":\"7a3d108bc5658508d76d98fe24b8f3dee4feac2d50856202b2ea7395c3dc9cc1\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\",\"scope\":\"explicit_target_candidates\",\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"1c8dd17ce31b369fbb44450d3dd240f74423609ca84fbddc83db2e22233c1d6d\"},\"identity_scope\":\"Object and instance IDs belong to this captured document/snapshot.\",\"certificate_scope\":\"Proof category only; surface witnesses are not shared-interior proofs.\"},\"measurement_contracts\":{\"closed_solid_relation\":{\"method\":\"bounded_exact_closed_shell_v1\",\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"relation_tolerance_m\":0.0},\"surface_proximity\":{\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\"}},\"execution_authority\":false,\"trace_id\":\"3ab0e087c852484a8b2ba367beba1f42\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "human_eye_spatial_relations",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "224416367e57bfe50ecd746d19d560dc63630b692f45606f242df437dab7b072",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "for name in ['N16','N12','N24','N04','N19']:\n print(name,'world_vertices',np.round(worldverts[name],8).tolist())\ncenter=lambda name:(worldverts[name].min(0)+worldverts[name].max(0))/2\nmid=(center('N12')[2]+center('N24')[2])/2\npipes=(center('N04')[:2]+center('N19')[:2])/2\nback=worldverts['N10'][:,1].max()\nprint('rail_mid_z',mid,'beam_rear_y',back,'pipes_mid_xy',pipes.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name); print(name,'center',c.tolist(),'xy_distance',float(np.linalg.norm(c[:2]-pipes)),'conditions',[bool(c[2]<mid),bool(c[1]>back),bool(np.linalg.norm(c[:2]-pipes)<=.70)])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "a415237efd5fa3803829bf6f2bce3b2c2ab6d44a55e1832e768da91dabccadf0",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "for name in ['N16','N12','N24','N04','N19']:\n print(name,'world_vertices',np.round(worldverts[name],8).tolist())\ncenter=lambda name:(worldverts[name].min(0)+worldverts[name].max(0))/2\nmid=(center('N12')[2]+center('N24')[2])/2\npipes=(center('N04')[:2]+center('N19')[:2])/2\nback=worldverts['N10'][:,1].max()\nprint('rail_mid_z',mid,'beam_rear_y',back,'pipes_mid_xy',pipes.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name); print(name,'center',c.tolist(),'xy_distance',float(np.linalg.norm(c[:2]-pipes)),'conditions',[bool(c[2]<mid),bool(c[1]>back),bool(np.linalg.norm(c[:2]-pipes)<=.70)])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"N16 world_vertices [[0.11000001, 0.08, 0.30000001], [0.25, 0.08, 0.30000001], [0.25, 0.08, 0.42000002], [0.11000001, 0.08, 0.42000002], [0.13500001, 0.08, 0.32500002], [0.22500001, 0.08, 0.32500002], [0.22500001, 0.08, 0.39500001], [0.13500001, 0.08, 0.39500001], [0.11000001, 0.12, 0.30000001], [0.25, 0.12, 0.30000001], [0.25, 0.12, 0.42000002], [0.11000001, 0.12, 0.42000002], [0.13500001, 0.12, 0.32500002], [0.22500001, 0.12, 0.32500002], [0.22500001, 0.12, 0.39500001], [0.13500001, 0.12, 0.39500001]]\\nN12 world_vertices [[-0.50999999, 0.0675, 0.62], [-0.50999999, 0.1525, 0.62], [-0.50999999, 0.1525, 0.66999996], [-0.50999999, 0.0675, 0.66999996], [-0.50999999, 0.08, 0.63], [-0.50999999, 0.14, 0.63], [-0.50999999, 0.14, 0.65999997], [-0.50999999, 0.08, 0.65999997], [0.50999999, 0.0675, 0.62], [0.50999999, 0.1525, 0.62], [0.50999999, 0.1525, 0.66999996], [0.50999999, 0.0675, 0.66999996], [0.50999999, 0.08, 0.63], [0.50999999, 0.14, 0.63], [0.50999999, 0.14, 0.65999997], [0.50999999, 0.08, 0.65999997]]\\nN24 world_vertices [[-0.50999999, 0.0675, 0.25], [-0.50999999, 0.1525, 0.25], [-0.50999999, 0.1525, 0.30000001], [-0.50999999, 0.0675, 0.30000001], [-0.50999999, 0.08, 0.26000002], [-0.50999999, 0.14, 0.26000002], [-0.50999999, 0.14, 0.28999999], [-0.50999999, 0.08, 0.28999999], [0.50999999, 0.0675, 0.25], [0.50999999, 0.1525, 0.25], [0.50999999, 0.1525, 0.30000001], [0.50999999, 0.0675, 0.30000001], [0.50999999, 0.08, 0.26000002], [0.50999999, 0.14, 0.26000002], [0.50999999, 0.14, 0.28999999], [0.50999999, 0.08, 0.28999999]]\\nN04 world_vertices [[0.37199998, 0.155, 0.23000002], [0.37441152, 0.146, 0.23000002], [0.38099998, 0.13941154, 0.23000002], [0.38999999, 0.13699999, 0.23000002], [0.39899999, 0.13941154, 0.23000002], [0.40558845, 0.146, 0.23000002], [0.40799999, 0.155, 0.23000002], [0.40558845, 0.164, 0.23000002], [0.39899999, 0.17058846, 0.23000002], [0.38999999, 0.17300001, 0.23000002], [0.38099998, 0.17058846, 0.23000002], [0.37441152, 0.164, 0.23000002], [0.37199998, 0.155, 0.75], [0.37441152, 0.146, 0.75], [0.38099998, 0.13941154, 0.75], [0.38999999, 0.13699999, 0.75], [0.39899999, 0.13941154, 0.75], [0.40558845, 0.146, 0.75], [0.40799999, 0.155, 0.75], [0.40558845, 0.164, 0.75], [0.39899999, 0.17058846, 0.75], [0.38999999, 0.17300001, 0.75], [0.38099998, 0.17058846, 0.75], [0.37441152, 0.164, 0.75]]\\nN19 world_vertices [[0.45199999, 0.155, 0.23000002], [0.45441154, 0.146, 0.23000002], [0.461, 0.13941154, 0.23000002], [0.47, 0.13699999, 0.23000002], [0.479, 0.13941154, 0.23000002], [0.48558846, 0.146, 0.23000002], [0.48800001, 0.155, 0.23000002], [0.48558846, 0.164, 0.23000002], [0.479, 0.17058846, 0.23000002], [0.47, 0.17300001, 0.23000002], [0.461, 0.17058846, 0.23000002], [0.45441154, 0.164, 0.23000002], [0.45199999, 0.155, 0.75], [0.45441154, 0.146, 0.75], [0.461, 0.13941154, 0.75], [0.47, 0.13699999, 0.75], [0.479, 0.13941154, 0.75], [0.48558846, 0.146, 0.75], [0.48800001, 0.155, 0.75], [0.48558846, 0.164, 0.75], [0.479, 0.17058846, 0.75], [0.47, 0.17300001, 0.75], [0.461, 0.17058846, 0.75], [0.45441154, 0.164, 0.75]]\\nrail_mid_z 0.4599999934434891 beam_rear_y -0.10249999910593033 pipes_mid_xy [0.4299999922513962, 0.1550000011920929]\\nN15 center [-0.30000001192092896, -0.02999999839812517, 0.36000001430511475] xy_distance 0.7530770252371104 conditions [True, True, False]\\nN16 center [0.18000000342726707, 0.10000000149011612, 0.36000001430511475] xy_distance 0.2559785037445178 conditions [True, True, True]\\nN18 center [0.18000000342726707, 0.1599999964237213, 0.7300000190734863] xy_distance 0.25004998373201504 conditions [False, True, True]\\nN25 center [-0.05999999679625034, -0.27000001072883606, 0.36000001430511475] xy_distance 0.6486331778435971 conditions [True, False, True]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "f4cd17ab9cdeabd4bcc8a654994db922ef35badf591325cdda7ef37095236888",
+      "source_sha256": "0db51cd6baa93b1b03cc5b368206558a67bde8f34cc4a5115c2658a12b43a31d"
+    }
+  ]
+}

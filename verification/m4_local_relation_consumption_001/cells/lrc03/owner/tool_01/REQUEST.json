@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_9e0ecd9962794bebb22da295f10fed60",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c79d-580c-7ca1-8f65-8c277fc36bd1",
+        "thread_id": "01a1c79d-580c-7ca1-8f65-8c277fc36bd1",
+        "turn_started_at_unix_ms": 1794350340268,
+        "turn_id": "01a1c79d-58a5-7eb2-8dfd-a5be5db688b2",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "db4ec4c4e0fa3cbf44a8f57fb3f4826730432e81",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c79d-580c-7ca1-8f65-8c277fc36bd1",
+      "itemId": "fc_03ff7e7c045cea3d016af39d08a97887d08679833f6450660c",
+      "progressToken": 1
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import bpy, json\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\ndef bounds(o):\n p=[o.matrix_world@v.co for v in o.data.vertices]\n lo=[min(v[i] for v in p) for i in range(3)]; hi=[max(v[i] for v in p) for i in range(3)]\n return {'lo':lo,'hi':hi,'center':[(a+b)/2 for a,b in zip(lo,hi)]}\nprint(json.dumps({n:{'data':o.data.name,**bounds(o)} for n,o in objs.items()},ensure_ascii=False))\nprint('camera',[(o.name, list(o.location),o.data.type) for o in bpy.context.scene.objects if o.type=='CAMERA'])"
+    }
+  }
+}

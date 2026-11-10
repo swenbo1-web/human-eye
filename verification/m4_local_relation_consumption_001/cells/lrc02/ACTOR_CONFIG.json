@@ -1,0 +1,143 @@
+{
+  "group": "P",
+  "task": "T1",
+  "output": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_local_relation_consumption_001\\cells\\lrc02\\owner",
+  "endpoint": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_local_relation_consumption_001\\cells\\lrc02\\ENDPOINT.json",
+  "asset": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_local_relation_consumption_001\\input\\scene.blend",
+  "asset_sha256": "91129d2e82749162bd0c9f4b232be10bd74d422be53c73e248325c0894b14a85",
+  "blender": "D:/Tools/blender5.2/blender.exe",
+  "worker_deadline_ns": 459582894283100,
+  "dependency_python": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+  "read_schemas": [
+    {
+      "description": "Read current solid relations and surface distances from a target to 1..3 explicit candidates in one capture. Returns each pair, penetrating candidates and nearest separated ties; unknowns and incomplete sets stay explicit. Surface distance is not penetration depth. Read-only: no images or actions.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "items": {
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ],
+              "properties": {
+                "id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": "array"
+          },
+          "include_aabb": {
+            "default": false,
+            "type": "boolean"
+          },
+          "target": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "properties": {
+              "id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "target",
+          "candidates"
+        ],
+        "type": "object"
+      },
+      "name": "human_eye_spatial_relations"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Find the nearest triangle surfaces, in metres, from one current Blender mesh to all other meshes in the scene. Complete results give global nearest ties; partial results give best-known candidates and unresolved coverage. Surface distance is unsigned, not penetration depth. Includes available closest points in world metres and independent witness/direction status for each best-known candidate. Read-only: no images or actions. Example: {\"target\":{\"name\":\"Bracket\"}}.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "properties": {
+              "id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "name": "human_eye_surface_nearest"
+    }
+  ],
+  "entry": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_observation_baseline_001\\installation\\.human-eye\\releases\\9.7.2+m4.r2\\admin\\target_runtime_entry.py",
+  "install_root": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_observation_baseline_001\\installation\\.human-eye\\releases\\9.7.2+m4.r2\\site-packages",
+  "source_sha256": "7a3d108bc5658508d76d98fe24b8f3dee4feac2d50856202b2ea7395c3dc9cc1",
+  "external_group": "P0"
+}
