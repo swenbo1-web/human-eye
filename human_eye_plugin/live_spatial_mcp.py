@@ -271,6 +271,7 @@ SPATIAL_TASK_TOOLS_SCHEMA = [{
     'description': ('Read current solid relations and surface distances from a target to 1..3 explicit '
         'candidates in one capture. Returns each pair, penetrating candidates and nearest separated ties; '
         'unknowns and incomplete sets stay explicit. Surface distance is not penetration depth. '
+        'A supported transverse crossing includes its captured triangles and an approximate boundary location when publishable. '
         'Read-only: no images or actions.'),
     'inputSchema': {'type': 'object', 'properties': {
         'target': copy.deepcopy(SELECTOR_SCHEMA),
@@ -611,7 +612,10 @@ def _project_spatial_relations(value):
             row['candidate_index'] = pair['candidate_index']
             row[name] = {key: item for key, item in fact.items() if key not in common}
     if any('certificate' in row['closed_solid_relation'] for row in rows[1:]):
-        context['certificate_scope'] = 'Proof category only; surface witnesses are not shared-interior proofs.'
+        context['certificate_scope'] = ('Certificate category with local evidence when available. '
+            'Transverse evidence identifies current captured triangles and approximates their boundary crossing; '
+            'the exact midpoint is on both boundaries, not in their shared volume interior. '
+            'Neither a boundary location nor surface distance is penetration depth.')
     indices = {row['object_id']: row['candidate_index'] for row in rows[1:] if 'object_id' in row}
     def candidate_indices(ids):
         return None if ids is None else [indices[oid] for oid in ids]

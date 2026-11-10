@@ -250,7 +250,7 @@ def _closed_solid_pair_measurement(left, right, cache, checkpoint, *, source,
         return compute()
     result, diagnostics['closed_solid_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute, parameters={'source': source, 'unit': 'm', 'coordinate_frame': 'world',
-            'relation_tolerance_m': 0.0}, algorithm_version='task-closed-solid-exact-v1')
+            'relation_tolerance_m': 0.0}, algorithm_version='task-closed-solid-exact-local-evidence-v2')
     return result
 
 
@@ -262,6 +262,8 @@ def _closed_solid_fact(measured):
     if measured.get('measurement_valid') is True and relation in ('separated', 'touching', 'penetrating'):
         if 'certificate' in measured:
             metadata['certificate'] = measured['certificate']
+        if 'local_evidence' in measured:
+            metadata['local_evidence'] = measured['local_evidence']
         return _fact(relation, **metadata)
     return _fact(reason=measured.get('reason') or 'closed_solid_relation_unavailable', **metadata)
 

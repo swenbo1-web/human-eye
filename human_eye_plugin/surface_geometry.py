@@ -335,11 +335,35 @@ def _closed_in_triangle(point, triangle, budget, strict=False):
     return u>0 and v>0 and total<squared if strict else u>=0 and v>=0 and total<=squared
 
 
-def _closed_transverse(points,a,b,budget):
+def _closed_transverse(points,a,b,budget,*,middle_holder=None):
     e=budget.exact
+    if middle_holder is not None:middle_holder.pop('middle',None)
     if len(points)!=2 or points[0]==points[1] or not any(e._cross(a[1],b[1])):return False
     middle=e._mul(e._add(points[0],points[1]),e._fraction(1,2))
-    return _closed_in_triangle(middle,a,budget,True) and _closed_in_triangle(middle,b,budget,True)
+    transverse=_closed_in_triangle(middle,a,budget,True) and _closed_in_triangle(middle,b,budget,True)
+    if transverse and middle_holder is not None:middle_holder['middle']=middle
+    return transverse
+
+
+def _closed_transverse_evidence(records,i,j,middle,origin,factor,exact):
+    """Retain this successful pair; float coordinates only locate the crossing."""
+    triangles=[]
+    for (mesh,faces,_),index in zip(records,(i,j)):
+        triangles.append([[float(value) for value in mesh.vertices[vertex]] for vertex in faces[index]])
+    evidence=dict(type='transverse_triangle_crossing',triangle_indices=[i,j],
+        triangle_vertices_world_m=triangles,
+        triangle_scope='current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids',
+        point_world_m=None,point_status='unknown',
+        point_scope='boundary_crossing_localization_not_volume_interior_or_penetration_depth',
+        publication_tolerance_m=float(exact._PUBLICATION_TOLERANCE))
+    try:
+        published=exact._publish_points((middle,middle),origin,factor,0.)
+    except (exact._DomainError,OverflowError):
+        evidence['point_reason']='world_point_publication_limit'
+    else:
+        if published is None:evidence['point_reason']='world_point_precision_exceeded'
+        else:evidence.update(point_world_m=list(published[0]),point_status='approximate')
+    return evidence
 
 
 def _closed_point_candidates(point,shell,budget):
@@ -445,7 +469,7 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         shells=[_closed_topology(record[0],record[1],triangles,budget)
                 for record,triangles in zip(records,prepared)]
         for shell in shells:_closed_validate_embedded(shell,budget)
-        a,b=shells;contacts=[]
+        a,b=shells;contacts=[];middle_holder={}
         for i,j in candidate_pairs(a['bounds'],0,budget,budget.counts,
                 other_bounds=b['bounds'],roots=(a['root'],b['root'])):
             budget.pair('cross_pair_tests')
@@ -455,8 +479,10 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
             if prepared_holder is not None and 'boundary_contact' not in prepared_holder:
                 prepared_holder['boundary_contact']=dict(pair=prepared_pair,
                     point=points[0],triangles=(i,j))
-            if _closed_transverse(points,ta,tb,budget):
+            if _closed_transverse(points,ta,tb,budget,middle_holder=middle_holder):
                 result.update(measurement_valid=True,relation='penetrating',certificate='transverse_boundary_interiors')
+                result['local_evidence']=_closed_transverse_evidence(records,i,j,middle_holder['middle'],
+                    prepared_pair[2],prepared_pair[3],exact)
                 return result
             contacts.append((i,j))
         if contacts:
