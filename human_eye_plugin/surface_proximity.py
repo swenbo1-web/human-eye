@@ -24,6 +24,10 @@ class _DomainError(ValueError):
 
 
 def _bounded(value):
+    if type(value) is int:
+        if value.bit_length() > MAX_BITS:
+            raise _DomainError('surface_exact_bit_budget')
+        return value
     numerator = value.numerator if isinstance(value, Fraction) else value
     denominator = value.denominator if isinstance(value, Fraction) else 1
     if abs(numerator).bit_length() > MAX_BITS or denominator.bit_length() > MAX_BITS:

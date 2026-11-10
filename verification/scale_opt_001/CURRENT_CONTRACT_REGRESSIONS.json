@@ -1,0 +1,63 @@
+{
+  "schema": "scale-opt-001-current-contract-regressions-v1",
+  "tests_run": 24,
+  "tests_passed": 24,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "test_suites_passed": true,
+  "runner_completed": false,
+  "post_test_global_audit_passed": false,
+  "post_test_audit_error": {
+    "attempt": 2,
+    "stage": "after_both_test_suites_completed",
+    "tests_started": 24,
+    "tests_completed": 24,
+    "exception_type": "_human_eye_verified_source_bootstrap.SourceBindingError",
+    "message": "verified_source_preloaded_module:verification.test_blender_host_contracts",
+    "cause": "Reusing the accepted source loader in the workspace root makes the verification fixture internal to its origin audit; the original runner used a separate engine root. Product sources and existing tests were not changed.",
+    "guard_verify_loaded": false,
+    "rerun_made": false,
+    "runtime_warning": "human_eye_foveated_renderer.py:151: RuntimeWarning: overflow encountered in add; center = 0.5 * (self._cached_bbox_min + self._cached_bbox_max)"
+  },
+  "groups": [
+    {
+      "label": "RESIDENT_TASK_CONTRACT",
+      "path": "verification/arch_read_context_001/test_resident_task.py",
+      "test_source_sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c",
+      "tests_run": 12,
+      "passed": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "RESIDENT_TASK_CONTRACT.txt",
+      "log_sha256": "783f01e7988010a3f141d637e6f01f8ed94814c8e203029c14d92d36097b07f1"
+    },
+    {
+      "label": "DEGENERATE_HULLS_CONTRACT",
+      "path": "verification/degenerate_surface_001/tests/test_degenerate_surface.py",
+      "test_source_sha256": "642399238ec5365bfbe212416fba8e4748ed1c936f69eb042d42c8f928af3bb7",
+      "tests_run": 12,
+      "passed": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "DEGENERATE_HULLS_CONTRACT.txt",
+      "log_sha256": "69f5de088b1334092b3e33c41144bbbe1c69f0469f59109f42988f4163a67eca"
+    }
+  ],
+  "Blender_sessions": 0,
+  "performance_samples": 0,
+  "test_execution": "Exact existing test bytes compiled under SHA-tagged filenames; original verified_source_loader installed against current product source snapshot; entry dependency loaded but entry suite not run.",
+  "dependency": {
+    "path": "verification/surface_nearest_entry_001/tests/test_surface_nearest_entry.py",
+    "sha256": "739fa86d14b6199b0ba9d438a944b4d26ed9c4b4e5947babdf5f42fcb4c4b46a",
+    "tests_executed": false
+  },
+  "product_surface_sha256": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3",
+  "limitations": [
+    "The global post-test guard audit failed on test fixture origin classification; no successful full loaded-module audit is claimed.",
+    "Both test suites completed once and their raw logs show 12/12 each. No rerun was performed to obtain cleaner logs.",
+    "These are offline contract checks, not Blender or performance samples."
+  ]
+}

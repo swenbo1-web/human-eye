@@ -1,0 +1,120 @@
+{
+  "schema": "scale-opt-001-regression-review-v1",
+  "introduced_regressions": 0,
+  "current_contract_tests_run": 24,
+  "current_contract_tests_passed": 24,
+  "current_contract_suites_passed": true,
+  "current_contract_runner_completed": false,
+  "current_contract_post_test_audit_passed": false,
+  "legacy_suite": {
+    "tests_run": 193,
+    "passed": 191,
+    "failures": 2,
+    "errors": 0,
+    "baseline_failure_ids": [
+      "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+      "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain"
+    ],
+    "candidate_failure_ids": [
+      "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+      "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain"
+    ],
+    "candidate_and_baseline_failure_sets_identical": true,
+    "baseline_function_restoration": "run_regressions.py uses FunctionType(old._bounded.__code__,candidate.__dict__); all callers and other code/globals remain identical.",
+    "baseline_source_commit": "d01d49bc0ec82583b24a8faf22e622e6f6ea8c5d"
+  },
+  "unchanged_from_frozen_product_functions": {
+    "_observe_task": true,
+    "_integer_frame": true
+  },
+  "findings": [
+    {
+      "test_id": "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+      "attribution": "preexisting_legacy_assertion_conflicts_with_accepted_read_context_contract",
+      "old_expected": "A read-only task query must clear prior action runtime.sessions on disk.",
+      "observed": "Prior action sessions remain on disk; readonly task uses separate ReadContext and does not read/write the action journal.",
+      "evidence": [
+        {
+          "path": "verification/test_task_query.py",
+          "line": 310,
+          "text": "self.assertFalse(json.loads((self.base/'state.json').read_text())['runtime']['sessions'])",
+          "sha256": "813f74ad1a66c771b12a18306e49508322ea54debdf140f1107ea72aaec8252c"
+        },
+        {
+          "path": "verification/arch_read_context_001/test_resident_task.py",
+          "line": 232,
+          "text": "def test_prepared_action_ledger_is_untouched_by_read(self):",
+          "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+        },
+        {
+          "path": "verification/arch_read_context_001/test_resident_task.py",
+          "line": 241,
+          "text": "self.assertEqual(self.service.state_path.read_bytes(), original)",
+          "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+        },
+        {
+          "path": "verification/arch_read_context_001/test_resident_task.py",
+          "line": 243,
+          "text": "def test_pending_committed_quarantine_and_corrupt_action_bytes_are_opaque(self):",
+          "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+        },
+        {
+          "path": "human_eye_plugin/live_service.py",
+          "line": 1342,
+          "text": "def _observe_task(self, session_id, query):",
+          "sha256": "fa5b4775b99d0691720a58212732c3aa2b60819cfe21d7df5ffe4bc9bf9d5986"
+        }
+      ],
+      "conclusion": "Not introduced by integer arithmetic optimization. Persisted bytes alone do not prove stale authority is reused. Clearing the journal here would violate the newer no-action-I/O contract."
+    },
+    {
+      "test_id": "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain",
+      "attribution": "preexisting_legacy_degenerate_unknown_expectation_conflicts_with_accepted_hulls_v3_contract",
+      "old_expected": "A collinear triple must be invalid with reason surface_degenerate_triangle.",
+      "observed": "The collinear triple is retained as its closed segment hull and has valid surface distance and exact rank.",
+      "independent_geometry": "Focal triangle has x<=0; segment [(2,0,0),(4,0,0)] has x>=2. Distance is at least 2, attained by (0,0,0) and (2,0,0).",
+      "evidence": [
+        {
+          "path": "verification/exact_rank_001/test_exact_rank.py",
+          "line": 142,
+          "text": "self.assertFalse(unknown['measurement_valid'])",
+          "sha256": "d61b6f5b2cca38e5d079aed7b680319916a780e2d6e18f8ad73e83de9fb3da34"
+        },
+        {
+          "path": "verification/exact_rank_001/test_exact_rank.py",
+          "line": 143,
+          "text": "self.assertEqual(unknown['reason'], 'surface_degenerate_triangle')",
+          "sha256": "d61b6f5b2cca38e5d079aed7b680319916a780e2d6e18f8ad73e83de9fb3da34"
+        },
+        {
+          "path": "human_eye_plugin/surface_proximity.py",
+          "line": 202,
+          "text": "# A collinear triple's lexicographic extremes are its closed",
+          "sha256": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3"
+        },
+        {
+          "path": "verification/degenerate_surface_001/tests/test_degenerate_surface.py",
+          "line": 171,
+          "text": "def test_g02_point_segment_actual_hull_endpoints_all_vertex_orders(self):",
+          "sha256": "642399238ec5365bfbe212416fba8e4748ed1c936f69eb042d42c8f928af3bb7"
+        },
+        {
+          "path": "verification/degenerate_surface_001/REPORT.md",
+          "line": 15,
+          "text": "首遍也是唯一一遍离线执行：83/83 方法通过，零失败、错误或跳过。新增定向组严格为 12 个方法，其余是与改动有关的既有回归；旧退化 unknown 断言按合同更新，partial/unknown 另用真实有限位宽超限输入保留。旧运行原件未覆盖。",
+          "sha256": "0d884fe76a53ba0af052d8c52c2217b7e8dab24ef5c7b9f5ac2b129dd848a2b7"
+        }
+      ],
+      "conclusion": "Not introduced by integer optimization. Fixed d01 already contains the identical hull reduction; the accepted directed suite validates point/segment/face combinations independently."
+    }
+  ],
+  "contract_results": "CURRENT_CONTRACT_REGRESSIONS.json",
+  "contract_results_sha256": "9e6c8d9bc40f076b0bfe7332c7cb1e924765164cceb29090935937018d1db4f2",
+  "preservation": "No product or pre-existing test source modified; all 193-case red results and test preparation/audit failures remain. Current-contract suites supplement attribution; the legacy suite remains 191/193.",
+  "scope_of_zero_introduced": "No differing regression failure identified between candidate and restored-old-bounded runs; not a claim that every product behavior has been proven.",
+  "limits": [
+    "Two legacy tests remain red; neither was edited or omitted from the recorded 193-case run.",
+    "Current-contract suites actually passed 24/24 but their runner failed the subsequent fixture-origin guard audit; that error is preserved and not represented as successful source audit.",
+    "No performance, Blender, external consumer or permission-effect claim follows from these offline checks."
+  ]
+}

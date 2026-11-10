@@ -1,0 +1,484 @@
+{
+  "task": "SCALE-OPT-001",
+  "date": "2026-11-10",
+  "baseline_evidence_commit": "b39a5d9f58aed2782225287738413982beac4920",
+  "admin_review_commit": "64a6001b976230a21eb121ad031ed8302f011df8",
+  "admin_contract": "D:\\hefe\\verification\\fixes\\20261110_scale_diag_review\\SCALE_OPT_001.md",
+  "admin_contract_sha256": "26ce27ab378f742e4bf8dfdebbbe9f6f3064f8134d4c0df0b9f8e8469db2835e",
+  "candidate": "only type(value) is int early bit_length guard and return in surface_proximity._bounded; all other product bytes unchanged",
+  "product_diff_numstat": "4\t0\thuman_eye_plugin/surface_proximity.py",
+  "versions": {
+    "O": "a50e34c9169e9384047b29fa8bda8a072f96681f64610334ccec367d8597589b",
+    "C": "3fc2651e108ad7ac252394871d78e1abaee1200c92a018125984b2fc240193bd"
+  },
+  "logical_cells": 78,
+  "cells_per_version": 39,
+  "static_cells": 36,
+  "T_cells": 42,
+  "static_cold": 12,
+  "static_warm": 24,
+  "T_rounds": 3,
+  "physical_chains": 18,
+  "entry_budget_s": 30,
+  "worker_lifetime_s": 570,
+  "accuracy_m": 1e-06,
+  "unknown_is_correct_completion": false,
+  "order": [
+    {
+      "index": 0,
+      "block": 0,
+      "position_in_block": 0,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "G_low",
+      "scene": "G60_D12",
+      "mode": "G",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 1,
+      "block": 0,
+      "position_in_block": 1,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "G_low",
+      "scene": "G60_D12",
+      "mode": "G",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 2,
+      "block": 1,
+      "position_in_block": 0,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "G_mid",
+      "scene": "G508",
+      "mode": "G",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 3,
+      "block": 1,
+      "position_in_block": 1,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "G_mid",
+      "scene": "G508",
+      "mode": "G",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 4,
+      "block": 2,
+      "position_in_block": 0,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "G_high",
+      "scene": "G4092",
+      "mode": "G",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 5,
+      "block": 2,
+      "position_in_block": 1,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "G_high",
+      "scene": "G4092",
+      "mode": "G",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 6,
+      "block": 3,
+      "position_in_block": 0,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "D_low",
+      "scene": "G60_D12",
+      "mode": "D",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 7,
+      "block": 3,
+      "position_in_block": 1,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "D_low",
+      "scene": "G60_D12",
+      "mode": "D",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 8,
+      "block": 4,
+      "position_in_block": 0,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "D_mid",
+      "scene": "D48",
+      "mode": "D",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 9,
+      "block": 4,
+      "position_in_block": 1,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "D_mid",
+      "scene": "D48",
+      "mode": "D",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 10,
+      "block": 5,
+      "position_in_block": 0,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "D_high",
+      "scene": "D192",
+      "mode": "D",
+      "group": "C",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 11,
+      "block": 5,
+      "position_in_block": 1,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "D_high",
+      "scene": "D192",
+      "mode": "D",
+      "group": "O",
+      "round": null,
+      "logical_expected": 3
+    },
+    {
+      "index": 12,
+      "block": 6,
+      "position_in_block": 0,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "T_round_0",
+      "scene": "D48",
+      "mode": "T",
+      "group": "O",
+      "round": 0,
+      "logical_expected": 7
+    },
+    {
+      "index": 13,
+      "block": 6,
+      "position_in_block": 1,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "T_round_0",
+      "scene": "D48",
+      "mode": "T",
+      "group": "C",
+      "round": 0,
+      "logical_expected": 7
+    },
+    {
+      "index": 14,
+      "block": 7,
+      "position_in_block": 0,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "T_round_1",
+      "scene": "D48",
+      "mode": "T",
+      "group": "C",
+      "round": 1,
+      "logical_expected": 7
+    },
+    {
+      "index": 15,
+      "block": 7,
+      "position_in_block": 1,
+      "pair_order": [
+        "C",
+        "O"
+      ],
+      "cell": "T_round_1",
+      "scene": "D48",
+      "mode": "T",
+      "group": "O",
+      "round": 1,
+      "logical_expected": 7
+    },
+    {
+      "index": 16,
+      "block": 8,
+      "position_in_block": 0,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "T_round_2",
+      "scene": "D48",
+      "mode": "T",
+      "group": "O",
+      "round": 2,
+      "logical_expected": 7
+    },
+    {
+      "index": 17,
+      "block": 8,
+      "position_in_block": 1,
+      "pair_order": [
+        "O",
+        "C"
+      ],
+      "cell": "T_round_2",
+      "scene": "D48",
+      "mode": "T",
+      "group": "C",
+      "round": 2,
+      "logical_expected": 7
+    }
+  ],
+  "no_resampling": true,
+  "same_fixtures_and_oracle": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\driver.py": "b1400edc200ff134a766fec63518aa72cdcec7916188e406e750edb066274eb3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\session.py": "d636da8ad4d6e052792bb26163ac46dabc006db93635548e027003d4a9cd5ece",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\instrument.py": "895a2eea37952cabf9dd29a1b8362296513af1eed4e9b8c375a165851b7c1245",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\build_fixtures.py": "f776d08ee703192e01e3eb607b7ac92b10c27c44bda424473f36561adfbb4b6c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\FREEZE.json": "f89556bed5ee608b4e6f089fa6af6836d63d4b217b9d9580ac1f7570a4e0f4c2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\oracle.py": "c2224f9e218589a7ab945510cc390f9ca5162220765e34036b4e6dd9461bc028",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\ORACLE.json": "4c6d45ddc087e2c9c38864890a4f99333e3c6cda40c6f36397b1768791509720",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D192.blend": "ddd8d67728042a60db7f5cb74f9a87ae7bc1122eb7ccbb2820bcd70138e87241",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D192.json": "07f32b214e86bb2d127b0484aa485afb4778d6f5fc7936d6f8ff83b3a299403e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D48.blend": "8729d98bcbcc774b36b69e7df73ac48c5ec09553df27e55bb24b6fbce28bc431",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D48.json": "5d0dde58b8857481c68c8b894825573cd41e847f49ff530072802ce9e0254472",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G4092.blend": "595c73ec0afb87580552fab97213119117ebe2146c950533d2c9382d29b9fe7e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G4092.json": "36864123daf6c210b0cbcba2d106204c7e65bc441cdeea656298ec9b7fc38659",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G508.blend": "04ec6907cb2384c7f8f248c7f7ad56373ca5203692deba20c1f6eae4ec0e1c6f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G508.json": "d1af83c191a9672e49fb5ff2e1f9b46fab0a87e39aa0ad6556ccc5bf6e4b834d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G60_D12.blend": "9bba515e72bcbd307d3b41b42d426e253d9da56b1723c0da21663b3653bb7cd8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\G60_D12.json": "290915f74488ef43d7ac393ebedda772ed7b3da2b766f924a925d6b385dda82d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T0.json": "c96100fd94549473e792a072681fbf6a8b32724fa336633d271ff2f84a648865",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T1.json": "a87989b2432026cfdac7ec12223e16a37292d66c3acf8039c54bc568a2c12a65",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T2.json": "7ca6228378948836039daa336384fbae3e2482afb52f5d692cf5bdc4daea41a7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T3.json": "1b2306426e1d0ae05250ee54d14b41cb54b7b0e72e0bc8e07444f8cd1fa6d91a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T4.json": "1eb6b8ed899f5b2b19baf80bdd35a685281784620ca463e8d54b4a56da175e11",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T5.json": "3722c59a05ea57c7530d45ee5be211bd50d508914e1cf69faa0c241a86473473",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\T6.json": "2d4676b0665add05a087c5e66285a8cc65536cb482c8f74338d1e68d9eb599aa",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\BUILD_COMPLETE.json": "de6237ab033adb7f70332b56e5574ebb6222e340fbd15e595bf799e0cabd44e2"
+  },
+  "target_D48_cold_entry_fraction_of_O": 0.75,
+  "target_T_chain_median_fraction_of_O": 0.75,
+  "T_primary_cost": "shared original child whole_chain_ns (same scope); new wrapper whole/full process costs also reported",
+  "quality_fields": "same geometric facts/witness/work/reasons; runtime/source/trace IDs legitimately differ; expired never correct",
+  "expected_G_mid_high": "original unknown reasons and limits remain; no expanded admissible geometry",
+  "regressions": {
+    "run_each": 193,
+    "pass_each": 191,
+    "known_baseline_failures": [
+      "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+      "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain"
+    ],
+    "introduced_failures": 0,
+    "current_contract_review": {
+      "schema": "scale-opt-001-regression-review-v1",
+      "introduced_regressions": 0,
+      "current_contract_tests_run": 24,
+      "current_contract_tests_passed": 24,
+      "current_contract_suites_passed": true,
+      "current_contract_runner_completed": false,
+      "current_contract_post_test_audit_passed": false,
+      "legacy_suite": {
+        "tests_run": 193,
+        "passed": 191,
+        "failures": 2,
+        "errors": 0,
+        "baseline_failure_ids": [
+          "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+          "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain"
+        ],
+        "candidate_failure_ids": [
+          "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+          "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain"
+        ],
+        "candidate_and_baseline_failure_sets_identical": true,
+        "baseline_function_restoration": "run_regressions.py uses FunctionType(old._bounded.__code__,candidate.__dict__); all callers and other code/globals remain identical.",
+        "baseline_source_commit": "d01d49bc0ec82583b24a8faf22e622e6f6ea8c5d"
+      },
+      "unchanged_from_frozen_product_functions": {
+        "_observe_task": true,
+        "_integer_frame": true
+      },
+      "findings": [
+        {
+          "test_id": "verification.test_task_query.TaskQueryTests.test_does_not_reuse_prior_write_prepare_context",
+          "attribution": "preexisting_legacy_assertion_conflicts_with_accepted_read_context_contract",
+          "old_expected": "A read-only task query must clear prior action runtime.sessions on disk.",
+          "observed": "Prior action sessions remain on disk; readonly task uses separate ReadContext and does not read/write the action journal.",
+          "evidence": [
+            {
+              "path": "verification/test_task_query.py",
+              "line": 310,
+              "text": "self.assertFalse(json.loads((self.base/'state.json').read_text())['runtime']['sessions'])",
+              "sha256": "813f74ad1a66c771b12a18306e49508322ea54debdf140f1107ea72aaec8252c"
+            },
+            {
+              "path": "verification/arch_read_context_001/test_resident_task.py",
+              "line": 232,
+              "text": "def test_prepared_action_ledger_is_untouched_by_read(self):",
+              "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+            },
+            {
+              "path": "verification/arch_read_context_001/test_resident_task.py",
+              "line": 241,
+              "text": "self.assertEqual(self.service.state_path.read_bytes(), original)",
+              "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+            },
+            {
+              "path": "verification/arch_read_context_001/test_resident_task.py",
+              "line": 243,
+              "text": "def test_pending_committed_quarantine_and_corrupt_action_bytes_are_opaque(self):",
+              "sha256": "25c4d6141e9f1d2536e82c7ff2bc9b4fc9aba07a1e931b0dd725bf887473305c"
+            },
+            {
+              "path": "human_eye_plugin/live_service.py",
+              "line": 1342,
+              "text": "def _observe_task(self, session_id, query):",
+              "sha256": "fa5b4775b99d0691720a58212732c3aa2b60819cfe21d7df5ffe4bc9bf9d5986"
+            }
+          ],
+          "conclusion": "Not introduced by integer arithmetic optimization. Persisted bytes alone do not prove stale authority is reused. Clearing the journal here would violate the newer no-action-I/O contract."
+        },
+        {
+          "test_id": "verification.exact_rank_001.test_exact_rank.ExactRankTests.test_g06_unknown_candidate_and_original_reason_remain",
+          "attribution": "preexisting_legacy_degenerate_unknown_expectation_conflicts_with_accepted_hulls_v3_contract",
+          "old_expected": "A collinear triple must be invalid with reason surface_degenerate_triangle.",
+          "observed": "The collinear triple is retained as its closed segment hull and has valid surface distance and exact rank.",
+          "independent_geometry": "Focal triangle has x<=0; segment [(2,0,0),(4,0,0)] has x>=2. Distance is at least 2, attained by (0,0,0) and (2,0,0).",
+          "evidence": [
+            {
+              "path": "verification/exact_rank_001/test_exact_rank.py",
+              "line": 142,
+              "text": "self.assertFalse(unknown['measurement_valid'])",
+              "sha256": "d61b6f5b2cca38e5d079aed7b680319916a780e2d6e18f8ad73e83de9fb3da34"
+            },
+            {
+              "path": "verification/exact_rank_001/test_exact_rank.py",
+              "line": 143,
+              "text": "self.assertEqual(unknown['reason'], 'surface_degenerate_triangle')",
+              "sha256": "d61b6f5b2cca38e5d079aed7b680319916a780e2d6e18f8ad73e83de9fb3da34"
+            },
+            {
+              "path": "human_eye_plugin/surface_proximity.py",
+              "line": 202,
+              "text": "# A collinear triple's lexicographic extremes are its closed",
+              "sha256": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3"
+            },
+            {
+              "path": "verification/degenerate_surface_001/tests/test_degenerate_surface.py",
+              "line": 171,
+              "text": "def test_g02_point_segment_actual_hull_endpoints_all_vertex_orders(self):",
+              "sha256": "642399238ec5365bfbe212416fba8e4748ed1c936f69eb042d42c8f928af3bb7"
+            },
+            {
+              "path": "verification/degenerate_surface_001/REPORT.md",
+              "line": 15,
+              "text": "首遍也是唯一一遍离线执行：83/83 方法通过，零失败、错误或跳过。新增定向组严格为 12 个方法，其余是与改动有关的既有回归；旧退化 unknown 断言按合同更新，partial/unknown 另用真实有限位宽超限输入保留。旧运行原件未覆盖。",
+              "sha256": "0d884fe76a53ba0af052d8c52c2217b7e8dab24ef5c7b9f5ac2b129dd848a2b7"
+            }
+          ],
+          "conclusion": "Not introduced by integer optimization. Fixed d01 already contains the identical hull reduction; the accepted directed suite validates point/segment/face combinations independently."
+        }
+      ],
+      "contract_results": "CURRENT_CONTRACT_REGRESSIONS.json",
+      "contract_results_sha256": "9e6c8d9bc40f076b0bfe7332c7cb1e924765164cceb29090935937018d1db4f2",
+      "preservation": "No product or pre-existing test source modified; all 193-case red results and test preparation/audit failures remain. Current-contract suites supplement attribution; the legacy suite remains 191/193.",
+      "scope_of_zero_introduced": "No differing regression failure identified between candidate and restored-old-bounded runs; not a claim that every product behavior has been proven.",
+      "limits": [
+        "Two legacy tests remain red; neither was edited or omitted from the recorded 193-case run.",
+        "Current-contract suites actually passed 24/24 but their runner failed the subsequent fixture-origin guard audit; that error is preserved and not represented as successful source audit.",
+        "No performance, Blender, external consumer or permission-effect claim follows from these offline checks."
+      ]
+    }
+  },
+  "learning_binding": {
+    "context_bound": false,
+    "host_epoch": 5,
+    "rebind_required": true,
+    "task_sync": "pending; no borrowed handle"
+  },
+  "no_LLM_or_Native_rerun": true,
+  "tokens": "N/A",
+  "fees": "N/A",
+  "coordinator_model_cost": "unmeasured",
+  "default_MCP_Hook": "unchanged by this batch; administrator separately owns user-authorized later deployment",
+  "files_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\driver.py": "59d5bd6cc132e0a10121e0d94b9409c9adee9caeb6273628324c1f45a292728b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\freeze.py": "db31d51665d8df1d7509b3db2840ed3a22f90344681b54d22a897ef04209c321",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\quality_review.py": "58063531099edc7f2f8c864583cf55225547cbbf414e07a549620d79fe0caf34",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\install_candidate.py": "55d1fb10f0641668f0a44efd6367970a161f7026025b61f6db8b84398ff00797",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\INSTALLS.json": "29906d67527a8c8af591e0f8de3683ccaf7c34713f80c0f06e07cd3bd9824f3c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\BOUNDED_EQUIVALENCE.json": "ec216d5ae8a7d6187298d192265c4026cfb8d9e0f81f0c629622933910ee0426",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\REGRESSIONS_BASELINE.json": "95930c8e933bfb1f981c55367a38180bb4475cd18c679261aa114755aaf12509",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\REGRESSIONS_CANDIDATE.json": "eded6812b814835f3442263024c6944c51b2de2103c9788aee357801361c7974",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_opt_001\\REGRESSION_REVIEW.json": "dd3769d2d6aa6f61befeb89171e0b92f20874ed5c926a4165e9a3c2e9aee4af7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\surface_proximity.py": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\quality_review.py": "5f9193ffda1bc341f0e47f56fef4e629ba4f305c162fb0ebc7bbab047314f77e"
+  }
+}
