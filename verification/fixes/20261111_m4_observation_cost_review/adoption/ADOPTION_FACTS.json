@@ -1,0 +1,1001 @@
+{
+  "schema": "M4-post-seal-adoption-review-v1",
+  "reviewer": "independent grader A after quality seal",
+  "quality_seal_authorized": "16032384e9f0914ba3e377a1fad1ecd05bcdc9c92ffce6e9a8dc5087eeb8c2c1",
+  "scope": "actual tool use and evidence gaps only; no numeric time/token/fee recomputation",
+  "base": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_observation_baseline_001",
+  "input_sha256": {
+    "private/ANON_MAP.json": "e4ff7e9dcda0f04da45bdc710ec1630ee39ddecc56029268478728c7a278903d",
+    "RUN_RESULT.json": "8ba2d42813f2dc5aababb274c136882a20cdf1c67e156ea34cccf7f768718a4f",
+    "scoring/SCORING_CONTRACT.json": "1c4a88d7018426c1a68ae7f770acb8f1eb90faee50ee46ca616dd0ea703cdbcc",
+    "scoring/TRUTH.json": "2bb917d6d96bfec4b8dffbdbc437f70185f532877e9bcb45855ea2d988e6a1b2"
+  },
+  "frozen_quality_sha256": "d579c3b15dc9acc8b9d1450ce57c180fdab279e81ad61dcaaed659047cd9f059",
+  "cells": [
+    {
+      "cell": "01",
+      "group": "N",
+      "answer_id": "answer_69cc9ae597e60afa",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 3,
+      "spatial_relations_calls": 0,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "native_only",
+        "discovery": "Call1: all28 actual world bounds/centers and shared mesh IDs; camera metadata.",
+        "local_evidence": "Call2: N16/N13/N08/N28 plus rails actual matrices, vertices and faces; pipe midpoint and four-frame XY distances. Call3: no modifiers, attained left gap and rod clearances, rail midpoint/front rear. Final uses actual material bar and strict interior point, not whole-AABB overlap.",
+        "necessary_vs_repeat": "Call2 adds material/hole topology absent from initial bounds. Call3 prints arithmetic derivable from preceding arrays; absent-modifier information is new but no hidden mandatory modifier-call requirement is imposed."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nworld={n:np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices],dtype=float) for n,o in meshes.items()}\nfor n,o in sorted(meshes.items()):\n a=world[n]; print(n,o.data.name,'bounds',np.round(a.min(0),7).tolist(),np.round(a.max(0),7).tolist(),'center',np.round((a.min(0)+a.max(0))/2,7).tolist())\nprint('camera',bpy.context.scene.camera.name,tuple(bpy.context.scene.camera.location),bpy.context.scene.camera.data.type)\n"
+          },
+          "raw_request": "cells/01/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/01/owner/tool_01/RESPONSE.json",
+          "request_sha256": "5581e580734fd98e11d5a314be27169db1c561814af032802229874ea74fbda7",
+          "response_sha256": "8cbc10db8865ca7d1b112f3e95563f7b465b3fbd28fa8153fe64d7b7789cac9f",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "for n in ['N16','N13','N08','N28','N12','N24']:\n o=meshes[n];print('\\n',n,'matrix',[[round(x,9) for x in row] for row in o.matrix_world]); print('vertices',world[n].tolist());print('faces',[list(p.vertices) for p in o.data.polygons])\nmid=np.mean([(world[n].min(0)+world[n].max(0))/2 for n in ['N04','N19']],axis=0)\nprint('pipes XY',mid[:2])\nfor n in ['N15','N16','N18','N25']:\n c=(world[n].min(0)+world[n].max(0))/2\n print(n,'center',c.tolist(),'XYdist',np.linalg.norm(c[:2]-mid[:2]))"
+          },
+          "raw_request": "cells/01/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/01/owner/tool_02/RESPONSE.json",
+          "request_sha256": "9a604aa9826acdde4de7591790be286504f6ce15e05e0f0c3edb7127804e5f03",
+          "response_sha256": "b0285bd279c666103f850e3fa9f0c9e667be599a141eda2e3fb499334de85f0c",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 3,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "print('geometry modifiers',[(n,[(m.name,m.type) for m in o.modifiers]) for n,o in sorted(meshes.items()) if len(o.modifiers)])\nframe=world['N16']; block=world['N08']; rod=world['N28']\nprint('left gap m',frame[:,0].min()-block[:,0].max())\nprint('rod vertical clearances m',rod[:,2].min()-frame[4,2],frame[6,2]-rod[:,2].max())\nprint('rod horizontal clearances m',rod[:,0].min()-frame[4,0],frame[5,0]-rod[:,0].max())\nprint('right overlap XYZ m',np.minimum(frame.max(0),world['N13'].max(0))-np.maximum(frame.min(0),world['N13'].min(0)))\nprint('rail midpoint Z',sum((world[n][:,2].min()+world[n][:,2].max())/2 for n in ['N12','N24'])/2)\nprint('front beam back Y',world['N10'][:,1].max())\n"
+          },
+          "raw_request": "cells/01/owner/tool_03/REQUEST.json",
+          "raw_response": "cells/01/owner/tool_03/RESPONSE.json",
+          "request_sha256": "d4431bdd31a802149c351eaab9bc824588719be9d16ff69f563c46da9a1b1f82",
+          "response_sha256": "300a22c16edfbd017891870510ff9cd60d5aa14059c3d16bbfe47c496ab065f8",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false
+    },
+    {
+      "cell": "02",
+      "group": "P",
+      "answer_id": "answer_635fcb52c8009303",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 2,
+      "spatial_relations_calls": 1,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "plugin_relations_adopted_with_native_local_supplement",
+        "discovery": "Call1: all28 actual bounds/centers and mesh IDs; camera metadata.",
+        "local_evidence": "Call3 reads world vertices of N16/N13/N08/N28/N12/N24/N04/N19, then rail-midpoint and four frame XY-distance calculations. N16 inner coordinate levels are new and support final right-bar/common-interior point and opening limits.",
+        "necessary_vs_repeat": "N08 full vertices and rails/pipes full vertices are unnecessary to establish already measured pair gap or already returned bounds. Frame centers and three selection arithmetic follow from Call1; rounded pipe midpoint is far from selection boundary. Call3 contains no re-solve of three pair distances/solid relations."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nprint('meshes',len(objs),'total',len(bpy.context.scene.objects))\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]); lo=v.min(0); hi=v.max(0)\n print(name,'data',o.data.name,'min',lo.tolist(),'max',hi.tolist(),'center',((lo+hi)/2).tolist())\nprint('camera',bpy.context.scene.camera.name,tuple(bpy.context.scene.camera.location),bpy.context.scene.camera.data.type)"
+          },
+          "raw_request": "cells/02/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/02/owner/tool_01/RESPONSE.json",
+          "request_sha256": "5b4bd34dd8569fdb378108961dbb0e85f8113fc5663ca8374994a3ce2ba794cc",
+          "response_sha256": "c1243160b71acd18714392a0964c5298df59d31adcef7fce5be72c5ed8530de9",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "human_eye_spatial_relations",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "target": {
+              "name": "N16"
+            },
+            "candidates": [
+              {
+                "name": "N13"
+              },
+              {
+                "name": "N08"
+              },
+              {
+                "name": "N28"
+              }
+            ],
+            "include_aabb": true
+          },
+          "raw_request": "cells/02/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/02/owner/tool_02/RESPONSE.json",
+          "request_sha256": "dc78f99c15d3bc5b9fe9602e0dcbf910d314d0c8a3f3a6e2fc69114ac8e7efce",
+          "response_sha256": "c15824d7b0a2a6e0b068e2ac14e84393896c77b6a58b18b005bb09a4d20e247d",
+          "run_result_equals_raw_request_and_content": true,
+          "facts": [
+            {
+              "name": "N13",
+              "solid": {
+                "status": "measured",
+                "value": "penetrating",
+                "certificate": "transverse_boundary_interiors"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.0,
+                  "nearest_witness": {
+                    "a": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "b": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "direction_a_to_b": null
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "not_applicable",
+                "direction_reason": "undefined_zero_distance"
+              },
+              "gap": {
+                "status": "not_applicable",
+                "value": null,
+                "reason": "pair_is_not_separated"
+              }
+            },
+            {
+              "name": "N08",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.00010000728070735931,
+                  "nearest_witness": {
+                    "a": [
+                      0.11000000685453415,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "b": [
+                      0.10989999957382679,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "direction_a_to_b": [
+                      -1.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.00010000728070735931,
+                "semantics": "separated_surface_gap_m"
+              }
+            },
+            {
+              "name": "N28",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.023000000044703484,
+                  "nearest_witness": {
+                    "a": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.32500001415610313
+                    ],
+                    "b": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.3480000142008066
+                    ],
+                    "direction_a_to_b": [
+                      0.0,
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.023000000044703484,
+                "semantics": "separated_surface_gap_m"
+              }
+            }
+          ],
+          "coverage": {
+            "requested_candidates": 3,
+            "resolved_candidates": 3,
+            "classified_candidates": 3,
+            "unresolved_candidates": 0
+          },
+          "source_currentness": "capture_snapshot",
+          "certificate_scope": "Proof category only; surface witnesses are not shared-interior proofs."
+        },
+        {
+          "index": 3,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "for name in ['N16','N13','N08','N28','N12','N24','N04','N19']:\n o=objs[name]; print(name,'world_vertices', [tuple(o.matrix_world@p.co) for p in o.data.vertices])\nmid=np.array([0.43,0.155]); print('rail_mid_z',(0.6449999809265137+0.2750000059604645)/2)\nfor name in ['N15','N16','N18','N25']:\n o=objs[name]; v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]); c=(v.min(0)+v.max(0))/2\n print(name,'center',c.tolist(),'pipe_xy_dist',float(np.linalg.norm(c[:2]-mid)))"
+          },
+          "raw_request": "cells/02/owner/tool_03/REQUEST.json",
+          "raw_response": "cells/02/owner/tool_03/RESPONSE.json",
+          "request_sha256": "d34e37bbb0f0e669e26a7488118bbd25ea422e481e69d0f37c4edf24983c1e3a",
+          "response_sha256": "917eb8572c90630ee4a59d7089b1c59ed3fe7ec24ab975405fb102bb285001ae",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false,
+      "plugin_first_request_valid": true,
+      "plugin_relation_and_distance_facts_adopted": true,
+      "all_three_pair_facts_used": true,
+      "full_native_pair_resolve_after_plugin": false,
+      "whole_supplement_proven_unavoidable": false,
+      "model_distrust_inferred": false,
+      "global_discovery_provided_by_plugin": false
+    },
+    {
+      "cell": "03",
+      "group": "P",
+      "answer_id": "answer_16cc0a01c1667547",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 2,
+      "spatial_relations_calls": 1,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "plugin_relations_adopted_with_native_local_supplement",
+        "discovery": "Call1: all28 bounds/centers, shared IDs and vertex counts; camera name/unit scale.",
+        "local_evidence": "Call3 outputs N16/N12/N24/N04/N19/N13/N28 cached world vertices; computes rail threshold, beam rear, pipe midpoint and all four candidate Boolean condition triples. The frame inner material coordinates support final strict shared-interior point and rod-in-hole explanation.",
+        "necessary_vs_repeat": "Cached mesh arrays already existed after Call1 but their inner vertices had not been delivered. Rails/pipes vertex dumps and selection scalars are derivable from delivered bounds; no N08 re-read and no pair-solver reimplementation."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nworld={name:np.array([tuple(o.matrix_world @ v.co) for v in o.data.vertices]) for name,o in objs.items()}\nfor name,o in sorted(objs.items()):\n a=world[name]; print(name, o.data.name, 'n',len(a),'min',a.min(0).round(7).tolist(),'max',a.max(0).round(7).tolist(),'center',((a.min(0)+a.max(0))/2).round(7).tolist())\nprint('camera',bpy.context.scene.camera.name if bpy.context.scene.camera else None,'units',bpy.context.scene.unit_settings.scale_length)"
+          },
+          "raw_request": "cells/03/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/03/owner/tool_01/RESPONSE.json",
+          "request_sha256": "43c0ec7638a313a4efd8b31b2006eb3ae542efc92e2c5981b7f954e394e0a0f2",
+          "response_sha256": "53f4e7f8d6ada08e1556b3f85585e0e095593746ee58d38fc2867c258faebb94",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "human_eye_spatial_relations",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "target": {
+              "name": "N16"
+            },
+            "candidates": [
+              {
+                "name": "N13"
+              },
+              {
+                "name": "N08"
+              },
+              {
+                "name": "N28"
+              }
+            ],
+            "include_aabb": true
+          },
+          "raw_request": "cells/03/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/03/owner/tool_02/RESPONSE.json",
+          "request_sha256": "1a957f59833fa36a6a5c6f8a7303c681c9a745552196a64d41a620d9c7005a93",
+          "response_sha256": "b65621d00e4bb578ab2ef3f530b1378eb9848bf941304adafba1a0bb19828c8d",
+          "run_result_equals_raw_request_and_content": true,
+          "facts": [
+            {
+              "name": "N13",
+              "solid": {
+                "status": "measured",
+                "value": "penetrating",
+                "certificate": "transverse_boundary_interiors"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.0,
+                  "nearest_witness": {
+                    "a": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "b": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "direction_a_to_b": null
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "not_applicable",
+                "direction_reason": "undefined_zero_distance"
+              },
+              "gap": {
+                "status": "not_applicable",
+                "value": null,
+                "reason": "pair_is_not_separated"
+              }
+            },
+            {
+              "name": "N08",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.00010000728070735931,
+                  "nearest_witness": {
+                    "a": [
+                      0.11000000685453415,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "b": [
+                      0.10989999957382679,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "direction_a_to_b": [
+                      -1.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.00010000728070735931,
+                "semantics": "separated_surface_gap_m"
+              }
+            },
+            {
+              "name": "N28",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.023000000044703484,
+                  "nearest_witness": {
+                    "a": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.32500001415610313
+                    ],
+                    "b": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.3480000142008066
+                    ],
+                    "direction_a_to_b": [
+                      0.0,
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.023000000044703484,
+                "semantics": "separated_surface_gap_m"
+              }
+            }
+          ],
+          "coverage": {
+            "requested_candidates": 3,
+            "resolved_candidates": 3,
+            "classified_candidates": 3,
+            "unresolved_candidates": 0
+          },
+          "source_currentness": "capture_snapshot",
+          "certificate_scope": "Proof category only; surface witnesses are not shared-interior proofs."
+        },
+        {
+          "index": 3,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "for name in ['N16','N12','N24','N04','N19','N13','N28']:\n print(name,'vertices',world[name].round(9).tolist())\nmid=(world['N12'][:,2].min()+world['N12'][:,2].max()+world['N24'][:,2].min()+world['N24'][:,2].max())/4\npipe_mid=((world['N04'].min(0)+world['N04'].max(0))/2+(world['N19'].min(0)+world['N19'].max(0))/2)/2\nrear=world['N10'][:,1].max()\nprint('threshold_z',mid,'beam_rear_y',rear,'pipe_mid_xy',pipe_mid[:2].tolist())\nfor name in ['N15','N16','N18','N25']:\n center=(world[name].min(0)+world[name].max(0))/2\n print(name,'center',center.tolist(),'distance_xy',float(np.linalg.norm(center[:2]-pipe_mid[:2])),'passes',[bool(center[2]<mid),bool(center[1]>rear),bool(np.linalg.norm(center[:2]-pipe_mid[:2])<=.70)])"
+          },
+          "raw_request": "cells/03/owner/tool_03/REQUEST.json",
+          "raw_response": "cells/03/owner/tool_03/RESPONSE.json",
+          "request_sha256": "57e759da8dc90851639d5fd92cfb3b441b84ba3383ee548bb6a740acaa185d32",
+          "response_sha256": "3ce978351989e1e5ed1b94243bf6bab78f63ac66a0ad4be0f622c2766ae2a9ca",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false,
+      "plugin_first_request_valid": true,
+      "plugin_relation_and_distance_facts_adopted": true,
+      "all_three_pair_facts_used": true,
+      "full_native_pair_resolve_after_plugin": false,
+      "whole_supplement_proven_unavoidable": false,
+      "model_distrust_inferred": false,
+      "global_discovery_provided_by_plugin": false
+    },
+    {
+      "cell": "04",
+      "group": "N",
+      "answer_id": "answer_07229f7fac18446d",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 2,
+      "spatial_relations_calls": 0,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "native_only",
+        "discovery": "Call1: all28 bounds/centers, shared mesh IDs/counts.",
+        "local_evidence": "Call2: six local objects including N16/N13/N08/N28 plus rails vertices and faces; three selection thresholds and four candidate condition triples. Valid analytic material intersection, attained axial gap and rod-section/hole containment support final.",
+        "necessary_vs_repeat": "One local follow-up provides new topology/material evidence and arithmetic together. No universal triangle solver is required for these axis-aligned extruded solids."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nprint('mesh_count',len(objs))\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]);\n print(name,o.data.name,len(v),'min',np.round(v.min(0),7).tolist(),'max',np.round(v.max(0),7).tolist(),'center',np.round((v.min(0)+v.max(0))/2,7).tolist())"
+          },
+          "raw_request": "cells/04/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/04/owner/tool_01/RESPONSE.json",
+          "request_sha256": "205d3617432f59d9d250733ae0868f6da79348bbd0df23ef74f2b8a9b274ecd9",
+          "response_sha256": "a820fb151827d149bbb9d767d9ce35ae1712f0a156e3b4a06bedbf77ebf2afdc",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "V={name:np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices],dtype=float) for name,o in objs.items()}\nfor name in ['N16','N13','N08','N28','N12','N24']:\n o=objs[name]\n print('\\n',name,'vertices',[(i,tuple(round(float(x),9) for x in p)) for i,p in enumerate(V[name])])\n print('faces',[tuple(p.vertices) for p in o.data.polygons])\nprint('frame_selection')\nmidz=sum((V[n].min(0)[2]+V[n].max(0)[2])/2 for n in ['N12','N24'])/2\nrear=V['N10'].max(0)[1]\npipe_mid=sum((V[n].min(0)[:2]+V[n].max(0)[:2])/2 for n in ['N04','N19'])/2\nprint('rail_mid_z',midz,'beam_rear_y',rear,'pipe_mid_xy',pipe_mid)\nfor n in ['N15','N16','N18','N25']:\n c=(V[n].min(0)+V[n].max(0))/2\n print(n,'center',c,'distance',np.linalg.norm(c[:2]-pipe_mid),'passes',bool(c[2]<midz),bool(c[1]>rear),bool(np.linalg.norm(c[:2]-pipe_mid)<=.7))"
+          },
+          "raw_request": "cells/04/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/04/owner/tool_02/RESPONSE.json",
+          "request_sha256": "75f14e093d1069ea23ea03cc9439d086de7cf216c23e1888d874102df9938e52",
+          "response_sha256": "d013065124812e2b453ed6ee8f0650ee187bc7a86dec2df0c00cd4be7c0c363c",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false
+    },
+    {
+      "cell": "05",
+      "group": "N",
+      "answer_id": "answer_ae6684a89ddc7a0e",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 2,
+      "spatial_relations_calls": 0,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "native_only",
+        "discovery": "Call1: all28 bounds/centers, mesh IDs/counts, camera metadata.",
+        "local_evidence": "Call2: six local objects including N16/N13/N08/N28 plus rails indexed vertices/faces and explicit selection conditions. Valid shortcut uses exact scene structure; no guess from initial image/AABBs.",
+        "necessary_vs_repeat": "One local follow-up supplies material/hole geometry. Numeric precision is adequate for the original classification contract."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nprint('meshes',len(objs),'objects',len(bpy.context.scene.objects))\nverts={name:np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices]) for name,o in objs.items()}\nfor name,o in sorted(objs.items()):\n a=verts[name]; print(name,o.data.name,'n',len(a),'min',np.round(a.min(0),7).tolist(),'max',np.round(a.max(0),7).tolist(),'center',np.round((a.min(0)+a.max(0))/2,7).tolist())\nprint('camera',bpy.context.scene.camera.name,tuple(bpy.context.scene.camera.location),bpy.context.scene.camera.data.type)\n"
+          },
+          "raw_request": "cells/05/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/05/owner/tool_01/RESPONSE.json",
+          "request_sha256": "0db47cd335d48ceb8827af44b9594db204db52334abbb9cb08c9d6f13d9e0124",
+          "response_sha256": "74516e1de41a4a3bceb4c06fd349e8d030a3e4795f3fc148cf48eb296065b598",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "for name in ['N16','N13','N08','N28','N12','N24']:\n print('\\n',name)\n for index,point in enumerate(verts[name]): print(index, ['%.10f'%coord for coord in point])\n print('faces', [tuple(p.vertices) for p in objs[name].data.polygons])\nmidz=sum((verts[name].min(0)[2]+verts[name].max(0)[2])/2 for name in ['N12','N24'])/2\npipexy=sum(((verts[name].min(0)+verts[name].max(0))/2)[:2] for name in ['N04','N19'])/2\nprint('midz',midz,'pipexy',pipexy,'beamrear',verts['N10'].max(0)[1])\nfor name in ['N15','N16','N18','N25']:\n center=(verts[name].min(0)+verts[name].max(0))/2\n print(name,'center',center,'distance',np.linalg.norm(center[:2]-pipexy),'conditions',bool(center[2]<midz),bool(center[1]>verts['N10'].max(0)[1]),bool(np.linalg.norm(center[:2]-pipexy)<=0.7))"
+          },
+          "raw_request": "cells/05/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/05/owner/tool_02/RESPONSE.json",
+          "request_sha256": "42e4edb418aa564e10b4bc5f3353ad91df2226207e0ace5ab6d1525458241545",
+          "response_sha256": "4b427cee59aded60bb2a1a058c716bd690d0fe32a11f4a10610457203c148e02",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false
+    },
+    {
+      "cell": "06",
+      "group": "P",
+      "answer_id": "answer_e85f06af4348d600",
+      "quality_complete_correct_frozen": true,
+      "native_calls": 2,
+      "spatial_relations_calls": 1,
+      "surface_nearest_calls": 0,
+      "first_call": "execute_blender_code",
+      "unknown_or_failed_calls": 0,
+      "notes": {
+        "route": "plugin_relations_adopted_with_native_local_supplement",
+        "discovery": "Call1: all28 actual bounds/centers and shared mesh IDs.",
+        "local_evidence": "Call3: double-precision numpy world coordinate levels of N16/N13/N08/N28/N12/N24/N10/N04/N19; N16 full vertices/faces; all four frame centers and XY distances. This is the only P supplement with explicit frame faces, and it supports the same right-bar and opening explanation.",
+        "necessary_vs_repeat": "Double-precision coordinate levels reproduce several AABBs already provided by plugin. N08 and reference-object re-reads are not needed for original pair classification/selection. N16 inner levels/faces are new to delivered evidence; no global or three-pair distance re-solve occurs."
+      },
+      "calls": [
+        {
+          "index": 1,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "import bpy, numpy as np\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]); lo=v.min(0); hi=v.max(0)\n print(name, o.data.name, 'bounds',lo.tolist(),hi.tolist(),'center',((lo+hi)/2).tolist())"
+          },
+          "raw_request": "cells/06/owner/tool_01/REQUEST.json",
+          "raw_response": "cells/06/owner/tool_01/RESPONSE.json",
+          "request_sha256": "1873b2a4ea1b818ed1d238e9b625bf60960d11090e53bfd7f300c86bbe8ef482",
+          "response_sha256": "088cb6577e75d57a6cad15e357732d3d4940024e2c15b5b424035e6bcbcfdce0",
+          "run_result_equals_raw_request_and_content": true
+        },
+        {
+          "index": 2,
+          "tool": "human_eye_spatial_relations",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "target": {
+              "name": "N16"
+            },
+            "candidates": [
+              {
+                "name": "N13"
+              },
+              {
+                "name": "N08"
+              },
+              {
+                "name": "N28"
+              }
+            ],
+            "include_aabb": true
+          },
+          "raw_request": "cells/06/owner/tool_02/REQUEST.json",
+          "raw_response": "cells/06/owner/tool_02/RESPONSE.json",
+          "request_sha256": "91997a4b1baa6d2326a246f29d8ceffcedde02ba0709f873bccf4cb37a90ba50",
+          "response_sha256": "74e62ec5af488f7d3c056bfa2978420dfbe86011f9f67511b30cc8db8102e76b",
+          "run_result_equals_raw_request_and_content": true,
+          "facts": [
+            {
+              "name": "N13",
+              "solid": {
+                "status": "measured",
+                "value": "penetrating",
+                "certificate": "transverse_boundary_interiors"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.0,
+                  "nearest_witness": {
+                    "a": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "b": [
+                      0.2500000074505806,
+                      0.1100000012665987,
+                      0.3900000136345625
+                    ],
+                    "direction_a_to_b": null
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "not_applicable",
+                "direction_reason": "undefined_zero_distance"
+              },
+              "gap": {
+                "status": "not_applicable",
+                "value": null,
+                "reason": "pair_is_not_separated"
+              }
+            },
+            {
+              "name": "N08",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.00010000728070735931,
+                  "nearest_witness": {
+                    "a": [
+                      0.11000000685453415,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "b": [
+                      0.10989999957382679,
+                      0.08000000193715096,
+                      0.3350000139325857
+                    ],
+                    "direction_a_to_b": [
+                      -1.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.00010000728070735931,
+                "semantics": "separated_surface_gap_m"
+              }
+            },
+            {
+              "name": "N28",
+              "solid": {
+                "status": "measured",
+                "value": "separated",
+                "certificate": "disjoint_boundaries_with_exact_parity"
+              },
+              "surface": {
+                "status": "measured",
+                "value": {
+                  "distance_m": 0.023000000044703484,
+                  "nearest_witness": {
+                    "a": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.32500001415610313
+                    ],
+                    "b": [
+                      0.18000000715255737,
+                      0.08000000193715096,
+                      0.3480000142008066
+                    ],
+                    "direction_a_to_b": [
+                      0.0,
+                      0.0,
+                      1.0
+                    ]
+                  },
+                  "topology": [
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    },
+                    {
+                      "boundary_edge_count": 0,
+                      "nonmanifold_edge_count": 0
+                    }
+                  ]
+                },
+                "witness_status": "measured",
+                "direction_status": "measured"
+              },
+              "gap": {
+                "status": "measured",
+                "value": 0.023000000044703484,
+                "semantics": "separated_surface_gap_m"
+              }
+            }
+          ],
+          "coverage": {
+            "requested_candidates": 3,
+            "resolved_candidates": 3,
+            "classified_candidates": 3,
+            "unresolved_candidates": 0
+          },
+          "source_currentness": "capture_snapshot",
+          "certificate_scope": "Proof category only; surface witnesses are not shared-interior proofs."
+        },
+        {
+          "index": 3,
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "error": null,
+          "arguments": {
+            "code": "for name in ['N16','N13','N08','N28','N12','N24','N10','N04','N19']:\n o=objs[name]; mat=np.array(o.matrix_world,dtype=float); local=np.array([tuple(v.co) for v in o.data.vertices]); world=local@mat[:3,:3].T+mat[:3,3]\n print(name,'world coordinate levels',[np.unique(np.round(world[:,axis],10)).tolist() for axis in range(3)])\n if name=='N16':\n  print('vertices',world.tolist());print('faces',[list(p.vertices) for p in o.data.polygons])\nmid=np.array([.43,.155]);\nfor name in ['N15','N16','N18','N25']:\n o=objs[name]; mat=np.array(o.matrix_world,dtype=float); verts=np.array([tuple(v.co) for v in o.data.vertices])@mat[:3,:3].T+mat[:3,3]; center=(verts.min(0)+verts.max(0))/2\n print('frame',name,'center',center.tolist(),'xy_distance',float(np.linalg.norm(center[:2]-mid)))"
+          },
+          "raw_request": "cells/06/owner/tool_03/REQUEST.json",
+          "raw_response": "cells/06/owner/tool_03/RESPONSE.json",
+          "request_sha256": "494929230243bcad22249c82628ff594c4669c2d75cc967a246ad2416caad03a",
+          "response_sha256": "d2f75b3968e84ff00b03223d3bf08902f5242267c25c876f1f3f104b6ca17ed6",
+          "run_result_equals_raw_request_and_content": true
+        }
+      ],
+      "image_delivery": {
+        "prepared_file_verified": true,
+        "initial_attachment_in_argv": true,
+        "CLI_process_launched": true,
+        "CLI_thread_started": true,
+        "status": "CLI_thread_started; initial attachment delivery unconfirmed",
+        "provider_delivery_confirmed": null,
+        "model_view_confirmed": null
+      },
+      "image_tokens": null,
+      "quality_result_changed": false,
+      "plugin_first_request_valid": true,
+      "plugin_relation_and_distance_facts_adopted": true,
+      "all_three_pair_facts_used": true,
+      "full_native_pair_resolve_after_plugin": false,
+      "whole_supplement_proven_unavoidable": false,
+      "model_distrust_inferred": false,
+      "global_discovery_provided_by_plugin": false
+    }
+  ],
+  "totals": {
+    "sessions": 6,
+    "N_sessions": 3,
+    "P_sessions": 3,
+    "actual_tool_calls": 16,
+    "N_native_calls": 7,
+    "P_native_calls": 6,
+    "P_plugin_relations_calls": 3,
+    "P_plugin_attempt_sessions": 3,
+    "P_first_plugin_request_valid": 3,
+    "P_pair_facts_adopted_sessions": 3,
+    "P_pair_facts_adopted_pairs": 9,
+    "P_native_full_pair_resolve_after_plugin": 0,
+    "surface_nearest_calls": 0,
+    "new_tool_image_calls": 0,
+    "first_call_native_sessions": 6
+  },
+  "interpretation_limits": [
+    "One controlled 28-mesh scene repeated three times per arm; not three independent scene classes.",
+    "No private cognitive-state inference; native supplement is not by itself distrust or rejection.",
+    "New geometry used by the actual detailed final does not prove the entire supplement unavoidable under the public contract.",
+    "Already-exact separated certificate plus local attained witness can support N08/N28 without a new universal solve.",
+    "Shared initial image submitted, provider receipt and model view unknown; no engine automatic visual discovery or new nearest witness benefit established."
+  ],
+  "source_references": [
+    {
+      "file": "installation/run_02/source_107641ec/human_eye_plugin/live_spatial_mcp.py",
+      "lines": [
+        269,
+        291,
+        294,
+        297,
+        573,
+        614
+      ],
+      "sha256": "aecaf2917a6e598ad36d2eef21dcdf47131a7af4f54ad2ec7899609dee9f2540"
+    },
+    {
+      "file": "installation/run_02/source_107641ec/human_eye_plugin/task_query.py",
+      "lines": [
+        257,
+        265
+      ],
+      "sha256": "e00453167b20f30ca5afbd737cc38f8a2b031b5fb4a3661955576bfe742918d4"
+    },
+    {
+      "file": "installation/run_02/source_107641ec/human_eye_plugin/surface_geometry.py",
+      "lines": [
+        449,
+        460,
+        471,
+        484
+      ],
+      "sha256": "f0c81f1aa7ed406bbe574cfeb697d07a3c83a6c5e493bfaa806f7809a3fc1bd8"
+    }
+  ],
+  "one_next_direction": "Expose bounded, correctly typed location/feature evidence from the same closed-solid classification in the existing spatial_relations result; distinguish transverse boundary evidence from strict common-interior or containment evidence. Do not add a second solver or global mesh dump. Test whether the local supplement shrinks under unchanged natural task rules; call savings not yet established.",
+  "no_execution": {
+    "models": 0,
+    "Blender": 0,
+    "product": 0,
+    "source_edits": 0,
+    "quality_edits": 0
+  },
+  "agent_learning": "Subagent read-only assignment; no current writable own context handle available; did not borrow root handle."
+}
