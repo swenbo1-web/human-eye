@@ -1,0 +1,800 @@
+{
+  "schema": "complex004_blind_assembly_evidence_review_v1",
+  "created_utc": "2026-11-10T11:22:01.867080+00:00",
+  "reviewer": "/root/scale_opt_design_review",
+  "assessment_scope": "Label-blind, limited read-only review of nine assembly answers and actual tool arguments/results against frozen A1-A7. No product, Blender or model rerun.",
+  "input_files": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\TOOL_EVIDENCE_INDEX.json",
+      "sha256": "bae325ea2affdbc2604f1599ea56fcc2359c8141974e3d194cb6c97187c859d2"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\ANSWERS.json",
+      "sha256": "d0d7de0ea81d132f164662aa3e416bad66d23245075a94dc1a9bd1c9cecd072a"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_004\\PRIVATE_RUBRIC.json",
+      "sha256": "4dc89dcfe8e82a2e28c56391b091ef88167da66305d41cfd124246180c7246a4"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_004\\RUBRIC_BINDING.json",
+      "sha256": "155789fef94ca644b4c3a0e010f0aff9b885f563417a813144b6e81a865f6aef"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_004\\BLIND_SEMANTIC_REVIEW.json",
+      "sha256": "2118ff5beaa68901187ecff80e185f131abd564897b416ca34e70ef6a605141a"
+    }
+  ],
+  "summary": {
+    "planned": 9,
+    "reviewed": 9,
+    "full_pass": 9,
+    "failed": 0,
+    "unrun": 0,
+    "retained_failed_tool_attempts": 4
+  },
+  "answers": [
+    {
+      "answer_id": "677e551a8abf434bb9e3e1d47ace94a4",
+      "task_id": "assembly",
+      "answer_text_sha256": "4730c198195abe59583b0bc7b21097512dee4447ffea7fd0af0f823da114f666",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\677e551a8abf434bb9e3e1d47ace94a4.json",
+      "evidence_sha256": "df130ba8ab7f972426f84efd8d4fd233555b0c78b35ced468b5e832f9c1cea75",
+      "method_observed": "current_mesh_read_and_calculation",
+      "evidence_call_sequences": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "actual_tool_call_count": 4,
+      "retained_failed_attempts": [],
+      "evidence_basis": "Calls 2-4 read all current local vertices, triangles and world matrices. Call 4 computes float64 world vertex-face distances both ways and edge-edge distances; endpoint cases are included by point-to-edge projections. Call 4 checks a strict shared interior point for Object_03 against the actual outer/inner ring halfspaces and thickness.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869,
+        "Object_04": 0.039999960661
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Calls 1-4 provide actual transforms, target-relative ring/box geometry and contained world AABBs; final correctly distinguishes hole space from material."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "The approximately 0.005 m value describes one strict interior point beyond an inner wall, not a global penetration or escape depth."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "6dc59a60e02e4d2fa617582106ec4c3d",
+      "task_id": "assembly",
+      "answer_text_sha256": "ed1a4f7ad39a50ed3bcc0b2d900e49ce5467764066d16b1dfc188637e8a5af79",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\6dc59a60e02e4d2fa617582106ec4c3d.json",
+      "evidence_sha256": "338191afedcc3e2f5973d27ee83947e0995a7834f9d6df83dfe9ee272cd1d495",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        2
+      ],
+      "actual_tool_call_count": 3,
+      "retained_failed_attempts": [
+        {
+          "sequence": 1,
+          "method": "human_eye_scene_observe",
+          "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+          "executed": false,
+          "host_mutation_started": false
+        }
+      ],
+      "evidence_basis": "Call 2 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry. The additional native read exposes actual current transforms; quoted orientation details match it."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "57c90ad39d6d4263afcb2c91a1403d74",
+      "task_id": "assembly",
+      "answer_text_sha256": "b93a981e36502288b1d101ff5e93e71f5aa028de73415e56ad05f2e161abe369",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\57c90ad39d6d4263afcb2c91a1403d74.json",
+      "evidence_sha256": "3db2ba7d8e594cb3494adf62cbee4ffbaaa0dd0c4721cc33a45fe936624d25e9",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        1
+      ],
+      "actual_tool_call_count": 2,
+      "retained_failed_attempts": [],
+      "evidence_basis": "Call 1 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry. The additional native read exposes actual current transforms; quoted orientation details match it."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "6795ab31a1e94381abe16f6a6bac3da6",
+      "task_id": "assembly",
+      "answer_text_sha256": "c2ada261bcabdd91f0d21005f3262cd30a46519277a8ba16449e4ad7bef2c4c9",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\6795ab31a1e94381abe16f6a6bac3da6.json",
+      "evidence_sha256": "7b579c10dbee5d906d638460ad83869856a047b9d07f0486bc5091a8fc325906",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        1
+      ],
+      "actual_tool_call_count": 1,
+      "retained_failed_attempts": [],
+      "evidence_basis": "Call 1 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "ed3b536b3f4a42f3b7da2eb2b0c3ba1a",
+      "task_id": "assembly",
+      "answer_text_sha256": "040eaf017a74610a634ba7fc9053661c4796e861259cbb6ddb9d36fbf34e3c73",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\ed3b536b3f4a42f3b7da2eb2b0c3ba1a.json",
+      "evidence_sha256": "eea4beb1bc66f9b86f29a3d2a778e270f88afadcd4338510a3f8b70bde2a368f",
+      "method_observed": "current_mesh_read_and_calculation",
+      "evidence_call_sequences": [
+        1,
+        2,
+        3
+      ],
+      "actual_tool_call_count": 3,
+      "retained_failed_attempts": [],
+      "evidence_basis": "Calls 1-2 obtain actual evaluated meshes and clear temporary meshes. Call 3 rechecks current matrices/vertices and computes all vertex-face distances in both directions plus edge-edge interior and all four clamped endpoint cases. Current target-relative box bounds and Object_03 centre inside the annular material support the solid classifications.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218451,
+        "Object_04": 0.03999996066093581
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "The actual target ring topology, target-relative candidate coordinates, matrices and world bounds support the final rotation/AABB explanation."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "The approximately 0.005 m value describes the candidate centre beyond the local inner wall; the answer does not call it global penetration depth."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "e8f144f094d0457ca8e3752ac1a5a51a",
+      "task_id": "assembly",
+      "answer_text_sha256": "0dda686e17c957182ff5dd3558d5ae8d32ec7d7c14480f36ca6f9b285b98f0a0",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\e8f144f094d0457ca8e3752ac1a5a51a.json",
+      "evidence_sha256": "152fadce5971162b962d08a471ae702905332d220ab3113bb4a9735d95f33eb4",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        3
+      ],
+      "actual_tool_call_count": 3,
+      "retained_failed_attempts": [
+        {
+          "sequence": 2,
+          "method": "human_eye_scene_observe",
+          "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+          "executed": false,
+          "host_mutation_started": false
+        }
+      ],
+      "evidence_basis": "Call 3 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry. The additional native read exposes actual current transforms; quoted orientation details match it."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "aa3857878f1b4d499eb39d2b6211cf0c",
+      "task_id": "assembly",
+      "answer_text_sha256": "d2be4bd456835b1215e419449ba5a1c6ee0edceb6db90c680e4d729a7f537e28",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\aa3857878f1b4d499eb39d2b6211cf0c.json",
+      "evidence_sha256": "c351e0f3ff3506911787589e25a2c3b31efe4a28008a54f77b43a406d286878f",
+      "method_observed": "current_mesh_read_and_calculation",
+      "evidence_call_sequences": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "actual_tool_call_count": 4,
+      "retained_failed_attempts": [],
+      "evidence_basis": "Calls 1-2 read actual meshes/matrices and closed-edge counts; actual BVH boundary overlaps are 0/8/0. Call 3 computes float64 all vertex-face and edge-edge distances, including endpoint cases. Call 4 uses signed solid-angle winding: Object_03 centre and some vertices are inside the ring, while its other vertices are outside; Object_02/Object_04 are outside. This supports positive-volume penetration rather than contact.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218451,
+        "Object_04": 0.03999996066093577
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Current target-relative ring/box coordinates and actual world AABB overlap support the final hole and rotation explanation."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "No numerical global penetration depth is asserted; strict interior membership is used only as penetration evidence."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "f29097195f274cae9b82d1f61de619b2",
+      "task_id": "assembly",
+      "answer_text_sha256": "5d1be21f3b6035c8b1c613543e805b80c88c31fe73307f30172dec784c48a2bc",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\f29097195f274cae9b82d1f61de619b2.json",
+      "evidence_sha256": "6c49a920821cb21c62df86fe88b9f4e71a35c039685f2a7a2f96ad3499484073",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        2
+      ],
+      "actual_tool_call_count": 2,
+      "retained_failed_attempts": [
+        {
+          "sequence": 1,
+          "method": "human_eye_scene_observe",
+          "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+          "executed": false,
+          "host_mutation_started": false
+        }
+      ],
+      "evidence_basis": "Call 2 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000049869",
+          "abs_error_plus_bound_m": "2.5433506625775212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.039999960661",
+          "abs_error_plus_bound_m": "3.4076233406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    },
+    {
+      "answer_id": "09ed1126a838481586577208209534a8",
+      "task_id": "assembly",
+      "answer_text_sha256": "a054bfa03b42ce8ce397d92a064cceae0df283275e576e23f20c6a2e158bac4d",
+      "evidence_file": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\blind\\tools\\09ed1126a838481586577208209534a8.json",
+      "evidence_sha256": "859b76a516bdfddd740fba2a23648f940552ebdb200e50fbaaa456cfbfb0b464",
+      "method_observed": "measured_current_plugin_facts",
+      "evidence_call_sequences": [
+        3
+      ],
+      "actual_tool_call_count": 3,
+      "retained_failed_attempts": [
+        {
+          "sequence": 2,
+          "method": "human_eye_scene_observe",
+          "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+          "executed": false,
+          "host_mutation_started": false
+        }
+      ],
+      "evidence_basis": "Call 3 returns measured closed-solid relations for all three current candidates: disjoint_boundaries_with_exact_parity for Object_02/Object_04 and transverse_boundary_interiors for Object_03; surface distances and matching nearest-point witnesses are measured. Coverage is 3/3 with no unresolved relation or distance. These valid plugin facts directly satisfy the evidence requirement.",
+      "observed_separated_distances_m": {
+        "Object_02": 0.010000049869218474,
+        "Object_04": 0.039999960660935814
+      },
+      "reported_distance_checks": [
+        {
+          "object": "Object_02",
+          "reported_m": "0.010000",
+          "abs_error_plus_bound_m": "2.0446606627575212E-7",
+          "pass": true
+        },
+        {
+          "object": "Object_04",
+          "reported_m": "0.040000",
+          "abs_error_plus_bound_m": "3.0142333406358355E-7",
+          "pass": true
+        }
+      ],
+      "criterion_results": {
+        "A1": {
+          "pass": true,
+          "reason": "All three final relations match actual evidence and the frozen rubric: Object_02 separated, Object_03 penetrating, Object_04 separated."
+        },
+        "A2": {
+          "pass": true,
+          "reason": "Both separated surface gaps are supported by actual tool results; every reported value passes abs(error)+registered nonzero bound <= 1e-6 m."
+        },
+        "A3": {
+          "pass": true,
+          "reason": "The final complete penetrating set is exactly {Object_03}; all three requested candidates are accounted for."
+        },
+        "A4": {
+          "pass": true,
+          "reason": "Object_02 is the nearest separated candidate; its approximately 0.01 m gap is smaller than Object_04 at approximately 0.04 m."
+        },
+        "A5": {
+          "pass": true,
+          "reason": "Returned world-space AABBs contain all three candidates, while two solid relations are separated. The final explains why rotation/AABB or a single-axis/centre approximation cannot replace real surface/solid geometry. The additional native read exposes actual current transforms; quoted orientation details match it."
+        },
+        "A6": {
+          "pass": true,
+          "reason": "Zero is labelled surface distance/intersection, never a global penetration depth. Positive-volume penetration relies on the transverse-boundary classification, not on zero distance alone."
+        },
+        "A7": {
+          "pass": true,
+          "reason": "Inspected tool arguments/code perform current-scene reads/calculation only, with no image, save, transform/mesh mutation or truth/other-cell read. Anonymous receipt checks report frozen initial mesh, identical final mesh/source asset, event binding and backend cleanup; raw receipt revalidation belongs to root."
+        }
+      },
+      "core_facts_correct": true,
+      "requested_answer_complete": true,
+      "evidence_supported": true,
+      "readonly_current_state": true,
+      "readonly_current_state_scope": "inspected anonymous calls plus supplied bound receipt checks; original receipt validation reserved for root",
+      "forbidden_access_observed": false,
+      "unresolved_requested_items": [],
+      "full_pass": true
+    }
+  ],
+  "review_limits": [
+    "No costs, group/version mapping, RUN_RESULT or raw cells were read. Tool methods themselves reveal a route; no version/group is inferred.",
+    "No new formal-proof requirement, mandatory hole wording, or redundant native confirmation of valid plugin facts was added.",
+    "Initial/final/source/close checks are supplied in anonymous packets. Root is responsible for comparing their original same-version and state receipts after this score is frozen.",
+    "Missing graceful EXIT from thin client bridges remains a transport exit evidence limitation, distinct from backend close/known process cleanup; it is not classified as an incorrect geometry answer.",
+    "Code inspection and unchanged final geometry support readonly compliance; final equality alone would not prove absence of every possible transient operation. No such operation was found in the inspected calls.",
+    "Four unsupported nearest_witness task requests were rejected before mutation and corrected. Their failed attempts remain in evidence and must remain in total cost accounting."
+  ]
+}

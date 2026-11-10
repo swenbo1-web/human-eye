@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_8481f940c4a44b0193d8105860a33e90",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c509-70bc-7810-91c3-68ddb8c81528",
+        "thread_id": "01a1c509-70bc-7810-91c3-68ddb8c81528",
+        "turn_started_at_unix_ms": 1794307092840,
+        "turn_id": "01a1c509-7161-7dd3-9664-5fbe3169221b",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c509-70bc-7810-91c3-68ddb8c81528",
+      "itemId": "fc_0818e2986df834c6016af2f4278cb487d09c850097fd11524f",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import hashlib\n\ndef acquire():\n out={}\n for obj in bpy.context.scene.objects:\n  if obj.type!='MESH': continue\n  eo=obj.evaluated_get(bpy.context.evaluated_depsgraph_get())\n  mesh=eo.data\n  mesh.calc_loop_triangles()\n  local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n  mat=np.array(eo.matrix_world,dtype=np.float64)\n  world=local@mat[:3,:3].T+mat[:3,3]\n  faces=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n  out[obj.name]=(world,faces)\n return out\ngeom=acquire()\ndef fingerprint(g):\n return {name:hashlib.sha256(v.tobytes()+f.tobytes()).hexdigest() for name,(v,f) in g.items()}\ngeom_sig=fingerprint(geom)\nprint('meshes',len(geom),'triangles',sum(len(f) for v,f in geom.values()))\nfor name in ['Target','Peer_000','Competing_001','Near_003']:\n v,f=geom[name]; print(name,'bounds',v.min(0).tolist(),v.max(0).tolist(),'triangles',len(f))\n\n# Pairwise point/triangle distances, including projected face interiors.\ndef point_tri(points,tris):\n p=points[:,None,:]; a=tris[None,:,0,:]; u=tris[None,:,1,:]-a; v=tris[None,:,2,:]-a\n w=p-a\n uu=np.sum(u*u,2); uv=np.sum(u*v,2); vv=np.sum(v*v,2)\n wu=np.sum(w*u,2); wv=np.sum(w*v,2); den=uu*vv-uv*uv\n s=(wu*vv-wv*uv)/den; t=(wv*uu-wu*uv)/den\n q=a+s[:,:,None]*u+t[:,:,None]*v\n d=np.sum((p-q)**2,2); d[(s<0)|(t<0)|(s+t>1)]=np.inf\n idx=np.unravel_index(np.argmin(d),d.shape)\n return float(d[idx]),points[idx[0]].copy(),q[idx].copy()\n\ndef edges(tris):\n return tris[:,[0,1,2],:].reshape(-1,3),tris[:,[1,2,0],:].reshape(-1,3)\n\ndef edge_edge(e1,e2):\n p,p_end=e1; q,q_end=e2\n p=p[:,None,:]; q=q[None,:,:]; u=p_end[:,None,:]-p; v=q_end[None,:,:]-q; w=p-q\n a=np.sum(u*u,2); b=np.sum(u*v,2); c=np.sum(v*v,2); d=np.sum(u*w,2); e=np.sum(v*w,2)\n den=a*c-b*b\n s=np.divide(b*e-c*d,den,out=np.zeros_like(den),where=den>1e-28)\n t=np.divide(a*e-b*d,den,out=np.zeros_like(den),where=den>1e-28)\n candidates=[(s,t,(s>=0)&(s<=1)&(t>=0)&(t<=1)&(den>1e-28)),(np.zeros_like(den),np.clip(e/c,0,1),True),(np.ones_like(den),np.clip((e+b)/c,0,1),True),(np.clip(-d/a,0,1),np.zeros_like(den),True),(np.clip((b-d)/a,0,1),np.ones_like(den),True)]\n best=(float('inf'),None,None)\n for s,t,valid in candidates:\n  pp=p+s[:,:,None]*u; qq=q+t[:,:,None]*v\n  dist=np.where(valid,np.sum((pp-qq)**2,2),np.inf)\n  ix=np.unravel_index(np.argmin(dist),dist.shape)\n  if dist[ix]<best[0]: best=(float(dist[ix]),pp[ix].copy(),qq[ix].copy())\n return best\n\ndef edge_hits(es,tris):\n p,pend=es; p=p[:,None,:]; direction=pend[:,None,:]-p\n a=tris[None,:,0,:]; u=tris[None,:,1,:]-a; v=tris[None,:,2,:]-a\n h=np.cross(direction,v); det=np.sum(u*h,2)\n inv=np.divide(1.,det,out=np.zeros_like(det),where=np.abs(det)>1e-25)\n s=p-a; bary1=inv*np.sum(s*h,2); cross=np.cross(s,u)\n bary2=inv*np.sum(direction*cross,2); along=inv*np.sum(v*cross,2)\n valid=(np.abs(det)>1e-25)&(bary1>=0)&(bary2>=0)&(bary1+bary2<=1)&(along>=0)&(along<=1)\n loc=np.argwhere(valid)\n if len(loc):\n  row,col=loc[0]; return (p+along[:,:,None]*direction)[row,col].copy()\n return None\n\ndef surface_dist(g1,g2):\n v1,f1=g1; v2,f2=g2; t1=v1[f1]; t2=v2[f2]; e1=edges(t1); e2=edges(t2)\n for es,ts in [(e1,t2),(e2,t1)]:\n  hit=edge_hits(es,ts)\n  if hit is not None: return 0.,hit,hit,'intersection'\n candidates=[(*point_tri(v1,t2),'vertex-face'),(*((lambda r:(r[0],r[2],r[1]))(point_tri(v2,t1))),'face-vertex'),(*edge_edge(e1,e2),'edge-edge')]\n best=min(candidates,key=lambda r:r[0]); return math.sqrt(max(0,best[0])),best[1],best[2],best[3]\nstart=time.time()\nresults={name:surface_dist(geom['Target'],g) for name,g in geom.items() if name!='Target'}\nfor name,result in sorted(results.items(),key=lambda item:item[1][0]):\n print(name,format(result[0],'.12f'),result[3])\nprint('elapsed',time.time()-start)\n"
+    }
+  }
+}

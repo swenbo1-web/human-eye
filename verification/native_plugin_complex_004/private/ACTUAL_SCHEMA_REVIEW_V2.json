@@ -1,0 +1,120 @@
+{
+  "schema": "complex004-actual-schema-review-v2",
+  "final": true,
+  "no_further_overwrite_of_v2": true,
+  "recorded_at_utc": "2026-11-10T11:25:34.899162+00:00",
+  "before_backups": {
+    "backups": [
+      {
+        "original": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\analyze.py",
+        "backup": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\analyze_BEFORE_ACTUAL_SCHEMA_REVIEW.py",
+        "sha256": "52727177fc9b0dbc0e7a79d726191f7ac783b3a02f01795aa497c8b817ae3234",
+        "bytes": 61735
+      },
+      {
+        "original": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_PENDING_QUALITY.json",
+        "backup": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_PENDING_QUALITY_BEFORE_ACTUAL_SCHEMA_REVIEW.json",
+        "sha256": "313602bb924dcc9f8cffe44b1182c5a5f2bf9c0764634ed4aa0d49e6ee5cff6a",
+        "bytes": 585380
+      }
+    ],
+    "new_model_calls": 0,
+    "new_product_calls": 0,
+    "new_Blender_runs": 0
+  },
+  "findings": [
+    {
+      "issue": "source identity false negatives",
+      "cause": "old function already read SOURCE_PREFLIGHT.versions[group], but compared actual initialize source_files (absent by product contract) to full runtime_sources. The frozen identity.source_files and runtime_sources are equal137-entry lists; wrong projection, not wrong group lookup.",
+      "implementation_evidence": "human_eye_plugin/live_spatial_mcp.py initialize replaces source_files with source_file_count",
+      "correction": "all other frozen identity fields must match; source_file_count and canonical pin must match; independently re-hash all137 installed source files per version; bind actual initialize RX, saved owner identity and controlled serve argv/config."
+    },
+    {
+      "issue": "missing thin-client graceful EXIT",
+      "observation": "all18 EXIT.json absent.98 id requests have98 matching RX;18 notifications need no response.62 exact CLI tool outcomes match public request args/results and owner ledgers.18 owners closed with actual final geometry; known attachment PIDs absent in root cleanup snapshot.",
+      "correction": "retain strict protocol audit0/18. Report narrower known-request outcomes and owned-backend cleanup18/18 separately. Never fabricate EXIT or infer normal EOF/termination mechanism.",
+      "unresolved": "reason/method of client termination unknown; no receipt for last bridge-wide byte counters; no claim every transient process/message was observed"
+    },
+    {
+      "issue": "owner close interval label",
+      "cause": "CLOSE.started_ns is Owner construction time, so ended-started is owner lifetime, not close-only duration.",
+      "correction": "owner_lifetime_ns and timing_intervals retain that span; owner_close_ns is null. OWNER_FINISH inclusive interval, initial/final geometry QA RPC, consumer post-exit cleanup and whole-cell spans are retained separately and never summed as exclusive phases."
+    }
+  ],
+  "summary": {
+    "schema": "native-plugin-complex-004-raw-metrics-v2",
+    "denominator": 18,
+    "recorded": 18,
+    "protocol_completed": 18,
+    "protocol_audit_passed": 0,
+    "recorded_request_outcomes_audit_passed": 18,
+    "owned_backend_cleanup_audit_passed": 18,
+    "operational_evidence_audit_passed": 18,
+    "plugin_source_identity_bound": 12,
+    "missing_graceful_client_exit_receipts": 18,
+    "normal_client_exit_receipts": 0,
+    "all_slots_protocol_audit_passed": false,
+    "all_slots_operational_evidence_audit_passed": true,
+    "public_id_requests": 98,
+    "notifications": 18,
+    "actual_cli_tool_outcomes": 62,
+    "remaining_issue_counts": {
+      "missing_bridge_exit": 18
+    }
+  },
+  "audit_definitions": {
+    "protocol_audit_passed": "strict original audit including actual normal thin-client EXIT receipts; not relaxed after observing results",
+    "recorded_request_outcomes_audit_passed": "all recorded id TX have valid matching RX; exact CLI tool outcome/owner ledger/response-byte bindings; completed public turn",
+    "owned_backend_cleanup_audit_passed": "frozen mesh/worker receipts/source replay/actual pinned serve/owner close plus root cleanup snapshot covers known PIDs",
+    "operational_evidence_audit_passed": "known outcomes and owned backend audit, with no issue other than explicitly missing graceful thin-client EXIT",
+    "limitation": "missing EXIT never proves normal EOF, shutdown mechanism, or absence of every unrecorded transient process/message"
+  },
+  "metric_schema": {
+    "timing": "rows[].timing_intervals; inclusive overlap; import-only/product-close/semantic-QA unknown where not directly timed",
+    "bytes": "rows[].byte_accounting: catalogue, compact parameter re-encoding, actual CLI RX, pre-budget proposed response, actual charged response, internal peer pipe separate; not model-token fees",
+    "usage": "rows[].usage actual CLI turn counters; cached input never added again to input; provider_request_count/fees/resolved_effort remain null",
+    "quality": "semantic_quality=null; no answer text or semantic verdict in metrics"
+  },
+  "code_locations": {
+    "full_source_replay": 122,
+    "compact_source_binding": 159,
+    "public_frames": 258,
+    "actual_product_peer": 410,
+    "scoped_audits": 760,
+    "timing_intervals": 800,
+    "byte_accounting": 813,
+    "self_test": 937
+  },
+  "stable_script": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\analyze_ACTUAL_SCHEMA_REVIEW_V2.py",
+    "sha256": "674c0b1b7bbbcd5fdda5d994bdf52848cf5f005a6a4425fcac7e62b62fde09d0",
+    "bytes": 81279
+  },
+  "stable_report": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_ACTUAL_SCHEMA_REVIEW_V2.json",
+    "sha256": "3ffdd1943a4bae1e97214a636addfb7e1f77e9e8e09591ba2762e24e0e7f85a4",
+    "bytes": 809587
+  },
+  "canonical_script": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\analyze.py",
+    "sha256": "674c0b1b7bbbcd5fdda5d994bdf52848cf5f005a6a4425fcac7e62b62fde09d0"
+  },
+  "canonical_report": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_PENDING_QUALITY.json",
+    "sha256": "3ffdd1943a4bae1e97214a636addfb7e1f77e9e8e09591ba2762e24e0e7f85a4"
+  },
+  "raw_evidence_index": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_V2_RAW_EVIDENCE_INDEX.json",
+    "sha256": "885b585b6febc890c52bb1c7c2b55ca0fed92f29e0860961e61ddccb905e3334",
+    "file_count": 1881
+  },
+  "self_test": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\private\\ANALYSIS_V2_SELF_TEST.json",
+    "sha256": "8274de6cf119b6cc1f4716fa3c3c50cef2afd1fc46f364349a24a9a670354e68",
+    "passed": true
+  },
+  "new_model_calls": 0,
+  "new_product_calls": 0,
+  "new_Blender_runs": 0,
+  "frozen_execution_sources_changed": false
+}

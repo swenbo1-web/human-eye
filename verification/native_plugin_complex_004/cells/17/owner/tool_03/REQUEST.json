@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_c29ac3a540604a4bbfe74a35d66b9dea",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c516-36f2-7541-a03f-d8b4f591972f",
+        "thread_id": "01a1c516-36f2-7541-a03f-d8b4f591972f",
+        "turn_started_at_unix_ms": 1794307930034,
+        "turn_id": "01a1c516-37aa-79d3-a94b-3b80af9d56ea",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c516-36f2-7541-a03f-d8b4f591972f",
+      "itemId": "fc_06c8c49ea6041631016af2f773d1b087d0a35ad47e3cc0c09d",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import numpy as np, time\nstart=time.time()\ndeps=bpy.context.evaluated_depsgraph_get()\ndef world_tri(obj):\n    ev=obj.evaluated_get(deps); mesh=ev.to_mesh()\n    try:\n        mesh.calc_loop_triangles()\n        coords=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n        mat=np.array(ev.matrix_world,dtype=np.float64)\n        coords=coords@mat[:3,:3].T+mat[:3,3]\n        inds=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64)\n        return coords[inds]\n    finally: ev.to_mesh_clear()\ntriangles={obj.name:world_tri(obj) for obj in meshes}\ndef dot(a,b): return np.sum(a*b,axis=-1)\ndef point_segments(points,first,last):\n    direction=last-first\n    denominator=dot(direction,direction)\n    parameter=np.clip(dot(points-first,direction)/np.where(denominator>0,denominator,1),0,1)\n    closest=first+parameter[...,None]*direction\n    return dot(points-closest,points-closest),closest\ndef point_tri(points,tri):\n    first,second,third=tri[...,0,:],tri[...,1,:],tri[...,2,:]\n    edge1=second-first;edge2=third-first;offset=points-first\n    normal=np.cross(edge1,edge2); normal2=dot(normal,normal)\n    projection=points-(dot(offset,normal)/np.where(normal2>0,normal2,1))[...,None]*normal\n    aa=dot(edge1,edge1);ab=dot(edge1,edge2);bb=dot(edge2,edge2)\n    pa=dot(projection-first,edge1);pb=dot(projection-first,edge2)\n    denom=aa*bb-ab*ab\n    uu=(bb*pa-ab*pb)/np.where(denom!=0,denom,1)\n    vv=(aa*pb-ab*pa)/np.where(denom!=0,denom,1)\n    inside=(uu>=0)&(vv>=0)&(uu+vv<=1)&(normal2>0)\n    best=np.where(inside,dot(points-projection,points-projection),np.inf)\n    witness=projection.copy()\n    for corner in range(3):\n        squared,closest=point_segments(points,tri[...,corner,:],tri[...,(corner+1)%3,:])\n        update=squared<best;best=np.minimum(best,squared);witness=np.where(update[...,None],closest,witness)\n    return best,witness\ndef surface_distance(target,candidate):\n    best=np.inf; pair=None; feature=None\n    def retain(squared,first,second,label):\n        nonlocal best,pair,feature\n        index=np.unravel_index(np.argmin(squared),squared.shape)\n        value=float(squared[index])\n        if value<best:\n            best=value;pair=(np.broadcast_to(first,squared.shape+(3,))[index].copy(),np.broadcast_to(second,squared.shape+(3,))[index].copy());feature=label\n    for corner in range(3):\n        point=target[:,None,corner,:]; tri=candidate[None,:,:,:]\n        squared,closest=point_tri(point,tri);retain(squared,point,closest,'target vertex / candidate triangle')\n        point=candidate[None,:,corner,:];tri=target[:,None,:,:]\n        squared,closest=point_tri(point,tri);retain(squared,closest,point,'candidate vertex / target triangle')\n    for corner1 in range(3):\n        first=target[:,None,corner1,:];direction1=target[:,None,(corner1+1)%3,:]-first\n        for corner2 in range(3):\n            second=candidate[None,:,corner2,:];direction2=candidate[None,:,(corner2+1)%3,:]-second\n            offset=first-second\n            aa=dot(direction1,direction1);bb=dot(direction1,direction2);cc=dot(direction2,direction2)\n            dd=dot(direction1,offset);ee=dot(direction2,offset);denom=aa*cc-bb*bb\n            uu=(bb*ee-cc*dd)/np.where(denom>0,denom,1);vv=(aa*ee-bb*dd)/np.where(denom>0,denom,1)\n            valid=(denom>0)&(uu>=0)&(uu<=1)&(vv>=0)&(vv<=1)\n            closest1=first+uu[...,None]*direction1;closest2=second+vv[...,None]*direction2\n            squared=np.where(valid,dot(closest1-closest2,closest1-closest2),np.inf)\n            retain(squared,closest1,closest2,'edge / edge')\n    # Segment/triangle crossings are required in addition to boundary distances.\n    for swap in [False,True]:\n        source,other=(candidate,target) if swap else (target,candidate)\n        tri=other[None,:,:,:];edge1=tri[...,1,:]-tri[...,0,:];edge2=tri[...,2,:]-tri[...,0,:]\n        for corner in range(3):\n            origin=source[:,None,corner,:];direction=source[:,None,(corner+1)%3,:]-origin\n            cross=np.cross(direction,edge2);det=dot(edge1,cross);nonparallel=det!=0\n            inv=1/np.where(nonparallel,det,1);offset=origin-tri[...,0,:]\n            uu=dot(offset,cross)*inv;cross2=np.cross(offset,edge1);vv=dot(direction,cross2)*inv;tt=dot(edge2,cross2)*inv\n            valid=nonparallel&(uu>=0)&(vv>=0)&(uu+vv<=1)&(tt>=0)&(tt<=1)\n            if np.any(valid):\n                idx=np.argwhere(valid)[0];point=(origin+tt[...,None]*direction)[tuple(idx)]\n                return 0.0,(point,point),'surface intersection'\n    return float(np.sqrt(best)),pair,feature\nresults=[]\nfor name,tri in triangles.items():\n    if name!='Target':\n        distance,witness,feature=surface_distance(triangles['Target'],tri)\n        results.append((distance,name,witness,feature))\nresults.sort(key=lambda item:item[0])\nprint('evaluated_meshes',len(triangles),'candidate_count',len(results),'triangle_counts',sorted(set(len(t) for t in triangles.values())))\nprint('all_distances_m',[(name,round(distance,12)) for distance,name,_,_ in results])\nprint('closest_details',[(name,distance,[point.tolist() for point in witness],feature) for distance,name,witness,feature in results[:3]])\nprint('elapsed_s',time.time()-start)\n"
+    }
+  }
+}

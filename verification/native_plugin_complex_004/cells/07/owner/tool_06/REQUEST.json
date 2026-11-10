@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_e95c6a6f70d54a2293de448643be8de5",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+        "thread_id": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+        "turn_started_at_unix_ms": 1794307194948,
+        "turn_id": "01a1c50b-003d-7962-8d09-7e8bbb7ab1f0",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+      "itemId": "fc_0513fca438020112016af2f4d2bc7487d0adf8a09a74f76621",
+      "progressToken": 6
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def crosses(edges,triangles):\n start=edges[:,0,None,:]; direct=edges[:,1,None,:]-start\n corner=triangles[None,:,0,:]; side1=triangles[None,:,1,:]-corner; side2=triangles[None,:,2,:]-corner\n cross=np.cross(direct,side2); det=np.sum(side1*cross,axis=2)\n scale=np.linalg.norm(direct,axis=2)*np.linalg.norm(side1,axis=2)*np.linalg.norm(side2,axis=2)\n stable=np.abs(det)>1e-12*scale\n inv=1/np.where(stable,det,1)\n delta=start-corner; u=np.sum(delta*cross,axis=2)*inv\n q=np.cross(delta,side1); v=np.sum(direct*q,axis=2)*inv; along=np.sum(side2*q,axis=2)*inv\n hit=stable&(u>=0)&(v>=0)&(u+v<=1)&(along>=0)&(along<=1)\n if np.any(hit):\n  index=tuple(np.argwhere(hit)[0]); return (start+along[:,:,None]*direct)[index]\n return None\nresults=[]\nfor name,(verts,faces,edges) in geoms.items():\n if name=='Target': continue\n triangles=verts[faces]; segments=verts[edges]\n hit=crosses(targetsegs,triangles)\n if hit is None: hit=crosses(segments,targettris)\n if hit is not None: best=(0.,hit,hit)\n else:\n  forward=pointfaces(targetverts,triangles); backward=pointfaces(verts,targettris); backward=(backward[0],backward[2],backward[1])\n  best=min([forward,backward,edgesdistance(targetsegs,segments)],key=lambda item:item[0])\n results.append((math.sqrt(best[0]),name,best[1].tolist(),best[2].tolist()))\nresults.sort()\nprint('candidates',len(results))\nfor result in results[:5]: print(result)\nprint('remaining min',min(r[0] for r in results[5:]))"
+    }
+  }
+}

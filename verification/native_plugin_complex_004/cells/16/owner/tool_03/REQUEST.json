@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_f26de4d34cce48918ec00b900a82055e",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c514-857c-7362-b142-e6c93f8f0270",
+        "thread_id": "01a1c514-857c-7362-b142-e6c93f8f0270",
+        "turn_started_at_unix_ms": 1794307819055,
+        "turn_id": "01a1c514-8628-7433-bf1a-bffcbb68398e",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c514-857c-7362-b142-e6c93f8f0270",
+      "itemId": "fc_0bd5de297d7e109b016af2f70b855c87d0aa000cedfabae040",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def point_face(points, triangles):\n origin=triangles[:,0]; edge_u=triangles[:,1]-origin; edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v); norm2=np.einsum('ij,ij->i',normal,normal)\n delta=points[:,None,:]-origin[None,:,:]\n signed=np.einsum('ijk,jk->ij',delta,normal)/norm2\n projected=points[:,None,:]-signed[:,:,None]*normal[None,:,:]\n rel=projected-origin[None,:,:]\n uu=np.einsum('ij,ij->i',edge_u,edge_u); uv=np.einsum('ij,ij->i',edge_u,edge_v); vv=np.einsum('ij,ij->i',edge_v,edge_v)\n ru=np.einsum('ijk,jk->ij',rel,edge_u); rv=np.einsum('ijk,jk->ij',rel,edge_v)\n determinant=uu*vv-uv*uv\n bary_u=(ru*vv-rv*uv)/determinant; bary_v=(rv*uu-ru*uv)/determinant\n inside=(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\n distances=np.where(inside,signed*signed*norm2,np.inf)\n row,col=np.unravel_index(np.argmin(distances),distances.shape)\n return float(distances[row,col]),points[row],projected[row,col],(int(row),int(col))\ndef edges_of(triangles):\n return triangles[:,[0,1,2],:].reshape(-1,3),triangles[:,[1,2,0],:].reshape(-1,3)\ndef point_edge(points,starts,ends):\n direction=ends-starts\n delta=points[:,None,:]-starts[None,:,:]\n parameters=np.clip(np.einsum('ijk,jk->ij',delta,direction)/np.einsum('ij,ij->i',direction,direction),0,1)\n closest=starts[None,:,:]+parameters[:,:,None]*direction[None,:,:]\n sq=np.sum((points[:,None,:]-closest)**2,axis=2)\n row,col=np.unravel_index(np.argmin(sq),sq.shape)\n return float(sq[row,col]),points[row],closest[row,col],(int(row),int(col))\ndef edge_edge(starts_a,ends_a,starts_b,ends_b):\n direction_a=ends_a-starts_a;direction_b=ends_b-starts_b\n delta=starts_a[:,None,:]-starts_b[None,:,:]\n aa=np.sum(direction_a*direction_a,axis=1)[:,None];bb=np.sum(direction_b*direction_b,axis=1)[None,:]\n ab=direction_a@direction_b.T\n ad=np.einsum('ijk,ik->ij',delta,direction_a);bd=np.einsum('ijk,jk->ij',delta,direction_b)\n determinant=aa*bb-ab*ab\n valid=determinant>1e-28\n safe=np.where(valid,determinant,1)\n param_a=(ab*bd-bb*ad)/safe;param_b=(aa*bd-ab*ad)/safe\n valid &= (param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n closest_a=starts_a[:,None,:]+param_a[:,:,None]*direction_a[:,None,:]\n closest_b=starts_b[None,:,:]+param_b[:,:,None]*direction_b[None,:,:]\n sq=np.where(valid,np.sum((closest_a-closest_b)**2,axis=2),np.inf)\n row,col=np.unravel_index(np.argmin(sq),sq.shape)\n return float(sq[row,col]),closest_a[row,col],closest_b[row,col],(int(row),int(col))\ndef crossings(starts,ends,triangles):\n origin=triangles[:,0];edge_u=triangles[:,1]-origin;edge_v=triangles[:,2]-origin\n direction=ends-starts\n cross=np.cross(direction[:,None,:],edge_v[None,:,:]);det=np.einsum('ijk,jk->ij',cross,edge_u)\n valid=np.abs(det)>1e-24;safe=np.where(valid,det,1)\n delta=starts[:,None,:]-origin[None,:,:]\n bary_u=np.sum(delta*cross,axis=2)/safe\n cross2=np.cross(delta,edge_u[None,:,:])\n bary_v=np.einsum('ijk,ik->ij',cross2,direction)/safe\n parameter=np.einsum('ijk,jk->ij',cross2,edge_v)/safe\n valid &= (bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)&(parameter>=0)&(parameter<=1)\n if np.any(valid):\n  row,col=np.argwhere(valid)[0];point=starts[row]+parameter[row,col]*direction[row]\n  return 0.,point,point,(int(row),int(col))\n return None\n\ndef surface_distance(geom_a,geom_b):\n triangles_a=geom_a['t'];triangles_b=geom_b['t']\n starts_a,ends_a=edges_of(triangles_a);starts_b,ends_b=edges_of(triangles_b)\n candidates=[]\n for label,entry in [('Aedge_Bface',crossings(starts_a,ends_a,triangles_b)),('Bedge_Aface',crossings(starts_b,ends_b,triangles_a))]:\n  if entry is not None:return (*entry,label)\n for label,entry,reverse in [('Avertex_Bface',point_face(geom_a['v'],triangles_b),False),('Bvertex_Aface',point_face(geom_b['v'],triangles_a),True),('Avertex_Bedge',point_edge(geom_a['v'],starts_b,ends_b),False),('Bvertex_Aedge',point_edge(geom_b['v'],starts_a,ends_a),True),('Aedge_Bedge',edge_edge(starts_a,ends_a,starts_b,ends_b),False)]:\n  sq,first,second,indices=entry\n  if reverse:first,second=second,first\n  candidates.append((sq,first,second,indices,label))\n return min(candidates,key=lambda entry:entry[0])\nstarted=time.time();results={}\nfor name,geom in geometry.items():\n if name!='Target':results[name]=surface_distance(target,geom)\nprint('elapsed',time.time()-started)\nfor name,result in sorted(results.items(),key=lambda item:item[1][0]):\n print(name,format(math.sqrt(result[0]),'.12f'),result[4],result[3])\n"
+    }
+  }
+}

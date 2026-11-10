@@ -1,0 +1,673 @@
+{
+  "group": "O",
+  "task": "discovery",
+  "output": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\cells\\17\\owner",
+  "endpoint": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_004\\cells\\17\\ENDPOINT.json",
+  "asset": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\scale_diag_001\\fixtures\\D48.blend",
+  "asset_sha256": "8729d98bcbcc774b36b69e7df73ac48c5ec09553df27e55bb24b6fbce28bc431",
+  "blender": "D:/Tools/blender5.2/blender.exe",
+  "worker_deadline_ns": 417226896964300,
+  "dependency_python": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+  "read_schema": {
+    "name": "human_eye_scene_observe",
+    "description": "Current Blender facts. Task set example: {\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. Complete means global nearest; partial means best-known. scene_revision/fingerprint bind this capture/source/revision; runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_instruction": {
+          "type": "string"
+        },
+        "focal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goal": {
+          "type": "object",
+          "description": "Optional caller-supplied task criteria, evaluated separately from execution. Omitted object IDs bind to the selected observation/action pair. These criteria are not independently verified as the human user's intent.",
+          "properties": {
+            "focal_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reference_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "target_clearance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "clearance_tolerance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "target_focal_pivot_world_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "position_tolerance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_contact_normal_angle_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "max_tangent_yaw_mismatch_deg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "yaw_symmetry_order": {
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                4
+              ]
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "target_clearance_m"
+              ]
+            },
+            {
+              "required": [
+                "target_focal_pivot_world_m"
+              ]
+            },
+            {
+              "required": [
+                "max_contact_normal_angle_deg"
+              ]
+            },
+            {
+              "required": [
+                "max_tangent_yaw_mismatch_deg"
+              ]
+            }
+          ],
+          "dependentRequired": {
+            "target_clearance_m": [
+              "clearance_tolerance_m"
+            ],
+            "clearance_tolerance_m": [
+              "target_clearance_m"
+            ],
+            "target_focal_pivot_world_m": [
+              "position_tolerance_m"
+            ],
+            "position_tolerance_m": [
+              "target_focal_pivot_world_m"
+            ]
+          },
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "task",
+                "surface_nearest",
+                "overview",
+                "exact_pairs",
+                "nearest",
+                "top1",
+                "mesh_structure",
+                "mesh_surface"
+              ]
+            },
+            "objects": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "maxItems": 4,
+              "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."
+            },
+            "target": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "required": [
+                    "name"
+                  ]
+                }
+              ],
+              "additionalProperties": false
+            },
+            "candidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "maxItems": 3,
+              "description": "1..3 explicit candidates in request order; one capture with target. Requires closed_solid_relation and surface_proximity; aabb optional."
+            },
+            "requested_facts": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "aabb",
+                  "center_delta",
+                  "axis_gap",
+                  "surface_clearance",
+                  "solid_relation",
+                  "nearest_witness",
+                  "pair_relation",
+                  "surface_proximity",
+                  "closed_solid_relation"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "task: closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."
+            },
+            "operation": {
+              "type": "string",
+              "enum": [
+                "diagnose",
+                "patch",
+                "reference",
+                "restore_preview",
+                "reference_patch"
+              ],
+              "description": "Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "near_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.001
+            },
+            "threshold_m": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 0.01
+            },
+            "reference_ref": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "indices": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4095
+              },
+              "minItems": 1,
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "patch_ref": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "task_ref": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$",
+              "description": "Trusted begin handoff, required in local lifecycle mode; selects the active generation without creating or renewing a task."
+            },
+            "object_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "maxItems": 255,
+              "uniqueItems": true
+            },
+            "label_object_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "maxItems": 6,
+              "uniqueItems": true,
+              "description": "Current full IDs for image annotation, separate from measurement object_ids: up to six related labels plus A/B. Missing pair/image, occlusion or undersampling is explicit; display only."
+            },
+            "max_exact_pairs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 255
+            },
+            "alignment_evidence": {
+              "type": "boolean",
+              "default": true,
+              "description": "False omits optional face angles and requires include_image=false; strict distance, host rigid-frame and action checks remain."
+            },
+            "support_plane_discovery": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Read-only discovery of bounded original support-plane selectors for the current focal/reference pair. Omit direction for geometry only; no action direction is invented.",
+              "properties": {
+                "direction_world": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "max_candidates": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "default": 4
+                }
+              }
+            },
+            "native_visual": {
+              "type": "object",
+              "description": "Display policy only; never execution permission. Auto uses a negotiated read-only native host, otherwise the analytical projection. Projection skips negotiation; multiscale requires support. Labels and contact sections require projection.",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "projection",
+                    "multiscale"
+                  ]
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "SCENE",
+                    "XY",
+                    "XZ"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "visual_diagnostic": {
+              "type": "string",
+              "enum": [
+                "contact_section"
+              ],
+              "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "surface_nearest"
+                  }
+                },
+                "required": [
+                  "mode"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "mode": {},
+                  "objects": {
+                    "maxItems": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            {
+              "if": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "mode": {
+                        "const": "task"
+                      }
+                    },
+                    "required": [
+                      "mode"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "target"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "candidates"
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "required": [
+                  "mode",
+                  "requested_facts"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "task"
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "objects"
+                    ],
+                    "properties": {
+                      "target": false,
+                      "candidates": false
+                    }
+                  },
+                  {
+                    "required": [
+                      "target",
+                      "candidates"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {},
+                      "target": {},
+                      "candidates": {},
+                      "requested_facts": {
+                        "items": {
+                          "enum": [
+                            "closed_solid_relation",
+                            "surface_proximity",
+                            "aabb"
+                          ]
+                        },
+                        "allOf": [
+                          {
+                            "contains": {
+                              "const": "closed_solid_relation"
+                            }
+                          },
+                          {
+                            "contains": {
+                              "const": "surface_proximity"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "include_image": {
+          "type": "boolean",
+          "default": true,
+          "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."
+        },
+        "task_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_run_id"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "task_run_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "scene_delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional observation-only snapshot transport. Empty object asks for full resync; a complete base revision and SHA256 enables a delta when worthwhile.",
+          "properties": {
+            "base_revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "base_fingerprint": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "dependentRequired": {
+            "base_revision": [
+              "base_fingerprint"
+            ],
+            "base_fingerprint": [
+              "base_revision"
+            ]
+          }
+        },
+        "response_detail": {
+          "type": "string",
+          "enum": [
+            "full",
+            "brief"
+          ],
+          "default": "full",
+          "description": "Optional display projection. Brief preserves measurements, scopes, unknowns and native image bytes while omitting named camera/raster diagnostics. Full is a new current observation, not retrieval of a previous observation. Errors and insufficient savings keep full."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "query"
+            ],
+            "properties": {
+              "query": {
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "surface_nearest"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "session_id",
+              "include_image"
+            ],
+            "properties": {
+              "include_image": {
+                "const": false
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "focal_id"
+                ],
+                "properties": {
+                  "query": {
+                    "not": {
+                      "required": [
+                        "objects"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "not": {
+                  "required": [
+                    "focal_id"
+                  ]
+                },
+                "properties": {
+                  "query": {
+                    "required": [
+                      "objects"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "query"
+            ],
+            "properties": {
+              "query": {
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "const": "task"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "include_image"
+            ],
+            "properties": {
+              "include_image": {
+                "const": false
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "focal_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "reference_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "goal"
+                  ]
+                },
+                {
+                  "required": [
+                    "scene_delta"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "entry": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261110.scale.baseline.lab\\admin\\target_runtime_entry.py",
+  "install_root": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261110.scale.baseline.lab\\site-packages",
+  "source_sha256": "a50e34c9169e9384047b29fa8bda8a072f96681f64610334ccec367d8597589b"
+}

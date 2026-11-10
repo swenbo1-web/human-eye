@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_da41251e878e4121977c130447fbd34f",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c508-1abf-7cc1-a378-c56a29ca9322",
+        "thread_id": "01a1c508-1abf-7cc1-a378-c56a29ca9322",
+        "turn_started_at_unix_ms": 1794307005308,
+        "turn_id": "01a1c508-1b73-74c3-8c89-5ad66bbc17c0",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c508-1abf-7cc1-a378-c56a29ca9322",
+      "itemId": "fc_020babd2a8146ada016af2f3d781b487d0b3f5700c535fd3a9",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import numpy as np, time, hashlib\nstart=time.time()\ndeps=bpy.context.evaluated_depsgraph_get()\ndef capture_mesh(obj):\n    evaluated=obj.evaluated_get(deps)\n    mesh=evaluated.to_mesh()\n    try:\n        mesh.calc_loop_triangles()\n        local=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n        matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n        world=local@matrix[:3,:3].T+matrix[:3,3]\n        indices=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64)\n        return world[indices],world\n    finally:\n        evaluated.to_mesh_clear()\ngeometry={obj.name:capture_mesh(obj) for obj in bpy.context.scene.objects if obj.type=='MESH'}\ndef point_triangle_distance_sq(points, triangles):\n    offset=points-triangles[:,0]\n    first=triangles[:,1]-triangles[:,0]\n    second=triangles[:,2]-triangles[:,0]\n    normal=np.cross(first,second)\n    normal_sq=np.sum(normal*normal,axis=-1)\n    dot=np.sum(offset*normal,axis=-1)\n    projection=points-(dot/normal_sq)[:,None]*normal\n    relative=projection-triangles[:,0]\n    aa=np.sum(first*first,axis=-1); ab=np.sum(first*second,axis=-1); bb=np.sum(second*second,axis=-1)\n    ra=np.sum(relative*first,axis=-1); rb=np.sum(relative*second,axis=-1)\n    denominator=aa*bb-ab*ab\n    bary_a=(bb*ra-ab*rb)/denominator; bary_b=(aa*rb-ab*ra)/denominator\n    inside=(bary_a>=0)&(bary_b>=0)&(bary_a+bary_b<=1)\n    return np.where(inside,dot*dot/normal_sq,np.inf)\ndef segment_dist_sq(begin_a,end_a,begin_b,end_b):\n    direction_a=end_a-begin_a; direction_b=end_b-begin_b; offset=begin_a-begin_b\n    aa=np.sum(direction_a*direction_a,axis=-1); bb=np.sum(direction_b*direction_b,axis=-1); ab=np.sum(direction_a*direction_b,axis=-1)\n    ar=np.sum(direction_a*offset,axis=-1); br=np.sum(direction_b*offset,axis=-1)\n    denominator=aa*bb-ab*ab\n    param_a=np.divide(ab*br-bb*ar,denominator,out=np.zeros_like(denominator),where=denominator>1e-28)\n    param_a=np.clip(param_a,0,1)\n    param_b=(ab*param_a+br)/bb\n    param_a=np.where(param_b<0,np.clip(-ar/aa,0,1),param_a)\n    param_a=np.where(param_b>1,np.clip((ab-ar)/aa,0,1),param_a)\n    param_b=np.clip(param_b,0,1)\n    difference=offset+param_a[:,None]*direction_a-param_b[:,None]*direction_b\n    return np.sum(difference*difference,axis=-1)\ndef crosses(begin,end,triangles):\n    direction=end-begin\n    first=triangles[:,1]-triangles[:,0]; second=triangles[:,2]-triangles[:,0]\n    cross=np.cross(direction,second); determinant=np.sum(first*cross,axis=-1)\n    valid=np.abs(determinant)>1e-20\n    inverse=np.divide(1.0,determinant,out=np.zeros_like(determinant),where=valid)\n    offset=begin-triangles[:,0]\n    bary_a=np.sum(offset*cross,axis=-1)*inverse\n    cross2=np.cross(offset,first)\n    bary_b=np.sum(direction*cross2,axis=-1)*inverse\n    parameter=np.sum(second*cross2,axis=-1)*inverse\n    return valid&(bary_a>=0)&(bary_b>=0)&(bary_a+bary_b<=1)&(parameter>=0)&(parameter<=1)\ndef mesh_distance(triangles_a,triangles_b):\n    paired_a=np.repeat(triangles_a,len(triangles_b),axis=0)\n    paired_b=np.tile(triangles_b,(len(triangles_a),1,1))\n    best=np.inf\n    for vertex in range(3):\n        if np.any(crosses(paired_a[:,vertex],paired_a[:,(vertex+1)%3],paired_b)) or np.any(crosses(paired_b[:,vertex],paired_b[:,(vertex+1)%3],paired_a)):\n            return 0.0\n        best=min(best,np.min(point_triangle_distance_sq(paired_a[:,vertex],paired_b)),np.min(point_triangle_distance_sq(paired_b[:,vertex],paired_a)))\n        for edge in range(3):\n            best=min(best,np.min(segment_dist_sq(paired_a[:,vertex],paired_a[:,(vertex+1)%3],paired_b[:,edge],paired_b[:,(edge+1)%3])))\n    return float(np.sqrt(best))\nresults=[]\nfor name,(triangles,vertices) in geometry.items():\n    if name!='Target': results.append((mesh_distance(geometry['Target'][0],triangles),name))\nresults.sort()\nprint('evaluated meshes:',len(geometry),'target triangles:',len(geometry['Target'][0]))\nprint('all distances (m):',results)\nprint('elapsed_seconds',time.time()-start)\n"
+    }
+  }
+}

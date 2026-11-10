@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_f35341f67bfd4097b0c004bc514813bb",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c512-7303-7d91-b3e5-aafde4f6024e",
+        "thread_id": "01a1c512-7303-7d91-b3e5-aafde4f6024e",
+        "turn_started_at_unix_ms": 1794307683240,
+        "turn_id": "01a1c512-73a1-7022-b60b-7e6e1999d858",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c512-7303-7d91-b3e5-aafde4f6024e",
+      "itemId": "fc_0fe2c06dede7197c016af2f682f8dc87d089ad666218d7e2e3",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "# Refresh world geometry from current scene, using double precision arithmetic.\nfor name,obj in objs.items():\n assert np.array_equal(np.array(obj.matrix_world),geo[name]['matrix']) and np.array_equal(np.array([v.co[:] for v in obj.data.vertices]),geo[name]['local'])\n geo[name]['v']=(geo[name]['matrix'][:3,:3]@geo[name]['local'].T).T+geo[name]['matrix'][:3,3]\ninv_target=np.linalg.inv(geo['Object_01']['matrix'])\nfor name in list(objs)[1:]:\n local_to_target=(inv_target[:3,:3]@geo[name]['v'].T).T+inv_target[:3,3]\n geo[name]['target_local']=local_to_target\n print(name,'target-local vertices',local_to_target.tolist())\n\ndef point_tri_candidates(points, triangles):\n point=points[:,None,:]; origin=triangles[None,:,0,:]\n side1=triangles[None,:,1,:]-origin; side2=triangles[None,:,2,:]-origin\n normal=np.cross(side1,side2); normal2=np.sum(normal*normal,axis=-1)\n projected=point-normal*(np.sum((point-origin)*normal,axis=-1)/normal2)[...,None]\n rel=projected-origin\n dot11=np.sum(side1*side1,axis=-1); dot12=np.sum(side1*side2,axis=-1); dot22=np.sum(side2*side2,axis=-1)\n dotr1=np.sum(rel*side1,axis=-1); dotr2=np.sum(rel*side2,axis=-1)\n denom=dot11*dot22-dot12*dot12\n bary1=(dot22*dotr1-dot12*dotr2)/denom; bary2=(dot11*dotr2-dot12*dotr1)/denom\n dist2=np.sum((point-projected)**2,axis=-1)\n dist2=np.where((bary1>=-1e-13)&(bary2>=-1e-13)&(bary1+bary2<=1+1e-13),dist2,np.inf)\n index=np.unravel_index(np.argmin(dist2),dist2.shape)\n return float(dist2[index]),points[index[0]],projected[index],('vertex-face',index)\ndef unique_edges(faces):\n return np.array(sorted({tuple(sorted((int(a),int(b)))) for face in faces for a,b in zip(face,np.roll(face,-1))}))\ndef surface_distance(first,second):\n va,fa=first['v'],first['f']; vb,fb=second['v'],second['f']\n ca=point_tri_candidates(va,vb[fb]); cb=point_tri_candidates(vb,va[fa]); cb=(cb[0],cb[2],cb[1],cb[3])\n ea,eb=va[unique_edges(fa)],vb[unique_edges(fb)]\n starta=ea[:,None,0,:]; startb=eb[None,:,0,:]\n direca=ea[:,None,1,:]-starta; direcb=eb[None,:,1,:]-startb\n delta=starta-startb\n aa=np.sum(direca*direca,axis=-1); bb=np.sum(direca*direcb,axis=-1); cc=np.sum(direcb*direcb,axis=-1)\n dd=np.sum(direca*delta,axis=-1); ee=np.sum(direcb*delta,axis=-1)\n determinant=aa*cc-bb*bb\n valid=determinant>1e-24\n safe=np.where(valid,determinant,1)\n sa=(bb*ee-cc*dd)/safe; sb=(aa*ee-bb*dd)/safe\n candidates=[]\n for param_a,param_b,mask in [(sa,sb,valid&(sa>=0)&(sa<=1)&(sb>=0)&(sb<=1)),(np.zeros_like(ee),np.clip(ee/cc,0,1),True),(np.ones_like(ee),np.clip((ee+bb)/cc,0,1),True),(np.clip(-dd/aa,0,1),np.zeros_like(dd),True),(np.clip((bb-dd)/aa,0,1),np.ones_like(dd),True)]:\n  pa=starta+param_a[...,None]*direca; pb=startb+param_b[...,None]*direcb\n  squared=np.where(mask,np.sum((pa-pb)**2,axis=-1),np.inf)\n  index=np.unravel_index(np.argmin(squared),squared.shape)\n  candidates.append((float(squared[index]),pa[index],pb[index],('edge-edge',index)))\n return min([ca,cb]+candidates,key=lambda candidate:candidate[0])\nfor name in ['Object_02','Object_04']:\n result=surface_distance(geo['Object_01'],geo[name]); geo[name]['distance_result']=result\n print('DISTANCE',name,math.sqrt(result[0]),'witness target',result[1].tolist(),'candidate',result[2].tolist(),'type',result[3])\n print('witness target local', (inv_target[:3,:3]@result[1]+inv_target[:3,3]).tolist(),(inv_target[:3,:3]@result[2]+inv_target[:3,3]).tolist())\n"
+    }
+  }
+}

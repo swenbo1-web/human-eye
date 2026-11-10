@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_8e7d3b919cdd4ebbb8d6b422ba54e21d",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+        "thread_id": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+        "turn_started_at_unix_ms": 1794307194948,
+        "turn_id": "01a1c50b-003d-7962-8d09-7e8bbb7ab1f0",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c50a-ff9e-7212-9cc2-0783122a4d32",
+      "itemId": "fc_0513fca438020112016af2f491012487d089e42c6bd5e13f05",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "deps=bpy.context.evaluated_depsgraph_get()\ndef getgeom(obj):\n ev=obj.evaluated_get(deps); mesh=ev.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  local=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n  mat=np.array(ev.matrix_world,dtype=np.float64)\n  verts=local@mat[:3,:3].T+mat[:3,3]\n  tri=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=int)\n  edges=np.array(sorted({tuple(sorted((int(t[i]),int(t[(i+1)%3])))) for t in tri for i in range(3)}),dtype=int)\n  return verts,tri,edges\n finally: ev.to_mesh_clear()\ngeoms={obj.name:getgeom(obj) for obj in meshes}\ndef pointfaces(points, triangles):\n origin=triangles[:,0]; side1=triangles[:,1]-origin; side2=triangles[:,2]-origin\n normal=np.cross(side1,side2); norm2=np.einsum('ij,ij->i',normal,normal)\n delta=points[:,None,:]-origin[None,:,:]\n heights=np.einsum('ptj,tj->pt',delta,normal)/np.where(norm2>0,norm2,1)[None,:]\n proj=points[:,None,:]-heights[:,:,None]*normal[None,:,:]\n rel=proj-origin[None,:,:]\n aa=np.einsum('ij,ij->i',side1,side1); ab=np.einsum('ij,ij->i',side1,side2); bb=np.einsum('ij,ij->i',side2,side2)\n ra=np.einsum('ptj,tj->pt',rel,side1); rb=np.einsum('ptj,tj->pt',rel,side2)\n den=aa*bb-ab*ab; safe=np.where(den>0,den,1)\n u=(ra*bb-rb*ab)/safe; v=(rb*aa-ra*ab)/safe\n valid=(den[None,:]>0)&(u>=0)&(v>=0)&(u+v<=1)\n dist2=np.where(valid,heights*heights*norm2[None,:],np.inf)\n index=np.unravel_index(np.argmin(dist2),dist2.shape)\n return float(dist2[index]),points[index[0]],proj[index]\ndef edgesdistance(first,second):\n start=first[:,0,None,:]; end=second[None,:,0,:]\n direction1=first[:,1,None,:]-start; direction2=second[None,:,1,:]-end\n delta=start-end\n aa=np.sum(direction1*direction1,axis=2); bb=np.sum(direction1*direction2,axis=2); cc=np.sum(direction2*direction2,axis=2)\n dd=np.sum(direction1*delta,axis=2); ee=np.sum(direction2*delta,axis=2)\n denominator=aa*cc-bb*bb\n ss=(bb*ee-cc*dd)/np.where(denominator>0,denominator,1)\n tt=(aa*ee-bb*dd)/np.where(denominator>0,denominator,1)\n valid=(denominator>0)&(ss>=0)&(ss<=1)&(tt>=0)&(tt<=1)\n choices=[(ss,tt,valid),(np.zeros_like(bb),np.clip(ee/np.where(cc>0,cc,1),0,1),True),(np.ones_like(bb),np.clip((ee+bb)/np.where(cc>0,cc,1),0,1),True),(np.clip(-dd/np.where(aa>0,aa,1),0,1),np.zeros_like(bb),True),(np.clip((bb-dd)/np.where(aa>0,aa,1),0,1),np.ones_like(bb),True)]\n best=(float('inf'),None,None)\n for ss,tt,valid in choices:\n  firstpt=start+ss[:,:,None]*direction1; secondpt=end+tt[:,:,None]*direction2\n  sq=np.where(valid,np.sum((firstpt-secondpt)**2,axis=2),np.inf)\n  index=np.unravel_index(np.argmin(sq),sq.shape)\n  if sq[index]<best[0]: best=(float(sq[index]),firstpt[index],secondpt[index])\n return best\ndef crosses(edges,triangles):\n start=edges[:,0,None,:]; direct=edges[:,1,None,:]-start\n corner=triangles[None,:,0,:]; side1=triangles[None,:,1,:]-corner; side2=triangles[None,:,2,:]-corner\n cross=np.cross(direct,side2); det=np.sum(side1*cross,axis=2)\n inv=1/np.where(det!=0,det,1)\n delta=start-corner; u=np.sum(delta*cross,axis=2)*inv\n q=np.cross(delta,side1); v=np.sum(direct*q,axis=2)*inv; along=np.sum(side2*q,axis=2)*inv\n hit=(det!=0)&(u>=0)&(v>=0)&(u+v<=1)&(along>=0)&(along<=1)\n if np.any(hit):\n  index=tuple(np.argwhere(hit)[0]); return (start+along[:,:,None]*direct)[index]\n return None\ntargetverts,targetfaces,targetedges=geoms['Target']; targettris=targetverts[targetfaces]; targetsegs=targetverts[targetedges]\nresults=[]\nfor name,(verts,faces,edges) in geoms.items():\n if name=='Target': continue\n triangles=verts[faces]; segments=verts[edges]\n hit=crosses(targetsegs,triangles)\n if hit is None: hit=crosses(segments,targettris)\n if hit is not None: best=(0.,hit,hit)\n else:\n  forward=pointfaces(targetverts,triangles); backward=pointfaces(verts,targettris); backward=(backward[0],backward[2],backward[1])\n  best=min([forward,backward,edgesdistance(targetsegs,segments)],key=lambda item:item[0])\n results.append((math.sqrt(best[0]),name,best[1].tolist(),best[2].tolist()))\nresults.sort()\nprint('Complete candidates:',len(results))\nfor result in results: print(result)\nprint('target triangles:',len(targetfaces),'other triangle counts:',sorted(set(len(g[1]) for name,g in geoms.items() if name!='Target')))"
+    }
+  }
+}

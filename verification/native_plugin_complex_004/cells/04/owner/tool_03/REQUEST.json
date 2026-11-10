@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_3518615bd7164b65ab4d0335db54d9e6",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c507-0a72-7e72-ad59-567316eacd5d",
+        "thread_id": "01a1c507-0a72-7e72-ad59-567316eacd5d",
+        "turn_started_at_unix_ms": 1794306935579,
+        "turn_id": "01a1c507-0b14-74a2-9ba7-0a6506b51ef7",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c507-0a72-7e72-ad59-567316eacd5d",
+      "itemId": "fc_0fa84dfcb19644a9016af2f393de3087d0861cc897f3cfeb0c",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import hashlib\nstart_time=time.perf_counter()\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ngeometry={}\nfor obj in meshes:\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    local=np.array([vertex.co[:] for vertex in mesh.vertices],dtype=np.float64)\n    matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n    world=local @ matrix[:3,:3].T + matrix[:3,3]\n    indices=np.array([tri.vertices[:] for tri in mesh.loop_triangles],dtype=np.int64).reshape((-1,3))\n    edge_indices=np.unique(np.sort(np.concatenate([indices[:,[0,1]],indices[:,[1,2]],indices[:,[2,0]]]),axis=1),axis=0)\n    geometry[obj.name]={'vertices':world,'triangles':world[indices],'edges':world[edge_indices]}\n    evaluated.to_mesh_clear()\n\ndef vertex_triangle_min(vertices,triangles):\n    points=vertices[:,None,:]\n    base=triangles[None,:,0,:]\n    side1=triangles[None,:,1,:]-base\n    side2=triangles[None,:,2,:]-base\n    normal=np.cross(side1,side2)\n    normal2=np.sum(normal*normal,axis=-1)\n    height=np.sum((points-base)*normal,axis=-1)/np.where(normal2>0,normal2,1)\n    projection=points-height[...,None]*normal\n    relative=projection-base\n    dot11=np.sum(side1*side1,axis=-1); dot12=np.sum(side1*side2,axis=-1); dot22=np.sum(side2*side2,axis=-1)\n    dotp1=np.sum(relative*side1,axis=-1); dotp2=np.sum(relative*side2,axis=-1)\n    denominator=dot11*dot22-dot12*dot12\n    bary1=(dot22*dotp1-dot12*dotp2)/np.where(denominator!=0,denominator,1)\n    bary2=(dot11*dotp2-dot12*dotp1)/np.where(denominator!=0,denominator,1)\n    valid=(bary1>=0)&(bary2>=0)&(bary1+bary2<=1)&(normal2>0)\n    distances=np.where(valid,np.sum((points-projection)**2,axis=-1),np.inf)\n    closest=projection.copy()\n    for corner in range(3):\n        edge_start=triangles[None,:,corner,:]\n        edge_delta=triangles[None,:,(corner+1)%3,:]-edge_start\n        edge_length2=np.sum(edge_delta*edge_delta,axis=-1)\n        fraction=np.clip(np.sum((points-edge_start)*edge_delta,axis=-1)/np.where(edge_length2>0,edge_length2,1),0,1)\n        edge_point=edge_start+fraction[...,None]*edge_delta\n        squared=np.sum((points-edge_point)**2,axis=-1)\n        replace=squared<distances\n        closest=np.where(replace[...,None],edge_point,closest)\n        distances=np.minimum(distances,squared)\n    index=np.unravel_index(np.argmin(distances),distances.shape)\n    return float(distances[index]), vertices[index[0]].copy(),closest[index].copy()\n\ndef edge_edge_min(edges1,edges2):\n    base1=edges1[:,None,0,:]; base2=edges2[None,:,0,:]\n    delta1=edges1[:,None,1,:]-base1; delta2=edges2[None,:,1,:]-base2\n    offset=base1-base2\n    aa=np.sum(delta1*delta1,axis=-1); bb=np.sum(delta1*delta2,axis=-1); cc=np.sum(delta2*delta2,axis=-1)\n    dd=np.sum(delta1*offset,axis=-1); ee=np.sum(delta2*offset,axis=-1)\n    denominator=aa*cc-bb*bb\n    param1=(bb*ee-cc*dd)/np.where(denominator!=0,denominator,1)\n    param2=(aa*ee-bb*dd)/np.where(denominator!=0,denominator,1)\n    valid=(denominator>1e-28)&(param1>=0)&(param1<=1)&(param2>=0)&(param2<=1)\n    point1=base1+param1[...,None]*delta1; point2=base2+param2[...,None]*delta2\n    squared=np.where(valid,np.sum((point1-point2)**2,axis=-1),np.inf)\n    index=np.unravel_index(np.argmin(squared),squared.shape)\n    return float(squared[index]),point1[index].copy(),point2[index].copy()\n\ndef edge_face_intersection(edges,triangles):\n    origin=edges[:,None,0,:]; direction=edges[:,None,1,:]-origin\n    base=triangles[None,:,0,:]; side1=triangles[None,:,1,:]-base; side2=triangles[None,:,2,:]-base\n    cross=np.cross(direction,side2); determinant=np.sum(side1*cross,axis=-1)\n    inverse=1/np.where(determinant!=0,determinant,1)\n    offset=origin-base\n    bary1=np.sum(offset*cross,axis=-1)*inverse\n    second_cross=np.cross(offset,side1)\n    bary2=np.sum(direction*second_cross,axis=-1)*inverse\n    param=np.sum(side2*second_cross,axis=-1)*inverse\n    valid=(np.abs(determinant)>1e-25)&(bary1>=0)&(bary2>=0)&(bary1+bary2<=1)&(param>=0)&(param<=1)\n    if np.any(valid):\n        index=tuple(np.argwhere(valid)[0])\n        return (origin+param[...,None]*direction)[index].copy()\n    return None\n\ntarget=geometry['Target']\nresults=[]\nfor name,candidate in geometry.items():\n    if name=='Target': continue\n    hit=edge_face_intersection(target['edges'],candidate['triangles'])\n    if hit is None: hit=edge_face_intersection(candidate['edges'],target['triangles'])\n    if hit is not None:\n        best=(0.0,hit,hit)\n    else:\n        forward=vertex_triangle_min(target['vertices'],candidate['triangles'])\n        reverse=vertex_triangle_min(candidate['vertices'],target['triangles'])\n        reverse=(reverse[0],reverse[2],reverse[1])\n        edges_result=edge_edge_min(target['edges'],candidate['edges'])\n        best=min([forward,reverse,edges_result],key=lambda item:item[0])\n    results.append({'name':name,'distance':math.sqrt(best[0]),'target_witness':best[1].tolist(),'candidate_witness':best[2].tolist()})\nresults.sort(key=lambda item:item['distance'])\nprint('geometry_count',len(geometry),'candidate_count',len(results),'elapsed',time.perf_counter()-start_time)\nprint('evaluated_mesh_sizes',[(name,len(data['triangles']),len(data['edges'])) for name,data in geometry.items()][:3])\nprint('ranked_distances',[(row['name'],round(row['distance'],12)) for row in results])\nprint('nearest_witness',results[0])\nprint('nonfinite', [row['name'] for row in results if not math.isfinite(row['distance'])])\n"
+    }
+  }
+}

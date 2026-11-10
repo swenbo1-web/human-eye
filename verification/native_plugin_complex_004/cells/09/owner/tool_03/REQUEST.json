@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_f27d44693e7d445092c92e4d886cdefe",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c50d-f8ef-7092-aa63-984972454ef3",
+        "thread_id": "01a1c50d-f8ef-7092-aa63-984972454ef3",
+        "turn_started_at_unix_ms": 1794307389841,
+        "turn_id": "01a1c50d-f989-7eb3-867c-7c1720a40878",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "fde3c2f2f21d4b7b454c8cd76e0a28de70ddb796",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c50d-f8ef-7092-aa63-984972454ef3",
+      "itemId": "fc_0ba8609e71f98912016af2f567387c87d0948842eebdb8ef7d",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import numpy as np, time, hashlib\nstarted=time.perf_counter()\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ndef get_triangles(obj):\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  vertices=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)\n  matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n  vertices=vertices@matrix[:3,:3].T+matrix[:3,3]\n  indices=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64)\n  return vertices[indices]\n finally: evaluated.to_mesh_clear()\ntriangles={obj.name:get_triangles(obj) for obj in meshes}\nprint('units',bpy.context.scene.unit_settings.system,'scale_length',bpy.context.scene.unit_settings.scale_length)\nprint('evaluated triangles',[(name,len(tris)) for name,tris in triangles.items()])\ndef dot(first,second): return np.sum(first*second,axis=-1)\ndef triangle_distance(first,second):\n first=np.broadcast_to(first[:,None,:,:],(len(first),len(second),3,3)).reshape(-1,3,3)\n second=np.broadcast_to(second[None,:,:,:],(len(first)//len(second),len(second),3,3)).reshape(-1,3,3) if False else np.tile(second,(len(first)//len(second),1,1))\n best=float('inf'); witness=None\n def record(squared,point_a,point_b):\n  nonlocal best,witness\n  index=int(np.argmin(squared)); value=float(squared[index])\n  if value<best: best=value; witness=(point_a[index].copy(),point_b[index].copy())\n # Vertex to face interior, both directions.\n for points,faces,reverse in [(first,second,False),(second,first,True)]:\n  edge_u=faces[:,1]-faces[:,0]; edge_v=faces[:,2]-faces[:,0]\n  normal=np.cross(edge_u,edge_v); norm_squared=dot(normal,normal)\n  for vertex_index in range(3):\n   point=points[:,vertex_index]; offset=point-faces[:,0]\n   signed=dot(offset,normal)/np.where(norm_squared>0,norm_squared,1)\n   projection=point-signed[:,None]*normal\n   offset_projected=projection-faces[:,0]\n   uu=dot(edge_u,edge_u); uv=dot(edge_u,edge_v); vv=dot(edge_v,edge_v)\n   pu=dot(offset_projected,edge_u); pv=dot(offset_projected,edge_v)\n   denominator=uu*vv-uv*uv\n   beta=(vv*pu-uv*pv)/np.where(denominator!=0,denominator,1)\n   gamma=(uu*pv-uv*pu)/np.where(denominator!=0,denominator,1)\n   valid=(denominator>0)&(beta>=-1e-13)&(gamma>=-1e-13)&(beta+gamma<=1+1e-13)\n   squared=np.where(valid,dot(point-projection,point-projection),np.inf)\n   record(squared,projection if reverse else point,point if reverse else projection)\n # Edge pairs: endpoint projections and interior stationary pair.\n for first_edge in range(3):\n  start_a=first[:,first_edge]; vector_a=first[:,(first_edge+1)%3]-start_a\n  aa=dot(vector_a,vector_a)\n  for second_edge in range(3):\n   start_b=second[:,second_edge]; vector_b=second[:,(second_edge+1)%3]-start_b\n   bb=dot(vector_b,vector_b); ab=dot(vector_a,vector_b); offset=start_a-start_b\n   aw=dot(vector_a,offset); bw=dot(vector_b,offset)\n   denominator=aa*bb-ab*ab\n   param_a=(ab*bw-bb*aw)/np.where(denominator>0,denominator,1)\n   param_b=(aa*bw-ab*aw)/np.where(denominator>0,denominator,1)\n   valid=(denominator>1e-25)&(param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n   point_a=start_a+param_a[:,None]*vector_a; point_b=start_b+param_b[:,None]*vector_b\n   record(np.where(valid,dot(point_a-point_b,point_a-point_b),np.inf),point_a,point_b)\n   for endpoint in (0.,1.):\n    point_a=start_a+endpoint*vector_a\n    projection=np.clip(dot(point_a-start_b,vector_b)/np.where(bb>0,bb,1),0,1)\n    point_b=start_b+projection[:,None]*vector_b\n    record(dot(point_a-point_b,point_a-point_b),point_a,point_b)\n    point_b=start_b+endpoint*vector_b\n    projection=np.clip(dot(point_b-start_a,vector_a)/np.where(aa>0,aa,1),0,1)\n    point_a=start_a+projection[:,None]*vector_a\n    record(dot(point_a-point_b,point_a-point_b),point_a,point_b)\n # Edges piercing a face imply zero surface distance.\n for edges,faces in [(first,second),(second,first)]:\n  edge_u=faces[:,1]-faces[:,0]; edge_v=faces[:,2]-faces[:,0]\n  for edge_index in range(3):\n   origin=edges[:,edge_index]; direction=edges[:,(edge_index+1)%3]-origin\n   cross=np.cross(direction,edge_v); determinant=dot(edge_u,cross)\n   inverse=1/np.where(determinant!=0,determinant,1)\n   delta=origin-faces[:,0]; beta=dot(delta,cross)*inverse\n   cross2=np.cross(delta,edge_u); gamma=dot(direction,cross2)*inverse\n   parameter=dot(edge_v,cross2)*inverse\n   valid=(np.abs(determinant)>1e-25)&(beta>=0)&(gamma>=0)&(beta+gamma<=1)&(parameter>=0)&(parameter<=1)\n   if np.any(valid):\n    point=origin[np.flatnonzero(valid)[0]]+parameter[np.flatnonzero(valid)[0]]*direction[np.flatnonzero(valid)[0]]\n    return 0.,(point,point)\n return np.sqrt(best),witness\nresults=[]\nfor name,tris in triangles.items():\n if name!='Target':\n  distance,witness=triangle_distance(triangles['Target'],tris)\n  results.append((distance,name,witness))\nresults.sort(key=lambda item:item[0])\nfor distance,name,witness in results: print(name,format(distance,'.12f'))\nprint('winner_witness',results[0][2])\nprint('elapsed',time.perf_counter()-started)\nprint('fingerprint',hashlib.sha256(b''.join(name.encode()+tris.tobytes() for name,tris in sorted(triangles.items()))).hexdigest())"
+    }
+  }
+}
