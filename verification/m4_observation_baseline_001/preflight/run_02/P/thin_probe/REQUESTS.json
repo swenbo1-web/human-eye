@@ -1,0 +1,90 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "m4-no-model-preflight",
+        "version": "001"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "method": "notifications/initialized"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list"
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "execute_blender_code",
+      "arguments": {
+        "code": "import json\nprint(json.dumps({'unit_scale_m':bpy.context.scene.unit_settings.scale_length,'scene_objects':len(bpy.context.scene.objects),'mesh_names':sorted(o.name for o in bpy.context.scene.objects if o.type=='MESH'),'mesh_objects':sum(o.type=='MESH' for o in bpy.context.scene.objects)}))"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "name": "N01"
+        },
+        "candidates": [
+          {
+            "name": "N02"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_surface_nearest",
+      "arguments": {
+        "target": {
+          "name": "N01"
+        }
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 6,
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_spatial_relations",
+      "arguments": {
+        "target": {
+          "name": "N16"
+        },
+        "candidates": [
+          {
+            "name": "N13"
+          },
+          {
+            "name": "N08"
+          },
+          {
+            "name": "N28"
+          }
+        ]
+      }
+    }
+  }
+]

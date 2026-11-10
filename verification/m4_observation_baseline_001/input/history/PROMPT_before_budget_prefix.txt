@@ -1,0 +1,461 @@
+设备检修区域的空间观察
+
+这是一项只读任务。结合共同提供的初始图片、完整中性物体目录、相机元数据和固定方向，先找出目标框架，再识别三个邻件并判断它们与同一目标的关系。目录没有预选目标或邻件；编号不表达用途。
+
+在四个同形、带通孔的框架中，选出同时满足以下三个公开条件的框架。中心指世界空间顶点的轴对齐包围范围中心：
+1. 下部检修带：框架中心 Z 严格小于上下两条横向中空导轨中心 Z 的中间高度。这是高度带条件，不要求接触导轨，也不是寻找最近的框架。
+2. 前横梁后方：框架中心 Y 严格大于前方横向实体横梁后表面的 Y；固定方向的 +Y 为后。
+3. 双管水平邻域：框架中心的 XY 点，到两根并排竖直管件轴线 XY 中点的平面欧氏距离不超过 0.70 米。这是宽邻域半径，不是最近者排序。
+三个条件必须同时成立。请给出目标编号，并简要说明三个条件怎样对应到该物体。
+
+随后自行识别并写出以下三个邻件的编号，分别判断它们与目标的关系：目标近右侧的竖直窄隔片、目标左侧的短定位块、穿过目标开口的直探杆。右侧始终指世界 +X，不能因相机投影或观察方式改变而重定义。应区分框架实体和孔内空隙；包围盒重叠本身不能证明实体内部重叠。
+
+每一对关系请用以下含义作答，中文或等价表达均可：
+- 内部重叠（solid_overlap）：有依据证明两个实体内部存在重叠。
+- 在接触容差内（within_contact_tolerance）：已排除实体内部重叠，最短表面距离不超过 0.25 毫米。
+- 分离（separated）：已排除实体内部重叠，最短表面距离大于 0.25 毫米。
+- 无法确定（unknown）：当前证据不足以支持其中某一类别，说明还缺什么。
+0.25 毫米是分类容差，不等于精确物理接触；处于阈值附近而误差或证据不足时不要强行选边。本任务不要求全局穿透深度、移动或修复。
+
+每个邻件关系都应给出对应这一对物体的局部几何依据，例如可核验的见证点及其含义、局部表面或开口特征、量测或足以支持结论的空间关系。不得把零表面距离自动当成内部重叠，或只凭探杆与整个框架的包围盒相交就判穿入框架实体。单位可用米或毫米等价表达；无需固定 JSON 格式、字段名、源码行号、面索引清单或手抄文件摘要。
+
+初图有真实遮挡，且不带物体编号标签。图片可辅助理解布局和外观，但不足以分辨的微小间隙、遮挡后部或内部重叠应靠实际取得的几何依据判断；不能仅凭图片把亚毫米关系说成已看清。已取得的充分证据可以直接用于结论，不要求额外步骤；工具拒绝或安全拒绝本身不是空间判断答案。
+
+本轮只共同提供这一张已有初图，不新增、渲染或请求补充图片。允许合理的只读几何读取与计算；不改变设备、相机、可见性、渲染或场景设置，不保存文件。不能确定的内容如实说明。不要读取管理员材料、私有真值、评分材料、旧答案或其他消费者记录。
+
+固定方向：世界 Z 为上，-X 为左、+X 为右，-Y 为设备前侧、+Y 为后侧。本文中的左右前后始终使用这些世界方向；屏幕水平位置不能替代世界左右。
+共同初图为原有 INITIAL.png，INITIAL_VIEW.json 是原相机和裁切元数据；相机为正交投影。实际场景有28个mesh、32个总对象，是受控合成设备场景。
+本轮初图1张、新图构造及额外图片预算0。只读相机元数据与几何，不调整相机、渲染设置或可见性，不保存场景；不沿用历史任务允许临时相机及补图的条款。
+
+完整中性目录（原件全文）：
+{
+  "fixture_version": "spatial-perception-qual-001-v1",
+  "source_sha256": "91129d2e82749162bd0c9f4b232be10bd74d422be53c73e248325c0894b14a85",
+  "provenance": "controlled_synthetic_not_real_user_environment",
+  "catalog_scope": "neutral complete mesh inventory; no target/reference assignment or answer labels",
+  "objects": [
+    {
+      "object_id": "N01",
+      "mesh_data_id": "G03",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N02",
+      "mesh_data_id": "G16",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P06",
+      "display_color_rgb": [
+        0.6499999761581421,
+        0.27000001072883606,
+        0.07999999821186066
+      ]
+    },
+    {
+      "object_id": "N03",
+      "mesh_data_id": "G24",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P07",
+      "display_color_rgb": [
+        0.07000000029802322,
+        0.08500000089406967,
+        0.09000000357627869
+      ]
+    },
+    {
+      "object_id": "N04",
+      "mesh_data_id": "G12",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P05",
+      "display_color_rgb": [
+        0.14000000059604645,
+        0.3799999952316284,
+        0.3100000023841858
+      ]
+    },
+    {
+      "object_id": "N05",
+      "mesh_data_id": "G23",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P07",
+      "display_color_rgb": [
+        0.07000000029802322,
+        0.08500000089406967,
+        0.09000000357627869
+      ]
+    },
+    {
+      "object_id": "N06",
+      "mesh_data_id": "G22",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P07",
+      "display_color_rgb": [
+        0.07000000029802322,
+        0.08500000089406967,
+        0.09000000357627869
+      ]
+    },
+    {
+      "object_id": "N07",
+      "mesh_data_id": "G20",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N08",
+      "mesh_data_id": "G10",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    },
+    {
+      "object_id": "N09",
+      "mesh_data_id": "G14",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P05",
+      "display_color_rgb": [
+        0.14000000059604645,
+        0.3799999952316284,
+        0.3100000023841858
+      ]
+    },
+    {
+      "object_id": "N10",
+      "mesh_data_id": "G06",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N11",
+      "mesh_data_id": "G07",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N12",
+      "mesh_data_id": "G05",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    },
+    {
+      "object_id": "N13",
+      "mesh_data_id": "G09",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    },
+    {
+      "object_id": "N14",
+      "mesh_data_id": "G04",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N15",
+      "mesh_data_id": "G08",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P03",
+      "display_color_rgb": [
+        0.11999999731779099,
+        0.3400000035762787,
+        0.4699999988079071
+      ]
+    },
+    {
+      "object_id": "N16",
+      "mesh_data_id": "G08",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P03",
+      "display_color_rgb": [
+        0.11999999731779099,
+        0.3400000035762787,
+        0.4699999988079071
+      ]
+    },
+    {
+      "object_id": "N17",
+      "mesh_data_id": "G15",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P05",
+      "display_color_rgb": [
+        0.14000000059604645,
+        0.3799999952316284,
+        0.3100000023841858
+      ]
+    },
+    {
+      "object_id": "N18",
+      "mesh_data_id": "G08",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P03",
+      "display_color_rgb": [
+        0.11999999731779099,
+        0.3400000035762787,
+        0.4699999988079071
+      ]
+    },
+    {
+      "object_id": "N19",
+      "mesh_data_id": "G13",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P05",
+      "display_color_rgb": [
+        0.14000000059604645,
+        0.3799999952316284,
+        0.3100000023841858
+      ]
+    },
+    {
+      "object_id": "N20",
+      "mesh_data_id": "G19",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    },
+    {
+      "object_id": "N21",
+      "mesh_data_id": "G02",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N22",
+      "mesh_data_id": "G01",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P01",
+      "display_color_rgb": [
+        0.10499999672174454,
+        0.13500000536441803,
+        0.1599999964237213
+      ]
+    },
+    {
+      "object_id": "N23",
+      "mesh_data_id": "G18",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P02",
+      "display_color_rgb": [
+        0.1899999976158142,
+        0.2199999988079071,
+        0.23999999463558197
+      ]
+    },
+    {
+      "object_id": "N24",
+      "mesh_data_id": "G05",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    },
+    {
+      "object_id": "N25",
+      "mesh_data_id": "G08",
+      "type": "mesh",
+      "vertices": 16,
+      "polygons": 16,
+      "triangles": 32,
+      "material": "P03",
+      "display_color_rgb": [
+        0.11999999731779099,
+        0.3400000035762787,
+        0.4699999988079071
+      ]
+    },
+    {
+      "object_id": "N26",
+      "mesh_data_id": "G21",
+      "type": "mesh",
+      "vertices": 8,
+      "polygons": 6,
+      "triangles": 12,
+      "material": "P07",
+      "display_color_rgb": [
+        0.07000000029802322,
+        0.08500000089406967,
+        0.09000000357627869
+      ]
+    },
+    {
+      "object_id": "N27",
+      "mesh_data_id": "G17",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P07",
+      "display_color_rgb": [
+        0.07000000029802322,
+        0.08500000089406967,
+        0.09000000357627869
+      ]
+    },
+    {
+      "object_id": "N28",
+      "mesh_data_id": "G11",
+      "type": "mesh",
+      "vertices": 24,
+      "polygons": 14,
+      "triangles": 44,
+      "material": "P04",
+      "display_color_rgb": [
+        0.44999998807907104,
+        0.49000000953674316,
+        0.5199999809265137
+      ]
+    }
+  ]
+}
+原始初图相机元数据（原件全文）：
+{
+  "position": [
+    0.949999988079071,
+    -2.299999952316284,
+    0.9200000166893005
+  ],
+  "rotation_euler": [
+    1.3822994232177734,
+    3.0022704322618665e-08,
+    0.387148380279541
+  ],
+  "type": "ORTHO",
+  "ortho_scale": 1.4500000476837158,
+  "resolution": [
+    1200,
+    900
+  ],
+  "clip": [
+    0.009999999776482582,
+    10.0
+  ],
+  "look_at": [
+    0,
+    0.03,
+    0.44
+  ],
+  "coordinate_frame": "world",
+  "unit": "m",
+  "scene_visibility": "all original fixture objects unchanged"
+}

@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spatial-perception-qual-002:answer:v2",
+  "title": "Four judgments: one target and three role-bound neighbor relations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "source_binding",
+    "answer_status",
+    "target_id",
+    "target_evidence",
+    "relations",
+    "limitations"
+  ],
+  "properties": {
+    "task_id": {
+      "const": "SPATIAL-PERCEPTION-QUAL-002"
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scene_sha256",
+        "catalog_sha256",
+        "initial_view_sha256",
+        "initial_camera_sha256"
+      ],
+      "properties": {
+        "scene_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "catalog_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "initial_view_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of INITIAL.png exact image bytes; distinct from initial_camera_sha256"
+        },
+        "initial_camera_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of INITIAL_VIEW.json camera metadata"
+        }
+      }
+    },
+    "answer_status": {
+      "enum": [
+        "answered",
+        "partial",
+        "refused"
+      ]
+    },
+    "target_id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/object_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "target_evidence": {
+      "$ref": "#/$defs/evidence"
+    },
+    "relations": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "neighbor_role": {
+                "const": "near_right_upright_separator"
+              }
+            },
+            "required": [
+              "neighbor_role"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "neighbor_role": {
+                "const": "left_short_locator_block"
+              }
+            },
+            "required": [
+              "neighbor_role"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "neighbor_role": {
+                "const": "through_opening_probe_rod"
+              }
+            },
+            "required": [
+              "neighbor_role"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "neighbor_role",
+          "neighbor_id",
+          "relation",
+          "evidence",
+          "limitations"
+        ],
+        "properties": {
+          "neighbor_role": {
+            "enum": [
+              "near_right_upright_separator",
+              "left_short_locator_block",
+              "through_opening_probe_rod"
+            ]
+          },
+          "neighbor_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/object_id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "relation": {
+            "enum": [
+              "solid_overlap",
+              "within_contact_tolerance",
+              "separated",
+              "unknown"
+            ]
+          },
+          "evidence": {
+            "$ref": "#/$defs/evidence"
+          },
+          "limitations": {
+            "type": "string",
+            "maxLength": 1200
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "relation": {
+                  "const": "unknown"
+                }
+              },
+              "required": [
+                "relation"
+              ]
+            },
+            "then": {
+              "properties": {
+                "limitations": {
+                  "minLength": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "neighbor_id": {
+                  "$ref": "#/$defs/object_id"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "limitations": {
+      "type": "string",
+      "maxLength": 2400
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "target_id": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "target_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "relations": {
+            "items": {
+              "properties": {
+                "relation": {
+                  "const": "unknown"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "answer_status": {
+            "const": "answered"
+          }
+        },
+        "required": [
+          "answer_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "target_id": {
+            "$ref": "#/$defs/object_id"
+          },
+          "relations": {
+            "items": {
+              "properties": {
+                "relation": {
+                  "enum": [
+                    "solid_overlap",
+                    "within_contact_tolerance",
+                    "separated"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "answer_status": {
+            "const": "refused"
+          }
+        },
+        "required": [
+          "answer_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "target_id": {
+            "type": "null"
+          },
+          "relations": {
+            "items": {
+              "properties": {
+                "relation": {
+                  "const": "unknown"
+                }
+              }
+            }
+          },
+          "limitations": {
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "object_id": {
+      "type": "string",
+      "pattern": "^N[0-9]{2}$"
+    },
+    "point": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number"
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "witness_points",
+        "source_features",
+        "image_refs"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "maxLength": 1600
+        },
+        "witness_points": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "object_id",
+              "world_m",
+              "meaning"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/$defs/object_id"
+              },
+              "world_m": {
+                "$ref": "#/$defs/point"
+              },
+              "meaning": {
+                "enum": [
+                  "surface_witness",
+                  "interior_overlap_witness",
+                  "identification_landmark",
+                  "other_local_witness"
+                ]
+              }
+            }
+          }
+        },
+        "source_features": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "object_id",
+              "triangle_indices"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/$defs/object_id"
+              },
+              "triangle_indices": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 16,
+                "uniqueItems": true,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "image_refs": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Application validation additionally requires exactly one row per neighbor_role, IDs from the supplied catalog, matching frozen source hashes, finite numbers, source-bound feature/image references, and no substantive relation when target_id is null. No answer IDs or class distribution are embedded."
+}

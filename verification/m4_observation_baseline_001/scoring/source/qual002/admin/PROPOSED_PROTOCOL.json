@@ -1,0 +1,144 @@
+{
+  "schema": "spatial-perception-qualification-protocol-v2",
+  "task_id": "SPATIAL-PERCEPTION-QUAL-002",
+  "status": "proposed_not_started",
+  "scope": "one controlled synthetic equipment-maintenance scene; observation only; not a formal A/B or a quality/benefit claim",
+  "production_candidate_frozen": {
+    "commit": "56ed427",
+    "reported_build_prefix": "29f8d603",
+    "changes_permitted": false
+  },
+  "fixture": {
+    "scene_mesh_count": 28,
+    "similar_through_hole_frames": 4,
+    "labels": "neutral randomized Nxx labels; complete catalog; no focal/reference preselection",
+    "source": "same final original scene file for every consumer; no per-group simplification, deletion, geometry replacement, or hidden-object removal",
+    "inputs_to_freeze": {
+      "scene_sha256": "91129d2e82749162bd0c9f4b232be10bd74d422be53c73e248325c0894b14a85",
+      "catalog_sha256": "375b471721352fad19883c080f00619fc094333bb5d0663315a12d321cfcfb18",
+      "initial_view_sha256": "42466e241a4239552fa418b7f79bf1fd73c10092f174c3e87444ed5e93cbed0a",
+      "task_sha256": "2e01cd16de536442ad62a67efe4863f7442ddc2144541ae7ec03e5abd6aa0c2f",
+      "answer_schema_sha256": "dfedd183422c7975bf9e9c18ef797b1e34bab50ac7457d7e6d3b816c2028f46a",
+      "geometry_oracle_seal_sha256": "090ceac96d0b3ed7fb6bf13ad3c47684ba20913b54d5e861020640bf93733746",
+      "initial_camera_sha256": "0812d56ca19537419f4951c10edb5356bc17962ef6dd856ce386f9fa0c460ada"
+    },
+    "freeze_required_before_start": true,
+    "independent_oracle": "certifies final world meshes and unique conjunction of target landmarks privately; never derived from Human Eye output",
+    "invalid_fixture_policy": "do not run consumers if target uniqueness or supported solid/distance truth is unresolved",
+    "scene_total_object_count": 32,
+    "target_predicate_certificate_sha256": "fce452fc1c72a642504e3b22174a6d628cc68d7db2c65b722e10cfc605ee90a4"
+  },
+  "four_judgments": [
+    "target identity",
+    "target versus near-right upright separator",
+    "target versus left short locator block",
+    "target versus probe rod through its opening"
+  ],
+  "semantics": {
+    "length_unit": "m",
+    "contact_tolerance_m": 0.00025,
+    "classes": [
+      "solid_overlap",
+      "within_contact_tolerance",
+      "separated",
+      "unknown"
+    ],
+    "tolerance_is_not_exact_physical_contact": true,
+    "global_penetration_depth_requested": false
+  },
+  "consumers": {
+    "model": "inherit current source Pro model; no override; exact provider version unmeasured if not exposed",
+    "model_settings": "inherit same current reasoning/settings; no override",
+    "system_instructions": "same fixed TASK/schema/directions plus lane allowlist only",
+    "per_consumer_total_budget": {
+      "wall_minutes": 15,
+      "includes": "lane setup, planning, tools, retries, answer; common fixture/admin cost separate"
+    },
+    "unset_parameters_block_start": true,
+    "equal_parameters": [
+      "model and version",
+      "reasoning/settings",
+      "system/task/schema",
+      "original file and catalog",
+      "initial view and direction reference",
+      "total wall-clock/tool/model budget"
+    ],
+    "fresh_context": true,
+    "allowed_shared_inputs": [
+      "original scene",
+      "complete neutral ID catalog",
+      "fixed initial view and direction metadata",
+      "TASK.txt",
+      "ANSWER_SCHEMA.json",
+      "ordinary tool descriptions for the assigned lane"
+    ],
+    "excluded_inputs": [
+      "private oracle",
+      "admin previews and scoring materials",
+      "other consumer records/answers",
+      "earlier native repair experiments",
+      "administrative full tool logs not returned by a consumer's own allowed tools"
+    ],
+    "invocation_policy": "proposed only; neither this file nor task registration starts any consumer",
+    "native_lane": {
+      "capabilities": [
+        "ordinary bpy read access to original world mesh/scene state",
+        "reasonable native geometry calculations",
+        "native local camera views",
+        "temporary camera/extra images with exact state restoration; not compulsory"
+      ],
+      "prohibited": [
+        "Human Eye helper/engine use",
+        "reading oracle/admin/other-lane files",
+        "device geometry/state edits or saving; temporary observer camera/settings permitted only with exact state restoration"
+      ],
+      "baseline_policy": "allow a competent native observation workflow; equal information targets and budgets; do not weaken it to screenshots or AABBs alone"
+    },
+    "human_eye_lane": {
+      "capabilities": "normal fixed 56ed427 Human Eye read-only queries on the same original scene",
+      "prohibited": [
+        "production edits or new specialized diagnostic adapters",
+        "native bypass computations not declared for this lane",
+        "write/transform execution",
+        "oracle/admin/other-lane access"
+      ],
+      "supported_refusal_policy": "retain actual refusals/unknowns; a correct refusal is not a solved spatial judgment",
+      "extra_images": "not mandatory; original common INITIAL.png is counted separately"
+    },
+    "hard_isolation": "enforce lane tools through external allowlists and separate fresh consumer contexts/processes where available; disclose any host/tool/account/context access that could not be technically removed; instruction-only separation is not hard isolation",
+    "model_version_verification": "Proposed recommendation only; source must bind actual common worker settings before start. No claim that Pro is an exposed exact model version."
+  },
+  "accounting": {
+    "pair_unit": "one actual evaluated target-neighbor relation; repeated pair adds evaluations, unique unordered pair coverage counted separately; batch three pairs = three evaluations; catalog/projected primitives are not relation evaluations",
+    "image_unit": "separate common initial image, actual construction, publishable/returned, cached resend and actual model-received; postconstruction failure still counts a construction; cached resend does not construct a new image",
+    "retry_unit": "every actual request/attempt; retries and startup/preflight work remain charged",
+    "budgets": "include lane-specific setup/preflight, model planning, script generation, observations, images, retries, validation, and final answer; common fixture/oracle/admin work is separately disclosed and never silently assigned as free lane work",
+    "ledger_A_F": {
+      "A": "runtime/import/host startup, configuration/source identity and initial input acquisition",
+      "B": "source capture, appearance/geometry checks and hashing; measured values versus statically inferred counts explicitly separated",
+      "C": "spatial queries/native calculations, actual evaluated object pairs, unsupported/partial/unknown coverage and retries",
+      "D": "local view/render/PNG/base64 construction and requested/constructed/publishable/returned/consumer-visible image counts",
+      "E": "transport and service envelope times, actual wire versus application bytes, serialization/parse fields only if measured",
+      "F": "consumer/model planning and answer work; provider-reported token/cache/reasoning usage and fees only when available"
+    },
+    "missing_values": "null with reason, never zero inferred from missing instrumentation",
+    "timing": "inclusive spans are not additive; retain cold/setup and warm observations individually",
+    "records": "full raw tool/transport/usage records are administrative evidence, not extra model input; keep the exact ordinary responses actually consumed",
+    "paid_calls": "no additional paid/provider usage calls are authorized by this proposal"
+  },
+  "scoring": "admin/offline_scorer.py; target 1, relations 3, evidence 3 fixed denominators; offline fixtures are not model results; authenticity automatic and substantive sufficiency manual",
+  "release": "no formal A/B start, promotion, production install, or benefit claim authorized",
+  "closure": {
+    "qualification_new_work_stop_utc": "2026-11-03T16:04:36Z",
+    "qualification_deadline_utc": "2026-11-03T16:09:36Z",
+    "reserved_closing_minutes": 5,
+    "prior_qual001_stop_and_failure": "preserved unchanged in old directory; does not authorize a retry of that run"
+  },
+  "pending_before_any_start": [
+    "final source and private oracle seals",
+    "agreed consumer model/settings/budget",
+    "review of task/schema and lane isolation",
+    "explicit start decision for a subsequent authorized run"
+  ],
+  "qualification_correction_reason": "Before any plugin output/consumer answer, fix Nxx schema, true object counts and distinct image/camera binding; replace hidden nearest-rail selection with explicit public predicates without changing any geometry."
+}

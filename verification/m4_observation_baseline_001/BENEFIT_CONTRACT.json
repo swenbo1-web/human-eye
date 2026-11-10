@@ -1,0 +1,59 @@
+{
+  "cycle_id": "M4-OBSERVATION-BASELINE-001",
+  "frozen_before_consumers": true,
+  "logical_denominator": 6,
+  "per_arm": 3,
+  "independent_geometry_tasks": 1,
+  "semantic_quality_contract": "scoring/SCORING_CONTRACT.json",
+  "quality_before_unblinding": true,
+  "all_samples_retained": true,
+  "replacement_consumers": 0,
+  "functional_acceptance": {
+    "P_complete_correct_required": 3,
+    "P_materially_unsupported_or_contradictory_claims_required": 0,
+    "unknown_refusal_missing_wrong_infrastructure_separate": true,
+    "no_partial_dimension_weighting_to_hide_missing_facts": true
+  },
+  "efficiency_acceptance": {
+    "both_arms_complete_correct_required": 3,
+    "P_local_evidence_quality_must_not_degrade": true,
+    "primary_metric": "complete cell wall time from before input checks through actual owner/backend close",
+    "rule": "P full-cell median must be lower than N only after the quality gate; report all six individual times, paired differences and both ranges",
+    "minimum_percentage_gain": null,
+    "no_success_only_filtering": true,
+    "incomplete_N_policy": "Report completion-quality differences and observed costs for all six logical cells; do not call the time ratio a matched-quality speedup",
+    "incomplete_dispatch_policy": "Retain entered failures and not_run tail; no positive full-batch acceptance"
+  },
+  "separate_cost_metrics": [
+    "prompt submission to final answer",
+    "complete cell and batch wall times",
+    "actual tool attempts and underlying RPCs",
+    "owner-serialized tool-response bytes including JSON envelope",
+    "common initial-image bytes and image delivery receipts",
+    "observed new-image construction and delivery violations",
+    "actual exposed input/output/cached/reasoning tokens",
+    "setup/build/install/qualification including failures and fallback costs"
+  ],
+  "unknown_costs_remain_unknown": [
+    "image-token subdivision if not exposed",
+    "provider request count if not exposed",
+    "exact resolved model/effort if not exposed",
+    "fees and financial savings",
+    "coordinator model cost",
+    "capture/cache details not emitted by the actual runtime"
+  ],
+  "no_invalid_inference": [
+    "do not estimate tokens from characters or image bytes",
+    "do not add overlapping time spans or call fact-to-final time private reasoning time",
+    "do not turn a faster local algorithm into full-task speedup",
+    "do not compare this new delivery contract directly to old 547/721-second AB001 as version speedup",
+    "one scene repeated three times is not three independent scene classes or a population significance result",
+    "CLI attachment submission is not proof that a model cognitively used an image"
+  ],
+  "attribution": {
+    "stages": ["target discovery", "three neighbor roles", "three relations", "pair-local evidence", "unknown/error"],
+    "routes": ["native only", "plugin facts directly used after discovery", "necessary native supplement", "redundant full native re-solve", "failed or incomplete"],
+    "nearest_new_evidence": "Record only if naturally requested and genuinely used; do not force a nearest subtask or credit a present field",
+    "image_discovery": "Separate shared intrinsic vision and native catalogue/position reading from engine perception algorithms"
+  }
+}

@@ -1,0 +1,2 @@
+import json
+print(json.dumps({'unit_scale_m':bpy.context.scene.unit_settings.scale_length,'scene_objects':len(bpy.context.scene.objects),'mesh_names':sorted(o.name for o in bpy.context.scene.objects if o.type=='MESH'),'mesh_objects':sum(o.type=='MESH' for o in bpy.context.scene.objects)}))
