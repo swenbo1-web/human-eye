@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_54a690fd85054199affd8a19e2efbdd1",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1c38c-429c-7bf1-ad75-a0f1adebaafa",
+        "thread_id": "01a1c38c-429c-7bf1-ad75-a0f1adebaafa",
+        "turn_started_at_unix_ms": 1794282111844,
+        "turn_id": "01a1c38c-4354-7901-91e2-5bddfe6612fe",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "4d7801cf7072e9da0ba302710acd35ace1e1c645",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1c38c-429c-7bf1-ad75-a0f1adebaafa",
+      "itemId": "fc_0511bcaa56d6d39b016af2929b899487d0b96400c1b558cf4d",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "from mathutils.geometry import closest_point_on_tri\n# Fresh evaluated mesh comparison validates the per-call cached geometry.\nfor name,data in objs.items():\n eo=bpy.data.objects[name].evaluated_get(bpy.context.evaluated_depsgraph_get()); me=eo.to_mesh(); me.calc_loop_triangles()\n current=np.array([tuple(eo.matrix_world @ vertex.co) for vertex in me.vertices]); current_t=np.array([tuple(tri.vertices) for tri in me.loop_triangles]); eo.to_mesh_clear()\n assert np.array_equal(current,data['v']) and np.array_equal(current_t,data['t']),name\n\ndef edges_of(data):\n return sorted({tuple(sorted((int(tri[index]),int(tri[(index+1)%3])))) for tri in data['t'] for index in range(3)})\ndef segment_pair(first,second,third,fourth):\n direction1=second-first; direction2=fourth-third; offset=first-third\n aa=direction1@direction1; bb=direction1@direction2; cc=direction2@direction2; dd=direction1@offset; ee=direction2@offset\n candidates=[]\n denominator=aa*cc-bb*bb\n if denominator>1e-25:\n  ss=(bb*ee-cc*dd)/denominator; tt=(aa*ee-bb*dd)/denominator\n  if 0<=ss<=1 and 0<=tt<=1: candidates.append((ss,tt))\n candidates.extend([(0,np.clip(ee/cc,0,1)),(1,np.clip((ee+bb)/cc,0,1)),(np.clip(-dd/aa,0,1),0),(np.clip((bb-dd)/aa,0,1),1)])\n pairs=[(first+ss*direction1,third+tt*direction2) for ss,tt in candidates]\n return min(pairs,key=lambda pair:np.sum((pair[0]-pair[1])**2))\ndef mesh_distance(first,second):\n best=(float('inf'),None,None,None)\n for src,dst,reverse in [(first,second,False),(second,first,True)]:\n  for vi,point in enumerate(src['v']):\n   for ti,tri in enumerate(dst['t']):\n    nearest=np.array(closest_point_on_tri(Vector(point),*(Vector(dst['v'][idx]) for idx in tri)))\n    distance=float(np.linalg.norm(point-nearest))\n    if distance<best[0]: best=(distance,nearest if reverse else point,point if reverse else nearest,('vertex-face',reverse,vi,ti))\n for edge1 in edges_of(first):\n  for edge2 in edges_of(second):\n   point1,point2=segment_pair(*first['v'][list(edge1)],*second['v'][list(edge2)])\n   distance=float(np.linalg.norm(point1-point2))\n   if distance<best[0]: best=(distance,point1,point2,('edge-edge',edge1,edge2))\n return best\nbase=objs['Object_01']; base_bvh=BVHTree.FromPolygons(base['v'].tolist(),base['t'].tolist(),all_triangles=True,epsilon=0)\ninv=np.linalg.inv(np.array(bpy.data.objects['Object_01'].matrix_world,dtype=float))\nfor name in ['Object_02','Object_03','Object_04']:\n data=objs[name]; tree=BVHTree.FromPolygons(data['v'].tolist(),data['t'].tolist(),all_triangles=True,epsilon=0)\n overlaps=base_bvh.overlap(tree)\n local=(np.column_stack((data['v'],np.ones(len(data['v']))))@inv.T)[:,:3]\n print(name,'surface triangle overlap count',len(overlaps),'candidate vertices in target frame',local.tolist())\n if not overlaps:\n  print('minimum distance & world witness target,candidate,feature',mesh_distance(base,data))\n"
+    }
+  }
+}
