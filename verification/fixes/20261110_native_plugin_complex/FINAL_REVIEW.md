@@ -2,6 +2,8 @@
 
 结论：本题三组均3/3正确且完整。旧、新插件相对原生的完整耗时中位数分别减少55.85%、59.73%，三次实际输入＋输出token合计分别减少63.90%、64.10%。六个插件消费者均自主一次查询后作答，无原生回退。A/B空间代码相同；本轮不支持“新版空间算法更快”的结论。
 
+最终封存已独立核验：作者提交ecdda96aa2f70a098716a0f3b9e345f00a0d0f46，父4d7801cf；579索引成员加索引本身共580个Git blob逐一吻合实际文件，只有本轮verification目录变更，工作树干净。39个进程名单与独立记录完全一致，原29项名单仍保留。详见AUTHOR_FINAL_SEAL_REVIEW.json；此前AUTHOR_INDEX_REVIEW.json保留为提交前快照。本次收尾没有再启动模型、Blender或新增试验。
+
 ## 固定条件
 
 9个全新消费者，Latin顺序NAB / ABN / BNA；gpt-6.1-sol，requested medium，既有Pro登录。相同场景、提示词、完成规则、原生Python/NumPy/BVH能力与预算；A/B仅额外提供真实安装的human_eye_spatial_relations，不强制消费。
