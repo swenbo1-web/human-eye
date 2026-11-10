@@ -1329,6 +1329,9 @@ class LiveSpatialService:
             nearest = result.pop('nearest_ids')
             result['nearest_objects'] = None if nearest is None else [named(oid) for oid in nearest]
             result['best_known_objects'] = [named(oid) for oid in result.pop('best_known_ids')]
+            result['best_known_evidence'] = [dict(candidate=named(row['object_id']),
+                **{key: value for key, value in row.items() if key != 'object_id'})
+                for row in result['best_known_evidence']]
             result['unresolved'] = [dict(named(oid), reason=reason)
                 for oid, reason in sorted(result['unresolved'].items())]
             result.pop('excluded')

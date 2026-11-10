@@ -483,6 +483,13 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _norm
         if result['witness_status'] == 'unknown' or result['direction_status'] == 'unknown':
             notes[oid] = {key: result[key] for key in ('witness_status', 'witness_reason',
                 'direction_status', 'direction_reason') if key in result}
+    evidence = []
+    for oid in best:
+        measured = measurements[oid]
+        evidence.append({'object_id': oid,
+            **{key: measured.get(key) for key in ('point_a_world', 'point_b_world',
+                'direction_a_to_b', 'witness_status', 'direction_status')},
+            **{key: measured[key] for key in ('witness_reason', 'direction_reason') if key in measured}})
     checkpoint('surface_nearest_complete')
     return dict(result_kind='surface_nearest', status='complete' if complete else 'partial' if best else 'unknown',
         scope='surface_nearest_candidates', focal_id=focal, nearest_ids=best if complete else None,
@@ -490,7 +497,11 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _norm
         unit='m', coverage={'targets_excluding_focal': len(directory)-1,
             'distance_valid': sum(len(group) for group in groups), 'strictly_excluded': len(excluded),
             'unresolved': len(unresolved)}, unresolved=unresolved, excluded=sorted(excluded, key=lambda row: row['object_id']),
-        measurement_notes=notes, binding={'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
+        measurement_notes=notes, best_known_evidence=evidence,
+        measurement_semantics={'distance': 'unsigned_surface_distance_not_penetration_depth',
+            'coordinate_frame': 'world', 'pair_order': 'focal_to_candidate',
+            'method': measurements[best[0]].get('method') if best else None},
+        binding={'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
             'document_epoch': full['document_epoch'], 'directory_sha256': binding.get('directory_sha256'),
             'host_source_sha256': host_sha, 'runtime_source_sha256': identity['source_sha256']},
         execution_authority=False)

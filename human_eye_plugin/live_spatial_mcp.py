@@ -281,7 +281,8 @@ SPATIAL_TASK_TOOLS_SCHEMA = [{
     'description': ('Find the nearest triangle surfaces, in metres, from one current Blender mesh '
         'to all other meshes in the scene. Complete results give global nearest ties; partial '
         'results give best-known candidates and unresolved coverage. Surface distance is unsigned, '
-        'not penetration depth. Read-only: no images or actions. '
+        'not penetration depth. Includes available closest points in world metres and independent '
+        'witness/direction status for each best-known candidate. Read-only: no images or actions. '
         'Example: {"target":{"name":"Bracket"}}.'),
     'annotations': {'readOnlyHint': True, 'destructiveHint': False,
                     'idempotentHint': True, 'openWorldHint': False},
