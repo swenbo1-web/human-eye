@@ -1,0 +1,416 @@
+{
+  "schema": "human-eye.complex005.root-cost-review.v1",
+  "created_utc": "2026-11-10T13:13:00.234932+00:00",
+  "reviewer": "/root/scale_opt_design_review",
+  "status": "pass_no_empirical_accounting_mismatch_found",
+  "scope": "Independent read-only audit after blind-quality seal. Reviewed 004-to-005 recompute source delta, raw three-cell consumer/events/timing/usage, every-cell tool counts and public TX/RX frames, and all six group sums/medians/min/max. No model, Blender, product, author analysis script or benchmark execution. Only this requested report written.",
+  "inputs": {
+    "quality_seal": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_005\\BLIND_QUALITY_SEAL.json",
+      "sha256": "e45390ea05209760f094127ee7bd853f8c73fc12e341a7c46b2dcae5b8249ca1"
+    },
+    "root_recompute_script": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_005\\recompute_results.py",
+      "sha256": "c292bf878f5699cb26e13808b800f593dff2d394a71fca7cb82d76f552fd5746"
+    },
+    "root_results": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_005\\ROOT_RECOMPUTED_RESULTS.json",
+      "sha256": "f7c3b0699b9baceea08c478570ea43995c8b3c81d5718a85931cd88005958b2d"
+    },
+    "prior_script": {
+      "path": "D:\\hefe\\verification\\fixes\\20261110_native_plugin_compare_004\\recompute_results.py",
+      "sha256": "6508f0092682e7a2b3f6ac66d31b0037450d26f874e8ea1bb4f69f1ec340a5fe"
+    },
+    "driver": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\driver.py",
+      "sha256": "29452013a631924d10a9096e3962bfb1244ab95fa4ae5a4976c7136606c75d93"
+    },
+    "consumer_transport": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\consumer_transport.py",
+      "sha256": "3bd85eca9589e28fe0fa8c266a74bb5d6394065b5b679d7527ec1d750c55c9f1"
+    }
+  },
+  "script_delta_review": "005 changes the run path/schema, sealed grade filenames and O label to H; adds seal validation plus summaries for already-computed tool_elapsed_sum_s/driver_gap_s. No changed cost definition or unintended denominator loss found.",
+  "denominator": {
+    "planned": 18,
+    "actual_rows": 18,
+    "groups": 6,
+    "each_group": 3,
+    "quality_pass": 17,
+    "quality_fail_retained": 1,
+    "dropped_or_replaced": 0
+  },
+  "actual_tool_ledger_totals": {
+    "attempts": 59,
+    "errors": 3,
+    "execute_blender_code": 53,
+    "human_eye_scene_observe": 6
+  },
+  "public_frame_totals": {
+    "tx_bytes": 161828,
+    "rx_bytes": 290379,
+    "requests_with_id": 95,
+    "notifications": 18,
+    "tool_calls": 59,
+    "tool_rx_bytes": 170331,
+    "control_rx_bytes": 120048,
+    "delivered_tool_text_utf8_bytes": 161737
+  },
+  "sample_selection": "Fixed cell 01 (N assembly), 04 (H discovery), 18 (C discovery), spanning every group and including an actual failed plugin request. Selection used IDs/group/task/error coverage, not elapsed-time ranking.",
+  "raw_cell_checks": [
+    {
+      "cell": "01",
+      "task": "assembly",
+      "group": "N",
+      "sources": [
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\01\\CONSUMER.json",
+          "sha256": "9cf1a278093dee484eeaf1940c2ce1ece4dfb395f56ce83cf1b56e06b15481f9"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\01\\events.jsonl",
+          "sha256": "3c6ca407285814f709dc56fd4c2cae2b4867558c8f8309c833a05846a923a6f2"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\01\\owner\\TOOLS.json",
+          "sha256": "9c233f6a33ed0a0e1d6f59e38cbf23c2c2c5665f91090999bfca22dc8328580c"
+        }
+      ],
+      "whole_s": 97.3662862,
+      "prompt_to_final_s": 90.9393183,
+      "setup_s": 0.9930029,
+      "after_final_consumer_s": 5.2484457,
+      "owner_finish_s": 0.1759891,
+      "driver_gap_s": 0.0018835,
+      "tool_calls": 4,
+      "tool_errors": 0,
+      "event_usage_and_final_match": true,
+      "lifecycle_and_tool_interval_recompute_match": true,
+      "public_frames_match": true
+    },
+    {
+      "cell": "04",
+      "task": "discovery",
+      "group": "H",
+      "sources": [
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\04\\CONSUMER.json",
+          "sha256": "a97048b271ba1d05dd66adb624c063acfb4df9181dfca2e1a597582d54cbd7f7"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\04\\events.jsonl",
+          "sha256": "eb7b39155aae48bea89574cefd08895103b111b1aee27818de6395843edff8f6"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\04\\owner\\TOOLS.json",
+          "sha256": "47ad3f771bcc6458e06cc7540f2b1e7482eb98708134816b2928bea0a1c31ab0"
+        }
+      ],
+      "whole_s": 81.912997,
+      "prompt_to_final_s": 68.7910501,
+      "setup_s": 2.0144222,
+      "after_final_consumer_s": 10.7137031,
+      "owner_finish_s": 0.3849519,
+      "driver_gap_s": 0.0015062,
+      "tool_calls": 2,
+      "tool_errors": 0,
+      "event_usage_and_final_match": true,
+      "lifecycle_and_tool_interval_recompute_match": true,
+      "public_frames_match": true
+    },
+    {
+      "cell": "18",
+      "task": "discovery",
+      "group": "C",
+      "sources": [
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\18\\CONSUMER.json",
+          "sha256": "ec4570d9688f33cd7e8d0f67792b170be3580d58e44539c405212f18d00aa59d"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\18\\events.jsonl",
+          "sha256": "777f7d9dd11c507283d8d364d945567c0842c1c90ac774be7b6f6926b0069a5b"
+        },
+        {
+          "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\cells\\18\\owner\\TOOLS.json",
+          "sha256": "007182b28f0aac77cb5ef8c514b9e22631ebc553b83dafe085740e6538e840e9"
+        }
+      ],
+      "whole_s": 78.0389574,
+      "prompt_to_final_s": 68.3926131,
+      "setup_s": 1.9045017,
+      "after_final_consumer_s": 7.413952,
+      "owner_finish_s": 0.318737,
+      "driver_gap_s": 0.0017447,
+      "tool_calls": 3,
+      "tool_errors": 1,
+      "event_usage_and_final_match": true,
+      "lifecycle_and_tool_interval_recompute_match": true,
+      "public_frames_match": true
+    }
+  ],
+  "six_group_checks": [
+    {
+      "task": "assembly",
+      "group": "N",
+      "n": 3,
+      "passes": 3,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 96.069546,
+        "min": 83.6442697,
+        "max": 97.3662862,
+        "sum": 277.0801019
+      },
+      "prompt_to_final_s": {
+        "median": 90.9393183,
+        "min": 78.8172715,
+        "max": 90.9937705,
+        "sum": 260.7503603
+      },
+      "inclusive_total_tokens": {
+        "median": 48787,
+        "min": 48617,
+        "max": 49361,
+        "sum": 146765
+      }
+    },
+    {
+      "task": "assembly",
+      "group": "H",
+      "n": 3,
+      "passes": 3,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 84.37809,
+        "min": 79.7018367,
+        "max": 97.3285439,
+        "sum": 261.4084706
+      },
+      "prompt_to_final_s": {
+        "median": 79.3291155,
+        "min": 74.6937824,
+        "max": 93.4017391,
+        "sum": 247.42463700000002
+      },
+      "inclusive_total_tokens": {
+        "median": 38759,
+        "min": 37925,
+        "max": 39405,
+        "sum": 116089
+      }
+    },
+    {
+      "task": "assembly",
+      "group": "C",
+      "n": 3,
+      "passes": 3,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 55.7478413,
+        "min": 42.3439633,
+        "max": 61.1206946,
+        "sum": 159.2124992
+      },
+      "prompt_to_final_s": {
+        "median": 46.5445062,
+        "min": 32.2154777,
+        "max": 50.5402774,
+        "sum": 129.3002613
+      },
+      "inclusive_total_tokens": {
+        "median": 31446,
+        "min": 15154,
+        "max": 31650,
+        "sum": 78250
+      }
+    },
+    {
+      "task": "discovery",
+      "group": "N",
+      "n": 3,
+      "passes": 3,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 103.4952206,
+        "min": 96.2710052,
+        "max": 106.923503,
+        "sum": 306.6897288
+      },
+      "prompt_to_final_s": {
+        "median": 98.2650327,
+        "min": 90.7436933,
+        "max": 102.989458,
+        "sum": 291.99818400000004
+      },
+      "inclusive_total_tokens": {
+        "median": 57879,
+        "min": 53780,
+        "max": 62550,
+        "sum": 174209
+      }
+    },
+    {
+      "task": "discovery",
+      "group": "H",
+      "n": 3,
+      "passes": 3,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 91.412982,
+        "min": 81.912997,
+        "max": 123.7646116,
+        "sum": 297.0905906
+      },
+      "prompt_to_final_s": {
+        "median": 85.034131,
+        "min": 68.7910501,
+        "max": 117.3867167,
+        "sum": 271.2118978
+      },
+      "inclusive_total_tokens": {
+        "median": 24854,
+        "min": 24656,
+        "max": 72561,
+        "sum": 122071
+      }
+    },
+    {
+      "task": "discovery",
+      "group": "C",
+      "n": 3,
+      "passes": 2,
+      "all_sum_median_min_max_and_usage_wire_sums_match": true,
+      "checked_fields": [
+        "whole_s",
+        "prompt_to_final_s",
+        "tool_union_s",
+        "setup_s",
+        "after_final_consumer_s",
+        "owner_finish_s",
+        "tool_calls",
+        "inclusive_total_tokens",
+        "uncached_input_tokens",
+        "tool_elapsed_sum_s",
+        "driver_gap_s"
+      ],
+      "whole_s": {
+        "median": 78.0389574,
+        "min": 71.9985249,
+        "max": 80.1431098,
+        "sum": 230.1805921
+      },
+      "prompt_to_final_s": {
+        "median": 68.3926131,
+        "min": 61.3324095,
+        "max": 74.8922604,
+        "sum": 204.617283
+      },
+      "inclusive_total_tokens": {
+        "median": 31021,
+        "min": 24467,
+        "max": 32289,
+        "sum": 87777
+      }
+    }
+  ],
+  "accounting_findings": [
+    {
+      "topic": "whole lifecycle",
+      "result": "Correct for the measured per-cell boundary: driver.py lines 204-211 begins before prepare and ends after owner finish. consumer_transport.py lines 90-119 and 182-199 include CLI spawn, prompt submission, stream consumption, process/bridge cleanup. Hence whole_s includes backend setup, consumer startup, answer, consumer cleanup and owner close. It excludes earlier one-time build/install/preflight and review, and final CONSUMER.json persistence after the timing sample."
+    },
+    {
+      "topic": "prompt-to-final",
+      "result": "Time starts after prompt bytes are submitted and ends at receipt of the final public agent_message event; checked against raw timestamps. It is distinct from whole lifecycle and is not pure provider inference time."
+    },
+    {
+      "topic": "tool overlap",
+      "result": "Tool interval union is computed inside consumer wall; sums and union are reported separately and never added again to whole_s. Independent endpoint-sweep matched three raw cells. Tool durations are wrapper/owner measured, not isolated engine CPU."
+    },
+    {
+      "topic": "usage",
+      "result": "Inclusive total = input_tokens + output_tokens. cached_input_tokens stays an input subset, reasoning_output_tokens stays an output subset, and uncached input is input minus cached. All 18 rows obey this arithmetic; sample turn.completed events match exactly. cache_write_input_tokens is zero throughout, so no unreviewed cache-write counting extension is needed."
+    },
+    {
+      "topic": "public frames versus other byte counts",
+      "result": "95 ID-bearing public requests include 59 tools/call plus 36 control requests; 18 notifications remain separate. Public TX/RX actual JSON frame sizes include directory/handshake traffic; response text UTF-8 payload is separately counted. owner_intended_tool_wire_bytes is separate, not added to actual public traffic. These are recorded public application frames, not TCP headers, provider tokens or all internal RPC bytes."
+    },
+    {
+      "topic": "failed attempts",
+      "result": "59 tool attempts include all 3 explicit errors; 53 native and 6 scene-observe attempts. No status-tool call appeared. The failed quality answer remains in the same six-group denominators and timing/token summaries."
+    }
+  ],
+  "unmeasured_or_nonattributable": [
+    "Exact provider request count, hidden model retries and dollar fees remain null; MCP calls are not provider calls. No conversion of Pro subscription usage into invented dollar cost.",
+    "One-time preparation/install/preflight and total reviewer/coordinator cost are outside measured per-cell whole_s and are not zero. This result file does not establish end-to-end project net cost.",
+    "Requested reasoning effort is recorded, but resolved effort is unexposed; emitted reasoning-output count alone is not a measure of internal wall-time causes.",
+    "Whole-task speed differences mix model behavior, native fallbacks, tool catalogue and product paths. They cannot establish an isolated engine-algorithm speedup.",
+    "Client graceful-exit receipt limitations remain operational provenance limits from the sealed evidence; elapsed cleanup is still timed and not omitted."
+  ],
+  "empirical_inconsistencies": []
+}
