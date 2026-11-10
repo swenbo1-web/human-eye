@@ -2,7 +2,7 @@
 
 2026-11-10. User authorized upgrading the latest optimized local plugin and trying the same tasks. Fixed product commit: `df016079b0265ee327f884c90dd4815c392016b6`, from our `codex/architecture-arm-correction` worktree. This document is the root review and deployment record; producer evidence remains in `verification/scale_opt_001` at that commit.
 
-**Installed and configured:** `9.7.2+20261110.scale.opt.r1`, 137 runtime sources, canonical `3fc2651e108ad7ac252394871d78e1abaee1200c92a018125984b2fc240193bd`. New-process checks and owned Blender task trials passed. **Current desktop process reload, live Blender connection and real host Hook activation remain pending.** They are not counted as passed.
+**Installed and configured:** `9.7.2+20261110.scale.opt.r1`, 137 runtime sources, canonical `3fc2651e108ad7ac252394871d78e1abaee1200c92a018125984b2fc240193bd`. New-process checks and owned Blender task trials passed. Following the user's reconnect confirmation, the **actual desktop MCP also reports this identity and healthy state**. Live Blender connection and real host Hook activation remain pending; they are not counted as passed.
 
 ## Independent review of the optimization
 
@@ -51,4 +51,6 @@ The initial packaging attempt omitted README.md from the frozen copy, so portabl
 
 Local evidence lives in `D:/hefe/verification/fixes/20261110_local_upgrade/`, including `ROOT_QUALITY_REVIEW.json`, `ROOT_CODE_REVIEW.md`, `ENTRY_ACCEPTANCE_REVIEW.json`, `INSTALL/ISOLATED_INSTALL.json`, `APPLY_DIFF_REVIEW.json`, migration receipts and raw entry responses. Private configuration backups remain local and are not published with this review.
 
-Next: reconnect Codex MCP, start/connect the Blender MCP service at the configured address, then verify the desktop runtime and a real read-only Hook observation. No repeated upgrade approval is needed. No further optimization batch is dispatched while this local-entry acceptance remains open. Google API/key/paid trials remain paused; no original assets, competitor branch, dedicated owned/reference services or host trust records were modified.
+After the user reported reconnect completion, the actual desktop `human_eye_connection_status` returned the expected 3fc/137 identity, installed distribution, compatible pins, six sessions, two receipts, no in-flight operation and no quarantine. The subsequent real `human_eye_scene_observe` returned BlenderMCP unavailable before sending; executed=false and connector state write not attempted. Port 9876 still had no listener. Raw receipts are `DESKTOP_RECONNECT_STATUS.json` and `DESKTOP_RECONNECT_OBSERVE.json`. No unavailable scene read is counted as successful.
+
+Next: start/connect the Blender MCP service at the configured address, then verify the live scene and a real read-only Hook observation. The installed Blender add-on's panel is `MCP for Blender`, with `Connect to MCP server` and port 9876. No repeated upgrade or desktop-reconnect approval is needed. No further optimization batch is dispatched while this local-entry acceptance remains open. Google API/key/paid trials remain paused; no original assets, competitor branch, dedicated owned/reference services or host trust records were modified.
