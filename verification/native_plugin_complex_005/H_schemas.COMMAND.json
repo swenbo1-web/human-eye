@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+    "-I",
+    "-B",
+    "-X",
+    "utf8",
+    "-c",
+    "\nimport importlib.util,json,pathlib,sys\nforbidden=[]\ndef audit(event,args):\n    if event in ('socket.connect','socket.connect_ex','socket.bind','subprocess.Popen','os.system'):\n        forbidden.append(event);raise RuntimeError('source_preflight_forbids_'+event)\nsys.addaudithook(audit)\nentry=pathlib.Path(sys.argv[1]).resolve()\nspec=importlib.util.spec_from_file_location('_complex005_fixed_target',entry)\nboot=importlib.util.module_from_spec(spec);sys.modules[spec.name]=boot;spec.loader.exec_module(boot)\nproof=boot.validate_binding(expected_python=sys.executable)\nsys.path.insert(0,proof['module_root']);identity,origins=boot.verify_imported_runtime(proof)\nimport numpy,PIL\nfrom human_eye_plugin.live_spatial_mcp import LiveSpatialMCPServer\nserver=LiveSpatialMCPServer(object(),default_session_id='complex005-source-only')\nresponse=server.handle_jsonrpc_message({'jsonrpc':'2.0','id':1,'method':'tools/list','params':{}})\nidentity,origins=boot.verify_imported_runtime(proof)\nprint(json.dumps({'isolated':bool(sys.flags.isolated),'dont_write_bytecode':sys.dont_write_bytecode,\n    'python':sys.executable,'prefix':sys.prefix,'python_version':sys.version,\n    'numpy_version':numpy.__version__,'numpy_file':numpy.__file__,\n    'pillow_version':PIL.__version__,'pillow_file':PIL.__file__,\n    'identity':identity,'module_origins':origins,'launcher':proof,'tools_list':response,\n    'spatial_task_only_attribute_present':hasattr(server,'spatial_task_only'),\n    'spatial_task_only':getattr(server,'spatial_task_only',None),\n    'constructor_arguments':{'service':'opaque object only','default_session_id':'complex005-source-only'},\n    'service_constructed':False,'configuration_read':False,'host_calls':0,'forbidden_audit_events':forbidden}))\n",
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261103.scene.trace.r1\\admin\\target_runtime_entry.py"
+  ],
+  "exit_code": 0,
+  "started_ns": 420233717604100,
+  "elapsed_ns": 785952700,
+  "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\H_schemas.stdout.json",
+  "stdout_sha256": "900a4b4cd817f59bd9e847f89f309c12a112f0acffe710be89bb15c287a1ceb9",
+  "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_005\\H_schemas.stderr.txt",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
