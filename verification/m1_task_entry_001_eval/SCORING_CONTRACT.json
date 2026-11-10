@@ -13,8 +13,8 @@
         "Part_26"
       ],
       "certified_interval_m": [
-        0.007812492487105033,
-        0.007812507512894968
+        0.007812492487105026,
+        0.007812507512894975
       ],
       "answer_tolerance_m": 1e-06,
       "candidate_count": 3,
@@ -30,21 +30,42 @@
         "Part_26": {
           "relation": "separated",
           "distance_interval_m": [
-            0.007812492487105033,
-            0.007812507512894968
-          ]
+            0.007812492487105026,
+            0.007812507512894975
+          ],
+          "distance_interval_source": {
+            "path": "tasks/T1/run_01/WORLD_ROUNDOFF.json",
+            "sha256": "047bd291f231c225cfe2ec5120d381490e4167178c3196ffab5779f708ffc77a",
+            "field": "separated_distance_intervals_with_binary64_world_roundoff[].captured_world_distance_interval_m",
+            "meaning": "Formal scoring uses actual-affine interval expanded by independently certified binary64 world-coordinate arithmetic; original TRUTH/ORACLE unchanged.",
+            "object": "Part_26"
+          }
         },
         "Part_38": {
           "relation": "separated",
           "distance_interval_m": [
-            0.015624991804114577,
-            0.015625008195885425
-          ]
+            0.015624991804114568,
+            0.015625008195885432
+          ],
+          "distance_interval_source": {
+            "path": "tasks/T1/run_01/WORLD_ROUNDOFF.json",
+            "sha256": "047bd291f231c225cfe2ec5120d381490e4167178c3196ffab5779f708ffc77a",
+            "field": "separated_distance_intervals_with_binary64_world_roundoff[].captured_world_distance_interval_m",
+            "meaning": "Formal scoring uses actual-affine interval expanded by independently certified binary64 world-coordinate arithmetic; original TRUTH/ORACLE unchanged.",
+            "object": "Part_38"
+          }
         }
       },
       "required_penetrating_set": [
         "Part_17"
-      ]
+      ],
+      "certified_interval_source": {
+        "path": "tasks/T1/run_01/WORLD_ROUNDOFF.json",
+        "sha256": "047bd291f231c225cfe2ec5120d381490e4167178c3196ffab5779f708ffc77a",
+        "field": "separated_distance_intervals_with_binary64_world_roundoff[].captured_world_distance_interval_m",
+        "meaning": "Formal scoring uses actual-affine interval expanded by independently certified binary64 world-coordinate arithmetic; original TRUTH/ORACLE unchanged.",
+        "object": "Part_26"
+      }
     },
     "T2": {
       "truth_path": "tasks/T2/TRUTH.json",
@@ -76,12 +97,19 @@
         0.0078125
       ],
       "answer_tolerance_m": 1e-06,
-      "candidate_count": 5
+      "candidate_count": 5,
+      "representativeness": {
+        "every_pair_AABB_lower_bound_is_exact": true,
+        "center_sorting_selects_correct_winner": true,
+        "vertex_pair_only_ranking_is_wrong": true,
+        "native_lower_bound_plus_attained_surface_witness_is_valid": true,
+        "subdivision_adds_work_not_intrinsic_spatial_difficulty": true
+      }
     }
   },
   "pass_definition": "All mandatory factual claims complete and correct; no contradictory wrong object/relation/global-distance/units/penetration-depth claim. No weighted compensation for wrong geometry. Honest unknown is recorded separately but is not a completed task.",
-  "distance_rule": "Convert stated units to metres. Compare the entire independently certified interval: max(abs(stated_distance-lower),abs(stated_distance-upper)) <= frozen 1e-6 metres. Nominal T1 values are not exact actual distances.",
-  "text_format": "Natural language accepted; no unrelated strict reference/JSON format task. Equivalent unambiguous object names/IDs allowed if actual captured binding proves correspondence.",
+  "distance_rule": "Convert stated units to metres. Compare the entire independently certified interval: max(abs(stated_distance-lower),abs(stated_distance-upper)) <= frozen 1e-6 metres. Nominal T1 values are not exact actual distances. T1 nearest and both separated-pair official intervals are explicitly bound to the preserved WORLD_ROUNDOFF source, replacing the narrower affine-only82e scoring fields.",
+  "text_format": "Natural language accepted; no unrelated strict reference/JSON format task. Equivalent unambiguous object names/IDs allowed if actual captured binding proves correspondence. Equivalent units and scientific notation are accepted when the numeric error satisfies the disclosed tolerance; the public precision sentence is not a fixed decimal-string formatting gate.",
   "required_task_outputs": {
     "T1": [
       "classification of all three named candidates",
@@ -117,5 +145,7 @@
   "first_request_valid_definition": "First plugin attempt is valid if it targets a tool exposed to that arm and passes transport/schema/profile/zero-image checks into its normal contract, with no request-parameter/protocol error. Factual completeness/success/unknown/refusal are independently recorded, and a non-error first-response rate is also disclosed. No native attempt is counted as plugin.",
   "adoption_evidence": "Trace fact delivery and concrete final answer use; a successful plugin call alone is insufficient. Disclose plugin-followed-by-full-native-solve, necessary local native supplement, native-only, failure/incomplete separately.",
   "independent_judging": "Root judges task-labelled anonymous raw final answer and necessary fact evidence before arm/cost unblinding. Public route/tool words may reveal arm; disclose imperfect blinding.",
-  "no_rerun_or_replacement": true
+  "no_rerun_or_replacement": true,
+  "common_precision_instruction": "距离答案误差要求不超过0.001毫米，数值至少保留到0.001毫米；无法支持该精度时说明原因。",
+  "revision": "V2; publicly disclosed precision and explicit T1 WORLD_ROUNDOFF scoring binding before any model sampling"
 }

@@ -1,0 +1,121 @@
+{
+  "schema": "m1-task-entry-001-quality-rubric-v1",
+  "frozen_before_consumer": true,
+  "input_boundary": "Consumer receives exactly shared SESSION_RULES bytes + newline + task PROMPT bytes. No schema tutorial, tool-name prompt, oracle, generator, scoring, comparative history or other final answers. Native read capability remains complete.",
+  "independent_answers": {
+    "T1": {
+      "truth_path": "tasks/T1/run_01/TRUTH.json",
+      "truth_sha256": "0ef4a1f504e7dc37ca18d8571b569e6f8d997f384e6fa42bf497f40c4da67c10",
+      "asset_sha256": "e123b5578dbb1629778a72d889509ff986328724b463a7db0fc8ea9d470b5630",
+      "target": "Part_49",
+      "kind": "relations",
+      "required_nearest_names": [
+        "Part_26"
+      ],
+      "certified_interval_m": [
+        0.007812492487105033,
+        0.007812507512894968
+      ],
+      "answer_tolerance_m": 1e-06,
+      "candidate_count": 3,
+      "ordered_candidates": [
+        "Part_17",
+        "Part_26",
+        "Part_38"
+      ],
+      "required_pair_facts": {
+        "Part_17": {
+          "relation": "penetrating"
+        },
+        "Part_26": {
+          "relation": "separated",
+          "distance_interval_m": [
+            0.007812492487105033,
+            0.007812507512894968
+          ]
+        },
+        "Part_38": {
+          "relation": "separated",
+          "distance_interval_m": [
+            0.015624991804114577,
+            0.015625008195885425
+          ]
+        }
+      },
+      "required_penetrating_set": [
+        "Part_17"
+      ]
+    },
+    "T2": {
+      "truth_path": "tasks/T2/TRUTH.json",
+      "truth_sha256": "6cef7ce5e55e1512955446de583f93dfc95a0c7ba86fc0fa8f22d133ea926264",
+      "asset_sha256": "5a9e3cccfe3a3d72bac0f9d3d8fea23a6e3ee1115ec7e97c3984900e60d8fce4",
+      "target": "Mesh_D17AB2",
+      "kind": "nearest",
+      "required_nearest_names": [
+        "Mesh_097A63"
+      ],
+      "certified_interval_m": [
+        0.00390625,
+        0.00390625
+      ],
+      "answer_tolerance_m": 1e-06,
+      "candidate_count": 8
+    },
+    "T3": {
+      "truth_path": "tasks/T3/TRUTH.json",
+      "truth_sha256": "a4a2a7a1286b87cd9246b00ab7f037244bd9728439406f24ae204a6e43a8f6c3",
+      "asset_sha256": "7fb7d648644d35c8e1c07c6be7f5ff741b4b32230f0e3eb18a461330b6f90d4c",
+      "target": "Mesh_DDBB95",
+      "kind": "nearest",
+      "required_nearest_names": [
+        "Mesh_8CC127"
+      ],
+      "certified_interval_m": [
+        0.0078125,
+        0.0078125
+      ],
+      "answer_tolerance_m": 1e-06,
+      "candidate_count": 5
+    }
+  },
+  "pass_definition": "All mandatory factual claims complete and correct; no contradictory wrong object/relation/global-distance/units/penetration-depth claim. No weighted compensation for wrong geometry. Honest unknown is recorded separately but is not a completed task.",
+  "distance_rule": "Convert stated units to metres. Compare the entire independently certified interval: max(abs(stated_distance-lower),abs(stated_distance-upper)) <= frozen 1e-6 metres. Nominal T1 values are not exact actual distances.",
+  "text_format": "Natural language accepted; no unrelated strict reference/JSON format task. Equivalent unambiguous object names/IDs allowed if actual captured binding proves correspondence.",
+  "required_task_outputs": {
+    "T1": [
+      "classification of all three named candidates",
+      "surface separation gap for each separated candidate",
+      "complete nearest-separated set and its gap",
+      "penetrating candidate identified without inventing penetration depth"
+    ],
+    "T2": [
+      "correct complete globally nearest object set among all other meshes",
+      "unsigned surface distance and correct unit",
+      "global scope supported; best-known partial cannot be called global"
+    ],
+    "T3": [
+      "correct complete globally nearest object set among all other meshes",
+      "actual surface distance rather than a vertex-only approximation",
+      "global scope and unit; nearest point pair optional unless volunteered claims are wrong"
+    ]
+  },
+  "adoption_and_first_attempt": {
+    "complete_correct": 9,
+    "direct_plugin_fact_adoption_minimum": 8,
+    "first_plugin_request_valid_minimum": 0.9,
+    "primary_rate_denominator": "sessions that actually attempted at least one plugin request; frozen before results",
+    "also_report": [
+      "attempted/9",
+      "not_attempted/9",
+      "first_valid/attempted",
+      "first_valid/9",
+      "first_invalid/attempted",
+      "protocol_or_parameter_error_vs_tool_refusal_vs_unknown"
+    ]
+  },
+  "first_request_valid_definition": "First plugin attempt is valid if it targets a tool exposed to that arm and passes transport/schema/profile/zero-image checks into its normal contract, with no request-parameter/protocol error. Factual completeness/success/unknown/refusal are independently recorded, and a non-error first-response rate is also disclosed. No native attempt is counted as plugin.",
+  "adoption_evidence": "Trace fact delivery and concrete final answer use; a successful plugin call alone is insufficient. Disclose plugin-followed-by-full-native-solve, necessary local native supplement, native-only, failure/incomplete separately.",
+  "independent_judging": "Root judges task-labelled anonymous raw final answer and necessary fact evidence before arm/cost unblinding. Public route/tool words may reveal arm; disclose imperfect blinding.",
+  "no_rerun_or_replacement": true
+}

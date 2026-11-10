@@ -31,21 +31,32 @@ def load(name, p):
     return module
 
 
-def prepare(slot, *, output):
+def prepare(slot, *, output, cell_started_ns=None):
     """Also reusable after administrator GO; no consumer dispatch here."""
+    prepare_started_ns = time.perf_counter_ns()
+    if cell_started_ns is None:
+        cell_started_ns = prepare_started_ns
+    cell_deadline_ns = cell_started_ns+570*10**9
+    actor_startup_deadline_ns = min(cell_deadline_ns, prepare_started_ns+40*10**9)
+    if time.perf_counter_ns() >= cell_deadline_ns:
+        raise TimeoutError('original_full_cell_deadline_exceeded')
     tasks = read(HERE/'TASKS.json')
     ready = read(HERE/'installation/READY.json')
     task, group = tasks[slot['task']], slot['group']
-    start = time.perf_counter_ns()
     folder = Path(output)
     folder.mkdir(parents=True, exist_ok=False)
     assert ready['source_sha256'] == CANONICAL
     asset = HERE/task['asset']
     assert sha(asset) == task['asset_sha256']
     schemas = [] if group == 'N' else read(HERE/'catalogues'/group/'PUBLIC_TOOLS.json')
+    now = time.perf_counter_ns()
+    if now >= cell_deadline_ns:
+        raise TimeoutError('original_full_cell_deadline_exceeded')
+    if now >= actor_startup_deadline_ns:
+        raise TimeoutError('actor_startup_original_40s')
     config = {'group': group, 'task': slot['task'], 'output': str(folder/'owner'),
         'endpoint': str(folder/'ENDPOINT.json'), 'asset': str(asset), 'asset_sha256': task['asset_sha256'],
-        'blender': 'D:/Tools/blender5.2/blender.exe', 'worker_deadline_ns': start+570*10**9,
+        'blender': 'D:/Tools/blender5.2/blender.exe', 'worker_deadline_ns': cell_deadline_ns,
         'dependency_python': ready['dependency_python'], 'read_schemas': schemas,
         'entry': None if group == 'N' else ready['entry'],
         'install_root': None if group == 'N' else ready['install_root'],
@@ -53,19 +64,33 @@ def prepare(slot, *, output):
     save(folder/'ACTOR_CONFIG.json', config)
     command = [ready['dependency_python'], '-I', '-B', str(HERE/'actor.py'), '--config', str(folder/'ACTOR_CONFIG.json')]
     with (folder/'actor_stdout.bin').open('wb') as out, (folder/'actor_stderr.bin').open('wb') as err:
+        now = time.perf_counter_ns()
+        if now >= cell_deadline_ns:
+            raise TimeoutError('original_full_cell_deadline_exceeded')
+        if now >= actor_startup_deadline_ns:
+            raise TimeoutError('actor_startup_original_40s')
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=out, stderr=err,
             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-    save(folder/'ACTOR_LAUNCH.json', {'pid': process.pid, 'argv': command, 'started_ns': start})
+    save(folder/'ACTOR_LAUNCH.json', {'pid': process.pid, 'argv': command, 'started_ns': cell_started_ns,
+        'cell_started_ns': cell_started_ns, 'prepare_started_ns': prepare_started_ns,
+        'worker_deadline_ns': cell_deadline_ns, 'actor_startup_deadline_ns': actor_startup_deadline_ns})
     try:
-        startup = min(config['worker_deadline_ns'], start+40*10**9)
         while not (folder/'ENDPOINT.json').exists():
             if process.poll() is not None:
                 raise RuntimeError('actor_start_failed')
-            if time.perf_counter_ns() >= startup:
+            now = time.perf_counter_ns()
+            if now >= cell_deadline_ns:
+                raise TimeoutError('original_full_cell_deadline_exceeded')
+            if now >= actor_startup_deadline_ns:
                 raise TimeoutError('actor_startup_original_40s')
             time.sleep(.02)
+        now = time.perf_counter_ns()
+        if now >= cell_deadline_ns:
+            raise TimeoutError('original_full_cell_deadline_exceeded')
+        if now >= actor_startup_deadline_ns:
+            raise TimeoutError('actor_startup_original_40s')
         save(folder/'cell.json', {'group': group, 'endpoint': str(folder/'ENDPOINT.json'), 'audit_dir': str(folder/'owner')})
-        return folder, process, start
+        return folder, process, cell_started_ns
     except BaseException:
         finish(folder, process)
         raise
@@ -218,6 +243,7 @@ def preflight(output, selected):
 
 def run_models():
     """Explicit later-phase entry only; this preparation batch never calls it."""
+    batch_started_ns = time.perf_counter_ns()
     go, plan = read(HERE/'GO.json'), read(HERE/'PLAN.json')
     assert go['task'] == 'M1-TASK-ENTRY-001_EVAL' and go['authorized'] is True
     assert go['plan_sha256'] == sha(HERE/'PLAN.json') and go['max_consumers'] == 27
@@ -234,8 +260,11 @@ def run_models():
             'plan_sha256': sha(HERE/'PLAN.json')}, stream)
     records, stop = [], None
     for slot in plan['sequence']:
-        folder, process, start = None, None, time.perf_counter_ns()
-        row = {**slot, 'errors': [], 'consumer': None, 'finish': None}
+        cell_started_ns = time.perf_counter_ns()
+        cell_deadline_ns = cell_started_ns+570*10**9
+        folder, process = None, None
+        row = {**slot, 'errors': [], 'consumer': None, 'finish': None,
+            'cell_started_ns': cell_started_ns, 'worker_deadline_ns': cell_deadline_ns}
         try:
             for name, digest in plan['dispatch_input_sha256'].items():
                 assert sha(HERE/name) == digest, 'frozen_dispatch_input_changed: '+name
@@ -243,8 +272,12 @@ def run_models():
             assert sha(HERE/task['snapshot']) == task['snapshot_sha256'], 'frozen_mesh_snapshot_changed'
             prompt = (HERE/'SESSION_RULES.txt').read_bytes()+b'\n'+(HERE/task['prompt']).read_bytes()
             assert hashlib.sha256(prompt).hexdigest() == task['model_input_sha256']
-            folder, process, start = prepare(slot, output=HERE/'cells'/slot['cell'])
+            if time.perf_counter_ns() >= cell_deadline_ns:
+                raise TimeoutError('original_full_cell_deadline_exceeded')
+            folder, process, _ = prepare(slot, output=HERE/'cells'/slot['cell'], cell_started_ns=cell_started_ns)
             snapshot_binding(read(folder/'owner/INITIAL.json'), read(HERE/task['snapshot']))
+            if time.perf_counter_ns() >= cell_deadline_ns:
+                raise TimeoutError('original_full_cell_deadline_exceeded')
             row['consumer'] = transport.consume(slot,
                 {'python': plan['installation_ready']['dependency_python']}, plan, prompt)
         except BaseException as exc:
@@ -256,13 +289,15 @@ def run_models():
                     row['finish'] = finish(folder, process)
                 except BaseException as exc:
                     row['errors'].append({'type': type(exc).__name__, 'message': str(exc)})
-            row['full_cell_wall_ns'] = time.perf_counter_ns()-start
+            row['cell_ended_ns'] = time.perf_counter_ns()
+            row['cell_timing_scope'] = 'before per-cell input validation through owner close; excludes subsequent cell accounting publication'
+            row['full_cell_wall_ns'] = row['cell_ended_ns']-cell_started_ns
             row['within_570s'] = row['full_cell_wall_ns'] < 570*10**9
             if row['consumer'] is not None:
                 consumer = row['consumer']
                 consumer['owner_finish'] = row['finish']
                 consumer['total_task_wall_ns'] = row['full_cell_wall_ns']
-                consumer['pre_consumer_setup_ns'] = consumer['started_ns']-start
+                consumer['pre_consumer_setup_ns'] = consumer['started_ns']-cell_started_ns
                 save(folder/'CONSUMER.json', consumer)
                 if not consumer['safe_to_continue']:
                     stop = 'consumer_or_execution_state_uncertain'
@@ -287,7 +322,15 @@ def run_models():
                 'all_planned_dispatched': len(records) == 27, 'no_replacements': True})
         if stop:
             break
-    return {'records': records, 'stop': stop}
+    batch_ended_ns = time.perf_counter_ns()
+    result = {'records': records, 'stop': stop,
+        'started_cells': len(records), 'maximum_consumers': 27,
+        'all_planned_dispatched': len(records) == 27, 'no_replacements': True,
+        'batch_started_ns': batch_started_ns, 'batch_ended_ns': batch_ended_ns,
+        'batch_wall_ns': batch_ended_ns-batch_started_ns,
+        'batch_timing_scope': 'run_models entry through last per-cell RUN_RESULT publication; includes batch setup and cell accounting, excludes final timing-summary publication and caller overhead; not model reasoning time'}
+    save(HERE/'RUN_RESULT.json', result)
+    return result
 
 
 if __name__ == '__main__':
