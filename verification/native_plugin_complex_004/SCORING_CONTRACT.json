@@ -1,0 +1,498 @@
+{
+  "schema": "native-plugin-complex-004-scoring-contract-draft-v1",
+  "stage": "PREP_ONLY",
+  "frozen": false,
+  "model_visible": false,
+  "actual_consumer_runs": 0,
+  "planned_denominator": 18,
+  "introduced_new_assets": false,
+  "references": {
+    "assembly_prompt": {
+      "path": "verification/native_plugin_complex_003/PROMPT.txt",
+      "bytes": 1217,
+      "sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159"
+    },
+    "assembly_truth": {
+      "path": "verification/native_plugin_complex_003/private/TRUTH.json",
+      "bytes": 12109,
+      "sha256": "d01b0006ef1d4416c8b40663e8aabb7ba64730c7c833b516c3ee1631651a38ff"
+    },
+    "assembly_scene": {
+      "path": "verification/native_plugin_complex_003/scene.blend",
+      "bytes": 89128,
+      "sha256": "a1a593fc1591365bbbff0c62c535af90ab8b1cdd2dc5ce560d3922252c4e1fcb"
+    },
+    "assembly_actual_mesh_certificate": {
+      "path": "verification/native_plugin_complex_003/private/author_mesh_snapshots.json",
+      "bytes": 62567,
+      "sha256": "5a089d22faad7c90b9a28c6ea408ea8b73e8b939e47a3cb66a193ba85f23fc14"
+    },
+    "discovery_scene": {
+      "path": "verification/scale_diag_001/fixtures/D48.blend",
+      "bytes": 106343,
+      "sha256": "8729d98bcbcc774b36b69e7df73ac48c5ec09553df27e55bb24b6fbce28bc431"
+    },
+    "discovery_worldmesh": {
+      "path": "verification/scale_diag_001/fixtures/D48.json",
+      "bytes": 229212,
+      "sha256": "5d0dde58b8857481c68c8b894825573cd41e847f49ff530072802ce9e0254472"
+    },
+    "discovery_oracle": {
+      "path": "verification/scale_diag_001/ORACLE.json",
+      "bytes": 3536708,
+      "sha256": "4c6d45ddc087e2c9c38864890a4f99333e3c6cda40c6f36397b1768791509720"
+    },
+    "discovery_oracle_replay": {
+      "path": "verification/scale_diag_001/ORACLE_REPLAY.json",
+      "bytes": 882,
+      "sha256": "0fff81623ae584d6cda4a03052e7ea1b0dbf974da2f9e4b23f4fc761616feee4"
+    },
+    "discovery_freeze": {
+      "path": "verification/scale_diag_001/FREEZE.json",
+      "bytes": 4449,
+      "sha256": "f89556bed5ee608b4e6f089fa6af6836d63d4b217b9d9580ac1f7570a4e0f4c2"
+    }
+  },
+  "prompt_contract": {
+    "assembly": {
+      "path": "verification/native_plugin_complex_003/PROMPT.txt",
+      "bytes": 1217,
+      "sha256": "ce28c29bc453f66f4ca682f8f59501deab130fd59b18aa0d17ca985dde49c159",
+      "full_input_policy": "Read original PROMPT.txt raw bytes unchanged; do not reconstruct from this private contract."
+    },
+    "discovery": {
+      "path": "verification/native_plugin_complex_004/PROMPT_DISCOVERY.txt",
+      "sha256": "a79364d6580e7098b74c4cca49da7bed8c2afe991ef46820a9ae7d4bc0cebeb6",
+      "question_exact": "只读检查当前场景。以名为 Target 的网格为目标，在场景其余全部网格中找出与它三维表面距离最小的对象。报告对象名称、距离（单位米，绝对误差不超过1e-6 m）、是否完整覆盖候选，以及必要依据。若仍存在未解决的候选，说明范围与原因。自行选择工具，证据充分后直接回答。",
+      "common_prefix_sha256": "35d55e52396fce9b6921fb1be3aff4378e71ef74be4a738d8195161551d55f0c",
+      "common_completion_sha256": "551a8cbb7abf117a48c592399a5175598b800613ea4635c34f9a3a4453d52915",
+      "only_nonquestion_replacement": {
+        "old": "本轮场景是固定initial。",
+        "new": "本轮场景是当前固定场景。"
+      },
+      "algorithm_or_candidate_hints_added": false
+    },
+    "additional_model_visible_budget_notice": {
+      "draft_default": "No new notice is appended to the fixed assembly prompt. Root must choose any session-level notice before freeze.",
+      "if_added": "One exactly identical neutral zero-image/read-only budget notice for all 18 cells, bound as a separate model-visible input; no route-specific guidance or forced tool choice.",
+      "read_tool_schema_rewritten": false,
+      "image_true_request_policy": "Enforce the common zero-image budget openly; do not silently rewrite include_image=true to false. Rejected attempts consume the ordinary limits."
+    }
+  },
+  "routes": {
+    "N": {
+      "tools": "Common native execute_blender_code only",
+      "product_release": null
+    },
+    "O": {
+      "tools": "Exactly the same common native plus actual ordinary human_eye_scene_observe",
+      "product_release": "Root to bind the genuine pre-optimization installed release and canonical source identity before freeze."
+    },
+    "C": {
+      "tools": "Exactly the same common native plus actual ordinary human_eye_scene_observe",
+      "product_release": "Root to bind the single accepted post-SCALE-OPT-001 installed release and canonical source identity before freeze."
+    }
+  },
+  "tool_fairness": {
+    "common_native_reference": "verification/native_plugin_complex_003/actor.py:NATIVE",
+    "common_native_canonical_sha256": "77d56a2b28839af4fa24054456f29003d48bc7a1f14dfce49be5823234e6eb14",
+    "common_native_descriptor": {
+      "name": "execute_blender_code",
+      "description": "Execute ordinary read-only bpy/Python in this session persistent private Blender namespace. NumPy, mathutils BVH, mesh/triangle reading, your own Python computations and cached variables are allowed. Only this scene and your own computations may be read; no fixture sources, management files or scoring data. No scene edits or saving. Image delivery disabled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "ordinary_scene_observe_schema": "O/C actual schemas and descriptions must be byte/canonical equal; no task-only wrapper or semantic substitution.",
+    "adoption_policy": "Models naturally choose plugin or common native; no required plugin call, required repeat check, solved actor helper, or privileged cache.",
+    "fallback_policy": "Unsupported/unknown/error may use remaining native capability; all attempts remain in cell cost and denominator.",
+    "actor_role": "Controlled launch/serve/forward/record/limit/lifecycle only; actor must not solve the task or fabricate product facts."
+  },
+  "budgets": {
+    "model_seconds": 450,
+    "total_cell_seconds": 570,
+    "tool_calls": 32,
+    "tool_response_wire_bytes": 1048576,
+    "single_native_or_plugin_request_seconds": 30,
+    "images": 0,
+    "consumer_retries": 0,
+    "fresh_consumer_sessions": 18,
+    "concurrency": 1,
+    "inherited_003_additional_limits": {
+      "native_code_bytes": 262144,
+      "physical_rpc_limit": 128,
+      "note": "Freeze and audit whether all administrative snapshot/close calls are included; never hide them from reported physical cost."
+    }
+  },
+  "schedule_draft": [
+    {
+      "cell": "01",
+      "round": 1,
+      "task": "assembly",
+      "route": "N",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "02",
+      "round": 1,
+      "task": "assembly",
+      "route": "O",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "03",
+      "round": 1,
+      "task": "assembly",
+      "route": "C",
+      "position_within_task_round": 3
+    },
+    {
+      "cell": "04",
+      "round": 1,
+      "task": "discovery",
+      "route": "O",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "05",
+      "round": 1,
+      "task": "discovery",
+      "route": "C",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "06",
+      "round": 1,
+      "task": "discovery",
+      "route": "N",
+      "position_within_task_round": 3
+    },
+    {
+      "cell": "07",
+      "round": 2,
+      "task": "discovery",
+      "route": "C",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "08",
+      "round": 2,
+      "task": "discovery",
+      "route": "N",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "09",
+      "round": 2,
+      "task": "discovery",
+      "route": "O",
+      "position_within_task_round": 3
+    },
+    {
+      "cell": "10",
+      "round": 2,
+      "task": "assembly",
+      "route": "O",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "11",
+      "round": 2,
+      "task": "assembly",
+      "route": "C",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "12",
+      "round": 2,
+      "task": "assembly",
+      "route": "N",
+      "position_within_task_round": 3
+    },
+    {
+      "cell": "13",
+      "round": 3,
+      "task": "assembly",
+      "route": "C",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "14",
+      "round": 3,
+      "task": "assembly",
+      "route": "N",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "15",
+      "round": 3,
+      "task": "assembly",
+      "route": "O",
+      "position_within_task_round": 3
+    },
+    {
+      "cell": "16",
+      "round": 3,
+      "task": "discovery",
+      "route": "N",
+      "position_within_task_round": 1
+    },
+    {
+      "cell": "17",
+      "round": 3,
+      "task": "discovery",
+      "route": "O",
+      "position_within_task_round": 2
+    },
+    {
+      "cell": "18",
+      "round": 3,
+      "task": "discovery",
+      "route": "C",
+      "position_within_task_round": 3
+    }
+  ],
+  "quality_scoring": {
+    "blind_review_owner": "Administrator root in a separate blind review context; evaluator identity to be bound by root before freeze, never borrowed Agent Learning context 514.",
+    "consumer_inputs_exclude": [
+      "This contract",
+      "PLAN_DRAFT.md or final plan",
+      "Private truth and scoring code",
+      "Fixture author sources",
+      "SCALE-DIAG oracle/results and prior model answers",
+      "Group/version map, other sessions, costs and timing"
+    ],
+    "blind_packet": {
+      "include": [
+        "Anonymous answer ID",
+        "Unedited original final text or explicit no-final marker",
+        "Task prompt and task identity",
+        "Private task truth and neutral scoring criteria"
+      ],
+      "exclude": [
+        "N/O/C labels",
+        "Release/source identity",
+        "Round/order/cell IDs",
+        "Raw tool route logs",
+        "Costs/usage/latency",
+        "Unblinding map"
+      ],
+      "wording_policy": "Do not paraphrase answers to hide methods; method terminology can leak route. This is label-blind review, not guaranteed double-blind review."
+    },
+    "criterion_states": [
+      "pass",
+      "fail",
+      "unknown",
+      "not_applicable"
+    ],
+    "missing_or_unknown": "Do not invent missing claims; safe unknown preserves honesty but is incomplete, not successful completion.",
+    "quality_before_cost": true,
+    "fully_correct_completion": "All required task semantic criteria pass and independent protocol/lifecycle validity holds; process exit0 alone is insufficient.",
+    "assembly": {
+      "source_truth_pointer": "states.initial",
+      "source_truth_unchanged": true,
+      "expected_initial": {
+        "target": "Object_01",
+        "probes": {
+          "Object_02": {
+            "relation": "separated",
+            "minimum_gap_m": 0.010000000000000009,
+            "world_aabb_overlap": true,
+            "distance_error_bound_m": 2.0446606626675212e-07,
+            "oracle_arithmetic_bound_m": 2.0155007241505336e-08,
+            "distance_interval_m": [
+              0.009999795533933742,
+              0.010000204466066276
+            ]
+          },
+          "Object_03": {
+            "relation": "penetrating",
+            "minimum_gap_m": null,
+            "world_aabb_overlap": true,
+            "distance_error_bound_m": 1.6571877314519164e-07,
+            "oracle_arithmetic_bound_m": 2.0155007241505336e-08,
+            "shared_interior_point_assembly_m": [
+              -0.61,
+              0,
+              0
+            ],
+            "shared_interior_point_world_m": [
+              -0.2033333333333333,
+              -0.4066666666666666,
+              -0.4066666666666666
+            ],
+            "shared_interior_margins_m": {
+              "target": 0.010000000000000009,
+              "probe": 0.006000000000000002
+            },
+            "certified_witness": true,
+            "witness_proof": "same-topology vertex homotopy stays farther from witness than boundary displacement"
+          },
+          "Object_04": {
+            "relation": "separated",
+            "minimum_gap_m": 0.040000000000000036,
+            "world_aabb_overlap": true,
+            "distance_error_bound_m": 3.0142333402758355e-07,
+            "oracle_arithmetic_bound_m": 2.0155007241505336e-08,
+            "distance_interval_m": [
+              0.03999969857666601,
+              0.040000301423334064
+            ]
+          }
+        },
+        "nearest_separated_probe": "Object_02",
+        "mesh_inputs_verified": true,
+        "object_error_certificates": {
+          "Object_01": {
+            "observed_max_vertex_error_m": 1.368738963724528e-07,
+            "construction_arithmetic_bound_m": 2.9103830456733704e-11,
+            "rho_m": 1.3690300020290954e-07,
+            "correspondence": "same ordered vertices and exact oriented triangle list",
+            "boundary_bound": "barycentric interpolation gives bidirectional boundary Hausdorff bound"
+          },
+          "Object_02": {
+            "observed_max_vertex_error_m": 4.737895499188051e-08,
+            "construction_arithmetic_bound_m": 2.9103830456733704e-11,
+            "rho_m": 4.740805882233724e-08,
+            "correspondence": "same ordered vertices and exact oriented triangle list",
+            "boundary_bound": "barycentric interpolation gives bidirectional boundary Hausdorff bound"
+          },
+          "Object_03": {
+            "observed_max_vertex_error_m": 8.631661870320045e-09,
+            "construction_arithmetic_bound_m": 2.9103830456733704e-11,
+            "rho_m": 8.66076570077678e-09,
+            "correspondence": "same ordered vertices and exact oriented triangle list",
+            "boundary_bound": "barycentric interpolation gives bidirectional boundary Hausdorff bound"
+          },
+          "Object_04": {
+            "observed_max_vertex_error_m": 1.4433622275271195e-07,
+            "construction_arithmetic_bound_m": 2.9103830456733704e-11,
+            "rho_m": 1.4436532658316869e-07,
+            "correspondence": "same ordered vertices and exact oriented triangle list",
+            "boundary_bound": "barycentric interpolation gives bidirectional boundary Hausdorff bound"
+          }
+        },
+        "direction_certificate": null,
+        "answer_rule": "abs(answer-d0)+distance_error_bound_m <= 1e-6",
+        "penetration_metric": "strict shared interior, global minimum escape not requested"
+      },
+      "distance_acceptance": "For every separated probe, abs(answer_m - original minimum_gap_m) + original distance_error_bound_m <= 1e-6. Preserve original nonzero E; never replace with a zero-error target.",
+      "required_criteria": [
+        {
+          "id": "A1",
+          "claim": "Identify all three original candidates and their exact separated/touching/penetrating relations."
+        },
+        {
+          "id": "A2",
+          "claim": "Both separated minimum surface gaps satisfy the original E-inclusive numerical rule."
+        },
+        {
+          "id": "A3",
+          "claim": "The complete penetrating-object set is exact."
+        },
+        {
+          "id": "A4",
+          "claim": "The nearest separated object is correct."
+        },
+        {
+          "id": "A5",
+          "claim": "Explain rotation, cavity and AABB limitations with necessary current geometric evidence; AABB overlap alone is insufficient."
+        },
+        {
+          "id": "A6",
+          "claim": "Do not report a penetrating surface distance as global penetration depth or minimum escape displacement."
+        }
+      ]
+    },
+    "discovery": {
+      "source_truth_pointer": "snapshots[id=D48].global_nearest_unsigned",
+      "source_geometry_sha256": "c328f5aec7d23d5cd3b8ba4bf887489de5216ac34a51de0df3461f2aa61d7b94",
+      "expected_directory_count": 48,
+      "expected_candidate_count": 47,
+      "expected_target": "Target",
+      "expected_nearest_names": [
+        "Peer_000"
+      ],
+      "expected_distance_interval_m": {
+        "lower": 0.0030000059049561864,
+        "upper": 0.0030000059049562497
+      },
+      "quantity": "Global unsigned distance between original triangle surface sets, not nearest separated object, object-center distance, AABB distance, escape vector or penetration depth.",
+      "distance_acceptance": "Use the original certified D48 interval [L,U]. Accept only max(abs(answer_m-L),abs(answer_m-U)) <= 1e-6, evaluated from the original decimal bounds; do not use a product/native answer as expected.",
+      "required_criteria": [
+        {
+          "id": "D1",
+          "claim": "Exact nearest-object name set; no omitted or invented ties."
+        },
+        {
+          "id": "D2",
+          "claim": "Distance in metres satisfies the certified interval rule."
+        },
+        {
+          "id": "D3",
+          "claim": "Explicitly state candidate completeness. Every current mesh except Target must be accounted for by valid measurements or conservative non-winning bounds; unresolved candidates mean incomplete even if best-known name is right."
+        },
+        {
+          "id": "D4",
+          "claim": "Give sufficient current geometric basis for the global surface claim. Valid full-scope summary or sound geometric computation is acceptable; unsupported vertex-only or AABB-only nearest claims are insufficient."
+        }
+      ],
+      "not_required": [
+        "A list of all 47 distances",
+        "All candidate names enumerated in the final",
+        "A specific solver, plugin call or extra verification count",
+        "Solid-relation classification",
+        "A minimum escape vector"
+      ],
+      "scope": "One fixed D48 snapshot, no state mutations or animation coverage."
+    }
+  },
+  "protocol_validity": {
+    "separate_from_semantic_blind_score": true,
+    "required": [
+      "Actual scene copy matches frozen input and final scene is unchanged",
+      "No writes or saves or delivered images",
+      "No oracle/management/history/other-session reads or answer injection",
+      "No budget breach or consumer replacement",
+      "Owner terminal snapshot, close ACK, WORKER_CLOSED and wait/reap are confirmed"
+    ],
+    "uncertain_execution": "Stop affected chain and inspect owned state; never replay a possibly executed action. Unresolved closure/auth/quota stop preserves remaining not-run slots in the planned denominator."
+  },
+  "cost_reporting": {
+    "primary": [
+      "Task semantic quality and correct-completion count",
+      "Prompt-arrival to final-answer time",
+      "Full-cell lifecycle from setup start through owner verification/close/reap"
+    ],
+    "separate_components": [
+      "Cold scene copy/startup",
+      "Product launch/import/catalog",
+      "Consumer/CLI input to final and exit",
+      "All native and plugin tool time/calls/errors/fallbacks",
+      "Final readback/publication/close and cleanup",
+      "Model-visible bytes and tool-catalog bytes",
+      "Physical RPC including administrative snapshots and close"
+    ],
+    "usage": "Retain actual CLI usage events and distinguish incremental from cumulative counters before aggregation. Provider requests, resolved effort and fees remain unknown unless actually exposed; do not infer paid API fees from Pro tokens.",
+    "failure_policy": "Retain timeout, error, unknown, fallback, no-final, lifecycle failure and not-run in the planned 18 slots. Report completed-only summaries only with explicit denominators, never as the whole trial.",
+    "statistical_limits": "Three repetitions per task/route are exploratory; median/min/max and raw rows only, no p95 or broad-domain improvement claim."
+  },
+  "before_freeze_pending": [
+    "Root binds O/C installed release/runtime and CLI/model identities",
+    "Root verifies actual O/C ordinary schemas and common native descriptor equality",
+    "Root decides and binds any common model-visible zero-image notice",
+    "Root confirms model-facing paths/transport cannot reveal private plan/oracle/scoring; ordinary Python is not claimed to be a complete hostile-code filesystem sandbox",
+    "Root completes no-model connectivity/read-only lifecycle precheck separately; preflight not part of 18 consumers",
+    "Administrator root reviews draft and authorizes one fixed final schedule/prompt/rubric before consumer launch"
+  ],
+  "agent_learning": "Current binding unavailable; do not borrow administrator 514 or another context. Sync only once legitimate binding exists."
+}

@@ -1,0 +1,1 @@
+print({'mesh_count':sum(o.type=='MESH' for o in bpy.context.scene.objects)})
