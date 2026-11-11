@@ -55,8 +55,9 @@ def validate_object_selector(selector):
 
 
 def validate_task_query(query):
-    if type(query) is dict and (set(query) == {'mode', 'target', 'candidates', 'requested_facts'}
-            or set(query) == {'mode', 'scope', 'objects', 'requested_facts'}):
+    query_fields = set(query) if type(query) is dict else set()
+    if (query_fields - {'geometry'} == {'mode', 'target', 'candidates', 'requested_facts'}
+            or query_fields - {'geometry'} == {'mode', 'scope', 'objects', 'requested_facts'}):
         if 'target' in query:
             candidates = query['candidates']
             if type(candidates) is not list or not 1 <= len(candidates) <= 3:
@@ -74,7 +75,18 @@ def validate_task_query(query):
                 or len(facts) != len(set(facts)) or not set(facts) <= SET_FACTS
                 or not {'closed_solid_relation', 'surface_proximity'} <= set(facts)):
             raise ValueError('task set requires closed_solid_relation and surface_proximity; optional aabb only')
-        return {'mode': 'task', 'scope': SET_SCOPE, 'objects': selectors, 'requested_facts': list(facts)}
+        result = {'mode': 'task', 'scope': SET_SCOPE, 'objects': selectors, 'requested_facts': list(facts)}
+        if 'geometry' in query:
+            geometry = query['geometry']
+            if (type(geometry) is not dict or set(geometry) - {'objects', 'include_triangles'}
+                    or type(geometry.get('objects')) is not list or not 1 <= len(geometry['objects']) <= 4
+                    or type(geometry.get('include_triangles', False)) is not bool):
+                raise ValueError('task geometry requires 1..4 object selectors and optional boolean include_triangles')
+            result['geometry'] = {
+                'objects': [validate_object_selector(selector) for selector in geometry['objects']],
+                'include_triangles': geometry.get('include_triangles', False),
+            }
+        return result
     if type(query) is not dict or set(query) != {'mode', 'objects', 'requested_facts'}:
         raise ValueError('task query requires only mode, objects and requested_facts')
     selectors, facts = query['objects'], query['requested_facts']
@@ -199,6 +211,41 @@ def bind_objects(scene, selectors):
     if len(bound) == 2 and all(bound) and bound[0]['object_id'] == bound[1]['object_id']:
         return bound, rows, 'pair_selectors_resolve_to_same_object'
     return bound, rows, None
+
+
+def project_task_geometry(result, meshes, request, checkpoint):
+    """Project only the original task bindings from its normalized capture."""
+    bindings = result['binding']['objects']
+    identities = {row['object_id']: row for row in bindings if 'object_id' in row}
+    by_id = {mesh.object_id: mesh for mesh in meshes}
+    rows = []
+    for selector in request['objects']:
+        checkpoint('before_task_geometry_object')
+        unresolved = next((row for row in bindings if row.get('status') == 'unknown'
+                           and row.get('selector') == selector), None)
+        if unresolved is not None:
+            rows.append({'selector': dict(selector), 'status': 'unknown', 'reason': unresolved['reason']})
+            continue
+        field = 'object_id' if 'id' in selector else 'name'
+        value = next(iter(selector.values()))
+        matches = [row for row in identities.values() if row[field] == value]
+        if not matches:
+            raise ValueError('task geometry selector is outside the original task bindings')
+        if len(matches) > 1:
+            rows.append({'selector': dict(selector), 'status': 'unknown', 'reason': 'object_name_ambiguous'})
+            continue
+        binding = matches[0]
+        mesh = by_id[binding['object_id']]
+        row = {'object_id': binding['object_id'], 'name': binding['name'],
+               'vertices_world': mesh.vertices.tolist()}
+        if request['include_triangles']:
+            row['triangles'] = mesh.faces.tolist()
+        rows.append(row)
+    checkpoint('after_task_geometry')
+    contract = {'vertices_world': 'current_evaluated_vertices_world_metres_in_captured_order'}
+    if request['include_triangles']:
+        contract['triangles'] = 'zero_based_triplets_index_vertices_world_in_captured_order'
+    return {'objects': rows, 'contract': contract}
 
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,

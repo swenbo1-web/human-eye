@@ -42,6 +42,15 @@ _ID_SCHEMA = {"type": "string", "minLength": 1}
 _VECTOR_SCHEMA = {
     "type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3,
 }
+_TASK_GEOMETRY_SCHEMA = {
+    'type': 'object',
+    'description': 'Opt-in geometry from the original relation bindings. Vertices use world metres; captured triangles are optional.',
+    'properties': {
+        'objects': {'type': 'array', 'items': copy.deepcopy(SELECTOR_SCHEMA), 'minItems': 1, 'maxItems': 4},
+        'include_triangles': {'type': 'boolean', 'default': False},
+    },
+    'required': ['objects'], 'additionalProperties': False,
+}
 _ACTION_SCHEMA = {
     "type": "object",
     "properties": {
@@ -67,6 +76,7 @@ _QUERY_SCHEMA = {
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
             "minItems": 1, "uniqueItems": True,
             "description": "task: closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."},
+        'geometry': copy.deepcopy(_TASK_GEOMETRY_SCHEMA),
         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
             "description":"Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
@@ -96,7 +106,7 @@ _QUERY_SCHEMA = {
                    {"required": ["objects"], "properties": {"target": False, "candidates": False}},
                    {"required": ["target", "candidates"],
                     "additionalProperties": False,
-                    "properties": {"mode": {}, "target": {}, "candidates": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
+                    "properties": {"mode": {}, "target": {}, "candidates": {}, "geometry": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
                         "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
                ]}}],
     "additionalProperties": False,
@@ -276,6 +286,7 @@ SPATIAL_TASK_TOOLS_SCHEMA = [{
     'inputSchema': {'type': 'object', 'properties': {
         'target': copy.deepcopy(SELECTOR_SCHEMA),
         'candidates': {'type': 'array', 'items': copy.deepcopy(SELECTOR_SCHEMA), 'minItems': 1, 'maxItems': 3},
+        'geometry': copy.deepcopy(_TASK_GEOMETRY_SCHEMA),
         'include_aabb': {'type': 'boolean', 'default': False}},
         'required': ['target', 'candidates'], 'additionalProperties': False}}, {
     'name': 'human_eye_surface_nearest',
@@ -293,9 +304,12 @@ SPATIAL_TASK_TOOLS_SCHEMA = [{
 
 
 def _spatial_task_query(arguments):
-    return {'mode': 'task', 'target': arguments.get('target'), 'candidates': arguments.get('candidates'),
+    query = {'mode': 'task', 'target': arguments.get('target'), 'candidates': arguments.get('candidates'),
         'requested_facts': ['closed_solid_relation', 'surface_proximity']
             + (['aabb'] if arguments.get('include_aabb', False) else [])}
+    if 'geometry' in arguments:
+        query['geometry'] = arguments['geometry']
+    return query
 
 
 def _surface_nearest_task_query(arguments):
@@ -339,7 +353,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
     if not isinstance(arguments, dict):
         raise ValueError("arguments must be an object")
     allowed = {
-        'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb'},
+        'human_eye_spatial_relations': {'target', 'candidates', 'include_aabb', 'geometry'},
         'human_eye_surface_nearest': {'target'},
         'human_eye_arm_twist_observe': {'selection', 'session_id', 'task_context'},
         "human_eye_scene_observe": {"task_instruction", "focal_id", "reference_id", "session_id", "goal", "query", 'task_context', 'scene_delta', 'response_detail', 'include_image'},
@@ -643,6 +657,8 @@ def _project_spatial_relations(value):
         'execution_authority': value['execution_authority']}
     if 'trace_id' in value:
         result['trace_id'] = value['trace_id']
+    if 'geometry' in value:
+        result['geometry'] = value['geometry']
     return result
 
 

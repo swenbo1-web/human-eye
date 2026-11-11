@@ -1347,6 +1347,9 @@ class LiveSpatialService:
         from .task_query import task_result
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        geometry = query.get('geometry')
+        if geometry is not None:
+            query = {key: value for key, value in query.items() if key != 'geometry'}
         context = self._read_context
         with context.lock, self._observation_scope():
             rejected, source_check = self._read_source_identity()
@@ -1370,6 +1373,10 @@ class LiveSpatialService:
                     scene, meshes, fingerprint, query, context.scene_cache,
                     self._check_request_budget, diagnostics=work))
                 work['result_cache_hit'] = hit
+            if geometry is not None:
+                from .task_query import project_task_geometry
+                result['geometry'] = project_task_geometry(
+                    result, meshes, geometry, self._check_request_budget)
             self._bind_read_result(result, source_check)
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=scene['revision'],
