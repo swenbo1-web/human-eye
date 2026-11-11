@@ -1,0 +1,1290 @@
+{
+  "completed_public_event_native_content_matches_owner": true,
+  "last_native_read": {
+    "attempt_array_index": 2,
+    "attempt_order": 3,
+    "code": "for name in ['N16','N24','N12']:\n obj=bpy.data.objects[name]\n print(name,'world vertices', [tuple(round(float(c),8) for c in (obj.matrix_world @ v.co)) for v in obj.data.vertices])\nmid=np.array([0.43,0.155])\nfor name in ['N15','N18','N25','N16']:\n obj=bpy.data.objects[name]; pts=np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]); center=(pts.min(0)+pts.max(0))/2\n print(name,'XY_distance_to_pipe_mid_m',float(np.linalg.norm(center[:2]-mid)), 'below_midZ',bool(center[2]<0.46),'behind_frontbeam',bool(center[1]>-0.1025))\n",
+    "code_pointer": "/owner_attempts/2/request/params/arguments/code",
+    "code_utf8_sha256": "aaefd5cc87dcc5f49327c46d34d2c816615d6aa68a8999983d72c6bb2630dabf",
+    "original_request_files": [
+      {
+        "kind": "REQUEST.json",
+        "original_sha256": "4d03b5edb86360d4705cfa7ae25f4fd64cdbe2d642ebbccf1b9112d5b3b37dd0"
+      },
+      {
+        "kind": "RESPONSE.json",
+        "original_sha256": "78e807aee7d12339aa307379a8fa58340020d2aaa12112212b5e8623320ccf86"
+      },
+      {
+        "kind": "ATTEMPT.json",
+        "original_sha256": "c1fdb913154959f204bcb7ed231f17d06d7978f34937bb64e0b3825b6db13451"
+      }
+    ],
+    "request_pointer": "/owner_attempts/2/request",
+    "response_pointer": "/owner_attempts/2/responses/0/value",
+    "returned_transport_text": "{\"result\":{\"executed\":true,\"result\":\"N16 world vertices [(0.11000001, 0.08, 0.30000001), (0.25, 0.08, 0.30000001), (0.25, 0.08, 0.42000002), (0.11000001, 0.08, 0.42000002), (0.13500001, 0.08, 0.32500002), (0.22500001, 0.08, 0.32500002), (0.22500001, 0.08, 0.39500001), (0.13500001, 0.08, 0.39500001), (0.11000001, 0.12, 0.30000001), (0.25, 0.12, 0.30000001), (0.25, 0.12, 0.42000002), (0.11000001, 0.12, 0.42000002), (0.13500001, 0.12, 0.32500002), (0.22500001, 0.12, 0.32500002), (0.22500001, 0.12, 0.39500001), (0.13500001, 0.12, 0.39500001)]\\nN24 world vertices [(-0.50999999, 0.0675, 0.25), (-0.50999999, 0.1525, 0.25), (-0.50999999, 0.1525, 0.30000001), (-0.50999999, 0.0675, 0.30000001), (-0.50999999, 0.08, 0.26000002), (-0.50999999, 0.14, 0.26000002), (-0.50999999, 0.14, 0.28999999), (-0.50999999, 0.08, 0.28999999), (0.50999999, 0.0675, 0.25), (0.50999999, 0.1525, 0.25), (0.50999999, 0.1525, 0.30000001), (0.50999999, 0.0675, 0.30000001), (0.50999999, 0.08, 0.26000002), (0.50999999, 0.14, 0.26000002), (0.50999999, 0.14, 0.28999999), (0.50999999, 0.08, 0.28999999)]\\nN12 world vertices [(-0.50999999, 0.0675, 0.62), (-0.50999999, 0.1525, 0.62), (-0.50999999, 0.1525, 0.66999996), (-0.50999999, 0.0675, 0.66999996), (-0.50999999, 0.08, 0.63), (-0.50999999, 0.14, 0.63), (-0.50999999, 0.14, 0.65999997), (-0.50999999, 0.08, 0.65999997), (0.50999999, 0.0675, 0.62), (0.50999999, 0.1525, 0.62), (0.50999999, 0.1525, 0.66999996), (0.50999999, 0.0675, 0.66999996), (0.50999999, 0.08, 0.63), (0.50999999, 0.14, 0.63), (0.50999999, 0.14, 0.65999997), (0.50999999, 0.08, 0.65999997)]\\nN15 XY_distance_to_pipe_mid_m 0.7530770324554206 below_midZ True behind_frontbeam True\\nN18 XY_distance_to_pipe_mid_m 0.2500499915029067 below_midZ False behind_frontbeam True\\nN25 XY_distance_to_pipe_mid_m 0.6486331829160733 below_midZ True behind_frontbeam False\\nN16 XY_distance_to_pipe_mid_m 0.25597851105601366 below_midZ True behind_frontbeam True\\n\"},\"status\":\"success\"}",
+    "returned_transport_text_utf8_sha256": "a3b91ea4ace46f3b85f4438ee97bc1c25e28b7578630e913b0f63ef65b317a15",
+    "stdout": "N16 world vertices [(0.11000001, 0.08, 0.30000001), (0.25, 0.08, 0.30000001), (0.25, 0.08, 0.42000002), (0.11000001, 0.08, 0.42000002), (0.13500001, 0.08, 0.32500002), (0.22500001, 0.08, 0.32500002), (0.22500001, 0.08, 0.39500001), (0.13500001, 0.08, 0.39500001), (0.11000001, 0.12, 0.30000001), (0.25, 0.12, 0.30000001), (0.25, 0.12, 0.42000002), (0.11000001, 0.12, 0.42000002), (0.13500001, 0.12, 0.32500002), (0.22500001, 0.12, 0.32500002), (0.22500001, 0.12, 0.39500001), (0.13500001, 0.12, 0.39500001)]\nN24 world vertices [(-0.50999999, 0.0675, 0.25), (-0.50999999, 0.1525, 0.25), (-0.50999999, 0.1525, 0.30000001), (-0.50999999, 0.0675, 0.30000001), (-0.50999999, 0.08, 0.26000002), (-0.50999999, 0.14, 0.26000002), (-0.50999999, 0.14, 0.28999999), (-0.50999999, 0.08, 0.28999999), (0.50999999, 0.0675, 0.25), (0.50999999, 0.1525, 0.25), (0.50999999, 0.1525, 0.30000001), (0.50999999, 0.0675, 0.30000001), (0.50999999, 0.08, 0.26000002), (0.50999999, 0.14, 0.26000002), (0.50999999, 0.14, 0.28999999), (0.50999999, 0.08, 0.28999999)]\nN12 world vertices [(-0.50999999, 0.0675, 0.62), (-0.50999999, 0.1525, 0.62), (-0.50999999, 0.1525, 0.66999996), (-0.50999999, 0.0675, 0.66999996), (-0.50999999, 0.08, 0.63), (-0.50999999, 0.14, 0.63), (-0.50999999, 0.14, 0.65999997), (-0.50999999, 0.08, 0.65999997), (0.50999999, 0.0675, 0.62), (0.50999999, 0.1525, 0.62), (0.50999999, 0.1525, 0.66999996), (0.50999999, 0.0675, 0.66999996), (0.50999999, 0.08, 0.63), (0.50999999, 0.14, 0.63), (0.50999999, 0.14, 0.65999997), (0.50999999, 0.08, 0.65999997)]\nN15 XY_distance_to_pipe_mid_m 0.7530770324554206 below_midZ True behind_frontbeam True\nN18 XY_distance_to_pipe_mid_m 0.2500499915029067 below_midZ False behind_frontbeam True\nN25 XY_distance_to_pipe_mid_m 0.6486331829160733 below_midZ True behind_frontbeam False\nN16 XY_distance_to_pipe_mid_m 0.25597851105601366 below_midZ True behind_frontbeam True\n",
+    "stdout_pointer_in_decoded_transport_text": "/result/result",
+    "stdout_utf8_bytes": 1899,
+    "stdout_utf8_sha256": "878bf7e432337ed9f8940efb3bce427c849b29f34f2fb9f85903424b18a4d74c",
+    "transport_text_pointer": "/owner_attempts/2/responses/0/value/result/content/0/text"
+  },
+  "parsed_last_geometry": [
+    {
+      "field": "vertices_world",
+      "line_utf8_sha256": "ee56db1229a19365fb1cfb7a53f3e535a60045cdad04ac4e53e309d4dd49c804",
+      "object_name": "N16",
+      "returned_values": [
+        [
+          0.11000001,
+          0.08,
+          0.30000001
+        ],
+        [
+          0.25,
+          0.08,
+          0.30000001
+        ],
+        [
+          0.25,
+          0.08,
+          0.42000002
+        ],
+        [
+          0.11000001,
+          0.08,
+          0.42000002
+        ],
+        [
+          0.13500001,
+          0.08,
+          0.32500002
+        ],
+        [
+          0.22500001,
+          0.08,
+          0.32500002
+        ],
+        [
+          0.22500001,
+          0.08,
+          0.39500001
+        ],
+        [
+          0.13500001,
+          0.08,
+          0.39500001
+        ],
+        [
+          0.11000001,
+          0.12,
+          0.30000001
+        ],
+        [
+          0.25,
+          0.12,
+          0.30000001
+        ],
+        [
+          0.25,
+          0.12,
+          0.42000002
+        ],
+        [
+          0.11000001,
+          0.12,
+          0.42000002
+        ],
+        [
+          0.13500001,
+          0.12,
+          0.32500002
+        ],
+        [
+          0.22500001,
+          0.12,
+          0.32500002
+        ],
+        [
+          0.22500001,
+          0.12,
+          0.39500001
+        ],
+        [
+          0.13500001,
+          0.12,
+          0.39500001
+        ]
+      ],
+      "stdout_line_number": 1
+    },
+    {
+      "field": "vertices_world",
+      "line_utf8_sha256": "00787b4adab1906c6fec9129e3cf2bc3e21c6ff7c52c61f248aeefc251dd6e3e",
+      "object_name": "N24",
+      "returned_values": [
+        [
+          -0.50999999,
+          0.0675,
+          0.25
+        ],
+        [
+          -0.50999999,
+          0.1525,
+          0.25
+        ],
+        [
+          -0.50999999,
+          0.1525,
+          0.30000001
+        ],
+        [
+          -0.50999999,
+          0.0675,
+          0.30000001
+        ],
+        [
+          -0.50999999,
+          0.08,
+          0.26000002
+        ],
+        [
+          -0.50999999,
+          0.14,
+          0.26000002
+        ],
+        [
+          -0.50999999,
+          0.14,
+          0.28999999
+        ],
+        [
+          -0.50999999,
+          0.08,
+          0.28999999
+        ],
+        [
+          0.50999999,
+          0.0675,
+          0.25
+        ],
+        [
+          0.50999999,
+          0.1525,
+          0.25
+        ],
+        [
+          0.50999999,
+          0.1525,
+          0.30000001
+        ],
+        [
+          0.50999999,
+          0.0675,
+          0.30000001
+        ],
+        [
+          0.50999999,
+          0.08,
+          0.26000002
+        ],
+        [
+          0.50999999,
+          0.14,
+          0.26000002
+        ],
+        [
+          0.50999999,
+          0.14,
+          0.28999999
+        ],
+        [
+          0.50999999,
+          0.08,
+          0.28999999
+        ]
+      ],
+      "stdout_line_number": 2
+    },
+    {
+      "field": "vertices_world",
+      "line_utf8_sha256": "4718219bdeac36d1dab14636884b1cc3c0bd51dccee7d391978f1a83a80b764a",
+      "object_name": "N12",
+      "returned_values": [
+        [
+          -0.50999999,
+          0.0675,
+          0.62
+        ],
+        [
+          -0.50999999,
+          0.1525,
+          0.62
+        ],
+        [
+          -0.50999999,
+          0.1525,
+          0.66999996
+        ],
+        [
+          -0.50999999,
+          0.0675,
+          0.66999996
+        ],
+        [
+          -0.50999999,
+          0.08,
+          0.63
+        ],
+        [
+          -0.50999999,
+          0.14,
+          0.63
+        ],
+        [
+          -0.50999999,
+          0.14,
+          0.65999997
+        ],
+        [
+          -0.50999999,
+          0.08,
+          0.65999997
+        ],
+        [
+          0.50999999,
+          0.0675,
+          0.62
+        ],
+        [
+          0.50999999,
+          0.1525,
+          0.62
+        ],
+        [
+          0.50999999,
+          0.1525,
+          0.66999996
+        ],
+        [
+          0.50999999,
+          0.0675,
+          0.66999996
+        ],
+        [
+          0.50999999,
+          0.08,
+          0.63
+        ],
+        [
+          0.50999999,
+          0.14,
+          0.63
+        ],
+        [
+          0.50999999,
+          0.14,
+          0.65999997
+        ],
+        [
+          0.50999999,
+          0.08,
+          0.65999997
+        ]
+      ],
+      "stdout_line_number": 3
+    }
+  ],
+  "preceding_relation_pointer": "/owner_attempts/1/responses/0/value/result/content/0/text",
+  "preceding_relation_response": {
+    "candidates": [
+      {
+        "aabb": {
+          "status": "measured",
+          "value": {
+            "dimensions": [
+              0.019999999552965164,
+              0.05999999865889549,
+              0.05999999865889549
+            ],
+            "max": [
+              0.2599999997764826,
+              0.13000000081956387,
+              0.3900000136345625
+            ],
+            "min": [
+              0.24000000022351742,
+              0.07000000216066837,
+              0.330000014975667
+            ]
+          }
+        },
+        "candidate_index": 0,
+        "closed_solid_relation": {
+          "certificate": "transverse_boundary_interiors",
+          "local_evidence": {
+            "point_scope": "boundary_crossing_localization_not_volume_interior_or_penetration_depth",
+            "point_status": "approximate",
+            "point_world_m": [
+              0.2500000074505806,
+              0.11500000115483999,
+              0.3900000136345625
+            ],
+            "publication_tolerance_m": 1e-09,
+            "triangle_indices": [
+              12,
+              11
+            ],
+            "triangle_scope": "current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids",
+            "triangle_vertices_world_m": [
+              [
+                [
+                  0.2500000074505806,
+                  0.08000000193715096,
+                  0.30000001564621925
+                ],
+                [
+                  0.2500000074505806,
+                  0.12000000104308128,
+                  0.30000001564621925
+                ],
+                [
+                  0.2500000074505806,
+                  0.12000000104308128,
+                  0.42000001296401024
+                ]
+              ],
+              [
+                [
+                  0.24000000022351742,
+                  0.07000000216066837,
+                  0.3900000136345625
+                ],
+                [
+                  0.2599999997764826,
+                  0.13000000081956387,
+                  0.3900000136345625
+                ],
+                [
+                  0.24000000022351742,
+                  0.13000000081956387,
+                  0.3900000136345625
+                ]
+              ]
+            ],
+            "type": "transverse_triangle_crossing"
+          },
+          "status": "measured",
+          "value": "penetrating"
+        },
+        "instance_id": "172",
+        "name": "N13",
+        "object_id": "blender:bc2e50e049d2fd62537aa9dff8f96608f350fdc799725fcc6721d209ca01583e",
+        "separation_gap": {
+          "reason": "pair_is_not_separated",
+          "status": "not_applicable",
+          "value": null
+        },
+        "surface_proximity": {
+          "direction_reason": "undefined_zero_distance",
+          "direction_status": "not_applicable",
+          "status": "measured",
+          "value": {
+            "distance_m": 0.0,
+            "nearest_witness": {
+              "a": [
+                0.2500000074505806,
+                0.1100000012665987,
+                0.3900000136345625
+              ],
+              "b": [
+                0.2500000074505806,
+                0.1100000012665987,
+                0.3900000136345625
+              ],
+              "direction_a_to_b": null
+            },
+            "topology": [
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              },
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              }
+            ]
+          },
+          "witness_status": "measured"
+        }
+      },
+      {
+        "aabb": {
+          "status": "measured",
+          "value": {
+            "dimensions": [
+              0.019999999552965164,
+              0.05000000074505806,
+              0.05000000074505806
+            ],
+            "max": [
+              0.10989999957382679,
+              0.12500000186264515,
+              0.3850000146776438
+            ],
+            "min": [
+              0.08990000002086163,
+              0.07500000111758709,
+              0.3350000139325857
+            ]
+          }
+        },
+        "candidate_index": 1,
+        "closed_solid_relation": {
+          "certificate": "disjoint_boundaries_with_exact_parity",
+          "status": "measured",
+          "value": "separated"
+        },
+        "instance_id": "167",
+        "name": "N08",
+        "object_id": "blender:f772b46bd483bd412211b976b832e2af71e651dc1095ff2485850085fbe0fbec",
+        "separation_gap": {
+          "semantics": "separated_surface_gap_m",
+          "status": "measured",
+          "value": 0.00010000728070735931
+        },
+        "surface_proximity": {
+          "direction_status": "measured",
+          "status": "measured",
+          "value": {
+            "distance_m": 0.00010000728070735931,
+            "nearest_witness": {
+              "a": [
+                0.11000000685453415,
+                0.08000000193715096,
+                0.3350000139325857
+              ],
+              "b": [
+                0.10989999957382679,
+                0.08000000193715096,
+                0.3350000139325857
+              ],
+              "direction_a_to_b": [
+                -1.0,
+                0.0,
+                0.0
+              ]
+            },
+            "topology": [
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              },
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              }
+            ]
+          },
+          "witness_status": "measured"
+        }
+      },
+      {
+        "aabb": {
+          "status": "measured",
+          "value": {
+            "dimensions": [
+              0.024000000208616257,
+              0.27000001072883606,
+              0.024000000208616257
+            ],
+            "max": [
+              0.1920000072568655,
+              0.24000000208616257,
+              0.3720000144094229
+            ],
+            "min": [
+              0.16800000704824924,
+              -0.030000008642673492,
+              0.3480000142008066
+            ]
+          }
+        },
+        "candidate_index": 2,
+        "closed_solid_relation": {
+          "certificate": "disjoint_boundaries_with_exact_parity",
+          "status": "measured",
+          "value": "separated"
+        },
+        "instance_id": "187",
+        "name": "N28",
+        "object_id": "blender:776df02dac3d7ed20707eba5167bd572599bf6276df63d28c016f6f96072bf44",
+        "separation_gap": {
+          "semantics": "separated_surface_gap_m",
+          "status": "measured",
+          "value": 0.023000000044703484
+        },
+        "surface_proximity": {
+          "direction_status": "measured",
+          "status": "measured",
+          "value": {
+            "distance_m": 0.023000000044703484,
+            "nearest_witness": {
+              "a": [
+                0.18000000715255737,
+                0.08000000193715096,
+                0.32500001415610313
+              ],
+              "b": [
+                0.18000000715255737,
+                0.08000000193715096,
+                0.3480000142008066
+              ],
+              "direction_a_to_b": [
+                0.0,
+                0.0,
+                1.0
+              ]
+            },
+            "topology": [
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              },
+              {
+                "boundary_edge_count": 0,
+                "nonmanifold_edge_count": 0
+              }
+            ]
+          },
+          "witness_status": "measured"
+        }
+      }
+    ],
+    "context": {
+      "candidate_count": 28,
+      "capture_scope": "selected_objects",
+      "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+      "coordinate_frame": "world",
+      "currentness": "capture_snapshot",
+      "disk_status": "disk_not_checked",
+      "host_identity": {
+        "document_epoch": "0bf84518373c92ea5a4d998b331ea6acc22ee79c3416fc0d13c4936c15f8c95a",
+        "schema_version": "1.0"
+      },
+      "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+      "pair_order": "target_to_candidate",
+      "runtime_source_sha256": "53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732",
+      "scene_fingerprint": "3e0961e136aaba28b3fad3d74f54079ad98835df2e76471f60c569f7eed9df85",
+      "scene_revision": "blender:bc8200c404c4ab48755f3321ef3df1e22724f3c106a02077087ad916a9207f4f",
+      "scope": "explicit_target_candidates",
+      "selected_count": 4,
+      "source": "blender",
+      "source_check_scope": "bound_generation_identity",
+      "source_status": "loaded_generation",
+      "unit": "m"
+    },
+    "coverage": {
+      "classified_candidates": 3,
+      "requested_candidates": 3,
+      "resolved_candidates": 3,
+      "unresolved_candidates": 0
+    },
+    "execution_authority": false,
+    "measurement_contracts": {
+      "closed_solid_relation": {
+        "geometry_scope": "finite_connected_closed_orientable_non_self_intersecting_triangle_shells",
+        "method": "bounded_exact_closed_shell_v1",
+        "relation_tolerance_m": 0.0
+      },
+      "surface_proximity": {
+        "method": "exact_binary64_triangle_surface_hulls_v3",
+        "semantics": "current_evaluated_triangle_surfaces_world_metres"
+      }
+    },
+    "result_kind": "task_query",
+    "schema_version": "spatial-relations-v1",
+    "sets": {
+      "nearest_separated": {
+        "candidate_indices": [
+          1
+        ],
+        "complete": true,
+        "distance_m": 0.00010000728070735931
+      },
+      "penetrating": {
+        "candidate_indices": [
+          0
+        ],
+        "complete": true
+      }
+    },
+    "status": "observed",
+    "target": {
+      "aabb": {
+        "status": "measured",
+        "value": {
+          "dimensions": [
+            0.14000000059604645,
+            0.03999999910593033,
+            0.11999999731779099
+          ],
+          "max": [
+            0.2500000074505806,
+            0.12000000104308128,
+            0.42000001296401024
+          ],
+          "min": [
+            0.11000000685453415,
+            0.08000000193715096,
+            0.30000001564621925
+          ]
+        }
+      },
+      "instance_id": "175",
+      "name": "N16",
+      "object_id": "blender:d3f91492188a2ad6163705c33f9c11727e3afee34d473b79735b520165f7bbc5"
+    },
+    "trace_id": "1f7471d739564ff9a1f30c1443bdeb0e"
+  },
+  "public_event_source_hashes": {
+    "source_line_sha256": "88dda8424e9b993d15657e297562f03bd58edc9f875579e8300fc080a18337db",
+    "source_sha256": "66c7ca818caa3210fe48654b465371b41a7304283bc825bcf2306d82eb3fa6c4"
+  },
+  "source": {
+    "bytes": 33566,
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_local_relation_consumption_001\\quality_handoff\\handoff_01\\public\\answer_1acac64d24eaf8de\\tool_evidence.json",
+    "sha256": "fed04a1f248a7957f9e843fc7adffe0e05501e48e40a0980f922e9cb4e8e53e9"
+  },
+  "stage1": {
+    "attempt_array_index": 0,
+    "attempt_order": 1,
+    "code": "import bpy, numpy as np\nfor obj in bpy.context.scene.objects:\n if obj.type=='MESH':\n  pts=np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]); low=pts.min(0); high=pts.max(0)\n  print(obj.name, obj.data.name, 'min',low.round(7).tolist(),'max',high.round(7).tolist(),'center',((low+high)/2).round(7).tolist())\n",
+    "code_pointer": "/owner_attempts/0/request/params/arguments/code",
+    "code_utf8_sha256": "ae99aca9d41f16e73d846bb8c62e301d97b47daa8b7d334791361eb599ac7d34",
+    "original_request_files": [
+      {
+        "kind": "REQUEST.json",
+        "original_sha256": "52de126ee2659161a5383efbc76b2d5f9f0c62b9f6a0b376eb10a91ba7d71de8"
+      },
+      {
+        "kind": "RESPONSE.json",
+        "original_sha256": "dc0aa120cae206a989306fecbde56e3d5b15f4ac700f63bf72251dc1d5c01504"
+      },
+      {
+        "kind": "ATTEMPT.json",
+        "original_sha256": "421f0014c932fbc6f4747dc92696a9239ac4c7db6e96aeb04f66d5f7fac04faa"
+      }
+    ],
+    "request_pointer": "/owner_attempts/0/request",
+    "response_pointer": "/owner_attempts/0/responses/0/value",
+    "returned_transport_text": "{\"result\":{\"executed\":true,\"result\":\"N22 G01 min [-0.57, 0.2775, 0.025] max [0.57, 0.3025, 0.935] center [0.0, 0.29, 0.48]\\nN21 G02 min [-0.57, -0.28, 0.025] max [0.57, 0.36, 0.085] center [0.0, 0.04, 0.055]\\nN01 G03 min [-0.5675, -0.27, 0.045] max [-0.5325, 0.35, 0.895] center [-0.55, 0.04, 0.47]\\nN14 G04 min [0.5325, -0.27, 0.045] max [0.5675, 0.35, 0.895] center [0.55, 0.04, 0.47]\\nN24 G05 min [-0.51, 0.0675, 0.25] max [0.51, 0.1525, 0.3] center [0.0, 0.11, 0.275]\\nN12 G05 min [-0.51, 0.0675, 0.62] max [0.51, 0.1525, 0.67] center [0.0, 0.11, 0.645]\\nN10 G06 min [-0.44, -0.1375, 0.386] max [0.44, -0.1025, 0.424] center [0.0, -0.12, 0.405]\\nN11 G07 min [-0.5, 0.21, 0.48] max [0.5, 0.25, 0.52] center [0.0, 0.23, 0.5]\\nN15 G08 min [-0.37, -0.05, 0.3] max [-0.23, -0.01, 0.42] center [-0.3, -0.03, 0.36]\\nN18 G08 min [0.11, 0.14, 0.67] max [0.25, 0.18, 0.79] center [0.18, 0.16, 0.73]\\nN25 G08 min [-0.13, -0.29, 0.3] max [0.01, -0.25, 0.42] center [-0.06, -0.27, 0.36]\\nN16 G08 min [0.11, 0.08, 0.3] max [0.25, 0.12, 0.42] center [0.18, 0.1, 0.36]\\nN13 G09 min [0.24, 0.07, 0.33] max [0.26, 0.13, 0.39] center [0.25, 0.1, 0.36]\\nN08 G10 min [0.0899, 0.075, 0.335] max [0.1099, 0.125, 0.385] center [0.0999, 0.1, 0.36]\\nN28 G11 min [0.168, -0.03, 0.348] max [0.192, 0.24, 0.372] center [0.18, 0.105, 0.36]\\nN04 G12 min [0.372, 0.137, 0.23] max [0.408, 0.173, 0.75] center [0.39, 0.155, 0.49]\\nN19 G13 min [0.452, 0.137, 0.23] max [0.488, 0.173, 0.75] center [0.47, 0.155, 0.49]\\nN09 G14 min [0.15, 0.137, 0.732] max [0.39, 0.173, 0.768] center [0.27, 0.155, 0.75]\\nN17 G15 min [0.28, 0.137, 0.212] max [0.47, 0.173, 0.248] center [0.375, 0.155, 0.23]\\nN02 G16 min [-0.4716686, -0.0089951, 0.4211561] max [0.4316686, 0.0389951, 0.6088438] center [-0.02, 0.015, 0.515]\\nN27 G17 min [-0.4522879, -0.0168388, 0.3832411] max [0.4222879, 0.1868389, 0.6367589] center [-0.015, 0.085, 0.51]\\nN23 G18 min [-0.41, -0.231, 0.465] max [-0.03, -0.209, 0.595] center [-0.22, -0.22, 0.53]\\nN20 G19 min [0.2825, -0.0575, 0.49] max [0.3175, -0.0225, 0.71] center [0.3, -0.04, 0.6]\\nN07 G20 min [-0.185, 0.14, 0.465] max [-0.055, 0.22, 0.575] center [-0.12, 0.18, 0.52]\\nN26 G21 min [-0.17, 0.12, 0.49] max [-0.07, 0.134, 0.55] center [-0.12, 0.127, 0.52]\\nN06 G22 min [-0.515, 0.185, 0.795] max [-0.465, 0.215, 0.845] center [-0.49, 0.2, 0.82]\\nN05 G23 min [0.465, 0.185, 0.795] max [0.515, 0.215, 0.845] center [0.49, 0.2, 0.82]\\nN03 G24 min [0.2825, 0.125, 0.2125] max [0.3175, 0.185, 0.2475] center [0.3, 0.155, 0.23]\\n\"},\"status\":\"success\"}",
+    "returned_transport_text_utf8_sha256": "9110d95a8a13561c00ea09bbc1b1e6a5654e2e287cf74dab70baaee78a1e6e29",
+    "stdout": "N22 G01 min [-0.57, 0.2775, 0.025] max [0.57, 0.3025, 0.935] center [0.0, 0.29, 0.48]\nN21 G02 min [-0.57, -0.28, 0.025] max [0.57, 0.36, 0.085] center [0.0, 0.04, 0.055]\nN01 G03 min [-0.5675, -0.27, 0.045] max [-0.5325, 0.35, 0.895] center [-0.55, 0.04, 0.47]\nN14 G04 min [0.5325, -0.27, 0.045] max [0.5675, 0.35, 0.895] center [0.55, 0.04, 0.47]\nN24 G05 min [-0.51, 0.0675, 0.25] max [0.51, 0.1525, 0.3] center [0.0, 0.11, 0.275]\nN12 G05 min [-0.51, 0.0675, 0.62] max [0.51, 0.1525, 0.67] center [0.0, 0.11, 0.645]\nN10 G06 min [-0.44, -0.1375, 0.386] max [0.44, -0.1025, 0.424] center [0.0, -0.12, 0.405]\nN11 G07 min [-0.5, 0.21, 0.48] max [0.5, 0.25, 0.52] center [0.0, 0.23, 0.5]\nN15 G08 min [-0.37, -0.05, 0.3] max [-0.23, -0.01, 0.42] center [-0.3, -0.03, 0.36]\nN18 G08 min [0.11, 0.14, 0.67] max [0.25, 0.18, 0.79] center [0.18, 0.16, 0.73]\nN25 G08 min [-0.13, -0.29, 0.3] max [0.01, -0.25, 0.42] center [-0.06, -0.27, 0.36]\nN16 G08 min [0.11, 0.08, 0.3] max [0.25, 0.12, 0.42] center [0.18, 0.1, 0.36]\nN13 G09 min [0.24, 0.07, 0.33] max [0.26, 0.13, 0.39] center [0.25, 0.1, 0.36]\nN08 G10 min [0.0899, 0.075, 0.335] max [0.1099, 0.125, 0.385] center [0.0999, 0.1, 0.36]\nN28 G11 min [0.168, -0.03, 0.348] max [0.192, 0.24, 0.372] center [0.18, 0.105, 0.36]\nN04 G12 min [0.372, 0.137, 0.23] max [0.408, 0.173, 0.75] center [0.39, 0.155, 0.49]\nN19 G13 min [0.452, 0.137, 0.23] max [0.488, 0.173, 0.75] center [0.47, 0.155, 0.49]\nN09 G14 min [0.15, 0.137, 0.732] max [0.39, 0.173, 0.768] center [0.27, 0.155, 0.75]\nN17 G15 min [0.28, 0.137, 0.212] max [0.47, 0.173, 0.248] center [0.375, 0.155, 0.23]\nN02 G16 min [-0.4716686, -0.0089951, 0.4211561] max [0.4316686, 0.0389951, 0.6088438] center [-0.02, 0.015, 0.515]\nN27 G17 min [-0.4522879, -0.0168388, 0.3832411] max [0.4222879, 0.1868389, 0.6367589] center [-0.015, 0.085, 0.51]\nN23 G18 min [-0.41, -0.231, 0.465] max [-0.03, -0.209, 0.595] center [-0.22, -0.22, 0.53]\nN20 G19 min [0.2825, -0.0575, 0.49] max [0.3175, -0.0225, 0.71] center [0.3, -0.04, 0.6]\nN07 G20 min [-0.185, 0.14, 0.465] max [-0.055, 0.22, 0.575] center [-0.12, 0.18, 0.52]\nN26 G21 min [-0.17, 0.12, 0.49] max [-0.07, 0.134, 0.55] center [-0.12, 0.127, 0.52]\nN06 G22 min [-0.515, 0.185, 0.795] max [-0.465, 0.215, 0.845] center [-0.49, 0.2, 0.82]\nN05 G23 min [0.465, 0.185, 0.795] max [0.515, 0.215, 0.845] center [0.49, 0.2, 0.82]\nN03 G24 min [0.2825, 0.125, 0.2125] max [0.3175, 0.185, 0.2475] center [0.3, 0.155, 0.23]\n",
+    "stdout_pointer_in_decoded_transport_text": "/result/result",
+    "stdout_utf8_bytes": 2448,
+    "stdout_utf8_sha256": "ec7ddadc3bc5152db6a460083afffea27731fcb91f95faa6883a6c5a4e92c1a6",
+    "transport_text_pointer": "/owner_attempts/0/responses/0/value/result/content/0/text"
+  },
+  "stage1_directory": {
+    "N01": {
+      "bounds": {
+        "max": [
+          -0.5325,
+          0.35,
+          0.895
+        ],
+        "min": [
+          -0.5675,
+          -0.27,
+          0.045
+        ]
+      },
+      "center": [
+        -0.55,
+        0.04,
+        0.47
+      ],
+      "data": "G03",
+      "name": "N01"
+    },
+    "N02": {
+      "bounds": {
+        "max": [
+          0.4316686,
+          0.0389951,
+          0.6088438
+        ],
+        "min": [
+          -0.4716686,
+          -0.0089951,
+          0.4211561
+        ]
+      },
+      "center": [
+        -0.02,
+        0.015,
+        0.515
+      ],
+      "data": "G16",
+      "name": "N02"
+    },
+    "N03": {
+      "bounds": {
+        "max": [
+          0.3175,
+          0.185,
+          0.2475
+        ],
+        "min": [
+          0.2825,
+          0.125,
+          0.2125
+        ]
+      },
+      "center": [
+        0.3,
+        0.155,
+        0.23
+      ],
+      "data": "G24",
+      "name": "N03"
+    },
+    "N04": {
+      "bounds": {
+        "max": [
+          0.408,
+          0.173,
+          0.75
+        ],
+        "min": [
+          0.372,
+          0.137,
+          0.23
+        ]
+      },
+      "center": [
+        0.39,
+        0.155,
+        0.49
+      ],
+      "data": "G12",
+      "name": "N04"
+    },
+    "N05": {
+      "bounds": {
+        "max": [
+          0.515,
+          0.215,
+          0.845
+        ],
+        "min": [
+          0.465,
+          0.185,
+          0.795
+        ]
+      },
+      "center": [
+        0.49,
+        0.2,
+        0.82
+      ],
+      "data": "G23",
+      "name": "N05"
+    },
+    "N06": {
+      "bounds": {
+        "max": [
+          -0.465,
+          0.215,
+          0.845
+        ],
+        "min": [
+          -0.515,
+          0.185,
+          0.795
+        ]
+      },
+      "center": [
+        -0.49,
+        0.2,
+        0.82
+      ],
+      "data": "G22",
+      "name": "N06"
+    },
+    "N07": {
+      "bounds": {
+        "max": [
+          -0.055,
+          0.22,
+          0.575
+        ],
+        "min": [
+          -0.185,
+          0.14,
+          0.465
+        ]
+      },
+      "center": [
+        -0.12,
+        0.18,
+        0.52
+      ],
+      "data": "G20",
+      "name": "N07"
+    },
+    "N08": {
+      "bounds": {
+        "max": [
+          0.1099,
+          0.125,
+          0.385
+        ],
+        "min": [
+          0.0899,
+          0.075,
+          0.335
+        ]
+      },
+      "center": [
+        0.0999,
+        0.1,
+        0.36
+      ],
+      "data": "G10",
+      "name": "N08"
+    },
+    "N09": {
+      "bounds": {
+        "max": [
+          0.39,
+          0.173,
+          0.768
+        ],
+        "min": [
+          0.15,
+          0.137,
+          0.732
+        ]
+      },
+      "center": [
+        0.27,
+        0.155,
+        0.75
+      ],
+      "data": "G14",
+      "name": "N09"
+    },
+    "N10": {
+      "bounds": {
+        "max": [
+          0.44,
+          -0.1025,
+          0.424
+        ],
+        "min": [
+          -0.44,
+          -0.1375,
+          0.386
+        ]
+      },
+      "center": [
+        0.0,
+        -0.12,
+        0.405
+      ],
+      "data": "G06",
+      "name": "N10"
+    },
+    "N11": {
+      "bounds": {
+        "max": [
+          0.5,
+          0.25,
+          0.52
+        ],
+        "min": [
+          -0.5,
+          0.21,
+          0.48
+        ]
+      },
+      "center": [
+        0.0,
+        0.23,
+        0.5
+      ],
+      "data": "G07",
+      "name": "N11"
+    },
+    "N12": {
+      "bounds": {
+        "max": [
+          0.51,
+          0.1525,
+          0.67
+        ],
+        "min": [
+          -0.51,
+          0.0675,
+          0.62
+        ]
+      },
+      "center": [
+        0.0,
+        0.11,
+        0.645
+      ],
+      "data": "G05",
+      "name": "N12"
+    },
+    "N13": {
+      "bounds": {
+        "max": [
+          0.26,
+          0.13,
+          0.39
+        ],
+        "min": [
+          0.24,
+          0.07,
+          0.33
+        ]
+      },
+      "center": [
+        0.25,
+        0.1,
+        0.36
+      ],
+      "data": "G09",
+      "name": "N13"
+    },
+    "N14": {
+      "bounds": {
+        "max": [
+          0.5675,
+          0.35,
+          0.895
+        ],
+        "min": [
+          0.5325,
+          -0.27,
+          0.045
+        ]
+      },
+      "center": [
+        0.55,
+        0.04,
+        0.47
+      ],
+      "data": "G04",
+      "name": "N14"
+    },
+    "N15": {
+      "bounds": {
+        "max": [
+          -0.23,
+          -0.01,
+          0.42
+        ],
+        "min": [
+          -0.37,
+          -0.05,
+          0.3
+        ]
+      },
+      "center": [
+        -0.3,
+        -0.03,
+        0.36
+      ],
+      "data": "G08",
+      "name": "N15"
+    },
+    "N16": {
+      "bounds": {
+        "max": [
+          0.25,
+          0.12,
+          0.42
+        ],
+        "min": [
+          0.11,
+          0.08,
+          0.3
+        ]
+      },
+      "center": [
+        0.18,
+        0.1,
+        0.36
+      ],
+      "data": "G08",
+      "name": "N16"
+    },
+    "N17": {
+      "bounds": {
+        "max": [
+          0.47,
+          0.173,
+          0.248
+        ],
+        "min": [
+          0.28,
+          0.137,
+          0.212
+        ]
+      },
+      "center": [
+        0.375,
+        0.155,
+        0.23
+      ],
+      "data": "G15",
+      "name": "N17"
+    },
+    "N18": {
+      "bounds": {
+        "max": [
+          0.25,
+          0.18,
+          0.79
+        ],
+        "min": [
+          0.11,
+          0.14,
+          0.67
+        ]
+      },
+      "center": [
+        0.18,
+        0.16,
+        0.73
+      ],
+      "data": "G08",
+      "name": "N18"
+    },
+    "N19": {
+      "bounds": {
+        "max": [
+          0.488,
+          0.173,
+          0.75
+        ],
+        "min": [
+          0.452,
+          0.137,
+          0.23
+        ]
+      },
+      "center": [
+        0.47,
+        0.155,
+        0.49
+      ],
+      "data": "G13",
+      "name": "N19"
+    },
+    "N20": {
+      "bounds": {
+        "max": [
+          0.3175,
+          -0.0225,
+          0.71
+        ],
+        "min": [
+          0.2825,
+          -0.0575,
+          0.49
+        ]
+      },
+      "center": [
+        0.3,
+        -0.04,
+        0.6
+      ],
+      "data": "G19",
+      "name": "N20"
+    },
+    "N21": {
+      "bounds": {
+        "max": [
+          0.57,
+          0.36,
+          0.085
+        ],
+        "min": [
+          -0.57,
+          -0.28,
+          0.025
+        ]
+      },
+      "center": [
+        0.0,
+        0.04,
+        0.055
+      ],
+      "data": "G02",
+      "name": "N21"
+    },
+    "N22": {
+      "bounds": {
+        "max": [
+          0.57,
+          0.3025,
+          0.935
+        ],
+        "min": [
+          -0.57,
+          0.2775,
+          0.025
+        ]
+      },
+      "center": [
+        0.0,
+        0.29,
+        0.48
+      ],
+      "data": "G01",
+      "name": "N22"
+    },
+    "N23": {
+      "bounds": {
+        "max": [
+          -0.03,
+          -0.209,
+          0.595
+        ],
+        "min": [
+          -0.41,
+          -0.231,
+          0.465
+        ]
+      },
+      "center": [
+        -0.22,
+        -0.22,
+        0.53
+      ],
+      "data": "G18",
+      "name": "N23"
+    },
+    "N24": {
+      "bounds": {
+        "max": [
+          0.51,
+          0.1525,
+          0.3
+        ],
+        "min": [
+          -0.51,
+          0.0675,
+          0.25
+        ]
+      },
+      "center": [
+        0.0,
+        0.11,
+        0.275
+      ],
+      "data": "G05",
+      "name": "N24"
+    },
+    "N25": {
+      "bounds": {
+        "max": [
+          0.01,
+          -0.25,
+          0.42
+        ],
+        "min": [
+          -0.13,
+          -0.29,
+          0.3
+        ]
+      },
+      "center": [
+        -0.06,
+        -0.27,
+        0.36
+      ],
+      "data": "G08",
+      "name": "N25"
+    },
+    "N26": {
+      "bounds": {
+        "max": [
+          -0.07,
+          0.134,
+          0.55
+        ],
+        "min": [
+          -0.17,
+          0.12,
+          0.49
+        ]
+      },
+      "center": [
+        -0.12,
+        0.127,
+        0.52
+      ],
+      "data": "G21",
+      "name": "N26"
+    },
+    "N27": {
+      "bounds": {
+        "max": [
+          0.4222879,
+          0.1868389,
+          0.6367589
+        ],
+        "min": [
+          -0.4522879,
+          -0.0168388,
+          0.3832411
+        ]
+      },
+      "center": [
+        -0.015,
+        0.085,
+        0.51
+      ],
+      "data": "G17",
+      "name": "N27"
+    },
+    "N28": {
+      "bounds": {
+        "max": [
+          0.192,
+          0.24,
+          0.372
+        ],
+        "min": [
+          0.168,
+          -0.03,
+          0.348
+        ]
+      },
+      "center": [
+        0.18,
+        0.105,
+        0.36
+      ],
+      "data": "G11",
+      "name": "N28"
+    }
+  },
+  "wrapper_fields": {
+    "owner": [
+      "content",
+      "isError"
+    ],
+    "public_event": [
+      "content",
+      "structured_content"
+    ]
+  }
+}

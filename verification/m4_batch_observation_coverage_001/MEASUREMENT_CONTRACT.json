@@ -1,0 +1,38 @@
+{
+  "cycle_id": "M4-BATCH-OBSERVATION-COVERAGE-001",
+  "frozen_before_projection_measurements": true,
+  "manifest_sha256": "c4afc33d5f1eb9c01093d1540caeb0102fa30a1c0d01f908c7214288617bb8fa",
+  "prototype_draft_sha256": "e101bb32c9a9582f596f2e41d3d3ce02864b0f8865513b666396bb2fec1e220f",
+  "prototype_final_sha256": "4faa9a915fc4e139978496cf53505be248e98dc058493c2649d5e2a864a9ac73",
+  "native_sha256": "6d2d9e88d50df076ed7f2fdec43051bea4f4c5c85edd5bf0775c2cb4dd8ee3f4",
+  "verifier_sha256": "dcdf2e1f35b6b258efb0e8c45be85c7374f771b83a5fea974a90a85a0a249ea5",
+  "runner_sha256": "98dc644b304a1d6eed82e7480a603d6b88c4a8e1039bf3cb6ead33f0a5184d3a",
+  "fixtures": 4,
+  "lanes": [
+    "draft",
+    "final",
+    "native"
+  ],
+  "workers": 12,
+  "worker_kind": "ordinary isolated offline Python projection",
+  "samples_per_worker": 21,
+  "warmup_calls_per_worker": 1,
+  "timed_region": "directory projection + selected projection + two compact UTF8 JSON encodings with final LF",
+  "excluded_from_timed_region": [
+    "input parsing",
+    "world coordinate preparation",
+    "existing relation generation",
+    "host/MCP/consumer work"
+  ],
+  "memory_metrics": [
+    "one additional tracemalloc peak after timed samples",
+    "fresh worker lifetime OS peak through memory snapshot"
+  ],
+  "comparison": "same retained input, same selectors, precision and response layout; native has equal permission to retain and batch",
+  "baseline_relation_input": "Identical precomputed facts supplied to both. Native production of equivalent facts is unmeasured.",
+  "simplification": "one fixed removal of directory center; AABB remains available for derivation",
+  "model_consumers": 0,
+  "product_processes": 0,
+  "Blender_sessions": 0,
+  "new_images": 0
+}

@@ -1,0 +1,48 @@
+{
+  "cycle_id": "M4-BATCH-OBSERVATION-COVERAGE-001",
+  "scope": "Frozen finite validation rules for saved observations and a same-information native projection",
+  "seed": "M4-BATCH-OBSERVATION-COVERAGE-001/validation/v1",
+  "source_requirement": "Root-pinned input_02 from P1 lrc03 saved INITIAL and actual tool02 response/capture. Four captured objects use exact resource triangles; other objects explicitly retain source polygons. Original source and relation context are preserved.",
+  "revision": "fixture_02_source_contract_correction",
+  "prior_fixture": "history/fixture_01 retains every original specification, generator, derived fixture, manifest, verifier and native source. No correctness or performance run used fixture_01.",
+  "variants": [
+    {
+      "name": "renamed_ids_reordered",
+      "rule": "Rank original object IDs independently by SHA256(seed|id|ID), assign offline-r-NNNN IDs, name each object asset_ plus SHA256(seed|name|ID) first12hex, order objects by SHA256(seed|order|ID). Retarget stored relation pair IDs using the explicit map. Preserve geometry, facts and original context."
+    },
+    {
+      "name": "proper_rotation_z90",
+      "rotation": [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+      "translation_m": [0, 0, 0],
+      "coordinate_rule": "(x,y,z) -> (-y,x,z), using copies/sign changes only",
+      "relation_rule": "Preserve the existing three fact scalars and topology by exact isometry. Transform only explicit local_evidence triangle_vertices_world_m/point_world_m and surface_proximity.value.nearest_witness a/b/direction_a_to_b. Preserve all remaining fields. Keep original capture context with derived-fixture provenance."
+    },
+    {
+      "name": "additional_same_shape_object",
+      "clone_rule": "Clone the object named by the first existing stored relation target_id. Assign offline-distractor-v1 and asset_distractor_v1. Preserve its faces and face_kind. Translate all world vertices by (2,0,0) with an exact Fraction-to-binary64 equality check. Keep every original object and original relation. Add no relation for the clone."
+    }
+  ],
+  "comparison_contract": {
+    "functions": ["directory(bundle)", "selected_observation(bundle,request)"],
+    "object_fields": ["vertices_world", "faces"],
+    "face_kind": "captured_triangles for the four actual selected-capture objects; source_polygons for the remaining directory objects",
+    "native_policy": "Same bundle, source binding, field selection, precision, compact output layout and existing relation facts. Batch reads and retained inputs are allowed equally.",
+    "performance_execution_owner": "root",
+    "geometry_expectations": "Independent saved source values and exact signed-coordinate transformations; no product output generates expected geometry or relations"
+  },
+  "generic_checks": [
+    "source mismatch produces unknown with no selected payload",
+    "unknown object and unsupported object field remain explicit gaps",
+    "reversed or absent ordered relation is a gap",
+    "unavailable relation field is a gap",
+    "recorded unknown fact remains unknown",
+    "returned values do not mutate retained input",
+    "name is not guessed as an unrelated object ID",
+    "directory never expands vertices/faces or labels the task target"
+  ],
+  "model_consumers": 0,
+  "Blender_sessions": 0,
+  "product_processes": 0,
+  "new_images": 0,
+  "performance_measurements_run_here": 0
+}
