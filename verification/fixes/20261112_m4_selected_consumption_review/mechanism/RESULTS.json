@@ -1,0 +1,1134 @@
+{
+  "cells": [
+    {
+      "cell": "sgc01",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "N",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": null,
+      "legacy_close_event_status": "unknown",
+      "mixed_tool_attempts": 0,
+      "original_native_geometry_delivery_call": 2,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 5,
+      "post_relation_classes": [],
+      "post_relation_supplements": null,
+      "prior_program_cache": "Full world coordinates for all meshes stored in verts by call1; call1 exposes bounds/centers only.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": null,
+      "round": 1,
+      "route": "native directory -> native cached coordinates plus live polygons and derived centers",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nverts={n:np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices],dtype=float) for n,o in objs.items()}\nfor n,o in sorted(objs.items()):\n a=verts[n]; print(n,o.data.name,'verts',len(a),'min',np.round(a.min(0),7).tolist(),'max',np.round(a.max(0),7).tolist(),'center',np.round((a.min(0)+a.max(0))/2,7).tolist())\nprint('camera',[(o.name,tuple(o.location),o.data.type) for o in bpy.context.scene.objects if o.type=='CAMERA'])",
+          "delivered_stdout_bytes": 2779,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2998,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\ATTEMPT.json",
+          "code": "for n in ['N16','N13','N08','N28','N12','N04','N19']:\n o=objs[n];print('\\n',n,'matrix',np.round(np.array(o.matrix_world),9).tolist());print('world_vertices',[(i,tuple(round(float(t),9) for t in v)) for i,v in enumerate(verts[n])]);print('polygons',[tuple(p.vertices) for p in o.data.polygons])\nmid=(verts['N04'].min(0)+verts['N04'].max(0)+verts['N19'].min(0)+verts['N19'].max(0))/4\nprint('pipe_mid_xy',mid[:2].tolist())\nfor n in ['N15','N16','N18','N25']:\n c=(verts[n].min(0)+verts[n].max(0))/2\n print(n,'center',c.tolist(),'radius',float(np.linalg.norm(c[:2]-mid[:2])))",
+          "delivered_stdout_bytes": 8565,
+          "index": 2,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 8792,
+          "worker_sequence": 3
+        }
+      ],
+      "total_tool_attempts": 2
+    },
+    {
+      "cell": "sgc02",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "P",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_calls": [
+        3
+      ],
+      "mixed_tool_attempts": 1,
+      "out_of_set_new_shape_attempts": 1,
+      "physical_worker_RPC_including_snapshots_and_close": 6,
+      "post_relation_classes": [
+        "in_scope_geometry_information:new_scene_read:N16",
+        "out_of_set_reference_information:new_scene_read:N12,N24",
+        "repeated_center_or_simple_distance:N15,N16,N18,N25,N04,N19"
+      ],
+      "post_relation_supplements": 1,
+      "prior_program_cache": "No whole-scene coordinate cache; coords(o) rereads object vertices.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "round": 1,
+      "route": "native directory -> relations -> mixed native shape and reference supplement",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\ndef coords(o): return np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices],dtype=float)\nfor name,o in sorted(meshes.items()):\n a=coords(o); lo=a.min(0); hi=a.max(0)\n print(name, 'mesh',o.data.name,'min',lo.round(7).tolist(),'max',hi.round(7).tolist(),'center',((lo+hi)/2).round(7).tolist())\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\n",
+          "delivered_stdout_bytes": 2605,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2824,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "380828753012f1cd0c5e02bcf37370baba78b50bf09b6e5191bbb7789c494f03",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732",
+            "scene_fingerprint": "f72d415c0f3c010de9f3040626ee292ac88a61d29290f7071a460bdd612b04b2",
+            "scene_revision": "blender:3823f863b89996494b917be9c7bcb1a402ec505154889b247a0bd0b6ff727530",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 6921,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\ATTEMPT.json",
+          "code": "for name in ['N16','N12','N24']:\n o=meshes[name]; a=coords(o)\n print(name,'world vertices',a.round(9).tolist())\nmid=(coords(meshes['N04']).min(0)+coords(meshes['N04']).max(0)+coords(meshes['N19']).min(0)+coords(meshes['N19']).max(0))/4\nprint('pipe midpoint XY',mid[:2].tolist())\nfor name in ['N15','N16','N18','N25']:\n a=coords(meshes[name]); c=(a.min(0)+a.max(0))/2\n print(name,'center',c.tolist(),'xy_distance_to_pipes',float(np.linalg.norm(c[:2]-mid[:2])))\n",
+          "delivered_stdout_bytes": 2473,
+          "index": 3,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\RESPONSE.json",
+          "response_bytes": 2650,
+          "worker_sequence": 4
+        }
+      ],
+      "total_tool_attempts": 3
+    },
+    {
+      "adoption_final_feature_evidence": {
+        "frame_inner_x": [
+          0.13500000536441803,
+          0.22500000894069672
+        ],
+        "frame_inner_z": [
+          0.32500001415610313,
+          0.39500001445412636
+        ],
+        "frame_y_extent": [
+          0.08000000193715096,
+          0.12000000104308128
+        ],
+        "rod_x": [
+          0.16800000704824924,
+          0.1920000072568655
+        ],
+        "rod_z": [
+          0.3480000142008066,
+          0.3720000144094229
+        ],
+        "strict_interior_point_used_in_final": [
+          0.245,
+          0.1,
+          0.36
+        ]
+      },
+      "adoption_scope": "Externally supported use of previously unexposed N16 opening/material extents and correct relation evidence; not a claim about hidden attention or every returned field.",
+      "avoided_same_class_local_supplement": true,
+      "cell": "sgc03",
+      "geometry_correctly_used": true,
+      "geometry_fields_added": "Complete current captured world vertices and triangle connectivity for N16/N13/N08/N28; call1 only exposed bounds/centers.",
+      "geometry_requested": true,
+      "group": "G",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_calls": [
+        3
+      ],
+      "mixed_tool_attempts": 1,
+      "out_of_set_new_shape_attempts": 1,
+      "physical_worker_RPC_including_snapshots_and_close": 6,
+      "post_relation_classes": [
+        "out_of_set_reference_information:new_scene_read:N24,N12,N04,N19",
+        "repeated_center_or_simple_distance:new_scene_read_and_compute:N15,N18,N25,N16"
+      ],
+      "post_relation_supplements": 0,
+      "prior_program_cache": "Object references/functions only; complete N16 arrays were not model-visible before relation.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "remaining_call_note": "bounds(objs[N16]) internally rereads vertices, but delivers only repeated center/arithmetic, not new in-scope local shape.",
+      "round": 1,
+      "route": "native directory -> relations+full geometry -> outside-reference shapes and repeated centers",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, json\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\ndef worldverts(o): return [o.matrix_world@v.co for v in o.data.vertices]\ndef bounds(o):\n v=worldverts(o); return [[min(p[i] for p in v) for i in range(3)],[max(p[i] for p in v) for i in range(3)]]\nprint(json.dumps([{'name':o.name,'mesh':o.data.name,'bounds':bounds(o),'center':[(a+b)/2 for a,b in zip(*bounds(o))]} for o in objs.values()],indent=1))",
+          "delivered_stdout_bytes": 8570,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 10919,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "320915704a57b67c14b79096f8655546fb155db3a67e1b913683a70d2a9799ef",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "4ebc3910652ee461d9fa7476c8df0ecf6312580d6a02e1066c0eac88bef5c76c",
+            "scene_fingerprint": "83f9772efae3ff82df70dc313f8445009abe10593ca56670935f00a97f12fbf9",
+            "scene_revision": "blender:d40cf9588155d18449e34a0f4b78952d920ff33c4e542b7d5b8f48e1a89c2cb2",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "geometry_contract": {
+            "triangles": "zero_based_triplets_index_vertices_world_in_captured_order",
+            "vertices_world": "current_evaluated_vertices_world_metres_in_captured_order"
+          },
+          "geometry_counts": {
+            "N08": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N13": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N16": {
+              "triangles": 32,
+              "vertices": 16
+            },
+            "N28": {
+              "triangles": 44,
+              "vertices": 24
+            }
+          },
+          "geometry_sha256": "f244f4883eb65a507b68f688b3ba82e8c830c8ff15785a901da015d77dbf90bd",
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 12067,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\ATTEMPT.json",
+          "code": "import math\nfor name in ['N24','N12','N04','N19']:\n o=objs[name]\n print(name,'local vertices', [tuple(round(float(c),6) for c in v.co) for v in o.data.vertices], 'matrix', [list(r) for r in o.matrix_world])\nmid=(.43,.155)\nfor name in ['N15','N18','N25','N16']:\n lo,hi=bounds(objs[name]); c=[(a+b)/2 for a,b in zip(lo,hi)]\n print(name,'center',c,'pipe_midpoint_XY_distance',math.hypot(c[0]-mid[0],c[1]-mid[1]))",
+          "delivered_stdout_bytes": 3124,
+          "index": 3,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\RESPONSE.json",
+          "response_bytes": 3301,
+          "worker_sequence": 4
+        }
+      ],
+      "total_tool_attempts": 3
+    },
+    {
+      "cell": "sgc04",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "P",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_calls": [
+        3
+      ],
+      "mixed_tool_attempts": 1,
+      "out_of_set_new_shape_attempts": 1,
+      "physical_worker_RPC_including_snapshots_and_close": 6,
+      "post_relation_classes": [
+        "in_scope_geometry_information:consumer_cache_print:N16",
+        "out_of_set_reference_information:consumer_cache_print:N12,N24,N04,N19",
+        "repeated_center_or_simple_distance:consumer_cache_compute:N15,N16,N18,N25"
+      ],
+      "post_relation_supplements": 1,
+      "prior_program_cache": "Full world coordinates for all meshes stored in verts by call1; only bounds/centers exposed then.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "remaining_call_note": "Zero new scene acquisition in call3 does not remove this first model-visible local-shape delivery or its round trip.",
+      "round": 2,
+      "route": "native directory/cache -> relations -> cached arrays first printed to model and center arithmetic",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np, json\nfrom mathutils import Vector\nmeshes={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nverts={name:np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices]) for name,o in meshes.items()}\nfor name,o in sorted(meshes.items()):\n a=verts[name]; print(name,o.data.name,'min',np.round(a.min(0),7).tolist(),'max',np.round(a.max(0),7).tolist(),'center',np.round((a.min(0)+a.max(0))/2,7).tolist())",
+          "delivered_stdout_bytes": 2448,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2665,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "2da491c60c7e744c8e579a91d8eaf9461d37a12b98e48ca777e4ecea9c41df19",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732",
+            "scene_fingerprint": "409ef05dd42cd3d92170fd37f9e16569fcaa04956bb5080d78c03662d79d81e4",
+            "scene_revision": "blender:0aa8603b0480750266af08e963de364b7cd4378149d0224f8d64bd2f10d80aa7",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 6921,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\ATTEMPT.json",
+          "code": "for name in ['N16','N12','N24','N04','N19']:\n print(name,'vertices',np.round(verts[name],7).tolist())\np=np.array([.43,.155]);\nfor name in ['N15','N16','N18','N25']:\n a=verts[name]; c=(a.min(0)+a.max(0))/2\n print(name,'center',c.tolist(),'XY_distance_to_pipes_midpoint',float(np.linalg.norm(c[:2]-p)))",
+          "delivered_stdout_bytes": 2761,
+          "index": 3,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\RESPONSE.json",
+          "response_bytes": 2940,
+          "worker_sequence": 4
+        }
+      ],
+      "total_tool_attempts": 3
+    },
+    {
+      "adoption_final_feature_evidence": {
+        "frame_inner_x": [
+          0.13500000536441803,
+          0.22500000894069672
+        ],
+        "frame_inner_z": [
+          0.32500001415610313,
+          0.39500001445412636
+        ],
+        "frame_y_extent": [
+          0.08000000193715096,
+          0.12000000104308128
+        ],
+        "rod_x": [
+          0.16800000704824924,
+          0.1920000072568655
+        ],
+        "rod_z": [
+          0.3480000142008066,
+          0.3720000144094229
+        ],
+        "strict_interior_point_used_in_final": [
+          0.245,
+          0.1,
+          0.36
+        ]
+      },
+      "adoption_scope": "Externally supported use of previously unexposed N16 opening/material extents and correct relation evidence; not a claim about hidden attention or every returned field.",
+      "avoided_same_class_local_supplement": true,
+      "cell": "sgc05",
+      "geometry_correctly_used": true,
+      "geometry_fields_added": "Complete current captured world vertices and triangle connectivity for N16/N13/N08/N28; call1 only exposed bounds/centers.",
+      "geometry_requested": true,
+      "group": "G",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_tool_attempts": 0,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 5,
+      "post_relation_classes": [],
+      "post_relation_supplements": 0,
+      "prior_program_cache": "Loop coordinate buffer, not a whole-scene coordinate cache; only bounds/centers exposed.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "round": 2,
+      "route": "native directory -> relations+full geometry -> final",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nfor obj in bpy.context.scene.objects:\n if obj.type=='MESH':\n  coords=np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]); lo=coords.min(0); hi=coords.max(0)\n  print(obj.name, obj.data.name, 'bounds',lo.tolist(),hi.tolist(),'center',((lo+hi)/2).tolist())\nprint('camera', [(o.name,tuple(o.location),o.data.type) for o in bpy.context.scene.objects if o.type=='CAMERA'])",
+          "delivered_stdout_bytes": 5747,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 5966,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "21f57698e31151226a7d16c86b126e9b7778d6ad4e1b98f55589b15c97fa73c2",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "4ebc3910652ee461d9fa7476c8df0ecf6312580d6a02e1066c0eac88bef5c76c",
+            "scene_fingerprint": "5e2b19e66065df0cdb84518a46c78cb0d72f2917c052c7651fbd9fc2c6bcbaaa",
+            "scene_revision": "blender:fe169db3cac60e9519717714af9f15600f344fb01c3b37fc1fd27199aa3bd8d0",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "geometry_contract": {
+            "triangles": "zero_based_triplets_index_vertices_world_in_captured_order",
+            "vertices_world": "current_evaluated_vertices_world_metres_in_captured_order"
+          },
+          "geometry_counts": {
+            "N08": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N13": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N16": {
+              "triangles": 32,
+              "vertices": 16
+            },
+            "N28": {
+              "triangles": 44,
+              "vertices": 24
+            }
+          },
+          "geometry_sha256": "f244f4883eb65a507b68f688b3ba82e8c830c8ff15785a901da015d77dbf90bd",
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 12067,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        }
+      ],
+      "total_tool_attempts": 2
+    },
+    {
+      "cell": "sgc06",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "N",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": null,
+      "legacy_close_event_status": "unknown",
+      "mixed_tool_attempts": 0,
+      "native_third_call": "Reacquires bounds/centers, computes checks/gap from existing geometry and reads modifiers; not a repeated plugin solve because no plugin relation exists.",
+      "original_native_geometry_delivery_call": 2,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 6,
+      "post_relation_classes": [],
+      "post_relation_supplements": null,
+      "prior_program_cache": "Loop coordinate buffer; no whole-scene stored vertex dictionary.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": null,
+      "round": 2,
+      "route": "native directory -> native vertices/faces -> fresh bounds checks and arithmetic/modifier read",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nprint('meshes',len(objs))\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]);lo=v.min(0);hi=v.max(0)\n print(name,o.data.name,len(v),'bounds',lo.tolist(),hi.tolist(),'center',((lo+hi)/2).tolist())\nprint('camera',[(o.name,tuple(o.location),o.data.type) for o in bpy.context.scene.objects if o.type=='CAMERA'])",
+          "delivered_stdout_bytes": 5828,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 6049,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\ATTEMPT.json",
+          "code": "for name in ['N16','N13','N08','N28','N12','N04']:\n o=objs[name]\n print('\\n',name,'matrix', [list(row) for row in o.matrix_world])\n print('vertices',[(i,tuple(o.matrix_world@p.co)) for i,p in enumerate(o.data.vertices)])\n print('faces',[tuple(p.vertices) for p in o.data.polygons])\n",
+          "delivered_stdout_bytes": 8656,
+          "index": 2,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 8865,
+          "worker_sequence": 3
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\ATTEMPT.json",
+          "code": "def bounds(name):\n ob=objs[name]; verts=np.array([tuple(ob.matrix_world@vert.co) for vert in ob.data.vertices]); return verts.min(0),verts.max(0)\ndef center(name):\n lower,upper=bounds(name);return (lower+upper)/2\nmidheight=(center('N12')[2]+center('N24')[2])/2\npipes=(center('N04')[:2]+center('N19')[:2])/2\nrear=bounds('N10')[1][1]\nprint('rail_mid_z',midheight,'beam_rear_y',rear,'pipe_mid_xy',pipes.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name);dist=np.linalg.norm(c[:2]-pipes)\n print(name,'center',c.tolist(),'distance',dist,'conditions',bool(c[2]<midheight),bool(c[1]>rear),bool(dist<=.70))\nprint('modifiers',[(name,len(objs[name].modifiers)) for name in objs])\nprint('N08 gap m',bounds('N16')[0][0]-bounds('N08')[1][0])\nprint('N13 shared interior box',np.maximum(bounds('N16')[0],bounds('N13')[0]).tolist(),np.minimum(bounds('N16')[1],bounds('N13')[1]).tolist())\nprint('rod vertical clearances m',0.34800001978874207-0.32500001788139343,0.39500001072883606-0.3720000088214874)\n",
+          "delivered_stdout_bytes": 1223,
+          "index": 3,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\RESPONSE.json",
+          "response_bytes": 1402,
+          "worker_sequence": 4
+        }
+      ],
+      "total_tool_attempts": 3
+    },
+    {
+      "adoption_final_feature_evidence": {
+        "frame_inner_x": [
+          0.13500000536441803,
+          0.22500000894069672
+        ],
+        "frame_inner_z": [
+          0.32500001415610313,
+          0.39500001445412636
+        ],
+        "frame_y_extent": [
+          0.08000000193715096,
+          0.12000000104308128
+        ],
+        "rod_x": [
+          0.16800000704824924,
+          0.1920000072568655
+        ],
+        "rod_z": [
+          0.3480000142008066,
+          0.3720000144094229
+        ],
+        "strict_interior_point_used_in_final": [
+          0.245,
+          0.1,
+          0.36
+        ]
+      },
+      "adoption_scope": "Externally supported use of previously unexposed N16 opening/material extents and correct relation evidence; not a claim about hidden attention or every returned field.",
+      "avoided_same_class_local_supplement": true,
+      "cell": "sgc07",
+      "geometry_correctly_used": true,
+      "geometry_fields_added": "Complete current captured world vertices and triangle connectivity for N16/N13/N08/N28; call1 only exposed bounds/centers.",
+      "geometry_requested": true,
+      "group": "G",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_tool_attempts": 0,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 5,
+      "post_relation_classes": [],
+      "post_relation_supplements": 0,
+      "prior_program_cache": "Loop coordinate buffer, not whole-scene stored vertex dictionary; only bounds/centers exposed.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "round": 3,
+      "route": "native directory -> relations+full geometry -> final",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]); lo=v.min(0); hi=v.max(0)\n print(name, o.data.name, 'bounds',lo.round(7).tolist(),hi.round(7).tolist(),'center',((lo+hi)/2).round(7).tolist())",
+          "delivered_stdout_bytes": 2420,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2637,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "ae4b7ee6a437c7d4ff649faf5854da6de4a683d5761f759d7fe4fd452df9bab6",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "4ebc3910652ee461d9fa7476c8df0ecf6312580d6a02e1066c0eac88bef5c76c",
+            "scene_fingerprint": "9726989f733444e5222de61cae1c5f9ae3f11eebfbcfcdbc4d673f79d9b7a8c3",
+            "scene_revision": "blender:b3e6ec22f9fe7393b9bf5c26eb6984fee4a0172e16c5bbc8c2ba7a13985a5bab",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "geometry_contract": {
+            "triangles": "zero_based_triplets_index_vertices_world_in_captured_order",
+            "vertices_world": "current_evaluated_vertices_world_metres_in_captured_order"
+          },
+          "geometry_counts": {
+            "N08": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N13": {
+              "triangles": 12,
+              "vertices": 8
+            },
+            "N16": {
+              "triangles": 32,
+              "vertices": 16
+            },
+            "N28": {
+              "triangles": 44,
+              "vertices": 24
+            }
+          },
+          "geometry_sha256": "f244f4883eb65a507b68f688b3ba82e8c830c8ff15785a901da015d77dbf90bd",
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 12067,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        }
+      ],
+      "total_tool_attempts": 2
+    },
+    {
+      "cell": "sgc08",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "N",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": null,
+      "legacy_close_event_status": "unknown",
+      "mixed_tool_attempts": 0,
+      "original_native_geometry_delivery_call": 2,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 5,
+      "post_relation_classes": [],
+      "post_relation_supplements": null,
+      "prior_program_cache": "Call2 creates world dictionary; call1 did not expose complete per-object shape arrays.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": null,
+      "round": 3,
+      "route": "native directory -> native full-world cache plus selected vertex/face print and arithmetic",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\nprint('meshes',len(objs),'objects',len(bpy.context.scene.objects))\nfor name,o in sorted(objs.items()):\n v=np.array([tuple(o.matrix_world @ p.co) for p in o.data.vertices]);\n print(name,o.data.name,'n',len(v),'min',np.round(v.min(0),7).tolist(),'max',np.round(v.max(0),7).tolist(),'center',np.round((v.min(0)+v.max(0))/2,7).tolist())",
+          "delivered_stdout_bytes": 2596,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2815,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\ATTEMPT.json",
+          "code": "world={name:np.array([tuple(o.matrix_world @ p.co) for p in o.data.vertices],dtype=float) for name,o in objs.items()}\nfor name in ['N16','N13','N08','N28','N12','N24']:\n o=objs[name]\n print(name,'matrix', [list(row) for row in o.matrix_world], 'modifiers',[(m.name,m.type) for m in o.modifiers])\n print('vertices',world[name].tolist()); print('faces',[list(p.vertices) for p in o.data.polygons])\nmid=(world['N04'].min(0)+world['N04'].max(0)+world['N19'].min(0)+world['N19'].max(0))/4\nprint('pipe midpoint',mid)\nfor name in ['N15','N16','N18','N25']:\n c=(world[name].min(0)+world[name].max(0))/2\n print(name,'center',c.tolist(),'radial',np.linalg.norm(c[:2]-mid[:2]))\nprint('camera',[(o.name, list(o.location),list(o.rotation_euler),o.data.type,o.data.ortho_scale) for o in bpy.context.scene.objects if o.type=='CAMERA'])",
+          "delivered_stdout_bytes": 8346,
+          "index": 2,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 8555,
+          "worker_sequence": 3
+        }
+      ],
+      "total_tool_attempts": 2
+    },
+    {
+      "cell": "sgc09",
+      "geometry_correctly_used": false,
+      "geometry_requested": false,
+      "group": "P",
+      "in_scope_complete_geometry_repeat_attempts_after_plugin": 0,
+      "legacy_close_event_status": "unknown",
+      "mixed_calls": [
+        3
+      ],
+      "mixed_tool_attempts": 1,
+      "out_of_set_new_shape_attempts": 0,
+      "physical_worker_RPC_including_snapshots_and_close": 6,
+      "post_relation_classes": [
+        "in_scope_geometry_information:new_scene_read:N16,N13,N28",
+        "repeated_center_or_simple_distance:new_scene_read_and_compute:N15,N16,N18,N25"
+      ],
+      "post_relation_supplements": 1,
+      "prior_program_cache": "Loop coordinate buffer only; call3 directly rereads vertices.",
+      "quality_complete_correct": "sealed; not rescored by this audit",
+      "relation_recomputation_tool_attempts_after_plugin": 0,
+      "round": 3,
+      "route": "native directory -> relations -> native local shape plus repeated center arithmetic",
+      "source_records": {
+        "closure": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\CLOSE.json",
+        "consumer": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\CONSUMER.json",
+        "final": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\PUBLIC_FINAL.txt"
+      },
+      "tool_calls": [
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\ATTEMPT.json",
+          "code": "import bpy, numpy as np\nobjects={obj.name:obj for obj in bpy.context.scene.objects if obj.type=='MESH'}\nfor name,obj in sorted(objects.items()):\n points=np.array([tuple(obj.matrix_world @ vertex.co) for vertex in obj.data.vertices])\n print(name, 'mesh',obj.data.name,'bounds',np.round(points.min(0),7).tolist(),np.round(points.max(0),7).tolist(),'center',np.round((points.min(0)+points.max(0))/2,7).tolist())\nprint('units',bpy.context.scene.unit_settings.scale_length)\n",
+          "delivered_stdout_bytes": 2570,
+          "index": 1,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\RESPONSE.json",
+          "response_bytes": 2789,
+          "worker_sequence": 2
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\ATTEMPT.json",
+          "context": {
+            "candidate_count": 28,
+            "capture_scope": "selected_objects",
+            "certificate_scope": "Certificate category with local evidence when available. Transverse evidence identifies current captured triangles and approximates their boundary crossing; the exact midpoint is on both boundaries, not in their shared volume interior. Neither a boundary location nor surface distance is penetration depth.",
+            "coordinate_frame": "world",
+            "currentness": "capture_snapshot",
+            "disk_status": "disk_not_checked",
+            "host_identity": {
+              "document_epoch": "2b7a7d7f83eb49cc445d2901aafbd02d5d83630f39c2208f371f134419c5435f",
+              "schema_version": "1.0"
+            },
+            "identity_scope": "Object and instance IDs belong to this captured document/snapshot.",
+            "pair_order": "target_to_candidate",
+            "runtime_source_sha256": "53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732",
+            "scene_fingerprint": "b4131738cb047d6b09279d83de4ff98f718e11814cf0ffc05e60c4338f97dd9e",
+            "scene_revision": "blender:b5cc15346171bc23d523c8a30458a32bda34d29fac2eaf716c3e7582674a7011",
+            "scope": "explicit_target_candidates",
+            "selected_count": 4,
+            "source": "blender",
+            "source_check_scope": "bound_generation_identity",
+            "source_status": "loaded_generation",
+            "unit": "m"
+          },
+          "index": 2,
+          "name": "human_eye_spatial_relations",
+          "public_delivery_content_matches_owner": true,
+          "relations": [
+            {
+              "class": "penetrating",
+              "name": "N13",
+              "surface_distance_m": 0.0
+            },
+            {
+              "class": "separated",
+              "name": "N08",
+              "surface_distance_m": 0.00010000728070735931
+            },
+            {
+              "class": "separated",
+              "name": "N28",
+              "surface_distance_m": 0.023000000044703484
+            }
+          ],
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\RESPONSE.json",
+          "response_bytes": 6921,
+          "selected_names": [
+            "N16",
+            "N13",
+            "N08",
+            "N28"
+          ],
+          "worker_sequence": 3
+        },
+        {
+          "attempt": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\ATTEMPT.json",
+          "code": "for name in ['N16','N13','N28']:\n obj=objects[name]\n print(name,'world_vertices',[tuple(round(float(component),9) for component in (obj.matrix_world @ vertex.co)) for vertex in obj.data.vertices])\nmid_xy=np.array([0.43,0.155])\nfor name in ['N15','N16','N18','N25']:\n obj=objects[name]; points=np.array([tuple(obj.matrix_world @ vertex.co) for vertex in obj.data.vertices]); center=(points.min(0)+points.max(0))/2\n print(name,'center',center.tolist(),'pipe_midpoint_xy_distance',float(np.linalg.norm(center[:2]-mid_xy)))\n",
+          "delivered_stdout_bytes": 2445,
+          "index": 3,
+          "name": "execute_blender_code",
+          "public_delivery_content_matches_owner": true,
+          "request": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\REQUEST.json",
+          "response": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\RESPONSE.json",
+          "response_bytes": 2620,
+          "worker_sequence": 4
+        }
+      ],
+      "total_tool_attempts": 3
+    }
+  ],
+  "limits": [
+    "Token and cost acceptance belongs to separate cost audit; bytes do not identify exact token attribution.",
+    "Legacy worker close events remain unknown; confirmed separate close/exit records do not relabel those events.",
+    "No new PRODUCT_RUNTIME_PROOF or thin-client EXIT was inferred.",
+    "Quality was sealed 9/9 by root and fresh scorer and is not changed by route classification."
+  ],
+  "mechanism": {
+    "G_same_class_local_supplement_attempts": 0,
+    "P_same_class_local_supplement_attempts": 3,
+    "actual_tool_calls_G_vs_N": [
+      7,
+      7
+    ],
+    "actual_tool_calls_G_vs_P": [
+      7,
+      9
+    ],
+    "correctly_used_and_same_class_supplement_avoided": 3,
+    "natural_geometry_requested": 3,
+    "passed_frozen_gate": true
+  },
+  "method": "Read raw owner requests/responses/attempts, exact public completed content, consumer finals and source/closure records; classify externally observable information operations. No model code executed.",
+  "new_Blender_sessions": 0,
+  "new_images": 0,
+  "new_model_consumers": 0,
+  "new_product_processes": 0,
+  "quality_fixed_before_mechanism": true,
+  "quality_seal_sha256": "dfffad47ef02eea55389f617882a55833f1a6a46ae29978abf4b61383acadc64",
+  "source_commit": "de35ceda1f5e3f5af2c9ec02f0e4646808f417c2",
+  "source_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\CONSUMER.json": "5aa9647620a0a402818fa525e843a08f4fab30b3787c6dd170e0d6fd5af14f5c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\PUBLIC_FINAL.txt": "17d851f13f30997bdb5ea1581f0e05192881d293d5522901682f756a6275ae33",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\events.jsonl": "a1b2bf67f3ae4270ed69783f7f7c3bc44a8b3fc4d7927804b0779fb211f81dfe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\CLOSE.json": "414dd19364a304696335726d8b3f09e42c7dcec93df5aa188f913f31fa12b944",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\native\\WORKER_EVENTS.jsonl": "04222eec92daedf529cec4168d5ee9a9f5225b94eb5918e5b6b6796612d1a575",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\ATTEMPT.json": "04fb0ef710979a81108cb6d1eb73e380f095c3fcc53f24fbe8df5662a7fd7f08",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\REQUEST.json": "ec4211fc45a9e11bb15125da3594f8f55312273d5e3ec9bace7d7bed4423bf66",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_01\\RESPONSE.json": "0707ea241316529ee308b219fee31e6e068fff49c627b637963ecd5b37af01ea",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\ATTEMPT.json": "1b2f1898b78aa8e21198c3df41550071d41205d986290ae36621ed80e131c513",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\REQUEST.json": "443ff48761c0c8b8cf6a8457b361c9767616a8d4ca367c721570a4dc1e3f321e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc01\\owner\\tool_02\\RESPONSE.json": "456d98d581e66315cfc81eb2b9da277a6ba2d60ab8ad8bb6ceaf54977aa008b2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\CONSUMER.json": "97c762a673f540e7d4d0f985ba306fb0823d7384bcad41b3b89c3e501f5bc18d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\PUBLIC_FINAL.txt": "5174500dfe2f272ed9bd6d0defc18f0c16ac4517f77ab77e4f0a58918f01d513",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\events.jsonl": "7d1006a6a2e9612e59d8bbf8cec384f70f53aad342fcccf6b0965f6a2436c073",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\CLOSE.json": "23b61c42b20ecc1d59575deda32904ebded927517cbcc9bf05eb280385e1cc3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\native\\WORKER_EVENTS.jsonl": "716230e841640e8715f4eb87ac18df4e40dcfddedf95c733167bfda49ba0329a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\ATTEMPT.json": "2fa2edb6a7de8c0aaff707d9e68894418c71986dd60da77158267122fe2f9b0e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\REQUEST.json": "a9e16f11f956cdeb2427bf568c04f632e014fce1a87b886a61db34063314c761",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_01\\RESPONSE.json": "c54dbc46e3f4e6ac780c8e6473d06ee1d825605ce5cd5393722f1b31884b635c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\ATTEMPT.json": "a3b8b9208097219b862e272fc2118ca13da3ef03d4a1fa1227a91f125b125505",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\REQUEST.json": "e9b6d5f4648dcfad59ba43a3964b82250d320a3fc7b01fad3937c9357ee3ce96",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_02\\RESPONSE.json": "0a1e7be53f93639e63ef214985a262b3b1c49b7e17499f702605501a5dfc6a0a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\ATTEMPT.json": "f95ddd271816293551436944450d11ef3636f3077c982117c9b029f712b6b168",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\REQUEST.json": "e81d77f3376aa975b25f28d1a86a51c786ef4ca77f7056444a28b090e8d6c069",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc02\\owner\\tool_03\\RESPONSE.json": "bcd443f35e7f550ee72c1680f0e6ebb5c3f4fa3525745653c1c015030bd41a46",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\CONSUMER.json": "b5ba87f8f889a938deefef42f56c54bdb4474b10c2dee6db6232e6b851079d21",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\PUBLIC_FINAL.txt": "92b74e9d276a873b5de91383aae08b702ca5daba5057b8eb0c809df9efe99132",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\events.jsonl": "7957933dd81637137654c48c2716339e6c728d90309583ebab72e7dafd4fdda2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\CLOSE.json": "021a423fd8c9771fb231618ba09fde827960d7f9d58b391233065b2cb037498a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\native\\WORKER_EVENTS.jsonl": "e9fd18e0a04693c463fe14e7fb24cd015b410f3d3b4e1bdc8cd74a5e440a4847",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\ATTEMPT.json": "e51495b0d675e3fbe18dc59f25b84ac0516906bbfcdce839e4c072e673d1ea8a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\REQUEST.json": "3cd1d68b719aeeafaad5726ecfe1fdcb9b6cbe829c6b1795cba9b91e8053f704",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\RESPONSE.json": "b2cc61ff06207ef12b4f80528508801d11095a17cb79f4da2d180f2b1babd0db",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\ATTEMPT.json": "2bc7e38cbe887948824c106287483c10bd3bae2f1b977f8c782abc39855600eb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\REQUEST.json": "24fb401c2ddff236ef304102e7da06181b8a941fc15dab4b7d66f1371b9c96eb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\RESPONSE.json": "30d4654817146fd054ae96647ec7e279e8d6ce3c47dbe08d63be42cccdb01f27",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\ATTEMPT.json": "3a3a1f49499fb9104e7f0ead9722c096eb856a1b3a60b23f390cc58611407d3a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\REQUEST.json": "8315f1d602a388410146f897ff0746d4173108bbcc87278a2795c7e70f7bc9e0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\RESPONSE.json": "1878c383ee18636e6b4b5d1fbed386ea40000406a3b2dfca3a77c3fe9417b54b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\CONSUMER.json": "14e56d2e852790ddae1e040982aebd74e9bd718d9107a0c1308b99f510856605",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\PUBLIC_FINAL.txt": "39ba1bd41e31244079ffaef4c418dd95e4fdb7a4a8533f53e924797cc03a419a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\events.jsonl": "2fa0b275f6f20298f2900348c7fc831f946b51ff6dd5862bd8605c3da4cd010d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\CLOSE.json": "7674db11b8da00f5907abc32337cd0c0bd99d10083c9c79d4faa5fd6f5524783",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\native\\WORKER_EVENTS.jsonl": "c8ac4769ffd294ff9cdef54e8a32d9e4b29617071d82512556e254bc3967fc5c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\ATTEMPT.json": "7e2b3b99cbc8a93d7134cea4315fe6942f98a2fcc021942f13d9880c4f488d7a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\REQUEST.json": "7e188ea921f102c0ae62ad21f932156c68c75f43cbbef973f57b58eaad5630b3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_01\\RESPONSE.json": "b341ee6d93cae196a0c101511073982cc7e025525a7a4bb903add3b0e7181ee5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\ATTEMPT.json": "b7109bd23782a3872ae0d8d7d184c0a399647c76e0ce1ee64d39fbb6c6d0d3cc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\REQUEST.json": "f51d4d6a330bd3a9288203efb4992f006214022f34393d6fc133ca5afbe0388b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_02\\RESPONSE.json": "9702e08f7b39b645936776811ff5f2e4b974c4dfa6a84423ef0bcbb642e06248",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\ATTEMPT.json": "845a7c94c587cc496368c577c7c45c27306585b4489c69afdee10d1e506e4a6f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\REQUEST.json": "8612a8332863b8ca52a6ef0caf9161871a51be201c0764a2a0007ec991a9f284",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc04\\owner\\tool_03\\RESPONSE.json": "7726c561acb63c20f65648a4e9601b5861eb4f03dce2ff23a4c194d5682d152f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\CONSUMER.json": "2853a05b2b0bb37661ba42f9de58f00d101e7c424f1a6fcc51dd32a73b382a7f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\PUBLIC_FINAL.txt": "4e95da9b152154bc2738675ff2ec213cde84cd09f829128963dcb48f6c1daddf",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\events.jsonl": "2ebc9fef89f778c19d81c5bf1666f6868178710257493968584581e4efb50074",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\CLOSE.json": "68d0b9de08d07e46709866cfa16a5a09e44a52e82c96a2593833246bcd62fdba",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\native\\WORKER_EVENTS.jsonl": "12d0933ffe3dd5cb12e80f1ea5dfb2033a6c27d137d80a1bb635e8d05eeddacf",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\ATTEMPT.json": "7c4386933eba36e2734c61ec101ab5a78b823da589dd780d88d058296790b835",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\REQUEST.json": "ea3eb179a72dfa7cddf04efe57c74d88137f80f649ec78d3fa99f2a2746551c4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_01\\RESPONSE.json": "179576d9d2141247ea48b0bfe449daa1e3ea87df336bff053fea761530cb8a2c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\ATTEMPT.json": "36d112bf9736c7f520dea54710c19a0b9b9b982e99ef8ec5138c3202ab98d47c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\REQUEST.json": "4e85dc2e59735590acc1f624cabebd73c6a94be74d275aaaaea1f7eb0d7e6627",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc05\\owner\\tool_02\\RESPONSE.json": "02ce084d8ef7f11898e59f3db49af1d7a96bf5d959c48f0a76e21245f9d01f91",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\CONSUMER.json": "cc953d6fa5015699377d791548ff7f94a28b0662f4da15f3e90b65baa6e475b1",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\PUBLIC_FINAL.txt": "870f033e1fd9447b3cf484daa1bc75bd7afee0dcd81efaaf05b88ca1d5b66053",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\events.jsonl": "adaf3b2b6021ac8e858bf0db336079bde5742d4ea0290a19d8663253c214d869",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\CLOSE.json": "dde07b9127fd6065039dcd4cf687d6b0e80e7623e91b7d8a52c288e918e7459b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\native\\WORKER_EVENTS.jsonl": "ba6aa16df09500c27433aec9c8f55599304a11c62f1267dcdcc07e05177dac99",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\ATTEMPT.json": "9f3147cff4a0a5ed37709a103b407b9b40b533d37ce209b6fe9cf92cc4cccc5c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\REQUEST.json": "2d5146e8090c96e7dce10283b248c352b1f801372aa987cbbfbac4b06f08e161",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_01\\RESPONSE.json": "9c6438ee4f670d2d16fc02b67b1bff8aeb070d2ad5a7ce16c78c9d6bfd15a51f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\ATTEMPT.json": "3e8b9c7c0a7c4f04a9a23aa702ae333ca90e791aff55e159c60c9f107d866e5f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\REQUEST.json": "30f866891efe773dd7841c5bb1c968ec86444b1be85794750543c754312ab9a0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_02\\RESPONSE.json": "b439f58b197333a3daa8fa5d80a128e0e1750546c17e8a2c79bb096eeba65d48",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\ATTEMPT.json": "481b993eebb5f3e37f6d4643d1d8c3a390ae9a69f350ef01fb475b14f69032ac",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\REQUEST.json": "8174bee1ba522df4c262186b661609b4fcf54c106ee187bb24a87fefbf30cba2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc06\\owner\\tool_03\\RESPONSE.json": "e8e4893162bd1124d79b98876edf78206518e547ec1dfb562061255e22524899",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\CONSUMER.json": "a6a5bdeb103df469444a1ca0319cfc7c1cc219114edb29af50ff82e3689606d9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\PUBLIC_FINAL.txt": "284c23d613b2c4479c69326b61c1237546b9bedc2bc19ecfd733b7cfcd6747db",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\events.jsonl": "38ce9c6fa7ca39c810db4b717b37954dc7055c91d12c613fd8fbf93bb8c96442",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\CLOSE.json": "eaf923fb10fd50d8c0fcc7e9a5d7af11686af69633487466253682963fdc6e09",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\native\\WORKER_EVENTS.jsonl": "73b3e43d16b0372d06737e79517e773714b150d7fe1bca00d31e427ac7058c57",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\ATTEMPT.json": "1fe07f2695f2a965a76e636cc7cbffa5bbebd460db0c79d83e39d9623aaf4937",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\REQUEST.json": "7c5a9973527b4f15dd14b9dddccc518020ef0d839096a36b2c640e89bf3534fb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_01\\RESPONSE.json": "3144936d73a35fb55b57694f8356ecea092a5cd7880764d4487944e7b6a0eca4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\ATTEMPT.json": "46514ed83d3abcb4c30033afefb7a8bf8428e6d6ddd011f6d809cd535d507ab4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\REQUEST.json": "c804be6762dae99ea2789c7677816335660ac3f826b061839bf1f09f1d74ba4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc07\\owner\\tool_02\\RESPONSE.json": "c0a41b3a41c1c68327cb22d5a086da56ef900d31acd36246064f1a72c80d228a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\CONSUMER.json": "2294c8a2b823eca045b6553d003f8be231a1dea9faf1127a79162a2581e4b2ef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\PUBLIC_FINAL.txt": "9c453e63808c19a30f807cfe462d59a6fa37f1c7128d134248d437bc3b4ee329",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\events.jsonl": "420f81f4268ec0091b0d5eab149186fe86ce79d58d5432dea6aa027bbd5b2f7a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\CLOSE.json": "3bad03d8e6dd5c998bf97db489feeadd198cbc00fdcde1b1fa1b473a6f8e674e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\native\\WORKER_EVENTS.jsonl": "974b6e3f9c89c462da37150d22594dd64d9b107c25f977d500f8844832ce70ad",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\ATTEMPT.json": "1645e3076b1b0f536bc169ff79ee9ab5f72a579790541079c76d389140fcde93",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\REQUEST.json": "14ad17acc6e1488ea27a53ca8ff07cf74d37b650c9416a310fc511dfa44ff27e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_01\\RESPONSE.json": "81f6e7372fd4e3a18d4943be323a2055a8551477e4015b5678c70af9ebf3bc30",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\ATTEMPT.json": "19aaaeb44e0d9d024b737d14f4d0fafaa1bdb094f19cb1f7a0a3f512c443a527",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\REQUEST.json": "42dbd7f93c3acbf275e7e4f21c421a81b6cf0cbc9047421500412d28260d3325",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc08\\owner\\tool_02\\RESPONSE.json": "14b055fa3c31057bc05b07c303aedd4dbe9d822a5acb9436efdb48b7c44f820b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\CONSUMER.json": "ea322a5d01323faebb4bcd5dcf80d3213bd09daceb79f1120461c256a8860f6c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\PUBLIC_FINAL.txt": "b7fc597af7ca9a890f8c7ce186a95920adac3c77ade5b39964d98b1ba3ba740d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\events.jsonl": "bca1128cd6ad270c241987cdbf782967e611d8bf9d0a7b8d2d7bf43eaa45750c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\CLOSE.json": "8833d27d8e6b1d45f511108bdfe237daa23dfc06ff5063ab91d5301f930ea7f7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\native\\WORKER_EVENTS.jsonl": "9f1c498177c6b35ef04f60555a95058c3643ed917df35b8878799002d67829bb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\ATTEMPT.json": "7cd702a113a92dfac1418e0d5a71688d584cbff1ab456f03b4147a51d17bceb4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\REQUEST.json": "7c51cbb35b8d469accbef98fc9fc405a31d91f06bec2bd3ad31b5e823d5a94ae",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_01\\RESPONSE.json": "6346bf83ec6c224c810503529d1669fe77d2600f7e85a844189bbd7ee99dda12",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\ATTEMPT.json": "f17dccc8a6f26f69f7d54b31e91f42e92eb17da6fa9bf86d37c6fd468f27064d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\REQUEST.json": "7472d9a46b05214f96f9b2d4013c2cad8308e4f15db90c068cb959d2d7b00311",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_02\\RESPONSE.json": "f8dfcd0ba2acb9d7a4f5576bff2840423d5c046c75fe574ccd048ac5caccab25",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\ATTEMPT.json": "32b500356bc765a62dcc37779b13b23e41151c1976783afc1592d36d7a2fb8b5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\REQUEST.json": "e0cf0652630e84762c46a1d1964542435731b2d9a0afb266629ea54b5a3d98b0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc09\\owner\\tool_03\\RESPONSE.json": "2bf54cff4c83f0207a0818126e4e6777b2926f52723bd0d23647cb9dce22352d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\private\\ANON_MAP.json": "dcc3ffdf4b785cbb1573fd94a76c17beedaa4ea0823b654c216e8edc0d07321b",
+    "D:\\hefe\\verification\\fixes\\20261112_m4_selected_consumption_review\\QUALITY_SEAL.json": "dfffad47ef02eea55389f617882a55833f1a6a46ae29978abf4b61383acadc64"
+  },
+  "source_unchanged": true,
+  "totals": {
+    "G": {
+      "physical_worker_RPC": 16,
+      "tool_attempts": 7,
+      "tool_response_bytes": 59024
+    },
+    "N": {
+      "physical_worker_RPC": 16,
+      "tool_attempts": 7,
+      "tool_response_bytes": 39476
+    },
+    "P": {
+      "physical_worker_RPC": 18,
+      "tool_attempts": 9,
+      "tool_response_bytes": 37251
+    }
+  }
+}
