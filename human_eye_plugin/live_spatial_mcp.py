@@ -108,7 +108,10 @@ _QUERY_SCHEMA = {
                     "additionalProperties": False,
                     "properties": {"mode": {}, "target": {}, "candidates": {}, "geometry": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
                         "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
-               ]}}],
+               ]}},
+              {"if": {"required": ["geometry"]},
+               "then": {"required": ["mode", "target", "candidates"],
+                        "properties": {"mode": {"const": "task"}}}}],
     "additionalProperties": False,
 }
 _GOAL_SCHEMA = {

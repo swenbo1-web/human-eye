@@ -1,0 +1,16 @@
+diff --git a/human_eye_plugin/live_spatial_mcp.py b/human_eye_plugin/live_spatial_mcp.py
+index e923f346..a9e3b116 100644
+--- a/human_eye_plugin/live_spatial_mcp.py
++++ b/human_eye_plugin/live_spatial_mcp.py
+@@ -108,7 +108,10 @@ _QUERY_SCHEMA = {
+                     "additionalProperties": False,
+                     "properties": {"mode": {}, "target": {}, "candidates": {}, "geometry": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
+                         "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
+-               ]}}],
++               ]}},
++              {"if": {"required": ["geometry"]},
++               "then": {"required": ["mode", "target", "candidates"],
++                        "properties": {"mode": {"const": "task"}}}}],
+     "additionalProperties": False,
+ }
+ _GOAL_SCHEMA = {
