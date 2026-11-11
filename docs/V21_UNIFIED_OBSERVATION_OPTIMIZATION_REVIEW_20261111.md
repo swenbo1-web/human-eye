@@ -165,3 +165,7 @@ MCP 直接调用                    Hook 提前交付同一结果
 - 数值论证示例：同目录 `algorithm/numerical_claim_checks.py`、`numerical_claim_results.json`；仅离线数学核查。
 
 作者报告中的新跑分、我们的既有实测、本次源码/协议检查分别保留，不互相替代。
+
+## 8. 同日回报后的收敛决定
+
+实施交付0bcd1660的离线观察原型已独立复核：有限覆盖成立，同信息原生输出逐字节相同，包装原型未取得交付收益；关闭其微调和直接产品化。继续只验证源码中已确认的一个接点：现有关系请求按需交付同次捕获的局部几何，不新增工具/目录/缓存，不扩四对象范围。本批先做真实工程接点，模型消费者为0；根复核后才决定有限消费验收。详见 `docs/M4_BATCH_OBSERVATION_COVERAGE_001_REVIEW.md` 和 `docs/M4_RELATION_SELECTED_EVIDENCE_001_PLAN.md`。Hook及其他内核优化继续后置。
