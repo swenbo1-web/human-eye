@@ -1,0 +1,58 @@
+--- verification\m4_local_relation_consumption_001\runtime\driver.py
++++ runtime/driver.py
+@@ -15,14 +15,14 @@
+ 
+ HERE=Path(__file__).resolve().parent.parent
+ ROOT=HERE.parents[1]
+-CYCLE='M4-LOCAL-RELATION-CONSUMPTION-001'
++CYCLE='M4-SELECTED-GEOMETRY-CONSUMPTION-001'
+ SOURCE_BY_PROFILE={
+-    'P0':'7a3d108bc5658508d76d98fe24b8f3dee4feac2d50856202b2ea7395c3dc9cc1',
+-    'P1':'53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732'}
++    'P':'53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732',
++    'G':'4ebc3910652ee461d9fa7476c8df0ecf6312580d6a02e1066c0eac88bef5c76c'}
+ COMMIT_BY_PROFILE={
+-    'P0':'107641ec19919d56aa843c1949261590fc338148',
+-    'P1':'e077fce38b5951efff8166b3b688d05ffa2ebf04'}
+-GROUP_ORDER=('N','P0','P1','P0','P1','N','P1','N','P0')
++    'P':'e077fce38b5951efff8166b3b688d05ffa2ebf04',
++    'G':'00b13060a3cbe709b38f6e98ce04a6e5c3dabfb4'}
++GROUP_ORDER=('N','P','G','P','G','N','G','N','P')
+ sha=lambda path:hashlib.sha256(Path(path).read_bytes()).hexdigest()
+ 
+ def read(p):
+@@ -39,9 +39,9 @@
+ 
+ def arm_runtime(plan, slot):
+     """Pure external-arm selection; copied actor/transport still see only N/P."""
+-    external=slot['group'];assert external in ('N','P0','P1'), 'unsupported_external_group'
++    external=slot['group'];assert external in ('N','P','G'), 'unsupported_external_group'
+     arm=plan['arms'][external]
+-    profile='P0' if external in ('N','P0') else 'P1'
++    profile='P' if external in ('N','P') else 'G'
+     internal='N' if external=='N' else 'P'
+     assert arm['actor_group']==internal and arm['installation_profile']==profile, 'arm_mapping_changed'
+     expected=None if external=='N' else SOURCE_BY_PROFILE[profile]
+@@ -60,11 +60,11 @@
+     assert go['plan_sha256']==plan_sha256 and go['max_consumers']==9, 'GO_not_bound_to_nine_frozen_slots'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE
+     assert len(plan['sequence'])==9 and len({row['cell'] for row in plan['sequence']})==9
+-    assert [row['cell'] for row in plan['sequence']]==['lrc'+str(index).zfill(2) for index in range(1,10)], 'fresh_cycle_cell_ids_required'
++    assert [row['cell'] for row in plan['sequence']]==['sgc'+str(index).zfill(2) for index in range(1,10)], 'fresh_cycle_cell_ids_required'
+     assert tuple(row['group'] for row in plan['sequence'])==GROUP_ORDER, 'fixed_group_order_changed'
+     assert all(row['task']=='T1' and row['round']==index//3+1 for index,row in enumerate(plan['sequence']))
+     assert plan['image_count']==1 and plan['new_images']==0
+-    assert set(plan['arms'])=={'N','P0','P1'} and set(plan['installations'])=={'P0','P1'}
++    assert set(plan['arms'])=={'N','P','G'} and set(plan['installations'])=={'P','G'}
+     for row in plan['sequence']:arm_runtime(plan,row)
+ 
+ 
+@@ -257,7 +257,7 @@
+ def preflight_inputs():
+     """No Popen, model or backend operation: file/hash/argv capability only."""
+     plan=read(HERE/'PLAN.json')
+-    for group in ('N','P0','P1'):
++    for group in ('N','P','G'):
+         arm_runtime(plan,{'cell':'input-check','round':1,'task':'T1','group':group})
+     prompt=(HERE/plan['inputs']['prompt']).read_bytes()
+     assert hashlib.sha256(prompt).hexdigest()==plan['inputs']['prompt_sha256']

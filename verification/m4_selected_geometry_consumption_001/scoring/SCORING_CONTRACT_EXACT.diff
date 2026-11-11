@@ -1,0 +1,47 @@
+--- previous_scoring_contract
++++ new_scoring_contract
+@@ -1,6 +1,6 @@
+ {
+   "complete_correct": "Correct target and all three public-position explanations, correct identities for all three roles, all three supported relation classes and pair-local sufficient evidence, with no material contradiction. Individual stage counts are still reported; correct guesses without evidence and unknown do not pass the full task. Valid analytic shortcuts and equivalent evidence are accepted without prescribing a tool or algorithm.",
+-  "cycle_id": "M4-LOCAL-RELATION-CONSUMPTION-001",
++  "cycle_id": "M4-SELECTED-GEOMETRY-CONSUMPTION-001",
+   "evidence_policy": {
+     "authenticity_and_sufficiency_separate": true,
+     "computed_from_observed_geometry": "Reasonable native computations and mathematically valid shortcuts are accepted. Evidence need not be a literal copied substring when it can be checked against genuinely observed geometry and the recorded calculation.",
+@@ -10,7 +10,7 @@
+     "no_plugin_truth": "Plugin output is a candidate observation checked against independent truth, never used to generate expectations.",
+     "source_binding_by_executor": "scene/image/catalogue/camera and actual exposed observations are independently hash/receipt bound. A correct answer need not repeat these hashes or exact reference strings."
+   },
+-  "fixed_sample_policy": "One scene, N/P0/P1 each3, nine fixed slots, no replacement for failure/unknown/no-attempt/slow/incomplete samples. Frozen stop tails are not_run, distinct from entered failures. No extra task introduced here. The earlier six-cell baseline remains historical and is not pooled with this batch.",
++  "fixed_sample_policy": "One scene, N/P/G each3, nine fixed slots; retain every entered failure and not_run tail without replacement. Earlier matrices remain historical and are not pooled.",
+   "frozen_before_model_consumers": true,
+   "image_use_attribution": "An actual image-receipt proves exposure, not cognitive use. Distinguish native/catalogue geometric discovery, image-assisted reasoning and genuine use of the newly exposed nearest witness; do not credit a present capability that was not used.",
+   "input_binding": "scoring/INPUT_BINDING.json",
+@@ -96,21 +96,21 @@
+   "sample_metadata": {
+     "anonymous_mapping": "private/ANON_MAP.json",
+     "anonymous_mapping_scope": "new pre-consumer fixed nine-row mapping; private, not a consumer input",
+-    "anonymous_mapping_sha256": "d0535e412c89339c095edcd0e82a0eb6430b3aa979be19f982fd2972ba1193d8",
++    "anonymous_mapping_sha256": "dcc3ffdf4b785cbb1573fd94a76c17beedaa4ea0823b654c216e8edc0d07321b",
+     "groups": [
+       "N",
+-      "P0",
+-      "P1"
++      "P",
++      "G"
+     ],
+-    "historical_baseline_pooling": "The earlier N/P six-cell batch is not pooled into this batch.",
++    "historical_baseline_pooling": "All earlier matrices are historical only; nine fresh cells in this matrix.",
+     "logical_denominator": 9,
+     "per_group": 3,
+     "rounds": 3,
+     "sequence": "SEQUENCE.json",
+-    "sequence_sha256": "9ded7fc2ca8707bc2355092e6ce333f458da5d6c9ebcbc1808836b7e2a34445f"
++    "sequence_sha256": "53c4e4d708e9798ae71ae9ad8bc6e67ff3577e40b9a531b77f9711b6b36c9771"
+   },
+   "schema": "M4-observation-natural-semantic-scoring-v1",
+-  "scope": "One unchanged historical scene; N/P0/P1 each three planned fresh consumers. This file is private scoring material, never consumer input.",
++  "scope": "One unchanged historical scene; N/P/G each three planned fresh consumers. Private quality specification, never consumer input.",
+   "separate_stage_denominators": {
+     "neighbor_role_identifications": 3,
+     "target_condition_explanations": 3

@@ -1,0 +1,29 @@
+--- verification\m4_local_relation_consumption_001\quality_handoff\pack_quality.py
++++ runtime/pack_quality.py
+@@ -13,7 +13,7 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ EVAL = HERE.parent
+-CYCLE = 'M4-LOCAL-RELATION-CONSUMPTION-001'
++CYCLE = 'M4-SELECTED-GEOMETRY-CONSUMPTION-001'
+ sha = lambda raw: hashlib.sha256(raw).hexdigest()
+ KEYS = ('cell', 'task', 'round', 'group')
+ TOOL_TYPES = {'command_execution', 'mcp_tool_call', 'custom_tool_call', 'function_call',
+@@ -185,7 +185,7 @@
+     if 'CONSUMER.json' in sources:
+         consumer = decode(sources['CONSUMER.json'])
+         assert all(consumer.get(key)==slot[key] for key in ('cell','task','round')), 'consumer slot binding mismatch'
+-        expected_group={'N':'N','P0':'P','P1':'P'}[slot['group']]
++        expected_group={'N':'N','P':'P','G':'P'}[slot['group']]
+         assert consumer.get('group')==expected_group and consumer.get('external_group')==slot['group'], 'consumer external/internal group binding mismatch'
+     entered = record is not None
+     if not entered:
+@@ -357,7 +357,7 @@
+     assert sha(control['PLAN.json'])==freeze['plan_sha256'], 'execution PLAN not frozen'
+     assert sha(control['private/ANON_MAP.json'])==plan['private_anonymous_map_sha256'], 'anonymous map drift'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE, 'wrong observation cycle'
+-    assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','P0','P1'}, 'wrong fixed nine-slot sample metadata'
++    assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','P','G'}, 'wrong fixed nine-slot sample metadata'
+     assert plan['image_count']==1 and plan['new_images']==0, 'wrong shared-image contract'
+     sequence, rows, records=plan['sequence'],mapping['rows'],run['records']
+     assert len(sequence)==len(rows)==9 and len({row['cell'] for row in sequence})==9
