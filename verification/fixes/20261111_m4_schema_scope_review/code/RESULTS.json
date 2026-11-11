@@ -1,0 +1,918 @@
+{
+  "Blender_sessions": 0,
+  "baseline_runtime_reexecuted": false,
+  "compact_controls": [
+    {
+      "arguments": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "mode": "OFF",
+      "normalized": {
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "scope": "explicit_target_candidates"
+      },
+      "schema_accepts": true,
+      "validator_accepts": true
+    },
+    {
+      "arguments": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "target": {
+          "id": "a"
+        }
+      },
+      "mode": "vertices",
+      "normalized": {
+        "geometry": {
+          "include_triangles": false,
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "scope": "explicit_target_candidates"
+      },
+      "schema_accepts": true,
+      "validator_accepts": true
+    },
+    {
+      "arguments": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "include_triangles": true,
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "target": {
+          "id": "a"
+        }
+      },
+      "mode": "full",
+      "normalized": {
+        "geometry": {
+          "include_triangles": true,
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "scope": "explicit_target_candidates"
+      },
+      "schema_accepts": true,
+      "validator_accepts": true
+    }
+  ],
+  "compact_count": 3,
+  "compact_schema_unchanged": true,
+  "external_operation_attempts": [],
+  "generic_count": 20,
+  "generic_query_cases": [
+    {
+      "expected_current": false,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      },
+      "name": "overview_geometry",
+      "new_schema": false,
+      "old_schema": true,
+      "query": {
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "overview"
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      },
+      "name": "legacy_AABB_geometry",
+      "new_schema": false,
+      "old_schema": true,
+      "query": {
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          }
+        ],
+        "requested_facts": [
+          "aabb"
+        ]
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "valid_vertices",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "geometry": {
+            "include_triangles": false,
+            "objects": [
+              {
+                "id": "a"
+              }
+            ]
+          },
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ],
+          "scope": "explicit_target_candidates"
+        }
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "valid_full_AABB",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "include_triangles": true,
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity",
+          "aabb"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "geometry": {
+            "include_triangles": true,
+            "objects": [
+              {
+                "id": "a"
+              }
+            ]
+          },
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity",
+            "aabb"
+          ],
+          "scope": "explicit_target_candidates"
+        }
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "valid_task_no_geometry",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ],
+          "scope": "explicit_target_candidates"
+        }
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "legacy_overview",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "mode": "overview"
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "max_exact_pairs": 255,
+          "mode": "overview"
+        }
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "default_query",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {},
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "max_exact_pairs": 255,
+          "mode": "overview"
+        }
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "legacy_AABB",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          }
+        ],
+        "requested_facts": [
+          "aabb"
+        ]
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            }
+          ],
+          "requested_facts": [
+            "aabb"
+          ]
+        }
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "surface_nearest query accepts only mode and optionally one object selector",
+        "normalized": null
+      },
+      "name": "nearest_geometry",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "id": "a"
+          }
+        ]
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "surface_nearest query accepts only mode and optionally one object selector",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": true,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": true,
+        "error": null,
+        "normalized": null
+      },
+      "name": "nearest",
+      "new_schema": true,
+      "old_schema": true,
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "id": "a"
+          }
+        ]
+      },
+      "validate_query": {
+        "accepted": true,
+        "error": null,
+        "normalized": {
+          "mode": "surface_nearest",
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": true,
+      "generic_validate": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      },
+      "name": "geometry_only",
+      "new_schema": false,
+      "old_schema": true,
+      "query": {
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      },
+      "name": "missing_mode",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "query contains unsupported observation fields",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      },
+      "name": "missing_target",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ]
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      },
+      "name": "missing_candidates",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      },
+      "name": "missing_requested_facts",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+        "normalized": null
+      },
+      "name": "missing_required_fact",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "aabb"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      },
+      "name": "mixed_objects",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "objects": [
+          {
+            "id": "a"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task query requires only mode, objects and requested_facts",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+        "normalized": null
+      },
+      "name": "unsupported_fact",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity",
+          "center_delta"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task set requires closed_solid_relation and surface_proximity; optional aabb only",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task geometry requires 1..4 object selectors and optional boolean include_triangles",
+        "normalized": null
+      },
+      "name": "empty_geometry",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "objects": []
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task geometry requires 1..4 object selectors and optional boolean include_triangles",
+        "normalized": null
+      }
+    },
+    {
+      "expected_current": false,
+      "expected_old": false,
+      "generic_validate": {
+        "accepted": false,
+        "error": "task geometry requires 1..4 object selectors and optional boolean include_triangles",
+        "normalized": null
+      },
+      "name": "nonboolean_triangles",
+      "new_schema": false,
+      "old_schema": false,
+      "query": {
+        "candidates": [
+          {
+            "id": "b"
+          }
+        ],
+        "geometry": {
+          "include_triangles": 0,
+          "objects": [
+            {
+              "id": "a"
+            }
+          ]
+        },
+        "mode": "task",
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "target": {
+          "id": "a"
+        }
+      },
+      "validate_query": {
+        "accepted": false,
+        "error": "task geometry requires 1..4 object selectors and optional boolean include_triangles",
+        "normalized": null
+      }
+    }
+  ],
+  "guard_verify_loaded_pass": true,
+  "installs": 0,
+  "model_consumers": 0,
+  "new_runtime_source_copies": 0,
+  "passed": true,
+  "performance_measurements": 0,
+  "schema_validation_kind": "Explicit bounded static evaluator, not full JSON Schema implementation",
+  "service_dispatches": 0,
+  "source_identity_pass": true,
+  "unknown_schema_keyword_rejected": true,
+  "validator_same_AST_as_baseline": true,
+  "visited_schema_keywords": [
+    "additionalProperties",
+    "allOf",
+    "anyOf",
+    "const",
+    "contains",
+    "default",
+    "description",
+    "enum",
+    "if",
+    "items",
+    "maxItems",
+    "maxLength",
+    "minItems",
+    "minLength",
+    "oneOf",
+    "properties",
+    "required",
+    "then",
+    "type",
+    "uniqueItems"
+  ],
+  "whole_module_scope_pass": true
+}
