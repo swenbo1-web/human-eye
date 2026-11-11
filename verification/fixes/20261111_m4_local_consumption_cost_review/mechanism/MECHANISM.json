@@ -1,0 +1,330 @@
+{
+  "cycle_id": "M4-LOCAL-RELATION-CONSUMPTION-001",
+  "review_kind": "public-only adoption and architecture mechanism, not cost grading",
+  "public_index_sha256": "594e7a51af914717b6c61a2c1890566b9a1f3cdb65b68916de95720369079807",
+  "rows": [
+    {
+      "anonymous_id": "answer_133c21148dfbc715",
+      "answer_sha256": "255220e22583e4f650f2fc913439feafd4c6d1dd36b59a050b20bfd74ff9d0fc",
+      "evidence_sha256": "4becbec463154a349361eb54e2bdfe2410a2530a66daf2d424a704232fba5230",
+      "route": [
+        "execute_blender_code",
+        "execute_blender_code"
+      ],
+      "relation_target": null,
+      "relation_candidates": [],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "world={n:np.array([tuple(o.matrix_world @ p.co) for p in o.data.vertices]) for n,o in objs.items()}\nfor name in ['N16','N13','N08','N28','N12','N04','N19']:\n o=objs[name]; print('\\n',name,'vertices',world[name].tolist());print('faces',[list(p.vertices) for p in o.data.polygons])\nmid=( (world['N12'].min(0)+world['N12'].max(0))[2]/2+(world['N24'].min(0)+world['N24'].max(0))[2]/2)/2\npipe_mid=np.mean([(world[n].min(0)+world[n].max(0))[:2]/2 for n in ['N04','N19']],axis=0)\nprint('height threshold',mid,'beam rear',world['N10'][:,1].max(),'pipe midpoint',pipe_mid.tolist())\nfor n in ['N15','N16','N18','N25']:\n c=(world[n].min(0)+world[n].max(0))/2;print(n,'center',c.tolist(),'pipe XY distance',np.linalg.norm(c[:2]-pipe_mid))",
+      "last_native_named_objects": [
+        "N04",
+        "N08",
+        "N10",
+        "N12",
+        "N13",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "native geometric discovery and analytic pair/material reasoning",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_1acac64d24eaf8de",
+      "answer_sha256": "aa6bddf7061330bc074e4bcd5e443774e5e330f88f002e189497c84a02295e78",
+      "evidence_sha256": "fed04a1f248a7957f9e843fc7adffe0e05501e48e40a0980f922e9cb4e8e53e9",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": true,
+      "crossing_point": [
+        0.2500000074505806,
+        0.11500000115483999,
+        0.3900000136345625
+      ],
+      "crossing_point_cited_in_final": true,
+      "last_native_code": "for name in ['N16','N24','N12']:\n obj=bpy.data.objects[name]\n print(name,'world vertices', [tuple(round(float(c),8) for c in (obj.matrix_world @ v.co)) for v in obj.data.vertices])\nmid=np.array([0.43,0.155])\nfor name in ['N15','N18','N25','N16']:\n obj=bpy.data.objects[name]; pts=np.array([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]); center=(pts.min(0)+pts.max(0))/2\n print(name,'XY_distance_to_pipe_mid_m',float(np.linalg.norm(center[:2]-mid)), 'below_midZ',bool(center[2]<0.46),'behind_frontbeam',bool(center[1]>-0.1025))\n",
+      "last_native_named_objects": [
+        "N12",
+        "N15",
+        "N16",
+        "N18",
+        "N24",
+        "N25"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_25b1ec4200384d46",
+      "answer_sha256": "d9b9c8c9cd2f3a2d95f098802e37cba2faf3659a8b909bc0074bc942685c10c0",
+      "evidence_sha256": "5a6bec9cc5a981e9da5d1363922282585a90e4f286cc7acf19700abab832daae",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "for name in ['N16','N12','N24','N04','N19']:\n print(name,'world_vertices',np.round(worldverts[name],8).tolist())\ncenter=lambda name:(worldverts[name].min(0)+worldverts[name].max(0))/2\nmid=(center('N12')[2]+center('N24')[2])/2\npipes=(center('N04')[:2]+center('N19')[:2])/2\nback=worldverts['N10'][:,1].max()\nprint('rail_mid_z',mid,'beam_rear_y',back,'pipes_mid_xy',pipes.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name); print(name,'center',c.tolist(),'xy_distance',float(np.linalg.norm(c[:2]-pipes)),'conditions',[bool(c[2]<mid),bool(c[1]>back),bool(np.linalg.norm(c[:2]-pipes)<=.70)])\n",
+      "last_native_named_objects": [
+        "N04",
+        "N10",
+        "N12",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_3f87212b9e9cabc9",
+      "answer_sha256": "12fc9f71f17c0a68f9bb6dd9eace804c83d767553f5d97c66335c825390a4e1f",
+      "evidence_sha256": "4c8268139c4c7c5e58abab2378f2b92d12346550944c30f9170797c4821066f1",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": true,
+      "crossing_point": [
+        0.2500000074505806,
+        0.11500000115483999,
+        0.3900000136345625
+      ],
+      "crossing_point_cited_in_final": true,
+      "last_native_code": "import math\nfor name in ['N16','N24','N12','N04','N19','N28']:\n o=objs[name]\n print(name,'world_vertices',[[round(float(c),9) for c in o.matrix_world@v.co] for v in o.data.vertices])\nmid=[(bounds(objs['N04'])['center'][i]+bounds(objs['N19'])['center'][i])/2 for i in range(2)]\nprint('pipe_axis_xy_mid',mid)\nfor n in ['N15','N18','N25','N16']:\n c=bounds(objs[n])['center']; print(n,'center',c,'xy_radius',math.dist(c[:2],mid))",
+      "last_native_named_objects": [
+        "N04",
+        "N12",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_5b03c0ef801f7a82",
+      "answer_sha256": "3f05a365489498c41f1860766d2724d6e8cc304e511eb6139ac8096233c30129",
+      "evidence_sha256": "a3416f5dea4b932bff0837552f363905fdfc30c912b23fcdb5e4691e5ff5e3b4",
+      "route": [
+        "execute_blender_code",
+        "execute_blender_code"
+      ],
+      "relation_target": null,
+      "relation_candidates": [],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "for n in ['N16','N13','N08','N28','N12','N04','N19']:\n o=objs[n]; print('\\n',n,'vertices',[(i,tuple(round(float(c),9) for c in p)) for i,p in enumerate(verts[n])]); print('faces',[tuple(p.vertices) for p in o.data.polygons])\nmid=(verts['N12'][:,2].min()+verts['N12'][:,2].max()+verts['N24'][:,2].min()+verts['N24'][:,2].max())/4\npipe_mid=((verts['N04'].min(0)+verts['N04'].max(0))/2+(verts['N19'].min(0)+verts['N19'].max(0))/2)/2\nprint('height threshold',mid,'pipe midpoint',pipe_mid[:2],'beam back',verts['N10'][:,1].max())\nfor n in ['N15','N16','N18','N25']:\n c=(verts[n].min(0)+verts[n].max(0))/2; print(n,'center',c.tolist(),'distanceXY',np.linalg.norm(c[:2]-pipe_mid[:2]),'conditions',bool(c[2]<mid),bool(c[1]>verts['N10'][:,1].max()),bool(np.linalg.norm(c[:2]-pipe_mid[:2])<=.7))",
+      "last_native_named_objects": [
+        "N04",
+        "N08",
+        "N10",
+        "N12",
+        "N13",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "native geometric discovery and analytic pair/material reasoning",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_84be72fecbf32dd2",
+      "answer_sha256": "6e114838d938a2f0693c0563d62f82a2cc7745db03e4f68f86dc0efbdfba5792",
+      "evidence_sha256": "96bbb0af1fa1d35ce8bc61cb59705a9821102111f2b4191f2496dc6e3b3bd172",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "for name in ['N16','N13','N08','N28']:\n o=objs[name]; print(name,'world vertices', [tuple(round(x,9) for x in (o.matrix_world@v.co)) for v in o.data.vertices])\ndef bounds(name):\n o=objs[name]; v=np.array([tuple(o.matrix_world@p.co) for p in o.data.vertices]); return v.min(0),v.max(0)\ndef center(name):\n low,high=bounds(name); return (low+high)/2\nmid=(center('N04')[:2]+center('N19')[:2])/2\nprint('rail mid z',(center('N12')[2]+center('N24')[2])/2,'front beam rear Y',bounds('N10')[1][1],'pipe midpoint XY',mid.tolist())\nfor name in ['N15','N16','N18','N25']:\n c=center(name); print(name,'center',c.tolist(),'XY distance',float(np.linalg.norm(c[:2]-mid)))",
+      "last_native_named_objects": [
+        "N04",
+        "N08",
+        "N10",
+        "N12",
+        "N13",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_9b56fad6b7eb11c5",
+      "answer_sha256": "20a5be50d837082627ed45ebdee9197ed9e256cbd263eef79342b13807c7cba7",
+      "evidence_sha256": "9ab56e117504162ffbee7f73ab0b3360c4902d4a06e8f5ebebe6d1f4b4304ed6",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "for n in ['N16','N13','N28','N24','N12']:\n print(n,'vertices',np.round(verts[n],9).tolist())\nmid=(verts['N04'].min(0)[:2]+verts['N04'].max(0)[:2]+verts['N19'].min(0)[:2]+verts['N19'].max(0)[:2])/4\nprint('pipe_mid_XY',mid.tolist())\nfor n in ['N15','N18','N25','N16']:\n center=(verts[n].min(0)+verts[n].max(0))/2\n print(n,'center',center.tolist(),'XY_distance',float(np.linalg.norm(center[:2]-mid)))",
+      "last_native_named_objects": [
+        "N04",
+        "N12",
+        "N13",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N24",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_a4b1331500dcff86",
+      "answer_sha256": "5413a8122a3d65f5a755e4e40f905579e44063b97dccadb9bb15570893e6befb",
+      "evidence_sha256": "32d2d4da50db2a2df59301816d4568fdb5ae6d4e056e375fd610c1509d086c51",
+      "route": [
+        "execute_blender_code",
+        "human_eye_spatial_relations",
+        "execute_blender_code"
+      ],
+      "relation_target": "N16",
+      "relation_candidates": [
+        "N13",
+        "N08",
+        "N28"
+      ],
+      "crossing_evidence_present": true,
+      "crossing_point": [
+        0.2500000074505806,
+        0.11500000115483999,
+        0.3900000136345625
+      ],
+      "crossing_point_cited_in_final": true,
+      "last_native_code": "for name in ['N16','N13','N28','N04','N19']:\n o=bpy.data.objects[name]\n pts=np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices])\n print(name,'world vertex coordinate levels', [np.unique(np.round(pts[:,axis],8)).tolist() for axis in range(3)])\nmid=np.array([.43,.155])\nfor name in ['N15','N18','N25','N16']:\n o=bpy.data.objects[name]; pts=np.array([tuple(o.matrix_world@v.co) for v in o.data.vertices]); center=(pts.min(0)+pts.max(0))/2\n print(name,'center',center.tolist(),'XY distance',float(np.linalg.norm(center[:2]-mid)))\n",
+      "last_native_named_objects": [
+        "N04",
+        "N13",
+        "N15",
+        "N16",
+        "N18",
+        "N19",
+        "N25",
+        "N28"
+      ],
+      "manual_classification": "selected vertex/coordinate-level observation plus target-predicate calculations; no independent three-pair closed-solid/surface solver",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    },
+    {
+      "anonymous_id": "answer_f02b251381bd8be8",
+      "answer_sha256": "84eb1aaec4d8cb9c3ab500266df4dd7fb7920eaa641d8b37093be2e4b9056485",
+      "evidence_sha256": "28e2fb77f7da8c46d2b7e1b37647dd22f5389ebecf4e78b53a48d24f2772cbde",
+      "route": [
+        "execute_blender_code",
+        "execute_blender_code",
+        "execute_blender_code"
+      ],
+      "relation_target": null,
+      "relation_candidates": [],
+      "crossing_evidence_present": false,
+      "crossing_point": null,
+      "crossing_point_cited_in_final": false,
+      "last_native_code": "print('geometry modifiers',[(name,[(m.name,m.type) for m in objs[name].modifiers]) for name in ['N16','N13','N08','N28']])\nf=world['N16']; block=world['N08']; rod=world['N28']\nprint('left_gap_m',f[:,0].min()-block[:,0].max())\nprint('left_witnesses',(float(block[:,0].max()),0.1,0.36),(float(f[:,0].min()),0.1,0.36))\nprint('overlap_witness',(0.245,0.1,0.36))\nprint('overlap_box_min',(max(f[5,0],world['N13'][:,0].min()),max(f[:,1].min(),world['N13'][:,1].min()),max(f[:,2].min(),world['N13'][:,2].min())))\nprint('overlap_box_max',(min(f[:,0].max(),world['N13'][:,0].max()),min(f[:,1].max(),world['N13'][:,1].max()),min(f[:,2].max(),world['N13'][:,2].max())))\nprint('rod_clearances_m',{'left':rod[:,0].min()-f[4,0],'right':f[5,0]-rod[:,0].max(),'bottom':rod[:,2].min()-f[4,2],'top':f[6,2]-rod[:,2].max()})\nprint('rod_top_witness',(float(rod[3,0]),0.1,float(rod[3,2])),'frame_top_inner_witness',(float(rod[3,0]),0.1,float(f[6,2])))",
+      "last_native_named_objects": [
+        "N08",
+        "N13",
+        "N16",
+        "N28"
+      ],
+      "manual_classification": "native geometric discovery and analytic pair/material reasoning",
+      "source_scope": "public original answers, owner attempts and consumer event projections; no private arm identity or cost opened"
+    }
+  ],
+  "counts": {
+    "anonymous_answers": 9,
+    "relations_routes": 6,
+    "local_crossing_present": 3,
+    "local_crossing_cited": 3,
+    "relations_followed_by_native": 6,
+    "nearest_calls": 0
+  },
+  "source_file_sha256": {
+    "live_spatial_mcp.py": "96eebfed7ae51fccf99c61aba51712696cd9cca4b4eeb18b207df78f1776bb4a",
+    "task_query.py": "a297ce8a760410223c000c822ed3b77512b04e0183a25f52a33226dda82577e5",
+    "live_service.py": "534fc87b59c34a2367e9de562fbeb3ac8bb75f0870add7e9f2bd2964f3f1918d",
+    "read_context.py": "5c3c211d0a93aa49e63d9129932d833a633c48c22a974f53473bc79130d952e3",
+    "scene_cache.py": "8b857eddc946cd08258d5ae138bc8a7a07e14e13a45b1ccbfa970b8ec448f0ec",
+    "scene_delta.py": "9fc3abc81d532edb2ab0e27a31a471d89918d4fc7b2ed6799491f95b0566fb8b",
+    "blender_mcp_host.py": "8de440a79a1f4f94782293ec6d75ad61fcce21ecbe9365d48a364ef9bfd85585",
+    "blender_host.py": "10f2b59c00699d1b8cd7b946ff58f0986cbc55fc3af11ad2feaaa9212674af60",
+    "query_policy.py": "97e12dff9e91e285238f0442377284d0f0d4dcddc02886b5b2c95bdeb8a85e1d",
+    "surface_task_service.py": "d307e5f9a22a899456f60fbdb05e5529e58dee3d58915acd38c8203e6545e642"
+  },
+  "not_run": [
+    "new consumers",
+    "Blender",
+    "product calls",
+    "private cost or mapping reads",
+    "performance estimation"
+  ]
+}
