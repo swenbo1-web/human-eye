@@ -1,0 +1,73 @@
+{
+  "cycle_id": "M4-DEFAULT-LATENCY-ATTRIBUTION-001",
+  "analysis_kind": "one frozen saved-record control-variable experiment",
+  "independent_unit": "owned session",
+  "fixed_sessions": [
+    {"ordinal": 1, "version": "B", "role": "baseline", "first_pair": ["ON", "OFF"]},
+    {"ordinal": 2, "version": "C", "role": "candidate", "first_pair": ["ON", "OFF"]},
+    {"ordinal": 3, "version": "C", "role": "candidate", "first_pair": ["OFF", "ON"]},
+    {"ordinal": 4, "version": "B", "role": "baseline", "first_pair": ["OFF", "ON"]}
+  ],
+  "per_session": {
+    "cold": {"relation_calls": 1, "profile": "OFF", "analysis_pool": "cold_only"},
+    "warmup": {"relation_calls": 1, "profile": "OFF", "analysis_pool": "warmup_only"},
+    "paired": {"recorded_phase": "warm", "pairs": 10, "relation_calls_per_pair": 2, "order": "alternate the frozen first pair and its reversal", "profile_calls_each": 10},
+    "total_relation_calls": 22,
+    "close_profile": "OFF"
+  },
+  "descriptive_summary": ["count", "minimum", "median", "maximum", "all_raw_samples"],
+  "within_session": [
+    "ON and OFF samples separately",
+    "paired ON minus OFF differences, including raw pair order and position",
+    "first and second pair position separately within each profile condition",
+    "previous profile condition separately within each current profile condition",
+    "cold and warmup separately from the paired samples"
+  ],
+  "version_comparison": {
+    "session_counts": {"baseline": 2, "candidate": 2},
+    "equal_weight_summary": "arithmetic mean of the two session medians per version and condition; retain both original session medians",
+    "raw_matched_blocks": [[1, 2], [4, 3]],
+    "matched_block_order": "baseline then candidate, matched by frozen first-pair order",
+    "condition_contrast": "candidate session median minus baseline session median, separately ON and OFF",
+    "interaction": "candidate(ON median minus OFF median) minus baseline(ON median minus OFF median), per matched block",
+    "paired_difference_comparison": "report each session median of paired ON minus OFF separately; do not replace condition medians with it"
+  },
+  "timing_hierarchy": {
+    "entry": "full recorded wrapper interval",
+    "verification": "immediate post-request QA validation, kept separately and in session totals",
+    "request_with_checks": "recorded request plus immediate-validation interval; report its actual boundary without adding nested components",
+    "Peer": "recorded transport interval ending before final receipt publication",
+    "trace": "inclusive product trace duration",
+    "host_capture": "inclusive host.capture span",
+    "content_encode": "inclusive existing mcp.content_encode, including relation projection and content preparation",
+    "outside_host": "trace duration minus inclusive host.capture duration, on each recorded request",
+    "outside_trace": "entry duration minus trace duration, on each recorded request",
+    "QA_probes": "before includes installation and state checks; after includes restoration checks; reported separately with overlapping boundaries",
+    "profile_scope": "starts when rpc_scope state is constructed, includes before sampling, overlaps both probes and execution; no subtraction as callback-only cost",
+    "old_probe_comparison": "new probe boundaries differ from the prior run; no direct old/new same-name probe subtraction or mutually-exclusive decomposition",
+    "mode_cost_scope": "ON dict counters and OFF null counters have natural recording/publication differences; ON minus OFF measures this whole mode chain, without isolating pure callback overhead"
+  },
+  "gates_before_interpretation": [
+    "exact pinned installation and request",
+    "all attempted sessions and raw failures retained",
+    "received RPC sequence and profiler schedule binding",
+    "initial profile state clean, actual state matches requested, restoration verified",
+    "OFF callback counters explicitly uncollected",
+    "unchanged current facts and capture generation within a session",
+    "same cold/warmup/pair business history in each session",
+    "zero product writes and images, protected asset and owned process cleanup"
+  ],
+  "cost_accounting": "keep whole preparation, startup, verification, session, close and saved-record publication costs in recorded scope; keep extra metadata/control RPCs in totals",
+  "no_new_thresholds": true,
+  "no_outlier_removal": true,
+  "no_replacement_sessions": true,
+  "no_stable_p95_or_significance_claim": true,
+  "prior_3_57_percent_regression_stays_sealed": true,
+  "full_admission_granted_by_this_analysis": false,
+  "possible_conclusions": [
+    "difference persists in this controlled sequence",
+    "difference varies with profiler or request order",
+    "attribution remains unresolved"
+  ],
+  "new_runtime_measurements_by_analyzer": 0
+}
