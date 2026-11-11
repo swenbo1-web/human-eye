@@ -1,0 +1,145 @@
+{
+  "confirmed": true,
+  "records": [
+    {
+      "name": "overview_geometry",
+      "actual_tool_arguments": {
+        "query": {
+          "mode": "overview",
+          "geometry": {
+            "objects": [
+              {
+                "id": "a"
+              }
+            ]
+          }
+        },
+        "include_image": false
+      },
+      "actual_query_schema_accepts_by_explicit_static_rules": true,
+      "runtime_validate_query_accepts": false,
+      "runtime_error": "query contains unsupported observation fields",
+      "actual_tool_runtime_validator_accepts": false,
+      "tool_error": "query contains unsupported observation fields",
+      "normalized": null
+    },
+    {
+      "name": "legacy_task_AABB_geometry",
+      "actual_tool_arguments": {
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "id": "a"
+            }
+          ],
+          "requested_facts": [
+            "aabb"
+          ],
+          "geometry": {
+            "objects": [
+              {
+                "id": "a"
+              }
+            ]
+          }
+        },
+        "include_image": false
+      },
+      "actual_query_schema_accepts_by_explicit_static_rules": true,
+      "runtime_validate_query_accepts": false,
+      "runtime_error": "task query requires only mode, objects and requested_facts",
+      "actual_tool_runtime_validator_accepts": false,
+      "tool_error": "task query requires only mode, objects and requested_facts",
+      "normalized": null
+    },
+    {
+      "name": "valid_target_candidates_geometry",
+      "actual_tool_arguments": {
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "a"
+          },
+          "candidates": [
+            {
+              "id": "b"
+            }
+          ],
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ],
+          "geometry": {
+            "objects": [
+              {
+                "id": "a"
+              }
+            ]
+          }
+        },
+        "include_image": false
+      },
+      "actual_query_schema_accepts_by_explicit_static_rules": true,
+      "runtime_validate_query_accepts": true,
+      "runtime_error": null,
+      "actual_tool_runtime_validator_accepts": true,
+      "tool_error": null,
+      "normalized": {
+        "mode": "task",
+        "scope": "explicit_target_candidates",
+        "objects": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ],
+        "requested_facts": [
+          "closed_solid_relation",
+          "surface_proximity"
+        ],
+        "geometry": {
+          "objects": [
+            {
+              "id": "a"
+            }
+          ],
+          "include_triangles": false
+        }
+      }
+    }
+  ],
+  "validation_method": "bounded independent evaluator of explicitly listed static JSON Schema rules; no third-party validator installed",
+  "visited_keywords": [
+    "additionalProperties",
+    "allOf",
+    "anyOf",
+    "const",
+    "contains",
+    "description",
+    "enum",
+    "if",
+    "items",
+    "maxItems",
+    "maxLength",
+    "minItems",
+    "minLength",
+    "oneOf",
+    "properties",
+    "required",
+    "then",
+    "type",
+    "uniqueItems"
+  ],
+  "candidate_source_sha256": "9f287f28a9be9ad0a06c0689b1fda3b15e9181efae0e280c0f2bcfed2d3ef504",
+  "introduced_by_new_global_geometry_property": true,
+  "baseline_proof": "fixed baseline query properties do not contain geometry and additionalProperties is false; these inputs were rejected by old schema",
+  "scope": "generic human_eye_scene_observe query schema; compact relation tool unaffected; zero host calls",
+  "minimal_fix": "Restrict geometry to mode=task with target and candidates in generic query schema; retain runtime normalization and legacy rejection unchanged",
+  "host_calls": 0,
+  "Blender": 0,
+  "consumers": 0,
+  "dependency_installs": 0
+}
