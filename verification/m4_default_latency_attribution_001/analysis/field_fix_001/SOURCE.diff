@@ -1,0 +1,35 @@
+--- frozen_ce877249/analyze_saved.py
++++ derived/analyze_saved_fields_02.py
+@@ -33,6 +33,11 @@
+ def critical_commit_matches(frozen_commit, bindings, root):
+     actual = {name: sha((root / name).read_bytes()) for name in bindings["critical_git_paths"]}
+     return frozen_commit["files_sha256"] == actual
++
++
++def warm_recorded_work_matches(task, successful_hash_count):
++    return successful_hash_count == 0 and task['result_cache_hit'] is True and all(
++        task[key] == 0 for key in ('exact_pair_count', 'closed_solid_pair_count', 'surface_pair_count'))
+ 
+ 
+ def distribution(values):
+@@ -243,8 +248,8 @@
+                             "exact_pair_count": 0, "closed_solid_pair_count": 3,
+                             "surface_pair_count": 3, "pair_calls": 3, "rank_calls": 1})
+                 else:
+-                    check(label + ":warm_no_hash_or_kernel", row["successful_normalize_hash_spans"] == 0
+-                          and task["result_cache_hit"] is True and all(task[key] == 0 for key in KERNEL))
++                    check(label + ":warm_no_hash_or_kernel", warm_recorded_work_matches(
++                        task, row["successful_normalize_hash_spans"]))
+                 trace = row["request_trace"]
+                 check(label + ":trace_PID_matches_owned_runtime", trace["pid"] == runtime_proof.get("runtime_pid"))
+                 host_spans = [span for span in trace["spans"] if span["name"] == "host.capture"]
+@@ -263,6 +268,9 @@
+                 rows.append({"label": row["label"], "phase": phase, "pair_index": pair_index,
+                     "pair_position": position, "profile_enabled": requested, "previous_profile_enabled": previous,
+                     "measurements": measurements, "raw_work": work, "task_work": task,
++                    "additional_task_counter_status": {key: 'reported' if key in task else
++                        'not_emitted_on_cache_hit' if task['result_cache_hit'] else 'not_emitted'
++                        for key in ('pair_calls', 'rank_calls')},
+                     "lifetime_product_peak_rss": trace.get("peak_rss")})
+                 previous = requested
+             received = [event for event in all_worker if type(event.get("started_ns")) is int and type(event.get("sequence")) is int]

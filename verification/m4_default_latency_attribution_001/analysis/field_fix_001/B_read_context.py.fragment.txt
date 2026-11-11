@@ -1,0 +1,12 @@
+def result(self, key, compute):
+        cached = self._results.get(key)
+        if cached is not None:
+            self._results.move_to_end(key)
+            return copy.deepcopy(cached), True
+        value = compute()
+        # No request trace or caller mutation is retained. Exceptions never
+        # populate this map; partial/unknown retain their original status.
+        self._results[key] = value
+        if len(self._results) > 16:
+            self._results.popitem(last=False)
+        return copy.deepcopy(value), False

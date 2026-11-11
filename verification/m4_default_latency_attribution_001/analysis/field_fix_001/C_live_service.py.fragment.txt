@@ -1,0 +1,42 @@
+def _observe_task(self, session_id, query):
+        """Finite current-capture query, independent of action persistence."""
+        from .task_query import task_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        geometry = query.get('geometry')
+        if geometry is not None:
+            query = {key: value for key, value in query.items() if key != 'geometry'}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_host_capture')
+            task_capture = getattr(self.host, 'capture_task_scene', None)
+            selected_capture = callable(task_capture)
+            with span('host.capture', kind='host'):
+                captured = task_capture(query['objects']) if selected_capture else self.host.capture_scene()
+            self._check_request_budget('after_host_capture')
+            context.activate(captured, 'task_selected' if selected_capture else 'task_full',
+                query['objects'] if selected_capture else None)
+            with span('scene.validate'):
+                scene, meshes, fingerprint = context.normalized(
+                    lambda: _validated_scene(captured, _task_capture=selected_capture))
+            with span('observation.task_facts'):
+                from .read_context import query_key
+                work = {'exact_pair_count': 0, 'surface_pair_count': 0, 'closed_solid_pair_count': 0}
+                result, hit = context.result(query_key(query), lambda: task_result(
+                    scene, meshes, fingerprint, query, context.scene_cache,
+                    self._check_request_budget, diagnostics=work))
+                work['result_cache_hit'] = hit
+            if geometry is not None:
+                from .task_query import project_task_geometry
+                result['geometry'] = project_task_geometry(
+                    result, meshes, geometry, self._check_request_budget)
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=scene['revision'],
+            engine_invoked=(work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0
+                            or work.get('closed_solid_pair_count', 0) > 0), task_work=work)
+        self._check_request_budget('before_task_result')
+        return result
