@@ -1,0 +1,60 @@
+--- 
++++ 
+@@ -154,7 +154,7 @@
+         totals['worker_RPC'] += len(worker)
+         totals['close_RPC'] += 1
+         totals['legacy_close_events_status_unknown'] += worker[-1]['status'] == 'unknown'
+-        check(name + ':image_and_render_zero', case['recorded_image_construction_events'] == 0
++        check(name + ':image_and_render_zero', case['recorded_image_construction_events'] == []
+               and all(not event.get('changed_or_new_PNG_files')
+                       and event.get('event') not in ('render_started','render_completed','render_cancelled')
+                       and ('render_events_after' not in event
+@@ -262,9 +262,17 @@
+             script = raw(folder / f'native/call_{index+1}/SCRIPT.py')
+             stdout = raw(folder / f'native/call_{index+1}/stdout.txt')
+             stderr = raw(folder / f'native/call_{index+1}/stderr.txt')
+-            check(label + ':native_original_script_and_output', sha(script) == event['script_sha256']
+-                  and len(stdout) == event['stdout_bytes'] and len(stderr) == event['stderr_bytes']
+-                  and not stderr)
++            logical_script = script.replace(b'\r\n', b'\n')
++            logical_stdout = stdout.replace(b'\r\n', b'\n')
++            logical_stderr = stderr.replace(b'\r\n', b'\n')
++            check(label + ':Windows_write_text_storage_boundary',
++                  logical_script.replace(b'\n', b'\r\n') == script
++                  and logical_stdout.replace(b'\n', b'\r\n') == stdout
++                  and logical_stderr.replace(b'\n', b'\r\n') == stderr)
++            check(label + ':native_original_logical_script_and_output',
++                  sha(logical_script) == event['script_sha256']
++                  and len(logical_stdout) == event['stdout_bytes']
++                  and len(logical_stderr) == event['stderr_bytes'] and not stderr)
+             marker = b'HUMAN_EYE_BLENDER_MCP:'
+             check(label + ':captured_protocol_marker', stdout.startswith(marker))
+             packet = json.loads(stdout[len(marker):])['result']
+@@ -312,7 +320,10 @@
+                 cold_ns = row['entry_elapsed_ns']
+             else:
+                 zero_kernel = all(task[key] == 0 for key in
+-                    ('exact_pair_count','closed_solid_pair_count','surface_pair_count','pair_calls','rank_calls'))
++                    ('exact_pair_count','closed_solid_pair_count','surface_pair_count'))
++                optional_pair_rank = {key: task[key] for key in ('pair_calls','rank_calls') if key in task}
++                check(label + ':cache_hit_optional_pair_rank_fields',
++                      all(value == 0 for value in optional_pair_rank.values()))
+                 check(label + ':warm_cache_no_new_kernel', zero_kernel and task['result_cache_hit'] is True
+                       and row['successful_normalize_hash_spans'] == 0 and packet['resources'] == [])
+                 totals['warm_and_warmup_zero_resource_work'] += 1
+@@ -379,6 +390,15 @@
+         'cross_session_named_fact_projection': [
+             'sets','coverage','measurement_contracts',
+             'target/candidate names and all closed_solid_relation/surface_proximity/separation_gap fields'],
++        'review_parser_corrections': {
++            'initial_review': 'POST_RUN_REVIEW_01_ERROR.json',
++            'initial_review_sha256': 'c178135f67a00579503e7fdecc14788272d5bbc47597cb76ee3923e2bfcbc385',
++            'image_events': 'Original field is a list; its empty list means no recorded image construction events.',
++            'text_storage': 'Only native SCRIPT.py/stdout.txt/stderr.txt metadata comparisons use the proven Windows write_text LF-to-CRLF storage relation, checked bidirectionally. All raw source, installed, wire and control pins remain byte-exact.',
++            'warm_diagnostics': 'Cache-hit task_work explicitly reports three zero kernel counts and result_cache_hit=true. pair_calls/rank_calls are absent on that branch; they are not rewritten or presented as observed zero-valued fields.',
++            'original_records_modified': False,
++            'new_business_samples': 0,
++        },
+         'record_limitations': [
+             'Each of four legacy close events retains status=unknown; explicit closed receipts, terminal fingerprints and zero-exit proofs confirm closure.',
+             'OFF callback counts are uncollected and represented by null, with residency and product trace work still checked.',

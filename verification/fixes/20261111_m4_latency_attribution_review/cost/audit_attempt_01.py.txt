@@ -1,0 +1,262 @@
+"""Independent saved-record audit; stdlib/Git/file reads only, no product imports or new runtime samples."""
+import argparse
+import ast
+import hashlib
+import json
+from pathlib import Path
+import statistics
+import subprocess
+
+WT = Path('C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe')
+HEAD = 'a1b402a434623c82ebcec2a48c7a09f0ca97d7df'
+FREEZE = 'ed001dddc8a50b492591d06ab82639b82501acdd'
+SCHEMA = '00b13060'
+PREFIX = 'verification/m4_default_latency_attribution_001'
+BATCH = WT / PREFIX
+HERE = Path(__file__).resolve().parent
+VERSIONS = {
+    'B': ('e077fce38b5951efff8166b3b688d05ffa2ebf04', '53db41976085ce5f361d026196f4da5faf80d639af33dfced35ba58e328ef732', 'm4_local_relation_evidence_001'),
+    'C': ('a81e530a03460f93846e3bef4c45ebaa9347531b', '9f287f28a9be9ad0a06c0689b1fda3b15e9181efae0e280c0f2bcfed2d3ef504', 'm4_relation_selected_evidence_001'),
+}
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+def compact(o):
+    return json.dumps(o, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf8')
+
+def dist(v):
+    return {'count': len(v), 'minimum': min(v) if v else None, 'median': statistics.median(v) if v else None,
+            'maximum': max(v) if v else None, 'raw_samples': v}
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, default=HERE / 'audit.json')
+    args = parser.parse_args()
+    checks = []
+    def ck(name, ok, detail=None):
+        checks.append({'check': name, 'passed': bool(ok), 'detail': detail})
+    def git(*argv):
+        return subprocess.run(['git', '-C', str(WT), *argv], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+    def blobs(commit, paths):
+        raw = subprocess.run(['git', '-C', str(WT), 'cat-file', '--batch'],
+            input=''.join(commit+':'+p+'\n' for p in paths).encode(), stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, check=True).stdout
+        result = {}; pos = 0
+        for path in paths:
+            end = raw.index(b'\n', pos)
+            oid, kind, n = raw[pos:end].decode().split(); n = int(n)
+            assert kind == 'blob'
+            result[path] = (oid, raw[end+1:end+1+n]); pos = end+n+2
+        assert pos == len(raw)
+        return result
+    def read(name):
+        return json.loads((BATCH/name).read_bytes())
+    def readabs(path):
+        return json.loads(Path(path).read_bytes())
+    before = git('status', '--short').decode()
+    ck('fixed_HEAD', git('rev-parse', 'HEAD').decode().strip() == HEAD)
+    ck('clean_implementation_before', before == '', before)
+    index = read('INDEX.json'); ready = read('ATTRIBUTION_READY.json')
+    indexed = {r['path']: r for r in index['files']}
+    expected = set(indexed) | {PREFIX+'/'+p for p in index['self_reference_files']}
+    tracked = set(git('ls-tree', '-r', '--name-only', HEAD, '--', PREFIX).decode().splitlines())
+    disk = {p.relative_to(WT).as_posix() for p in BATCH.rglob('*') if p.is_file()}
+    bytecode = {p for p in disk if '__pycache__' in p.split('/') or p.endswith('.pyc')}
+    ck('948_unique_indexed', len(indexed) == len(index['files']) == index['file_count'] == 948)
+    ck('950_exact_Git_set', tracked == expected and len(expected) == 950,
+       {'missing': sorted(expected-tracked), 'extra': sorted(tracked-expected)})
+    ck('950_exact_disk_set_except_local_bytecode', disk-bytecode == expected,
+       {'missing': sorted(expected-(disk-bytecode)), 'extra': sorted((disk-bytecode)-expected), 'local_bytecode_count':len(bytecode)})
+    files = []
+    for path,(oid,raw) in blobs(HEAD, sorted(expected)).items():
+        ck('Git_disk:'+path, raw == (WT/path).read_bytes())
+        if path in indexed:
+            pin = indexed[path]
+            ck('index_pin:'+path, len(raw) == pin['bytes'] and sha(raw) == pin['sha256'])
+        files.append({'path':path, 'bytes':len(raw), 'sha256':sha(raw), 'git_blob':oid})
+    ck('indexed_byte_total', sum(p['bytes'] for p in index['files']) == index['bytes'] == 17159982)
+    ck('READY_index_sha', sha((BATCH/'INDEX.json').read_bytes()) == ready['index_sha256'])
+    bindings=read('preparation/INPUT_BINDINGS.json'); frozen=read('entry/run_01/FROZEN_COMMIT.json')
+    critical = bindings['critical_git_paths']
+    ck('20_unique_frozen_critical_paths', len(critical)==len(set(critical))==20)
+    ck('freeze_ancestor_of_evidence', subprocess.run(['git','-C',str(WT),'merge-base','--is-ancestor',FREEZE,HEAD]).returncode==0)
+    ck('actual_frozen_commit_record', frozen['commit']==FREEZE)
+    for path,(oid,raw) in blobs(FREEZE,critical).items():
+        ck('premeasurement_frozen_bytes:'+path, raw==(WT/path).read_bytes() and sha(raw)==frozen['files_sha256'][path])
+    batch=read('entry/run_01/RESULTS.json'); installed=read('entry/run_01/VALIDATED_INPUTS.json')
+    source_pins=bindings['source_files_sha256']; install_pins=installed['checked_files_sha256']
+    ck('31_source_and_290_install_pins', len(source_pins)==31 and len(install_pins)==290)
+    ck('pre_post_pin_sets', set(batch['source_checks'])==set(source_pins) and set(batch['installed_checks'])==set(install_pins))
+    current_pins=[]
+    for label,pins,post in [('source',source_pins,batch['source_checks']),('installed',install_pins,batch['installed_checks'])]:
+        for name,digest in pins.items():
+            # Hash only; never parse or print protected configuration contents.
+            path=Path(name) if Path(name).is_absolute() else WT/name
+            actual=sha(path.read_bytes())
+            ck(label+'_pin:'+name, actual==digest and post[name] is True)
+            current_pins.append({'kind':label,'path':name,'sha256':actual,'recorded_sha256':digest})
+    schema=readabs(WT/'verification/m4_geometry_schema_scope_fix_001/SOURCE_DIFF.json')
+    runtime=[r['path'] for r in schema['manifest']]
+    ck('137_current_runtime', len(runtime)==len(set(runtime))==137)
+    schema_blobs=blobs(SCHEMA,runtime); head_runtime=blobs(HEAD,runtime)
+    ck('zero_runtime_source_change_in_attribution_batch', all(schema_blobs[p][1]==head_runtime[p][1] for p in runtime))
+    ck('zero_runtime_source_change_after_freeze', git('diff','--name-only',FREEZE,HEAD,'--',*runtime)==b'')
+    ck('137_checkout_matches_current_4eb_manifest', all(sha((WT/r['path']).read_bytes())==r['sha256'] for r in schema['manifest']))
+    installation=[]
+    for letter,(commit,canonical,old_batch) in VERSIONS.items():
+        prep=WT/'verification'/old_batch/'installation'
+        install=readabs(prep/'READY.json'); fixed=readabs(prep/'run_01/FIXED_BUILD_INPUTS.json')
+        manifest=fixed['manifest']; originals=blobs(commit,[r['path'] for r in manifest])
+        ck(letter+'_137_source_install_identity', len(manifest)==137 and fixed['source_sha256']==canonical and install['source_sha256']==canonical)
+        ck(letter+'_reused_READY_record', installed['versions'][letter]==install and install['commit']==commit)
+        for r in manifest:
+            raw=originals[r['path']][1]
+            ck(letter+'_Git_manifest_install:'+r['path'], sha(raw)==r['sha256'] and (Path(install['install_root'])/r['path']).read_bytes()==raw)
+        constants={}
+        for node in ast.parse(originals['human_eye_plugin/runtime_identity.py'][1]).body:
+            if isinstance(node,ast.Assign):
+                for target in node.targets:
+                    if isinstance(target,ast.Name) and target.id in ('BASE_VERSION','IMPLEMENTATION_REVISION'):
+                        constants[target.id]=ast.literal_eval(node.value)
+        recomputed=sha(json.dumps({'base_version':constants['BASE_VERSION'],'implementation_revision':constants['IMPLEMENTATION_REVISION'],'files':manifest},sort_keys=True,separators=(',',':'),ensure_ascii=True).encode())
+        ck(letter+'_canonical_recomputed',recomputed==canonical)
+        installation.append({'version':letter,'commit':commit,'canonical':recomputed,'file_count':137,'install_root':install['install_root'],'new_installation':False})
+    schedule=read('SCHEDULE.json'); author=read('analysis/run_02/RESULTS.json')
+    ck('four_BCCB_sessions', [s['id'] for s in batch['cases']]==[s['id'] for s in schedule['sessions']]==['01_B','02_C','03_C','04_B'])
+    starts=[json.loads(line) for line in (BATCH/'entry/OWNED_STARTS.jsonl').read_bytes().splitlines()]
+    ck('four_start_reservations_no_replacement',len(starts)==batch['started_sessions']==batch['planned_sessions']==4 and not batch['not_run_sessions'] and batch['stop'] is None)
+    ck('no_new_install_images_or_consumers',batch['new_installations']==batch['images']==batch['model_consumers']==0)
+    ck('freeze_verification_elapsed_binding',batch['frozen_commit_verification_ns']==frozen['elapsed_ns'])
+    ck('preparation_elapsed_binding',batch['preparation_verification_elapsed_ns']==installed['verification_elapsed_ns'])
+    sessions=[]; rows_all=[]; total_rpc=0; total_stdio=0; all_tx=0; all_rx=0
+    names=None
+    for i,(session,plan) in enumerate(zip(batch['cases'],schedule['sessions'])):
+        sid=session['id']; folder=BATCH/'entry/run_01'/sid
+        ck(sid+'_saved_case',session==readabs(folder/'RESULTS.json'))
+        ck(sid+'_reservation',session['start_reservation']==starts[i])
+        ck(sid+'_wall_subtraction',session['ended_ns']-session['started_ns']==session['session_wall_ns'])
+        if i: ck(sid+'_serial',session['started_ns']>=batch['cases'][i-1]['ended_ns'])
+        ck(sid+'_cleanup',session['passed'] and not session['errors'] and session['product_close']['confirmed'] and session['product_close']['exit_code']==0 and session['product_close']['process_reaped'] and session['native_close']['exit_code']==0 and session['native_close']['process_reaped'] and session['native_close']['source_file_unchanged'] and session['native_close']['protected_files_unchanged'] and not session['worker_closed']['poisoned'])
+        init=readabs(folder/'ACTUAL_INITIALIZE.json')['result']['_meta']['human_eye']
+        canonical=VERSIONS[session['version']][1]
+        ck(sid+'_actual_loaded_identity',init['source_sha256']==canonical and init['source_file_count']==137 and init['source_kind']=='installed_distribution' and init['identity_check']['compatible'])
+        events=[json.loads(line) for line in (folder/'native/WORKER_EVENTS.jsonl').read_bytes().splitlines() if line]
+        ck(sid+'_23_raw_worker_events',events==session['all_worker_events'] and len(events)==23 and [e['sequence'] for e in events]==list(range(1,24)))
+        ck(sid+'_zero_render_events',all(e['render_events_before']==e['render_events_after']==0 and not e['changed_or_new_PNG_files'] for e in events))
+        total_rpc+=len(events)
+        rpc=readabs(folder/'product/RPC.json'); total_stdio+=len(rpc['requests'])
+        ck(sid+'_26_stdio',len(rpc['requests'])==26 and [r['method'] for r in rpc['requests'][:4]]==schedule['metadata_stdio_per_session'])
+        tx=rx=0
+        for number,receipt in enumerate(rpc['requests'],1):
+            io=folder/'product'/f'{number:03}'
+            ck(sid+'_receipt_'+str(number),readabs(io/'RECEIPT.json')==receipt)
+            sent=(io/'TX.bin').read_bytes(); received=(io/'RX.bin').read_bytes() if (io/'RX.bin').exists() else b''
+            ck(sid+'_wire_bytes_'+str(number),len(sent)==receipt['sent_bytes']==receipt['attempted_send_bytes'] and len(received)==receipt['received_bytes'] and receipt['send_confirmed'] and receipt['error'] is None)
+            tx+=len(sent);rx+=len(received)
+            if number>4:
+                row=session['rows'][number-5]
+                request=readabs(folder/(row['label']+'.REQUEST.json'))
+                response=readabs(folder/(row['label']+'.RESPONSE.json'))
+                ck(sid+'_raw_request_'+row['label'],json.loads(sent)==request and {k:v for k,v in request.items() if k!='id'}=={k:v for k,v in schedule['request_template'].items() if k!='id'})
+                ck(sid+'_raw_response_'+row['label'],json.loads(received)==response and row['stdio']==receipt)
+                texts=response['result']['content']
+                ck(sid+'_raw_body_'+row['label'],len(texts)==1 and texts[0]['type']=='text' and json.loads(texts[0]['text'])==row['body'])
+        ck(sid+'_wire_totals',tx==rpc['tx_bytes'] and rx==rpc['rx_bytes']);all_tx+=tx;all_rx+=rx
+        ck(sid+'_22_business_rows',len(session['rows'])==len(plan['business'])==22)
+        extracted=[]
+        for j,(row,expectedrow) in enumerate(zip(session['rows'],plan['business'])):
+            label=sid+':'+row['label'];event=events[j];q=event['qa_work'];trace=row['request_trace']
+            ck(label+'_schedule',all(row[k]==v for k,v in expectedrow.items()))
+            ck(label+'_worker_link',row['worker_received_events']==[event] and row['worker_received_RPC_count']==1 and row['sequence']==q['worker_sequence'])
+            ck(label+'_entry_subtraction',row['ended_ns']-row['started_ns']==row['entry_elapsed_ns'])
+            ck(label+'_runtime_identity',row['body']['context']['runtime_source_sha256']==canonical and trace['annotations']['build_id']=='sha256:'+canonical)
+            ck(label+'_profile_restored',q['profile_enabled']==row['profile_enabled'] and q['profile_initial_present'] is False and q['profile_restored_to_initial'] is True and not q['errors'])
+            ck(label+'_counts_collection',q['callback_counts_status']==('collected' if row['profile_enabled'] else 'not_collected') and all(isinstance(q[k],dict) if row['profile_enabled'] else q[k] is None for k in ('python_calls','C_calls','C_returns','C_exceptions')))
+            spans={s['name']:s['duration_ns'] for s in trace['spans']}
+            metrics={'entry_elapsed_ns':row['entry_elapsed_ns'],'Peer_elapsed_ns':row['stdio']['elapsed_ns'],
+                'trace_duration_ns':trace['duration_ns'],'host_capture_ns':spans['host.capture'],
+                'trace_outside_host_ns':trace['duration_ns']-spans['host.capture'],
+                'entry_outside_trace_ns':row['entry_elapsed_ns']-trace['duration_ns'],
+                'content_encode_inclusive_ns':spans['mcp.content_encode'],'worker_elapsed_ns':event['elapsed_ns'],
+                'QA_before_probe_ns':q['before_probe_elapsed_ns'],'QA_after_probe_ns':q['after_probe_elapsed_ns'],
+                'profile_scope_inclusive_ns':q['profile_scope_ns'],'verification_elapsed_ns':row['verification_elapsed_ns'],
+                'request_with_checks_ns':row['request_with_checks_ns']}
+            if names is None:names=list(metrics)
+            ck(label+'_author_measurements',metrics==author['sessions'][i]['rows'][j]['measurements'])
+            ex={k:row[k] for k in ('label','phase','sequence','pair_index','pair_position','profile_enabled','previous_profile_enabled')}
+            ex['measurements']=metrics;ex['task_work']=row['task_work'];ex['trace_peak_rss']=trace['peak_rss']
+            ex['payload_bytes']=len(compact(row['body']))
+            ex['model_text_bytes']=len(readabs(folder/(row['label']+'.RESPONSE.json'))['result']['content'][0]['text'].encode())
+            extracted.append(ex);rows_all.append({'session':sid,**ex})
+        warm=[r for r in extracted if r['phase']=='warm']
+        ck(sid+'_20_warm_10_each',len(warm)==20 and sum(r['profile_enabled'] for r in warm)==10 and len({r['pair_index'] for r in warm})==10)
+        summarize=lambda selected:{name:dist([r['measurements'][name] for r in selected]) for name in names}
+        summary={mode:summarize([r for r in warm if r['profile_enabled']==enabled]) for mode,enabled in [('ON',True),('OFF',False)]}
+        summary.update({phase:summarize([r for r in extracted if r['phase']==phase]) for phase in ('cold','warmup')})
+        differences=[]
+        for pair in range(1,11):
+            selected=[r for r in warm if r['pair_index']==pair];by={r['profile_enabled']:r for r in selected}
+            ck(sid+'_pair_'+str(pair),len(selected)==2 and set(by)=={True,False} and [r['pair_position'] for r in selected]==[1,2])
+            differences.append({'pair_index':pair,'order':[r['profile_enabled'] for r in selected], 'labels':[r['label'] for r in selected],
+                'ON_minus_OFF':{name:by[True]['measurements'][name]-by[False]['measurements'][name] for name in names}})
+        summary['pair_differences']=differences
+        summary['paired_ON_minus_OFF']={name:dist([p['ON_minus_OFF'][name] for p in differences]) for name in names}
+        summary['position']={mode:{str(pos):summarize([r for r in warm if r['profile_enabled']==enabled and r['pair_position']==pos]) for pos in (1,2)} for mode,enabled in [('ON',True),('OFF',False)]}
+        summary['previous_profile']={mode:{previous:summarize([r for r in warm if r['profile_enabled']==enabled and r['previous_profile_enabled']==prior]) for previous,prior in [('ON',True),('OFF',False),('unknown',None)]} for mode,enabled in [('ON',True),('OFF',False)]}
+        ck(sid+'_all_13_metric_distributions_pairs_position_and_predecessor',summary==author['sessions'][i]['summary'])
+        stages=session['timing_stages_ns']
+        ck(sid+'_verification_stage_sum',stages['verification']==sum(r['verification_elapsed_ns'] for r in session['rows']))
+        stage_nonoverlap=sum(v for k,v in stages.items() if k!='verification')
+        ck(sid+'_nonoverlap_stages_within_wall',stage_nonoverlap<=session['session_wall_ns'])
+        sessions.append({'id':sid,'version':session['version'],'summary':summary,'wall_ns':session['session_wall_ns'],
+            'stages_ns':stages,'unattributed_session_ns':session['session_wall_ns']-stage_nonoverlap,
+            'wire_tx_bytes':tx,'wire_rx_bytes':rx,'rows':extracted})
+    ck('denominator_88_80_40_92_104',len(rows_all)==88 and sum(r['phase']=='warm' for r in rows_all)==80 and sum(len(s['summary']['pair_differences']) for s in sessions)==40 and total_rpc==92 and total_stdio==104)
+    matched=[]
+    for bi,ci in [(0,1),(3,2)]:
+        b,c=sessions[bi],sessions[ci];contrast={}
+        for name in names:
+            on=c['summary']['ON'][name]['median']-b['summary']['ON'][name]['median']
+            off=c['summary']['OFF'][name]['median']-b['summary']['OFF'][name]['median']
+            contrast[name]={'C_minus_B_ON':on,'C_minus_B_OFF':off,'interaction':on-off}
+        matched.append({'baseline_session':b['id'],'candidate_session':c['id'],'contrasts':contrast})
+    ck('matched_blocks_all_metrics',matched==author['version_comparisons']['matched_blocks'])
+    weighted={mode:{name:statistics.mean(s['summary'][mode][name]['median'] for s in sessions if s['version']=='C')-statistics.mean(s['summary'][mode][name]['median'] for s in sessions if s['version']=='B') for name in names} for mode in ('ON','OFF')}
+    ck('equal_session_weight_contrasts',weighted==author['version_comparisons']['equal_weight_version_difference'])
+    costs={'batch_wall_ns':batch['batch_wall_ns'],'frozen_commit_verification_ns':batch['frozen_commit_verification_ns'],
+        'in_batch_preparation_verification_ns':batch['preparation_verification_elapsed_ns'],
+        'sum_session_wall_ns':sum(s['wall_ns'] for s in sessions),
+        'stages_ns':{k:sum(s['stages_ns'][k] for s in sessions) for k in sessions[0]['stages_ns']},
+        'stdio_tx_bytes':all_tx,'stdio_rx_bytes':all_rx,'model_tokens':None,'model_fees':None,
+        'scope':'entry batch only; verification stage is inside business_loop; nested trace/probe spans must not be added'}
+    costs['batch_outside_explicit_freeze_preparation_sessions_ns']=costs['batch_wall_ns']-costs['frozen_commit_verification_ns']-costs['in_batch_preparation_verification_ns']-costs['sum_session_wall_ns']
+    ck('batch_wall_subtraction',batch['batch_ended_ns']-batch['batch_started_ns']==batch['batch_wall_ns'])
+    ck('all_session_wall_total',costs['sum_session_wall_ns']==author['sum_session_wall_ns']==10808792400)
+    ck('prior_1976_evidence_files_unchanged_since_be2de48',git('diff','--name-only','be2de48bd9656787c4cdfbc5767c2551defcaada',HEAD,'--','verification/m4_relation_selected_evidence_001')==b'')
+    history=['analysis/run_01/ANALYZER_EXCEPTION.txt','analysis/run_01/PARTIAL_CHECKS.json','POST_RUN_REVIEW_01_ERROR.json','history/post_run_review_01/POST_RUN_REVIEW_EXECUTED.py']
+    ck('both_current_analysis_failures_preserved',all((BATCH/p).is_file() for p in history))
+    ck('frozen_original_analyzer_retained',sha((BATCH/'analysis/analyze_saved.py').read_bytes())==source_pins[PREFIX+'/analysis/analyze_saved.py'])
+    ck('derived_analyzer_identity',sha((BATCH/'analysis/analyze_saved_fields_02.py').read_bytes())==author['analysis_source_sha256'])
+    changes=git('diff','--name-only',SCHEMA,HEAD).decode().splitlines()
+    ck('current_batch_changes_only_evidence',all(p.startswith(PREFIX+'/') for p in changes),changes)
+    after=git('status','--short').decode()
+    ck('implementation_status_unchanged',before==after)
+    failed=[c for c in checks if not c['passed']]
+    result={'audit_kind':'independent saved-record provenance and cost reconstruction','implementation_HEAD':HEAD,'frozen_commit':FREEZE,
+        'new_runtime_samples':0,'product_imports':0,'Blender_calls':0,'model_calls':0,'passed':not failed,'check_count':len(checks),'failed_checks':failed,
+        'checks':checks,'files':files,'pins':current_pins,'installations':installation,'checkout_canonical_not_performance_tested':schema['source_sha256'],
+        'sessions':sessions,'matched_blocks':matched,'equal_weight_version_differences':weighted,'costs':costs,
+        'limitations':['Two sessions per version; 80 warm calls are clustered, not 80 independent version replications.',
+            'ON/OFF difference includes callback plus its counting/publication state; QA outer helper remains enabled in both conditions.',
+            'Cold means first application request, not OS-cache cold. Cold and warmup each have only one observation per session.',
+            'B/C signs reverse across matched blocks; old +1.341ms default cost remains historically observed and causally unresolved.',
+            'No product regression root cause, equivalence, default admission, 4eb performance acceptance or end-to-end model benefit follows.',
+            'No further attribution samples are recommended under the one-shot contract.']}
+    with args.output.open('x',encoding='utf8',newline='\n') as f:
+        json.dump(result,f,ensure_ascii=False,indent=2,allow_nan=False);f.write('\n')
+    print(json.dumps({'passed':not failed,'checks':len(checks),'failures':failed,'output':str(args.output),'costs':costs},ensure_ascii=False))
+    return 0 if not failed else 1
+
+if __name__=='__main__':
+    raise SystemExit(main())
