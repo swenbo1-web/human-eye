@@ -1,0 +1,93 @@
+{
+  "scope": "Independent conditional pure-Python probes; not Blender or socket failure injection",
+  "candidate": "c6355a01a4c6ee204a0d676cd9309f02428fe3ba",
+  "checks": 8,
+  "passed": true,
+  "results": [
+    {
+      "case": "normal_hidden",
+      "evaluated": false,
+      "returned": true,
+      "source_mode": "static_original_hidden",
+      "bounds_unknown": false
+    },
+    {
+      "case": "bbox_runtime_error",
+      "evaluated": false,
+      "returned": false,
+      "error": "RuntimeError",
+      "message": "injected_bbox_failure"
+    },
+    {
+      "case": "bbox_runtime_error",
+      "evaluated": true,
+      "returned": true,
+      "source_mode": "evaluated_static",
+      "bounds_unknown": true
+    },
+    {
+      "case": "eval_runtime_error",
+      "evaluated": false,
+      "returned": false,
+      "error": "RuntimeError",
+      "message": "injected_evaluation_failure"
+    },
+    {
+      "case": "eval_reference_error",
+      "evaluated": false,
+      "returned": false,
+      "error": "ReferenceError",
+      "message": "injected_reference_failure"
+    },
+    {
+      "case": "MCP_fake_clock_short_parent",
+      "forwarded_parent_deadline_ns": 100000000,
+      "transport_deadline_s": 30.0,
+      "real_network_calls": 0
+    },
+    {
+      "case": "MCP_late_success_rejected",
+      "error": "acquisition_deadline_exceeded",
+      "simulated_elapsed_s": 0.5
+    },
+    {
+      "case": "Process_fake_write_consumes_original_deadline",
+      "parent_deadline_s": 0.1,
+      "operations": [
+        {
+          "op": "write",
+          "at_s": 0.0
+        },
+        {
+          "op": "flush",
+          "at_s": 0.25
+        },
+        {
+          "op": "queue_wait",
+          "at_s": 0.5,
+          "timeout_s": 0.1
+        }
+      ],
+      "simulated_elapsed_s": 0.6,
+      "late_success_rejected": true,
+      "real_processes": 0
+    }
+  ],
+  "sources": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_host.py",
+      "sha256": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9",
+      "bytes": 221977
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_mcp_host.py",
+      "sha256": "a0ec7e715d373cf3d031bd391c5bcdbe385689042ad9aae65589138092970877",
+      "bytes": 41584
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_process.py",
+      "sha256": "f267e4e602e4360c4ab798ba2214fad075c15ae8d88f23b0bd701afb2ae3bcfb",
+      "bytes": 46436
+    }
+  ]
+}
