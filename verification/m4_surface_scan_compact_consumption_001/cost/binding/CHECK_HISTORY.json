@@ -1,0 +1,33 @@
+{
+  "schema": "offline-binding-checker-development-history-v1",
+  "failures": [
+    {
+      "attempt": 1,
+      "assertion": "r2 public canonical",
+      "cause": "The first checker used Windows Path ordering, whose case folding differs from the frozen POSIX-string order for manifest entries.",
+      "correction": "Sort by exact relative POSIX strings before canonicalization.",
+      "original_evidence_changed": false
+    },
+    {
+      "attempt": 2,
+      "assertion": "N1 common native declaration",
+      "cause": "The checker hashed the sorted frozen schema while the historical identity hashes the original source dictionary insertion order.",
+      "correction": "Read the accepted native source without importing it, extract the literal via AST, compare schema semantics and reproduce its original encoder order.",
+      "original_evidence_changed": false
+    }
+    ,{
+      "attempt": 3,
+      "assertion": "actual MCP CLI configuration parse",
+      "cause": "The checker treated an inline TOML CLI assignment as JSON.",
+      "correction": "Use standard-library tomllib for the actual and frozen assignments.",
+      "original_evidence_changed": false
+    }
+    ,{
+      "attempt": 4,
+      "assertion": "N1 INITIAL all vertices faces matrices unit equal baseline",
+      "cause": "The baseline object records contain additional qualification fields, so a top-level projection alone compared unequal.",
+      "correction": "Project baseline objects onto all four recorded geometry fields, retaining every vertex, face, matrix and unit.",
+      "original_evidence_changed": false
+    }
+  ]
+}
