@@ -1,0 +1,21 @@
+--- prepared_02/run_entry.py
++++ prepared_03/run_entry.py
+@@ -229,6 +229,7 @@
+             try:
+                 result['product_runtime_exit'] = runtime._runtime_exit(runtime_handle)
+                 assert result['product_runtime_exit']['confirmed'] is True and result['product_runtime_exit']['exit_code']==0
++                assert result['product_runtime_exit']['exited'] is True and result['product_runtime_exit']['handle_closed'] is True
+             except BaseException as exc: result['errors'].append({'stage':'product_runtime_exit','error':repr(exc)})
+         if native is not None:
+             try:
+@@ -281,7 +282,9 @@
+         result['source_files_unchanged'] = all(sha(path)==expected for path,expected in binding['source_files'].items())
+         result['ended_ns'] = time.perf_counter_ns()
+         result['session_wall_ns'] = result['ended_ns']-started
+-        result['harness_execution_complete'] = len(result['business'])==3 and not result['errors'] and result['source_files_unchanged']
++        result['harness_execution_complete'] = (len(result['business'])==3
++            and all('response' in row and row['classification']!='transport_or_harness_exception' for row in result['business'])
++            and not result['errors'] and result['source_files_unchanged'])
+         result['business_passed'] = None
+         result['business_passed_scope'] = 'independent oracle verification required; harness completion cannot turn unknown into business success'
+         save(output/'RESULTS.json',result)

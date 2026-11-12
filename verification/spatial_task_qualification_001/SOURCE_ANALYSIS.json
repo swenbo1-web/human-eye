@@ -1,0 +1,232 @@
+{
+  "schema": "human-eye-spatial-task-static-source-analysis-v1",
+  "cycle_id": "SPATIAL-TASK-QUALIFICATION-001",
+  "reviewer": "/root/m1_entry_architecture",
+  "scope": "固定产品的只读源码定位与一个M3下一改造建议",
+  "product": {
+    "commit": "fac9b4373575d653cc96f39f1dcb225300cd5977",
+    "source_count": 137,
+    "source_sha256": "6acb3ac7f014a590a279994f44be07c581af53a2da4dafae8dba9cd58eaea0bb",
+    "implementation_HEAD": "c0134088796d47a982edfc838aa6704c8e052d57"
+  },
+  "source_files": [
+    {
+      "path": "human_eye_plugin/task_query.py",
+      "sha256": "def312ae4b67192e4a3e71feb80fa5122c08fd8a5c2853406c8de4f692df5fd8"
+    },
+    {
+      "path": "human_eye_plugin/surface_proximity.py",
+      "sha256": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3"
+    },
+    {
+      "path": "human_eye_plugin/surface_geometry.py",
+      "sha256": "cbbf523e3db8f0150953344f39179ac8fb4cb6fc4b9469d054601ad2e43a2fb2"
+    },
+    {
+      "path": "human_eye_plugin/scene_cache.py",
+      "sha256": "8b857eddc946cd08258d5ae138bc8a7a07e14e13a45b1ccbfa970b8ec448f0ec"
+    },
+    {
+      "path": "human_eye_plugin/read_context.py",
+      "sha256": "5c3c211d0a93aa49e63d9129932d833a633c48c22a974f53473bc79130d952e3"
+    },
+    {
+      "path": "human_eye_plugin/live_service.py",
+      "sha256": "05790c8bb14706982c3ec8e0a4b7db0ab9dc18333482b9ad589ca32a20aed3fe"
+    },
+    {
+      "path": "human_eye_plugin/live_spatial_mcp.py",
+      "sha256": "5c72ab123ad65ee330c32229f1eaaee1cf1b84f4ebf2175bb770770e434e5f78"
+    }
+  ],
+  "runtime_gate_hit_claimed": false,
+  "receipt_review_in_this_document": false,
+  "prediction_condition": "原始来源、selector绑定、宿主selected capture与场景校验先通过，并采用固定task set与aabb/surface_proximity/closed_solid_relation",
+  "fixed_pair_sizes": [
+    {
+      "candidate": "Peer_000",
+      "vertices": [
+        256,
+        256
+      ],
+      "triangles": [
+        508,
+        508
+      ],
+      "total_triangles": 1016,
+      "triangle_product": 258064,
+      "static_first_kernel_exit": "surface_proximity._admit theoretical_product_gate"
+    },
+    {
+      "candidate": "Competing_001",
+      "vertices": [
+        256,
+        32
+      ],
+      "triangles": [
+        508,
+        60
+      ],
+      "total_triangles": 568,
+      "triangle_product": 30480,
+      "static_first_kernel_exit": "surface_proximity._admit theoretical_product_gate"
+    },
+    {
+      "candidate": "Near_003",
+      "vertices": [
+        256,
+        32
+      ],
+      "triangles": [
+        508,
+        60
+      ],
+      "total_triangles": 568,
+      "triangle_product": 30480,
+      "static_first_kernel_exit": "surface_proximity._admit theoretical_product_gate"
+    },
+    {
+      "candidate": "simple_control",
+      "vertices": [
+        8,
+        8
+      ],
+      "triangles": [
+        12,
+        12
+      ],
+      "total_triangles": 24,
+      "triangle_product": 144,
+      "static_first_kernel_exit": "admission_passes; actual measured result requires receipt"
+    }
+  ],
+  "gate_layers": [
+    {
+      "location": "task_query.py:268-272,295-297",
+      "meaning": "面数总和/乘积或松散顶点条件决定绕过pair memo并直接compute，这里尚未返回unknown",
+      "fixed_case": "三装配对绕过pair memo，控制正常采用现有memo"
+    },
+    {
+      "location": "surface_proximity.py:149-153",
+      "meaning": "共同_admit在任何面验证、整数准备或剪枝前检查非零faces、两件总faces<=4096、faces乘积<=16384",
+      "surface_reason": "surface_geometry_work_limit",
+      "fixed_case": "三装配对乘积超限，面总数与闭壳总顶点均低于各自4096限制"
+    },
+    {
+      "location": "surface_geometry.py:458-464,511-514",
+      "meaning": "闭壳先收admission work=1并查两件总顶点<=4096，再调用同一exact._admit，捕获surface原因时改前缀",
+      "closed_reason": "closed_solid_geometry_work_limit"
+    },
+    {
+      "location": "surface_geometry.py:226-257,409-413",
+      "meaning": "后续262144 work、self与cross合计16384实际pair以及16384射线面测试是独立动态门，和理论乘积门具有不同层次"
+    }
+  ],
+  "public_fact_predictions": {
+    "aabb": "task_query._aabb_fact与全局facts.aabb独立产生4个绑定对象的measured范围，受浮点有限性约束",
+    "closed_solid_relation": "三pair的status=unknown,value=null,reason=closed_solid_geometry_work_limit",
+    "surface_proximity": "三pair的status=unknown,value=null,reason=surface_geometry_work_limit，topology与witness尚未计算",
+    "separation_gap": "status=unknown,value=null,reason=closed_solid_relation_unavailable",
+    "task_status": "有measured AABB可使整体partial，MCP isError仍可能false，业务精测保持未完成",
+    "set_summary": "classified_candidates=0、penetration_set_complete=false、nearest_separated_complete=false、nearest_separated_ids=null、best_known_separated_ids=[]、distance_m=null",
+    "ranking_caution": "没有classified separated pair时measurements为空，unresolved_distances也可为空，须结合unresolved_relations及complete旗标解释",
+    "partial_measurement_caution": "其他失败路径可保留有效distance但使witness/direction未知，逐事实状态与有效数值应分别保留"
+  },
+  "expected_first_cold_diagnostics": {
+    "pair_calls": 3,
+    "closed_solid_pair_count": 3,
+    "surface_pair_count": 3,
+    "rank_calls": 1,
+    "per_closed_work": "work_units=1，已初始化的validated_faces/referenced_vertices/pair_tests/self_pair_tests/cross_pair_tests/ray_tests/point_queries/ray_attempts/node_pair_visits/leaf_pair_visits/aabb_pruned_pairs为0，prepared_pair_reused=false，其他未发出字段不当作0",
+    "per_surface_work": "validated_faces/referenced_vertices/triangle_pairs/intersection及feature计数为0",
+    "scope": "静态预测，仅表示进入测量wrapper及准入，不能称已做3次完整几何求解"
+  },
+  "existing_work_and_pruning": {
+    "distance": {
+      "locations": [
+        "surface_proximity.py:135-146",
+        "surface_proximity.py:171-216",
+        "surface_proximity.py:305-360"
+      ],
+      "structure": "当前_nearest为完整三角面笛卡尔双循环，先增加triangle_pairs，再用精确整数AABB lower>best逐对剪枝，随后交点、point-face、point-edge、edge-edge",
+      "counts": [
+        "validated_faces",
+        "referenced_vertices",
+        "triangle_pairs",
+        "aabb_bound_tests",
+        "aabb_pruned_pairs",
+        "intersection_tests",
+        "point_face_tests",
+        "point_edge_tests",
+        "edge_edge_tests",
+        "predicate_steps"
+      ],
+      "limits": "4096-bit数值约束与checkpoint期限有效，_Work.tick目前主要计数，尚无以实际工作量替代理论乘积准入的独立计额",
+      "tree_status": "距离自身尚未使用BVH node traversal"
+    },
+    "closed": {
+      "locations": [
+        "surface_geometry.py:122-159",
+        "surface_geometry.py:265-305",
+        "surface_geometry.py:317-325",
+        "surface_geometry.py:369-426",
+        "surface_geometry.py:429-514"
+      ],
+      "structure": "已有整数triangle bounds与BVH，self/cross候选由candidate_pairs剪枝，定位采用point/ray BVH并执行精确parity",
+      "counts": [
+        "work_units",
+        "pair_tests",
+        "self_pair_tests",
+        "cross_pair_tests",
+        "node_pair_visits",
+        "leaf_pair_visits",
+        "aabb_pruned_pairs",
+        "point_queries",
+        "ray_attempts",
+        "ray_tests",
+        "predicate_steps"
+      ],
+      "counter_availability": "predicate_steps等按实际tick动态出现，未发出字段保留未发出状态",
+      "limitations": "自相交、跨物体和射线三类都已计量，self与cross共享合计16384 pair上限，实际工作上限仍可能使更大输入退出，当前准入门先于这些工作"
+    }
+  },
+  "preparation_and_cache": {
+    "locations": [
+      "task_query.py:251-335",
+      "scene_cache.py:171-181,406-443",
+      "read_context.py:35-79",
+      "live_service.py:1443-1486"
+    ],
+    "sharing": "本pair的holder在闭壳返回时可传递records/topology/origin/factor/prepared给surface，并可复用已有boundary_contact零距离见证，准备限本query生命周期",
+    "failure_sharing": "当前乘积门发生于holder填充前，surface会独立走_admit再次拒绝",
+    "closed_cache_hit": "closed memo命中时holder不携带已序列化结果以外的准备，surface miss会自行准备",
+    "pair_cache": "序列化有measurement_valid=true的结果，键含算法版本、参数、顺序mesh身份/内容，unknown与异常不加入pair memo",
+    "read_context": "完整task result可在同来源代与selection内缓存partial/unknown，这与pair memo规则不同",
+    "identity": "resident私有mesh/capture-version绑定减少重复完整网格哈希，来源代改变会使后续读key失效"
+  },
+  "one_next_M3_proposal": {
+    "name": "现有成对精测按实际工作量准入并做距离BVH遍历",
+    "precondition": "实际回执确认共同理论乘积准入是首个缺口",
+    "entry": "surface_proximity._admit与_nearest这一现有成对求解边界，联动task_query的同条件pair memo分流",
+    "change": "保留非零faces、4096面/闭壳顶点、数值bit与期限上限，把16384理论面乘积拒绝转换为实际未剪枝leaf pair与特征工作计量，节点访问和准备工作也收费",
+    "reuse": "复用现有surface_geometry._bvh节点与prepared整数triangle bounds，距离用严格平方距离lower>best裁枝，沿已有query-local holder复用可用准备或树",
+    "closed": "闭壳保持已有topology、self/cross、point/ray验证及262144 work/16384 pair/ray边界，继续分别输出各类消耗与unknown原因",
+    "correctness": "保留等距候选、degenerate triangle hull、精确rank、witness发布精度和方向语义；闭壳unknown不抹去独立可用surface数值",
+    "cache": "维护现有有界版本化pair memo与ReadContext代际，必要调整算法版本，Target跨不同candidate的pair整数frame未经证明不能直接复用",
+    "avoid": [
+      "仅抬大16384常数",
+      "只移除乘积门而保留全笛卡尔距离扫描",
+      "用pad=0的相交candidate_pairs代替正距离最近遍历",
+      "增加通用安全层、服务或持久准备cache"
+    ],
+    "qualification_limit": "该建议尚未实现，去掉最早gate后仍可能命中真实closed self/cross/ray预算，当前无法承诺G508通过或速度收益"
+  },
+  "reviewer_execution": {
+    "product_source_edits": 0,
+    "Blender_started": 0,
+    "models_started": 0,
+    "business_calls": 0,
+    "QA_or_performance_runs": 0,
+    "authorized_report": "SOURCE_ANALYSIS.json"
+  }
+}
