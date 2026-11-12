@@ -1,0 +1,25 @@
+{
+  "phase": "design_before_input_qualification",
+  "product_mutations": 0,
+  "AL": {
+    "context_bound": false,
+    "host_epoch": 5,
+    "rebind_required": true,
+    "borrowed_handle": false
+  },
+  "entry": "surface_scan_result(packet, cache, checkpoint, diagnostics=None, _normalize=None, _identity=None, max_new_pairs=512, _progress=None, max_delivery_bytes=524288)",
+  "packet": {
+    "protocol": "single-read-surface-scan-v1",
+    "result_kind": "acquisition_only_not_surface_scan_result",
+    "coverage": "Full directory rows object_id/name/bounds_world_m/bounds_status/source_status/reason",
+    "pairs": "Every unordered directory pair once, with lower_bound_m and retained/excluded_strict_bound/unknown_source",
+    "scope_issues": "Known unsupported scene-scope dependencies. Nonempty prevents complete.",
+    "capture": "One endpoint union with surface_scan_candidates identity scope",
+    "binding": "Full directory complete_scene_meshes identity and same-main-thread marker"
+  },
+  "threshold": "Existing exact M3 squared-distance key compared with exact binary64 threshold squared. Display floats never classify.",
+  "coverage_equation": "total_pairs = bound_excluded + measured_match + measured_nonmatch + unknown + deferred",
+  "progress": "One current ReadContext scan progress, keyed by current capture selection and query. No geometry copy. Successful measurement summaries survive partial continuation; normal pair cache also reused.",
+  "cache_changes": "ReadContext.result opt-in cache_partial=False; SceneCache.pair_measurement optional before_compute for actual cache-miss quota charging; old defaults unchanged.",
+  "generation": "Keep current generation invalidation for initial benchmark; per-object optimization deferred to administrator review."
+}

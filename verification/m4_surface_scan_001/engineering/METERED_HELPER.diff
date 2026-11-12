@@ -1,0 +1,42 @@
+--- C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_001\worker\pose_native.py
++++ C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_001\engineering\pose_native_metered.py
+@@ -235,6 +235,9 @@
+     # default output path so ordinary write_still never targets the source PNG.
+     renders_directory=workspace/'renders';renders_directory.mkdir(exist_ok=True)
+     bpy.context.scene.render.filepath=str(renders_directory/'default.png')
++    import importlib.util
++    meter_spec=importlib.util.spec_from_file_location('_scan_wire_meter',Path(__file__).with_name('wire_meter.py'))
++    meter=importlib.util.module_from_spec(meter_spec);meter_spec.loader.exec_module(meter)
+     initial=_scene_fingerprint(bpy);current=initial;qa_advanced=False
+     audit=workspace/'WORKER_EVENTS.jsonl';renders=[]
+     def render_event(kind):
+@@ -267,10 +270,13 @@
+                 if (workspace/'POISONED.json').exists():poisoned=True;break
+                 check(deadline);server.settimeout(max(.001,(deadline-time.perf_counter_ns())/1e9))
+                 connection,_=server.accept()
++                connection=meter.WireSocket(connection,sequence+1)
+                 with connection:
+                     start=time.perf_counter_ns();sequence+=1;execution_entered=False
+                     event=dict(sequence=sequence,started_ns=start,status='unknown',render_events_before=len(renders))
++                    m2_before=[]
+                     try:
++                        m2_before=meter.host_work()
+                         need(not (workspace/'POISONED.json').exists(),'session_poisoned')
+                         request=_read_request(connection,deadline)
+                         if request.get('type')=='close':
+@@ -336,6 +342,7 @@
+                         response=dict(status='error',error=dict(type=type(exc).__name__,message=str(exc)))
+                         if execution_entered or time.perf_counter_ns()>=deadline or any(reason in str(exc) for reason in ('scene_changed','source_file_changed','session_poisoned')):poisoned=True
+                     finally:
++                        event['m2_work']=meter.finish_rpc(m2_before,namespace)
+                         event['elapsed_ns']=time.perf_counter_ns()-start;append(audit,event)
+                     wire=encoded(response);need(len(wire)<=MAX_WIRE,'response_bytes')
+                     try:connection.sendall(wire)
+@@ -355,6 +362,7 @@
+         original_deadline_ns=deadline)
+     if 'qa_pose_patch' in config:
+         closed.update(accepted_geometry_fingerprint=current,qa_patch_applied=qa_advanced)
++    meter.flush(workspace)
+     save(workspace/'WORKER_CLOSED.json',closed)
+ 
+ class NativeSession:
