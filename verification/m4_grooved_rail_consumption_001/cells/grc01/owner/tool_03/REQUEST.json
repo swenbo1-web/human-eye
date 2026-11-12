@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_eec705fdac704ab7b2aa0d83951a9510",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1cf50-6dd6-7962-96a1-b4686fb03efa",
+        "thread_id": "01a1cf50-6dd6-7962-96a1-b4686fb03efa",
+        "turn_started_at_unix_ms": 1794479517309,
+        "turn_id": "01a1cf50-6e74-70b1-b7d7-0f8f9a2837da",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "8f83d7eb8e7df8d6c06889f0f7f98550dc17079b",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1cf50-6dd6-7962-96a1-b4686fb03efa",
+      "itemId": "fc_0443ed8680473143016af595b28cc087d0bbebfc9e59effedc",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def point_segment(point,start,end):\n direction=end-start\n param=np.clip(np.dot(point-start,direction)/np.dot(direction,direction),0.,1.)\n return start+param*direction\n\ndef point_triangle(point,triangle):\n start,second,third=triangle\n first_edge=second-start;second_edge=third-start\n normal=np.cross(first_edge,second_edge)\n projected=point-normal*(np.dot(point-start,normal)/np.dot(normal,normal))\n bary=np.linalg.solve(np.array([[np.dot(first_edge,first_edge),np.dot(first_edge,second_edge)],[np.dot(first_edge,second_edge),np.dot(second_edge,second_edge)]]),np.array([np.dot(projected-start,first_edge),np.dot(projected-start,second_edge)]))\n if min(bary)>=-1e-14 and sum(bary)<=1.+1e-14:return projected\n candidates=[point_segment(point,triangle[index],triangle[(index+1)%3]) for index in range(3)]\n return min(candidates,key=lambda candidate:np.dot(candidate-point,candidate-point))\n\ndef segment_segment(first_start,first_end,second_start,second_end):\n first_dir=first_end-first_start;second_dir=second_end-second_start;offset=first_start-second_start\n candidates=[(first_start,point_segment(first_start,second_start,second_end)),(first_end,point_segment(first_end,second_start,second_end)),(point_segment(second_start,first_start,first_end),second_start),(point_segment(second_end,first_start,first_end),second_end)]\n system=np.array([[np.dot(first_dir,first_dir),-np.dot(first_dir,second_dir)],[-np.dot(first_dir,second_dir),np.dot(second_dir,second_dir)]])\n if abs(np.linalg.det(system))>1e-28:\n  params=np.linalg.solve(system,np.array([-np.dot(first_dir,offset),np.dot(second_dir,offset)]))\n  if np.all(params>=0) and np.all(params<=1):candidates.append((first_start+params[0]*first_dir,second_start+params[1]*second_dir))\n return min(candidates,key=lambda pair:np.dot(pair[0]-pair[1],pair[0]-pair[1]))\n\ndef segment_triangle(start,end,triangle):\n first_edge=triangle[1]-triangle[0];second_edge=triangle[2]-triangle[0]\n system=np.column_stack((end-start,-first_edge,-second_edge))\n if abs(np.linalg.det(system))<1e-22:return None\n params=np.linalg.solve(system,triangle[0]-start)\n if 0<=params[0]<=1 and params[1]>=0 and params[2]>=0 and params[1]+params[2]<=1:return start+params[0]*(end-start)\n return None\n\ndef winding(point,vertices,triangles):\n total=0.\n for triangle in vertices[triangles]:\n  offsets=triangle-point;lengths=np.linalg.norm(offsets,axis=1)\n  numerator=np.dot(offsets[0],np.cross(offsets[1],offsets[2]))\n  denominator=np.prod(lengths)+np.dot(offsets[0],offsets[1])*lengths[2]+np.dot(offsets[1],offsets[2])*lengths[0]+np.dot(offsets[2],offsets[0])*lengths[1]\n  total+=2*np.arctan2(numerator,denominator)\n return total/(4*np.pi)\n\nresults={}\nfor name in ['Part_A','Part_B','Part_C']:\n target_verts,target_tris=geom['Target'];part_verts,part_tris=geom[name]\n candidates=[];intersections=[]\n for target_index,target_tri in enumerate(target_verts[target_tris]):\n  for part_index,part_tri in enumerate(part_verts[part_tris]):\n   for vertex in target_tri:candidates.append((vertex,point_triangle(vertex,part_tri),'target vertex / part face',target_index,part_index))\n   for vertex in part_tri:candidates.append((point_triangle(vertex,target_tri),vertex,'target face / part vertex',target_index,part_index))\n   for edge_index in range(3):\n    hit=segment_triangle(target_tri[edge_index],target_tri[(edge_index+1)%3],part_tri)\n    if hit is not None:intersections.append(hit)\n    hit=segment_triangle(part_tri[edge_index],part_tri[(edge_index+1)%3],target_tri)\n    if hit is not None:intersections.append(hit)\n    for other_edge in range(3):\n     point_target,point_part=segment_segment(target_tri[edge_index],target_tri[(edge_index+1)%3],part_tri[other_edge],part_tri[(other_edge+1)%3])\n     candidates.append((point_target,point_part,'edge / edge',target_index,part_index))\n best=min(candidates,key=lambda item:np.linalg.norm(item[0]-item[1]))\n distance=np.linalg.norm(best[0]-best[1])\n results[name]=(distance,best)\n print(name,'distance_m',format(distance,'.15f'),'distance_mm',format(distance*1000,'.12f'),'target_point', [format(value,'.12f') for value in best[0]],'part_point',[format(value,'.12f') for value in best[1]],'feature',best[2:],'intersections',len(intersections))\n print('part vertex windings in target',[round(winding(vertex,target_verts,target_tris),9) for vertex in part_verts])\n print('target vertex windings in part',[round(winding(vertex,part_verts,part_tris),9) for vertex in target_verts])\n"
+    }
+  }
+}

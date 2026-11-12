@@ -1,0 +1,330 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": true,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "mode": "task",
+              "requested_facts": [
+                "aabb",
+                "spatial_relation",
+                "surface_proximity",
+                "closed_solid_relation",
+                "nearest_witness"
+              ],
+              "target": {
+                "name": "Target"
+              }
+            },
+            "response_detail": "full"
+          },
+          "name": "human_eye_scene_observe"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"status\": \"error\", \"error\": \"task set requires surface_proximity with closed_solid_relation or spatial_relation and optional aabb\", \"tool_outcome\": \"unknown\", \"automatic_retry\": false, \"executed\": false, \"verified\": false, \"execution_verified\": false, \"execution_status\": \"not_executed\", \"host_mutation_started\": false, \"allow_action\": false, \"execution_authority\": false, \"retry_authorized\": false, \"connector_state_write_attempted\": false, \"connector_state_write_committed\": false, \"connector_state_write_status\": \"not_attempted\", \"connector_state_write_attempts\": 0, \"connector_state_write_commits\": 0, \"connector_state_write_unknown\": false, \"state_write_scope\": \"connector_state_json_not_audit_or_lock_sidecars\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": true
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "64a6962f554469bb699594a530ae2f67b35ba4dc67a1a6e89157d4b569cca2f1"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "dcab06a9016f1bad3ed39db735cb23b38fbb0216adee8e360b886f7773535452"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "fa45eeffab105be8602f76f0158d901f74bb8f33ea4862d8d60051108fd311ab"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "mode": "task",
+              "requested_facts": [
+                "aabb",
+                "spatial_relation",
+                "surface_proximity",
+                "closed_solid_relation"
+              ],
+              "target": {
+                "name": "Target"
+              }
+            },
+            "response_detail": "full"
+          },
+          "name": "human_eye_scene_observe"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"task-query-set-v2\",\"scope\":\"explicit_target_candidates\",\"status\":\"observed\",\"binding\":{\"scene_revision\":\"blender:0d824259303c4a7dc0bc83cc02674531347b624fc2671fd82b6f355332cd85a9\",\"scene_fingerprint\":\"291067c6f8a53d79a2181ebf2b0bd56b13be804a9ddb30767dc83c9ff605a503\",\"source\":\"blender\",\"objects\":[{\"object_id\":\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\",\"name\":\"Target\"},{\"object_id\":\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\",\"name\":\"Part_A\"},{\"object_id\":\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\",\"name\":\"Part_B\"},{\"object_id\":\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\",\"name\":\"Part_C\"}],\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"85fdaf12c2b57aa6e4efbb5d9005ebdb0f97b9585d4ede04028f596dffdc3625\",\"object_instances\":{\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\":\"162\",\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\":\"164\",\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\":\"163\",\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\":\"165\"},\"capture_scope\":\"selected_objects\"},\"candidate_count\":4,\"selected_count\":4,\"runtime_source_sha256\":\"2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"facts\":{\"aabb\":[{\"status\":\"measured\",\"value\":{\"min\":[0.09066665463615209,-0.08666666829958558,0.22133332514204085],\"max\":[0.14466666826047003,-0.04666665708646178,0.27199999964796007],\"dimensions\":[0.054000013624317944,0.0400000112131238,0.05066667450591922]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11961999552638264,-0.06616666284389794,0.24434332716995222],\"max\":[0.12351333082659499,-0.059899994302913484,0.2540499954484403],\"dimensions\":[0.0038933353002123527,0.006266668540984455,0.009706668278488095]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11431332905222347,-0.09370000186519079,0.23576999476752558],\"max\":[0.1259933322269407,-0.08343333275361609,0.24696999646365025],\"dimensions\":[0.011680003174717235,0.0102666691115747,0.011200001696124673]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11273332736163866,-0.09083333757007495,0.27019999906769954],\"max\":[0.12553333029791247,-0.07883333560312167,0.2791333341447171],\"dimensions\":[0.012800002936273813,0.012000001966953278,0.008933335077017546]}}]},\"pairs\":[{\"candidate_index\":0,\"object_id\":\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"geometry_scope\":\"two_connected_embedded_closed_orientable_triangle_shells_binary64_world_zero_tolerance\",\"relation_tolerance_m\":0.0,\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.0052500005143693625,\"nearest_witness\":{\"a\":[0.12018666297984124,-0.07106666314137157,0.24530666065331186],\"b\":[0.12116666304063983,-0.06616666284389794,0.24691666138824075],\"direction_a_to_b\":[0.18666665995866433,0.9333332985515395,0.30666677660741043]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.0052500005143693625,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":1,\"object_id\":\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":248539397488640,\"left_vertex_index\":7,\"origin\":[[1007885633,8589934592],[-157482123,2147483648],[950619393,4294967296]],\"primitive_direction\":[-18494784684081,-92473920836713,-30384300229764],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[14,4],\"right_min\":9816688795877772123205458348,\"right_vertex_index\":0}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.002750000356851723,\"nearest_witness\":{\"a\":[0.12066666413463341,-0.08166666590880298,0.2446666624989981],\"b\":[0.12015333073983962,-0.08423333281106005,0.24382332875644291],\"direction_a_to_b\":[-0.1866666647932623,-0.9333332978892658,-0.30666677568022727]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.002750000356851723,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":2,\"object_id\":\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":882690803273471030980048322560,\"left_vertex_index\":7,\"origin\":[[1007885633,8589934592],[-157482123,2147483648],[950619393,4294967296]],\"primitive_direction\":[81665320854485,-204163180920825,571657032071896],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[14,4],\"right_min\":1070262598969083242145092468736,\"right_vertex_index\":0}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.008500001624148858,\"nearest_witness\":{\"a\":[0.11746666178747549,-0.07866666847257885,0.2622666640777608],\"b\":[0.11859999578155112,-0.08150000177556649,0.27019999906769954],\"direction_a_to_b\":[0.13333338559086536,-0.3333332660711525,0.933333349890175]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.008500001624148858,\"semantics\":\"separated_surface_gap_m\"}}],\"coverage\":{\"requested_candidates\":3,\"resolved_candidates\":3,\"classified_candidates\":3,\"unresolved_candidates\":0},\"summary\":{\"penetration_set_complete\":true,\"known_penetrating_ids\":[],\"penetrating_ids\":[],\"nearest_separated_complete\":true,\"nearest_separated_ids\":[\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\"],\"best_known_separated_ids\":[\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\"],\"distance_m\":0.002750000356851723,\"best_known_distance_m\":0.002750000356851723,\"unresolved_relations\":[],\"unresolved_distances\":{}},\"execution_authority\":false,\"relation_fact\":\"spatial_relation\",\"trace_id\":\"d3a0eb63a1384e58a7c619a6945ac804\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "1663f879bd45c75a6cb018201aece215dd499c2967b30ee28cf78731ba4fadb0"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "fd89fa741f3eaab5809d51d439af12d10c3ea59fc1e92ccac34e4f1df004a3ea"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "a9ef94648b652a1f380b5a912a98be9cc6044b95903b021ad5ee283b1e066774"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Part_A"
+              },
+              {
+                "name": "Part_B"
+              },
+              {
+                "name": "Part_C"
+              }
+            ],
+            "mode": "task",
+            "requested_facts": [
+              "aabb",
+              "spatial_relation",
+              "surface_proximity",
+              "closed_solid_relation",
+              "nearest_witness"
+            ],
+            "target": {
+              "name": "Target"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "545786bb992f7df747994fa073d2f07f44d4e7536e8e0c9c496d1ac30eb36ca3",
+      "source_sha256": "57f01b45f358a2409b4ec6825135ea15f3457393e62e3821c7e9a65c983a4422"
+    },
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Part_A"
+              },
+              {
+                "name": "Part_B"
+              },
+              {
+                "name": "Part_C"
+              }
+            ],
+            "mode": "task",
+            "requested_facts": [
+              "aabb",
+              "spatial_relation",
+              "surface_proximity",
+              "closed_solid_relation",
+              "nearest_witness"
+            ],
+            "target": {
+              "name": "Target"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"status\": \"error\", \"error\": \"task set requires surface_proximity with closed_solid_relation or spatial_relation and optional aabb\", \"tool_outcome\": \"unknown\", \"automatic_retry\": false, \"executed\": false, \"verified\": false, \"execution_verified\": false, \"execution_status\": \"not_executed\", \"host_mutation_started\": false, \"allow_action\": false, \"execution_authority\": false, \"retry_authorized\": false, \"connector_state_write_attempted\": false, \"connector_state_write_committed\": false, \"connector_state_write_status\": \"not_attempted\", \"connector_state_write_attempts\": 0, \"connector_state_write_commits\": 0, \"connector_state_write_unknown\": false, \"state_write_scope\": \"connector_state_json_not_audit_or_lock_sidecars\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "failed",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "89e5b1a44267007cc911ef1823e7fc0025fc97a4efe4e627b82d5664db30e348",
+      "source_sha256": "57f01b45f358a2409b4ec6825135ea15f3457393e62e3821c7e9a65c983a4422"
+    },
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Part_A"
+              },
+              {
+                "name": "Part_B"
+              },
+              {
+                "name": "Part_C"
+              }
+            ],
+            "mode": "task",
+            "requested_facts": [
+              "aabb",
+              "spatial_relation",
+              "surface_proximity",
+              "closed_solid_relation"
+            ],
+            "target": {
+              "name": "Target"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "82cfec876622ba4b9fa7ece1724ca9067a13c52f3867623a5d1af7ede4ba2a2c",
+      "source_sha256": "57f01b45f358a2409b4ec6825135ea15f3457393e62e3821c7e9a65c983a4422"
+    },
+    {
+      "event": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "candidates": [
+              {
+                "name": "Part_A"
+              },
+              {
+                "name": "Part_B"
+              },
+              {
+                "name": "Part_C"
+              }
+            ],
+            "mode": "task",
+            "requested_facts": [
+              "aabb",
+              "spatial_relation",
+              "surface_proximity",
+              "closed_solid_relation"
+            ],
+            "target": {
+              "name": "Target"
+            }
+          },
+          "response_detail": "full"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"task-query-set-v2\",\"scope\":\"explicit_target_candidates\",\"status\":\"observed\",\"binding\":{\"scene_revision\":\"blender:0d824259303c4a7dc0bc83cc02674531347b624fc2671fd82b6f355332cd85a9\",\"scene_fingerprint\":\"291067c6f8a53d79a2181ebf2b0bd56b13be804a9ddb30767dc83c9ff605a503\",\"source\":\"blender\",\"objects\":[{\"object_id\":\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\",\"name\":\"Target\"},{\"object_id\":\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\",\"name\":\"Part_A\"},{\"object_id\":\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\",\"name\":\"Part_B\"},{\"object_id\":\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\",\"name\":\"Part_C\"}],\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"85fdaf12c2b57aa6e4efbb5d9005ebdb0f97b9585d4ede04028f596dffdc3625\",\"object_instances\":{\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\":\"162\",\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\":\"164\",\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\":\"163\",\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\":\"165\"},\"capture_scope\":\"selected_objects\"},\"candidate_count\":4,\"selected_count\":4,\"runtime_source_sha256\":\"2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"facts\":{\"aabb\":[{\"status\":\"measured\",\"value\":{\"min\":[0.09066665463615209,-0.08666666829958558,0.22133332514204085],\"max\":[0.14466666826047003,-0.04666665708646178,0.27199999964796007],\"dimensions\":[0.054000013624317944,0.0400000112131238,0.05066667450591922]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11961999552638264,-0.06616666284389794,0.24434332716995222],\"max\":[0.12351333082659499,-0.059899994302913484,0.2540499954484403],\"dimensions\":[0.0038933353002123527,0.006266668540984455,0.009706668278488095]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11431332905222347,-0.09370000186519079,0.23576999476752558],\"max\":[0.1259933322269407,-0.08343333275361609,0.24696999646365025],\"dimensions\":[0.011680003174717235,0.0102666691115747,0.011200001696124673]}},{\"status\":\"measured\",\"value\":{\"min\":[0.11273332736163866,-0.09083333757007495,0.27019999906769954],\"max\":[0.12553333029791247,-0.07883333560312167,0.2791333341447171],\"dimensions\":[0.012800002936273813,0.012000001966953278,0.008933335077017546]}}]},\"pairs\":[{\"candidate_index\":0,\"object_id\":\"blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"geometry_scope\":\"two_connected_embedded_closed_orientable_triangle_shells_binary64_world_zero_tolerance\",\"relation_tolerance_m\":0.0,\"certificate\":\"disjoint_boundaries_with_exact_parity\"},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.0052500005143693625,\"nearest_witness\":{\"a\":[0.12018666297984124,-0.07106666314137157,0.24530666065331186],\"b\":[0.12116666304063983,-0.06616666284389794,0.24691666138824075],\"direction_a_to_b\":[0.18666665995866433,0.9333332985515395,0.30666677660741043]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.0052500005143693625,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":1,\"object_id\":\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":248539397488640,\"left_vertex_index\":7,\"origin\":[[1007885633,8589934592],[-157482123,2147483648],[950619393,4294967296]],\"primitive_direction\":[-18494784684081,-92473920836713,-30384300229764],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[14,4],\"right_min\":9816688795877772123205458348,\"right_vertex_index\":0}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.002750000356851723,\"nearest_witness\":{\"a\":[0.12066666413463341,-0.08166666590880298,0.2446666624989981],\"b\":[0.12015333073983962,-0.08423333281106005,0.24382332875644291],\"direction_a_to_b\":[-0.1866666647932623,-0.9333332978892658,-0.30666677568022727]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.002750000356851723,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":2,\"object_id\":\"blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":882690803273471030980048322560,\"left_vertex_index\":7,\"origin\":[[1007885633,8589934592],[-157482123,2147483648],[950619393,4294967296]],\"primitive_direction\":[81665320854485,-204163180920825,571657032071896],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[14,4],\"right_min\":1070262598969083242145092468736,\"right_vertex_index\":0}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.008500001624148858,\"nearest_witness\":{\"a\":[0.11746666178747549,-0.07866666847257885,0.2622666640777608],\"b\":[0.11859999578155112,-0.08150000177556649,0.27019999906769954],\"direction_a_to_b\":[0.13333338559086536,-0.3333332660711525,0.933333349890175]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"},\"closed_solid_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"bounded_exact_closed_shell_v1\",\"relation_tolerance_m\":0.0,\"geometry_scope\":\"finite_connected_closed_orientable_non_self_intersecting_triangle_shells\",\"certificate\":\"disjoint_boundaries_with_exact_parity\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.008500001624148858,\"semantics\":\"separated_surface_gap_m\"}}],\"coverage\":{\"requested_candidates\":3,\"resolved_candidates\":3,\"classified_candidates\":3,\"unresolved_candidates\":0},\"summary\":{\"penetration_set_complete\":true,\"known_penetrating_ids\":[],\"penetrating_ids\":[],\"nearest_separated_complete\":true,\"nearest_separated_ids\":[\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\"],\"best_known_separated_ids\":[\"blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3\"],\"distance_m\":0.002750000356851723,\"best_known_distance_m\":0.002750000356851723,\"unresolved_relations\":[],\"unresolved_distances\":{}},\"execution_authority\":false,\"relation_fact\":\"spatial_relation\",\"trace_id\":\"d3a0eb63a1384e58a7c619a6945ac804\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "human_eye_scene_observe",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "6e4f30aca884c9ee63a37b5c5e53c0b04a51857c38ec0c50d3907a004b9df7d9",
+      "source_sha256": "57f01b45f358a2409b4ec6825135ea15f3457393e62e3821c7e9a65c983a4422"
+    }
+  ]
+}
