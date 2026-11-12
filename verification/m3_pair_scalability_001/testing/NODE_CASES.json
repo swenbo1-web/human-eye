@@ -1,0 +1,17 @@
+{
+  "scope": "root-authorized node-certificate proof counterexamples, frozen before executing this helper",
+  "projection": "fixed invertible identity map; all dyadic source coordinates converted to exact integers by scale four",
+  "cases": [
+    {"id":"legal_shared_edge","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[2,-2,1],[0,-2,2]],"left":[[0,1,3],[0,3,2]],"right":[[1,0,4],[4,0,5]],"certificate":true,"illegal_pairs":false},
+    {"id":"legal_shared_point","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[-2,-1,1],[-1,-2,2],[-2,-2,1]],"left":[[0,1,3],[0,3,2]],"right":[[0,4,6],[0,6,5]],"certificate":true,"illegal_pairs":false},
+    {"id":"same_side_overlap","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[1,0.25,0],[1.5,0.75,0],[0.25,1.5,0]],"left":[[0,1,3],[0,3,2]],"right":[[0,4,5],[0,5,6]],"certificate":false,"illegal_pairs":true},
+    {"id":"non_anchor_edge_remote_crossing","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[1,0,-1],[1,2,1],[0,1,2]],"left":[[0,1,3],[0,3,2]],"right":[[0,4,5],[0,5,6]],"certificate":false,"illegal_pairs":true},
+    {"id":"different_ids_same_coordinate","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[2,0,0],[2,-2,1],[0,-2,2]],"left":[[0,1,3],[0,3,2]],"right":[[4,0,5],[5,0,6]],"certificate":false,"illegal_pairs":true},
+    {"id":"one_leaf_projection_degenerate","vertices":[[0,0,0],[2,0,0],[0,2,0],[2,2,0],[2,0,-1],[2,0,1],[1,-1,1]],"left":[[0,1,3],[0,3,2]],"right":[[0,4,5],[0,5,6]],"certificate":false,"illegal_pairs":true},
+    {"id":"half_turn_not_strict_cone","vertices":[[0,0,0],[2,0,0],[0,2,0],[-2,0,0],[1,-2,1],[-1,-2,1],[0,-3,2]],"left":[[0,1,2],[0,2,3]],"right":[[0,4,6],[0,6,5]],"certificate":false,"illegal_pairs":false},
+    {"id":"strict_cone_wraps_negative_x","vertices":[[0,0,0],[-2,1,0],[-3,0,0],[-2,-1,0],[2,-1,1],[3,0,2],[2,1,1]],"left":[[0,1,2],[0,2,3]],"right":[[0,4,5],[0,5,6]],"certificate":true,"illegal_pairs":false}
+  ],
+  "guards":{"fixture":"legal_shared_edge","exact_bit_failure":"metadata/certificate fallback with original traversal available","cancel_and_deadline":"same original exception propagates","total_work_limit":262144},
+  "coverage_rule":"for every positive certificate independently enumerate all descendant cross-node triangle pairs and prove intersection lies only on common source-ID simplex",
+  "metadata_rule":"all descendant triangles project nondegenerately; every common-anchor cone contains all source rays; lo/hi ID sets equal all actual on-ray source IDs"
+}

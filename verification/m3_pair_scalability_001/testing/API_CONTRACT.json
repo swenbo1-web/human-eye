@@ -1,0 +1,15 @@
+{
+  "scope": "adapter details fixed after input/budget freeze, before candidate execution",
+  "prepared_pair": "original five-tuple, retained identity binds actual ordered mesh pair",
+  "holder_trees": {"pair": "same prepared_pair object", "bounds": "two world AABB lists", "roots": "two world roots"},
+  "surface_trees_keyword": "_prepared_trees",
+  "plane_distances": "_plane_distances(points, origin, normal, budget)",
+  "plane_comparator": "_plane_exceeds_best(distances, normal_squared, best)",
+  "intersection": "original five positional parameters plus optional plane_distances=(da,db), missing side None computed once",
+  "surface_narrow_budget_entry": "_Work.narrow_pair()",
+  "surface_total_budget_entry": "_Work.consume/tick",
+  "surface_fields": ["work_units", "prepared_triangles", "tree_builds", "tree_build_units", "node_pair_visits", "leaf_pair_visits", "queue_pushes", "queue_bound_tests", "narrow_phase_pairs", "plane_projection_tests", "plane_bound_tests", "plane_pruned_pairs", "shared_trees", "subtree_pruned_pairs"],
+  "coverage_counter": "subtree_pruned_pairs counts covered Cartesian pairs, not actual visits",
+  "closed_candidate_tree": "separate reversible integer-frame primary tree may serve self/cross; world roots remain for surface/point/ray; numeric overflow must fall back to world candidate coverage",
+  "missing_counters": "not_emitted or not_measured; never replace missing by zero"
+}

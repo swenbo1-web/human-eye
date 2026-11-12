@@ -1,0 +1,42 @@
+{
+  "cycle_id": "M3-PAIR-SCALABILITY-001",
+  "recorded_utc": "2026-11-12T05:11:05.388172+00:00",
+  "scope": "complete initial closed candidate before its first G508 result",
+  "design_commit": "c8da247b97fbb60e3a0906a64111ead1a7b78dc4",
+  "initial_source_sha256": "b2a5ae286aae568a9875e57a56ffa9a3ed2f83599fa8db4ee8d3bba60d2a3c3e",
+  "initial_source_bytes": 34281,
+  "previous_source_sha256": "cbbf523e3db8f0150953344f39179ac8fb4cb6fc4b9469d054601ad2e43a2fb2",
+  "newline": "LF",
+  "snapshot": "closed/INITIAL_surface_geometry.py.snapshot",
+  "sibling_surface_source_sha256": "ef909bed94344408c6ac53a3e40b8fac3886c6ea69d96dbcb2c2a51ce6cdbf98",
+  "strategy": {
+    "small_pair_face_product_limit": 256,
+    "world_leaf_size": 4,
+    "candidate_leaf_size": 1,
+    "frame": "left first triangle edge, normal cross edge, normal; primitive rows, whole-row power-of-two width equalization",
+    "projection_bit_failure": "world candidate tree fallback",
+    "world_tree_reuse": "holder pair and triangle identities, shared world bounds and roots",
+    "cheap_certificates": "strict side; shared-index closed halfspace; coplanar shared edge opposite open sides"
+  },
+  "budget": {
+    "total_work": 262144,
+    "full_self_cross_pairs": 16384,
+    "ray_tests": 16384
+  },
+  "counter_meaning": {
+    "candidate_projection_tests": "one exact row-point dot product; 3 per transformed vertex",
+    "plane_projection_tests": "one signed point-to-plane dot product; 3 per evaluated triangle side",
+    "cheap_pair_tests": "one candidate pair entering plane/simplex filtering",
+    "shared_index_tests": "one same-mesh face-index intersection",
+    "shared_simplex_tests": "one closed-halfspace zero-index certificate check",
+    "shared_edge_tests": "one coplanar opposite-side certificate check",
+    "pair_tests": "full original triangle intersection, after successful cheap rejection/certificate has been excluded",
+    "leaf_bounds_reused": "singleton triangle bounds already exactly tested as the node bounds",
+    "world_bound_faces": "one existing integer triangle-bound record read",
+    "candidate_bound_faces": "one projected triangle AABB construction"
+  },
+  "first_G508_counts_executed": false,
+  "product_files_written": [
+    "human_eye_plugin/surface_geometry.py"
+  ]
+}

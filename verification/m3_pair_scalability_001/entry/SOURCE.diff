@@ -1,0 +1,76 @@
+--- C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\spatial_task_qualification_001\entry\run_entry.py
++++ C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m3_pair_scalability_001\entry\run_entry.py
+@@ -2,6 +2,7 @@
+ import argparse
+ import hashlib
+ import json
++import re
+ from pathlib import Path
+ import time
+ import traceback
+@@ -10,12 +11,13 @@
+ HERE = Path(__file__).resolve().parent
+ BATCH = HERE.parent
+ ROOT = BATCH.parents[1]
+-READY = ROOT/'verification/m2_tight_directory_001/installation/READY.json'
++READY = BATCH/'installation/READY.json'
++QUALIFICATION = ROOT/'verification/spatial_task_qualification_001'
+ OWNED = ROOT/'verification/m2_tight_directory_001/measurement/owned_native.py'
+ METER = OWNED.with_name('wire_meter.py')
+ PEER = ROOT/'verification/m1_task_entry_001_eval/actor.py'
+ RUNTIME = ROOT/'verification/m1_task_entry_001_eval/preflight_client.py'
+-BINDER = BATCH/'oracle/verify_actual.py'
++BINDER = QUALIFICATION/'oracle/verify_actual.py'
+ BOOTSTRAP = ROOT/'verification/m2_tight_directory_001/measurement/analyze_saved.py'
+ 
+ 
+@@ -119,22 +121,28 @@
+     return {name:row['object_id'] for name,row in by_name.items()}
+ 
+ 
+-def prepare(output):
++def prepare(output, expected_commit, expected_source):
+     ready = json.loads(READY.read_bytes())
+-    manifest = json.loads((BATCH/'assets/DERIVED_MANIFEST.json').read_bytes())
+-    assert ready['source_sha256']=='6acb3ac7f014a590a279994f44be07c581af53a2da4dafae8dba9cd58eaea0bb'
+-    assert ready['commit']=='fac9b4373575d653cc96f39f1dcb225300cd5977' and ready['source_count']==137
++    manifest = json.loads((QUALIFICATION/'assets/DERIVED_MANIFEST.json').read_bytes())
++    assert re.fullmatch(r'[0-9a-f]{40}', expected_commit)
++    assert re.fullmatch(r'[0-9a-f]{64}', expected_source)
++    assert ready['source_sha256']==expected_source
++    assert ready['commit']==expected_commit and ready['source_count']==137
++    assert ready['version']=='9.7.2+m3.pair.r1'
+     assert sha(manifest['asset'])==manifest['asset_sha256']
+     assert manifest['counts']=={'mesh_objects':14,'vertices':848,'triangles':1640}
+     paths = [Path(__file__),HERE/'qa_snapshot.py',HERE/'QUERY_RULES.json',BINDER,
+-        BATCH/'assets/DERIVED_MANIFEST.json',BATCH/'assets/BUILD_SNAPSHOT.json',
+-        BATCH/'assets/ORIGINAL_EVALUATED.json',BATCH/'assets/build_asset.py',
+-        BATCH/'ROOT_PLAN.md',BATCH/'WORK_ORDER.json',BATCH/'INSTALLATION_BINDING.json',
++        QUALIFICATION/'assets/DERIVED_MANIFEST.json',QUALIFICATION/'assets/BUILD_SNAPSHOT.json',
++        QUALIFICATION/'assets/ORIGINAL_EVALUATED.json',QUALIFICATION/'assets/build_asset.py',
++        BATCH/'ROOT_PLAN.md',BATCH/'WORK_ORDER.json',QUALIFICATION/'INSTALLATION_BINDING.json',
++        QUALIFICATION/'entry/run_entry.py',
+         ROOT/'verification/scale_diag_001/fixtures/G508.json',ROOT/'verification/scale_diag_001/oracle.py',
+         ROOT/'verification/scale_diag_001/ORACLE.json',READY,OWNED,METER,PEER,RUNTIME,BOOTSTRAP,
++        HERE/'verify_saved.py',BATCH/'testing/witness_oracle.py',
++        QUALIFICATION/'oracle/formal_replay_01/ORACLE.json',
+         ROOT/'verification/native_plugin_complex_003/actor.py']
+     source_files = {str(path.resolve()):sha(path) for path in paths}
+-    binding = {'schema':'spatial-task-qualification-entry-binding-v1','ready':ready,'asset_manifest':manifest,
++    binding = {'schema':'m3-pair-scalability-entry-binding-v1','ready':ready,'asset_manifest':manifest,
+         'source_files':source_files,'business_observe_attempts':3,'QA_evaluated_snapshots':1,
+         'owned_Blender_limit':1,'owned_product_Peer_limit':1,'new_models':0,'new_images':0,
+         'status_semantics':'execution completion and business facts are separate; assembly unknown/error still followed by control'}
+@@ -295,9 +303,11 @@
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument('--output',type=Path,required=True)
+     parser.add_argument('--run',action='store_true')
++    parser.add_argument('--commit',required=True)
++    parser.add_argument('--source-sha256',required=True)
+     args = parser.parse_args()
+     output = args.output.resolve()
+-    binding = prepare(output)
++    binding = prepare(output,args.commit,args.source_sha256)
+     if not args.run:
+         print(json.dumps({'prepared_only':True,'binding':str(output/'INPUT_BINDINGS.json')}))
+         return 0

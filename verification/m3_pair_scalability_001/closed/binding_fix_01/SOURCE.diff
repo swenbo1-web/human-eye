@@ -1,0 +1,20 @@
+--- initial_surface_geometry.py
++++ binding_fixed_surface_geometry.py
+@@ -576,6 +576,7 @@
+     if prepared_holder is not None:
+         prepared_holder.pop('boundary_contact',None)
+         prepared_holder.pop('trees',None)
++        prepared_holder.pop('pair',None)
+     from . import surface_proximity as exact
+     budget=_ClosedWork(checkpoint,diagnostics,exact)
+     result=dict(measurement_valid=False,relation=None,method=CLOSED_SOLID_METHOD,
+@@ -584,7 +585,8 @@
+         budget.consume(1,'admission')
+         _closed_require(sum(len(mesh.vertices) for mesh in (left,right))<=LIMITS['vertices'],
+                         'vertex_budget')
+-        if prepared_pair is None:
++        if (prepared_pair is None or prepared_pair[0][0][0] is not left
++                or prepared_pair[0][1][0] is not right):
+             records,topology=exact._admit((left,right),budget)
+             origin,factor,prepared=exact._integer_frame(records,budget)
+             prepared_pair=(records,topology,origin,factor,prepared)

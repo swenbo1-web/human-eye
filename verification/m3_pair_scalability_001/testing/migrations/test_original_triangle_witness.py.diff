@@ -1,0 +1,30 @@
+--- baseline/test_original_triangle_witness.py
++++ migrations/test_original_triangle_witness.py
+@@ -21,11 +21,15 @@
+     def discover(self,scene,original=3,observation=None):
+         spec=ClearanceTaskSpec('part','base',reference_triangle_index=original)
+         raw=discover_support_planes(scene,'part','base',{'direction_world':[0,0,1]})
+-        if observation is None:observation={'support_plane_discovery':raw}
+         owner=scheduler.OwnedGoalScheduler.__new__(scheduler.OwnedGoalScheduler)
+         owner.service=SimpleNamespace(observe=Mock(return_value=observation))
+         envelope={'capture':copy.deepcopy(scene)}
+-        result=owner._discover(spec,envelope,'witness-read')
++        with patch('human_eye_plugin.support_plane_discovery.discover_support_planes',
++                   wraps=discover_support_planes) as direct_discovery:
++            if observation is not None:
++                direct_discovery.return_value=observation['support_plane_discovery']
++            result=owner._discover(spec,envelope,'witness-read')
++        owner._qa_direct_discovery=direct_discovery
+         return result,raw,spec,owner
+ 
+     def test_explicit_original_three_retained_when_representative_two_has_own_foot(self):
+@@ -38,7 +42,8 @@
+         self.assertEqual(scene,before)
+         self.assertIsNot(result,raw['candidates'][0]['selector'])
+         self.assertIsNot(result['selection_binding'],raw['candidates'][0]['selector']['selection_binding'])
+-        owner.service.observe.assert_called_once()
++        owner._qa_direct_discovery.assert_called_once()
++        owner.service.observe.assert_not_called()
+ 
+     def test_none_and_matching_original_keep_existing_fast_path(self):
+         for original in (None,2):
