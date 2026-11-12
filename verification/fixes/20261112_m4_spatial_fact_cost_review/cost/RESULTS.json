@@ -1,0 +1,1085 @@
+{
+  "schema": "independent-m4-cost-review-v1",
+  "started_utc": "2026-11-12T09:29:24.116401+00:00",
+  "completed_utc": "2026-11-12T09:29:35.428880+00:00",
+  "source_commit": "5cdf62f311f94890ca569d06c1a858f1578225e4",
+  "author_analysis_commit": "a44a6138b9d354ecc98a4fbd76095f0536d6973f",
+  "quality_seal_commit": "3a4b090532e01920110e6ee2be1702bc1c45c265",
+  "quality_seal_sha256": "fa467d121359d8ffff45693887de2598f1d34a811bf031849215042ef0e44852",
+  "actual_evidence_root": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe",
+  "actual_quality_root": "D:\\hefe",
+  "calculation_inputs": "Raw unique turn.completed usage; original cell start/deadline/end and exit receipts; fixed score/mapping bindings",
+  "source_timing_semantics": {
+    "driver": "138-163 wait/reap; 200 before validation; 230 after finish",
+    "consumer_transport": "209-214 cumulative final usage; 224-225 wait then exit timestamp; 235-259 cleanup"
+  },
+  "frozen_contract": {
+    "all_six_retained": true,
+    "full_correct_per_arm_required": 3,
+    "missing_usage_or_failed_or_not_run": "main useful-benefit gate cannot pass",
+    "quality_before_cost": true,
+    "unmeasured": [
+      "fees unless exposed",
+      "resolved model/effort unless exposed",
+      "provider request count unless exposed"
+    ],
+    "usage": "final cumulative per cell; deduplicate request-level data and exclude overlapping cached/reasoning subitems",
+    "useful_benefit": "P median full-cell time <=N and P cumulative actual input+output tokens <=N, at least one improves >=10%"
+  },
+  "cells": [
+    {
+      "cell": "spc01",
+      "group": "N",
+      "round": 1,
+      "task": "T1",
+      "anonymous_id": "answer_3bb23736081f79f8",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 36198,
+        "cached_input_tokens": 24192,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2198,
+        "reasoning_output_tokens": 88
+      },
+      "token_total": 38396,
+      "turn_completed_count": 1,
+      "full_cell_ns": 68825448300,
+      "prompt_to_final_ns": 64372644600,
+      "timestamps_ns": {
+        "cell_start": 579957542009700,
+        "original_cell_deadline": 580527542009700,
+        "actor_prepare_start": 579957722062100,
+        "actor_startup_deadline": 579997722062100,
+        "consumer_start": 579959012705800,
+        "original_consumer_deadline": 580409012705800,
+        "prompt_submitted": 579959025682200,
+        "final_received": 580023398326800,
+        "turn_completed": 580023399276200,
+        "consumer_exit_observed": 580026072994100,
+        "consumer_cleanup_end": 580026078324500,
+        "worker_closed": 580026120157200,
+        "owner_close_end": 580026352839700,
+        "cell_end": 580026367458000
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1470696100,
+        "consumer_setup": 915800,
+        "popen_to_prompt": 12060600,
+        "prompt_to_final": 64372644600,
+        "final_to_turn": 949400,
+        "turn_to_consumer_exit": 2673717900,
+        "consumer_exit_to_cleanup": 5330400,
+        "cleanup_to_full_cell_end": 289133500
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": null,
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc01\\attachments\\bridge_331567cdc0954b6caf56b314ceb8f2d8",
+              "started": {
+                "pid": 34016,
+                "kind": "native",
+                "started_ns": 579962973628800,
+                "instance_nonce": "1e6185c15cc643b7be27d3a239329cae"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "started_ns": 579970128018900,
+          "elapsed_ns": 38406600,
+          "response_bytes": 1805,
+          "produced_response_bytes": 1805,
+          "exception": null,
+          "is_error": false
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "started_ns": 579978865804300,
+          "elapsed_ns": 895819300,
+          "response_bytes": 17036,
+          "produced_response_bytes": 17036,
+          "exception": null,
+          "is_error": false
+        },
+        {
+          "attempt": 3,
+          "name": "execute_blender_code",
+          "started_ns": 580009893067300,
+          "elapsed_ns": 194877300,
+          "response_bytes": 766,
+          "produced_response_bytes": 766,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 579970105637800,
+          "end_ns": 579970167718000,
+          "elapsed_ns": 62080200
+        },
+        {
+          "id": "item_4",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 579978857076700,
+          "end_ns": 579979762963000,
+          "elapsed_ns": 905886300
+        },
+        {
+          "id": "item_6",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580009878591400,
+          "end_ns": 580010089285200,
+          "elapsed_ns": 210693800
+        }
+      ],
+      "tool_attempts": 3,
+      "tool_failures": 0,
+      "actor_handler_ns": 1129103200,
+      "public_tool_intervals_ns": 1178660300,
+      "prompt_interval_unattributed_ns": 63193984300,
+      "tool_tx_bytes": 8088,
+      "tool_rx_bytes": 19607,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 575,
+        "tool_count": 1
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "spc02",
+      "group": "P",
+      "round": 1,
+      "task": "T1",
+      "anonymous_id": "answer_4c5339761016a915",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 20571,
+        "cached_input_tokens": 11776,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 608,
+        "reasoning_output_tokens": 0
+      },
+      "token_total": 21179,
+      "turn_completed_count": 1,
+      "full_cell_ns": 39005613100,
+      "prompt_to_final_ns": 32472020800,
+      "timestamps_ns": {
+        "cell_start": 580026373530000,
+        "original_cell_deadline": 580596373530000,
+        "actor_prepare_start": 580026579300400,
+        "actor_startup_deadline": 580066579300400,
+        "consumer_start": 580028355645800,
+        "original_consumer_deadline": 580478355645800,
+        "prompt_submitted": 580028368199600,
+        "final_received": 580060840220400,
+        "turn_completed": 580060841155200,
+        "consumer_exit_observed": 580064970156100,
+        "consumer_cleanup_end": 580064977097400,
+        "worker_closed": 580065208024800,
+        "owner_close_end": 580065365483600,
+        "cell_end": 580065379143100
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1982115800,
+        "consumer_setup": 6138100,
+        "popen_to_prompt": 6415700,
+        "prompt_to_final": 32472020800,
+        "final_to_turn": 934800,
+        "turn_to_consumer_exit": 4129000900,
+        "consumer_exit_to_cleanup": 6941300,
+        "cleanup_to_full_cell_end": 402045700
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": {
+          "confirmed": true,
+          "exited": true,
+          "exit_code": 0,
+          "method": "retained Windows runtime handle",
+          "observed_ns": 580065193258200,
+          "handle_closed": true
+        },
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc02\\attachments\\bridge_636154b7101f4e589a2f66db2014fdfc",
+              "started": {
+                "pid": 28764,
+                "kind": "native",
+                "started_ns": 580028605075900,
+                "instance_nonce": "335293dd78154920a507c353598b581d"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "started_ns": 580036566903600,
+          "elapsed_ns": 5515600,
+          "response_bytes": 857,
+          "produced_response_bytes": 857,
+          "exception": null,
+          "is_error": true
+        },
+        {
+          "attempt": 2,
+          "name": "human_eye_scene_observe",
+          "started_ns": 580044543382300,
+          "elapsed_ns": 4210043300,
+          "response_bytes": 8464,
+          "produced_response_bytes": 8464,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "human_eye_scene_observe",
+          "status": "failed",
+          "start_ns": 580036542232100,
+          "end_ns": 580036573996500,
+          "elapsed_ns": 31764400
+        },
+        {
+          "id": "item_4",
+          "tool": "human_eye_scene_observe",
+          "status": "completed",
+          "start_ns": 580044528559700,
+          "end_ns": 580048754618100,
+          "elapsed_ns": 4226058400
+        }
+      ],
+      "tool_attempts": 2,
+      "tool_failures": 1,
+      "actor_handler_ns": 4215558900,
+      "public_tool_intervals_ns": 4257822800,
+      "prompt_interval_unattributed_ns": 28214198000,
+      "tool_tx_bytes": 2528,
+      "tool_rx_bytes": 9321,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 12785,
+        "tool_count": 2
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "spc03",
+      "group": "P",
+      "round": 2,
+      "task": "T1",
+      "anonymous_id": "answer_810d2b5de2b6d865",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 14175,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 518,
+        "reasoning_output_tokens": 0
+      },
+      "token_total": 14693,
+      "turn_completed_count": 1,
+      "full_cell_ns": 28951523900,
+      "prompt_to_final_ns": 23134307400,
+      "timestamps_ns": {
+        "cell_start": 580065388346800,
+        "original_cell_deadline": 580635388346800,
+        "actor_prepare_start": 580065596194700,
+        "actor_startup_deadline": 580105596194700,
+        "consumer_start": 580067333694300,
+        "original_consumer_deadline": 580517333694300,
+        "prompt_submitted": 580067340701800,
+        "final_received": 580090475009200,
+        "turn_completed": 580090514352700,
+        "consumer_exit_observed": 580094018428000,
+        "consumer_cleanup_end": 580094023894400,
+        "worker_closed": 580094188640000,
+        "owner_close_end": 580094324406600,
+        "cell_end": 580094339870700
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1945347500,
+        "consumer_setup": 673300,
+        "popen_to_prompt": 6334200,
+        "prompt_to_final": 23134307400,
+        "final_to_turn": 39343500,
+        "turn_to_consumer_exit": 3504075300,
+        "consumer_exit_to_cleanup": 5466400,
+        "cleanup_to_full_cell_end": 315976300
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": {
+          "confirmed": true,
+          "exited": true,
+          "exit_code": 0,
+          "method": "retained Windows runtime handle",
+          "observed_ns": 580094171596400,
+          "handle_closed": true
+        },
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc03\\attachments\\bridge_e676b4498c54496b8e7a840871dd061d",
+              "started": {
+                "pid": 15504,
+                "kind": "native",
+                "started_ns": 580067566464900,
+                "instance_nonce": "5fa013c9ceb94303be7c885705b45bad"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "started_ns": 580076108789100,
+          "elapsed_ns": 3536129900,
+          "response_bytes": 8464,
+          "produced_response_bytes": 8464,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "human_eye_scene_observe",
+          "status": "completed",
+          "start_ns": 580076091026300,
+          "end_ns": 580079646505800,
+          "elapsed_ns": 3555479500
+        }
+      ],
+      "tool_attempts": 1,
+      "tool_failures": 0,
+      "actor_handler_ns": 3536129900,
+      "public_tool_intervals_ns": 3555479500,
+      "prompt_interval_unattributed_ns": 19578827900,
+      "tool_tx_bytes": 1255,
+      "tool_rx_bytes": 8464,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 12785,
+        "tool_count": 2
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [
+        {
+          "perf_ns": 580067428092500,
+          "source": "stderr",
+          "text": "2026-11-12T08:15:35.042944Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n"
+        }
+      ],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "spc04",
+      "group": "N",
+      "round": 2,
+      "task": "T1",
+      "anonymous_id": "answer_27379ae7b6ac4280",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 19562,
+        "cached_input_tokens": 7680,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2505,
+        "reasoning_output_tokens": 131
+      },
+      "token_total": 22067,
+      "turn_completed_count": 1,
+      "full_cell_ns": 65543959800,
+      "prompt_to_final_ns": 62960348800,
+      "timestamps_ns": {
+        "cell_start": 580094350366600,
+        "original_cell_deadline": 580664350366600,
+        "actor_prepare_start": 580094558440300,
+        "actor_startup_deadline": 580134558440300,
+        "consumer_start": 580095415496200,
+        "original_consumer_deadline": 580545415496200,
+        "prompt_submitted": 580095422899600,
+        "final_received": 580158383248400,
+        "turn_completed": 580158523073900,
+        "consumer_exit_observed": 580159684860700,
+        "consumer_cleanup_end": 580159691136600,
+        "worker_closed": 580159741262300,
+        "owner_close_end": 580159878961500,
+        "cell_end": 580159894326400
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1065129600,
+        "consumer_setup": 887300,
+        "popen_to_prompt": 6516100,
+        "prompt_to_final": 62960348800,
+        "final_to_turn": 139825500,
+        "turn_to_consumer_exit": 1161786800,
+        "consumer_exit_to_cleanup": 6275900,
+        "cleanup_to_full_cell_end": 203189800
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": null,
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc04\\attachments\\bridge_06d63d9cedc64fc6a2218124246062c0",
+              "started": {
+                "pid": 37332,
+                "kind": "native",
+                "started_ns": 580095636969700,
+                "instance_nonce": "d34a0b8effc24b779de41f00c4e1ab72"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "started_ns": 580104886619100,
+          "elapsed_ns": 37815900,
+          "response_bytes": 1685,
+          "produced_response_bytes": 1685,
+          "exception": null,
+          "is_error": false
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "started_ns": 580146000439000,
+          "elapsed_ns": 194327500,
+          "response_bytes": 1963,
+          "produced_response_bytes": 1963,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580104878314900,
+          "end_ns": 580104925616900,
+          "elapsed_ns": 47302000
+        },
+        {
+          "id": "item_5",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580145983826200,
+          "end_ns": 580146195901300,
+          "elapsed_ns": 212075100
+        }
+      ],
+      "tool_attempts": 2,
+      "tool_failures": 0,
+      "actor_handler_ns": 232143400,
+      "public_tool_intervals_ns": 259377100,
+      "prompt_interval_unattributed_ns": 62700971700,
+      "tool_tx_bytes": 7539,
+      "tool_rx_bytes": 3648,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 575,
+        "tool_count": 1
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "spc05",
+      "group": "N",
+      "round": 3,
+      "task": "T1",
+      "anonymous_id": "answer_194ae90393424045",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 28603,
+        "cached_input_tokens": 13824,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2892,
+        "reasoning_output_tokens": 198
+      },
+      "token_total": 31495,
+      "turn_completed_count": 1,
+      "full_cell_ns": 79659709500,
+      "prompt_to_final_ns": 75757711500,
+      "timestamps_ns": {
+        "cell_start": 580159901367400,
+        "original_cell_deadline": 580729901367400,
+        "actor_prepare_start": 580160119807800,
+        "actor_startup_deadline": 580200119807800,
+        "consumer_start": 580160980305800,
+        "original_consumer_deadline": 580610980305800,
+        "prompt_submitted": 580160987557100,
+        "final_received": 580236745268600,
+        "turn_completed": 580236745836200,
+        "consumer_exit_observed": 580239339127500,
+        "consumer_cleanup_end": 580239345197700,
+        "worker_closed": 580239398160100,
+        "owner_close_end": 580239547637400,
+        "cell_end": 580239561076900
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1078938400,
+        "consumer_setup": 685700,
+        "popen_to_prompt": 6565600,
+        "prompt_to_final": 75757711500,
+        "final_to_turn": 567600,
+        "turn_to_consumer_exit": 2593291300,
+        "consumer_exit_to_cleanup": 6070200,
+        "cleanup_to_full_cell_end": 215879200
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": null,
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc05\\attachments\\bridge_2080e0197cc6463a844babc1cd86a83e",
+              "started": {
+                "pid": 40680,
+                "kind": "native",
+                "started_ns": 580161212428800,
+                "instance_nonce": "133155d3e15e43debd20a666d2e870ff"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "started_ns": 580172132308000,
+          "elapsed_ns": 67942100,
+          "response_bytes": 2232,
+          "produced_response_bytes": 2232,
+          "exception": null,
+          "is_error": false
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "started_ns": 580209701494800,
+          "elapsed_ns": 741673200,
+          "response_bytes": 775,
+          "produced_response_bytes": 775,
+          "exception": null,
+          "is_error": false
+        },
+        {
+          "attempt": 3,
+          "name": "execute_blender_code",
+          "started_ns": 580221875943100,
+          "elapsed_ns": 89456400,
+          "response_bytes": 622,
+          "produced_response_bytes": 622,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580172131176400,
+          "end_ns": 580172201531200,
+          "elapsed_ns": 70354800
+        },
+        {
+          "id": "item_5",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580209692060000,
+          "end_ns": 580210444308700,
+          "elapsed_ns": 752248700
+        },
+        {
+          "id": "item_7",
+          "tool": "execute_blender_code",
+          "status": "completed",
+          "start_ns": 580221858138100,
+          "end_ns": 580221966842100,
+          "elapsed_ns": 108704000
+        }
+      ],
+      "tool_attempts": 3,
+      "tool_failures": 0,
+      "actor_handler_ns": 899071700,
+      "public_tool_intervals_ns": 931307500,
+      "prompt_interval_unattributed_ns": 74826404000,
+      "tool_tx_bytes": 9923,
+      "tool_rx_bytes": 3629,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 575,
+        "tool_count": 1
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    },
+    {
+      "cell": "spc06",
+      "group": "P",
+      "round": 3,
+      "task": "T1",
+      "anonymous_id": "answer_3d9fef31bcaa7736",
+      "quality": "complete_correct",
+      "quality_sources": [
+        "independent_quality/SCORES.json",
+        "root_quality/SCORES.json"
+      ],
+      "usage": {
+        "input_tokens": 14179,
+        "cached_input_tokens": 5760,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 516,
+        "reasoning_output_tokens": 0
+      },
+      "token_total": 14695,
+      "turn_completed_count": 1,
+      "full_cell_ns": 28626742100,
+      "prompt_to_final_ns": 22168544400,
+      "timestamps_ns": {
+        "cell_start": 580239568260000,
+        "original_cell_deadline": 580809568260000,
+        "actor_prepare_start": 580239800513300,
+        "actor_startup_deadline": 580279800513300,
+        "consumer_start": 580241502233400,
+        "original_consumer_deadline": 580691502233400,
+        "prompt_submitted": 580241509554900,
+        "final_received": 580263678099300,
+        "turn_completed": 580263678962300,
+        "consumer_exit_observed": 580267863319900,
+        "consumer_cleanup_end": 580267869027800,
+        "worker_closed": 580268044570400,
+        "owner_close_end": 580268179522200,
+        "cell_end": 580268195002100
+      },
+      "phases_ns": {
+        "input_checks_and_owner_setup": 1933973400,
+        "consumer_setup": 757500,
+        "popen_to_prompt": 6564000,
+        "prompt_to_final": 22168544400,
+        "final_to_turn": 863000,
+        "turn_to_consumer_exit": 4184357600,
+        "consumer_exit_to_cleanup": 5707900,
+        "cleanup_to_full_cell_end": 325974300
+      },
+      "exit_evidence": {
+        "consumer_reaped": true,
+        "owner_wait_return_code": 0,
+        "native_reaped": true,
+        "product_runtime_exit": {
+          "confirmed": true,
+          "exited": true,
+          "exit_code": 0,
+          "method": "retained Windows runtime handle",
+          "observed_ns": 580268022349600,
+          "handle_closed": true
+        },
+        "thin_client_exit": {
+          "confirmed": null,
+          "scope": "thin-client EXIT receipts only; backend lifetime is external",
+          "receipt_status": "unknown",
+          "missing_exit_count": 1,
+          "instances": [
+            {
+              "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_spatial_fact_consumption_001\\cells\\spc06\\attachments\\bridge_c4827b1b3b6c4991b850ace4374fc99b",
+              "started": {
+                "pid": 43480,
+                "kind": "native",
+                "started_ns": 580241726132200,
+                "instance_nonce": "050c77f4230e44478e19bc1342cc8328"
+              },
+              "exit": null,
+              "confirmed": null
+            }
+          ],
+          "backend_close_confirmed": null
+        },
+        "full_cell_end_is_post_owner_wait": true
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "started_ns": 580249027475300,
+          "elapsed_ns": 3430600800,
+          "response_bytes": 8464,
+          "produced_response_bytes": 8464,
+          "exception": null,
+          "is_error": false
+        }
+      ],
+      "public_tool_intervals": [
+        {
+          "id": "item_3",
+          "tool": "human_eye_scene_observe",
+          "status": "completed",
+          "start_ns": 580249007737700,
+          "end_ns": 580252459452400,
+          "elapsed_ns": 3451714700
+        }
+      ],
+      "tool_attempts": 1,
+      "tool_failures": 0,
+      "actor_handler_ns": 3430600800,
+      "public_tool_intervals_ns": 3451714700,
+      "prompt_interval_unattributed_ns": 18716829700,
+      "tool_tx_bytes": 1255,
+      "tool_rx_bytes": 8464,
+      "catalog": {
+        "tx_bytes": 86,
+        "rx_bytes": 12785,
+        "tool_count": 2
+      },
+      "consumer_errors": [],
+      "provider_retry_observations": [],
+      "provider_requests": null,
+      "fees": null,
+      "resolved_effort": null
+    }
+  ],
+  "groups": {
+    "N": {
+      "complete_correct": 3,
+      "full_cell_ns": {
+        "count": 3,
+        "minimum": 65543959800,
+        "median": 68825448300,
+        "maximum": 79659709500,
+        "total": 214029117600
+      },
+      "prompt_to_final_ns": {
+        "count": 3,
+        "minimum": 62960348800,
+        "median": 64372644600,
+        "maximum": 75757711500,
+        "total": 203090704900
+      },
+      "token_total": {
+        "count": 3,
+        "minimum": 22067,
+        "median": 31495,
+        "maximum": 38396,
+        "total": 91958
+      },
+      "usage_sums": {
+        "input_tokens": 84363,
+        "cached_input_tokens": 45696,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 7595,
+        "reasoning_output_tokens": 417
+      },
+      "tool_attempts": 8,
+      "tool_failures": 0,
+      "actor_handler_ns": 2260318300,
+      "tool_tx_bytes": 25550,
+      "tool_rx_bytes": 26884
+    },
+    "P": {
+      "complete_correct": 3,
+      "full_cell_ns": {
+        "count": 3,
+        "minimum": 28626742100,
+        "median": 28951523900,
+        "maximum": 39005613100,
+        "total": 96583879100
+      },
+      "prompt_to_final_ns": {
+        "count": 3,
+        "minimum": 22168544400,
+        "median": 23134307400,
+        "maximum": 32472020800,
+        "total": 77774872600
+      },
+      "token_total": {
+        "count": 3,
+        "minimum": 14693,
+        "median": 14695,
+        "maximum": 21179,
+        "total": 50567
+      },
+      "usage_sums": {
+        "input_tokens": 48925,
+        "cached_input_tokens": 17536,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1642,
+        "reasoning_output_tokens": 0
+      },
+      "tool_attempts": 4,
+      "tool_failures": 1,
+      "actor_handler_ns": 11182289600,
+      "tool_tx_bytes": 5038,
+      "tool_rx_bytes": 26249
+    }
+  },
+  "pairs": [
+    {
+      "round": 1,
+      "N_cell": "spc01",
+      "P_cell": "spc02",
+      "full_cell_ns": {
+        "N": 68825448300,
+        "P": 39005613100,
+        "P_minus_N": -29819835200,
+        "reduction_percent": 43.32675766966272
+      },
+      "token_total": {
+        "N": 38396,
+        "P": 21179,
+        "P_minus_N": -17217,
+        "reduction_percent": 44.84060839670799
+      }
+    },
+    {
+      "round": 2,
+      "N_cell": "spc04",
+      "P_cell": "spc03",
+      "full_cell_ns": {
+        "N": 65543959800,
+        "P": 28951523900,
+        "P_minus_N": -36592435900,
+        "reduction_percent": 55.82884526912578
+      },
+      "token_total": {
+        "N": 22067,
+        "P": 14693,
+        "P_minus_N": -7374,
+        "reduction_percent": 33.41641364934065
+      }
+    },
+    {
+      "round": 3,
+      "N_cell": "spc05",
+      "P_cell": "spc06",
+      "full_cell_ns": {
+        "N": 79659709500,
+        "P": 28626742100,
+        "P_minus_N": -51032967400,
+        "reduction_percent": 64.06371266016228
+      },
+      "token_total": {
+        "N": 31495,
+        "P": 14695,
+        "P_minus_N": -16800,
+        "reduction_percent": 53.341800285759646
+      }
+    }
+  ],
+  "comparison": {
+    "full_cell_median_ns": {
+      "N": 68825448300,
+      "P": 28951523900,
+      "P_minus_N": -39873924400,
+      "reduction_percent": 57.934856052365156
+    },
+    "cumulative_input_plus_output": {
+      "N": 91958,
+      "P": 50567,
+      "P_minus_N": -41391,
+      "reduction_percent": 45.01076578437983
+    }
+  },
+  "gate": {
+    "quality_both_three_of_three": true,
+    "all_six_retained": true,
+    "all_usage_present": true,
+    "time_noninferior": true,
+    "token_noninferior": true,
+    "improvement_at_least_ten_percent": true,
+    "passes": true
+  },
+  "gate_scope": "Registered input-check-to-post-owner-wait boundary; not proof that every thin-client process exited. Six thin-client EXIT receipts remain unknown.",
+  "author_claim_comparison": {
+    "claims": {
+      "N_median_seconds": 68.8254483,
+      "P_median_seconds": 28.9515239,
+      "N_tokens": 91958,
+      "P_tokens": 50567
+    },
+    "independent_calculation": {
+      "N_median_seconds": 68.8254483,
+      "P_median_seconds": 28.9515239,
+      "N_tokens": 91958,
+      "P_tokens": 50567
+    },
+    "exact_match": true
+  },
+  "stages": {
+    "preparation": {
+      "original": {
+        "Blender_sessions": 0,
+        "coordinator_model_cost": null,
+        "freeze_utc": "2026-11-12T08:07:19.165511+00:00",
+        "installation_rebuilds": 0,
+        "live_product_processes": 0,
+        "model_consumers": 0,
+        "recorded_start_utc": "2026-11-12T07:45:00.405131+00:00",
+        "scope": "wall-clock local work-order through preparation freeze; preceding reading/delegation and coordinator model cost not separately measured",
+        "smoke_sessions": 0
+      },
+      "recorded_wall_ns": 1338760380000
+    },
+    "historic_installation": {
+      "version": "9.7.2+m3.sufficient.r1",
+      "elapsed_ns": 3874802500,
+      "counted_as_current_rebuild": false
+    },
+    "formal": {
+      "sum_cell_ns": 310612996700,
+      "batch_ns": 311063043400,
+      "batch_outside_cells_ns": 450046700,
+      "outer_process_ns": 311079627900,
+      "outer_minus_batch_ns": 16584500,
+      "overlap_rule": "Cells are nested within batch within outer process; never add all three"
+    },
+    "independent_quality_review": {
+      "time": null,
+      "tokens": null,
+      "fees": null,
+      "status": "unmeasured"
+    },
+    "author_saved_data_review": {
+      "time": null,
+      "tokens": null,
+      "fees": null,
+      "status": "unmeasured"
+    },
+    "current_independent_review": {
+      "new_consumer_runs": 0,
+      "new_Blender_runs": 0,
+      "new_product_runs": 0,
+      "geometry_reruns": 0,
+      "model_tokens": null,
+      "fees": null,
+      "status": "full review wall and coordination costs unmeasured"
+    }
+  },
+  "limitations": [
+    "Only one repeated synthetic scene and three samples per group; no cross-task/generalization/statistical-stability claim.",
+    "All six thin-client EXIT.json receipts are absent. Their exit is unknown, not proved by other processes. Backend/consumer owned exits have separate evidence; no all-process exit claim.",
+    "process_exit_ns is observation after wait; owner cell end is after wait/receipt publication, not an exact kernel exit instant.",
+    "Post-cell accounting publication is outside each registered cell; included in batch, which is reported separately.",
+    "Cached input and reasoning output are subitems of input/output. Only input+output summed; no cumulative snapshot duplication.",
+    "Provider request/retry count, resolved model/effort, monetary fees, cache memory, provider latency decomposition not measured.",
+    "Non-tool wall time remains unattributed; it must not be labelled model thinking.",
+    "Preparation window excludes preceding reading/delegation; coordinator and independent-review resources are unmeasured.",
+    "Geometry scores are consumed from the fixed seal without rerunning geometry.",
+    "This audit verifies selected cost/mapping/quality/source-timing evidence bytes, not every product/source/configuration file."
+  ],
+  "script_sha256": "fcd664ac2867bcd0be6ce257d3500ab96d7e76df38ea4b280cc259c6c09b42f7"
+}
