@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_23805cc23e974515a40a80155fbb6c6f",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d0d1-d352-7e63-9cb1-d75bc6eeabe5",
+        "thread_id": "01a1d0d1-d352-7e63-9cb1-d75bc6eeabe5",
+        "turn_started_at_unix_ms": 1794504774665,
+        "turn_id": "01a1d0d1-d402-7b30-91ea-69986bc4b039",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "3a1ba86c5fce2fe125671cc68a84b14031d318cb",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d0d1-d352-7e63-9cb1-d75bc6eeabe5",
+      "itemId": "fc_0cc39d34e8cfc323016af5f86ba5c487d086b88f4dae122e99",
+      "progressToken": 3
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(point,start,end):\n direction=end-start\n param=np.clip(dot_rows(point-start,direction)/dot_rows(direction,direction),0,1)\n delta=point-(start+param[...,None]*direction)\n return dot_rows(delta,delta)\ndef point_triangle_sq(point,tri):\n start=tri[...,0,:]; edge_one=tri[...,1,:]-start; edge_two=tri[...,2,:]-start\n normal=np.cross(edge_one,edge_two); norm_sq=dot_rows(normal,normal)\n offset=point-start\n height=dot_rows(offset,normal)/norm_sq\n projected=offset-height[...,None]*normal\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(projected,edge_one); pb=dot_rows(projected,edge_two)\n denom=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/denom; bary_two=(pb*aa-pa*ab)/denom\n inside=(bary_one>=0)&(bary_two>=0)&(bary_one+bary_two<=1)\n best=np.minimum.reduce([point_segment_sq(point,tri[...,idx,:],tri[...,(idx+1)%3,:]) for idx in range(3)])\n return np.where(inside,np.minimum(best,height*height*norm_sq),best)\ndef segment_segment_sq(start_one,end_one,start_two,end_two):\n edge_one=end_one-start_one; edge_two=end_two-start_two; offset=start_one-start_two\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n dd=dot_rows(edge_one,offset); ee=dot_rows(edge_two,offset)\n denom=aa*bb-ab*ab\n valid=denom>1e-14*aa*bb\n safe=np.where(valid,denom,1.0)\n param_one=(ab*ee-bb*dd)/safe; param_two=(aa*ee-ab*dd)/safe\n interior=valid&(param_one>=0)&(param_one<=1)&(param_two>=0)&(param_two<=1)\n delta=offset+param_one[...,None]*edge_one-param_two[...,None]*edge_two\n best=np.minimum.reduce([point_segment_sq(start_one,start_two,end_two),point_segment_sq(end_one,start_two,end_two),point_segment_sq(start_two,start_one,end_one),point_segment_sq(end_two,start_one,end_one)])\n return np.where(interior,np.minimum(best,dot_rows(delta,delta)),best)\ndef segment_hits_triangle(start,end,tri):\n edge_one=tri[...,1,:]-tri[...,0,:]; edge_two=tri[...,2,:]-tri[...,0,:]\n normal=np.cross(edge_one,edge_two)\n direction=end-start\n denom=dot_rows(direction,normal)\n valid=np.abs(denom)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n param=dot_rows(tri[...,0,:]-start,normal)/np.where(valid,denom,1.0)\n point=start+param[...,None]*direction\n offset=point-tri[...,0,:]\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(offset,edge_one); pb=dot_rows(offset,edge_two)\n det=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/det; bary_two=(pb*aa-pa*ab)/det\n return valid&(param>=0)&(param<=1)&(bary_one>=-1e-12)&(bary_two>=-1e-12)&(bary_one+bary_two<=1+1e-12)\ndef mesh_distance(tris_one,tris_two):\n one=tris_one[:,None,:,:]; two=tris_two[None,:,:,:]\n best=np.full((len(tris_one),len(tris_two)),np.inf)\n hits=np.zeros(best.shape,dtype=bool)\n for idx in range(3):\n  best=np.minimum(best,point_triangle_sq(one[...,idx,:],two))\n  best=np.minimum(best,point_triangle_sq(two[...,idx,:],one))\n  hits|=segment_hits_triangle(one[...,idx,:],one[...,(idx+1)%3,:],two)\n  hits|=segment_hits_triangle(two[...,idx,:],two[...,(idx+1)%3,:],one)\n  for other in range(3):\n   best=np.minimum(best,segment_segment_sq(one[...,idx,:],one[...,(idx+1)%3,:],two[...,other,:],two[...,(other+1)%3,:]))\n if np.any(hits): return 0.0\n return math.sqrt(max(0,float(best.min())))\nresults=[]\nfor first,second,lower in candidate_pairs:\n distance=mesh_distance(scan_meshes[first]['tri'],scan_meshes[second]['tri'])*mm_per_unit\n results.append((scan_meshes[first]['name'],scan_meshes[second]['name'],distance))\nqualifying=[record for record in results if record[2]<=2.0+1e-9]\nprint('QUALIFYING',len(qualifying))\nfor record in qualifying: print('%s %s %.9f mm'%record)\nprint('NEAREST_EXCLUDED_CANDIDATES',sorted([r for r in results if r[2]>2.0+1e-9],key=lambda r:r[2])[:8])\n"
+    }
+  }
+}

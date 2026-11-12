@@ -1,0 +1,359 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('UNIT',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('MESH_COUNT',len(objs))\nfor o in objs:\n print(repr(o.name),'verts',len(o.data.vertices),'polys',len(o.data.polygons),'mods',[(m.type,m.show_viewport) for m in o.modifiers],'hidden',o.hide_get(),o.hide_viewport)\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"UNIT METRIC 1.0\\nMESH_COUNT 24\\n'Obj_001' verts 8 polys 12 mods [] hidden False False\\n'Obj_002' verts 16 polys 28 mods [] hidden False False\\n'Obj_003' verts 16 polys 28 mods [] hidden False False\\n'Obj_004' verts 16 polys 28 mods [] hidden False False\\n'Obj_005' verts 12 polys 20 mods [] hidden False False\\n'Obj_006' verts 16 polys 28 mods [] hidden False False\\n'Obj_007' verts 12 polys 20 mods [] hidden False False\\n'Obj_008' verts 8 polys 12 mods [] hidden False False\\n'Obj_009' verts 8 polys 12 mods [] hidden False False\\n'Obj_010' verts 8 polys 12 mods [] hidden False False\\n'Obj_011' verts 8 polys 12 mods [] hidden False False\\n'Obj_012' verts 4 polys 2 mods [] hidden False False\\n'Obj_013' verts 64 polys 128 mods [] hidden False False\\n'Obj_014' verts 64 polys 128 mods [] hidden False False\\n'Obj_015' verts 64 polys 128 mods [] hidden False False\\n'Obj_016' verts 64 polys 128 mods [] hidden False False\\n'Obj_017' verts 8 polys 12 mods [] hidden False False\\n'Obj_018' verts 8 polys 12 mods [] hidden False False\\n'Obj_019' verts 8 polys 12 mods [] hidden False False\\n'Obj_020' verts 8 polys 12 mods [] hidden False False\\n'Obj_021' verts 34 polys 64 mods [] hidden False False\\n'Obj_022' verts 34 polys 64 mods [] hidden False False\\n'Obj_023' verts 34 polys 64 mods [] hidden False False\\n'Obj_024' verts 8 polys 12 mods [] hidden False False\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "e836b705bdb6f4ba77b827fb031a6d4e4e9f7ea3db93f73c3ffc3aa7ac0e2bf8"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "46b9a6a63a94ae212a1fba46adc88877db4664cb549ed2483d4393d4b5cfb45f"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "5d6d4fbfdd825d20b614b496d179aecadd8efb8562899bb3137e3c9e7b128c27"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "scan_meshes=[]\nfor obj in objs:\n ev=obj.evaluated_get(depsgraph)\n mesh=ev.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  coords=np.array([tuple(ev.matrix_world @ vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  inds=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int).reshape((-1,3))\n  triangles=coords[inds]\n  scan_meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n finally:\n  ev.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nlimit=2.0/mm_per_unit\ncandidate_pairs=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  if one['lo'] is None or two['lo'] is None: continue\n  gap=np.maximum(0,np.maximum(one['lo']-two['hi'],two['lo']-one['hi']))\n  lower=float(np.linalg.norm(gap))\n  if lower<=limit+1e-12: candidate_pairs.append((first,second,lower))\nprint('TOTAL_PAIRS',len(objs)*(len(objs)-1)//2,'AABB_CANDIDATES',len(candidate_pairs),'TRIANGLES',sum(len(m['tri']) for m in scan_meshes))\nprint('CANDIDATES',[(scan_meshes[a]['name'],scan_meshes[b]['name'],round(d*mm_per_unit,6)) for a,b,d in candidate_pairs])\nprint('DEGENERATE_TRIANGLES',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in scan_meshes if np.any(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0)])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"TOTAL_PAIRS 276 AABB_CANDIDATES 112 TRIANGLES 978\\nCANDIDATES [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0), ('Obj_001', 'Obj_006', 0.5), ('Obj_001', 'Obj_007', 1.5), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 0.0), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.249999), ('Obj_002', 'Obj_014', 0.249999), ('Obj_002', 'Obj_015', 0.249999), ('Obj_002', 'Obj_016', 0.249999), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 0.0), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 0.0), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 0.249999), ('Obj_003', 'Obj_015', 0.249999), ('Obj_003', 'Obj_016', 0.249999), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 0.0), ('Obj_003', 'Obj_023', 0.0), ('Obj_004', 'Obj_005', 0.0), ('Obj_004', 'Obj_006', 0.0), ('Obj_004', 'Obj_007', 0.0), ('Obj_004', 'Obj_008', 0.0), ('Obj_004', 'Obj_009', 0.0), ('Obj_004', 'Obj_010', 0.250001), ('Obj_004', 'Obj_013', 0.0), ('Obj_004', 'Obj_014', 0.0), ('Obj_004', 'Obj_015', 0.0), ('Obj_004', 'Obj_016', 0.0), ('Obj_004', 'Obj_017', 0.0), ('Obj_004', 'Obj_018', 0.0), ('Obj_004', 'Obj_019', 0.0), ('Obj_004', 'Obj_020', 0.0), ('Obj_004', 'Obj_021', 0.0), ('Obj_004', 'Obj_022', 0.0), ('Obj_004', 'Obj_023', 0.0), ('Obj_005', 'Obj_006', 0.0), ('Obj_005', 'Obj_007', 0.0), ('Obj_005', 'Obj_008', 0.0), ('Obj_005', 'Obj_009', 0.0), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 0.0), ('Obj_005', 'Obj_014', 0.0), ('Obj_005', 'Obj_015', 0.0), ('Obj_005', 'Obj_016', 0.0), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 0.0), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 0.0), ('Obj_005', 'Obj_021', 0.0), ('Obj_005', 'Obj_022', 0.0), ('Obj_005', 'Obj_023', 0.0), ('Obj_006', 'Obj_007', 0.0), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 0.0), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.2), ('Obj_006', 'Obj_013', 0.0), ('Obj_006', 'Obj_014', 0.0), ('Obj_006', 'Obj_015', 0.0), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 0.0), ('Obj_006', 'Obj_022', 0.0), ('Obj_006', 'Obj_023', 0.0), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 0.0), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.499999), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 0.0), ('Obj_007', 'Obj_015', 0.0), ('Obj_007', 'Obj_016', 0.0), ('Obj_007', 'Obj_021', 0.0), ('Obj_007', 'Obj_022', 0.0), ('Obj_007', 'Obj_023', 0.0), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.499999), ('Obj_008', 'Obj_014', 0.499999), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.0), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.000002), ('Obj_013', 'Obj_021', 0.0), ('Obj_015', 'Obj_016', 0.0), ('Obj_015', 'Obj_022', 0.0), ('Obj_018', 'Obj_020', 0.0)]\\nDEGENERATE_TRIANGLES []\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "f9edea5f9cec1c789422ee77debc50e6eb937fa4b90f211996c394d021dd7807"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "68c46935551fd4d5e9068bf47c98e4c85694d9b0a82df62662f1fa5f30f98ec4"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "bbd9490cec2c7fce260817b2f89f435033a94292bda64d651915db735aa8ae8c"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(point,start,end):\n direction=end-start\n param=np.clip(dot_rows(point-start,direction)/dot_rows(direction,direction),0,1)\n delta=point-(start+param[...,None]*direction)\n return dot_rows(delta,delta)\ndef point_triangle_sq(point,tri):\n start=tri[...,0,:]; edge_one=tri[...,1,:]-start; edge_two=tri[...,2,:]-start\n normal=np.cross(edge_one,edge_two); norm_sq=dot_rows(normal,normal)\n offset=point-start\n height=dot_rows(offset,normal)/norm_sq\n projected=offset-height[...,None]*normal\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(projected,edge_one); pb=dot_rows(projected,edge_two)\n denom=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/denom; bary_two=(pb*aa-pa*ab)/denom\n inside=(bary_one>=0)&(bary_two>=0)&(bary_one+bary_two<=1)\n best=np.minimum.reduce([point_segment_sq(point,tri[...,idx,:],tri[...,(idx+1)%3,:]) for idx in range(3)])\n return np.where(inside,np.minimum(best,height*height*norm_sq),best)\ndef segment_segment_sq(start_one,end_one,start_two,end_two):\n edge_one=end_one-start_one; edge_two=end_two-start_two; offset=start_one-start_two\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n dd=dot_rows(edge_one,offset); ee=dot_rows(edge_two,offset)\n denom=aa*bb-ab*ab\n valid=denom>1e-14*aa*bb\n safe=np.where(valid,denom,1.0)\n param_one=(ab*ee-bb*dd)/safe; param_two=(aa*ee-ab*dd)/safe\n interior=valid&(param_one>=0)&(param_one<=1)&(param_two>=0)&(param_two<=1)\n delta=offset+param_one[...,None]*edge_one-param_two[...,None]*edge_two\n best=np.minimum.reduce([point_segment_sq(start_one,start_two,end_two),point_segment_sq(end_one,start_two,end_two),point_segment_sq(start_two,start_one,end_one),point_segment_sq(end_two,start_one,end_one)])\n return np.where(interior,np.minimum(best,dot_rows(delta,delta)),best)\ndef segment_hits_triangle(start,end,tri):\n edge_one=tri[...,1,:]-tri[...,0,:]; edge_two=tri[...,2,:]-tri[...,0,:]\n normal=np.cross(edge_one,edge_two)\n direction=end-start\n denom=dot_rows(direction,normal)\n valid=np.abs(denom)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n param=dot_rows(tri[...,0,:]-start,normal)/np.where(valid,denom,1.0)\n point=start+param[...,None]*direction\n offset=point-tri[...,0,:]\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(offset,edge_one); pb=dot_rows(offset,edge_two)\n det=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/det; bary_two=(pb*aa-pa*ab)/det\n return valid&(param>=0)&(param<=1)&(bary_one>=-1e-12)&(bary_two>=-1e-12)&(bary_one+bary_two<=1+1e-12)\ndef mesh_distance(tris_one,tris_two):\n one=tris_one[:,None,:,:]; two=tris_two[None,:,:,:]\n best=np.full((len(tris_one),len(tris_two)),np.inf)\n hits=np.zeros(best.shape,dtype=bool)\n for idx in range(3):\n  best=np.minimum(best,point_triangle_sq(one[...,idx,:],two))\n  best=np.minimum(best,point_triangle_sq(two[...,idx,:],one))\n  hits|=segment_hits_triangle(one[...,idx,:],one[...,(idx+1)%3,:],two)\n  hits|=segment_hits_triangle(two[...,idx,:],two[...,(idx+1)%3,:],one)\n  for other in range(3):\n   best=np.minimum(best,segment_segment_sq(one[...,idx,:],one[...,(idx+1)%3,:],two[...,other,:],two[...,(other+1)%3,:]))\n if np.any(hits): return 0.0\n return math.sqrt(max(0,float(best.min())))\nresults=[]\nfor first,second,lower in candidate_pairs:\n distance=mesh_distance(scan_meshes[first]['tri'],scan_meshes[second]['tri'])*mm_per_unit\n results.append((scan_meshes[first]['name'],scan_meshes[second]['name'],distance))\nqualifying=[record for record in results if record[2]<=2.0+1e-9]\nprint('QUALIFYING',len(qualifying))\nfor record in qualifying: print('%s %s %.9f mm'%record)\nprint('NEAREST_EXCLUDED_CANDIDATES',sorted([r for r in results if r[2]>2.0+1e-9],key=lambda r:r[2])[:8])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"QUALIFYING 71\\nObj_001 Obj_002 0.000000000 mm\\nObj_001 Obj_003 0.000000000 mm\\nObj_001 Obj_004 0.000000000 mm\\nObj_001 Obj_005 1.000000047 mm\\nObj_001 Obj_006 0.500000024 mm\\nObj_001 Obj_007 1.500000013 mm\\nObj_001 Obj_017 0.000000000 mm\\nObj_001 Obj_018 0.000000000 mm\\nObj_001 Obj_019 0.000000000 mm\\nObj_001 Obj_020 0.000000000 mm\\nObj_002 Obj_003 0.000000000 mm\\nObj_002 Obj_004 0.000000000 mm\\nObj_002 Obj_005 0.000000000 mm\\nObj_002 Obj_006 0.000000000 mm\\nObj_002 Obj_007 0.000000000 mm\\nObj_002 Obj_009 0.000000000 mm\\nObj_002 Obj_013 0.249998644 mm\\nObj_002 Obj_014 0.249998644 mm\\nObj_002 Obj_015 0.249998644 mm\\nObj_002 Obj_016 0.249998644 mm\\nObj_002 Obj_017 0.000000000 mm\\nObj_002 Obj_018 0.000000000 mm\\nObj_002 Obj_020 0.000000000 mm\\nObj_002 Obj_022 0.000000000 mm\\nObj_003 Obj_004 0.000000000 mm\\nObj_003 Obj_005 0.000000000 mm\\nObj_003 Obj_006 0.000000000 mm\\nObj_003 Obj_007 0.000000000 mm\\nObj_003 Obj_009 0.000000000 mm\\nObj_003 Obj_015 0.249998644 mm\\nObj_003 Obj_016 0.249998644 mm\\nObj_003 Obj_018 0.000000000 mm\\nObj_003 Obj_019 0.000000000 mm\\nObj_003 Obj_020 0.000000000 mm\\nObj_004 Obj_005 0.999998301 mm\\nObj_004 Obj_010 0.250000507 mm\\nObj_004 Obj_017 1.500003040 mm\\nObj_004 Obj_018 1.500003040 mm\\nObj_004 Obj_019 1.500003040 mm\\nObj_004 Obj_020 1.500003040 mm\\nObj_005 Obj_006 1.000002027 mm\\nObj_005 Obj_010 0.000000000 mm\\nObj_005 Obj_017 0.000000000 mm\\nObj_005 Obj_019 0.000000000 mm\\nObj_006 Obj_007 0.999998301 mm\\nObj_006 Obj_008 0.000000000 mm\\nObj_006 Obj_009 1.350320876 mm\\nObj_006 Obj_010 0.000000000 mm\\nObj_006 Obj_011 0.199999660 mm\\nObj_006 Obj_016 0.000000000 mm\\nObj_007 Obj_008 0.000000000 mm\\nObj_007 Obj_010 0.000000000 mm\\nObj_007 Obj_011 0.000000000 mm\\nObj_007 Obj_012 1.499999315 mm\\nObj_007 Obj_013 0.000000000 mm\\nObj_007 Obj_021 0.600002706 mm\\nObj_008 Obj_010 0.000000000 mm\\nObj_008 Obj_013 0.499999151 mm\\nObj_008 Obj_014 0.499999151 mm\\nObj_008 Obj_021 0.000000000 mm\\nObj_009 Obj_010 0.000000000 mm\\nObj_009 Obj_015 0.249998644 mm\\nObj_009 Obj_016 0.000000000 mm\\nObj_009 Obj_022 0.000000000 mm\\nObj_010 Obj_021 0.000000000 mm\\nObj_010 Obj_022 0.000000000 mm\\nObj_013 Obj_014 1.761146088 mm\\nObj_013 Obj_021 0.588469463 mm\\nObj_015 Obj_016 0.780363777 mm\\nObj_015 Obj_022 0.588469685 mm\\nObj_018 Obj_020 0.000000000 mm\\nNEAREST_EXCLUDED_CANDIDATES [('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_003', 'Obj_022', 2.277432384163671), ('Obj_005', 'Obj_008', 2.708282321691513), ('Obj_002', 'Obj_023', 2.9221901092925178), ('Obj_003', 'Obj_023', 2.9221901092925178), ('Obj_007', 'Obj_014', 2.9999986290931706), ('Obj_001', 'Obj_024', 2.999999560415745), ('Obj_006', 'Obj_013', 3.999996930360794)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "405daed663262bb88b908b5b029ddf86b7aea008f548aebcee94a72467948ed6"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "f1cbfd0c39c6248950cc1de8d59ab3f2e7d44070dd94cc9f69b7b9f7f0638040"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "8980b27871e5a66e1cf41cd518848fffc26c956d3a1ef28cf8ce98ffd4a81751"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "all_pair_results=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  distance=mesh_distance(one['tri'],two['tri'])*mm_per_unit\n  all_pair_results.append((one['name'],two['name'],distance))\nfull_qualifying=[record for record in all_pair_results if record[2]<=2.0]\nprint('EXHAUSTIVE_PAIRS',len(all_pair_results),'QUALIFYING',len(full_qualifying),'MATCHES_BROAD_PHASE',full_qualifying==qualifying)\nprint('EXACT_ZERO_COUNT',sum(record[2]==0 for record in full_qualifying))\nprint('POSITIVE_UNDER_1_MICRON',[(a,b,d) for a,b,d in full_qualifying if 0<d<0.001])\nprint('GLOBAL_NEAREST_EXCLUDED',min((r for r in all_pair_results if r[2]>2),key=lambda r:r[2]))\nprint('EMPTY_MESHES',[m['name'] for m in scan_meshes if len(m['tri'])==0])\nprint('EDIT_MODE_OBJECTS',[o.name for o in objs if o.mode=='EDIT'])\nprint('ALL_FINITE',all(np.isfinite(m['tri']).all() for m in scan_meshes))\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"EXHAUSTIVE_PAIRS 276 QUALIFYING 71 MATCHES_BROAD_PHASE True\\nEXACT_ZERO_COUNT 43\\nPOSITIVE_UNDER_1_MICRON []\\nGLOBAL_NEAREST_EXCLUDED ('Obj_002', 'Obj_008', 2.2499989718198776)\\nEMPTY_MESHES []\\nEDIT_MODE_OBJECTS []\\nALL_FINITE True\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "ddd35ca587de748e96805b3bf6a10904b3d3077e5a3a5a43ab1603b088c7e692"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "b1ec4ecd6b69d4de762c45db6e782a3f41baa081fb2b4a51477aee9064dceac4"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "2e9211e83013c5411c7b55040dfefb96216f2a2a88e67d597777107e76a4f048"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('UNIT',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('MESH_COUNT',len(objs))\nfor o in objs:\n print(repr(o.name),'verts',len(o.data.vertices),'polys',len(o.data.polygons),'mods',[(m.type,m.show_viewport) for m in o.modifiers],'hidden',o.hide_get(),o.hide_viewport)\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "644ab6b2308725d47ce50c283e9a23a946fb52a9314c4e8cece5de72394f5c74",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('UNIT',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('MESH_COUNT',len(objs))\nfor o in objs:\n print(repr(o.name),'verts',len(o.data.vertices),'polys',len(o.data.polygons),'mods',[(m.type,m.show_viewport) for m in o.modifiers],'hidden',o.hide_get(),o.hide_viewport)\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"UNIT METRIC 1.0\\nMESH_COUNT 24\\n'Obj_001' verts 8 polys 12 mods [] hidden False False\\n'Obj_002' verts 16 polys 28 mods [] hidden False False\\n'Obj_003' verts 16 polys 28 mods [] hidden False False\\n'Obj_004' verts 16 polys 28 mods [] hidden False False\\n'Obj_005' verts 12 polys 20 mods [] hidden False False\\n'Obj_006' verts 16 polys 28 mods [] hidden False False\\n'Obj_007' verts 12 polys 20 mods [] hidden False False\\n'Obj_008' verts 8 polys 12 mods [] hidden False False\\n'Obj_009' verts 8 polys 12 mods [] hidden False False\\n'Obj_010' verts 8 polys 12 mods [] hidden False False\\n'Obj_011' verts 8 polys 12 mods [] hidden False False\\n'Obj_012' verts 4 polys 2 mods [] hidden False False\\n'Obj_013' verts 64 polys 128 mods [] hidden False False\\n'Obj_014' verts 64 polys 128 mods [] hidden False False\\n'Obj_015' verts 64 polys 128 mods [] hidden False False\\n'Obj_016' verts 64 polys 128 mods [] hidden False False\\n'Obj_017' verts 8 polys 12 mods [] hidden False False\\n'Obj_018' verts 8 polys 12 mods [] hidden False False\\n'Obj_019' verts 8 polys 12 mods [] hidden False False\\n'Obj_020' verts 8 polys 12 mods [] hidden False False\\n'Obj_021' verts 34 polys 64 mods [] hidden False False\\n'Obj_022' verts 34 polys 64 mods [] hidden False False\\n'Obj_023' verts 34 polys 64 mods [] hidden False False\\n'Obj_024' verts 8 polys 12 mods [] hidden False False\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "8f502e553bb7291b0e0a005380cba4cf9cbbcc9247766560484351e715b5e233",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "scan_meshes=[]\nfor obj in objs:\n ev=obj.evaluated_get(depsgraph)\n mesh=ev.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  coords=np.array([tuple(ev.matrix_world @ vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  inds=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int).reshape((-1,3))\n  triangles=coords[inds]\n  scan_meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n finally:\n  ev.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nlimit=2.0/mm_per_unit\ncandidate_pairs=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  if one['lo'] is None or two['lo'] is None: continue\n  gap=np.maximum(0,np.maximum(one['lo']-two['hi'],two['lo']-one['hi']))\n  lower=float(np.linalg.norm(gap))\n  if lower<=limit+1e-12: candidate_pairs.append((first,second,lower))\nprint('TOTAL_PAIRS',len(objs)*(len(objs)-1)//2,'AABB_CANDIDATES',len(candidate_pairs),'TRIANGLES',sum(len(m['tri']) for m in scan_meshes))\nprint('CANDIDATES',[(scan_meshes[a]['name'],scan_meshes[b]['name'],round(d*mm_per_unit,6)) for a,b,d in candidate_pairs])\nprint('DEGENERATE_TRIANGLES',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in scan_meshes if np.any(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0)])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "60d57062c2ee7914b8a983d976b1d1b2cbf3a960dfe3214bba561bf377dab343",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "scan_meshes=[]\nfor obj in objs:\n ev=obj.evaluated_get(depsgraph)\n mesh=ev.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  coords=np.array([tuple(ev.matrix_world @ vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  inds=np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=int).reshape((-1,3))\n  triangles=coords[inds]\n  scan_meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n finally:\n  ev.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nlimit=2.0/mm_per_unit\ncandidate_pairs=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  if one['lo'] is None or two['lo'] is None: continue\n  gap=np.maximum(0,np.maximum(one['lo']-two['hi'],two['lo']-one['hi']))\n  lower=float(np.linalg.norm(gap))\n  if lower<=limit+1e-12: candidate_pairs.append((first,second,lower))\nprint('TOTAL_PAIRS',len(objs)*(len(objs)-1)//2,'AABB_CANDIDATES',len(candidate_pairs),'TRIANGLES',sum(len(m['tri']) for m in scan_meshes))\nprint('CANDIDATES',[(scan_meshes[a]['name'],scan_meshes[b]['name'],round(d*mm_per_unit,6)) for a,b,d in candidate_pairs])\nprint('DEGENERATE_TRIANGLES',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in scan_meshes if np.any(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0)])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"TOTAL_PAIRS 276 AABB_CANDIDATES 112 TRIANGLES 978\\nCANDIDATES [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0), ('Obj_001', 'Obj_006', 0.5), ('Obj_001', 'Obj_007', 1.5), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 0.0), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.249999), ('Obj_002', 'Obj_014', 0.249999), ('Obj_002', 'Obj_015', 0.249999), ('Obj_002', 'Obj_016', 0.249999), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 0.0), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 0.0), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 0.249999), ('Obj_003', 'Obj_015', 0.249999), ('Obj_003', 'Obj_016', 0.249999), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 0.0), ('Obj_003', 'Obj_023', 0.0), ('Obj_004', 'Obj_005', 0.0), ('Obj_004', 'Obj_006', 0.0), ('Obj_004', 'Obj_007', 0.0), ('Obj_004', 'Obj_008', 0.0), ('Obj_004', 'Obj_009', 0.0), ('Obj_004', 'Obj_010', 0.250001), ('Obj_004', 'Obj_013', 0.0), ('Obj_004', 'Obj_014', 0.0), ('Obj_004', 'Obj_015', 0.0), ('Obj_004', 'Obj_016', 0.0), ('Obj_004', 'Obj_017', 0.0), ('Obj_004', 'Obj_018', 0.0), ('Obj_004', 'Obj_019', 0.0), ('Obj_004', 'Obj_020', 0.0), ('Obj_004', 'Obj_021', 0.0), ('Obj_004', 'Obj_022', 0.0), ('Obj_004', 'Obj_023', 0.0), ('Obj_005', 'Obj_006', 0.0), ('Obj_005', 'Obj_007', 0.0), ('Obj_005', 'Obj_008', 0.0), ('Obj_005', 'Obj_009', 0.0), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 0.0), ('Obj_005', 'Obj_014', 0.0), ('Obj_005', 'Obj_015', 0.0), ('Obj_005', 'Obj_016', 0.0), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 0.0), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 0.0), ('Obj_005', 'Obj_021', 0.0), ('Obj_005', 'Obj_022', 0.0), ('Obj_005', 'Obj_023', 0.0), ('Obj_006', 'Obj_007', 0.0), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 0.0), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.2), ('Obj_006', 'Obj_013', 0.0), ('Obj_006', 'Obj_014', 0.0), ('Obj_006', 'Obj_015', 0.0), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 0.0), ('Obj_006', 'Obj_022', 0.0), ('Obj_006', 'Obj_023', 0.0), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 0.0), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.499999), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 0.0), ('Obj_007', 'Obj_015', 0.0), ('Obj_007', 'Obj_016', 0.0), ('Obj_007', 'Obj_021', 0.0), ('Obj_007', 'Obj_022', 0.0), ('Obj_007', 'Obj_023', 0.0), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.499999), ('Obj_008', 'Obj_014', 0.499999), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.0), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.000002), ('Obj_013', 'Obj_021', 0.0), ('Obj_015', 'Obj_016', 0.0), ('Obj_015', 'Obj_022', 0.0), ('Obj_018', 'Obj_020', 0.0)]\\nDEGENERATE_TRIANGLES []\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "44190e7e1626c8dc9010f5e8a822217ae2e1f5cb6c129bd59d2f1a4c73d3ab03",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(point,start,end):\n direction=end-start\n param=np.clip(dot_rows(point-start,direction)/dot_rows(direction,direction),0,1)\n delta=point-(start+param[...,None]*direction)\n return dot_rows(delta,delta)\ndef point_triangle_sq(point,tri):\n start=tri[...,0,:]; edge_one=tri[...,1,:]-start; edge_two=tri[...,2,:]-start\n normal=np.cross(edge_one,edge_two); norm_sq=dot_rows(normal,normal)\n offset=point-start\n height=dot_rows(offset,normal)/norm_sq\n projected=offset-height[...,None]*normal\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(projected,edge_one); pb=dot_rows(projected,edge_two)\n denom=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/denom; bary_two=(pb*aa-pa*ab)/denom\n inside=(bary_one>=0)&(bary_two>=0)&(bary_one+bary_two<=1)\n best=np.minimum.reduce([point_segment_sq(point,tri[...,idx,:],tri[...,(idx+1)%3,:]) for idx in range(3)])\n return np.where(inside,np.minimum(best,height*height*norm_sq),best)\ndef segment_segment_sq(start_one,end_one,start_two,end_two):\n edge_one=end_one-start_one; edge_two=end_two-start_two; offset=start_one-start_two\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n dd=dot_rows(edge_one,offset); ee=dot_rows(edge_two,offset)\n denom=aa*bb-ab*ab\n valid=denom>1e-14*aa*bb\n safe=np.where(valid,denom,1.0)\n param_one=(ab*ee-bb*dd)/safe; param_two=(aa*ee-ab*dd)/safe\n interior=valid&(param_one>=0)&(param_one<=1)&(param_two>=0)&(param_two<=1)\n delta=offset+param_one[...,None]*edge_one-param_two[...,None]*edge_two\n best=np.minimum.reduce([point_segment_sq(start_one,start_two,end_two),point_segment_sq(end_one,start_two,end_two),point_segment_sq(start_two,start_one,end_one),point_segment_sq(end_two,start_one,end_one)])\n return np.where(interior,np.minimum(best,dot_rows(delta,delta)),best)\ndef segment_hits_triangle(start,end,tri):\n edge_one=tri[...,1,:]-tri[...,0,:]; edge_two=tri[...,2,:]-tri[...,0,:]\n normal=np.cross(edge_one,edge_two)\n direction=end-start\n denom=dot_rows(direction,normal)\n valid=np.abs(denom)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n param=dot_rows(tri[...,0,:]-start,normal)/np.where(valid,denom,1.0)\n point=start+param[...,None]*direction\n offset=point-tri[...,0,:]\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(offset,edge_one); pb=dot_rows(offset,edge_two)\n det=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/det; bary_two=(pb*aa-pa*ab)/det\n return valid&(param>=0)&(param<=1)&(bary_one>=-1e-12)&(bary_two>=-1e-12)&(bary_one+bary_two<=1+1e-12)\ndef mesh_distance(tris_one,tris_two):\n one=tris_one[:,None,:,:]; two=tris_two[None,:,:,:]\n best=np.full((len(tris_one),len(tris_two)),np.inf)\n hits=np.zeros(best.shape,dtype=bool)\n for idx in range(3):\n  best=np.minimum(best,point_triangle_sq(one[...,idx,:],two))\n  best=np.minimum(best,point_triangle_sq(two[...,idx,:],one))\n  hits|=segment_hits_triangle(one[...,idx,:],one[...,(idx+1)%3,:],two)\n  hits|=segment_hits_triangle(two[...,idx,:],two[...,(idx+1)%3,:],one)\n  for other in range(3):\n   best=np.minimum(best,segment_segment_sq(one[...,idx,:],one[...,(idx+1)%3,:],two[...,other,:],two[...,(other+1)%3,:]))\n if np.any(hits): return 0.0\n return math.sqrt(max(0,float(best.min())))\nresults=[]\nfor first,second,lower in candidate_pairs:\n distance=mesh_distance(scan_meshes[first]['tri'],scan_meshes[second]['tri'])*mm_per_unit\n results.append((scan_meshes[first]['name'],scan_meshes[second]['name'],distance))\nqualifying=[record for record in results if record[2]<=2.0+1e-9]\nprint('QUALIFYING',len(qualifying))\nfor record in qualifying: print('%s %s %.9f mm'%record)\nprint('NEAREST_EXCLUDED_CANDIDATES',sorted([r for r in results if r[2]>2.0+1e-9],key=lambda r:r[2])[:8])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "c570d373d41764614d7092f7b4cccec32cb744a8981bb74ee7d039b15f2af600",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(point,start,end):\n direction=end-start\n param=np.clip(dot_rows(point-start,direction)/dot_rows(direction,direction),0,1)\n delta=point-(start+param[...,None]*direction)\n return dot_rows(delta,delta)\ndef point_triangle_sq(point,tri):\n start=tri[...,0,:]; edge_one=tri[...,1,:]-start; edge_two=tri[...,2,:]-start\n normal=np.cross(edge_one,edge_two); norm_sq=dot_rows(normal,normal)\n offset=point-start\n height=dot_rows(offset,normal)/norm_sq\n projected=offset-height[...,None]*normal\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(projected,edge_one); pb=dot_rows(projected,edge_two)\n denom=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/denom; bary_two=(pb*aa-pa*ab)/denom\n inside=(bary_one>=0)&(bary_two>=0)&(bary_one+bary_two<=1)\n best=np.minimum.reduce([point_segment_sq(point,tri[...,idx,:],tri[...,(idx+1)%3,:]) for idx in range(3)])\n return np.where(inside,np.minimum(best,height*height*norm_sq),best)\ndef segment_segment_sq(start_one,end_one,start_two,end_two):\n edge_one=end_one-start_one; edge_two=end_two-start_two; offset=start_one-start_two\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n dd=dot_rows(edge_one,offset); ee=dot_rows(edge_two,offset)\n denom=aa*bb-ab*ab\n valid=denom>1e-14*aa*bb\n safe=np.where(valid,denom,1.0)\n param_one=(ab*ee-bb*dd)/safe; param_two=(aa*ee-ab*dd)/safe\n interior=valid&(param_one>=0)&(param_one<=1)&(param_two>=0)&(param_two<=1)\n delta=offset+param_one[...,None]*edge_one-param_two[...,None]*edge_two\n best=np.minimum.reduce([point_segment_sq(start_one,start_two,end_two),point_segment_sq(end_one,start_two,end_two),point_segment_sq(start_two,start_one,end_one),point_segment_sq(end_two,start_one,end_one)])\n return np.where(interior,np.minimum(best,dot_rows(delta,delta)),best)\ndef segment_hits_triangle(start,end,tri):\n edge_one=tri[...,1,:]-tri[...,0,:]; edge_two=tri[...,2,:]-tri[...,0,:]\n normal=np.cross(edge_one,edge_two)\n direction=end-start\n denom=dot_rows(direction,normal)\n valid=np.abs(denom)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n param=dot_rows(tri[...,0,:]-start,normal)/np.where(valid,denom,1.0)\n point=start+param[...,None]*direction\n offset=point-tri[...,0,:]\n aa=dot_rows(edge_one,edge_one); ab=dot_rows(edge_one,edge_two); bb=dot_rows(edge_two,edge_two)\n pa=dot_rows(offset,edge_one); pb=dot_rows(offset,edge_two)\n det=aa*bb-ab*ab\n bary_one=(pa*bb-pb*ab)/det; bary_two=(pb*aa-pa*ab)/det\n return valid&(param>=0)&(param<=1)&(bary_one>=-1e-12)&(bary_two>=-1e-12)&(bary_one+bary_two<=1+1e-12)\ndef mesh_distance(tris_one,tris_two):\n one=tris_one[:,None,:,:]; two=tris_two[None,:,:,:]\n best=np.full((len(tris_one),len(tris_two)),np.inf)\n hits=np.zeros(best.shape,dtype=bool)\n for idx in range(3):\n  best=np.minimum(best,point_triangle_sq(one[...,idx,:],two))\n  best=np.minimum(best,point_triangle_sq(two[...,idx,:],one))\n  hits|=segment_hits_triangle(one[...,idx,:],one[...,(idx+1)%3,:],two)\n  hits|=segment_hits_triangle(two[...,idx,:],two[...,(idx+1)%3,:],one)\n  for other in range(3):\n   best=np.minimum(best,segment_segment_sq(one[...,idx,:],one[...,(idx+1)%3,:],two[...,other,:],two[...,(other+1)%3,:]))\n if np.any(hits): return 0.0\n return math.sqrt(max(0,float(best.min())))\nresults=[]\nfor first,second,lower in candidate_pairs:\n distance=mesh_distance(scan_meshes[first]['tri'],scan_meshes[second]['tri'])*mm_per_unit\n results.append((scan_meshes[first]['name'],scan_meshes[second]['name'],distance))\nqualifying=[record for record in results if record[2]<=2.0+1e-9]\nprint('QUALIFYING',len(qualifying))\nfor record in qualifying: print('%s %s %.9f mm'%record)\nprint('NEAREST_EXCLUDED_CANDIDATES',sorted([r for r in results if r[2]>2.0+1e-9],key=lambda r:r[2])[:8])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"QUALIFYING 71\\nObj_001 Obj_002 0.000000000 mm\\nObj_001 Obj_003 0.000000000 mm\\nObj_001 Obj_004 0.000000000 mm\\nObj_001 Obj_005 1.000000047 mm\\nObj_001 Obj_006 0.500000024 mm\\nObj_001 Obj_007 1.500000013 mm\\nObj_001 Obj_017 0.000000000 mm\\nObj_001 Obj_018 0.000000000 mm\\nObj_001 Obj_019 0.000000000 mm\\nObj_001 Obj_020 0.000000000 mm\\nObj_002 Obj_003 0.000000000 mm\\nObj_002 Obj_004 0.000000000 mm\\nObj_002 Obj_005 0.000000000 mm\\nObj_002 Obj_006 0.000000000 mm\\nObj_002 Obj_007 0.000000000 mm\\nObj_002 Obj_009 0.000000000 mm\\nObj_002 Obj_013 0.249998644 mm\\nObj_002 Obj_014 0.249998644 mm\\nObj_002 Obj_015 0.249998644 mm\\nObj_002 Obj_016 0.249998644 mm\\nObj_002 Obj_017 0.000000000 mm\\nObj_002 Obj_018 0.000000000 mm\\nObj_002 Obj_020 0.000000000 mm\\nObj_002 Obj_022 0.000000000 mm\\nObj_003 Obj_004 0.000000000 mm\\nObj_003 Obj_005 0.000000000 mm\\nObj_003 Obj_006 0.000000000 mm\\nObj_003 Obj_007 0.000000000 mm\\nObj_003 Obj_009 0.000000000 mm\\nObj_003 Obj_015 0.249998644 mm\\nObj_003 Obj_016 0.249998644 mm\\nObj_003 Obj_018 0.000000000 mm\\nObj_003 Obj_019 0.000000000 mm\\nObj_003 Obj_020 0.000000000 mm\\nObj_004 Obj_005 0.999998301 mm\\nObj_004 Obj_010 0.250000507 mm\\nObj_004 Obj_017 1.500003040 mm\\nObj_004 Obj_018 1.500003040 mm\\nObj_004 Obj_019 1.500003040 mm\\nObj_004 Obj_020 1.500003040 mm\\nObj_005 Obj_006 1.000002027 mm\\nObj_005 Obj_010 0.000000000 mm\\nObj_005 Obj_017 0.000000000 mm\\nObj_005 Obj_019 0.000000000 mm\\nObj_006 Obj_007 0.999998301 mm\\nObj_006 Obj_008 0.000000000 mm\\nObj_006 Obj_009 1.350320876 mm\\nObj_006 Obj_010 0.000000000 mm\\nObj_006 Obj_011 0.199999660 mm\\nObj_006 Obj_016 0.000000000 mm\\nObj_007 Obj_008 0.000000000 mm\\nObj_007 Obj_010 0.000000000 mm\\nObj_007 Obj_011 0.000000000 mm\\nObj_007 Obj_012 1.499999315 mm\\nObj_007 Obj_013 0.000000000 mm\\nObj_007 Obj_021 0.600002706 mm\\nObj_008 Obj_010 0.000000000 mm\\nObj_008 Obj_013 0.499999151 mm\\nObj_008 Obj_014 0.499999151 mm\\nObj_008 Obj_021 0.000000000 mm\\nObj_009 Obj_010 0.000000000 mm\\nObj_009 Obj_015 0.249998644 mm\\nObj_009 Obj_016 0.000000000 mm\\nObj_009 Obj_022 0.000000000 mm\\nObj_010 Obj_021 0.000000000 mm\\nObj_010 Obj_022 0.000000000 mm\\nObj_013 Obj_014 1.761146088 mm\\nObj_013 Obj_021 0.588469463 mm\\nObj_015 Obj_016 0.780363777 mm\\nObj_015 Obj_022 0.588469685 mm\\nObj_018 Obj_020 0.000000000 mm\\nNEAREST_EXCLUDED_CANDIDATES [('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_003', 'Obj_022', 2.277432384163671), ('Obj_005', 'Obj_008', 2.708282321691513), ('Obj_002', 'Obj_023', 2.9221901092925178), ('Obj_003', 'Obj_023', 2.9221901092925178), ('Obj_007', 'Obj_014', 2.9999986290931706), ('Obj_001', 'Obj_024', 2.999999560415745), ('Obj_006', 'Obj_013', 3.999996930360794)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "02befad73a61cf2271cd66ed8219bfc6d034b33cbd2d656deff8dd223252e8c6",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "all_pair_results=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  distance=mesh_distance(one['tri'],two['tri'])*mm_per_unit\n  all_pair_results.append((one['name'],two['name'],distance))\nfull_qualifying=[record for record in all_pair_results if record[2]<=2.0]\nprint('EXHAUSTIVE_PAIRS',len(all_pair_results),'QUALIFYING',len(full_qualifying),'MATCHES_BROAD_PHASE',full_qualifying==qualifying)\nprint('EXACT_ZERO_COUNT',sum(record[2]==0 for record in full_qualifying))\nprint('POSITIVE_UNDER_1_MICRON',[(a,b,d) for a,b,d in full_qualifying if 0<d<0.001])\nprint('GLOBAL_NEAREST_EXCLUDED',min((r for r in all_pair_results if r[2]>2),key=lambda r:r[2]))\nprint('EMPTY_MESHES',[m['name'] for m in scan_meshes if len(m['tri'])==0])\nprint('EDIT_MODE_OBJECTS',[o.name for o in objs if o.mode=='EDIT'])\nprint('ALL_FINITE',all(np.isfinite(m['tri']).all() for m in scan_meshes))\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "eb83b90dbe762eab44adbaadcf537a03e9c3f4aed275505109a8f5f7ab9011e0",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "all_pair_results=[]\nfor first in range(len(scan_meshes)):\n for second in range(first+1,len(scan_meshes)):\n  one,two=scan_meshes[first],scan_meshes[second]\n  distance=mesh_distance(one['tri'],two['tri'])*mm_per_unit\n  all_pair_results.append((one['name'],two['name'],distance))\nfull_qualifying=[record for record in all_pair_results if record[2]<=2.0]\nprint('EXHAUSTIVE_PAIRS',len(all_pair_results),'QUALIFYING',len(full_qualifying),'MATCHES_BROAD_PHASE',full_qualifying==qualifying)\nprint('EXACT_ZERO_COUNT',sum(record[2]==0 for record in full_qualifying))\nprint('POSITIVE_UNDER_1_MICRON',[(a,b,d) for a,b,d in full_qualifying if 0<d<0.001])\nprint('GLOBAL_NEAREST_EXCLUDED',min((r for r in all_pair_results if r[2]>2),key=lambda r:r[2]))\nprint('EMPTY_MESHES',[m['name'] for m in scan_meshes if len(m['tri'])==0])\nprint('EDIT_MODE_OBJECTS',[o.name for o in objs if o.mode=='EDIT'])\nprint('ALL_FINITE',all(np.isfinite(m['tri']).all() for m in scan_meshes))\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"EXHAUSTIVE_PAIRS 276 QUALIFYING 71 MATCHES_BROAD_PHASE True\\nEXACT_ZERO_COUNT 43\\nPOSITIVE_UNDER_1_MICRON []\\nGLOBAL_NEAREST_EXCLUDED ('Obj_002', 'Obj_008', 2.2499989718198776)\\nEMPTY_MESHES []\\nEDIT_MODE_OBJECTS []\\nALL_FINITE True\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "ff0a4ceb55983868000307da654d2bad53004acadadd4d0643321e17d0131196",
+      "source_sha256": "d0568551e6a489aba076d9606e7b80aa4c4f51d6b069356589b89b67f3791b7d"
+    }
+  ]
+}
