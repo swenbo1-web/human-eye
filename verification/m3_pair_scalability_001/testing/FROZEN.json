@@ -1,0 +1,103 @@
+{
+  "baseline_manifest_sha256": "9b51fda552f6b14f562b1363aad9ab254eeedae1e6f6bd53cbb36a2da8bcf4bc",
+  "closed_budget_unchanged": {
+    "max_ray_tests": 16384,
+    "max_self_plus_cross_pairs": 16384,
+    "max_work_units": 262144
+  },
+  "designed_cases_sha256": "fa60265ab7f0753b0666325fdc163c5ce5f96561b89f8c573d05d924d604c1f8",
+  "freeze_script_sha256": "8f19ff705905e43ff61f2379a5ed58255c5f2daa93e1d714e3cbf736a08e9f27",
+  "plan_sha256": "35773638c2c8cfa594881aafea7c35e313b83c9c92705501a5e5dd9e5d34842d",
+  "precision_unchanged": {
+    "max_bits": 4096,
+    "max_scratch_bits": 8193,
+    "publication_tolerance_m": 1e-09
+  },
+  "reference": {
+    "diagnostic_only": true,
+    "overrides": {
+      "surface_geometry.CLOSED_SOLID_MAX_PAIR_TESTS": {
+        "from": 16384,
+        "to": 1000000000
+      },
+      "surface_geometry.CLOSED_SOLID_MAX_WORK": {
+        "from": 262144,
+        "to": 1000000000
+      },
+      "surface_proximity.MAX_TRIANGLE_PAIRS": {
+        "from": 16384,
+        "to": 1000000000
+      }
+    },
+    "peer_candidate_max_expensive_pairs": 9395,
+    "peer_expensive_intersection_entry_denominator": 18791,
+    "peer_full_cartesian_pairs": 258064,
+    "per_case_deadline_seconds": 30,
+    "reference_denominator_source": "baseline/diagnostics/ADMISSION_DIAGNOSTIC.json",
+    "surface_original_nearest_AABB_early_out_retained": true,
+    "unchanged": "original 137 source bytes, geometry, leaf arithmetic, bit/scratch guards, original callback deadlines, original ray cap"
+  },
+  "schema": "m3-pair-scalability-preimplementation-freeze-v1",
+  "source_sha256": "6acb3ac7f014a590a279994f44be07c581af53a2da4dafae8dba9cd58eaea0bb",
+  "status": "FROZEN; helper-spy names and runner adapters may be completed without changing fixtures, budgets, thresholds or repetitions",
+  "surface_budget": {
+    "linear_pair_limit": 256,
+    "max_full_narrow_phase_pairs": 16384,
+    "max_work_units": 1179648,
+    "units": "each actual validation/preparation/tree/node/leaf/queue/plane/AABB/feature/predicate unit is counted; no raw face-product admission"
+  },
+  "timing": {
+    "cases": [
+      "G508/Peer_000",
+      "G508/Competing_001",
+      "G508/Near_003",
+      "cube12/control"
+    ],
+    "cold": "fresh function call with new diagnostics/holder per role, no across-call measurement memo",
+    "deadline_seconds_per_role_case": 30,
+    "fixed_order": [
+      {
+        "iteration": 1,
+        "order": [
+          "reference",
+          "candidate"
+        ]
+      },
+      {
+        "iteration": 2,
+        "order": [
+          "candidate",
+          "reference"
+        ]
+      },
+      {
+        "iteration": 3,
+        "order": [
+          "reference",
+          "candidate"
+        ]
+      },
+      {
+        "iteration": 4,
+        "order": [
+          "candidate",
+          "reference"
+        ]
+      },
+      {
+        "iteration": 5,
+        "order": [
+          "reference",
+          "candidate"
+        ]
+      }
+    ],
+    "g508_total_rule": "candidate total time no greater than same-fact diagnostic reference",
+    "no_retries_or_best_selection": true,
+    "repetitions_per_role_per_case": 5,
+    "report": "all five values, median and range, incomplete/timeouts retained without speed ratio",
+    "shared_within_call": "closed then surface share that call original/candidate query-local holder only",
+    "simple_control_median_rule": "candidate minus reference <= max(1000000 ns, reference median * .05)",
+    "window": "same complete facts from preparation entry through closed and surface results; raw serialization and imports separate"
+  }
+}
