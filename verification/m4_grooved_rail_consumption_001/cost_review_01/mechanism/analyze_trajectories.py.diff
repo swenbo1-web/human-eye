@@ -1,0 +1,645 @@
+--- previous/analyze_trajectories.py
++++ grooved/analyze_trajectories.py
+@@ -39,101 +39,80 @@
+     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+ 
+ 
+-ANNOTATIONS = {
+-    ("spc01", 1): {
+-        "category": "directory_or_identity",
+-        "role": "核对四个指定对象的类型、世界矩阵、尺寸、modifier 和单位。",
+-        "before": "尚无当前几何和任务距离。",
+-        "after": "对象存在且为 MESH，单位已知，尚无表面距离。",
+-        "mesh_evaluations": 0,
+-    },
+-    ("spc01", 2): {
+-        "category": "new_information",
+-        "role": "求值四份网格，双精度转换到世界坐标，缓存几何，并将 Target 的全部 256 个世界顶点输出给消费者。",
+-        "before": "仅有对象身份、尺寸和单位。",
+-        "after": "四份完整网格可供同进程下次调用使用，尚无任务距离。",
+-        "mesh_evaluations": 4,
+-    },
+-    ("spc01", 3): {
+-        "category": "new_information",
+-        "role": "复用 geo，以双向点面、边边和边面测试首次计算三个表面距离、见证点和交叉检查。",
+-        "before": "已有完整几何，尚无任务距离。",
+-        "after": "三个表面距离和见证点已输出。封存质量评分确认最终 13 项要求完整正确。",
+-        "mesh_evaluations": 0,
+-    },
+-    ("spc02", 1): {
+-        "category": "new_information",
+-        "role": "尝试获取事实，将 nearest_witness 作为独立 requested_fact，合同校验拒绝。",
+-        "before": "尚无本次任务事实。",
+-        "after": "获得不执行的参数错误，未采集 Blender 网格。",
+-        "mesh_evaluations": 0,
+-        "outcome": "invalid_request",
+-    },
+-    ("spc02", 2): {
+-        "category": "new_information",
+-        "role": "删去无效 nearest_witness，保留 spatial_relation、surface_proximity 和额外 closed_solid_relation，获取三组任务事实。",
+-        "before": "上次请求已被拒绝，尚无任务事实。",
+-        "after": "必要关系、距离、见证点和最近者完整，三个额外 closed 结果为工作预算 unknown。",
+-        "mesh_evaluations": 4,
+-    },
+-    ("spc03", 1): {
+-        "category": "new_information",
+-        "role": "自然请求 spatial_relation、surface_proximity 和额外 closed_solid_relation，一次获取三组任务事实。",
+-        "before": "尚无本次任务事实。",
+-        "after": "必要关系、距离、见证点和最近者完整，三个额外 closed 结果为工作预算 unknown。",
+-        "mesh_evaluations": 4,
+-    },
+-    ("spc04", 1): {
+-        "category": "directory_or_identity",
+-        "role": "核对四个对象的类型、矩阵、原网格计数、modifier 和单位。",
+-        "before": "尚无当前几何和任务距离。",
+-        "after": "身份、原网格计数和单位已知，尚无任务距离。",
+-        "mesh_evaluations": 0,
+-    },
+-    ("spc04", 2): {
+-        "category": "new_information",
+-        "role": "求值四份完整几何，双精度转换，计算双向点面和边边距离、边面交叉，并以双向单顶点 winding 补充包含检查。",
+-        "before": "只有对象身份、计数和单位。",
+-        "after": "本次一次调用给出三个表面距离、见证点、无交叉和 winding 数据。",
+-        "mesh_evaluations": 4,
+-    },
+-    ("spc05", 1): {
+-        "category": "directory_or_identity",
+-        "secondary_categories": ["new_information"],
+-        "role": "核对对象和单位，同时求值四份网格，先用 mathutils 世界坐标转换后装入 float64 数组。",
+-        "before": "尚无当前几何和任务距离。",
+-        "after": "身份和第一份世界坐标缓存已知，尚无任务距离。",
+-        "mesh_evaluations": 4,
+-    },
+-    ("spc05", 2): {
+-        "category": "new_information",
+-        "role": "重读四份网格，改为局部坐标和世界矩阵均以 float64 运算，再以三角形笛卡尔积首次求距、见证点和交叉数。",
+-        "before": "有第一份几何缓存，尚无已回答的表面距离。",
+-        "after": "三个表面距离和见证点已知，后续仍补查包含关系。",
+-        "mesh_evaluations": 4,
+-        "repeat_geometry_refresh": {
+-            "meshes": 4,
+-            "vertices": 576,
+-            "triangles": 1136,
+-            "reason_in_saved_code": "Read mesh coordinates and apply the stored world matrices in double precision.",
+-            "refresh_only_duration_ns": None,
+-        },
+-    },
+-    ("spc05", 3): {
+-        "category": "unresolved_verification",
+-        "role": "复用 geo，检查四网格边流形，并对三个候选的双方全部顶点计算 solid-angle winding，补充排除包含。",
+-        "before": "已知正表面距离和无表面交叉，包含关系仍待补证。",
+-        "after": "输出流形和 winding 数据。封存评分确认最终答案完整正确。",
+-        "mesh_evaluations": 0,
+-    },
+-    ("spc06", 1): {
+-        "category": "new_information",
+-        "role": "自然请求 closed_solid_relation、surface_proximity 和 spatial_relation，一次获取三组任务事实。",
+-        "before": "尚无本次任务事实。",
+-        "after": "必要关系、距离、见证点和最近者完整，三个额外 closed 结果为工作预算 unknown。",
+-        "mesh_evaluations": 4,
+-    },
+-}
++ANNOTATIONS = {('grc01', 1): {'category': 'directory_or_identity',
++                'role': '核对象类型、位置、点数、modifier 与单位。',
++                'before': '尚无任务几何或表面距离。',
++                'after': '取得对象身份信息，尚无表面距离。',
++                'mesh_evaluations': 0},
++ ('grc04', 1): {'category': 'directory_or_identity',
++                'role': '遍历当前场景的对象名与类型。',
++                'before': '尚无任务几何或表面距离。',
++                'after': '取得对象身份信息，尚无表面距离。',
++                'mesh_evaluations': 0},
++ ('grc05', 1): {'category': 'directory_or_identity',
++                'role': '核四对象完整世界矩阵、modifier、单位和名称。',
++                'before': '尚无任务几何或表面距离。',
++                'after': '取得对象身份信息，尚无表面距离。',
++                'mesh_evaluations': 0},
++ ('grc01', 2): {'category': 'new_information',
++                'role': '求值四份网格，以 float64 世界矩阵运算缓存几何，并输出全部26世界顶点、36三角和54边。',
++                'before': '只有对象身份和单位。',
++                'after': '完整几何已供本格后续求解，任务距离尚未求出。',
++                'mesh_evaluations': 4},
++ ('grc01', 3): {'category': 'new_information',
++                'role': '复用 geom，首次计算三对点面/边边距离、边面相交及双方全部顶点 winding。',
++                'before': '已有完整几何，尚无任务距离或包含结论。',
++                'after': '首次交付三对距离、见证及相交和包含检查。',
++                'mesh_evaluations': 0},
++ ('grc04', 2): {'category': 'new_information',
++                'role': '用 mathutils 矩阵乘积读取世界点，再存入 float64 数组；输出计数、界与单位。',
++                'before': '只有对象目录。',
++                'after': '建立第一份几何缓存，尚未计算任务距离。',
++                'mesh_evaluations': 4},
++ ('grc04', 3): {'category': 'new_information',
++                'role': '重读局部点和世界矩阵，改用 float64 乘积，首次求三对距离并检查相交、全顶点 winding 和边面流形。',
++                'before': '有 mathutils 世界点缓存，距离尚未求出。',
++                'after': '首次交付完整距离和包含事实。',
++                'mesh_evaluations': 4,
++                'repeat_geometry_refresh': {'meshes': 4,
++                                            'vertices': 26,
++                                            'triangles': 36,
++                                            'reason_in_saved_code': 'Re-read stored local vertices and world '
++                                                                    'matrix, then multiply in NumPy float64 '
++                                                                    'before first distance computation.',
++                                            'refresh_only_duration_ns': None}},
++ ('grc05', 2): {'category': 'new_information',
++                'role': '求值四份网格并做 float64 世界变换，缓存点面，同时检查全部边的面关联计数。',
++                'before': '只有对象身份、矩阵和单位。',
++                'after': '取得几何、边关联与范围，尚无距离。',
++                'mesh_evaluations': 4},
++ ('grc05', 3): {'category': 'new_information',
++                'role': '复用 geo，首次计算点面/边边距离、相交及双向全顶点 winding。',
++                'before': '完整几何已知，尚无任务距离。',
++                'after': '三对任务事实首次完整交付。',
++                'mesh_evaluations': 0},
++ ('grc02', 1): {'category': 'new_information',
++                'role': '请求 spatial_relation、surface_proximity 和额外 closed_solid_relation，获取三对完整事实。',
++                'before': '尚无本格有效任务事实。',
++                'after': 'A走有界精确闭壳分支，B/C走充分支撑分离；三对关系、距离和见证完整。',
++                'mesh_evaluations': 4},
++ ('grc03', 2): {'category': 'new_information',
++                'role': '请求 spatial_relation、surface_proximity 和额外 closed_solid_relation，获取三对完整事实。 同时获取四份额外 '
++                        'aabb。',
++                'before': '尚无本格有效任务事实。',
++                'after': 'A走有界精确闭壳分支，B/C走充分支撑分离；三对关系、距离和见证完整。',
++                'mesh_evaluations': 4},
++ ('grc06', 1): {'category': 'new_information',
++                'role': '请求 spatial_relation、surface_proximity 和额外 closed_solid_relation，获取三对完整事实。',
++                'before': '尚无本格有效任务事实。',
++                'after': 'A走有界精确闭壳分支，B/C走充分支撑分离；三对关系、距离和见证完整。',
++                'mesh_evaluations': 4},
++ ('grc03', 1): {'category': 'new_information',
++                'role': '首次请求把 nearest_witness 作为独立事实名，合同验证拒绝。',
++                'before': '尚无本格有效任务事实。',
++                'after': '取得不执行错误，tool_outcome保留unknown，几何事实尚未提供。',
++                'mesh_evaluations': 0,
++                'outcome': 'invalid_request'}}
+ 
+ 
+ def review_cell(cell_name: str) -> dict:
+@@ -246,12 +225,18 @@
+                     assert facts["spatial_relation"]["status"] == "measured"
+                     assert facts["spatial_relation"]["value"] == "separated"
+                     assert facts["surface_proximity"]["status"] == "measured"
+-                    assert facts["closed_solid_relation"]["reason"] == "closed_solid_work_budget"
++                    assert facts["closed_solid_relation"]["status"] == "measured"
++                    assert facts["closed_solid_relation"]["value"] == "separated"
+                 assert body["summary"]["nearest_separated_complete"] is True
+                 assert body["summary"]["unresolved_relations"] == []
+                 assert body["summary"]["unresolved_distances"] == {}
+                 assert compact(body).decode("utf-8") == text
+         steps.append(step)
++    public_calls = consumer['tool_calls']
++    assert len(public_calls) == len(steps)
++    for public_call, step in zip(public_calls, steps, strict=True):
++        assert public_call['item']['tool'] == step['tool']
++        assert public_call['item']['arguments'] == step['arguments']
+     qa_events = [e for e in worker_events if "script_sha256" in e and e["sequence"] not in assigned_sequences]
+     assert len(qa_events) == 2
+     assert qa_events[0]["script_sha256"] == qa_events[1]["script_sha256"]
+@@ -287,239 +272,217 @@
+     }
+ 
+ 
+-def main() -> None:
+-    plan = read_json(BATCH / "PLAN.json")
+-    work_order = read_json(OUTPUT.parent / "WORK_ORDER.json")
+-    frozen = read_json(BATCH / "MECHANISM_CLASSIFICATION.json")
+-    seal = read_json(Path("D:/hefe/verification/fixes/20261112_m4_spatial_fact_consumption_review/QUALITY_SEAL.json"))
+-    source(Path("D:/hefe/docs/M4_SPATIAL_FACT_CONSUMPTION_001_QUALITY_REVIEW.md"))
+-    source(BATCH / "runtime" / "actor.py")
+-    source(BATCH.parent / "native_plugin_complex_003" / "actor.py")
+-    source(BATCH / "runtime" / "consumer_transport.py")
+-    source(BATCH / "scoring" / "SCORING_CONTRACT.json")
+-    source(BATCH / "scoring" / "TRUTH.json")
+-    snapshot = read_json(BATCH / "scoring" / "ACTUAL_SNAPSHOT.json")
+-    assert work_order["new_consumer_allowance"] == 0
+-    assert work_order["new_Blender_or_product_run_allowance"] == 0
+-    assert seal["quality"]["complete_correct"] == 6
+-    assert seal["private_map_cost_usage_read_before_seal"] is False
+-    cells = [review_cell(f"spc{i:02}") for i in range(1, 7)]
+-    steps = [s for c in cells for s in c["steps"]]
+-    product_successes = [s for s in steps if s["tool"] == "human_eye_scene_observe" and not s["is_error"]]
+-    closed = []
++
++def write_report(result):
++    lines = [
++        '# 凹槽迁移六格的实际消费机制', '',
++        '本次使用固定六格原件。质量引用已封存的6/6完整正确、78/78事实正确结果。机制审读覆盖全部请求代码、响应及最终答案，模型消费者、Blender、产品和业务API新增运行计数为0。', '',
++        '## 实际机制', '',
++        'P三格均自然请求spatial_relation和surface_proximity，直接使用完整事实形成正确答案。P原生工具调用、必要原生补完和已完成事实后的原生重算均为0，冻结机制条件达到3/3。三对关系均measured，正确答案在本题上由引擎事实独立支持。最终文字同时与spatial及closed返回值一致，现有记录无法区分模型读取了哪个同值关系字段。', '',
++        '## 完整调用轨迹', '',
++        '| 格/步 | 组 | 主分类 | handler毫秒 | 响应包络字节 | 作用 |',
++        '|---|---|---|---:|---:|---|',
++    ]
++    for cell in result['cells']:
++        for step in cell['steps']:
++            lines.append(f"| {cell['cell']}/{step['attempt']} | {cell['group']} | {step['category']} | {step['actor_elapsed_ns']/1e6:.4f} | {step['actor_accounted_response_envelope_bytes']} | {step['role']} [请求]({step['request_source']['path']}) [响应]({step['response_source']['path']}) |")
++    lines += [
++        '',
++        '全部13步的请求参数、源代码、原始业务响应、stdout、host执行、产品trace和最终答案均在RESULTS.json中，源文件SHA见SOURCES.json。目录3步、新增信息10步，单独未知补证0步、已有完整事实后重算0步。每格前后QA共12次单列，业务host execute共12次，其中N原生9次、P内部采集3次。', '',
++        '## A闭壳与B/C充分分离', '',
++        'A的候选支撑方向未严格分离，support_work.reason为spatial_support_not_strictly_separated。空间关系实际调用bounded_exact_closed_shell_v1，返回disjoint_boundaries_with_exact_parity。B/C的空间关系采用exact_sufficient_spatial_relation_v1及strict_all_referenced_vertex_support。', '',
++        '| 每次成功P请求 | 空间关系分支 | closed work_units | pair/self/cross tests | 射线/查询 | 显式closed的作用 |',
++        '|---|---|---:|---|---|---|',
++    ]
++    for item in result['closed_branch_analysis']['per_successful_request_pairs'][:3]:
++        work = item['closed_solid_work']
++        lines.append(f"| {item['candidate_name']} | {item['spatial_method']} | {work['work_units']} | {work['pair_tests']}/{work['self_pair_tests']}/{work['cross_pair_tests']} | {work['ray_tests']}/{work['point_queries']} | {item['explicit_closed_role']} |")
++    closed = result['closed_branch_analysis']
++    lines += [
++        '',
++        f"三次成功请求共记录closed工作{closed['all_closed_work_units']} units。其中A必要空间关系回退为{closed['required_A_fallback_work_units']} units，显式closed直接采用同一bundle.closed，第二次A闭壳调用为0。B/C因额外closed字段进入独立分类，共{closed['optional_BC_closed_work_units']} units。", '',
++        '源码task_query._closed_surface_facts先取空间关系bundle，仅当bundle.closed为空才调用额外closed测量。A已有闭壳结果，B/C充分分离后仍因显式请求closed而追加分类。三对每请求的closed_solid_pair_count均为1。', '',
++        '记录的pair/result缓存命中均为false或0。A的同请求结果直接复用与缓存命中分别描述。三对均prepared_pair_reused=true、prepared_trees_reused=false，每对闭壳工作新建2棵world tree。A的cross_pair_tests=0表示候选已被精确预检查排除，分类器仍执行树遍历、自体嵌入检查和双向奇偶检查。', '',
++        'trace只保存observation.task_facts包含式时段，没有独立closed时段。全部task_facts耗时与独立闭壳耗时分别列账，删除额外字段后的完整耗时和token变化为未测。', '',
++        '## 拒绝请求与精度刷新', '',
++    ]
++    invalid = result['invalid_nearest_witness_request']
++    lines += [
++        f"grc03/1请求nearest_witness独立事实名，原响应tool_outcome=unknown、executed=false、execution_status=not_executed、host_mutation_started=false。该步host执行0，actor窗口{invalid['actor_elapsed_ns']/1e6:.4f}毫秒，响应{invalid['actor_response_envelope_bytes']}字节，产品stdio发送/接收{invalid['rpc_sent_bytes']}/{invalid['rpc_received_bytes']}字节，产品RPC窗口{invalid['rpc_elapsed_ns']/1e6:.4f}毫秒。", '',
++        f"至修正请求开始的空档为{invalid['unassigned_gap_to_correction_ns']/1e9:.7f}秒，归因保持未测。grc03/2删去nearest_witness后成功，其余requested_facts包括aabb。四份AABB值组件的紧凑JSON为{result['simplification']['extra_aabb']['value_component_bytes']}字节，字段投影差{result['simplification']['extra_aabb']['compact_body_projection_difference_bytes']}字节。该投影仅量化已保存数据的组成。", '',
++        'grc04/2先经mathutils得到世界点再装入float64，grc04/3重新读取局部点和世界矩阵并在NumPy float64计算。重读4份几何、26点、36面，发生在首次距离求解之前。步骤3同时首次给出距离、见证、相交、包含及边流形数据，因此归类为新增信息。初始mathutils缓存的距离答案没有保存，刷新对冻结精度的必要性、独立刷新耗时及删去旧读取后的整题变化均未测。', '',
++        'N三格最终求解均同时给出边界相交及双向全顶点winding数据。当前质量已由封存评分确认，其算法在本题之外的适用范围未测。', '',
++        '## 有据简化与归因边界', '',
++        '| 项目 | 可定位的既有记录 | 时延/因果边界 |',
++        '|---|---|---|',
++        f"| 额外B/C closed | 6次分类，{closed['optional_BC_closed_work_units']} work_units，{closed['optional_BC_world_tree_builds']}次world tree构建 | 独立closed耗时及完整任务节省未测 |",
++        f"| 显式closed输出值 | 9个已测值组件，共{closed['closed_fact_value_component_bytes']}紧凑JSON字节，其中A字段共{closed['A_closed_fact_value_component_bytes']}字节复用既有结果 | 组件大小与实际删字段后wire分别解释 |",
++        f"| 无效事实名请求 | 1次，{invalid['actor_response_envelope_bytes']}字节，host执行0 | 自纠空档及整题后果未归因 |",
++        '| 数值精度刷新 | 4网格、26点、36面的一次重读 | 首次求值前，独立刷新成本未拆分 |',
++        '',
++        '仅请求spatial_relation和surface_proximity时，源码仍会为A运行必要闭壳回退，B/C的显式closed分支可跳过。上述15,276 units是已发生的可定位分支工量，真实请求删减后的完整时延、token和费用仍为未测。此项分析使用现有控制流及审计，消融运行计数为0。', '',
++        '唯一后续方向沿管理员主线转向无预给对象的全场候选发现、按需精查和覆盖停止。当前结果限定该小规模凹槽装配，后续广泛发现能力与成本需由该主线证据判定。', '',
++        '## 计量与可重放性', '',
++        'handler是包含式actor窗口。内部RPC、host采集与task_facts属于嵌套区间，各层保持原计量。空档保持未归因。响应预算使用compact UTF-8 JSON RPC包络加LF，SOURCES保存原始文件字节SHA；private product stdio帧按RPC.json另列。', '',
++        f"[完整结果]({(OUTPUT/'RESULTS.json').as_posix()}) [输入SHA]({(OUTPUT/'SOURCES.json').as_posix()}) [分析脚本]({(OUTPUT/'analyze_trajectories.py').as_posix()})", '',
++    ]
++    (OUTPUT / 'REPORT.md').write_text('\n'.join(lines), encoding='utf8', newline='\n')
++
++
++def main():
++    plan = read_json(BATCH / 'PLAN.json')
++    work_order = read_json(OUTPUT.parent / 'WORK_ORDER.json')
++    frozen = read_json(BATCH / 'MECHANISM_CLASSIFICATION.json')
++    seal_path = OUTPUT.parent / 'quality_source/QUALITY_SEAL.json'
++    seal = read_json(seal_path)
++    assert source(seal_path)['sha256'] == 'a493bd997b2003c595795ad90ae3bc9420e9a2a884a0adcf6225493f880f0c21'
++    assert seal['formal_commit'] == work_order['author_commit'] == '4a90bbe95ef46c6666050ef1a1096fc6719c3b97'
++    assert seal['quality']['complete_correct'] == 6 and seal['quality']['facts_correct'] == 78
++    assert work_order['new_consumer_allowance'] == work_order['new_Blender_or_product_run_allowance'] == 0
++    source(OUTPUT.parent / 'quality_source/QUALITY_REVIEW.md')
++    source(BATCH / 'runtime/actor.py')
++    source(BATCH.parent / 'native_plugin_complex_003/actor.py')
++    source(BATCH / 'runtime/consumer_transport.py')
++    source(BATCH / 'scoring/SCORING_CONTRACT.json')
++    source(BATCH / 'scoring/TRUTH.json')
++    snapshot = read_json(BATCH / 'scoring/ACTUAL_SNAPSHOT.json')
++    binding = read_json(BATCH / 'preflight/SOURCE_BINDING.json')
++    root = BATCH.parents[1]
++    branch_sources = []
++    for name in ('human_eye_plugin/task_query.py', 'human_eye_plugin/surface_proximity.py', 'human_eye_plugin/surface_geometry.py'):
++        expected = next(row['sha256'] for row in binding['source_manifest'] if row['path'] == name)
++        item = source(root / name)
++        assert item['sha256'] == expected
++        branch_sources.append(item)
++    mapping = read_json(BATCH / 'private/ANON_MAP.json')
++    quality_by_id = {row['answer_id']: row for row in seal['anonymous_answers']}
++    cells = [review_cell(f'grc{i:02}') for i in range(1, 7)]
++    for cell, mapped in zip(cells, mapping['rows'], strict=True):
++        assert cell['cell'] == mapped['cell'] and cell['group'] == mapped['group']
++        assert cell['final']['source']['sha256'] == quality_by_id[mapped['anonymous_id']]['answer_sha256']
++        cell['anonymous_id'] = mapped['anonymous_id']
++    steps = [step for cell in cells for step in cell['steps']]
++    successes = [step for step in steps if 'product_task_work' in step]
++    closed_rows = []
+     for cell in cells:
+-        for step in cell["steps"]:
+-            if "product_task_work" not in step:
++        for step in cell['steps']:
++            if 'product_task_work' not in step:
+                 continue
+-            body = step["product_business_result"]
+-            for pair, work_pair in zip(body["pairs"], step["product_task_work"]["pairs"], strict=True):
+-                fact = pair["facts"]["closed_solid_relation"]
+-                closed.append({
+-                    "cell": cell["cell"],
+-                    "attempt": step["attempt"],
+-                    "candidate_index": pair["candidate_index"],
+-                    "fact": fact,
+-                    "fact_standalone_compact_json_bytes": len(compact(fact)),
+-                    "closed_solid_work": work_pair["closed_solid_work"],
+-                    "separately_measured_closed_duration_ns": None,
++            for pair, work_pair in zip(step['product_business_result']['pairs'], step['product_task_work']['pairs'], strict=True):
++                index = pair['candidate_index']
++                facts = pair['facts']
++                expected_method = 'bounded_exact_closed_shell_v1' if index == 0 else 'exact_sufficient_spatial_relation_v1'
++                assert facts['spatial_relation']['method'] == expected_method
++                assert work_pair['closed_solid_pair_count'] == 1
++                assert work_pair['closed_solid_pair_cache_hit'] is False
++                if index == 0:
++                    assert work_pair['support_work']['reason'] == 'spatial_support_not_strictly_separated'
++                else:
++                    assert work_pair['support_work']['reason'] is None
++                    assert facts['spatial_relation']['certificate'] == 'strict_all_referenced_vertex_support'
++                closed_rows.append({
++                    'cell': cell['cell'], 'attempt': step['attempt'], 'candidate_index': index,
++                    'candidate_name': ('Part_A', 'Part_B', 'Part_C')[index],
++                    'spatial_method': expected_method, 'spatial_fact': facts['spatial_relation'],
++                    'closed_fact': facts['closed_solid_relation'],
++                    'closed_fact_compact_json_bytes': len(compact(facts['closed_solid_relation'])),
++                    'surface_work': work_pair['surface_work'], 'support_work': work_pair['support_work'],
++                    'closed_solid_work': work_pair['closed_solid_work'],
++                    'explicit_closed_role': 'reuse_required_spatial_fallback_bundle' if index == 0 else 'additional_explicit_closed_classification',
++                    'explicit_closed_additional_classifier_calls': 0 if index == 0 else 1,
++                    'closed_only_duration_ns': None,
+                 })
+-    category_counts = Counter(s["category"] for s in steps)
+-    route_totals = {}
+-    for group in ("N", "P"):
+-        route_steps = [s for c in cells if c["group"] == group for s in c["steps"]]
+-        route_totals[group] = {
+-            "consumer_tool_attempts": len(route_steps),
+-            "actor_tool_handler_elapsed_ns_sum": sum(s["actor_elapsed_ns"] for s in route_steps),
+-            "actor_accounted_response_envelope_bytes_sum": sum(s["actor_accounted_response_envelope_bytes"] for s in route_steps),
+-            "native_calls": sum(s["tool"] == "execute_blender_code" for s in route_steps),
+-            "product_calls": sum(s["tool"] == "human_eye_scene_observe" for s in route_steps),
+-        }
+-    selected = [o for o in snapshot["objects"] if o["name"] in {"Target", "Peer_000", "Competing_001", "Near_003"}]
+-    geometry = [{
+-        "name": o["name"], "vertices": len(o["vertices_world"]), "triangles": len(o["triangles"]),
+-        "unique_triangle_edges": len({tuple(sorted((t[i], t[(i + 1) % 3]))) for t in o["triangles"] for i in range(3)}),
+-    } for o in selected]
+-    assert len(steps) == 12 and len(product_successes) == 3 and len(closed) == 9
+-    assert route_totals["N"]["native_calls"] == 8 and route_totals["P"]["native_calls"] == 0
+-    invalid = cells[1]["steps"][0]
+-    invalid_rpc = invalid["product_rpc"]
++    assert len(steps) == 13 and len(successes) == 3 and len(closed_rows) == 9
++    categories = Counter(step['category'] for step in steps)
++    routes = {}
++    for group in ('N', 'P'):
++        selected = [step for cell in cells if cell['group'] == group for step in cell['steps']]
++        routes[group] = {'consumer_tool_attempts': len(selected),
++            'native_calls': sum(step['tool'] == 'execute_blender_code' for step in selected),
++            'product_calls': sum(step['tool'] == 'human_eye_scene_observe' for step in selected),
++            'actor_handler_elapsed_ns_sum': sum(step['actor_elapsed_ns'] for step in selected),
++            'actor_response_envelope_bytes_sum': sum(step['actor_accounted_response_envelope_bytes'] for step in selected)}
++    assert routes['N']['native_calls'] == 9 and routes['P']['native_calls'] == 0
++    invalid = cells[2]['steps'][0]
++    bad_body = invalid['product_business_result']
++    assert bad_body['tool_outcome'] == 'unknown' and bad_body['executed'] is False
++    assert bad_body['execution_status'] == 'not_executed' and not invalid['host_business_executions']
++    correction = cells[2]['steps'][1]
++    assert correction['arguments']['query']['requested_facts'] == ['aabb', 'spatial_relation', 'surface_proximity', 'closed_solid_relation']
++    aabb_body = correction['product_business_result']
++    aabb_values = aabb_body['facts']['aabb']
++    without_aabb = dict(aabb_body, facts={})
++    a_rows = [row for row in closed_rows if row['candidate_index'] == 0]
++    bc_rows = [row for row in closed_rows if row['candidate_index'] != 0]
++    p_cells = [cell for cell in cells if cell['group'] == 'P']
++    assert all(cell['mechanism']['naturally_requested_both_required_facts'] for cell in p_cells)
+     result = {
+-        "schema": "m4-saved-spatial-consumption-mechanism-review-v1",
+-        "scope": "Existing six cells only. Standard-library saved-data extraction, no new consumers, Blender, product, training, or quality scoring.",
+-        "frozen_classification": frozen,
+-        "quality_seal": {"source": source(Path("D:/hefe/verification/fixes/20261112_m4_spatial_fact_consumption_review/QUALITY_SEAL.json")), "quality": seal["quality"]},
+-        "fixed_identity": {
+-            "product_commit": plan["fixed_product_commit"],
+-            "candidate_source_sha256": plan["candidate_source_sha256"],
+-            "plan_sha256": source(BATCH / "PLAN.json")["sha256"],
+-            "evidence_commit": work_order["author_commit"],
+-            "quality_review_commit": work_order["quality_review_commit"],
+-        },
+-        "measurement_semantics": {
+-            "actor_elapsed": "ATTEMPT perf_counter_ns inclusive handler wall window, including enclosed transport/host work. This is not full-task or exclusive algorithm latency.",
+-            "actor_response_bytes": "actor.py len(encoded(response)), compact UTF-8 JSON RPC envelope with LF charged to actor budget. The inherited base.encoded uses separators=(',', ':') plus one LF. Distinct from private product stdio framing and saved pretty-JSON file byte counts.",
+-            "product_rpc_bytes": "RPC.json confirmed sent_bytes/received_bytes on the private product stdio boundary, including framing.",
+-            "saved_file_bytes": "Exact on-disk file bytes, may include administrative metadata and pretty formatting.",
+-            "standalone_fact_bytes": "Compact JSON value footprint inside actual body. Not an observed counterfactual response size or predicted wire saving.",
+-            "nested_spans": "Inclusive durations share nested work. Never sum parent and children as independent costs.",
+-            "unassigned_gaps": "Observed wall gaps between actor windows or final delivery. Attribution to model reasoning, provider, transport, queue, or other work is unavailable here.",
+-            "closed_duration": "No independent closed-only span exists. task_facts contains surface, support, closed and ranking work. No causal full-task time saving is estimated.",
+-        },
+-        "geometry_from_frozen_snapshot": geometry,
+-        "cells": cells,
+-        "classification_counts_primary": {category: category_counts[category] for category in frozen["categories"]},
+-        "route_tool_totals": route_totals,
+-        "mechanism_verdict": {
+-            "passed": True,
+-            "eligible_P_consumers": 3,
+-            "qualified_P_consumers": 3,
+-            "required_minimum": 2,
+-            "P_native_calls": 0,
+-            "P_native_recomputations_of_complete_facts": 0,
+-            "generality": "One fixed named-object task repeated three times per route, without images. No evidence of unseen-task transfer or general 3D advantage.",
+-        },
+-        "invalid_nearest_witness_request": {
+-            "cell": "spc02", "attempt": 1,
+-            "actor_elapsed_ns": invalid["actor_elapsed_ns"],
+-            "actor_response_envelope_bytes": invalid["actor_accounted_response_envelope_bytes"],
+-            "arguments_compact_json_utf8_bytes": invalid["arguments_compact_json_utf8_bytes"],
+-            "rpc_sent_bytes": invalid_rpc["sent_bytes"],
+-            "rpc_received_bytes": invalid_rpc["received_bytes"],
+-            "rpc_elapsed_ns": invalid_rpc["elapsed_ns"],
+-            "host_executions": len(invalid["host_business_executions"]),
+-            "unassigned_gap_to_correction_ns": cells[1]["steps"][1]["preceding_unassigned_wall_gap_ns"],
+-            "counterfactual_whole_task_saving": None,
+-        },
+-        "optional_closed": {
+-            "requests_adding_closed": 3,
+-            "facts_unknown": len(closed),
+-            "facts": closed,
+-            "total_work_units": sum(f["closed_solid_work"]["work_units"] for f in closed),
+-            "total_standalone_fact_value_compact_json_bytes": sum(f["fact_standalone_compact_json_bytes"] for f in closed),
+-            "observed_task_facts_span_ns": [
+-                {"trace_id": s["product_trace"]["trace_id"], "duration_ns": next(p["duration_ns"] for p in s["product_trace"]["spans"] if p["name"] == "observation.task_facts")}
+-                for s in product_successes
+-            ],
+-            "closed_only_duration_ns": None,
+-            "whole_task_saving_if_omitted": None,
+-            "interpretation": "All required pair relations/proximity/nearest facts completed using measured support and surface results. Extra closed attempts exhausted budget and did not add closed classification in this task.",
+-        },
+-        "simplified_analysis": {
+-            "available_without_new_execution": {
+-                "unnecessary_invalid_request_count": 1,
+-                "optional_closed_unknown_count": 9,
+-                "P_native_recompute_count": 0,
+-                "N_precision_geometry_refresh": {"cell": "spc05", "attempt": 2, "meshes": 4, "vertices": 576, "triangles": 1136},
+-            },
+-            "limits": [
+-                "There was no valid required-facts-only request in this batch, so its duration and final result are unobserved.",
+-                "Omitting invalid or closed requests could alter consumer behavior, request packing, cache use and later timing. Saved evidence cannot yield causal total-task savings.",
+-                "The spc05 geometry refresh preceded the first answer and changed numeric conversion precision. Its separate cost is unavailable.",
+-                "The spc05 final winding call adds containment evidence and does not repeat already complete surface distances.",
+-                "QA initial/final snapshot executions are retained separately and excluded from consumer native-call counts.",
+-            ],
+-        },
+-        "single_next_direction": {
+-            "direction": "Unseen-task transfer under a newly frozen limited contract, conditional on the parent whole-task cost admission verdict.",
+-            "now": "No new experiment, implementation, interface change or training. Record optional closed work as an unmeasured opportunity within the current evidence.",
+-        },
++        'schema': 'm4-grooved-saved-consumption-mechanism-v1',
++        'scope': 'Fixed original six cells, saved-data semantic review. New consumer, Blender, product and API runs are zero.',
++        'fixed_identity': {'evidence_commit': work_order['author_commit'], 'quality_commit': work_order['quality_review_commit'],
++            'product_commit': plan['fixed_product_commit'], 'source_sha256': plan['candidate_source_sha256'],
++            'plan_sha256': source(BATCH / 'PLAN.json')['sha256']},
++        'quality_seal': {'source': source(seal_path), 'quality': seal['quality']},
++        'frozen_classification': frozen, 'branch_control_flow_sources': branch_sources,
++        'cells': cells, 'classification_counts_primary': {name: categories[name] for name in frozen['categories']},
++        'route_tool_totals': routes,
++        'mechanism_verdict': {'passed': True, 'eligible_P_consumers': 3, 'qualified_P_consumers': 3,
++            'required_minimum': 2, 'P_native_calls': 0, 'P_necessary_native_completion_cells': 0,
++            'P_engine_independent_complete_fact_responses': 3, 'P_native_recomputations_of_complete_facts': 0,
++            'same_value_field_attribution': 'Final relations match both spatial and closed facts. The exact same-value field read by the model is unobserved.'},
++        'invalid_nearest_witness_request': {'cell': 'grc03', 'attempt': 1,
++            'actor_elapsed_ns': invalid['actor_elapsed_ns'], 'actor_response_envelope_bytes': invalid['actor_accounted_response_envelope_bytes'],
++            'rpc_sent_bytes': invalid['product_rpc']['sent_bytes'], 'rpc_received_bytes': invalid['product_rpc']['received_bytes'],
++            'rpc_elapsed_ns': invalid['product_rpc']['elapsed_ns'], 'host_executions': len(invalid['host_business_executions']),
++            'original_outcome': bad_body, 'unassigned_gap_to_correction_ns': correction['preceding_unassigned_wall_gap_ns'],
++            'counterfactual_whole_task_saving': None},
++        'closed_branch_analysis': {'per_successful_request_pairs': closed_rows,
++            'all_closed_work_units': sum(row['closed_solid_work']['work_units'] for row in closed_rows),
++            'required_A_fallback_work_units': sum(row['closed_solid_work']['work_units'] for row in a_rows),
++            'A_explicit_closed_additional_classifier_calls': sum(row['explicit_closed_additional_classifier_calls'] for row in a_rows),
++            'optional_BC_closed_work_units': sum(row['closed_solid_work']['work_units'] for row in bc_rows),
++            'optional_BC_classifier_calls': len(bc_rows),
++            'optional_BC_world_tree_builds': sum(row['closed_solid_work']['world_tree_builds'] for row in bc_rows),
++            'closed_fact_value_component_bytes': sum(row['closed_fact_compact_json_bytes'] for row in closed_rows),
++            'A_closed_fact_value_component_bytes': sum(row['closed_fact_compact_json_bytes'] for row in a_rows),
++            'optional_BC_closed_fact_value_component_bytes': sum(row['closed_fact_compact_json_bytes'] for row in bc_rows),
++            'required_fact_unknown_count': 0,
++            'observed_task_facts_inclusive_spans': [dict(cell=cell['cell'], attempt=step['attempt'],
++                **next(span for span in step['product_trace']['spans'] if span['name'] == 'observation.task_facts'))
++                for cell in p_cells for step in cell['steps'] if 'product_task_work' in step],
++            'closed_only_duration_ns': None, 'counterfactual_whole_task_saving': None,
++            'cache_scope': 'All observed result/pair hits are false/zero. A explicit fact directly reuses bundle.closed. Prepared pair geometry reuse is separately recorded.'},
++        'simplification': {'invalid_request_count': 1,
++            'extra_aabb': {'cell': 'grc03', 'attempt': 2, 'value_count': len(aabb_values),
++                'value_component_bytes': len(compact(aabb_values)),
++                'compact_body_projection_difference_bytes': len(compact(aabb_body)) - len(compact(without_aabb)),
++                'projection_scope': 'Derived existing compact-body field footprint, unobserved actual modified request/response.'},
++            'N_precision_geometry_refresh': {'cell': 'grc04', 'attempt': 3, 'meshes': 4, 'vertices': 26, 'triangles': 36,
++                'occurred_before_first_distance_solution': True, 'independent_refresh_elapsed_ns': None,
++                'necessity_for_frozen_scoring_precision': None,
++                'unobserved_counterfactual': 'No distance answer computed from the initial mathutils geometry cache was saved.'},
++            'causal_whole_task_savings': None, 'new_ablation_runs': 0},
++        'measurement_semantics': {'actor_response_bytes': 'Compact UTF-8 JSON RPC envelope plus LF charged by base.encoded. Original disk source hashes are retained.',
++            'inclusive_spans': 'Actor, RPC, host and task_facts nest. Kept separately, not added as exclusive algorithm costs.',
++            'unassigned_gaps': 'Attribution among provider, model, client, transport and other work is unmeasured.',
++            'component_bytes': 'Compact JSON value footprint or stated projection. Actual changed-request wire and token savings unmeasured.'},
++        'single_next_direction': 'Administrator-led target-free scene discovery, on-demand detailed checks and coverage stopping.',
++        'analysis_execution': {'new_consumer_Blender_product_API_runs': 0, 'quality_rescoring': False},
+     }
+-    (OUTPUT / "RESULTS.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+-    (OUTPUT / "SOURCES.json").write_text(json.dumps({"schema": "saved-input-sha256-manifest-v1", "files": sorted(SOURCES.values(), key=lambda s: s["path"])}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++    original_index = read_json(OUTPUT.parent / 'ORIGINAL_DATA_INDEX.json')
++    indexed = {(root / row['path']).resolve().as_posix(): row for row in original_index['original_batch_files']}
++    for name, item in SOURCES.items():
++        if name in indexed:
++            assert item['sha256'] == indexed[name]['sha256'] and item['bytes'] == indexed[name]['bytes']
++    source(Path(__file__))
++    result['saved_source_files'] = len(SOURCES)
++    (OUTPUT / 'RESULTS.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf8', newline='\n')
++    (OUTPUT / 'SOURCES.json').write_text(json.dumps({'schema': 'saved-input-sha256-manifest-v1', 'files': sorted(SOURCES.values(), key=lambda row: row['path'])}, ensure_ascii=False, indent=2) + '\n', encoding='utf8', newline='\n')
+     write_report(result)
+-    print(json.dumps({"cells": len(cells), "steps": len(steps), "P_qualified": 3, "closed_unknown": len(closed), "source_files": len(SOURCES)}, ensure_ascii=False))
+-
+-
+-def write_report(result: dict) -> None:
+-    cells = result["cells"]
+-    lines = [
+-        "# 已封存六格的调用机制复查",
+-        "",
+-        "本次仅分析既有六格原件。质量沿用管理员已封存的 6/6 完整正确、78/78 必要事实结果，分组和成本在封存后解封。未新增模型、Blender、产品运行、训练或质量评分。工具名称和业务内容可能透露路线，本批遮蔽范围为分组标签与成本。",
+-        "",
+-        "## 冻结准则的结果",
+-        "",
+-        "P 三格均自然请求 spatial_relation 与 surface_proximity，随后正确使用返回的当前关系、距离和见证点。P 共四次产品尝试，其中一次参数拒绝、三次成功，原生工具调用为零，满足预登记的至少 2/3 采用条件。每格的最终答案及来源都完整保存在 RESULTS.json。",
+-        "",
+-        "这项结果限定为同一指定对象任务的三次重复消费，图像为零。未见任务迁移、一般三维优势以及整任务成本准入由各自证据判定。",
+-        "",
+-        "## 逐步轨迹",
+-        "",
+-        "下表列出全部十二次业务工具尝试。处理时长来自 ATTEMPT 的包含式 handler 墙钟窗口，响应字节来自 actor 对 UTF-8 JSON 响应包络的实际记账。完整单调时钟起止、请求参数和代码、响应、内部 RPC、host 执行、trace、最终答案及 SHA 均列入 RESULTS.json 与 SOURCES.json。",
+-        "",
+-        "| 格与顺序 | 路线 | 主分类 | handler 毫秒 | 响应包络字节 | 本步作用及原件 |",
+-        "|---|---|---|---:|---:|---|",
+-    ]
+-    for cell in cells:
+-        for s in cell["steps"]:
+-            request_path = s["request_source"]["path"]
+-            response_path = s["response_source"]["path"]
+-            role = s["role"]
+-            lines.append(f"| {cell['cell']}/{s['attempt']:02} | {cell['group']} | {s['category']} | {s['actor_elapsed_ns']/1e6:.4f} | {s['actor_accounted_response_envelope_bytes']} | {role} [请求]({request_path}) [响应]({response_path}) |")
+-    lines += [
+-        "",
+-        "spc05 第二步重读 4 份几何、576 点和 1136 三角形，代码明确把坐标转换改为双精度。该步发生在首次距离答案之前。第三步补充全顶点 winding 包含检查，复用已有几何。两步分别归入新增信息和未决核验，已完整回答事实后的原生重算计数为零。",
+-        "",
+-        "spc01 第二步将 Target 的 256 个世界顶点整体输出给消费者，响应包络达到 17036 字节。其余几何缓存在 host 进程供下一步求距。该数据体积是实测消费轨迹，独立删减后的行为和收益未观测。",
+-        "",
+-        "每格前后各有一次 QA 几何快照，共 12 次，已单列保留。它们与消费者业务工具调用分别计数。P 的成功产品调用内部各有一次 host 采集，共 3 次，仍属于其产品调用的内部工作。",
+-        "",
+-        "## 无效请求与修正",
+-        "",
+-    ]
+-    invalid = result["invalid_nearest_witness_request"]
+-    lines += [
+-        f"spc02 首次将 nearest_witness 作为独立 requested_fact。请求校验返回 executed=false 和 not_executed，host 执行为 0。该次额外尝试确认为 handler {invalid['actor_elapsed_ns']/1e6:.4f} 毫秒、响应包络 {invalid['actor_response_envelope_bytes']} 字节，产品 stdio 边界发送 {invalid['rpc_sent_bytes']} 字节、接收 {invalid['rpc_received_bytes']} 字节，内部 RPC 窗口为 {invalid['rpc_elapsed_ns']/1e6:.4f} 毫秒。",
+-        "",
+-        f"下一次请求删去该项，并保留其余三类事实。首次 handler 结束至修正 handler 开始间隔为 {invalid['unassigned_gap_to_correction_ns']/1e6:.4f} 毫秒。它是可见的未归因墙钟间隔，无法确定各环节的耗时份额，也无法据此预测避免该错误后的整题节省。",
+-        "",
+-        "## 九项额外 closed unknown",
+-        "",
+-        "三次成功 P 请求都额外要求 closed_solid_relation。每次三个候选均返回 closed_solid_work_budget unknown，共九项。必要的 spatial_relation 与 surface_proximity 均为 measured，最近者 summary 为完整，整体 partial 来自额外事实。最终答案保留了这一限制，封存评分确认必要任务完成。",
+-        "",
+-        "| 格 | closed 项数 | closed work_units | closed pair_tests | closed node_pair_visits | task_facts 包含式毫秒 |",
+-        "|---|---:|---:|---:|---:|---:|",
+-    ]
+-    for cell in cells:
+-        successful = [s for s in cell["steps"] if "product_task_work" in s]
+-        if not successful:
+-            continue
+-        step = successful[0]
+-        closed = [p["closed_solid_work"] for p in step["product_task_work"]["pairs"]]
+-        span = next(p for p in step["product_trace"]["spans"] if p["name"] == "observation.task_facts")
+-        lines.append(f"| {cell['cell']} | 3 | {sum(p['work_units'] for p in closed)} | {sum(p['pair_tests'] for p in closed)} | {sum(p['node_pair_visits'] for p in closed)} | {span['duration_ns']/1e6:.4f} |")
+-    lines += [
+-        "",
+-        f"共确认 {result['optional_closed']['total_work_units']} 个 closed work_units。各候选复用了已准备的 pair/trees，但仍进行闭壳验证，最终触及工作预算。九个 closed 值按实际正文的紧凑 JSON 单独计量，各 229 字节，共 {result['optional_closed']['total_standalone_fact_value_compact_json_bytes']} 字节。这是既有正文组件的大小，删字段后的实际包络和传输大小尚未发生。",
+-        "",
+-        "现有 trace 只给出 surface、support、closed、ranking 等共用的 task_facts 窗口，缺少 closed 独立时段。上表的全部 task_facts 时长不能归为额外 closed 耗时。原件中没有一次仅请求必要事实的成功反事实运行，因此无法测得去除 closed 后的整题耗时、token 或成本变化。",
+-        "",
+-        "## 可确认的局部成本及归因边界",
+-        "",
+-        "| 路线 | 业务尝试 | 原生调用 | 产品调用 | handler 总毫秒 | 响应包络总字节 |",
+-        "|---|---:|---:|---:|---:|---:|",
+-    ]
+-    for group, values in result["route_tool_totals"].items():
+-        lines.append(f"| {group} | {values['consumer_tool_attempts']} | {values['native_calls']} | {values['product_calls']} | {values['actor_tool_handler_elapsed_ns_sum']/1e6:.4f} | {values['actor_accounted_response_envelope_bytes_sum']} |")
+-    lines += [
+-        "",
+-        "这里的 handler 合计仅覆盖工具处理窗口。模型任务的完整耗时、启动清理、输出入 token 与费用由成本报告独立统计。内部 RPC、host 采集及 trace 与外层 handler 含有嵌套工作，分别保留后不相加。空档时间保留为未归因，未命名为推理或插件延迟。",
+-        "",
+-        "## 一次简化分析与下一方向",
+-        "",
+-        "当前保存数据已足以识别一次无效参数往返、九项未增加闭壳结论的额外请求工量，以及原生路线的一次精度刷新。P 的零原生重算说明本题事实交付被实际消费。以上均为本批观测，尚不能计算删去这些步骤后的因果收益。",
+-        "",
+-        "建议仅保留一个后续方向。在整任务成本满足父报告准入后，冻结一个未见的小范围任务，验证必要事实的自然消费能否迁移。当前不实施改动或训练。额外 closed 工量作为本批待证机会保留，后续评审可结合迁移任务判断。",
+-        "",
+-        "## 证据与可重放性",
+-        "",
+-        f"分析脚本只读取既有文件，并输出本目录的 JSON 和报告。[分析脚本]({(OUTPUT/'analyze_trajectories.py').as_posix()}) [完整结果]({(OUTPUT/'RESULTS.json').as_posix()}) [输入 SHA 清单]({(OUTPUT/'SOURCES.json').as_posix()})",
+-        "",
+-        f"质量结论直接引用管理员封存件。[质量报告](D:/hefe/docs/M4_SPATIAL_FACT_CONSUMPTION_001_QUALITY_REVIEW.md) [封存件](D:/hefe/verification/fixes/20261112_m4_spatial_fact_consumption_review/QUALITY_SEAL.json)",
+-        "",
+-    ]
+-    (OUTPUT / "REPORT.md").write_text("\n".join(lines), encoding="utf-8")
+-
+-
+-if __name__ == "__main__":
++    print(json.dumps({'cells': len(cells), 'steps': len(steps), 'qualified_P': 3,
++                      'optional_BC_closed_work_units': result['closed_branch_analysis']['optional_BC_closed_work_units'],
++                      'source_files': len(SOURCES)}))
++
++
++if __name__ == '__main__':
+     main()

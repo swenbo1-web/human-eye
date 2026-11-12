@@ -1,0 +1,258 @@
+--- previous/extract_costs.py
++++ grooved/extract_costs.py
+@@ -14,11 +14,11 @@
+ 
+ ROOT = Path(__file__).resolve().parents[4]
+ OUT = Path(__file__).resolve().parent
+-BASE = 'verification/m4_spatial_fact_consumption_001'
+-EVIDENCE = '5cdf62f311f94890ca569d06c1a858f1578225e4'
+-SEAL_COMMIT = '3a4b090532e01920110e6ee2be1702bc1c45c265'
+-SEAL_PATH = 'verification/fixes/20261112_m4_spatial_fact_consumption_review/QUALITY_SEAL.json'
+-SEAL_SHA = 'fa467d121359d8ffff45693887de2598f1d34a811bf031849215042ef0e44852'
++BASE = 'verification/m4_grooved_rail_consumption_001'
++EVIDENCE = '4a90bbe95ef46c6666050ef1a1096fc6719c3b97'
++SEAL_COMMIT = 'e94798714d5d23694f0515f00e9eb083982a2b2f'
++SEAL_PATH = 'verification/fixes/20261112_m4_grooved_rail_quality_review/QUALITY_SEAL.json'
++SEAL_SHA = 'a493bd997b2003c595795ad90ae3bc9420e9a2a884a0adcf6225493f880f0c21'
+ SEMANTICS = [
+     BASE + '/runtime/actor.py',
+     BASE + '/runtime/consumer_transport.py',
+@@ -371,7 +371,7 @@
+         'requested_model': c['model'], 'requested_effort': c['requested_effort'],
+         'resolved_model': None, 'resolved_effort': c['resolved_effort'],
+         'provider_requests': c['provider_requests'], 'provider_retry_observations': c['provider_retry_observations'],
+-        'provider_retry_observations_semantics': 'original heuristic stderr rows; spc03 contains a PowerShell shell_snapshot warning, which does not establish a provider retry',
++        'provider_retry_observations_semantics': 'original heuristic stderr rows; their presence does not establish provider retry count',
+         'fees': c['fees'], 'image_tokens': c['image_tokens'],
+         'timing': {'full_cell_ns': run['full_cell_wall_ns'], 'prompt_to_final_ns': c['prompt_to_final_ns'],
+                    'consumer_wall_ns': c['wall_ns'], 'pre_consumer_setup_ns': c['pre_consumer_setup_ns'],
+@@ -435,10 +435,134 @@
+     return out
+ 
+ 
++def audit_budgets(saved, cells, runs, plan):
++    """Recompute observed limits and retain each layer's actual deadline scope."""
++    records = []
++    for cell, run in zip(cells, runs['records'], strict=True):
++        stem = BASE + '/cells/' + cell['cell']
++        read = lambda name: saved.json(stem + '/' + name)
++        consumer = read('CONSUMER.json')
++        launch = read('ACTOR_LAUNCH.json')
++        actor = read('ACTOR_CONFIG.json')
++        endpoint = read('ENDPOINT.json')
++        config = read('owner/native/CONFIG.json')
++        session = read('owner/native/SESSION.json')
++        ready = read('owner/native/READY.json')
++        closed = read('owner/native/WORKER_CLOSED.json')
++        owner_close = read('owner/CLOSE.json')
++        worker = saved.lines(stem + '/owner/native/WORKER_EVENTS.jsonl')
++        full_deadline = run['cell_started_ns'] + 570 * 10**9
++        consumer_deadline = consumer['started_ns'] + 450 * 10**9
++        actor_deadline = min(full_deadline, launch['prepare_started_ns'] + 40 * 10**9)
++        inherited = {
++            'run.worker_deadline_ns': run['worker_deadline_ns'],
++            'ACTOR_LAUNCH.worker_deadline_ns': launch['worker_deadline_ns'],
++            'ACTOR_CONFIG.worker_deadline_ns': actor['worker_deadline_ns'],
++            'ENDPOINT.chain_deadline_ns': endpoint['chain_deadline_ns'],
++            'native.CONFIG.deadline_ns': config['deadline_ns'],
++            'native.SESSION.deadline_ns': session['deadline_ns'],
++            'native.READY.deadline_ns': ready['deadline_ns'],
++            'native.WORKER_CLOSED.original_deadline_ns': closed['original_deadline_ns'],
++            'native.close.original_deadline_ns': owner_close['native_close']['original_deadline_ns'],
++            'native.close.response.deadline_ns': owner_close['native_close']['response']['deadline_ns'],
++        }
++        receipt_deadlines = {}
++        for suffix in ('owner/INITIAL.json.receipt.json', 'owner/FINAL.json.receipt.json'):
++            receipt_deadlines[suffix] = read(suffix)['original_deadline_ns']
++        for attempt in cell['tools']:
++            if attempt['name'] == 'execute_blender_code':
++                suffix = f"owner/tool_{attempt['attempt']:02}/NATIVE_RECEIPT.json"
++                receipt_deadlines[suffix] = read(suffix)['original_deadline_ns']
++        attempts = cell['tools']
++        prefixes = []
++        spent = 0
++        for attempt in attempts:
++            spent += attempt['response_wire_bytes']
++            prefixes.append({'attempt': attempt['attempt'], 'response_bytes': attempt['response_wire_bytes'],
++                             'cumulative_response_bytes': spent, 'is_error': attempt['is_error']})
++        native_rows = cell['native_worker_execute_receipts']
++        max_code = max((row['script_utf8_bytes'] for row in native_rows), default=0)
++        max_public_code = max((row['code_utf8_bytes'] for row in attempts), default=0)
++        rpc_elapsed = []
++        product_scope = None
++        if cell['group'] == 'P':
++            product_config = read('owner/product_config.json')
++            rpc = read('owner/plugin/RPC.json')
++            rpc_elapsed = [row['elapsed_ns'] for row in rpc['requests']]
++            trace_budgets = [trace['annotations'].get('request_budget_s')
++                             for trace in cell['product']['all_traces']
++                             if trace['operation'] == 'mcp.observe']
++            product_scope = {
++                'configured_request_budget_s': product_config['request_budget_s'],
++                'configured_host_timeout_s': product_config['blender']['timeout_s'],
++                'observed_mcp_trace_request_budget_s': trace_budgets,
++                'has_explicit_full_cell_absolute_deadline_in_product_config': any(
++                    'deadline' in key for key in product_config),
++                'scope': 'Product config exposes its cooperative per-request 30 s budget. The full-cell absolute deadline is enforced by the outer attach channel and the native worker. No direct product-internal 570 s propagation is claimed.',
++            }
++        checks = {
++            'full_cell_deadline_from_before_input_validation': all(v == full_deadline for v in inherited.values()),
++            'consumer_450_from_original_started': consumer['deadline_ns'] == consumer_deadline,
++            'actor_40_from_prepare_start_capped_by_full_cell': launch['actor_startup_deadline_ns'] == actor_deadline,
++            'actor_ready_before_original_startup_deadline': consumer['started_ns'] < actor_deadline,
++            'native_receipts_keep_original_deadline': all(v == full_deadline for v in receipt_deadlines.values()),
++            'full_cell_complete_before_570': run['cell_ended_ns'] < full_deadline,
++            'consumer_turn_and_exit_before_450': consumer['turn_completed_ns'] < consumer_deadline and consumer['process_exit_ns'] < consumer_deadline,
++            'native_worker_closed_before_original_deadline': closed['closed_ns'] < full_deadline,
++            'all_native_events_before_original_deadline': all(row['started_ns'] + row['elapsed_ns'] < full_deadline for row in worker),
++            'tool_attempts_charged_in_order': [row['attempt'] for row in attempts] == list(range(1, len(attempts) + 1)),
++            'observed_attempts_at_most_32': len(attempts) <= 32,
++            'host_max_calls_config_and_session_128': config['max_calls'] == session['max_calls'] == 128,
++            'all_observed_physical_requests_including_close_at_most_128': len(worker) <= 128,
++            'observed_actor_tool_windows_under_30s': all(row['actor_elapsed_ns'] < 30 * 10**9 for row in attempts),
++            'observed_public_tool_windows_under_30s': all(row['public_tool_interval_ns'] < 30 * 10**9 for row in attempts),
++            'observed_native_execute_windows_under_30s': all(row['elapsed_ns'] < 30 * 10**9 for row in native_rows),
++            'observed_product_peer_windows_under_30s': all(value < 30 * 10**9 for value in rpc_elapsed),
++            'cumulative_response_prefixes_under_1MiB': all(row['cumulative_response_bytes'] <= 1048576 for row in prefixes),
++            'cumulative_bytes_match_actor_ledger': spent == read('owner/TOOLS.json')['wire_tool_bytes'],
++            'all_observed_worker_code_at_most_256KiB': max_code <= 262144,
++            'all_public_native_code_at_most_256KiB': max_public_code <= 262144,
++            'no_deadline_timer_fired': consumer['deadline_timer_fired'] is False,
++        }
++        if product_scope is not None:
++            checks['product_local_budget_stays_30s'] = (
++                product_scope['configured_request_budget_s'] == product_scope['configured_host_timeout_s'] == 30
++                and all(value in (None, 30) for value in product_scope['observed_mcp_trace_request_budget_s']))
++        assert all(checks.values()), (cell['cell'], [k for k, value in checks.items() if not value])
++        records.append({
++            'cell': cell['cell'], 'checks': checks,
++            'original_full_cell_started_ns': run['cell_started_ns'], 'original_full_cell_deadline_ns': full_deadline,
++            'original_consumer_started_ns': consumer['started_ns'], 'original_consumer_deadline_ns': consumer_deadline,
++            'actor_prepare_started_ns': launch['prepare_started_ns'], 'actor_startup_deadline_ns': actor_deadline,
++            'actor_ready_elapsed_upper_bound_ns': consumer['started_ns'] - launch['prepare_started_ns'],
++            'consumer_turn_elapsed_ns': consumer['turn_completed_ns'] - consumer['started_ns'],
++            'consumer_exit_elapsed_ns': consumer['process_exit_ns'] - consumer['started_ns'],
++            'full_cell_elapsed_ns': run['cell_ended_ns'] - run['cell_started_ns'],
++            'inherited_full_deadline_values': inherited, 'native_receipt_deadline_values': receipt_deadlines,
++            'tool_attempts': len(attempts), 'host_physical_requests_including_close': len(worker),
++            'charged_native_nonclose_requests': len(native_rows),
++            'max_actor_tool_window_ns': max(row['actor_elapsed_ns'] for row in attempts),
++            'max_native_execute_window_ns': max(row['elapsed_ns'] for row in native_rows),
++            'max_product_peer_window_ns': max(rpc_elapsed, default=None),
++            'max_single_worker_code_utf8_bytes': max_code, 'max_single_public_code_utf8_bytes': max_public_code,
++            'cumulative_response_bytes': spent, 'response_prefixes_including_failed_attempts': prefixes,
++            'product_deadline_scope': product_scope,
++        })
++    return {
++        'schema': 'grooved-rail-saved-numeric-budget-audit-v1', 'passed': True, 'cells': records,
++        'frozen_limits': {k: plan[k] for k in ('max_session_seconds', 'total_cell_seconds', 'actor_startup_seconds',
++                                           'tool_attempts', 'physical_RPC_limit', 'tool_timeout_s', 'tool_response_bytes', 'code_bytes')},
++        'scope': 'Observed saved executions plus pinned producer source semantics. These observations do not prove adversarial boundary behavior or unexposed provider timing.',
++        'response_budget_scope': 'Actor tools/call responses including failures. Tools/list and control metadata are measured separately.',
++        'host_count_scope': 'Observed worker sequence includes close. The helper guards non-close command sequence against max_calls and accepts the final close separately. Both observed totals are retained.',
++        'timing_semantics': 'No nested durations are added. Actual per-tool handling windows are checked independently of the larger full-cell and consumer windows.',
++    }
++
++
+ def report(result):
+     n, p = result['groups']['N'], result['groups']['P']
+     fmt_s = lambda ns: f'{ns / 1e9:.7f}'
+-    lines = ['# M4 空间事实消费成本复算', '',
++    lines = ['# M4 凹槽迁移消费成本复算', '',
+              '本次只读取固定六格原始证据、既有运行代码和已封存质量结果，使用标准库重新计算。原始证据提交为 `' + EVIDENCE + '`。', '',
+              '质量封存为 6/6 完整正确、78/78 事实正确。成本计算沿用该封存，两个组各三格，保留全部请求、首次启动、无效请求纠错、额外 closed 计算及收尾。', '',
+              '## 冻结门限', '',
+@@ -461,6 +585,10 @@
+     for group, g in result['groups'].items():
+         f = g['full_cell_ns']
+         lines.append(f"| {group} | {fmt_s(f['sum'])} | {fmt_s(f['minimum'])} | {fmt_s(f['median'])} | {fmt_s(f['maximum'])} | {fmt_s(g['prompt_to_final_ns']['sum'])} |")
++    lines += ['', '| 派生 token 口径 | N | P |', '|---|---:|---:|',
++              f"| input 减 cached input | {n['usage_totals']['input_excluding_cached_tokens']} | {p['usage_totals']['input_excluding_cached_tokens']} |",
++              f"| output | {n['usage_totals']['output_tokens']} | {p['usage_totals']['output_tokens']} |", '',
++              '未缓存 input 是暴露 usage 的派生值，P 本批该项高于 N。冻结主门使用全部实际 input 加 output。货币费用未暴露，provider 实际价格及订阅资源扣费未测。']
+     lines += ['', '## 时间边界', '',
+               '完整单格从输入校验前开始，到 owner close 完成为止，包含启动、QA 全场景快照、产品元数据握手、模型往返、所有业务请求及退出。后续单格 accounting 发布在原合同计时域外。', '',
+               '| 格 | consumer 前 s | consumer 启动准备 s | popen→prompt s | prompt→final s | final→turn s | turn→exit s | exit→cleanup s | cleanup→cell end s |',
+@@ -473,6 +601,15 @@
+     for c in result['cells']:
+         t = c['timing']
+         lines.append(f"| {c['cell']} | {fmt_s(t['public_tool_intervals_sum_ns'])} | {fmt_s(t['actor_tool_intervals_sum_ns'])} | {fmt_s(t['prompt_to_final_outside_public_tool_intervals_ns'])} |")
++    lines += ['', '## 原期限与数值预算复算', '',
++              'BUDGETS.json 逐格保留实际单调时钟起点、原绝对截止值、逐层继承值和每次回包累计前缀。检查以固定代码语义与实际窗口为依据。', '',
++              '| 格 | consumer turn 秒 / 450 | actor 就绪上界秒 / 40 | 工具尝试 / 32 | host 请求含 close / 128 | 最大 handler 毫秒 / 30000 | 累计业务回包 B / 1MiB | 最大 worker code B / 256KiB |',
++              '|---|---:|---:|---:|---:|---:|---:|---:|']
++    for cell in result['budget_audit']['cells']:
++        lines.append(f"| {cell['cell']} | {fmt_s(cell['consumer_turn_elapsed_ns'])} | {fmt_s(cell['actor_ready_elapsed_upper_bound_ns'])} | {cell['tool_attempts']} | {cell['host_physical_requests_including_close']} | {cell['max_actor_tool_window_ns'] / 1e6:.4f} | {cell['cumulative_response_bytes']} | {cell['max_single_worker_code_utf8_bytes']} |")
++    lines += ['', '完整格的 570 秒从输入检查前的原 cell_started 开始；consumer 的 450 秒从其原 started 开始；actor 的 40 秒从 prepare_started 开始并受完整截止约束。ActorConfig、Endpoint、native CONFIG/SESSION/READY/关闭及 QA、native 工具回执保留同一个完整截止。全部实际完成窗口均在原期限内。', '',
++              '产品配置暴露 request_budget_s=30 和 host timeout=30，产品配置没有直接传入完整格的绝对截止值。产品的局部 cooperative 期限、外层 attach 的绝对 chain deadline、Peer 的剩余单工具窗口及 native worker 的原截止分别约束各层。拒绝请求和后续修正共用同一格及原预算。实际预算检查通过，未据此认证未执行的极限故障。']
++    lines += ['', '1MiB 预算对应 actor 累计 tools/call 响应，包含错误回包；tools/list 与控制元数据另列。host 表同时保留全部物理请求及非 close 请求，helper 的 max_calls 检查在非 close 分支执行，close 单独接受。']
+     lines += ['', '区间外时间包含 provider/client 等待和未计量工作，归因保持未知。产品 span 为 inclusive，父子 span 有重叠。host.capture、任务事实计算、编码和发送的原始 spans 已逐项保存在 RESULTS。', '',
+               '## 请求、字节与数据采集', '',
+               '| 组 | 公共工具尝试 | 失败 | native 工具 | observe 工具 | 工具 TX B | 工具 RX B | text 正文 UTF-8 B |',
+@@ -491,17 +628,17 @@
+     for group, g in result['groups'].items():
+         lines.append(f"| {group} | {g['schema_tools_list_response_wire_bytes']['median']} | {g['schema_tools_array_compact_json_bytes']['median']} |")
+     lines += ['', 'N 的唯一 native 声明与 P 中的 native 声明逐项一致。P 额外公开 ordinary human_eye_scene_observe 的完整声明。产品 peer 启动时读取完整实际 tools/list，其原始大小和全工具数量单独保留。schema 字节无法可靠换算成 provider token，模型 usage 已包含其实际影响。', '',
+-              '初始与最终全场景快照每格均为 14 个对象、848 点、1640 个三角形。P 每次成功 observe 实际选取 4 个对象、576 点、1136 面。各组使用独立 Blender 会话，首次请求和采集包含在完整耗时内。', '',
++              '初始与最终全场景快照每格均为 4 个对象、26 点、36 个三角形。P 每次成功 observe 实际选取相同的 4 对象、26 点、36 面。各组使用独立 Blender 会话，首次请求和采集包含在完整耗时内。', '',
+               '## 失败与可优化成本', '',
+-              'spc02 首次请求添加了域外 nearest_witness，返回明确拒绝。该请求的 5.5156 ms actor 时间与 857 B 回包均已计入，后续纠错所经过的整个模型区间也在完整耗时内。没有因此丢弃或替换格。', '',
+-              '三次 P 成功请求均额外请求 closed_solid_relation，9 项全部为 closed_solid_work_budget unknown，每项耗用 262144 work units。spatial_relation 与 surface_proximity 成功交付。现有 trace 未单独计量 closed 耗时，整段任务事实 span 同时包含其他计算，因此可删耗时尚不可量化。', '',
++              'grc03 首次请求包含不支持的 nearest_witness，返回拒绝与 not_executed；随后同格修正成功。全部尝试、回包及纠错墙钟已计入，具体原始数值列入逐工具 attempts。', '',
++              '三次 P 成功请求均请求 closed_solid_relation。实际工作与原始事实状态逐项保存。A 的非充分分离支持方向进入有界闭壳分支，B/C 的 spatial_relation 使用充分分离证明。额外 closed 与先前结果的复用由机制审查解释；独立 closed-only 耗时未暴露。', '',
+               '三次 P 成功后均无 native fallback。N 的额外 native 调用承载数据读取、精度校正或包含关系检查，具体机制由独立轨迹审核解释。', '',
+               'P 审计明确暴露的 result/pair cache 命中均为 false 或 0。复用 prepared triangle/tree 的算法工作字段仍按原值保留。缓存占用字节与 native 内部缓存/RSS 未计量。产品 peak RSS 为进程生命周期高水位，无法分离本请求新增内存。', '',
+               '## 证据与限制', '',
+               '所有参与计算的原件均与固定证据提交逐字节核对，INPUTS.json 保存路径、字节和 SHA256。原始证据、产品源码和全局配置保持原样。', '',
+               '六个 consumer、owner、Blender 的原始退出记录均保留，P 另有真实 runtime retained-handle 的退出证明。六个薄 stdio 客户端均缺原始 EXIT.json，其正常退出结论保持 unknown。独立 owned 退出证明、已封存文字质量评分和本批冻结合同结论分别保留。', '',
+               '费用、provider 请求次数、provider 自动重试、provider 网络字节、实际 resolved model/effort、host TCP wire 字节及部分缓存/内存指标均未测。未见独立的 closed span、pure model inference span 或 native 算法纯耗时。', '',
+-              '原 consumer 的 provider_retry_observations 是启发式 stderr 记录。spc03 其中一条为 PowerShell shell_snapshot 警告，provider 重试次数保持未测。', '',
++              '原 consumer 的 provider_retry_observations 是启发式 stderr 记录，provider 重试次数保持未测。', '',
+               'PREPARATION_COST 的冻结前本地工作时间，以及本次管理员审核成本，与六格产品任务分开记账。coordinator 模型费用未提供。原 FORMAL_PROCESS/batch 墙钟与六格合计互相包含，RESULTS 保留各自范围并避免相加。', '',
+               '冻结合同通过只覆盖这一个指定场景和两个路线各三次，后续跨任务、复杂资产和质量差异仍需独立验证。', '']
+     return '\n'.join(lines)
+@@ -515,7 +652,7 @@
+     seal_raw = git('show', SEAL_COMMIT + ':' + SEAL_PATH)
+     assert sha(seal_raw) == SEAL_SHA
+     seal = json.loads(seal_raw)
+-    assert seal['author_evidence_commit'] == EVIDENCE
++    assert seal['formal_commit'] == EVIDENCE
+     assert seal['quality']['complete_correct'] == 6 and seal['quality']['facts_correct'] == 78
+     contract = saved.json(BASE + '/BENEFIT_CONTRACT.json')
+     sequence = saved.json(BASE + '/SEQUENCE.json')['sequence']
+@@ -523,6 +660,7 @@
+     assert [r['cell'] for r in runs['records']] == [s['cell'] for s in sequence]
+     assert runs['started_cells'] == 6 and runs['all_planned_dispatched'] and runs['no_replacements']
+     cells = [extract_cell(saved, slot, row) for slot, row in zip(sequence, runs['records'])]
++    budget_audit = audit_budgets(saved, cells, runs, saved.json(BASE + '/PLAN.json'))
+     groups = {group: group_result(cells, group) for group in ('N', 'P')}
+     comparison = {
+         'median_full_cell': improvement(groups['N']['full_cell_ns']['median'], groups['P']['full_cell_ns']['median']),
+@@ -547,10 +685,11 @@
+     gate['passed'] = all(gate.values())
+     formal = saved.json(BASE + '/FORMAL_PROCESS.json')
+     assert formal['ended_ns'] - formal['started_ns'] >= sum(c['timing']['full_cell_ns'] for c in cells)
+-    results = {'schema': 'm4-spatial-fact-saved-cost-review-v1', 'evidence_commit': EVIDENCE,
++    results = {'schema': 'm4-grooved-rail-saved-cost-review-v1', 'evidence_commit': EVIDENCE,
+                'quality_seal': {'commit': SEAL_COMMIT, 'path': SEAL_PATH, 'sha256': SEAL_SHA, 'quality': seal['quality']},
+                'frozen_benefit_contract': contract, 'gate': gate, 'comparison': comparison,
+                'groups': groups, 'pairs': pairs, 'cells': cells,
++               'budget_audit': budget_audit,
+                'original_preparation_cost': saved.json(BASE + '/PREPARATION_COST.json'),
+                'batch_timing': {k: v for k, v in runs.items() if k.startswith('batch_')},
+                'outer_formal_process': formal,
+@@ -570,12 +709,12 @@
+               'seal': {'path': SEAL_PATH, 'commit': SEAL_COMMIT, 'sha256': sha(seal_raw), 'bytes': len(seal_raw)},
+               'extractor_sha256': sha(Path(__file__).read_bytes())}
+     OUT.mkdir(parents=True, exist_ok=True)
+-    for name, value in [('RESULTS.json', results), ('INPUTS.json', inputs)]:
++    for name, value in [('RESULTS.json', results), ('BUDGETS.json', budget_audit), ('INPUTS.json', inputs)]:
+         (OUT / name).write_text(json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2) + '\n', encoding='utf-8')
+     (OUT / 'REPORT.md').write_text(report(results), encoding='utf-8')
+     print(json.dumps({'gate': gate, 'comparison': comparison,
+                       'read_verified_files': len(inputs['files']),
+-                      'outputs': {name: sha((OUT / name).read_bytes()) for name in ('RESULTS.json', 'INPUTS.json', 'REPORT.md')}}, ensure_ascii=False))
++                      'outputs': {name: sha((OUT / name).read_bytes()) for name in ('RESULTS.json', 'BUDGETS.json', 'INPUTS.json', 'REPORT.md')}}, ensure_ascii=False))
+ 
+ 
+ if __name__ == '__main__':

@@ -1,0 +1,67 @@
+--- previous/prepare_unseal.py
++++ grooved/prepare_unseal.py
+@@ -10,11 +10,11 @@
+ HERE = Path(__file__).resolve().parent
+ BATCH = HERE.parent
+ ROOT = BATCH.parents[1]
+-AUTHOR = '5cdf62f311f94890ca569d06c1a858f1578225e4'
+-REVIEW = '3a4b090532e01920110e6ee2be1702bc1c45c265'
+-SEAL = Path('D:/hefe/verification/fixes/20261112_m4_spatial_fact_consumption_review/QUALITY_SEAL.json')
+-SEAL_SHA = 'fa467d121359d8ffff45693887de2598f1d34a811bf031849215042ef0e44852'
+-REPORT = Path('D:/hefe/docs/M4_SPATIAL_FACT_CONSUMPTION_001_QUALITY_REVIEW.md')
++AUTHOR = '4a90bbe95ef46c6666050ef1a1096fc6719c3b97'
++REVIEW = 'e94798714d5d23694f0515f00e9eb083982a2b2f'
++SEAL = Path('D:/hefe/verification/fixes/20261112_m4_grooved_rail_quality_review/QUALITY_SEAL.json')
++SEAL_SHA = 'a493bd997b2003c595795ad90ae3bc9420e9a2a884a0adcf6225493f880f0c21'
++REPORT = Path('D:/hefe/docs/M4_GROOVED_RAIL_TRANSFER_001_QUALITY_REVIEW.md')
+ 
+ 
+ def sha(data):
+@@ -30,7 +30,7 @@
+ def main():
+     assert sha(SEAL.read_bytes()) == SEAL_SHA
+     seal = json.loads(SEAL.read_bytes())
+-    assert seal['author_evidence_commit'] == AUTHOR
++    assert seal['formal_commit'] == AUTHOR
+     assert seal['quality']['complete_correct'] == 6
+     assert seal['quality']['facts_correct'] == seal['quality']['facts_required'] == 78
+     source = HERE / 'quality_source'
+@@ -44,14 +44,17 @@
+             stream.write(data)
+ 
+     prefix = BATCH.relative_to(ROOT).as_posix() + '/'
+-    names = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', '-z', AUTHOR, '--', prefix], cwd=ROOT)
++    names = subprocess.check_output(['git', 'ls-tree', '-r', '-z', AUTHOR, '--', prefix], cwd=ROOT)
+     records = []
+     for raw in names.split(b'\0'):
+         if not raw:
+             continue
+-        name = raw.decode('utf8')
++        metadata, raw_name = raw.split(b'\t', 1)
++        name = raw_name.decode('utf8')
+         data = (ROOT / name).read_bytes()
+-        blob = subprocess.check_output(['git', 'rev-parse', AUTHOR + ':' + name], cwd=ROOT).strip().decode()
++        mode, kind, blob_raw = metadata.split()
++        assert kind == b'blob'
++        blob = blob_raw.decode()
+         actual_blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+         assert blob == actual_blob, name
+         records.append({'path': name, 'bytes': len(data), 'sha256': sha(data), 'git_blob': blob})
+@@ -61,7 +64,7 @@
+         'index_scope': 'All batch files in the fixed author commit. New analysis outputs are outside this index.',
+     })
+     save(HERE / 'WORK_ORDER.json', {
+-        'cycle': 'M4-SPATIAL-FACT-CONSUMPTION-001', 'phase': 'saved_data_cost_and_mechanism_unseal',
++        'cycle': 'M4-GROOVED-RAIL-TRANSFER-001', 'phase': 'saved_data_cost_and_mechanism_unseal',
+         'recorded_utc': datetime.now(timezone.utc).isoformat(),
+         'authorization': 'Administrator delegated quality-sealed unseal, saved-data analysis, original-branch evidence commit and callback.',
+         'author_commit': AUTHOR, 'quality_review_commit': REVIEW, 'quality_seal_sha256': SEAL_SHA,
+@@ -70,7 +73,7 @@
+         'new_consumer_allowance': 0, 'new_Blender_or_product_run_allowance': 0,
+         'AL': {'context_bound': False, 'host_epoch': 5, 'rebind_required': True,
+                'task_registered': False, 'borrowed_handle': False},
+-        'pre_record_events': 'Read-only quality/contract/original-cost inspection and analysis delegation preceded this local record.',
++        'pre_record_events': 'Read-only sealed quality, contracts, prior analysis scripts and current session context inspection preceded this record.',
+         'completion': 'Cost and mechanism review ready callback, then wait for administrator review.',
+     })
+     print(json.dumps({'original_files_bound': len(records), 'quality_seal_sha256': SEAL_SHA,
