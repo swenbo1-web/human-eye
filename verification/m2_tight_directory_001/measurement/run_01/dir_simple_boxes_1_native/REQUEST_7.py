@@ -1,0 +1,1 @@
+print(json.dumps(_m2_native_directory(),ensure_ascii=False,separators=(',',':'),allow_nan=False))
