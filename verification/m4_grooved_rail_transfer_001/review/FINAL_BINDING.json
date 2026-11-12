@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "files_sha256": {
+    "REPORT.md": "c5b3ead31bc16c194bdba91872d50ac113067b4d7da48f6e7c997d81659df8bc",
+    "finalize_qualification.py": "0e04f8c97ad2e02812fafcd84d32ca5ecaac39f40c5ce0354f81c96396435d5b",
+    "review/RESULTS.json": "50b3100e6c24232ec93b787ae609c12bf63d11aae09acaed8fc41daa2cb5530a",
+    "review/REPORT.md": "6bf72f99b3037a12178c7817ea863c04637c0839de73d527e1ac545ae6823718",
+    "review/bind_final.py": "1389bcdea00a881bd2db6e68468db8bfb915ab019e076b559abe6c219c52b5f9"
+  },
+  "checks": {
+    "independent_qualification_passed": true,
+    "all_final_qualification_inputs_still_match": true,
+    "all_asset_worker_final_outputs_still_match": true,
+    "root_summary_actual_truth_bound": true,
+    "preparation_window_arithmetic": true,
+    "oracle_analysis_window_arithmetic": true,
+    "oracle_publication_window_arithmetic": true,
+    "nested_windows_kept_separate": true,
+    "finalizer_has_no_product_or_process_import": true,
+    "finalizer_timestamp_scope_explicit": true,
+    "final_files_stable_through_binding": true
+  },
+  "blocking_findings": [],
+  "incomplete_items": [],
+  "static_review_notes": [
+    "Root REPORT.md was read in full and its actual counts, features, distances and source hashes match the independent certificates and oracle.",
+    "The finalizer verifies both review bindings, protected sources and installation, actual asset/read-copy/snapshot, and owned builder/QA shutdown receipts before publication.",
+    "The ledger uses source clock boundaries. Builder and QA close remain inside the controller window, and oracle analysis remains inside its publication window.",
+    "The finalizer timestamp ends after input checks. Later ledger/READY/manifest publication, Git and callback remain outside that window.",
+    "Exclusive file creation protects existing summaries. The final manifest includes all prior qualification files, ledger and READY, with explicit lexical path sorting.",
+    "This static review leaves the finalizer unexecuted for the parent to publish and check."
+  ],
+  "reviewer_model_Blender_product_runs": 0,
+  "reviewer_finalizer_runs": 0,
+  "original_asset_oracle_review_results_modified": 0
+}
