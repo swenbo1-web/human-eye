@@ -1,0 +1,22 @@
+{
+  "scope": "offline verifier corrections only; original formal execution files unchanged",
+  "observed_failures": [
+    {
+      "check": "N1 exact delivered consumer/owner response tool_01",
+      "exception": "AssertionError",
+      "incorrect_assumption": "CLI mcp_tool_call.result retains exactly the owner MCP result object shape",
+      "observed_evidence": "content matches; owner isError is represented by CLI item.status, structuredContent maps to structured_content",
+      "correction": "verify content equality, structured-content mapping, failed status, and raw bridge/owner full response equality separately"
+    },
+    {
+      "check": "N1 full exposed tool declarations",
+      "exception": "AssertionError",
+      "incorrect_assumption": "owner/TOOLS.json tools holds declarations",
+      "observed_evidence": "owner/TOOLS.json tools is the attempts ledger; raw thin-client tools/list RX contains the declarations",
+      "correction": "read actual tools/list RX and compare complete declarations to frozen schemas"
+    }
+  ],
+  "final_status": "pass",
+  "originals_modified": false,
+  "new_Blender_model_or_business_API_runs": 0
+}

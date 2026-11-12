@@ -1,0 +1,13 @@
+{
+  "scope": "Root offline seal checker development",
+  "initial_failure": {
+    "command": "existing dependency Python -I -B -X utf8 cost/seal_review.py",
+    "exit_code": 1,
+    "exception": "AttributeError: 'list' object has no attribute 'items'",
+    "line": "for relative, record in ledger[\"sources\"].items()",
+    "cause": "The root checker assumed a dictionary, while the accounting ledger stores source records as a list with path fields."
+  },
+  "correction": "Read each list record and its explicit path before verifying bytes and SHA256.",
+  "original_consumer_replacements": 0,
+  "new_Blender_model_business_API_runs": 0
+}

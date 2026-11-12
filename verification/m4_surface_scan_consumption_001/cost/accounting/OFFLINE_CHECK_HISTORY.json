@@ -1,0 +1,20 @@
+{
+  "scope": "Accounting verifier development only, preserved without changing formal originals",
+  "observed_initial_failure": {
+    "command": "existing dependency Python -I -B -X utf8 cost/accounting/recompute.py",
+    "exit_code": 1,
+    "exception": "AssertionError: N1 host script hash",
+    "cause_verified": "SCRIPT.py was saved by a Windows text writer with CRLF. WORKER_EVENTS records the SHA256 of the LF code string actually sent to the worker.",
+    "example": {
+      "worker_code_sha256": "cd3461ff034d608a776a81cfcb750744b2dc303800525671272207a4da2e4e73",
+      "stored_file_sha256": "fae450d16d07d00732ba0f858798eb8327d6bf44e1ccb35e6ad051723fb475c1",
+      "LF_normalized_file_sha256": "cd3461ff034d608a776a81cfcb750744b2dc303800525671272207a4da2e4e73",
+      "stored_bytes": 382,
+      "LF_code_bytes": 379
+    }
+  },
+  "correction": "Read and hash the original file, normalize CRLF to LF for the worker-code equality assertion, retain both byte lengths and the original file hash. Every host script is checked against its recorded worker code SHA256.",
+  "formal_consumer_replacements": 0,
+  "formal_original_mutations": 0,
+  "new_Blender_model_API_runs": 0
+}
