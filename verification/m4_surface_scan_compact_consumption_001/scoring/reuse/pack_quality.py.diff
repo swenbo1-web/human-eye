@@ -1,0 +1,95 @@
+--- verification/m4_surface_scan_consumption_001/runtime/pack_quality.py
++++ verification\m4_surface_scan_compact_consumption_001\runtime\pack_quality.py
+@@ -13,7 +13,8 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ EVAL = HERE.parent
+-CYCLE = 'M4-SURFACE-SCAN-CONSUMPTION-001'
++CYCLE = 'M4-SURFACE-SCAN-COMPACT-CONSUMPTION-001'
++CELLS = ('N1', 'O1', 'C1', 'O2', 'C2', 'N2', 'C3', 'N3', 'O3')
+ sha = lambda raw: hashlib.sha256(raw).hexdigest()
+ KEYS = ('cell', 'task', 'round', 'group')
+ TOOL_TYPES = {'command_execution', 'mcp_tool_call', 'custom_tool_call', 'function_call',
+@@ -187,7 +188,7 @@
+     if 'CONSUMER.json' in sources:
+         consumer = decode(sources['CONSUMER.json'])
+         assert all(consumer.get(key)==slot[key] for key in ('cell','task','round')), 'consumer slot binding mismatch'
+-        expected_group={'N':'N','P':'P'}[slot['group']]
++        expected_group={'N':'N','O':'P','C':'P'}[slot['group']]
+         assert consumer.get('group')==expected_group and consumer.get('external_group')==slot['group'], 'consumer external/internal group binding mismatch'
+     entered = record is not None
+     if not entered:
+@@ -346,11 +347,11 @@
+     go, started = (decode(control[name]) for name in ('GO.json','STARTED.json'))
+     plan_sha256 = sha(control['PLAN.json'])
+     assert (go.get('task')==CYCLE and go.get('authorized') is True
+-        and go.get('max_consumers')==6 and go.get('plan_sha256')==plan_sha256), 'zero-launch GO binding mismatch'
+-    assert (started.get('max_consumers')==6 and started.get('plan_sha256')==plan_sha256
++        and go.get('max_consumers')==9 and go.get('plan_sha256')==plan_sha256), 'zero-launch GO binding mismatch'
++    assert (started.get('max_consumers')==9 and started.get('plan_sha256')==plan_sha256
+         and type(started.get('started_ns')) is int and started['started_ns']>0), 'zero-launch STARTED binding mismatch'
+     assert (len(run['records']) in (0,1) and type(run.get('started_cells')) is int
+-        and run['started_cells']==len(run['records']) and run.get('maximum_consumers')==6
++        and run['started_cells']==len(run['records']) and run.get('maximum_consumers')==9
+         and run.get('all_planned_dispatched') is False
+         and run.get('no_replacements') is True), 'zero-launch terminal counts mismatch'
+     assert isinstance(run.get('stop'),str) and run['stop'].strip(), 'zero-launch failed prefix required'
+@@ -385,13 +386,13 @@
+ 
+ 
+ def validate_pre_started_failure(run, control):
+-    """Retain six unstarted slots after a genuine pre-STARTED controller error."""
++    """Retain nine unstarted slots after a genuine pre-STARTED controller error."""
+     go = decode(control['GO.json'])
+     terminal = decode(control['FORMAL_PROCESS.json'])
+     assert (go.get('task') == CYCLE and go.get('authorized') is True
+-        and go.get('max_consumers') == 6 and go.get('plan_sha256') == sha(control['PLAN.json'])), 'pre-start GO binding mismatch'
++        and go.get('max_consumers') == 9 and go.get('plan_sha256') == sha(control['PLAN.json'])), 'pre-start GO binding mismatch'
+     assert (run['records'] == [] and run.get('started_cells') == 0
+-        and run.get('maximum_consumers') == 6 and run.get('all_planned_dispatched') is False
++        and run.get('maximum_consumers') == 9 and run.get('all_planned_dispatched') is False
+         and run.get('no_replacements') is True and isinstance(run.get('stop'),str)
+         and run['stop'].strip()), 'pre-start terminal denominator mismatch'
+     error = terminal.get('controller_error')
+@@ -416,15 +417,18 @@
+     assert sha(control['PLAN.json'])==freeze['plan_sha256'], 'execution PLAN not frozen'
+     assert sha(control['private/ANON_MAP.json'])==plan['private_anonymous_map_sha256'], 'anonymous map drift'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE, 'wrong observation cycle'
+-    assert plan['logical_denominator']==6 and plan['per_arm']==3 and set(plan['arms'])=={'N','P'}, 'wrong fixed six-slot sample metadata'
++    assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','O','C'}, 'wrong fixed nine-slot sample metadata'
+     assert plan['image_count']==0 and plan['new_images']==0, 'wrong zero-image contract'
+     sequence, rows, records=plan['sequence'],mapping['rows'],run['records']
+-    assert len(sequence)==len(rows)==6 and len({row['cell'] for row in sequence})==6
+-    assert len({row['anonymous_id'] for row in rows})==6
++    assert len(sequence)==len(rows)==9 and len({row['cell'] for row in sequence})==9
++    assert tuple(row['cell'] for row in sequence) == CELLS, 'fixed nine-slot sequence changed'
++    assert all(row['group'] == cell[0] and row['round'] == index//3+1
++        for index,(cell,row) in enumerate(zip(CELLS,sequence,strict=True))), 'fixed arm/round metadata changed'
++    assert len({row['anonymous_id'] for row in rows})==9
+     assert all(re.fullmatch(r'answer_[0-9a-f]{16}',row['anonymous_id']) for row in rows)
+-    assert len(records)<=6 and len({row['cell'] for row in records})==len(records)
++    assert len(records)<=9 and len({row['cell'] for row in records})==len(records)
+     assert type(run.get('batch_ended_ns')) is int and run['batch_ended_ns']>0, 'terminal batch record required'
+-    assert len(records)==6 or run.get('stop'), 'partial run needs its preserved stop reason'
++    assert len(records)==9 or run.get('stop'), 'partial run needs its preserved stop reason'
+     launched = any(isinstance(record.get('consumer'),dict)
+         and type(record['consumer'].get('consumer_pid')) is int and record['consumer']['consumer_pid']>0
+         for record in records)
+@@ -485,7 +489,7 @@
+         controller_public['controller_error'] = without_admin_fields(controller_public['controller_error'],
+             control['FORMAL_PROCESS.json'],controller_removals,pointer='$/controller_error',fields=('traceback',))
+     put(public/'INDEX.json',encoded({'tasks':tasks,'scoring_materials':scoring,'answers':answers,
+-        'controller_execution':controller_public,'fixed_slots':6,'scoring_performed':False}))
++        'controller_execution':controller_public,'fixed_slots':9,'scoring_performed':False}))
+     # Refuse a moving source rather than silently packaging a mixed-time run.
+     for folder,expected in snapshots:
+         current={path.relative_to(folder).as_posix():sha(path.read_bytes()) for path in folder.rglob('*') if path.is_file()} if folder.exists() else {}
+@@ -497,7 +501,7 @@
+         'public_files_sha256':{path.relative_to(public).as_posix():sha(path.read_bytes()) for path in public.rglob('*') if path.is_file()},
+         'model_calls':0,'product_calls':0,'Blender_calls':0,'scoring_calls':0}
+     put(private/'PROVENANCE.json',encoded(receipt))
+-    print(json.dumps({'packaged_slots':6,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
++    print(json.dumps({'packaged_slots':9,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
+ 
+ 
+ if __name__=='__main__': main()

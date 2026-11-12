@@ -1,0 +1,33 @@
+--- previous/run_formal.py
++++ current/run_formal.py
+@@ -1,4 +1,4 @@
+-"""Run the already authorized frozen six-slot sequence exactly once."""
++"""Run the already authorized frozen nine-slot sequence exactly once."""
+ 
+ from datetime import datetime, timezone
+ import importlib.util
+@@ -23,7 +23,7 @@
+     assert not (BATCH / 'STARTED.json').exists()
+     started = time.perf_counter_ns()
+     launch = {'started_ns': started, 'started_utc': datetime.now(timezone.utc).isoformat(),
+-              'scope': 'authorized six-slot driver, no retry or replacement', 'status': 'running'}
++              'scope': 'authorized nine-slot driver, no retry or replacement', 'status': 'running'}
+     with (BATCH / 'FORMAL_PROCESS.json').open('x', encoding='utf8', newline='\n') as stream:
+         json.dump(launch, stream, indent=2)
+         stream.write('\n')
+@@ -41,13 +41,13 @@
+             json.dump(error, stream, indent=2)
+             stream.write('\n')
+         # The driver's completed-prefix records remain authoritative. A failure
+-        # before its first cell can still deliver all six not-run slots.
++        # before its first cell can still deliver all nine not-run slots.
+         path = BATCH / 'RUN_RESULT.json'
+         if path.exists():
+             result = json.loads(path.read_bytes())
+         else:
+             result = {'records': [], 'stop': 'controller_failure_before_first_cell',
+-                      'started_cells': 0, 'maximum_consumers': 6,
++                      'started_cells': 0, 'maximum_consumers': 9,
+                       'all_planned_dispatched': False, 'no_replacements': True}
+         if result is not None:
+             result['stop'] = result.get('stop') or 'controller_exception_requires_review'

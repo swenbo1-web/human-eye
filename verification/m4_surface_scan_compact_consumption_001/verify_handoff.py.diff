@@ -1,0 +1,62 @@
+--- m4_surface_scan_consumption_001/verify_handoff.py
++++ m4_surface_scan_compact_consumption_001/verify_handoff.py
+@@ -38,22 +38,27 @@
+ def main():
+     plan,run = read(HERE/'PLAN.json'),read(HERE/'RUN_RESULT.json')
+     assert sha(HERE/'PLAN.json') == read(HERE/'FREEZE.json')['plan_sha256'] == read(HERE/'GO.json')['plan_sha256']
+-    assert [row['cell'] for row in plan['sequence']] == ['N1','P1','P2','N2','N3','P3']
+-    assert plan['logical_denominator'] == 6 and len(run['records']) <= 6
+-    assert run['started_cells'] == len(run['records']) and run['maximum_consumers'] == 6
+-    assert run['no_replacements'] and (len(run['records']) == 6 or run['stop'])
++    assert [row['cell'] for row in plan['sequence']] == ['N1','O1','C1','O2','C2','N2','C3','N3','O3']
++    assert plan['logical_denominator'] == 9 and len(run['records']) <= 9
++    assert run['started_cells'] == len(run['records']) and run['maximum_consumers'] == 9
++    assert run['no_replacements'] and (len(run['records']) == 9 or run['stop'])
+     for name,expected in plan['dispatch_input_sha256'].items():
+         assert sha(HERE/name) == expected,name
+     for name,expected in plan['external_input_sha256'].items():
+         assert sha(Path(name)) == expected,name
+     for name,expected in read(HERE/'preflight/PROTECTED_BEFORE.json').items():
+         assert sha(Path(name)) == expected,name
+-    ready = read(HERE/'installations/P_READY.json')
+-    manifest = read(HERE/'preflight/SOURCE_BINDING.json')['source_manifest']
+-    assert len(manifest) == 138 and plan['source_count'] == 138
+-    for row in manifest:
+-        assert sha(ROOT/row['path']) == sha(Path(ready['install_root'])/row['path']) == row['sha256']
+-    assert sha(Path(ready['entry'])) == ready['launcher_sha256']
++    profiles = read(HERE/'preflight/SOURCE_BINDING.json')['profiles']
++    assert set(profiles) == {'O', 'C'} and plan['source_count'] == 138
++    for name, profile in profiles.items():
++        ready = read(HERE/('installations/'+name+'_READY.json'))
++        manifest = profile['source_manifest']
++        assert len(manifest) == 138 and ready['source_sha256'] == profile['source_sha256']
++        for row in manifest:
++            assert sha(Path(ready['install_root'])/row['path']) == row['sha256']
++            if name == 'C':
++                assert sha(ROOT/row['path']) == row['sha256']
++        assert sha(Path(ready['entry'])) == ready['launcher_sha256']
+     terminal = read(HERE/'FORMAL_PROCESS.json')
+     assert terminal['status'] == 'terminal' and terminal['started_cells'] == len(run['records'])
+     threads = []
+@@ -112,7 +117,7 @@
+     files = {path.relative_to(public).as_posix():sha(path) for path in public.rglob('*') if path.is_file()}
+     assert files == provenance['public_files_sha256']
+     index = read(public/'INDEX.json')
+-    assert index['fixed_slots'] == 6 and len(index['answers']) == 6 and not index['scoring_performed']
++    assert index['fixed_slots'] == 9 and len(index['answers']) == 9 and not index['scoring_performed']
+     mapping = read(HERE/'private/ANON_MAP.json')
+     by_id = {row['anonymous_id']:row for row in mapping['rows']}
+     execution = Counter()
+@@ -154,10 +159,10 @@
+     manifest = [{'path':name,'bytes':(public/name).stat().st_size,'sha256':digest}
+                 for name,digest in sorted(files.items())]
+     result = dict(task=plan['cycle_id'],quality_scoring_performed=False,
+-        group_quality_or_cost_disclosed=False,fixed_slots=6,execution_counts=dict(execution),
++        group_quality_or_cost_disclosed=False,fixed_slots=9,execution_counts=dict(execution),
+         answer_states=dict(answer_states),unchanged_final_files_verified=final_bytes,
+         business_attempt_projections_verified=tool_projections,full_cell_receipts_verified=timing_checked,
+-        closure=dict(closure),unique_model_contexts=len(threads),runtime_sources_verified=138,
++        closure=dict(closure),unique_model_contexts=len(threads),runtime_sources_verified_per_profile=138,source_profiles_verified=2,
+         public_files=manifest,anonymous_packet_sha256=hashlib.sha256(canonical(manifest)).hexdigest(),
+         original_errors_and_unknowns_retained=True,perfect_blinding=False,
+         blinding_scope='Group and cost envelopes masked; actual business content can reveal the route.')

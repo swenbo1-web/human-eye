@@ -1,0 +1,115 @@
+"""Bind the existing OPT1 installation, BASE input and six consumer slots."""
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+
+
+HERE = Path(__file__).resolve().parent
+BATCH = HERE.parent
+ROOT = BATCH.parents[1]
+CYCLE = 'M4-SURFACE-SCAN-CONSUMPTION-001'
+SOURCE = 'c4832b1a1ced9438f904e25a431e2327c2d7532e2f4efbb34e34ce58a7ed1943'
+PRODUCT = 'c1cb2da32034e056a270384e691a2cde8dddbc0d'
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read(path):
+    return json.loads(path.read_bytes())
+
+
+def save(path,value):
+    with path.open('x',encoding='utf8',newline='\n') as stream:
+        json.dump(value,stream,ensure_ascii=False,sort_keys=True,indent=2,allow_nan=False)
+        stream.write('\n')
+
+
+def main():
+    assert not (BATCH/'STARTED.json').exists() and not (BATCH/'PLAN.json').exists()
+    ready = read(BATCH/'installations/P_READY.json')
+    source = read(BATCH/'preflight/SOURCE_BINDING.json')
+    assert ready['commit'] == PRODUCT and ready['source_sha256'] == SOURCE and ready['source_count'] == 138
+    assert source['source_sha256'] == SOURCE and source['source_count'] == 138
+    for row in source['source_manifest']:
+        assert sha(ROOT/row['path']) == sha(Path(ready['install_root'])/row['path']) == row['sha256']
+    assert sha(Path(ready['entry'])) == ready['launcher_sha256']
+    assert sha(Path(ready['release'])/'admin/RUNTIME_BINDING.json') == ready['binding_sha256']
+    assert sha(BATCH/'input/scene.blend') == source['asset_sha256'] == '7f6452d1d706a9f2db31126eb3aa7d08622e37a28abb9610992006bad5f5ad66'
+    assert sha(BATCH/'scoring/ACTUAL_SNAPSHOT.json') == source['snapshot_sha256'] == 'f8a578f78004a21e611c76d47506c5290f6015e7343e67b3b094a9e54da9884b'
+    assert sha(BATCH/'scoring/TRUTH.json') == source['truth_sha256'] == 'a0f14b1a48601590445ce5e2d13bb34f56647caa2acedf3eeac97b32e8a656c7'
+    assert sha(BATCH/'QUALIFICATION_SEAL.json') == source['qualification_seal_sha256']
+    for name,digest in read(BATCH/'preflight/PROTECTED_BEFORE.json').items():
+        assert sha(Path(name)) == digest
+    native = read(BATCH/'schemas/COMMON_NATIVE.json')
+    observe = read(BATCH/'schemas/P_PUBLIC_TOOLS.json')
+    assert read(BATCH/'schemas/N_CONSUMER_TOOLS.json') == [native]
+    assert read(BATCH/'schemas/P_CONSUMER_TOOLS.json') == [native,observe[0]] and len(observe) == 1
+    save(BATCH/'BENEFIT_CONTRACT.json',dict(quality_before_cost=True,all_six_retained=True,
+        full_correct_per_arm_required=3,time_gate='median of three full-cell P_i/N_i ratios <= 0.70',
+        token_gate='P cumulative actual input+output <= N cumulative actual input+output',
+        usage='final cumulative per cell; cached and reasoning are overlapping subsets',
+        missing_usage_or_failed_or_not_run='same-quality net-benefit gate cannot pass',
+        unmeasured=['fees unless exposed','resolved model and effort unless exposed','subscription debits unless exposed'],
+        quality_only_handoff=True))
+    save(BATCH/'MECHANISM_CLASSIFICATION.json',dict(evaluation_after_anonymous_quality_sealed=True,
+        separate_from_quality=True,categories=['natural_global_scan','native_selection_before_plugin',
+            'native_new_information','verification_of_unknown','recompute_already_complete_facts',
+            'engine_independent_answer','native_completion'],
+        query_missing_information_is_not_automatically_distrust=True))
+    cli = Path('C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe')
+    external_paths = [cli,ROOT/'verification/native_plugin_complex_003/actor.py',
+        ROOT/'verification/native_plugin_complex_003/reused/accepted_native.py',
+        ROOT/'verification/native_plugin_complex_003/reused/stdio_attach.py',
+        ROOT/'verification/m1_task_entry_001_eval/preflight_client.py',
+        Path(ready['entry']),Path(ready['release'])/'admin/installed_release.py',
+        Path(ready['release'])/'admin/RUNTIME_BINDING.json',
+        Path(source['previous_actual_tools_list']),Path(ready['fixed_inputs'])]
+    inputs = dict(scene='input/scene.blend',scene_sha256=sha(BATCH/'input/scene.blend'),
+        prompt='input/PROMPT.txt',prompt_sha256=sha(BATCH/'input/PROMPT.txt'),
+        image=None,image_bytes=0,image_sha256=None)
+    materials = [dict(path='scoring/'+name,sha256=sha(BATCH/'scoring'/name),public_name=name)
+                 for name in ('SCORING_CONTRACT.json','ACTUAL_SNAPSHOT.json','TRUTH.json')]
+    plan = dict(cycle_id=CYCLE,batch=CYCLE,logical_denominator=6,per_arm=3,
+        image_count=0,new_images=0,tool_images=0,inputs=inputs,
+        sequence=read(BATCH/'SEQUENCE.json')['sequence'],
+        arms={'N':dict(actor_group='N',installation_profile='P',source_sha256=None),
+              'P':dict(actor_group='P',installation_profile='P',source_sha256=SOURCE)},
+        installations={'P':ready},installation_ready=ready,
+        tasks={'T1':dict(asset=inputs['scene'],asset_sha256=inputs['scene_sha256'],
+            snapshot='scoring/ACTUAL_SNAPSHOT.json',snapshot_sha256=sha(BATCH/'scoring/ACTUAL_SNAPSHOT.json'))},
+        model='gpt-6.1-sol',requested_effort='medium',resolved_effort=None,resolved_model=None,
+        quality_before_cost=True,max_session_seconds=450,total_cell_seconds=570,actor_startup_seconds=40,
+        tool_attempts=32,physical_RPC_limit=128,tool_timeout_s=30,
+        tool_response_bytes=1048576,code_bytes=262144,quality_materials=materials,
+        private_anonymous_map_sha256=sha(BATCH/'private/ANON_MAP.json'),
+        CLI_sha256=sha(cli),actor_sha256=sha(HERE/'actor.py'),
+        consumer_transport_sha256=sha(HERE/'consumer_transport.py'),
+        preflight_driver_sha256=sha(HERE/'driver.py'),quality_handoff_script_sha256=sha(HERE/'pack_quality.py'),
+        source_count=138,fixed_product_commit=PRODUCT,candidate_source_sha256=SOURCE,
+        root_plan_sha256=sha(BATCH/'ROOT_PLAN.md'),
+        external_input_sha256={str(path.resolve()):sha(path) for path in external_paths},
+        dispatch_input_sha256={},authorization='Administrator directly authorizes preparation, freeze and the fixed six consumers.',
+        blinding_scope='group labels, costs and usage sealed; business tool content can reveal route',
+        isolation_scope='empty workspaces, frozen CLI isolation and native Python audit boundary; no OS sandbox claim',
+        smoke_sessions=0,smoke_decision='offline contracts only; no product, Blender or consumer pretest',
+        prepared_utc=datetime.now(timezone.utc).isoformat())
+    fixed = ['ROOT_PLAN.md','OPT1_REVIEW.md','QUALIFICATION_SEAL.json','bootstrap.py',
+        'preflight/ADMIN_REVIEW_MANIFEST.json','preflight/PROTECTED_BEFORE.json',
+        'preflight/BOOTSTRAP_RECEIPT.json','preflight/SOURCE_BINDING.json','WORK_ORDER.json',
+        'BENEFIT_CONTRACT.json','MECHANISM_CLASSIFICATION.json','SEQUENCE.json','private/ANON_MAP.json',
+        'installations/P_READY.json','input/PROMPT.txt','input/scene.blend',
+        'schemas/COMMON_NATIVE.json','schemas/P_PUBLIC_TOOLS.json','schemas/N_CONSUMER_TOOLS.json',
+        'schemas/P_CONSUMER_TOOLS.json','scoring/SCORING_CONTRACT.json','scoring/ACTUAL_SNAPSHOT.json','scoring/TRUTH.json']
+    fixed.extend(path.relative_to(BATCH).as_posix() for path in sorted(HERE.glob('*.py')))
+    fixed.extend(path.relative_to(BATCH).as_posix() for path in sorted((BATCH/'preflight').glob('CLI_*.*')))
+    for relative in fixed:
+        plan['dispatch_input_sha256'][relative] = sha(BATCH/relative)
+    save(BATCH/'PLAN.json',plan)
+    print(json.dumps(dict(prepared_slots=6,product_rebuilt=False,model_consumers=0,Blender_sessions=0)))
+
+
+if __name__ == '__main__':
+    main()

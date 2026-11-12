@@ -1,0 +1,86 @@
+--- verification/m4_surface_scan_consumption_001/scoring/score_answer.py
++++ verification\m4_surface_scan_compact_consumption_001\scoring\score_answer.py
+@@ -90,6 +90,29 @@
+     return 'incomplete' if negative else 'complete' if positive else 'not_stated'
+ 
+ 
++def compact_row(row, document):
++    """Read one declared compact fact row without guessing identity or units."""
++    columns = document.get('match_columns')
++    objects = document.get('objects')
++    required = {'object_a', 'object_b', 'object_a_ref', 'object_b_ref', 'distance_m', 'distance_mm'}
++    if (document.get('display_encoding') != 'surface-scan-task-table-v1'
++            or not isinstance(columns, list) or any(not isinstance(key, str) for key in columns)
++            or len(set(columns)) != len(columns) or not required.issubset(columns)
++            or not isinstance(objects, list) or not isinstance(row, list) or len(row) != len(columns)):
++        return None
++    values = dict(zip(columns, row))
++    labels = []
++    for name_key, ref_key in (('object_a', 'object_a_ref'), ('object_b', 'object_b_ref')):
++        reference = values[ref_key]
++        if type(reference) is not int or not 0 <= reference < len(objects):
++            return None
++        obj = objects[reference]
++        if not isinstance(obj, dict) or obj.get('name') != values[name_key]:
++            return None
++        labels.append(obj)
++    return {'objects': labels, 'distance_mm': values['distance_mm'], 'distance_m': values['distance_m']}
++
++
+ def extract_answer(text, snapshot):
+     """Extract common explicit rows without requiring them from consumers."""
+     aliases = namespace(snapshot)
+@@ -108,6 +131,9 @@
+             continue
+         default_unit = document.get('unit') if isinstance(document,dict) else None
+         for index,row in enumerate(rows):
++            compact = isinstance(document, dict) and 'display_encoding' in document
++            if compact:
++                row = compact_row(row, document)
+             if not isinstance(row,dict):
+                 unparsed.append(dict(row=index,reason='structured_row_needs_review'))
+                 continue
+@@ -125,8 +151,11 @@
+                     break
+             if isinstance(value,Decimal):
+                 value = str(value)
+-            claims.append(dict(labels=objects,value=value,unit=unit,
+-                kind='nonmatch' if row.get('matches_threshold') is False else 'match',source_row=index))
++            claim = dict(labels=objects,value=value,unit=unit,
++                kind='nonmatch' if row.get('matches_threshold') is False else 'match',source_row=index)
++            if compact:
++                claim['raw_distance_m'] = row['distance_m']
++            claims.append(claim)
+         return dict(claims=claims,unparsed=unparsed,
+                     completeness=completeness(text,document),aliases=aliases)
+     default_unit = None
+@@ -195,6 +224,14 @@
+             distance_correct += 1
+         else:
+             errors.append(dict(pair=pair,reason='wrong_shortest_surface_distance'))
++        if 'raw_distance_m' in claim:
++            try:
++                raw_value = Fraction(str(claim['raw_distance_m']))*1000
++            except (ValueError,ZeroDivisionError,OverflowError):
++                unresolved.append(dict(pair=pair,reason='raw_distance_value_unresolved'))
++            else:
++                if not distance_valid_mm(raw_value,row['exact_squared_distance_m2']):
++                    errors.append(dict(pair=pair,reason='wrong_raw_shortest_surface_distance'))
+         if not presentation_met(claim.get('value'),unit,row['exact_squared_distance_m2']):
+             presentation_issues.append(dict(pair=pair,reason='presentation_incomplete'))
+     duplicates = sorted(pair for pair,count in seen.items() if count > 1)
+@@ -226,10 +263,10 @@
+ 
+ 
+ def score_slots(sequence, records, truth, snapshot):
+-    """Synthetic six-slot binding checks; the formal pack does no scoring."""
+-    if len(sequence) != 6 or len({row['cell'] for row in sequence}) != 6:
+-        raise ValueError('expected_exactly_six_unique_planned_slots')
+-    if len(records) > 6 or len({row['cell'] for row in records}) != len(records):
++    """Synthetic nine-slot binding checks; the formal pack does no scoring."""
++    if len(sequence) != 9 or len({row['cell'] for row in sequence}) != 9:
++        raise ValueError('expected_exactly_nine_unique_planned_slots')
++    if len(records) > 9 or len({row['cell'] for row in records}) != len(records):
+         raise ValueError('duplicate_or_extra_result_row')
+     expected = {row['cell']:row for row in sequence}
+     for row in records:

@@ -1,0 +1,92 @@
+--- m4_surface_scan_consumption_001/runtime/test_preparation_contract.py
++++ m4_surface_scan_compact_consumption_001/runtime/test_preparation_contract.py
+@@ -42,30 +42,67 @@
+                           'scoring/','oracle','D:/','C:/'):
+             self.assertNotIn(forbidden,text)
+ 
+-    def test_complete_observe_schema_is_same_frozen_real_tools_list(self):
+-        name = 'verification/m4_surface_scan_001_opt1/engineering/run_01/pair_01/B/TOOLS.json'
+-        raw = subprocess.check_output(['git','show','860b87138d40de9cc08b01c947dd864d58da9295:'+name],cwd=ROOT)
+-        tools = json.loads(raw)['result']['tools']
+-        actual = [tool for tool in tools if tool['name'] == 'human_eye_scene_observe']
+-        self.assertEqual(read(BATCH/'schemas/P_PUBLIC_TOOLS.json'),actual)
+-        modes = actual[0]['inputSchema']['properties']['query']['properties']['mode']['enum']
+-        self.assertIn('surface_scan',modes)
+-        self.assertIn('mesh_surface',modes)
+-        self.assertIn('overview',modes)
++    def test_complete_observe_schemas_are_their_frozen_real_tools_lists(self):
++        cases = (
++            ('O', '860b87138d40de9cc08b01c947dd864d58da9295',
++             'verification/m4_surface_scan_001_opt1/engineering/run_01/pair_01/B/TOOLS.json'),
++            ('C', '6ab4e53409e539c71a377f48708f2f8725db6dde',
++             'verification/m4_surface_scan_compact_facts_001/engineering/run_01/TOOLS.json'),
++        )
++        for profile, commit, name in cases:
++            raw = subprocess.check_output(['git', 'show', commit + ':' + name], cwd=ROOT)
++            tools = json.loads(raw)['result']['tools']
++            actual = [tool for tool in tools if tool['name'] == 'human_eye_scene_observe']
++            self.assertEqual(read(BATCH / ('schemas/' + profile + '_PUBLIC_TOOLS.json')), actual)
++            modes = actual[0]['inputSchema']['properties']['query']['properties']['mode']['enum']
++            for mode in ('surface_scan', 'mesh_surface', 'overview'):
++                self.assertIn(mode, modes)
++        old = read(BATCH / 'schemas/O_PUBLIC_TOOLS.json')[0]
++        current = read(BATCH / 'schemas/C_PUBLIC_TOOLS.json')[0]
++        self.assertNotEqual(old, current)
++        self.assertEqual(old['inputSchema']['properties']['response_detail']['default'], 'full')
++        self.assertNotIn('default', current['inputSchema']['properties']['response_detail'])
+ 
+-    def test_only_six_fixed_slots_and_private_random_labels(self):
+-        sequence = read(BATCH/'SEQUENCE.json')['sequence']
+-        self.assertEqual([row['cell'] for row in sequence],['N1','P1','P2','N2','N3','P3'])
+-        self.assertEqual([row['group'] for row in sequence],['N','P','P','N','N','P'])
+-        rows = read(BATCH/'private/ANON_MAP.json')['rows']
+-        self.assertEqual([row['cell'] for row in rows],[row['cell'] for row in sequence])
+-        self.assertEqual(len({row['anonymous_id'] for row in rows}),6)
++    def test_nine_fixed_slots_and_private_random_labels(self):
++        sequence = read(BATCH / 'SEQUENCE.json')['sequence']
++        self.assertEqual([row['cell'] for row in sequence], ['N1','O1','C1','O2','C2','N2','C3','N3','O3'])
++        self.assertEqual([row['group'] for row in sequence], ['N','O','C','O','C','N','C','N','O'])
++        self.assertEqual([row['round'] for row in sequence], [1,1,1,2,2,2,3,3,3])
++        rows = read(BATCH / 'private/ANON_MAP.json')['rows']
++        self.assertEqual([row['cell'] for row in rows], [row['cell'] for row in sequence])
++        self.assertEqual(len({row['anonymous_id'] for row in rows}), 9)
+         for row in rows:
+-            self.assertRegex(row['anonymous_id'],r'^answer_[0-9a-f]{16}$')
+-        common = read(BATCH/'schemas/COMMON_NATIVE.json')
+-        self.assertEqual(read(BATCH/'schemas/N_CONSUMER_TOOLS.json'),[common])
+-        self.assertEqual(read(BATCH/'schemas/P_CONSUMER_TOOLS.json'),
+-                         [common,*read(BATCH/'schemas/P_PUBLIC_TOOLS.json')])
++            self.assertRegex(row['anonymous_id'], r'^answer_[0-9a-f]{16}$')
++        common = read(BATCH / 'schemas/COMMON_NATIVE.json')
++        self.assertEqual(read(BATCH / 'schemas/N_CONSUMER_TOOLS.json'), [common])
++        for profile in ('O', 'C'):
++            self.assertEqual(read(BATCH / ('schemas/' + profile + '_CONSUMER_TOOLS.json')),
++                             [common, *read(BATCH / ('schemas/' + profile + '_PUBLIC_TOOLS.json'))])
++
++    def test_each_installation_keeps_its_source_and_common_python(self):
++        source = read(BATCH / 'preflight/SOURCE_BINDING.json')['profiles']
++        ready = {name: read(BATCH / ('installations/' + name + '_READY.json')) for name in ('O', 'C')}
++        self.assertEqual(ready['O']['dependency_python'], ready['C']['dependency_python'])
++        self.assertNotEqual(ready['O']['source_sha256'], ready['C']['source_sha256'])
++        self.assertNotEqual(ready['O']['entry'], ready['C']['entry'])
++        for name in ('O', 'C'):
++            self.assertEqual(ready[name]['source_count'], 138)
++            self.assertEqual(ready[name]['source_sha256'], source[name]['source_sha256'])
++            self.assertEqual(ready[name]['commit'], source[name]['product_commit'])
++            for item in source[name]['source_manifest']:
++                path = Path(ready[name]['install_root']) / item['path']
++                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), item['sha256'])
++                if name == 'C':
++                    self.assertEqual(path.read_bytes(), (ROOT / item['path']).read_bytes())
++        self.assertFalse(source['O']['current_checkout_equal'])
++        self.assertTrue(source['C']['current_checkout_equal'])
++
++    def test_cli_executable_is_the_previous_frozen_binary(self):
++        previous = read(ROOT / 'verification/m4_surface_scan_consumption_001/PLAN.json')
++        record = read(BATCH / 'preflight/CLI_REUSE.json')
++        self.assertEqual(record['sha256'], previous['CLI_sha256'])
++        self.assertEqual(hashlib.sha256(Path(record['frozen_executable']).read_bytes()).hexdigest(), record['sha256'])
++        self.assertEqual(record['new_CLI_processes'], 0)
+ 
+     def test_consumer_settings_keep_reused_isolation_and_model(self):
+         previous = ROOT/'verification/m4_grooved_rail_consumption_001/runtime/consumer_transport.py'

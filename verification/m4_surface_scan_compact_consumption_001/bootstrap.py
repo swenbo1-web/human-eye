@@ -1,0 +1,192 @@
+"""Bind the two existing installations and common BASE without live startup."""
+import ast
+from datetime import datetime, timezone
+import hashlib
+import io
+import json
+from pathlib import Path
+import secrets
+import subprocess
+import time
+import zipfile
+
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
+QUAL = ROOT / 'verification/m4_surface_scan_001/qualification'
+QUAL_COMMIT = '96fce78b98cb749885792112e039a406744d282b'
+ORDER = ('N1', 'O1', 'C1', 'O2', 'C2', 'N2', 'C3', 'N3', 'O3')
+PROFILES = {
+    'O': dict(commit='c1cb2da32034e056a270384e691a2cde8dddbc0d',
+        delivery='860b87138d40de9cc08b01c947dd864d58da9295',
+        source='c4832b1a1ced9438f904e25a431e2327c2d7532e2f4efbb34e34ce58a7ed1943',
+        wheel='1ad6cd9ad3eb4ca27b62b49e3fa1e2ad66c00f163a80cf268b033d06b7bb4d79',
+        ready='verification/m4_surface_scan_001_opt1/installation/run_01/READY.json',
+        tools='verification/m4_surface_scan_001_opt1/engineering/run_01/pair_01/B/TOOLS.json'),
+    'C': dict(commit='452b44d2dcf231d6675bef54e568db0431a29261',
+        delivery='6ab4e53409e539c71a377f48708f2f8725db6dde',
+        source='4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6',
+        wheel='f71c299926ebb38b1c09a2ca9b26a90416810b2407e3b955a43502ad86a55792',
+        ready='verification/m4_surface_scan_compact_facts_001/installation/run_01/READY.json',
+        tools='verification/m4_surface_scan_compact_facts_001/engineering/run_01/TOOLS.json'),
+}
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read(path):
+    return json.loads(path.read_bytes())
+
+
+def save(path, value):
+    with path.open('x', encoding='utf8', newline='\n') as stream:
+        json.dump(value, stream, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False)
+        stream.write('\n')
+
+
+def copy_exact(source, target):
+    raw = source.read_bytes()
+    if target.exists():
+        assert target.read_bytes() == raw, str(target)
+    else:
+        target.write_bytes(raw)
+
+
+def git_bytes(commit, relative):
+    return subprocess.check_output(['git', 'show', commit + ':' + relative], cwd=ROOT)
+
+
+def native_schema(path):
+    tree = ast.parse(path.read_bytes())
+    return ast.literal_eval(next(node.value for node in tree.body if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == 'NATIVE' for target in node.targets)))
+
+
+def verify_profile(profile, spec):
+    original_ready = ROOT / spec['ready']
+    assert original_ready.read_bytes() == git_bytes(spec['delivery'], spec['ready'])
+    ready = read(original_ready)
+    assert ready['commit'] == spec['commit'] and ready['source_sha256'] == spec['source']
+    assert ready['source_count'] == 138 and ready['wheel_sha256'] == spec['wheel']
+    fixed_path = Path(ready['fixed_inputs'])
+    assert fixed_path.read_bytes() == git_bytes(spec['delivery'], fixed_path.relative_to(ROOT).as_posix())
+    manifest = read(fixed_path)['manifest']
+    tree = ast.parse(git_bytes(spec['commit'], 'human_eye_plugin/runtime_identity.py'))
+    constants = {node.targets[0].id: ast.literal_eval(node.value) for node in tree.body
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id in ('BASE_VERSION', 'IMPLEMENTATION_REVISION')}
+    canonical = json.dumps(dict(base_version=constants['BASE_VERSION'],
+        implementation_revision=constants['IMPLEMENTATION_REVISION'], files=manifest),
+        sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()
+    assert len(manifest) == 138 and hashlib.sha256(canonical).hexdigest() == spec['source']
+    refs = ''.join(spec['commit'] + ':' + row['path'] + '\n' for row in manifest).encode()
+    blobs = io.BytesIO(subprocess.run(['git', 'cat-file', '--batch'], input=refs, cwd=ROOT,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout)
+    wheel_path = next(fixed_path.parent.glob('bundle/*.whl'))
+    assert sha(wheel_path) == spec['wheel']
+    with zipfile.ZipFile(wheel_path) as wheel:
+        for row in manifest:
+            header = blobs.readline().split()
+            assert len(header) == 3 and header[1] == b'blob'
+            raw = blobs.read(int(header[2]))
+            assert blobs.read(1) == b'\n' and hashlib.sha256(raw).hexdigest() == row['sha256']
+            assert (Path(ready['install_root']) / row['path']).read_bytes() == wheel.read(row['path']) == raw
+            if profile == 'C':
+                assert (ROOT / row['path']).read_bytes() == raw, row['path']
+    assert blobs.read() == b''
+    assert sha(Path(ready['entry'])) == ready['launcher_sha256']
+    assert sha(Path(ready['release']) / 'admin/RUNTIME_BINDING.json') == ready['binding_sha256']
+    tools_path = ROOT / spec['tools']
+    assert tools_path.read_bytes() == git_bytes(spec['delivery'], spec['tools'])
+    observe = [tool for tool in read(tools_path)['result']['tools']
+               if tool['name'] == 'human_eye_scene_observe']
+    assert len(observe) == 1
+    return ready, observe, dict(product_commit=spec['commit'], source_sha256=spec['source'],
+        source_count=138, source_manifest=manifest, installation_ready_sha256=sha(original_ready),
+        previous_actual_tools_list=str(tools_path), previous_actual_tools_list_sha256=sha(tools_path),
+        commit_wheel_install_equal=True, current_checkout_equal=profile == 'C',
+        current_checkout_comparison_scope='only C is the current checkout; O is bound by Git/wheel/install')
+
+
+def main():
+    started = time.perf_counter_ns()
+    assert not (HERE / 'STARTED.json').exists() and not (HERE / 'PLAN.json').exists()
+    assert sha(HERE / 'ROOT_PLAN.md') == '0dfea3156b5c6db34b835bc45441eb7aabb23cccc30953928a5a39cf8e73a3fd'
+    for name in ('installations', 'input', 'schemas', 'private', 'preflight', 'scoring'):
+        (HERE / name).mkdir(exist_ok=True)
+    profiles = {name: verify_profile(name, spec) for name, spec in PROFILES.items()}
+    assert profiles['O'][0]['dependency_python'] == profiles['C'][0]['dependency_python']
+    qualification_path = QUAL / 'QUALIFICATION_READY.json'
+    qualification = git_bytes(QUAL_COMMIT, qualification_path.relative_to(ROOT).as_posix())
+    assert qualification_path.read_bytes() == qualification
+    promised = json.loads(qualification)
+    names = {'asset': 'assembly.blend', 'base_snapshot': 'BASE_SNAPSHOT.json',
+        'edit_snapshot': 'EDIT_SNAPSHOT.json', 'base_truth': 'BASE_TRUTH.json',
+        'edit_truth': 'EDIT_TRUTH.json', 'geometry_freeze': 'GEOMETRY_FREEZE.json',
+        'control_certificates': 'CONTROL_CERTIFICATES.json'}
+    checked = {str(QUAL / name): promised[key + '_sha256'] for key, name in names.items()}
+    worker = QUAL.parent / 'worker'
+    checked[str(worker / 'pose_native.py')] = promised['pose_helper_sha256']
+    checked[str(worker / 'POSE_PATCH.json')] = promised['pose_patch_sha256']
+    assert all(sha(Path(path)) == digest for path, digest in checked.items())
+    qmanifest_path = QUAL / 'SOURCE_OUTPUT_MANIFEST.json'
+    qmanifest = git_bytes(QUAL_COMMIT, qmanifest_path.relative_to(ROOT).as_posix())
+    assert qmanifest_path.read_bytes() == qmanifest
+    for row in json.loads(qmanifest)['files']:
+        path = QUAL.parent / row['path']
+        assert sha(path) == row['sha256'] and path.stat().st_size == row['bytes']
+    copy_exact(QUAL / 'assembly.blend', HERE / 'input/scene.blend')
+    copy_exact(ROOT / 'verification/m4_surface_scan_consumption_001/input/PROMPT.txt', HERE / 'input/PROMPT.txt')
+    copy_exact(QUAL / 'BASE_SNAPSHOT.json', HERE / 'scoring/ACTUAL_SNAPSHOT.json')
+    copy_exact(QUAL / 'BASE_TRUTH.json', HERE / 'scoring/TRUTH.json')
+    assert sha(HERE / 'input/PROMPT.txt') == '6a78e38a474647c0c0c49558be215864cb672932273b3e15ca6ba7f9fa02b4fc'
+    prompt = next(line[2:] for line in (HERE / 'ROOT_PLAN.md').read_text(encoding='utf8').splitlines()
+                  if line.startswith('> 检查'))
+    assert (HERE / 'input/PROMPT.txt').read_bytes() == (prompt + '\n').encode('utf8')
+    native_path = ROOT / 'verification/native_plugin_complex_003/actor.py'
+    native = native_schema(native_path)
+    save(HERE / 'schemas/COMMON_NATIVE.json', native)
+    save(HERE / 'schemas/N_CONSUMER_TOOLS.json', [native])
+    for profile, (ready, observe, binding) in profiles.items():
+        copy_exact(ROOT / PROFILES[profile]['ready'], HERE / ('installations/' + profile + '_READY.json'))
+        save(HERE / ('schemas/' + profile + '_PUBLIC_TOOLS.json'), observe)
+        save(HERE / ('schemas/' + profile + '_CONSUMER_TOOLS.json'), [native, observe[0]])
+    sequence = [dict(cell=cell, group=cell[0], task='T1', round=int(cell[1]), slot=index)
+                for index, cell in enumerate(ORDER, 1)]
+    save(HERE / 'SEQUENCE.json', dict(sequence=sequence, serial=True, replacements=0))
+    save(HERE / 'private/ANON_MAP.json', dict(created_before_consumers=True,
+        labels_scope='private mapping; publish anonymous_id only',
+        rows=[dict(row, anonymous_id='answer_' + secrets.token_hex(8)) for row in sequence]))
+    save(HERE / 'QUALIFICATION_SEAL.json', dict(qualification_commit=QUAL_COMMIT,
+        qualification_ready_sha256=hashlib.sha256(qualification).hexdigest(), existing_promises=checked,
+        qualification_files_verified=len(json.loads(qmanifest)['files']),
+        profiles={name: dict(product_commit=spec['commit'], source_sha256=spec['source'], source_count=138)
+                  for name, spec in PROFILES.items()},
+        root_review_manifest_sha256=sha(HERE / 'preflight/ADMIN_REVIEW_MANIFEST.json'),
+        model_consumers=0, Blender_sessions=0, live_product_processes=0))
+    protected = {str(path): sha(path) for path in [ROOT / 'pyproject.toml',
+        Path('C:/Users/Administrator/.codex/config.toml'), Path('D:/hefe/.codex/config.toml')]}
+    protected.update(checked)
+    protected[str(qmanifest_path)] = hashlib.sha256(qmanifest).hexdigest()
+    for row in json.loads(qmanifest)['files']:
+        protected[str(QUAL.parent / row['path'])] = row['sha256']
+    save(HERE / 'preflight/PROTECTED_BEFORE.json', protected)
+    save(HERE / 'preflight/SOURCE_BINDING.json', dict(
+        profiles={name: value[2] for name, value in profiles.items()},
+        asset_sha256=promised['asset_sha256'], actual_asset_copy=str(QUAL / 'assembly.blend'),
+        snapshot_sha256=promised['base_snapshot_sha256'], truth_sha256=promised['base_truth_sha256'],
+        qualification_seal_sha256=sha(HERE / 'QUALIFICATION_SEAL.json'),
+        common_native_source=str(native_path), common_native_source_sha256=sha(native_path),
+        common_native_schema_unchanged=True, observe_declarations_unchanged=True,
+        installation_rebuilt=False, models=0, Blender_sessions=0, live_product_processes=0))
+    save(HERE / 'preflight/BOOTSTRAP_RECEIPT.json', dict(recorded_utc=datetime.now(timezone.utc).isoformat(),
+        elapsed_ns=time.perf_counter_ns() - started, models=0, Blender_sessions=0, product_pretests=0,
+        qualification_promises_verified=9, qualification_files_verified=len(json.loads(qmanifest)['files']),
+        runtime_sources_verified_per_profile=138, ordinary_observe_tools_per_profile=1))
+    print(json.dumps(dict(prepared_input=True, profiles=['O', 'C'], model_consumers=0, Blender_sessions=0)))
+
+
+if __name__ == '__main__':
+    main()

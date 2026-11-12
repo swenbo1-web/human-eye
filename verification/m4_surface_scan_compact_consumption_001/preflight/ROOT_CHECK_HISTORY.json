@@ -1,0 +1,15 @@
+{
+  "initial_root_test_launch": {
+    "exception": "ImportError: Start directory is not importable",
+    "cause": "unittest discover with top_level_dir requires an importable start directory; these test directories use namespace package imports",
+    "correction": "Load explicit dotted test modules without adding package files",
+    "new_live_starts": 0
+  },
+  "first_combined_run": {
+    "tests_run": 92,
+    "errors": 10,
+    "failures": 0,
+    "cause": "Bridge test module defaults to its already populated first-run fixture directory. Explicit import did not execute its main directory setup.",
+    "correction": "Use a new bridge.OUT fixture path within the root rerun, preserving earlier receipts and test source."
+  }
+}

@@ -1,0 +1,90 @@
+--- previous/test_bridge_contract.py
++++ current/test_bridge_contract.py
+@@ -34,8 +34,10 @@
+ transport = load('_grooved_rail_bridge_transport', HERE / 'consumer_transport.py')
+ old_actor = ROOT / 'verification/m4_grooved_rail_consumption_001/runtime/actor.py'
+ old_transport = old_actor.with_name('consumer_transport.py')
+-tool_path = HERE.parent/'schemas/P_PUBLIC_TOOLS.json'
+-TOOLS = json.loads(tool_path.read_bytes())
++tool_path = HERE.parent/'schemas/O_PUBLIC_TOOLS.json'
++TOOLS_BY_PROFILE = {profile:json.loads((HERE.parent/'schemas'/(profile+'_PUBLIC_TOOLS.json')).read_bytes())
++                    for profile in ('O','C')}
++TOOLS = TOOLS_BY_PROFILE['O']
+ OBSERVE = next(tool for tool in TOOLS if tool['name'] == 'human_eye_scene_observe')
+ EVIDENCE['tool_declaration_source'] = {'path': str(tool_path), 'sha256': hashlib.sha256(tool_path.read_bytes()).hexdigest()}
+ 
+@@ -46,13 +48,14 @@
+ 
+ 
+ @contextmanager
+-def synthetic_owner(group, *, runtime_confirmed=True, runtime_exit_error=False):
++def synthetic_owner(group, *, profile='O', runtime_confirmed=True, runtime_exit_error=False):
+     folder = OUT / 'tmp' / ('owner_' + str(len(EVIDENCE['checks'])).zfill(3))
+     folder.mkdir(parents=True, exist_ok=False)
+     asset = folder / 'synthetic.blend'
+     asset.write_bytes(b'synthetic data, never opened by Blender')
+     records = []
+-    actual_tools = copy.deepcopy(TOOLS)
++    actual_tools = copy.deepcopy(TOOLS_BY_PROFILE[profile])
++    source = {'O':SOURCE,'C':'4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6'}[profile]
+     selected = next(tool for tool in actual_tools if tool['name'] == 'human_eye_scene_observe')
+     selected['x-synthetic-preserved'] = {'nested': [None, False, {'unknown': 'retained'}]}
+     payload = {'content': [{'type': 'text', 'text': '{"schema_version":"task-query-set-v2","unknown":{"value":null}}'}],
+@@ -101,7 +104,7 @@
+                 stream.write(b'{"event":"request_trace","pid":900002}\n')
+             method = request['method']
+             if method == 'initialize':
+-                return {'result': {'_meta': {'human_eye': {'source_sha256': SOURCE, 'source_kind': 'installed_distribution'}}}}
++                return {'result': {'_meta': {'human_eye': {'source_sha256': source, 'source_kind': 'installed_distribution'}}}}
+             if method == 'notifications/initialized':
+                 return None
+             if method == 'tools/list':
+@@ -133,7 +136,7 @@
+     config = {'group': group, 'output': str(folder / 'owner'), 'worker_deadline_ns': time.perf_counter_ns() + 570_000_000_000,
+               'blender': 'synthetic-never-launched', 'asset': str(asset), 'asset_sha256': hashlib.sha256(asset.read_bytes()).hexdigest(),
+               'install_root': 'synthetic-install', 'entry': 'synthetic-entry', 'dependency_python': 'synthetic-python',
+-              'source_sha256': SOURCE, 'read_schemas': [copy.deepcopy(selected)] if group == 'P' else []}
++              'source_sha256': source, 'read_schemas': [copy.deepcopy(selected)] if group == 'P' else []}
+     instance = actor.Owner.__new__(actor.Owner)
+     with ExitStack() as stack:
+         stack.enter_context(patch.object(actor.importlib.util, 'spec_from_file_location',
+@@ -167,7 +170,9 @@
+         self.assertEqual(hashlib.sha256((batch / 'input/scene.blend').read_bytes()).hexdigest(),
+                          '7f6452d1d706a9f2db31126eb3aa7d08622e37a28abb9610992006bad5f5ad66')
+         self.assertEqual(json.loads((batch / 'schemas/COMMON_NATIVE.json').read_bytes()), actor.base.NATIVE)
+-        self.assertEqual(json.loads((batch / 'schemas/P_PUBLIC_TOOLS.json').read_bytes()), [OBSERVE])
++        self.assertEqual(json.loads((batch / 'schemas/O_PUBLIC_TOOLS.json').read_bytes()), [OBSERVE])
++        self.assertEqual(len(TOOLS_BY_PROFILE['C']),1)
++        self.assertNotEqual(TOOLS_BY_PROFILE['C'],TOOLS_BY_PROFILE['O'])
+ 
+     def test_argv_is_text_only_and_matches_exact_preapproval(self):
+         folder = OUT / 'tmp/argv'
+@@ -273,6 +278,28 @@
+             self.assertNotIn('include_image', request['params']['arguments'])
+             self.assertTrue(owner.close()['confirmed'])
+ 
++    def test_both_product_profiles_forward_full_declarations_and_business_payload(self):
++        for profile in ('O','C'):
++            with self.subTest(profile=profile),synthetic_owner('P',profile=profile) as (owner,config,payload,selected,records):
++                config['external_group']=profile
++                owner.__init__(config)
++                self.assertEqual(owner.tools,[actor.base.NATIVE,selected])
++                request={'jsonrpc':'2.0','id':profile,'method':'tools/call','params':{
++                    'name':'human_eye_scene_observe','arguments':{'query':{'mode':'surface_scan','threshold_m':.002}}}}
++                self.assertEqual(owner.handle(request)['result'],payload)
++                identity=json.loads((Path(config['output'])/'IDENTITY.json').read_bytes())
++                self.assertEqual(identity['external_group'],profile)
++                self.assertEqual(identity['runtime_identity']['source_sha256'],config['source_sha256'])
++                proof=json.loads((Path(config['output'])/'PRODUCT_RUNTIME_PROOF.json').read_bytes())
++                self.assertIs(proof['before_stdin'],False)
++                self.assertIs(proof['before_consumer_business'],True)
++                self.assertLessEqual(proof['initial_QA_completed_ns'],proof['metadata_completed_ns'])
++                ordered=[row[0:2] for row in records]
++                proof_index=next(i for i,row in enumerate(ordered) if row[0]=='runtime_proof')
++                ping_index=next(i for i,row in enumerate(ordered) if row==('peer','ping'))
++                self.assertLess(ping_index,proof_index)
++                self.assertTrue(owner.close()['confirmed'])
++
+     def test_budget_is_cumulative_and_bounded_error_counts(self):
+         with synthetic_owner('P') as (owner, config, payload, selected, records):
+             owner.__init__(config)
