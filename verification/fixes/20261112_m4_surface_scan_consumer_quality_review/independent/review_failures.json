@@ -1,0 +1,34 @@
+{
+  "schema": "independent-review-failures-v1",
+  "failures": [
+    {
+      "operation": "Initial broad display of README, INDEX, task, contract and TRUTH",
+      "kind": "output_truncation",
+      "process_exit_code": 0,
+      "effect": "TRUTH was too large for the display budget. Truncated text was not used as complete truth review.",
+      "resolution": "audit_quality.py subsequently loads the full TRUTH bytes, validates all 276 exact threshold classifications, and writes all 1656 answer/pair cells. Focused business evidence views replace the broad display."
+    },
+    {
+      "operation": "Initial evidence structure display plus first snapshot object",
+      "kind": "output_truncation",
+      "process_exit_code": 0,
+      "effect": "Display contained too much object metadata and was truncated.",
+      "resolution": "Focused public event summaries and full machine-loaded AST/source records were reviewed; no pass was inferred from the truncated display."
+    },
+    {
+      "operation": "Supplementary final line-number display",
+      "kind": "encoding_error",
+      "process_exit_code": 1,
+      "error": "UnicodeDecodeError: 'gbk' codec can't decode byte 0xa3 in position 16: illegal multibyte sequence",
+      "cause": "A one-off read_text() omitted explicit UTF-8 on this Windows host.",
+      "effect": "Stopped before supplementary answer-line display. Prior full final reads and audit_quality.py already used the correct encoding.",
+      "resolution": "Re-read with encoding='utf-8'; preserve this failed check rather than replacing its history. The corrected read succeeded, but GBK stdout rendered Chinese as mojibake; subsequent Python displays use -X utf8. Formal file parsing and written JSON/CSV use explicit UTF-8 and are unaffected."
+    }
+  ],
+  "formal_pair_audit_run_01": {
+    "status": "completed",
+    "script_exceptions": [],
+    "factual_failures": [],
+    "log": "run_01.log"
+  }
+}
