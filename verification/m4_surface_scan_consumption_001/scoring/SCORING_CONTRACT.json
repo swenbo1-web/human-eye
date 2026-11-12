@@ -1,0 +1,72 @@
+{
+  "schema": "m4-surface-scan-anonymous-quality-v1",
+  "cycle_id": "M4-SURFACE-SCAN-CONSUMPTION-001",
+  "frozen_before_consumers": true,
+  "scope": "One qualified BASE scene, six fresh fixed consumers, text-only common task.",
+  "input_materials": {
+    "qualification_commit": "96fce78b98cb749885792112e039a406744d282b",
+    "actual_geometry": "scoring/ACTUAL_SNAPSHOT.json",
+    "independent_truth": "scoring/TRUTH.json",
+    "actual_snapshot_sha256": "f8a578f78004a21e611c76d47506c5290f6015e7343e67b3b094a9e54da9884b",
+    "independent_truth_sha256": "a0f14b1a48601590445ce5e2d13bb34f56647caa2acedf3eeac97b32e8a656c7",
+    "geometry_unit": "m",
+    "coordinate_frame": "world"
+  },
+  "primary_fixed_denominators": {
+    "all_object_pairs": 276,
+    "true_matching_pairs": 71,
+    "consumer_slots": 6
+  },
+  "complete_correct": "The final answer, including any clearly incorporated complete visible business list, establishes exactly all true triangle-surface distance matches at the exact binary64 0.002 metre threshold, accurate distances represented in millimetres at the requested effective precision, uniquely resolvable labels and an explicit completeness statement. No weighted compensation applies.",
+  "status_categories": {
+    "complete_correct": "All task requirements are satisfied.",
+    "incorrect": "A definite wrong pair, distance, duplicate, wrong completeness claim, or unsupported additional deterministic claim is present. Definite error takes priority over incompleteness.",
+    "incomplete": "Missing or uncertain task facts or unmet requested presentation, including honest unresolved coverage, absent completeness, m/cm-only representation or insufficient nonzero display precision, without a definite factual error.",
+    "execution_failure": "A started execution fails or does not provide a confirmed usable final answer. Preserve partial text and all attempts.",
+    "not_run": "A planned slot did not start. Preserve its place in the six-slot denominator."
+  },
+  "distance_policy": {
+    "requested_unit": "mm",
+    "requested_display_precision_mm": "0.001",
+    "absolute_error_mm": "0.000500001",
+    "threshold_m_binary64": 0.002,
+    "classification": "Compare exact squared rational distance to the square of Fraction(binary64(0.002)). Display rounding does not change membership.",
+    "display": "Complete correctness requires millimetre representation and effective display resolution at most 0.001 mm. Equivalent scientific notation is eligible. A true zero distance may be written as 0. Explicit m/cm-only values remain numerically assessable but do not automatically satisfy the requested presentation.",
+    "numeric_reference": "pairs[].exact_squared_distance_m2 contains exact numerator and denominator integer strings. Test the squared stated-distance tolerance interval against this exact value, avoiding a rounded oracle sqrt.",
+    "presentation_incomplete": "Numerically correct values using only other units, or nonzero values with insufficient display precision, are recorded separately as presentation_incomplete and assessed as incomplete or referred for manual review. They are not numerical incorrectness."
+  },
+  "completeness_policy": {
+    "omission_with_complete_claim": "incorrect",
+    "omission_with_admitted_incomplete_or_unknown": "incomplete",
+    "all_pairs_correct_but_no_completeness_statement": "incomplete",
+    "definite_error_with_incomplete_claim": "incorrect"
+  },
+  "evidence_policy": {
+    "common_standard": "Apply the same fact and source rules to every anonymous answer.",
+    "native_tools": "Batch reads, Blender APIs, NumPy/BVH and per-cell scripts/caches are eligible. No forced tool, proof algorithm or path is required.",
+    "source_binding": "Recorded business evidence and initial/final captures must concern the frozen current scene. The final answer need not repeat administrative hashes or IDs.",
+    "extra_facts": "No world witnesses, negative-pair list, solid classification or manually reproduced proof is required. Extra deterministic errors are recorded.",
+    "solid_scope": "Surface distance alone does not establish collision freedom, penetration depth or containment. A surface nonmatch is not a certificate of no solid collision.",
+    "mechanism": "Tool adoption, fallback and repeated computation are assessed after anonymous quality is frozen."
+  },
+  "language_policy": {
+    "no_required_JSON_or_field_spelling": true,
+    "unambiguous_aliases_or_current_scene_bound_IDs_accepted": true,
+    "manual_review_for_unparsed_free_text": true,
+    "parser_is_synthetic_regression_aid": true,
+    "no_automatic_formal_scoring_by_packer": true,
+    "clear_reference_to_complete_visible_business_list_accepted": "Eligible when the referenced visible list itself gives millimetres and the requested effective display precision. A raw distance_m list alone does not automatically satisfy all task requirements.",
+    "no_required_repetition_of_every_business_row_in_final": true
+  },
+  "fixed_sample_policy": "Exactly N1/P1, P2/N2, N3/P3. All failures, unknowns and not-run slots remain; no replacement or selective pooling.",
+  "anonymization_policy": "First share only the public package. Mask group labels, administrative timings and usage envelopes; preserve final bytes, native stdout, query/code, all business facts, errors, unknowns and duplicate attempts. Tool content can reveal route, so blindness is imperfect.",
+  "quality_before_cost": true,
+  "independent_truth_layout": {
+    "pairs": "All 276 unordered object pairs with exact squared distances and threshold membership.",
+    "true_matches": "71 threshold matches; hidden from consumers.",
+    "snapshot_binding": "TRUTH.snapshot_sha256 binds ACTUAL_SNAPSHOT original bytes."
+  },
+  "model_consumers_executed_by_contract_creation": 0,
+  "product_calls_executed_by_contract_creation": 0,
+  "Blender_sessions_executed_by_contract_creation": 0
+}

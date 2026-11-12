@@ -1,0 +1,134 @@
+--- previous/driver.py
++++ current/driver.py
+@@ -16,9 +16,9 @@
+ 
+ HERE=Path(__file__).resolve().parent.parent
+ ROOT=HERE.parents[1]
+-CYCLE='M4-GROOVED-RAIL-TRANSFER-001'
+-SOURCE_BY_PROFILE={'P':'2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390'}
+-COMMIT_BY_PROFILE={'P':'e836e03f4b3821f869c72ac3e50df5204f28b50f'}
++CYCLE='M4-SURFACE-SCAN-CONSUMPTION-001'
++SOURCE_BY_PROFILE={'P':'c4832b1a1ced9438f904e25a431e2327c2d7532e2f4efbb34e34ce58a7ed1943'}
++COMMIT_BY_PROFILE={'P':'c1cb2da32034e056a270384e691a2cde8dddbc0d'}
+ GROUP_ORDER=('N','P','P','N','N','P')
+ sha=lambda path:hashlib.sha256(Path(path).read_bytes()).hexdigest()
+ 
+@@ -44,7 +44,7 @@
+     expected=None if external=='N' else SOURCE_BY_PROFILE[profile]
+     assert arm['source_sha256']==expected, 'arm_source_changed'
+     ready=plan['installations'][profile]
+-    assert ready['source_sha256']==SOURCE_BY_PROFILE[profile] and ready['source_count']==137
++    assert ready['source_sha256']==SOURCE_BY_PROFILE[profile] and ready['source_count']==138
+     assert ready['commit']==COMMIT_BY_PROFILE[profile], 'installation_commit_changed'
+     assert ready['dependency_python']==plan['installation_ready']['dependency_python'], 'common_dependency_changed'
+     private_slot=dict(slot, group=internal, external_group=external)
+@@ -57,7 +57,7 @@
+     assert go['plan_sha256']==plan_sha256 and go['max_consumers']==6, 'authorization_not_bound_to_six_frozen_slots'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE
+     assert len(plan['sequence'])==6 and len({row['cell'] for row in plan['sequence']})==6
+-    assert [row['cell'] for row in plan['sequence']]==['grc'+str(index).zfill(2) for index in range(1,7)], 'fresh_cycle_cell_ids_required'
++    assert [row['cell'] for row in plan['sequence']]==['N1','P1','P2','N2','N3','P3'], 'fresh_cycle_cell_ids_required'
+     assert tuple(row['group'] for row in plan['sequence'])==GROUP_ORDER, 'fixed_group_order_changed'
+     assert all(row['task']=='T1' and row['round']==index//2+1 for index,row in enumerate(plan['sequence']))
+     assert plan['image_count']==0 and plan['new_images']==0
+@@ -182,6 +182,41 @@
+     return re.search(r'\b(?:http(?:/[\d.]+)?(?:\s+status)?|status(?:\s+code)?|error(?:\s+code)?)'
+                      r'\s*[:=]?\s*(?:429|503)\b', text) is not None
+ 
++
++def close_cell_accounting(folder, row, records, stop):
++    """Observe completion after business receipts and owned cleanup have closed.
++
++    These two controller timing receipts describe their own publication
++    separately. Their final self-publication is outside the business window.
++    File close is the existing durability level, with no fsync assertion.
++    """
++    folder.mkdir(parents=True, exist_ok=True)
++    save(HERE/'RUN_RESULT.json', {'records': records, 'stop': stop,
++        'started_cells': len(records), 'maximum_consumers': 6,
++        'all_planned_dispatched': len(records) == 6, 'no_replacements': True})
++    business_closed_ns = time.perf_counter_ns()
++    elapsed = business_closed_ns-row['cell_started_ns']
++    timing = {
++        'cell': row['cell'], 'cell_started_ns': row['cell_started_ns'],
++        'business_receipts_closed_ns': business_closed_ns,
++        'full_cell_wall_ns': elapsed, 'within_570s': elapsed < 570*10**9,
++        'owner_cleanup_confirmed': bool(row.get('finish') and row['finish'].get('confirmed')),
++        'scope': 'Before cell input checks through final CONSUMER, OWNER_FINISH and per-cell RUN_RESULT write/close and owned cleanup; controller timing-receipt publication is separate',
++        'durability': 'existing buffered write and close; fsync persistence unmeasured',
++    }
++    publication_started_ns = time.perf_counter_ns()
++    save(folder/'CELL_FINAL_TIMING.json', timing)
++    publication_closed_ns = time.perf_counter_ns()
++    save(folder/'CELL_TIMING_PUBLICATION.json', {
++        'cell': row['cell'], 'business_receipts_closed_ns': business_closed_ns,
++        'timing_receipt_publication_started_ns': publication_started_ns,
++        'timing_receipt_publication_closed_ns': publication_closed_ns,
++        'timing_receipt_publication_ns': publication_closed_ns-publication_started_ns,
++        'controller_tail_ns': publication_closed_ns-business_closed_ns,
++        'scope': 'CELL_FINAL_TIMING serialization, write and close; this publication receipt itself and later batch summaries excluded',
++    })
++    return timing
++
+ def run_models():
+     """Only this cycle's directly authorized frozen six-consumer receipt authorizes this entry."""
+     batch_started_ns = time.perf_counter_ns()
+@@ -201,7 +236,14 @@
+         cell_deadline_ns = cell_started_ns+570*10**9
+         folder, process = None, None
+         row = {**slot, 'errors': [], 'consumer': None, 'finish': None,
+-            'cell_started_ns': cell_started_ns, 'worker_deadline_ns': cell_deadline_ns}
++            'cell_started_ns': cell_started_ns, 'worker_deadline_ns': cell_deadline_ns,
++            'final_timing_receipt': 'cells/'+slot['cell']+'/CELL_FINAL_TIMING.json'}
++        records.append(row)
++        # Reserve this planned slot before any owner or consumer can start.
++        # A later accounting failure retains its started identity in RUN_RESULT.
++        save(HERE/'RUN_RESULT.json', {'records': records, 'stop': 'cell_in_progress',
++            'started_cells': len(records), 'maximum_consumers': 6,
++            'all_planned_dispatched': False, 'no_replacements': True})
+         try:
+             verify_frozen_inputs(plan)
+             task = plan['tasks'][slot['task']]
+@@ -222,19 +264,25 @@
+             row['errors'].append({'type': type(exc).__name__, 'message': str(exc), 'traceback': traceback.format_exc()})
+             stop = 'launch_or_execution_state_requires_review; no replacement consumer'
+         finally:
++            folder = folder or HERE/'cells'/slot['cell']
+             if process is not None:
+                 try:
+                     row['finish'] = finish(folder, process)
+                 except BaseException as exc:
+                     row['errors'].append({'type': type(exc).__name__, 'message': str(exc)})
++            elif (folder/'OWNER_FINISH.json').exists():
++                # prepare() owns cleanup when startup fails before returning.
++                row['finish'] = read(folder/'OWNER_FINISH.json')
+             row['cell_ended_ns'] = time.perf_counter_ns()
+-            row['cell_timing_scope'] = 'before per-cell input validation through owner close; excludes subsequent cell accounting publication'
++            row['cell_timing_scope'] = 'prefix through owned cleanup; final business accounting closes in CELL_FINAL_TIMING.json'
+             row['full_cell_wall_ns'] = row['cell_ended_ns']-cell_started_ns
+             row['within_570s'] = row['full_cell_wall_ns'] < 570*10**9
++            row['within_570s_scope'] = 'prefix; authoritative business-close budget in CELL_FINAL_TIMING.json'
+             if row['consumer'] is not None:
+                 consumer = row['consumer']
+                 consumer['owner_finish'] = row['finish']
+                 consumer['total_task_wall_ns'] = row['full_cell_wall_ns']
++                consumer['total_task_wall_scope'] = row['cell_timing_scope']
+                 consumer['pre_consumer_setup_ns'] = consumer['started_ns']-cell_started_ns
+                 save(folder/'CONSUMER.json', consumer)
+                 if not consumer['safe_to_continue']:
+@@ -264,10 +312,11 @@
+                         stop = 'product_channel_status_unknown'
+             if not row['within_570s']:
+                 stop = 'original_full_cell_deadline_exceeded'
+-            records.append(row)
+-            save(HERE/'RUN_RESULT.json', {'records': records, 'stop': stop,
+-                'started_cells': len(records), 'maximum_consumers': 6,
+-                'all_planned_dispatched': len(records) == 6, 'no_replacements': True})
++            timing = close_cell_accounting(folder, row, records, stop)
++            if not timing['within_570s']:
++                row['errors'].append({'type': 'TimeoutError', 'stage': 'final_business_accounting',
++                    'message': 'original_full_cell_deadline_exceeded'})
++                stop = 'original_full_cell_deadline_exceeded'
+         if stop:
+             break
+     batch_ended_ns = time.perf_counter_ns()

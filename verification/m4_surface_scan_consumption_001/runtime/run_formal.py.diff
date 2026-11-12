@@ -1,0 +1,60 @@
+--- previous/run_formal.py
++++ current/run_formal.py
+@@ -12,6 +12,12 @@
+ BATCH = HERE.parent
+ 
+ 
++def save(path, value):
++    with path.open('w', encoding='utf8', newline='\n') as stream:
++        json.dump(value, stream, ensure_ascii=False, indent=2, allow_nan=False)
++        stream.write('\n')
++
++
+ def main():
+     assert not (BATCH / 'FORMAL_PROCESS.json').exists()
+     assert not (BATCH / 'STARTED.json').exists()
+@@ -21,7 +27,7 @@
+     with (BATCH / 'FORMAL_PROCESS.json').open('x', encoding='utf8', newline='\n') as stream:
+         json.dump(launch, stream, indent=2)
+         stream.write('\n')
+-    spec = importlib.util.spec_from_file_location('_grooved_rail_formal_driver', HERE / 'driver.py')
++    spec = importlib.util.spec_from_file_location('_surface_scan_formal_driver', HERE / 'driver.py')
+     driver = importlib.util.module_from_spec(spec)
+     result = None
+     error = None
+@@ -39,7 +45,7 @@
+         path = BATCH / 'RUN_RESULT.json'
+         if path.exists():
+             result = json.loads(path.read_bytes())
+-        elif (BATCH / 'STARTED.json').exists():
++        else:
+             result = {'records': [], 'stop': 'controller_failure_before_first_cell',
+                       'started_cells': 0, 'maximum_consumers': 6,
+                       'all_planned_dispatched': False, 'no_replacements': True}
+@@ -48,13 +54,23 @@
+             result.setdefault('batch_started_ns', started)
+             result['batch_ended_ns'] = time.perf_counter_ns()
+             result['batch_wall_ns'] = result['batch_ended_ns'] - result['batch_started_ns']
+-            driver.save(path, result)
++            save(path, result)
+     terminal = {'started_ns': started, 'ended_ns': time.perf_counter_ns(),
+                 'ended_utc': datetime.now(timezone.utc).isoformat(),
+                 'status': 'terminal', 'controller_error': error,
+                 'started_cells': None if result is None else result['started_cells'],
+-                'stop': None if result is None else result['stop']}
+-    driver.save(BATCH / 'FORMAL_PROCESS.json', terminal)
++                'stop': None if result is None else result['stop'],
++                'timing_scope': 'Outer coordinator through returned driver, final RUN_RESULT write/close and owned cleanup; this terminal receipt publication is separate'}
++    terminal_publication_started_ns = time.perf_counter_ns()
++    save(BATCH / 'FORMAL_PROCESS.json', terminal)
++    terminal_publication_closed_ns = time.perf_counter_ns()
++    save(BATCH / 'FORMAL_PUBLICATION.json', {
++        'terminal_observed_ns': terminal['ended_ns'],
++        'publication_started_ns': terminal_publication_started_ns,
++        'publication_closed_ns': terminal_publication_closed_ns,
++        'publication_ns': terminal_publication_closed_ns-terminal_publication_started_ns,
++        'scope': 'FORMAL_PROCESS serialization, write and close; this publication receipt itself and caller overhead excluded',
++    })
+     print(json.dumps({'terminal': True, 'started_cells': terminal['started_cells'],
+                       'execution_exception': error is not None}))
+     return 0 if result is not None and error is None else 1

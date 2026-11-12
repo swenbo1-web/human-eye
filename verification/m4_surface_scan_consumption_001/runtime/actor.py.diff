@@ -1,0 +1,25 @@
+--- previous/actor.py
++++ current/actor.py
+@@ -107,7 +107,7 @@
+             self.peer.__init__(dict(config,product_config=self.out/'product_config.json'),self.out/'plugin')
+             # base.close performs final mesh readback, host.close, then native.close.
+             self.service=types.SimpleNamespace(host=self.peer)
+-            init=self.peer.call({'jsonrpc':'2.0','id':'private-init','method':'initialize','params':{'protocolVersion':'2025-03-26','capabilities':{},'clientInfo':{'name':'owned-comparison','version':'m4-spatial-fact-consumption-001'}}})
++            init=self.peer.call({'jsonrpc':'2.0','id':'private-init','method':'initialize','params':{'protocolVersion':'2025-03-26','capabilities':{},'clientInfo':{'name':'owned-comparison','version':'m4-surface-scan-consumption-001'}}})
+             save(self.out/'PLUGIN_INITIALIZE.json',init);self.identity=init['result']['_meta']['human_eye']
+             assert self.identity['source_sha256']==config['source_sha256'] and self.identity['source_kind']=='installed_distribution'
+             self.peer.call({'jsonrpc':'2.0','method':'notifications/initialized'})
+@@ -167,8 +167,11 @@
+                 receipt=self.native.run(args['code'],timeout_s=30);save(folder/'NATIVE_RECEIPT.json',receipt)
+                 raw=receipt['response'];result={'content':[{'type':'text','text':encoded(raw).decode().rstrip()}],'isError':raw.get('status')!='success'}
+             elif name in self.read_names and self.peer is not None:
+-                if name=='human_eye_scene_observe' and args.get('include_image') is not False:
+-                    raise ValueError('zero_image_budget_requires_explicit_include_image_false')
++                if name=='human_eye_scene_observe':
++                    query=args.get('query')
++                    scan=type(query) is dict and query.get('mode')=='surface_scan'
++                    if args.get('include_image', not scan) is not False:
++                        raise ValueError('zero_image_budget_requires_effective_include_image_false')
+                 answer=self.peer.call(req,timeout_s=max(.001,30-(time.perf_counter_ns()-mark)/1e9))
+                 result=answer.get('result',{'content':[{'type':'text','text':json.dumps(answer)}],'isError':True})
+             else:raise ValueError('tool_not_available')
