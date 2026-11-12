@@ -1,0 +1,327 @@
+*** Begin Patch
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/blender_host.py
+@@
++def _bounds_midpoint(low, high):
++    total = low + high
++    return total / 2 if math.isfinite(total) else low / 2 + high / 2
++
++
+ def _digest(value):
+@@
+         self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
+-            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0)
++            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
++            directory_builds=0, directory_vertices=0, directory_cache_hits=0)
+@@
+-    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
++    def capture_directory(self, deadline_ns, max_response_bytes):
++        """Aggregate evaluated vertex bounds without creating a mesh capture."""
++        self._main_thread()
++        if type(deadline_ns) is not int or deadline_ns <= 0:
++            raise BlenderHostError('directory_deadline')
++        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
++            raise BlenderHostError('directory_document_budget')
++
++        def checkpoint():
++            if time.perf_counter_ns() >= deadline_ns:
++                raise BlenderHostError('directory_deadline_exceeded')
++
++        checkpoint()
++        with self._lock:
++            graph, scale = self._depsgraph(), self._scale()
++            checkpoint()
++            objects = self._objects(graph)
++            resident = self._sync_residency(graph, scale)
++            selection_key = _digest(['directory'])
++            cached = self._residency.captures.get(selection_key) if resident else None
++            if cached is not None:
++                result = self._capture_state(cached, selection_key)
++                result['cache_hit'] = True
++                self._residency_stats['directory_cache_hits'] += 1
++            else:
++                identity = self._identity_metadata(objects, capture_scope='scene_directory')
++                source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
++                if identity is None or not _hex_string(source_sha, 64):
++                    raise BlenderHostError('directory_source_identity_unavailable')
++                rows = []
++                vertex_count = triangle_budget = 0
++                for obj in objects:
++                    checkpoint()
++                    evaluated = obj.evaluated_get(graph)
++                    if not bool(getattr(evaluated, 'is_evaluated', True)):
++                        raise BlenderHostError('directory_object_not_evaluated: ' + obj.name)
++                    matrix = _matrix(evaluated.matrix_world)
++                    temporary = None
++                    try:
++                        self._residency_stats['to_mesh'] += 1
++                        temporary = evaluated.to_mesh()
++                        if temporary is None or not len(temporary.vertices):
++                            raise BlenderHostError('directory_empty_or_unavailable_mesh: ' + obj.name)
++                        vertex_count += len(temporary.vertices)
++                        # A polygon with n loops has at most n-2 triangles.
++                        # Read collection lengths without triangulating or walking faces.
++                        triangle_budget += max(0, len(temporary.loops) - 2 * len(temporary.polygons))
++                        if vertex_count > 500000 or triangle_budget > 1000000:
++                            raise BlenderHostError('Scene geometry budget exceeded')
++                        low = [math.inf] * 3
++                        high = [-math.inf] * 3
++                        for vertex in _acquisition_vertices(temporary.vertices, checkpoint):
++                            point = tuple(float(vertex.co[i]) for i in range(3))
++                            world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale
++                                     for r in range(3)]
++                            self._residency_stats['directory_vertices'] += 1
++                            if any(not math.isfinite(value) for value in world):
++                                raise BlenderHostError('directory_nonfinite_geometry: ' + obj.name)
++                            for axis in range(3):
++                                low[axis] = min(low[axis], world[axis])
++                                high[axis] = max(high[axis], world[axis])
++                        rows.append(dict(object_id=self.object_id(obj), name=str(obj.name),
++                            bbox_min=low, bbox_max=high,
++                            center=[_bounds_midpoint(a, b) for a, b in zip(low, high)]))
++                    finally:
++                        if temporary is not None:
++                            evaluated.to_mesh_clear()
++                packet = dict(schema='human-eye-directory-v1', result_kind='scene_directory',
++                    status='complete', unit='m', coordinate_frame='world', objects=rows,
++                    coverage=dict(status='complete', mesh_objects=len(objects), measured_objects=len(rows)),
++                    binding=dict(host_source_sha256=source_sha, host_identity=identity,
++                        frame=int(getattr(self.scene, 'frame_current', 0)), scale_length=scale),
++                    execution_authority=False)
++                packet['directory_sha256'] = _digest(packet)
++                packet['capture_state'] = None
++                packet['cache_hit'] = False
++                checkpoint()
++                # Cache only a complete independent directory. Mesh resources,
++                # delta baselines and action state retain their own ownership.
++                if resident:
++                    if len(self._residency.captures) >= 8:
++                        self._residency.captures.clear()
++                    self._residency.captures[selection_key] = packet
++                self._residency_stats['directory_builds'] += 1
++                result = self._capture_state(packet, selection_key)
++            checkpoint()
++            encoded = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
++            if len(encoded) > max_response_bytes:
++                raise BlenderHostError('directory_document_budget_exceeded')
++            checkpoint()
++            return result
++
++    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+*** End Patch
+*** Begin Patch
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/live_service.py
+@@
+ import json
++import math
+@@
+-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest'):
++                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','scene_directory'):
+@@
+-                            if result.get('result_kind') in ('task_query', 'surface_nearest'):
++                            if result.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
+@@
+         query = validate_query(query)
++        if query['mode'] == 'directory':
++            if (include_image or task_instruction or focal_id is not None or reference_id is not None
++                    or goal is not None or scene_delta is not None):
++                raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
++            return self._observe_directory(session_id)
+@@
+-    def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
++    def _observe_directory(self, session_id):
++        """Read a source-bound directory without establishing a full-scene baseline."""
++        if not self.config.get('enabled', True):
++            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
++        context = self._read_context
++        with context.lock, self._observation_scope():
++            rejected, source_check = self._read_source_identity()
++            if rejected is not None:
++                return copy.deepcopy(rejected)
++            capture = getattr(self.host, 'capture_directory', None)
++            if not callable(capture):
++                raise ValueError('directory_host_not_supported')
++            now = time.perf_counter_ns()
++            remaining = self._check_request_budget('before_host_capture')
++            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
++            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
++            with span('host.capture', kind='host'):
++                result = capture(deadline, 64 * 1024 * 1024)
++            self._check_request_budget('after_host_capture')
++            self._validate_directory(result)
++            self._bind_read_result(result, source_check)
++        self.record_event('observe', session_id=session_id, status=result['status'],
++            directory_sha256=result['directory_sha256'], engine_invoked=False)
++        self._check_request_budget('before_directory_result')
++        return result
++
++    def _validate_directory(self, packet):
++        from .blender_host import _bounds_midpoint
++        core_keys = {'schema', 'result_kind', 'status', 'unit', 'coordinate_frame',
++                     'objects', 'coverage', 'binding', 'execution_authority'}
++        if (type(packet) is not dict or set(packet) != core_keys | {'directory_sha256', 'capture_state', 'cache_hit'}
++                or packet.get('schema') != 'human-eye-directory-v1'
++                or packet.get('result_kind') != 'scene_directory' or packet.get('status') != 'complete'
++                or packet.get('unit') != 'm' or packet.get('coordinate_frame') != 'world'
++                or packet.get('execution_authority') is not False or type(packet.get('cache_hit')) is not bool):
++            raise ValueError('directory_response_contract')
++        rows = packet['objects']
++        if type(rows) is not list or not 1 <= len(rows) <= 256:
++            raise ValueError('directory_object_coverage')
++        ids = []
++        for row in rows:
++            self._check_request_budget('directory_validate_object')
++            if (type(row) is not dict or set(row) != {'object_id', 'name', 'bbox_min', 'bbox_max', 'center'}
++                    or any(type(row.get(key)) is not str or not row[key] for key in ('object_id', 'name'))
++                    or len(row['object_id'].encode('utf8')) > 256):
++                raise ValueError('directory_object_contract')
++            vectors = [row[key] for key in ('bbox_min', 'bbox_max', 'center')]
++            if any(type(vector) is not list or len(vector) != 3
++                    or any(type(value) not in (int, float) or not math.isfinite(value) for value in vector)
++                    for vector in vectors):
++                raise ValueError('directory_bounds_contract')
++            if (any(a > b for a, b in zip(*vectors[:2]))
++                    or vectors[2] != [_bounds_midpoint(a, b) for a, b in zip(*vectors[:2])]):
++                raise ValueError('directory_bounds_contract')
++            ids.append(row['object_id'])
++        if (type(packet['coverage']) is not dict
++                or any(type(packet['coverage'].get(key)) is not int for key in ('mesh_objects', 'measured_objects'))
++                or len(set(ids)) != len(ids) or packet['coverage'] !=
++                {'status': 'complete', 'mesh_objects': len(rows), 'measured_objects': len(rows)}):
++            raise ValueError('directory_object_coverage')
++        binding = packet['binding']
++        expected_host_sha = next(item['sha256'] for item in self._identity['source_files']
++                                 if item['path'] == 'human_eye_plugin/blender_host.py')
++        if (type(binding) is not dict or set(binding) != {'host_source_sha256', 'host_identity', 'frame', 'scale_length'}
++                or binding['host_source_sha256'] != expected_host_sha or type(binding['frame']) is not int
++                or type(binding['scale_length']) not in (int, float)
++                or not math.isfinite(binding['scale_length']) or binding['scale_length'] <= 0):
++            raise ValueError('directory_source_binding')
++        identity = binding['host_identity']
++        if (type(identity) is not dict
++                or set(identity) != {'schema_version', 'document_epoch', 'object_instances', 'capture_scope'}
++                or identity['schema_version'] != '1.0' or identity['capture_scope'] != 'scene_directory'
++                or not _diagnostic_sha256(identity['document_epoch'])
++                or type(identity['object_instances']) is not dict or set(identity['object_instances']) != set(ids)
++                or any(type(value) is not str or not value for value in identity['object_instances'].values())
++                or len(set(identity['object_instances'].values())) != len(rows)):
++            raise ValueError('directory_source_binding')
++        state = packet['capture_state']
++        selection_key = hashlib.sha256(b'["directory"]').hexdigest()
++        if state is not None and (type(state) is not dict
++                or set(state) != {'instance_id', 'epoch', 'revision', 'selection_key'}
++                or type(state['instance_id']) is not str or not state['instance_id']
++                or any(type(state[key]) is not int or state[key] < 0 for key in ('epoch', 'revision'))
++                or state['selection_key'] != selection_key):
++            raise ValueError('directory_capture_state')
++        core = {key: packet[key] for key in core_keys}
++        digest = hashlib.sha256(json.dumps(core, sort_keys=True, separators=(',', ':'),
++            ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
++        if packet['directory_sha256'] != digest:
++            raise ValueError('directory_digest_mismatch')
++
++    def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
+*** End Patch
+*** Begin Patch
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/blender_mcp_host.py
+@@
+-_OBSERVATION_COMMANDS=frozenset({'capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
++_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+@@
+     def capture_task_scene(self, selectors) -> dict[str, Any]:
+         return self._request('capture_task', {'selectors': selectors})
+ 
++    def capture_directory(self, deadline_ns, max_response_bytes):
++        now = time.perf_counter_ns()
++        if type(deadline_ns) is not int or now >= deadline_ns:
++            raise ValueError('directory_deadline_exceeded')
++        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
++            raise ValueError('directory_document_budget')
++        deadline_ns = min(deadline_ns, now + int(self.timeout_s * 1e9))
++        result = self._request('capture_directory', dict(deadline_ns=deadline_ns,
++            max_response_bytes=max_response_bytes))
++        if time.perf_counter_ns() >= deadline_ns:
++            raise ValueError('directory_deadline_exceeded')
++        return result
++
+@@
+-        required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
++        required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
++            'capture_directory': {'deadline_ns', 'max_response_bytes'},
+@@
+                 if command in {'capture', 'capture_task', 'capture_nearest_candidates'}:
+                     result = self._scene_decoder.apply(result)
++                if command == 'capture_directory':
++                    self._record_observation_document(result.get('binding', {}))
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/blender_process.py
+@@
+     def capture_task_scene(self, selectors) -> dict[str, Any]:
+         return self._capture_request('capture_task', {'selectors': selectors})
+ 
++    def capture_directory(self, deadline_ns, max_response_bytes):
++        now = time.perf_counter_ns()
++        if type(deadline_ns) is not int or now >= deadline_ns:
++            raise ValueError('directory_deadline_exceeded')
++        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
++            raise ValueError('directory_document_budget')
++        deadline_ns = min(deadline_ns, now + int(self.timeout * 1e9))
++        result = self._request('capture_directory', dict(deadline_ns=deadline_ns,
++            max_response_bytes=max_response_bytes), timeout=(deadline_ns - now) / 1e9)
++        if time.perf_counter_ns() >= deadline_ns:
++            raise ValueError('directory_deadline_exceeded')
++        return result
++
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/blender_worker.py
+@@
+-            elif command == 'capture_task':
++            elif command == 'capture_directory':
++                if set(params) != {'deadline_ns', 'max_response_bytes'}:
++                    raise ValueError('Invalid directory capture arguments')
++                result = host.capture_directory(**params)
++            elif command == 'capture_task':
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/query_policy.py
+@@
+-    if type(query) is dict and query.get('mode') == 'surface_nearest':
++    if type(query) is dict and query.get('mode') == 'directory':
++        if set(query) != {'mode'}:
++            raise ValueError('directory query accepts only mode')
++        return {'mode': 'directory'}
++    if type(query) is dict and query.get('mode') == 'surface_nearest':
+*** End Patch
+*** Begin Patch
+*** Update File: C:/Users/Administrator/.codex/worktrees/m4-single-pass-acquisition/hefe/human_eye_plugin/live_spatial_mcp.py
+@@
+-        "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
++        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+@@
+-    "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
++    "allOf": [{"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
++               "then": {"properties": {"mode": {}}, "additionalProperties": False}},
++              {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
+@@
+-            "Current Blender facts. Task set example: "
++            "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. Task set example: "
+@@
+-            "allOf": [{
++            "allOf": [{"if": {"required": ["query"], "properties": {"query": {
++                    "required": ["mode"], "properties": {"mode": {"const": "directory"}}}}},
++                "then": {"required": ["include_image"],
++                         "properties": {"include_image": {"const": False}, "task_instruction": {"const": ""}},
++                         "not": {"anyOf": [{"required": [field]} for field in
++                             ("focal_id", "reference_id", "goal", "scene_delta")]}}}, {
+@@
+         if 'query' not in arguments:
+             selected_query = validate_query(None)
++        if selected_query['mode'] == 'directory':
++            if (arguments.get('include_image', True) or arguments.get('task_instruction', '')
++                    or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
++                raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
+@@
+-    if (value.get('result_kind') in ('task_query', 'surface_nearest')
++    if (value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory')
+@@
+-            if value.get('result_kind') == 'surface_nearest':
++            if value.get('result_kind') in ('surface_nearest', 'scene_directory'):
+@@
+-        if value.get('result_kind') in ('task_query', 'surface_nearest'):
++        if value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
+*** End Patch

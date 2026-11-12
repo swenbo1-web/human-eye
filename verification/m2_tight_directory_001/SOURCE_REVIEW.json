@@ -1,0 +1,73 @@
+{
+  "schema": "human-eye-finite-source-review-v1",
+  "cycle_id": "M2-TIGHT-DIRECTORY-001",
+  "review_date": "2026-11-12",
+  "reviewer": "/root/m1_entry_architecture",
+  "scope": "有限只读产品源码、实际七文件 Git diff、草稿修订和现有调用边界复核",
+  "conclusion": "no_blocking_source_findings_in_reviewed_scope",
+  "candidate": {
+    "commit": "fac9b4373575d653cc96f39f1dcb225300cd5977",
+    "source_count": 137,
+    "source_sha256": "6acb3ac7f014a590a279994f44be07c581af53a2da4dafae8dba9cd58eaea0bb",
+    "version": "9.7.2+dir.r1",
+    "identity_reference": "installation/READY.json",
+    "identity_scope": "引用固定候选安装身份及提交，安装与运行源完整验源由其独立执行记录承担",
+    "changed_product_files": [
+      "human_eye_plugin/blender_host.py",
+      "human_eye_plugin/blender_mcp_host.py",
+      "human_eye_plugin/blender_process.py",
+      "human_eye_plugin/blender_worker.py",
+      "human_eye_plugin/live_service.py",
+      "human_eye_plugin/live_spatial_mcp.py",
+      "human_eye_plugin/query_policy.py"
+    ],
+    "reviewed_actual_diff": {
+      "files": 7,
+      "insertions": 256,
+      "deletions": 11
+    }
+  },
+  "resolved_draft_finding": {
+    "issue": "半值相加的 midpoint 在 subnormal 边界可能归零或舍入错误",
+    "counterexamples": [
+      "low=high=2^-1074 时 low/2+high/2 得到0，落在原bbox之外",
+      "low=2^-1074、high=2*2^-1074 时半值相加与精确均值的binary64舍入不一致"
+    ],
+    "correction": "_bounds_midpoint 对有限 low+high 先除2，和溢出时使用半值相加，service 校验复用同一 helper",
+    "original_draft": "DRAFT_PRODUCT.diff",
+    "corrected_draft": "DRAFT_NUMERIC_FIX.diff",
+    "actual_source_correction_reviewed": true,
+    "independent_numeric_execution_scope": "由独立 QA 承担，本源码复核仅检查修正表达式及调用一致性"
+  },
+  "reviewed_boundaries": {
+    "geometry": "逐点使用原世界坐标 forward-map 顺序，遍历全部 evaluated 顶点聚合 tight bbox，中心为 bbox midpoint，to_mesh_clear 位于 finally",
+    "budget": "沿用对象和顶点数量限制，使用 loop/polygon collection 长度估计三角数量上界，目录分支无 calc_loop_triangles、faces/edges 数组构造或完整顶点传输",
+    "host_cache": "独立 directory key 复用 SceneResidency.captures 及原八槽边界，返回值深拷贝，dirty/context/pose 失效沿用既有同步，缺少通知时新鲜读取",
+    "cache_isolation": "目录分支保持 resources、wire、ReadContext normalized、完整 mesh capture 和动作账本的原有所有权",
+    "binding": "host core 精确校验 schema、coverage、对象唯一性、有限有序 bbox、midpoint、host source、document epoch、实例集合、frame、subframe 和 scale",
+    "digest": "directory_sha256 绑定 host core 及原始五字段 binding，capture_state、cache_hit、后注 runtime provenance 和 trace 位于该独立摘要作用域之外",
+    "service": "目录通过 read-context lock、observation scope、原来源检查、请求预算与审计，runtime provenance 在 host core 校验后注入，分支绕过动作 runtime 重建",
+    "transports": "MCP 与 owned typed 新命令具有固定参数，目录保持在 capture_delta 和 SceneDeltaDecoder.apply 的原三命令集合之外",
+    "query_schema": "显式 directory mode-only，要求无图、空 instruction、无 pair/goal/scene_delta，schema 与参数受理范围对应，默认 query 与 compact 两工具集合保持原含义",
+    "projection_and_publication": "scene_directory 覆盖 _request 的 scoped-result 豁免、trace 快路、MCP 文本快路、complete 状态判断和最终 publication 预算检查，原 stdio envelope 发布期限继续适用"
+  },
+  "acceptance_scope": {
+    "static_source_review_completed": true,
+    "dynamic_correctness": "requires_separate_validation_evidence",
+    "invalidation_and_cross_generation_behavior": "requires_separate_validation_evidence",
+    "actual_work_counts": "requires_separate_validation_evidence",
+    "performance": "requires_separate_measurement_evidence",
+    "engineering_admission_granted_by_this_review": false,
+    "model_task_benefit_claimed": false
+  },
+  "reviewer_execution": {
+    "product_source_edits": 0,
+    "model_consumers_started": 0,
+    "Blender_started": 0,
+    "product_services_started": 0,
+    "installations_started": 0,
+    "QA_or_performance_runs": 0,
+    "measurement_latency_read": false,
+    "authorized_report_output": "SOURCE_REVIEW.json"
+  }
+}

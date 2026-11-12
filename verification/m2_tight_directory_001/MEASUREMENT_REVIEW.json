@@ -1,0 +1,108 @@
+{
+  "schema": "human-eye-static-measurement-review-v1",
+  "cycle_id": "M2-TIGHT-DIRECTORY-001",
+  "reviewer": "/root/m1_entry_architecture",
+  "review_date": "2026-11-12",
+  "scope": "测前有限静态测量脚本、合同与既有纯算术证据审查",
+  "conclusion": "no_blocking_pre_measurement_findings_in_reviewed_scope",
+  "candidate": {
+    "commit": "fac9b4373575d653cc96f39f1dcb225300cd5977",
+    "source_count": 137,
+    "source_sha256": "6acb3ac7f014a590a279994f44be07c581af53a2da4dafae8dba9cd58eaea0bb"
+  },
+  "reviewed_files": [
+    {
+      "path": "measurement/CONTRACT.md",
+      "sha256": "4144bb8d908612b671e7b0307be7a942c41265eb902629039a9a39004187de30",
+      "bytes": 5591
+    },
+    {
+      "path": "measurement/sample.py",
+      "sha256": "a5482ef482d1cd757ce037c1e1246bec2728d108288242f8ddcf6b2a511bbf0c",
+      "bytes": 12114
+    },
+    {
+      "path": "measurement/matrix.py",
+      "sha256": "6431fc5cf7b0824acfd852fb2b1762ed66df18a0a7c7c30c9b8ea2d2cb298109",
+      "bytes": 6905
+    },
+    {
+      "path": "measurement/native_directory.py",
+      "sha256": "3bb24612b63eb02f123ef27f66910b306dacbf145419625685552a54d0378894",
+      "bytes": 5521
+    },
+    {
+      "path": "measurement/analyze_saved.py",
+      "sha256": "0c26e8d669ee975f9666a60105e75e9b88fa7a14ae9b04f43773f8b860f25590",
+      "bytes": 14131
+    },
+    {
+      "path": "measurement/wire_meter.py",
+      "sha256": "8d3e486a4d4ad3a68e46f376c62c24a00ce472424d8d54d9e579247a96d9e5a9",
+      "bytes": 3368
+    },
+    {
+      "path": "measurement/OWNED_NATIVE.diff",
+      "sha256": "d00e12f750ed050e36a93e4f1e1ab4b2dc0364453b5864063658121d34ba75be",
+      "bytes": 2538
+    },
+    {
+      "path": "measurement/probe.py",
+      "sha256": "9c002fe1fc56399cb23a16c124863eb8ac2499e770fb83b90d5d43f330da4a85",
+      "bytes": 8451
+    },
+    {
+      "path": "measurement/NATIVE_FORWARD_CHECK_02.json",
+      "sha256": "728ad5d247e29ee85665bdfefeceecb48b6ca0e75d950a3f48d05e4530c29c7a",
+      "bytes": 1143
+    },
+    {
+      "path": "check_native_forward.py",
+      "sha256": "b69ea36c00e24a99949a5959eed64216f152d14f1f7cf433a43396c9460ab741",
+      "bytes": 2800
+    }
+  ],
+  "resolved_findings": [
+    {
+      "issue": "NumPy左折叠与CPython改进浮点sum的通用等价声明",
+      "resolution": "保留通用反例，将native注释及metadata限定为三个固定输入，原实现保持强原生批读",
+      "evidence": "NATIVE_FORWARD_CHECK_02记录实际Blender Python3.13.13与NumPy2.3.4，三个冻结输入3514点数值相等，边界相等，通用等价明确未证明",
+      "execution_scope": "此复核仅阅读既有脚本和结果，未执行该纯算术检查"
+    },
+    {
+      "issue": "两步selected只通过isError不足以核同业务",
+      "resolution": "分析器从独立资产oracle计算AABB与axis gap，核实际runtime来源与selected绑定，并比较三路完整surface事实、状态、原因",
+      "surface_scope": "surface比较沿用同输入的完整结果相等，独立几何求解未新增"
+    }
+  ],
+  "checked_contract": {
+    "schedule": "27个独立纯目录会话，每个cold1+warm10，三资产各按old/new/native、native/old/new、new/native/old轮换；另9个独立连续两步会话，零性能替补",
+    "sampling": "每资产每路cold3与warm30分别统计，预录baseline_01排除最终样本",
+    "native": "foreach_get及NumPy批量forward，复用冻结SceneResidency通知、reset与context/pose/name/unit/frame代际签名和同代摘要，首次源码留在冷请求",
+    "wire": "同一socket wrapper记录实际REQUEST/RESPONSE原字节，计封装、request、response及sum，sendall失败保持失败状态，flush位于请求窗口外",
+    "timing": "old/new均为实际Peer完整MCP调用，native为原NativeSession完整execute调用，两种外层范围差异明示；进程建立与关闭另列",
+    "two_step": "同一固定M4_Focal/M4_Near task及session，首完整回执后立即发第二请求，事实校验和记录延后，连续窗口保留两步之间成本",
+    "p95": "nearest-rank，排序后索引ceil(0.95*n)-1，冷热不合池",
+    "gates": "peripheral三次配对冷响应各至少下降50%，完整工具冷中位至少下降10%，simple30个warm的p95增量不超过max(1ms,旧p95*5%)",
+    "work": "独立检查new目录无新vertices/faces/edges资源数组及triangulations增量，实际其余计数和原件继续保留",
+    "reporting": "保留所有native更快格，两步连续总成本、请求与响应总量、首次源码成本和会话生命周期分别报告，嵌套窗口避免重复求和",
+    "memory": "产品request_trace进程生命周期峰值按实际范围标注，原生内存峰值留unknown",
+    "control": "matrix默认prepare-only，显式run与全局MATRIX_STARTED只保留一次，源pin逐会话复核，失败停止并保留已进入与未运行范围"
+  },
+  "remaining_evidence": {
+    "actual_matrix": "pending",
+    "dynamic_freshness_and_facts": "由独立功能与实际矩阵记录验收",
+    "structural_and_two_step_benefit": "需核实际工作量及连续两步总成本，目录单步节省不直接推出完整收益",
+    "engineering_acceptance": "本静态审查未授予",
+    "model_task_quality_tokens_fees_roundtrips": "本批未测"
+  },
+  "reviewer_execution": {
+    "product_source_edits": 0,
+    "performance_or_QA_runs": 0,
+    "product_services_started": 0,
+    "Blender_started": 0,
+    "model_consumers_started": 0,
+    "measurement_latencies_read": false,
+    "authorized_output": "MEASUREMENT_REVIEW.json"
+  }
+}
