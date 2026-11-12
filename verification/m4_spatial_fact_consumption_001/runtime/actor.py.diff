@@ -1,0 +1,104 @@
+--- verification\m4_selected_geometry_consumption_001\runtime\actor.py
++++ verification\m4_spatial_fact_consumption_001\runtime\actor.py
+@@ -1,4 +1,4 @@
+-"""M4 observation: common native plus optional actual compact product tools.
++"""M4 observation: common native plus the ordinary scene-observe declaration.
+ 
+ Derived from native_plugin_complex_005/actor.py; the native worker and TCP
+ owner remain the original native_plugin_complex_003 implementation.
+@@ -9,10 +9,13 @@
+ HERE=Path(__file__).resolve().parent;PREVIOUS=HERE.parents[1]/'native_plugin_complex_003'
+ spec=importlib.util.spec_from_file_location('complex003_owner',PREVIOUS/'actor.py');base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
+ save,sha,encoded=base.save,base.sha,base.encoded
++RUNTIME_PATH=HERE.parents[1]/'m1_task_entry_001_eval/preflight_client.py'
++runtime_spec=importlib.util.spec_from_file_location('_spatial_fact_runtime_proof',RUNTIME_PATH)
++runtime=importlib.util.module_from_spec(runtime_spec);runtime_spec.loader.exec_module(runtime)
+ MAX_WIRE=24*1024*1024
+ TOOLS_BY_GROUP={
+     'N':frozenset(),
+-    'P':frozenset({'human_eye_spatial_relations','human_eye_surface_nearest'}),
++    'P':frozenset({'human_eye_scene_observe'}),
+ }
+ 
+ class Peer:
+@@ -22,7 +25,6 @@
+         self.tx_bytes=0;self.rx_bytes=0;self.events=queue.Queue();self.stderr=None
+         try:
+             command=[config['dependency_python'],'-I','-B',config['entry'],'serve','--config',str(config['product_config'])]
+-            if config['group']=='P':command.append('--spatial-task-only')
+             self.stderr=(out/'stderr.bin').open('wb')
+             self.process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.stderr,
+                 cwd=out,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+@@ -89,6 +91,7 @@
+         self.read_names=TOOLS_BY_GROUP[config['group']]
+         self.config=config;self.out=Path(config['output']);self.out.mkdir(parents=True,exist_ok=False)
+         self.started=time.perf_counter_ns();self.calls=0;self.bytes=0;self.logs=[];self.service=None;self.he=None;self.peer=None
++        self.runtime_handle=None
+         self.image_construction_violation=False
+         helper_spec=importlib.util.spec_from_file_location('_m4_observation_native',PREVIOUS/'reused/accepted_native.py')
+         self.helper=importlib.util.module_from_spec(helper_spec);helper_spec.loader.exec_module(self.helper)
+@@ -104,26 +107,32 @@
+             self.peer.__init__(dict(config,product_config=self.out/'product_config.json'),self.out/'plugin')
+             # base.close performs final mesh readback, host.close, then native.close.
+             self.service=types.SimpleNamespace(host=self.peer)
+-            init=self.peer.call({'jsonrpc':'2.0','id':'private-init','method':'initialize','params':{'protocolVersion':'2025-03-26','capabilities':{},'clientInfo':{'name':'owned-comparison','version':'m4-observation-prep'}}})
++            init=self.peer.call({'jsonrpc':'2.0','id':'private-init','method':'initialize','params':{'protocolVersion':'2025-03-26','capabilities':{},'clientInfo':{'name':'owned-comparison','version':'m4-spatial-fact-consumption-001'}}})
+             save(self.out/'PLUGIN_INITIALIZE.json',init);self.identity=init['result']['_meta']['human_eye']
+             assert self.identity['source_sha256']==config['source_sha256'] and self.identity['source_kind']=='installed_distribution'
+             self.peer.call({'jsonrpc':'2.0','method':'notifications/initialized'})
+             listed=self.peer.call({'jsonrpc':'2.0','id':'private-list','method':'tools/list'});save(self.out/'PLUGIN_TOOLS.json',listed)
+             read_tools=[t for t in listed['result']['tools'] if t['name'] in self.read_names]
+-            assert len(read_tools)==2 and {t['name'] for t in read_tools}==self.read_names
++            assert len(read_tools)==1 and {t['name'] for t in read_tools}==self.read_names
+             assert read_tools==config['read_schemas'],'profile_read_schemas_differ_from_frozen_installed_candidate'
+-            if config['group']=='P':
+-                assert len(listed['result']['tools'])==2,'compact_directory_contains_other_tools'
+             self.tools+=copy.deepcopy(read_tools)
+             # The same metadata-only probe for P; never warm geometry.
+             ping=self.peer.call({'jsonrpc':'2.0','id':'private-ping','method':'ping'})
+             assert ping.get('result')=={},'product_startup_ping_failed'
+             save(self.out/'PLUGIN_PING.json',ping)
++            events=[json.loads(line) for line in (self.out/'audit.jsonl').read_bytes().splitlines() if line]
++            pids={row['pid'] for row in events if row.get('event')=='request_trace'}
++            assert len(pids)==1,'one_actual_product_runtime_required'
++            proof,self.runtime_handle=runtime._windows_runtime_proof(
++                self.peer.process,pids.pop(),config['worker_deadline_ns'])
++            proof.update(before_stdin=False,scope='after metadata and before consumer business')
++            save(self.out/'PRODUCT_RUNTIME_PROOF.json',proof)
++            assert proof['confirmed'] is True,'actual_product_runtime_ownership_unconfirmed'
+         save(self.out/'IDENTITY.json',{'group':config['group'],'runtime_identity':self.identity,'actor_pid':os.getpid(),'actor_parent_pid':os.getppid(),
+             'python':sys.executable,'asset_sha256':sha(config['asset']),'common_native_sha256':__import__('hashlib').sha256(encoded(base.NATIVE)).hexdigest(),
+             'startup_ns':time.perf_counter_ns()-self.started,'product_serve_entry':config.get('entry'),
+             'profile':config['group'],'exposed_tool_names':[t['name'] for t in self.tools],
+-            'product_spatial_task_only':config['group']=='P','private_geometry_warmup':False})
++            'product_spatial_task_only':False,'private_geometry_warmup':False})
+     def image_construction_status(self):
+         path=self.out/'native/WORKER_EVENTS.jsonl';observed=[];error=None
+         try:
+@@ -201,16 +210,22 @@
+                 result['plugin_close']=getattr(self.peer,'close_record',None)
+             finally:
+                 try:
+-                    result['native_close']=self.native.close();result['worker_closed']=self.native.status().get('closed')
+-                except BaseException as exc:result['errors'].append({'stage':'native_close','error':repr(exc)})
++                    result['product_runtime_exit']=runtime._runtime_exit(self.runtime_handle) if self.peer is not None else None
++                    self.runtime_handle=None
++                except BaseException as exc:result['errors'].append({'stage':'product_runtime_exit','error':repr(exc)})
++                finally:
++                    try:
++                        result['native_close']=self.native.close();result['worker_closed']=self.native.status().get('closed')
++                    except BaseException as exc:result['errors'].append({'stage':'native_close','error':repr(exc)})
+         result['asset_unchanged']=sha(self.config['asset'])==self.config['asset_sha256'];result['ended_ns']=time.perf_counter_ns()
+-        n=result.get('native_close',{});p=result.get('plugin_close')
++        n=result.get('native_close',{});p=result.get('plugin_close');r=result.get('product_runtime_exit')
+         result['image_construction']=self.image_construction_status()
+         result['zero_new_images_budget_met']=not self.image_construction_violation and result['image_construction']['status']=='not_observed_in_recorded_scope'
+         result['confirmed']=bool(not result['errors'] and result.get('geometry_unchanged') and result['asset_unchanged']
+             and n.get('process_reaped') and n.get('exit_code')==0 and result.get('worker_closed')
+             and result['zero_new_images_budget_met']
+-            and (self.peer is None or p and p.get('confirmed')))
++            and (self.peer is None or p and p.get('confirmed') and r and r.get('confirmed') is True
++                and r.get('exited') is True and r.get('exit_code')==0 and r.get('handle_closed') is True))
+         save(self.out/'CLOSE.json',result);return result
+ 
+ if __name__=='__main__':

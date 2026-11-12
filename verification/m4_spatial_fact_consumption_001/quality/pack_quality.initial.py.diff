@@ -1,0 +1,132 @@
+--- verification\m4_selected_geometry_consumption_001\runtime\pack_quality.py
++++ verification\m4_spatial_fact_consumption_001\runtime\pack_quality.py
+@@ -13,7 +13,7 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ EVAL = HERE.parent
+-CYCLE = 'M4-SELECTED-GEOMETRY-CONSUMPTION-001'
++CYCLE = 'M4-SPATIAL-FACT-CONSUMPTION-001'
+ sha = lambda raw: hashlib.sha256(raw).hexdigest()
+ KEYS = ('cell', 'task', 'round', 'group')
+ TOOL_TYPES = {'command_execution', 'mcp_tool_call', 'custom_tool_call', 'function_call',
+@@ -142,7 +142,9 @@
+     evidence = {
+         'ACTOR_CONFIG':{'asset_sha256':field('ACTOR_CONFIG.json',config,'asset_sha256','$/asset_sha256')},
+         'owner_IDENTITY':{'asset_sha256':field('owner/IDENTITY.json',identity,'asset_sha256','$/asset_sha256')},
+-        'CONSUMER_IMAGE':{
++        'CONSUMER_INPUT':{
++            'input_image_count':field('CONSUMER.json',consumer,'input_image_count','$/input_image_count'),
++            'input_image_bytes':field('CONSUMER.json',consumer,'input_image_bytes','$/input_image_bytes'),
+             'initial_image_sha256':field('CONSUMER.json',image,'sha256','$/initial_image/sha256'),
+             'initial_image_unchanged':field('CONSUMER.json',consumer,'initial_image_unchanged','$/initial_image_unchanged'),
+             'image_delivery':{key:field('CONSUMER.json',delivery,key,'$/image_delivery/'+key)
+@@ -185,7 +187,7 @@
+     if 'CONSUMER.json' in sources:
+         consumer = decode(sources['CONSUMER.json'])
+         assert all(consumer.get(key)==slot[key] for key in ('cell','task','round')), 'consumer slot binding mismatch'
+-        expected_group={'N':'N','P':'P','G':'P'}[slot['group']]
++        expected_group={'N':'N','P':'P'}[slot['group']]
+         assert consumer.get('group')==expected_group and consumer.get('external_group')==slot['group'], 'consumer external/internal group binding mismatch'
+     entered = record is not None
+     if not entered:
+@@ -291,10 +293,11 @@
+ original initial/final file hashes and recorded closure/source/geometry fields.
+ Missing fields remain null with reasons. These are producer records, not new
+ passing checks or proof that no transient modification ever occurred.
+-The same original initial PNG accompanies the common task text. Existing
+-image file hashes and prepared/CLI submission states are producer records;
+-provider delivery and model-view nulls stay unknown. No receipt is promoted
+-to proof that the model viewed or cognitively used the image.
++The common task text has zero initial images and zero new images. Recorded
++image counts and text-only CLI submission fields are producer records.
++The scoring directory carries the frozen actual-geometry input, independent
++oracle and quality contract. Reviewers can validate nonunique surface witness
++pairs from their actual full-precision business evidence and final rounding.
+ 
+ Blinding is imperfect: original answer wording, tool names, schemas, code,
+ method-specific facts or incidental diagnostics may reveal the route. Model
+@@ -312,11 +315,11 @@
+     go, started = (decode(control[name]) for name in ('GO.json','STARTED.json'))
+     plan_sha256 = sha(control['PLAN.json'])
+     assert (go.get('task')==CYCLE and go.get('authorized') is True
+-        and go.get('max_consumers')==9 and go.get('plan_sha256')==plan_sha256), 'zero-launch GO binding mismatch'
+-    assert (started.get('max_consumers')==9 and started.get('plan_sha256')==plan_sha256
++        and go.get('max_consumers')==6 and go.get('plan_sha256')==plan_sha256), 'zero-launch GO binding mismatch'
++    assert (started.get('max_consumers')==6 and started.get('plan_sha256')==plan_sha256
+         and type(started.get('started_ns')) is int and started['started_ns']>0), 'zero-launch STARTED binding mismatch'
+     assert (len(run['records'])==1 and type(run.get('started_cells')) is int
+-        and run['started_cells']==1 and run.get('maximum_consumers')==9
++        and run['started_cells']==1 and run.get('maximum_consumers')==6
+         and run.get('all_planned_dispatched') is False
+         and run.get('no_replacements') is True), 'zero-launch terminal counts mismatch'
+     assert isinstance(run.get('stop'),str) and run['stop'].strip(), 'zero-launch failed prefix required'
+@@ -357,15 +360,15 @@
+     assert sha(control['PLAN.json'])==freeze['plan_sha256'], 'execution PLAN not frozen'
+     assert sha(control['private/ANON_MAP.json'])==plan['private_anonymous_map_sha256'], 'anonymous map drift'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE, 'wrong observation cycle'
+-    assert plan['logical_denominator']==9 and plan['per_arm']==3 and set(plan['arms'])=={'N','P','G'}, 'wrong fixed nine-slot sample metadata'
+-    assert plan['image_count']==1 and plan['new_images']==0, 'wrong shared-image contract'
++    assert plan['logical_denominator']==6 and plan['per_arm']==3 and set(plan['arms'])=={'N','P'}, 'wrong fixed six-slot sample metadata'
++    assert plan['image_count']==0 and plan['new_images']==0, 'wrong zero-image contract'
+     sequence, rows, records=plan['sequence'],mapping['rows'],run['records']
+-    assert len(sequence)==len(rows)==9 and len({row['cell'] for row in sequence})==9
+-    assert len({row['anonymous_id'] for row in rows})==9
++    assert len(sequence)==len(rows)==6 and len({row['cell'] for row in sequence})==6
++    assert len({row['anonymous_id'] for row in rows})==6
+     assert all(re.fullmatch(r'answer_[0-9a-f]{16}',row['anonymous_id']) for row in rows)
+-    assert len(records)<=9 and len({row['cell'] for row in records})==len(records)
++    assert len(records)<=6 and len({row['cell'] for row in records})==len(records)
+     assert type(run.get('batch_ended_ns')) is int and run['batch_ended_ns']>0, 'terminal batch record required'
+-    assert len(records)==9 or run.get('stop'), 'partial run needs its preserved stop reason'
++    assert len(records)==6 or run.get('stop'), 'partial run needs its preserved stop reason'
+     launched = any(isinstance(record.get('consumer'),dict)
+         and type(record['consumer'].get('consumer_pid')) is int and record['consumer']['consumer_pid']>0
+         for record in records)
+@@ -383,16 +386,24 @@
+     put(public/'README.md',README.encode('utf8'))
+     tasks=[]
+     assert set(plan['tasks'])=={'T1'}, 'one fixed observation task required'
+-    image_raw=(EVAL/plan['inputs']['image']).read_bytes()
+-    assert sha(image_raw)==plan['inputs']['image_sha256'] and len(image_raw)==plan['inputs']['image_bytes']
+-    put(public/'tasks'/'INITIAL.png',image_raw)
+     for task_id,task in sorted(plan['tasks'].items()):
+         raw=(EVAL/plan['inputs']['prompt']).read_bytes()
+         assert sha(raw)==plan['inputs']['prompt_sha256']
+         put(public/'tasks'/(task_id+'.txt'),raw)
+         tasks.append({'task_id':task_id,'prompt':'tasks/'+task_id+'.txt','input_sha256':sha(raw),
+-            'initial_image':'tasks/INITIAL.png','initial_image_sha256':sha(image_raw),
+-            'image_scope':'same original common initial PNG bytes; no new or annotated image'})
++            'initial_image_count':0,'new_images':0})
++    scoring=[]
++    for material in plan['quality_materials']:
++        relative=Path(material['path'])
++        assert not relative.is_absolute() and '..' not in relative.parts
++        name=material['public_name']
++        assert Path(name).name==name and name not in ('.','..')
++        original=(EVAL/relative).resolve()
++        assert original.is_relative_to(EVAL.resolve())
++        raw=original.read_bytes()
++        assert sha(raw)==material['sha256'], 'frozen quality material changed'
++        put(public/'scoring'/name,raw)
++        scoring.append({'file':'scoring/'+name,'sha256':sha(raw),'source_path':material['path']})
+     by_cell={row['cell']:row for row in records}
+     answers,audit,snapshots=[],[],[]
+     for row in sorted(rows,key=lambda row:row['anonymous_id']):
+@@ -403,7 +414,7 @@
+         answer,details=handoff_one(slot,row,by_cell.get(cell),sources,public/row['anonymous_id'])
+         answer['directory']=row['anonymous_id']
+         answers.append(answer);audit.append({'mapping':row,**details})
+-    put(public/'INDEX.json',encoded({'tasks':tasks,'answers':answers,'fixed_slots':9,'scoring_performed':False}))
++    put(public/'INDEX.json',encoded({'tasks':tasks,'scoring_materials':scoring,'answers':answers,'fixed_slots':6,'scoring_performed':False}))
+     # Refuse a moving source rather than silently packaging a mixed-time run.
+     for folder,expected in snapshots:
+         current={path.relative_to(folder).as_posix():sha(path.read_bytes()) for path in folder.rglob('*') if path.is_file()} if folder.exists() else {}
+@@ -414,7 +425,7 @@
+         'public_files_sha256':{path.relative_to(public).as_posix():sha(path.read_bytes()) for path in public.rglob('*') if path.is_file()},
+         'model_calls':0,'product_calls':0,'Blender_calls':0,'scoring_calls':0}
+     put(private/'PROVENANCE.json',encoded(receipt))
+-    print(json.dumps({'packaged_slots':9,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
++    print(json.dumps({'packaged_slots':6,'public_directory':str(public),'private_directory':str(private),'scoring_performed':False}))
+ 
+ 
+ if __name__=='__main__': main()

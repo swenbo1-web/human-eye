@@ -1,0 +1,92 @@
+--- verification\m4_selected_geometry_consumption_001\runtime\consumer_transport.py
++++ verification\m4_spatial_fact_consumption_001\runtime\consumer_transport.py
+@@ -12,7 +12,7 @@
+ ATTACH_PATH=HERE.parent/'native_plugin_complex_003/reused/stdio_attach.py'
+ TOOLS_BY_GROUP={
+     'N':frozenset({'execute_blender_code'}),
+-    'P':frozenset({'execute_blender_code','human_eye_spatial_relations','human_eye_surface_nearest'}),
++    'P':frozenset({'execute_blender_code','human_eye_scene_observe'}),
+ }
+ USAGE=('input_tokens','cached_input_tokens','cache_write_input_tokens','output_tokens','total_tokens','reasoning_tokens','reasoning_output_tokens')
+ KNOWN_TOOL_TYPES={'command_execution','mcp_tool_call','custom_tool_call','function_call','web_search','image_view','file_change','todo_list','collab_tool_call'}
+@@ -45,19 +45,14 @@
+         'missing_exit_count':missing,'instances':rows,'backend_close_confirmed':None}
+ 
+ def initial_image_metadata(plan):
+-    inputs=plan['inputs'];path=(HERE/inputs['image']).resolve()
+-    if not path.is_relative_to(HERE.resolve()):raise ValueError('initial_image_outside_frozen_batch')
+-    raw=path.read_bytes()
+-    if len(raw)!=inputs['image_bytes'] or hashlib.sha256(raw).hexdigest()!=inputs['image_sha256']:
+-        raise ValueError('initial_image_bytes_or_hash_changed')
+-    if raw[:8]!=b'\x89PNG\r\n\x1a\n' or raw[12:16]!=b'IHDR' or len(raw)<24:
+-        raise ValueError('frozen_initial_image_not_PNG')
+-    width=int.from_bytes(raw[16:20],'big');height=int.from_bytes(raw[20:24],'big')
+-    if width<=0 or height<=0:raise ValueError('initial_image_dimensions')
+-    if plan['image_count']!=1 or plan['new_images']!=0:raise ValueError('frozen_image_budget_one_initial_zero_new')
+-    return {'path':str(path),'sha256':inputs['image_sha256'],'bytes':len(raw),
+-        'format':'PNG','width':width,'height':height,'count':1,'new_images':0,
+-        'attachment':'actual CLI --image argument; provider/model delivery pending'}
++    """The shared input is text-only and attaches no image file."""
++    if plan['image_count']!=0 or plan['new_images']!=0:
++        raise ValueError('frozen_image_budget_zero_initial_zero_new')
++    inputs=plan['inputs']
++    if inputs.get('image') is not None or inputs.get('image_bytes',0)!=0 or inputs.get('image_sha256') is not None:
++        raise ValueError('zero_image_budget_has_no_initial_image_binding')
++    return {'path':None,'sha256':None,'bytes':0,'format':None,'width':None,'height':None,
++        'count':0,'new_images':0,'attachment':'none; common text-only task'}
+ 
+ 
+ def argv_for(python,cell,work,final,group=None,initial_image=None):
+@@ -66,8 +61,8 @@
+     config['mcp_servers.arm_engine']={'command':str(python),'args':['-I','-B',str(ATTACH_PATH),'--endpoint',endpoint,'--kind','native','--audit',str(Path(cell).parent/'attachments')],
+         'cwd':str(work),'required':True,'startup_timeout_sec':60,'tool_timeout_sec':40,
+         'tools':{name:{'approval_mode':'approve'} for name in sorted(expected_tools)}}
+-    if initial_image is None:raise ValueError('one_initial_image_attachment_required')
+-    argv=[str(EXE),'exec','--image',str(initial_image),'--ignore-user-config','--ignore-rules','--ephemeral','--strict-config','--json','--skip-git-repo-check','-C',str(work),'--color','never']
++    if initial_image is not None:raise ValueError('zero_initial_image_attachment_required')
++    argv=[str(EXE),'exec','--ignore-user-config','--ignore-rules','--ephemeral','--strict-config','--json','--skip-git-repo-check','-C',str(work),'--color','never']
+     for key,value in config.items():argv+=['-c',key+'='+toml(value)]
+     return argv+['-m','gpt-6.1-sol','-o',str(final),'-']
+ 
+@@ -133,7 +128,7 @@
+     group=slot['group'];expected_tools=TOOLS_BY_GROUP[group]
+     assert cell.get('group',group)==group,'consumer_cell_profile_binding'
+     assert plan['max_session_seconds']==450,'frozen_consumer_budget_450_seconds'
+-    work=ROOT/'.m4_observation_baseline_001_runtime/work'/slot['cell'];work.mkdir(parents=True,exist_ok=True)
++    work=ROOT/'.m4_spatial_fact_consumption_001_runtime/work'/slot['cell'];work.mkdir(parents=True,exist_ok=True)
+     assert not list(work.iterdir()),'fresh_empty_consumer_workspace_required'
+     image=initial_image_metadata(plan)
+     final=folder/'final.txt';argv=argv_for(install['python'],cell_path,work,final,group,initial_image=image['path'])
+@@ -147,10 +142,10 @@
+         'requested_effort':'medium','resolved_effort':None,'process_reaped':False,
+         'input_text_bytes':len(prompt),'input_sha256':hashlib.sha256(prompt).hexdigest(),
+         'public_image_bytes':0,'public_image_count':0,'tool_image_scope':'no delivered or newly requested tool images',
+-        'initial_image':image,'input_image_count':1,'input_image_bytes':image['bytes'],'image_tokens':None,
+-        'input_image_count_scope':'prepared shared initial attachment; delivery has separate unconfirmed receipts',
+-        'image_delivery':{'prepared_file_verified':True,'initial_attachment_in_argv':True,
+-            'CLI_process_launched':False,'CLI_thread_started':False,'status':'pending',
++        'initial_image':image,'input_image_count':0,'input_image_bytes':0,'image_tokens':None,
++        'input_image_count_scope':'common text-only task; no attachment',
++        'image_delivery':{'prepared_file_verified':None,'initial_attachment_in_argv':False,
++            'CLI_process_launched':False,'CLI_thread_started':False,'status':'not_applicable_text_only',
+             'provider_delivery_confirmed':None,'model_view_confirmed':None},
+         'valid_completion':False,'safe_to_continue':False}
+     save(folder/'CONSUMER.json',record)
+@@ -169,7 +164,7 @@
+         process=subprocess.Popen(argv,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+             cwd=work,env=safe_environment(os.environ),creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+         record['consumer_pid']=process.pid;record['image_delivery']['CLI_process_launched']=True
+-        record['image_delivery']['status']='submitted_to_CLI_via_image_argument; provider delivery unconfirmed'
++        record['image_delivery']['status']='CLI_process_launched; text_only_no_image_attachment'
+         for label,stream in (('stdout',process.stdout),('stderr',process.stderr)):
+             thread=threading.Thread(target=reader,args=(stream,label),daemon=True);thread.start();readers.append(thread)
+         record['prompt_write_started_ns']=time.perf_counter_ns();process.stdin.write(prompt);process.stdin.close()
+@@ -208,7 +203,7 @@
+                 public_log.write(json.dumps({'perf_ns':received,'event':logged},ensure_ascii=False)+'\n');public_log.flush()
+                 if kind=='thread.started':
+                     record['thread_id']=event.get('thread_id');record['image_delivery']['CLI_thread_started']=True
+-                    record['image_delivery']['status']='CLI_thread_started; initial attachment delivery unconfirmed'
++                    record['image_delivery']['status']='CLI_thread_started; text_only_no_image_attachment'
+                 if kind in ('error','turn.failed'):
+                     record['errors'].append({'perf_ns':received,'event':event})
+                 if kind=='turn.completed':
