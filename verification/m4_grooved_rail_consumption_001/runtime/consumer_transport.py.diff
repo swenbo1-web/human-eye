@@ -1,0 +1,11 @@
+--- verification\m4_spatial_fact_consumption_001\runtime\consumer_transport.py
++++ verification\m4_grooved_rail_consumption_001\runtime\consumer_transport.py
+@@ -128,7 +128,7 @@
+     group=slot['group'];expected_tools=TOOLS_BY_GROUP[group]
+     assert cell.get('group',group)==group,'consumer_cell_profile_binding'
+     assert plan['max_session_seconds']==450,'frozen_consumer_budget_450_seconds'
+-    work=ROOT/'.m4_spatial_fact_consumption_001_runtime/work'/slot['cell'];work.mkdir(parents=True,exist_ok=True)
++    work=ROOT/'.m4_grooved_rail_consumption_001_runtime/work'/slot['cell'];work.mkdir(parents=True,exist_ok=True)
+     assert not list(work.iterdir()),'fresh_empty_consumer_workspace_required'
+     image=initial_image_metadata(plan)
+     final=folder/'final.txt';argv=argv_for(install['python'],cell_path,work,final,group,initial_image=image['path'])

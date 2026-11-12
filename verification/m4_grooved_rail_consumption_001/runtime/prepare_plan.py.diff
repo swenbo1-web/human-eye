@@ -1,0 +1,76 @@
+--- previous/prepare_plan.py
++++ grooved/prepare_plan.py
+@@ -10,7 +10,7 @@
+ HERE = Path(__file__).resolve().parent
+ BATCH = HERE.parent
+ ROOT = BATCH.parents[1]
+-CYCLE = 'M4-SPATIAL-FACT-CONSUMPTION-001'
++CYCLE = 'M4-GROOVED-RAIL-TRANSFER-001'
+ SOURCE = '2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390'
+ 
+ 
+@@ -39,11 +39,13 @@
+     assert sha(Path(ready['entry'])) == ready['launcher_sha256']
+     assert sha(Path(ready['release']) / 'admin/RUNTIME_BINDING.json') == ready['binding_sha256']
+     previous = ROOT / 'verification/m3_sufficient_separation_001/entry/run_01'
+-    session = read(previous / 'native/SESSION.json')
+-    assert Path(session['asset_copy']).resolve() == (previous / 'native/input.blend').resolve()
+-    assert sha(previous / 'native/input.blend') == sha(BATCH / 'input/scene.blend') == session['asset_sha256']
+-    assert session['asset_sha256'] == '27f197a8cc312832382ae06cb633cbf846f20a1a22797909a15dfda8513ade46'
+-    assert sha(BATCH / 'scoring/ACTUAL_SNAPSHOT.json') == sha(previous / 'ACTUAL_SNAPSHOT.json')
++    qualification = ROOT / 'verification/m4_grooved_rail_transfer_001'
++    asset_binding = read(qualification / 'asset/ASSET_BINDING.json')
++    assert sha(qualification / 'asset/grooved_rail.blend') == sha(BATCH / 'input/scene.blend') == asset_binding['asset_sha256']
++    assert asset_binding['asset_sha256'] == '49c0dccb233181a97d6d1508cc2570c03c961dffd2f8c8ef4ba12ebae3f9ec67'
++    assert sha(BATCH / 'scoring/ACTUAL_SNAPSHOT.json') == sha(qualification / 'asset/ACTUAL_SNAPSHOT.json') == '6bb073b9aa29e7eecc5aa74ad2330cbb8fb5c5e06c79e70bf71091a33470ff52'
++    assert sha(BATCH / 'scoring/TRUTH.json') == sha(qualification / 'oracle/TRUTH.json') == '2d072197f67f2d9860cb2ceb86c2782a7d4d2c3a71f1ed6d8be2487afc0eaa74'
++    assert sha(BATCH / 'QUALIFICATION_SEAL.json') == '98222645f650e95519912519ac192f8a94f404483e272fafe0a9e443b7f063b9'
+     listed = read(previous / 'TOOLS.json')['result']['tools']
+     observe = [tool for tool in listed if tool['name'] == 'human_eye_scene_observe']
+     assert read(BATCH / 'schemas/P_PUBLIC_TOOLS.json') == observe and len(observe) == 1
+@@ -57,18 +59,18 @@
+     source_binding = {
+         'source_count': 137, 'source_sha256': SOURCE, 'source_manifest': frozen['manifest'],
+         'installation_ready_sha256': sha(BATCH / 'installations/P_READY.json'),
+-        'actual_asset_copy': str(previous / 'native/input.blend'), 'session_sha256': sha(previous / 'native/SESSION.json'),
+-        'asset_sha256': session['asset_sha256'], 'snapshot_sha256': sha(BATCH / 'scoring/ACTUAL_SNAPSHOT.json'),
++        'actual_asset_copy': str(qualification / 'asset/grooved_rail.blend'),
++        'qualification_binding_sha256': sha(qualification / 'asset/ASSET_BINDING.json'),
++        'qualification_seal_sha256': sha(BATCH / 'QUALIFICATION_SEAL.json'),
++        'asset_sha256': asset_binding['asset_sha256'], 'snapshot_sha256': sha(BATCH / 'scoring/ACTUAL_SNAPSHOT.json'),
+         'previous_actual_tools_list': str(previous / 'TOOLS.json'),
+         'previous_actual_tools_list_sha256': sha(previous / 'TOOLS.json'),
+         'common_native_schema_unchanged': True, 'observe_declaration_unchanged': True,
+         'models': 0, 'Blender_sessions': 0, 'installation_rebuilt': False,
+     }
+     save(BATCH / 'preflight/SOURCE_BINDING.json', source_binding)
+-    protected = [Path('C:/Users/Administrator/.codex/config.toml'), Path('D:/hefe/.codex/config.toml'),
+-                 ROOT / 'pyproject.toml', previous / 'native/input.blend',
+-                 ROOT / 'verification/spatial_task_qualification_001/assets/G508_control.blend']
+-    save(BATCH / 'preflight/PROTECTED_BEFORE.json', {str(path): sha(path) if path.is_file() else None for path in protected})
++    for name, digest in read(BATCH / 'preflight/PROTECTED_BEFORE.json').items():
++        assert sha(Path(name)) == digest
+     save(BATCH / 'BENEFIT_CONTRACT.json', {
+         'quality_before_cost': True, 'all_six_retained': True, 'full_correct_per_arm_required': 3,
+         'useful_benefit': 'P median full-cell time <=N and P cumulative actual input+output tokens <=N, at least one improves >=10%',
+@@ -80,6 +82,7 @@
+         'criterion': 'at least two of three P consumers naturally request spatial_relation plus surface_proximity, use it correctly, and avoid recomputing the same fully answered facts natively',
+         'separate_from_quality': True, 'categories': ['directory_or_identity', 'new_information', 'unresolved_verification', 'recompute_already_complete_facts'],
+         'evaluation_after_anonymous_quality_sealed': True,
++        'transfer_observations': ['actual Part_A relation solver branch', 'engine independent answer versus native completion', 'necessary new-information or unknown-verification fallback'],
+     })
+     cli = Path('C:/Users/Administrator/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe')
+     external_paths = [cli, base, ROOT / 'verification/native_plugin_complex_003/reused/accepted_native.py',
+@@ -122,10 +125,10 @@
+         'authorization': 'parent plan includes preparation and frozen six formal slots, no separate approval',
+         'blinding_scope': 'cost and group labels masked; business content can reveal route',
+         'isolation_scope': 'same trusted native Python audit boundary, empty workspaces, CLI hooks/rules/memory/tools disabled as frozen; no OS-level Python sandbox claim',
+-        'smoke_sessions': 0, 'smoke_decision': 'offline bridge tests plus prior same-byte ordinary MCP evidence cover the changed forwarding and declaration',
++        'smoke_sessions': 0, 'smoke_decision': 'offline checks cover input replacement and reused same-source ordinary declaration; no product or model pretest',
+         'prepared_utc': datetime.now(timezone.utc).isoformat(),
+     }
+-    for relative in ('ROOT_PLAN.md', 'WORK_ORDER.json', 'BENEFIT_CONTRACT.json', 'MECHANISM_CLASSIFICATION.json',
++    for relative in ('ROOT_PLAN.md', 'QUALIFICATION_REVIEW.md', 'QUALIFICATION_SEAL.json', 'bootstrap.py', 'preflight/PROTECTED_BEFORE.json', 'WORK_ORDER.json', 'BENEFIT_CONTRACT.json', 'MECHANISM_CLASSIFICATION.json',
+                      'SEQUENCE.json', 'private/ANON_MAP.json', 'installations/P_READY.json',
+                      'preflight/SOURCE_BINDING.json', 'input/PROMPT.txt', 'input/scene.blend',
+                      'schemas/COMMON_NATIVE.json', 'schemas/P_PUBLIC_TOOLS.json',

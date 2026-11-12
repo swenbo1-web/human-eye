@@ -1,0 +1,145 @@
+--- verification/m4_spatial_fact_consumption_001/quality/check_packager.py
++++ verification/m4_grooved_rail_consumption_001/quality/check_packager.py
+@@ -18,7 +18,7 @@
+ HERE = Path(__file__).resolve().parent
+ BATCH = HERE.parent
+ PACK_PATH = BATCH / 'runtime/pack_quality.py'
+-CYCLE = 'M4-SPATIAL-FACT-CONSUMPTION-001'
++CYCLE = 'M4-GROOVED-RAIL-TRANSFER-001'
+ 
+ 
+ def sha(raw):
+@@ -38,7 +38,7 @@
+ 
+ def sequence():
+     groups = ('N', 'P', 'P', 'N', 'N', 'P')
+-    return [{'cell': 'spc' + str(i + 1).zfill(2), 'task': 'T1', 'round': i // 2 + 1, 'group': group}
++    return [{'cell': 'grc' + str(i + 1).zfill(2), 'task': 'T1', 'round': i // 2 + 1, 'group': group}
+             for i, group in enumerate(groups)]
+ 
+ 
+@@ -63,12 +63,23 @@
+     plan_raw = encoded(plan)
+     final = 'SYNTHETIC final 原始字节。\nUnknown remains explicit.\n'
+     business_text = '{ "group": "semantic-group", "status":"unknown", "timing_ms":17, "support_evidence":{"primitive_direction":[1,0,0]}, "reason":"surface_work_budget", "path":"C:/semantic/file" }'
+-    tool_result = {'isError': False, 'content': [{'type': 'text', 'text': business_text}]}
++    tool_result = {'isError': False, 'content': [{'type': 'text', 'text': business_text}],
++                   'future_business_extension': {'group': 'semantic-group', 'elapsed_ns': 123,
++                                                 'unknown': {'reason': 'synthetic-budget', 'proof': [2, 3, 5]}}}
+     request = {'jsonrpc': '2.0', 'id': 'administrative-id', '_meta': {'clock': 123}, 'method': 'tools/call',
+                'params': {'name': 'human_eye_scene_observe', '_meta': {'elapsed': 77},
+                           'arguments': {'query': {'mode': 'task', 'requested_facts': ['spatial_relation', 'surface_proximity']},
+                                         'include_image': False, 'native_semantic_text': business_text}}}
+     response = {'jsonrpc': '2.0', 'id': 'administrative-id', '_meta': {'usage': 999}, 'result': tool_result}
++    error_value = {'code': -32602, 'message': 'SYNTHETIC invalid fact request',
++                   'data': {'status': 'unknown', 'reason': 'not_executed',
++                            'group': 'semantic-group', 'support_evidence': {'integers': [7, 11]}}}
++    error_response = {'jsonrpc': '2.0', 'id': 'administrative-id', 'error': error_value}
++    native_code = 'print("SYNTHETIC", {"group": "business", "elapsed_ns": 17})\n'
++    native_request = {'jsonrpc': '2.0', 'id': 'native-id', 'method': 'tools/call',
++                      'params': {'name': 'execute_blender_code', 'arguments': {'code': native_code}}}
++    native_result = {'isError': False, 'content': [{'type': 'text', 'text': business_text + '\nSYNTHETIC native stdout\n'}]}
++    native_response = {'jsonrpc': '2.0', 'id': 'native-id', 'result': native_result}
+     records = []
+     selected = [] if zero_entered else slots if all_six else slots[:1]
+     for i, slot in enumerate(selected):
+@@ -91,12 +102,30 @@
+                 events = {'at_ns': 765, 'event': {'type': 'item.completed', 'item': {
+                     'type': 'mcp_tool_call', 'server': 'human_eye', 'tool': 'human_eye_scene_observe',
+                     'arguments': request['params']['arguments'], 'result': tool_result, 'status': 'completed'}}}
+-                put(folder, 'cells/' + slot['cell'] + '/events.jsonl', encoded(events).replace(b'\n', b'') + b'\n')
+                 for number in (1, 2):
+                     base = 'cells/' + slot['cell'] + '/owner/tool_' + str(number).zfill(2) + '/'
+                     put(folder, base + 'REQUEST.json', encoded(request))
+                     put(folder, base + 'RESPONSE.json', encoded(response))
+                     put(folder, base + 'ATTEMPT.json', encoded({'is_error': False, 'elapsed_ns': 123456}))
++                base = 'cells/' + slot['cell'] + '/owner/tool_03/'
++                put(folder, base + 'REQUEST.json', encoded(request))
++                put(folder, base + 'ERROR_RESPONSE.json', encoded(error_response))
++                put(folder, base + 'ATTEMPT.json', encoded({'is_error': True, 'elapsed_ns': 345678,
++                    'exception': {'type': 'ValueError', 'message': 'SYNTHETIC not_executed',
++                                  'traceback': 'synthetic administrative traceback'}}))
++                base = 'cells/' + slot['cell'] + '/owner/tool_04/'
++                put(folder, base + 'REQUEST.json', encoded(native_request))
++                put(folder, base + 'RESPONSE.json', encoded(native_response))
++                put(folder, base + 'ATTEMPT.json', encoded({'is_error': False, 'elapsed_ns': 456789}))
++                event_values = [events]
++                for tool, arguments, result, error in (
++                        ('human_eye_scene_observe', request['params']['arguments'], None, error_value),
++                        ('execute_blender_code', native_request['params']['arguments'], native_result, None)):
++                    event_values.append({'at_ns': 987, 'event': {'type': 'item.completed', 'item': {
++                        'type': 'mcp_tool_call', 'server': 'human_eye', 'tool': tool,
++                        'arguments': arguments, 'result': result, 'error': error, 'status': 'completed'}}})
++                put(folder, 'cells/' + slot['cell'] + '/events.jsonl',
++                    b''.join(encoded(value).replace(b'\n', b'') + b'\n' for value in event_values))
+         records.append({**slot, 'consumer': consumer, 'finish': None,
+                         'errors': [] if consumer is not None else [{'type': 'SyntheticActorError', 'message': 'synthetic startup failure'}],
+                         'cell_started_ns': 30 + i, 'cell_ended_ns': 40 + i,
+@@ -116,14 +145,15 @@
+         put(folder, 'scoring/' + name, raw)
+     return {'slots': slots, 'mapping': mapping, 'run': run, 'controls': controls, 'prompt': prompt,
+             'scoring': scoring, 'final': final, 'business_text': business_text,
+-            'request': request, 'tool_result': tool_result}
++            'request': request, 'tool_result': tool_result, 'error_value': error_value,
++            'native_request': native_request, 'native_result': native_result}
+ 
+ 
+ def main():
+-    output = HERE / 'synthetic_02'
++    output = HERE / 'synthetic_01'
+     output.mkdir(exist_ok=False)
+     pack_bytes = PACK_PATH.read_bytes()
+-    pack = types.ModuleType('_m4_spatial_packager_synthetic')
++    pack = types.ModuleType('_m4_grooved_packager_synthetic')
+     pack.__file__ = str(PACK_PATH)
+     exec(compile(pack_bytes, str(PACK_PATH), 'exec', dont_inherit=True), pack.__dict__)
+     checks, attempts, cases = [], [], []
+@@ -184,8 +214,8 @@
+                         check(name + ':five_not_run', all(row['execution_record_state'] == row['answer_state'] == 'not_run'
+                                                           for row in ordered[1:]))
+                     wrong = dict(data['controls'])
+-                    wrong['GO.json'] = encoded({'task': 'M4-SELECTED-GEOMETRY-CONSUMPTION-001',
+-                                                'authorized': True, 'max_consumers': 9,
++                    wrong['GO.json'] = encoded({'task': 'M4-SPATIAL-FACT-CONSUMPTION-001',
++                                                'authorized': True, 'max_consumers': 6,
+                                                 'plan_sha256': sha(data['controls']['PLAN.json'])})
+                     try:
+                         pack.validate_zero_launch_failure(data['run'], wrong)
+@@ -199,15 +229,34 @@
+                         check(name + ':' + row['anonymous_id'] + ':final_bytes',
+                               row['answer_state'] == 'present' and (folder / 'answer.txt').read_bytes() == data['final'].encode())
+                         tools = json.loads((folder / 'tool_evidence.json').read_bytes())
+-                        check(name + ':' + row['anonymous_id'] + ':duplicates_retained', len(tools['owner_attempts']) == 2)
++                        check(name + ':' + row['anonymous_id'] + ':duplicates_retained', len(tools['owner_attempts']) == 4
++                              and tools['owner_attempts'][0]['request'] == tools['owner_attempts'][1]['request'])
+                         check(name + ':' + row['anonymous_id'] + ':full_business_response',
+-                              all(item['responses'][0]['value'] == {'result': data['tool_result']} for item in tools['owner_attempts']))
++                              all(item['responses'][0]['value'] == {'result': data['tool_result']} for item in tools['owner_attempts'][:2]))
+                         expected_request = copy.deepcopy(data['request'])
+                         for key in ('jsonrpc', 'id', '_meta'):
+                             expected_request.pop(key)
+                         expected_request['params'].pop('_meta')
+                         check(name + ':' + row['anonymous_id'] + ':arguments_preserved',
+-                              all(item['request'] == expected_request for item in tools['owner_attempts']))
++                              all(item['request'] == expected_request for item in tools['owner_attempts'][:2]))
++                        failed, native = tools['owner_attempts'][2:]
++                        check(name + ':' + row['anonymous_id'] + ':failed_response_preserved',
++                              failed['is_error'] is True and failed['responses'][0]['value'] == {'error': data['error_value']})
++                        expected_native = copy.deepcopy(data['native_request'])
++                        expected_native.pop('jsonrpc')
++                        expected_native.pop('id')
++                        check(name + ':' + row['anonymous_id'] + ':native_followup_preserved',
++                              native['request'] == expected_native
++                              and native['responses'][0]['value'] == {'result': data['native_result']})
++                        check(name + ':' + row['anonymous_id'] + ':known_exception_envelope_only',
++                              failed['owner_exception'] == {'type': 'ValueError', 'message': 'SYNTHETIC not_executed'})
++                        public_events = tools['public_tool_events']
++                        check(name + ':' + row['anonymous_id'] + ':public_events_preserved',
++                              len(public_events) == 3
++                              and public_events[0]['event']['result'] == data['tool_result']
++                              and public_events[1]['event']['error'] == data['error_value']
++                              and public_events[2]['event']['arguments'] == data['native_request']['params']['arguments']
++                              and public_events[2]['event']['result'] == data['native_result'])
+                         consistency = json.loads((folder / 'source_consistency.json').read_bytes())
+                         check(name + ':' + row['anonymous_id'] + ':recorded_text_only_input',
+                               consistency['CONSUMER_INPUT']['input_image_count'] == 0

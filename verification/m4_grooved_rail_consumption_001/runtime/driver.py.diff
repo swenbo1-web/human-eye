@@ -1,0 +1,20 @@
+--- previous/driver.py
++++ grooved/driver.py
+@@ -16,7 +16,7 @@
+ 
+ HERE=Path(__file__).resolve().parent.parent
+ ROOT=HERE.parents[1]
+-CYCLE='M4-SPATIAL-FACT-CONSUMPTION-001'
++CYCLE='M4-GROOVED-RAIL-TRANSFER-001'
+ SOURCE_BY_PROFILE={'P':'2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390'}
+ COMMIT_BY_PROFILE={'P':'e836e03f4b3821f869c72ac3e50df5204f28b50f'}
+ GROUP_ORDER=('N','P','P','N','N','P')
+@@ -57,7 +57,7 @@
+     assert go['plan_sha256']==plan_sha256 and go['max_consumers']==6, 'authorization_not_bound_to_six_frozen_slots'
+     assert plan['cycle_id']==CYCLE and plan['batch']==CYCLE
+     assert len(plan['sequence'])==6 and len({row['cell'] for row in plan['sequence']})==6
+-    assert [row['cell'] for row in plan['sequence']]==['spc'+str(index).zfill(2) for index in range(1,7)], 'fresh_cycle_cell_ids_required'
++    assert [row['cell'] for row in plan['sequence']]==['grc'+str(index).zfill(2) for index in range(1,7)], 'fresh_cycle_cell_ids_required'
+     assert tuple(row['group'] for row in plan['sequence'])==GROUP_ORDER, 'fixed_group_order_changed'
+     assert all(row['task']=='T1' and row['round']==index//2+1 for index,row in enumerate(plan['sequence']))
+     assert plan['image_count']==0 and plan['new_images']==0
