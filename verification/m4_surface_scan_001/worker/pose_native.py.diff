@@ -1,0 +1,150 @@
+--- accepted_native.py
++++ pose_native.py
+@@ -59,37 +59,19 @@
+ def protected_files_intact(config):
+     return (sha(config['asset'])==config['asset_sha256'] and sha(config['asset_copy'])==config['asset_sha256']
+         and all(sha(row['path'])==row['sha256'] for row in config.get('protected_public_images',[]))
+-        and ('qa_vertex_patch' not in config
+-             or sha(config['qa_vertex_patch']['path'])==config['qa_vertex_patch']['sha256']))
+-
+-def _load_qa_vertex_patch(path,expected_sha256=None):
+-    """Validate the fixed coordinator patch before any vertex setter runs."""
++        and ('qa_pose_patch' not in config
++             or sha(config['qa_pose_patch']['path'])==config['qa_pose_patch']['sha256']))
++
++def _load_qa_pose_patch(path,expected_sha256=None):
+     raw=Path(path).read_bytes()
+-    need(len(raw)<=MAX_CODE,'qa_patch_bytes')
++    need(len(raw)<=MAX_CODE,'qa_pose_patch_bytes')
+     digest=hashlib.sha256(raw).hexdigest()
+-    need(expected_sha256 is None or digest==expected_sha256,'qa_patch_source_changed')
++    need(expected_sha256 is None or digest==expected_sha256,'qa_pose_patch_source_changed')
+     patch=json.loads(raw)
+-    need(type(patch) is dict and set(patch)=={'target_name','vertices'},'qa_patch_fields')
+-    need(type(patch['target_name']) is str and 0<len(patch['target_name'])<=256,'qa_patch_target')
+-    need(type(patch['vertices']) is list and 0<len(patch['vertices'])<=4096,'qa_patch_vertices')
+-    indices=set()
+-    vertices=[]
+-    for row in patch['vertices']:
+-        need(type(row) is dict and set(row)=={'index','co'},'qa_patch_vertex_fields')
+-        index=row['index']
+-        need(type(index) is int and index>=0 and index not in indices,'qa_patch_index')
+-        co=row['co']
+-        need(type(co) is list and len(co)==3
+-             and all(type(value) in (int,float) and abs(value)<=3.4028234663852886e38
+-                     and math.isfinite(value) for value in co),'qa_patch_coordinate')
+-        # Blender mesh coordinates are float32. Bind readback to the same
+-        # representable values.
+-        try:normalized=[struct.unpack('f',struct.pack('f',value))[0] for value in co]
+-        except (OverflowError,struct.error):raise ValueError('visual004_native_qa_patch_coordinate_range')
+-        need(all(math.isfinite(value) for value in normalized),'qa_patch_coordinate_range')
+-        indices.add(index)
+-        vertices.append(dict(index=index,co=normalized))
+-    return dict(target_name=patch['target_name'],vertices=vertices),digest
++    need(type(patch) is dict and set(patch)=={'object_name','location_z_delta_m'},'qa_pose_patch_fields')
++    need(patch['object_name']=='Obj_008' and patch['location_z_delta_m']==-.00075,'qa_pose_patch_frozen_value')
++    return patch,digest
++
+ 
+ def png_metadata(raw):
+     need(type(raw) is bytes and 33<=len(raw)<=16*1024*1024 and raw[:8]==b'\x89PNG\r\n\x1a\n','PNG_signature_or_size')
+@@ -223,28 +205,18 @@
+ def _scene_fingerprint(bpy):
+     return hashlib.sha256(encoded(_scene_state(bpy))).hexdigest()
+ 
+-def _apply_qa_vertex_patch(bpy,patch):
+-    """Apply the preregistered local coordinates and verify the full readback."""
+-    before=_scene_state(bpy)
+-    targets=[obj for obj in bpy.data.objects if obj.name==patch['target_name']]
+-    need(len(targets)==1 and targets[0].type=='MESH','qa_patch_target_mesh')
+-    target=targets[0]
+-    need(sum(obj.type=='MESH' and obj.data is target.data for obj in bpy.data.objects)==1,'qa_patch_shared_mesh')
+-    need(all(row['index']<len(target.data.vertices) for row in patch['vertices']),'qa_patch_index_range')
+-    need(any(list(target.data.vertices[row['index']].co)!=row['co'] for row in patch['vertices']),'qa_patch_no_change')
+-    expected=json.loads(encoded(before))
+-    target_state=next(row for row in expected['objects'] if row['name']==patch['target_name'])
+-    for row in patch['vertices']:
+-        target_state['vertices'][row['index']]=row['co']
+-    for row in patch['vertices']:
+-        target.data.vertices[row['index']].co=row['co']
+-    target.data.update()
++def _apply_qa_pose_patch(bpy,patch):
++    before=_scene_fingerprint(bpy)
++    obj=bpy.data.objects.get(patch['object_name'])
++    need(obj is not None and obj.type=='MESH','qa_pose_target')
++    old_location=list(obj.location)
++    obj.location.z=float(obj.location.z)+patch['location_z_delta_m']
+     bpy.context.view_layer.update()
+-    after=_scene_state(bpy)
+-    need(after==expected,'qa_patch_readback')
+-    return dict(target_name=patch['target_name'],vertices_written=len(patch['vertices']),
+-        before_fingerprint=hashlib.sha256(encoded(before)).hexdigest(),
+-        after_fingerprint=hashlib.sha256(encoded(after)).hexdigest())
++    after=_scene_fingerprint(bpy)
++    need(before!=after,'qa_pose_patch_no_change')
++    return dict(target_name=obj.name,old_location=old_location,new_location=list(obj.location),
++        before_fingerprint=before,after_fingerprint=after)
++
+ 
+ def _scan_pngs(workspace):
+     rows={}
+@@ -308,7 +280,7 @@
+                             event['operation']='qa_advance'
+                             need(set(request)=={'type','params'} and type(request['params']) is dict
+                                 and set(request['params'])=={'patch_sha256'},'qa_advance_request')
+-                            binding=config.get('qa_vertex_patch')
++                            binding=config.get('qa_pose_patch')
+                             need(binding is not None,'qa_patch_not_enabled')
+                             need(not qa_advanced,'qa_patch_already_applied')
+                             need(request['params']['patch_sha256']==binding['sha256'],'qa_patch_binding')
+@@ -320,8 +292,8 @@
+                             # operation. Any failure after entry poisons the
+                             # chain, including a partial vertex setter failure.
+                             execution_entered=True
+-                            patch,_=_load_qa_vertex_patch(binding['path'],binding['sha256'])
+-                            outcome=_apply_qa_vertex_patch(bpy,patch)
++                            patch,_=_load_qa_pose_patch(binding['path'],binding['sha256'])
++                            outcome=_apply_qa_pose_patch(bpy,patch)
+                             check(deadline)
+                             need(protected_files_intact(config)
+                                 and sha(Path(__file__))==config['helper_sha256'],'source_file_changed_after')
+@@ -381,13 +353,13 @@
+     closed=dict(pid=os.getpid(),closed_ns=time.perf_counter_ns(),poisoned=poisoned,
+         final_geometry_fingerprint=_scene_fingerprint(bpy),initial_geometry_fingerprint=initial,
+         original_deadline_ns=deadline)
+-    if 'qa_vertex_patch' in config:
++    if 'qa_pose_patch' in config:
+         closed.update(accepted_geometry_fingerprint=current,qa_patch_applied=qa_advanced)
+     save(workspace/'WORKER_CLOSED.json',closed)
+ 
+ class NativeSession:
+     @classmethod
+-    def start(cls,*,blender,asset,workspace,deadline_ns,condition='N',expected_asset_sha256=None,max_calls=64,qa_vertex_patch=None):
++    def start(cls,*,blender,asset,workspace,deadline_ns,condition='N',expected_asset_sha256=None,max_calls=64,qa_pose_patch=None):
+         started=time.perf_counter_ns();check(deadline_ns)
+         need(deadline_ns-started<=600*10**9,'maximum_original_window')
+         need(condition in ('N','P') and type(max_calls) is int and 1<=max_calls<=128,'session_parameters')
+@@ -400,10 +372,10 @@
+             self.config=dict(schema='visual004-native-session-v1',workspace=str(self.workspace),asset=str(asset),asset_copy=str(copied),
+                 asset_sha256=digest,blender=str(blender),blender_sha256=sha(blender),helper_sha256=sha(Path(__file__)),
+                 deadline_ns=deadline_ns,condition=condition,max_calls=max_calls,started_ns=started)
+-            if qa_vertex_patch is not None:
+-                patch_path=Path(qa_vertex_patch).resolve()
+-                _,patch_digest=_load_qa_vertex_patch(patch_path)
+-                self.config['qa_vertex_patch']=dict(path=str(patch_path),sha256=patch_digest)
++            if qa_pose_patch is not None:
++                patch_path=Path(qa_pose_patch).resolve()
++                _,patch_digest=_load_qa_pose_patch(patch_path)
++                self.config['qa_pose_patch']=dict(path=str(patch_path),sha256=patch_digest)
+             public_image=asset.parent/'initial.png'
+             self.config['protected_public_images']=([dict(path=str(public_image),sha256=sha(public_image))] if public_image.is_file() else [])
+             save(self.workspace/'CONFIG.json',self.config);check(startup_deadline)
+@@ -484,7 +456,7 @@
+         unrestricted Python under the trial's read-only consumer protocol.
+         """
+         need(not (self.workspace/'POISONED.json').exists(),'session_poisoned')
+-        binding=self.config.get('qa_vertex_patch')
++        binding=self.config.get('qa_pose_patch')
+         need(binding is not None,'qa_patch_not_enabled')
+         need(protected_files_intact(self.config)
+             and sha(Path(__file__))==self.config['helper_sha256'],'qa_patch_source_changed')
