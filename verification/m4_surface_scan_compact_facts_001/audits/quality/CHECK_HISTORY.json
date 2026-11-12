@@ -1,0 +1,19 @@
+{
+  "scope": "Offline quality audit development only",
+  "initial_inspection_issues": [
+    "An overbroad terminal summary included the business payload and was truncated. Subsequent reads used selected fields.",
+    "Two inspection snippets guessed rows and id keys; actual structures use business and request_id. Raw files were retained."
+  ],
+  "initial_verifier_failure": {
+    "exception": "TypeError: both arguments should be Rational instances",
+    "cause": "Frozen rational oracle numerator/denominator values are decimal strings. The first audit helper passed these strings directly to the two-argument Fraction constructor.",
+    "correction": "Parse each numerator and denominator explicitly as an integer before constructing the exact Fraction."
+  },
+  "second_verifier_failure": {
+    "exception": "AssertionError: preserved identity directory_sha256",
+    "cause": "The audit initially treated the directory digest as object-name identity alone. The actual source contract hashes coverage including spatial bounds, so the registered pose correctly changes it.",
+    "correction": "Require the directory digest to change with the pose alongside scene revision and fingerprint. Keep document epoch and runtime/host sources stable."
+  },
+  "originals_modified": false,
+  "new_Blender_product_model_API_runs": 0
+}

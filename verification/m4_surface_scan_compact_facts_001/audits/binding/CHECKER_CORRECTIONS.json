@@ -1,0 +1,23 @@
+{
+  "scope": "Offline reviewer exploration only",
+  "initial_stdout_parse_error": {
+    "exception": "JSONDecodeError: Expecting value: line 1 column 1",
+    "incorrect_assumption": "Host execute_code stdout is an unprefixed JSON document.",
+    "observed": "The Blender MCP transport emits one HUMAN_EYE_BLENDER_MCP: protocol marker followed by its JSON envelope.",
+    "correction": "Check exactly one marker, decode the protocol envelope, then inspect its scene-delta capture and original work counters."
+  },
+  "initial_candidate_tree_scope_error": {
+    "exception": "KeyError: verification/m4_surface_scan_compact_facts_001/engineering/run_candidate.py",
+    "incorrect_assumption": "The product candidate Git tree also contains this batch's engineering controller.",
+    "observed": "The fixed product commit freezes product runtime sources. The controller is listed by its own SHA256 in the original pre-run INPUT_BINDINGS.json.",
+    "correction": "Verify the product against Git, build source, wheel and installation. Verify the controller against its actual pre-run digest and preserve this narrower history scope."
+  },
+  "initial_acquisition_scope_assumption": {
+    "exception": "AssertionError: host threshold and scope base_default",
+    "incorrect_assumption": "The host acquisition packet and completed product scan use identical scope strings.",
+    "observed": "The acquisition explicitly describes independent_static_triangle_meshes_current_evaluated_surfaces and marks acquisition_only_not_surface_scan_result. The result describes all_scene_mesh_triangle_surfaces.",
+    "correction": "Validate each layer against its explicit acquisition/result contract and bind their actual work counters, preserving the distinction."
+  },
+  "originals_modified": false,
+  "new_Blender_product_model_API_runs": 0
+}

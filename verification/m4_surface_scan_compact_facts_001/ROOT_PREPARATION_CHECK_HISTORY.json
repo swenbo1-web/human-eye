@@ -1,0 +1,35 @@
+{
+  "scope": "Root preparation checks",
+  "failures": [
+    {
+      "stage": "initial source search",
+      "result": "An optional tests/ path and guessed build/version filenames were absent; actual paths were resolved with rg."
+    },
+    {
+      "stage": "initial source regex",
+      "result": "PowerShell quoting malformed a regex; retried with a literal source search."
+    },
+    {
+      "stage": "candidate precommit whitespace check",
+      "exit_code": 2,
+      "result": "Git default whitespace rules treated preserved CRLF input documents as trailing whitespace. The following commit command proceeded before that result was inspected.",
+      "correction": "Rechecked committed bytes with cr-at-eol, which passed. Original input documents retain exact hashes and candidate source remains the qualified file."
+    },
+    {
+      "stage": "initial evidence sealer AST check",
+      "exit_code": 1,
+      "result": "LookupError from invalid encoding alias utf8-sig.",
+      "correction": "Use the standard utf-8-sig codec and rerun the offline sealer. No original engineering records were rewritten."
+    },
+    {
+      "stage": "initial public-artifact credential-pattern check",
+      "exit_code": 1,
+      "result": "The regex matched sk- inside ordinary task- identifiers in three already-versioned source files. It printed file paths only.",
+      "correction": "Require a token left boundary before sk-. Keep source bytes unchanged and rerun the manifest/index checks."
+    }
+  ],
+  "candidate_commit": "452b44d2dcf231d6675bef54e568db0431a29261",
+  "corrected_committed_whitespace_check": "git -c core.whitespace=trailing-space,space-before-tab,cr-at-eol show --format= --check 452b44d2dcf231d6675bef54e568db0431a29261",
+  "corrected_check_exit_code": 0,
+  "new_model_or_API_calls": 0
+}

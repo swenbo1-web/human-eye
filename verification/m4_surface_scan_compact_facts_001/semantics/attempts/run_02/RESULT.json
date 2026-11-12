@@ -1,0 +1,486 @@
+{
+  "schema": "surface_scan_compact_semantics_run_v1",
+  "run": 2,
+  "python": "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+  "isolation": "-I -B -X utf8",
+  "new_Blender_model_business_API_runs": 0,
+  "targets": [
+    "verification.m4_surface_scan_compact_facts_001.semantics.test_compact_semantics",
+    "verification.m4_surface_scan_001.tests.test_entry",
+    "verification.m4_surface_scan_001.tests.test_surface_scan",
+    "verification.m4_surface_scan_001_opt1.tests.test_entry",
+    "verification.test_live_spatial_mcp",
+    "verification.test_task_brief_independent",
+    "verification.test_structure_task_brief",
+    "verification.test_segment_brief_independent",
+    "verification.test_mcp_request_isolation.FramingAndEnvelopeTests",
+    "verification.test_mcp_request_isolation.PublicationIsolationTests"
+  ],
+  "predefined_suite_method_count": 181,
+  "old_schema_method_executed_via_equivalent_exported_cases": [
+    "verification.m4_surface_scan_001.tests.test_entry.EntryTests.test_schema_matches_new_and_existing_threshold_contracts"
+  ],
+  "schema_environment_reason": "Candidate dependency Python 3.12 has no jsonschema. Existing cached jsonschema/rpds binary supports Python 3.14, used only for exported-schema validation.",
+  "fixture_adaptation": {
+    "module": "verification.test_segment_brief_independent",
+    "constant": "BASELINE",
+    "read_only_sources": [
+      {
+        "path": "D:\\hefe\\verification\\fixes\\20261030_v1_agent_entry\\FIRST_SEGMENT_WIRE.json",
+        "bytes": 109963,
+        "sha256": "ecc0bfcfb1f60acfb703b7e24a061872be1c614399f07a536e2856931c655ffd"
+      },
+      {
+        "path": "D:\\hefe\\verification\\fixes\\20261030_v1_agent_entry\\RESUMED_SEGMENT_WIRE.json",
+        "bytes": 109664,
+        "sha256": "82abb05b9ddcb6684b7a3765bb424c365df40c38a540bf9bca5f9e135c0e5411"
+      }
+    ],
+    "original_test_source_unchanged": true
+  },
+  "tests_run": 180,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "expected_failures": 0,
+  "unexpected_successes": 0,
+  "successful": true,
+  "source_unchanged_during_run": true,
+  "product_source_sha256": "6fc5a4b8286130f2e6847ee4d7f4efee94c65a0591940e72b924f24ccd55081f",
+  "test_source_sha256": "0a7d2200440a3eeef51428ac6883d631de3f2c1b1c45d98c149c7b139d19ba06",
+  "runner_source_sha256": "b25123e207369201a79f4d0e269d6041b64b8c933809fb9bfd3518b1940db0f8",
+  "elapsed_ns": 2413758000,
+  "failures_detail": [],
+  "errors_detail": [],
+  "learning_context": {
+    "context_bound": false,
+    "host_epoch": 5,
+    "rebind_required": true
+  },
+  "scope": "Synthetic/mock host offline tests and existing local entry help checks. No new model consumers or Blender execution.",
+  "external_schema_validation": [
+    {
+      "schema": "surface_scan_external_schema_validation_v1",
+      "checks": [
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0.002
+            }
+          },
+          "expected_valid": true,
+          "actual_valid": true,
+          "error_messages": []
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0.002
+            },
+            "response_detail": "brief"
+          },
+          "expected_valid": true,
+          "actual_valid": true,
+          "error_messages": []
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0.002
+            },
+            "response_detail": "full"
+          },
+          "expected_valid": true,
+          "actual_valid": true,
+          "error_messages": []
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0
+            }
+          },
+          "expected_valid": true,
+          "actual_valid": true,
+          "error_messages": []
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 1e+308
+            }
+          },
+          "expected_valid": true,
+          "actual_valid": true,
+          "error_messages": []
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": -1
+            }
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "-1 is less than the minimum of 0"
+          ]
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 1.0,
+              "objects": []
+            }
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "[] should be non-empty",
+            "Additional properties are not allowed ('objects' was unexpected)"
+          ]
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 1.0
+            },
+            "include_image": true
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "False was expected"
+          ]
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 1.0
+            },
+            "focal_id": "a"
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "{'query': {'mode': 'surface_scan', 'threshold_m': 1.0}, 'focal_id': 'a'} should not be valid under {'anyOf': [{'required': ['focal_id']}, {'required': ['reference_id']}, {'required': ['goal']}, {'required': ['scene_delta']}]}"
+          ]
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan"
+            }
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "'threshold_m' is a required property"
+          ]
+        },
+        {
+          "job": "ordinary_observe",
+          "value": {
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0.002
+            },
+            "response_detail": null
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "None is not of type 'string'",
+            "None is not one of ['full', 'brief']"
+          ]
+        },
+        {
+          "job": "existing_mesh_surface_query",
+          "value": {
+            "mode": "mesh_surface",
+            "threshold_m": 0
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "0 is less than or equal to the minimum of 0"
+          ]
+        },
+        {
+          "job": "existing_mesh_surface_query",
+          "value": {
+            "mode": "mesh_surface",
+            "threshold_m": 0.02
+          },
+          "expected_valid": false,
+          "actual_valid": false,
+          "error_messages": [
+            "0.02 is greater than the maximum of 0.01"
+          ]
+        }
+      ],
+      "schema_count": 2,
+      "check_count": 13,
+      "python": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Scripts\\python.exe",
+      "python_version": "3.14.7 (main, Sep  1 2026, 14:17:30) [MSC v.1944 64 bit (AMD64)]",
+      "python_sha256": "80da2dbc9aca9420877223d6bf9ec0f5d9fd066a79ed65a3e3870037ff4e03e8",
+      "jsonschema_version": "4.26.0",
+      "sources": [
+        {
+          "module": "attr",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\__init__.py",
+          "bytes": 2057,
+          "sha256": "7ce608bedd5e192a90adee2e092dec256299d26c00b82f140faa9b6b9392f7f5"
+        },
+        {
+          "module": "attr._cmp",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_cmp.py",
+          "bytes": 4117,
+          "sha256": "dcd9f54e3c659546225ff9c9a159c4917a0393484cd4360a8f90c4ec665ee22d"
+        },
+        {
+          "module": "attr._compat",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_compat.py",
+          "bytes": 2829,
+          "sha256": "c7483b88450e9c15490bbdb3c850a06f578aab2c52fbb7f62c69cdc99febf79b"
+        },
+        {
+          "module": "attr._config",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_config.py",
+          "bytes": 843,
+          "sha256": "746ab7c51e9f819105e9406dfcbd13f9e507201e22e37911987d0fdbcb09570f"
+        },
+        {
+          "module": "attr._funcs",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_funcs.py",
+          "bytes": 16479,
+          "sha256": "231e481134dfcf9174d45fb5d8c17f0921689889f687c6faec4555cf6802b411"
+        },
+        {
+          "module": "attr._make",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_make.py",
+          "bytes": 106129,
+          "sha256": "1fb387d9e592e429c1ccb5233451355b299f3eb985d6bf1fbf644f76df4cb980"
+        },
+        {
+          "module": "attr._next_gen",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_next_gen.py",
+          "bytes": 26274,
+          "sha256": "050b42525cf08368161d3617050beb118067cc152b0ef3b9eeed0fcba5023e17"
+        },
+        {
+          "module": "attr._version_info",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\_version_info.py",
+          "bytes": 2222,
+          "sha256": "c3847e1580b734afe43241945899583f87150251fd1d1682fae9b77dc8d89073"
+        },
+        {
+          "module": "attr.converters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\converters.py",
+          "bytes": 3861,
+          "sha256": "1a50de3b33de4c581e0412db8fd1b9ec4cf994093af2e85200b45827f7b17bce"
+        },
+        {
+          "module": "attr.exceptions",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\exceptions.py",
+          "bytes": 1990,
+          "sha256": "6f8bcc6e7a10dd5a7059986aad88bfb2c5d508af28d9ce074124b4f5c49433da"
+        },
+        {
+          "module": "attr.filters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\filters.py",
+          "bytes": 1795,
+          "sha256": "64188a58ba774742df099b2aed7d75a67f565fc36c952db05cce23b272ce19cf"
+        },
+        {
+          "module": "attr.setters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\setters.py",
+          "bytes": 1617,
+          "sha256": "e7e75c4fadc640adf938d1334a07d70a46c1ee93e4691faabf5e669b83d54b34"
+        },
+        {
+          "module": "attr.validators",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attr\\validators.py",
+          "bytes": 21553,
+          "sha256": "9b7411cd94c036be1fd82e1e55d528160d753605d66a4f166ade2a4131a1bdcb"
+        },
+        {
+          "module": "attrs",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\__init__.py",
+          "bytes": 1183,
+          "sha256": "47168064dc1888487e7dcbc72d936943f0d62a78bbdccfe3c443c47ed8aad597"
+        },
+        {
+          "module": "attrs.converters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\converters.py",
+          "bytes": 76,
+          "sha256": "f244258eb5707d24d1bbc20dc0493c488d1e1abce659fb6c4fbaccd04ab2a213"
+        },
+        {
+          "module": "attrs.exceptions",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\exceptions.py",
+          "bytes": 76,
+          "sha256": "0020829a0d7dfaf0c56833d8f6f165d7df523d709030dfdb10db380c02e3ce6b"
+        },
+        {
+          "module": "attrs.filters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\filters.py",
+          "bytes": 73,
+          "sha256": "54e50c66e83db8453a754b80d1d1758c89d42b43cbddf2e03f45414b977e0831"
+        },
+        {
+          "module": "attrs.setters",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\setters.py",
+          "bytes": 73,
+          "sha256": "78bd5889d6105774f687dfd2608652651d4501c1c66f54ee093cb41342efd925"
+        },
+        {
+          "module": "attrs.validators",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\attrs\\validators.py",
+          "bytes": 76,
+          "sha256": "c5ccbac03e53b5391d086d5fe1759ba1c3d23b47da06393921f5497cfe92523d"
+        },
+        {
+          "module": "jsonschema",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\__init__.py",
+          "bytes": 3941,
+          "sha256": "a7e470e134bfd0e3c76482722260d6b1d5a099de823d61cc5cbabb06e4314c67"
+        },
+        {
+          "module": "jsonschema._format",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_format.py",
+          "bytes": 15568,
+          "sha256": "96bb3553b892076657f59d846a5b113987909b577d91e7f0d822e8d3c1bc3f8b"
+        },
+        {
+          "module": "jsonschema._keywords",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_keywords.py",
+          "bytes": 14949,
+          "sha256": "afcfc3aea01f9fa40bc109e65c4820bde89253e51a20bda9da7b8f20d7a57c57"
+        },
+        {
+          "module": "jsonschema._legacy_keywords",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_legacy_keywords.py",
+          "bytes": 15191,
+          "sha256": "dad5aec113d66d84bb10097cc01202feb69b1aebf527875f60ba8d10fa528610"
+        },
+        {
+          "module": "jsonschema._types",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_types.py",
+          "bytes": 5456,
+          "sha256": "7ff9e44c36eb8dadc4ddfb083530bbdf2fe03174d4db5d08fc7eea2b434ddf47"
+        },
+        {
+          "module": "jsonschema._typing",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_typing.py",
+          "bytes": 617,
+          "sha256": "a572e71b2de336d2144ead37ee451fab4c1ed7bd3ce5e1ed2700c9dadfbe9901"
+        },
+        {
+          "module": "jsonschema._utils",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\_utils.py",
+          "bytes": 10659,
+          "sha256": "5efebfc0a2ac941265c328fdfa3d9cf090c5c3ee33e1a5859d57b6a57f21ed4e"
+        },
+        {
+          "module": "jsonschema.exceptions",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\exceptions.py",
+          "bytes": 15256,
+          "sha256": "6f8da150339f3c5729ac8e1994da630de2cabfc93dbce86059cb768f20e5c739"
+        },
+        {
+          "module": "jsonschema.protocols",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\protocols.py",
+          "bytes": 7198,
+          "sha256": "960cabc951ea1628d2151033f79721dd5376173fa84c5ca18fd39b732e4ffc22"
+        },
+        {
+          "module": "jsonschema.validators",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema\\validators.py",
+          "bytes": 47159,
+          "sha256": "97f171b995b4b0ca05530a9366a1252fb1753f99f3cb7b1068b6d9aab1096fa5"
+        },
+        {
+          "module": "jsonschema_specifications",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema_specifications\\__init__.py",
+          "bytes": 386,
+          "sha256": "aa84c1d83298eeabcdac684c3c7ea0b6600944b8a599543e7c56704faaf2ab0d"
+        },
+        {
+          "module": "jsonschema_specifications._core",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\jsonschema_specifications\\_core.py",
+          "bytes": 1140,
+          "sha256": "b4585cd42325789dc024e2bf6e3c4ea4541376bb140a51467c5c4f054fc279b3"
+        },
+        {
+          "module": "referencing",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\__init__.py",
+          "bytes": 207,
+          "sha256": "e4864a5da007fc55b20894646939f55dca6d2df83d72f78b6fdbb99d853124ab"
+        },
+        {
+          "module": "referencing._attrs",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\_attrs.py",
+          "bytes": 791,
+          "sha256": "6e04fe28c84354b786b56c4cfd218a61e2da6411734f691454574090e7178bc8"
+        },
+        {
+          "module": "referencing._core",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\_core.py",
+          "bytes": 24732,
+          "sha256": "d923c67da4efcc0dec46a6e3ff8476c02fbe7e25e8942515a4b14b249eb3759f"
+        },
+        {
+          "module": "referencing.exceptions",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\exceptions.py",
+          "bytes": 4176,
+          "sha256": "cc581a120e9688a793e7c310b8a36c8060e71ecce9dba738a11782eac17d8073"
+        },
+        {
+          "module": "referencing.jsonschema",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\jsonschema.py",
+          "bytes": 18615,
+          "sha256": "8d767ab7ac7da13bd31cc202d2d4726858d6e6bdaa78739b62ebbb52149f2b74"
+        },
+        {
+          "module": "referencing.typing",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\referencing\\typing.py",
+          "bytes": 1445,
+          "sha256": "5a351b9d9ea33c0777d5c9c214069e588544373c87b47749c8e95e96fd4663bd"
+        },
+        {
+          "module": "rpds",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\rpds\\__init__.py",
+          "bytes": 99,
+          "sha256": "c373205d6ee5a530880b0d0a5dbc36d105f9ef7fe46ec12758878cb0202e82f3"
+        },
+        {
+          "module": "rpds.rpds",
+          "path": "C:\\Users\\Administrator\\AppData\\Local\\uv\\cache\\archive-v0\\_ruafSbD2XWAGOzS\\Lib\\site-packages\\rpds\\rpds.cp314-win_amd64.pyd",
+          "bytes": 561664,
+          "sha256": "3b81cb670522b77a53ce3c4258b438605ffbbf65720cf74926f2a5f5356c8a45"
+        }
+      ],
+      "new_Blender_model_business_API_runs": 0
+    }
+  ]
+}
