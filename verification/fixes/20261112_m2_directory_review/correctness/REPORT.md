@@ -17,7 +17,7 @@
 - `blender_host.py:1134–1227` 使用真实 evaluated 顶点，按既有 world forward 公式聚合，所有对象成功才发布 complete。不是八角近似。
 - 目录使用独立 captures key；`SceneResidency.sync/reset` 统一失效。返回经 `_capture_state` 深拷贝，服务随后补 provenance，不污染宿主缓存。
 - `live_service.py:1286–1376` 独立目录协议校验和来源绑定；没有 activate 完整 ReadContext、记录完整 scene_memory 或产生旧动作基底。`blender_mcp_host.py` 与 typed worker 的 directory 均绕过完整 capture delta decoder。
-- 新入口只在显式 directory 分支，无图且不接受 pair、goal、delta、自然语言求解；旧 overview/task/nearest 几何流程未被改写。完整 JSON Schema 与运行校验的一致性由根另核，本子任务未重复测试。
+- 新入口只在显式 directory 分支，无图且不接受 pair、goal、delta、自然语言求解；旧 overview/task/nearest 几何流程未被改写。根检查了声明与受理分支并重跑相关离线案例；完整 JSON Schema 求值引擎仍未运行，本子任务也未运行该引擎。
 
 ## 一个可优化点，当前不是错误
 
