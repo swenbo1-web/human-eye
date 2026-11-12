@@ -1,0 +1,277 @@
+--- baseline/surface_proximity.py
++++ initial/surface_proximity.py
+@@ -21,6 +21,12 @@
+ _MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
+ METHOD = 'exact_binary64_triangle_surface_hulls_v3'
+ _PUBLICATION_TOLERANCE = Fraction.from_float(1e-9)
++SPATIAL_METHOD = 'exact_sufficient_spatial_relation_v1'
++SPATIAL_SCOPE = 'referenced_triangle_unions_and_their_vertex_convex_hulls'
++_SURFACE_RESOURCE_STOPS = frozenset({'surface_work_budget', 'surface_pair_budget',
++                                      'surface_geometry_work_limit'})
++_CLOSED_RESOURCE_STOPS = frozenset({'closed_solid_work_budget', 'closed_solid_pair_budget',
++    'closed_solid_ray_budget', 'closed_solid_vertex_budget', 'closed_solid_geometry_work_limit'})
+ 
+ 
+ class _DomainError(ValueError):
+@@ -156,7 +162,9 @@
+                            tree_build_units=0, node_pair_visits=0, leaf_pair_visits=0,
+                            queue_pushes=0, queue_bound_tests=0, narrow_phase_pairs=0,
+                            plane_projection_tests=0, plane_bound_tests=0,
+-                           plane_pruned_pairs=0, subtree_pruned_pairs=0, shared_trees=False)
++                           plane_pruned_pairs=0, subtree_pruned_pairs=0, shared_trees=False,
++                           support_direction_components=0, support_source_vertices=0,
++                           support_vertex_dots=0)
+ 
+     def consume(self, amount, stage):
+         self.checkpoint('surface_proximity_' + stage)
+@@ -199,7 +207,7 @@
+     return records, topology
+ 
+ 
+-def _integer_frame(records, budget):
++def _integer_frame(records, budget, *, holder=None):
+     first_mesh, _, first_indices = records[0]
+     first = first_mesh.vertices[first_indices[0]]
+     if len(first) != 3 or any(not math.isfinite(float(value)) for value in first):
+@@ -220,6 +228,7 @@
+         relative.append((faces, coordinates))
+     factor = _bounded(1 << exponent)
+     prepared = []
++    retained = [] if holder is not None else None
+     for faces, coordinates in relative:
+         integers = {index: tuple(_bounded(value.numerator <<
+                     (exponent - value.denominator.bit_length() + 1)) for value in point)
+@@ -245,6 +254,10 @@
+                             max(point[k] for point in points)) for k in range(3))
+             triangles.append((points, normal, squared, edges, bounds))
+         prepared.append(triangles)
++        if retained is not None:
++            retained.append(integers)
++    if holder is not None:
++        holder['coordinates'] = tuple(retained)
+     return origin, factor, prepared
+ 
+ 
+@@ -423,15 +436,21 @@
+     return best
+ 
+ 
+-def _distance_roots(prepared, budget):
++def _distance_roots(prepared, budget, holder=None):
+     from .surface_geometry import _bvh
+     roots = []
++    retained_bounds = [] if holder is not None else None
+     for triangles in prepared:
+         budget.tick('tree_build_units', len(triangles))
+         bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
+                   for triangle in triangles]
+         budget.tick('tree_builds')
+         roots.append(_bvh(bounds, budget))
++        if retained_bounds is not None:
++            retained_bounds.append(bounds)
++    if holder is not None:
++        holder['trees'] = dict(pair=holder['pair'], triangles=tuple(prepared),
++                               bounds=tuple(retained_bounds), roots=tuple(roots))
+     return tuple(roots)
+ 
+ 
+@@ -500,14 +519,16 @@
+     return best
+ 
+ 
+-def _nearest(prepared, budget, *, prepared_trees=None):
++def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None):
+     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
+         return _nearest_linear(prepared,budget)
+     if prepared_trees is None:
+-        roots = _distance_roots(prepared,budget)
++        roots = _distance_roots(prepared,budget,holder=prepared_holder)
+     else:
+         roots = prepared_trees['roots']
+         budget.counts['shared_trees'] = True
++        if prepared_holder is not None:
++            prepared_holder['trees'] = prepared_trees
+     return _nearest_tree(prepared,roots,budget)
+ 
+ 
+@@ -692,10 +713,15 @@
+ 
+ 
+ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
+-                              _prepared_pair=None, _boundary_contact=None, _prepared_trees=None):
++                              _prepared_pair=None, _boundary_contact=None, _prepared_trees=None,
++                              _prepared_holder=None):
+     """Measure only the requested triangle surfaces, retaining known quantities."""
+     checkpoint('surface_proximity_admission')
+     budget = _Work(checkpoint, diagnostics)
++    if _prepared_holder is not None:
++        for key in ('pair', 'work', 'coordinates', 'trees'):
++            _prepared_holder.pop(key, None)
++        _prepared_holder['work'] = budget
+     result = dict(measurement_valid=False, distance_m=None, point_a_world=None,
+         point_b_world=None, direction_a_to_b=None, witness_status='unknown',
+         direction_status='unknown', topology=None, method=METHOD,
+@@ -704,12 +730,16 @@
+         if (_prepared_pair is None or _prepared_pair[0][0][0] is not left
+                 or _prepared_pair[0][1][0] is not right):
+             records, result['topology'] = _admit((left, right), budget)
+-            origin, factor, prepared = _integer_frame(records, budget)
++            origin, factor, prepared = _integer_frame(records, budget, holder=_prepared_holder)
++            pair = (records, result['topology'], origin, factor, prepared)
+             contact = None
+         else:
+             records, result['topology'], origin, factor, prepared = _prepared_pair
++            pair = _prepared_pair
+             budget.counts['shared_preparation'] = True
+             contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
++        if _prepared_holder is not None:
++            _prepared_holder['pair'] = pair
+         if contact is None:
+             trees = None
+             if (_prepared_pair is not None and type(_prepared_trees) is dict
+@@ -717,7 +747,8 @@
+                     and len(_prepared_trees.get('triangles', ())) == 2
+                     and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
+                 trees = _prepared_trees
+-            numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees)
++            numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
++                                                         prepared_holder=_prepared_holder)
+         else:
+             budget.counts['zero_witness_reused'] = True
+             numerator, denominator, descriptor = 0, 1, ('contact', contact)
+@@ -759,3 +790,100 @@
+         result.update(point_a_world=world[0], point_b_world=world[1], witness_status='measured')
+     checkpoint('surface_proximity_complete')
+     return result
++
++
++def _public_support_direction(surface, budget):
++    points = (surface.get('point_a_world'), surface.get('point_b_world'))
++    if (surface.get('measurement_valid') is not True or surface.get('witness_status') != 'measured'
++            or any(type(point) not in (list, tuple) or len(point) != 3 for point in points)
++            or any(type(value) not in (int, float) or not math.isfinite(value)
++                   for point in points for value in point)):
++        return None, 'spatial_support_direction_unavailable'
++    direction = []
++    for left, right in zip(*points):
++        budget.tick('support_direction_components')
++        direction.append(_bounded(Fraction.from_float(float(right)) - Fraction.from_float(float(left))))
++    exponent = max(value.denominator.bit_length()-1 for value in direction)
++    integers = tuple(_bounded(value.numerator << (exponent-value.denominator.bit_length()+1))
++                     for value in direction)
++    divisor = math.gcd(*integers)
++    if not divisor:
++        return None, 'spatial_support_direction_zero'
++    return tuple(value//divisor for value in integers), None
++
++
++def _referenced_support_evidence(surface, holder, budget):
++    direction, reason = _public_support_direction(surface, budget)
++    if direction is None:
++        return None, reason
++    pair, coordinates = holder.get('pair'), holder.get('coordinates')
++    if pair is None or coordinates is None:
++        return None, 'spatial_support_preparation_unavailable'
++    extrema, indices = [], []
++    for side, (record, points) in enumerate(zip(pair[0], coordinates)):
++        value = chosen = None
++        for index in record[2]:
++            budget.tick('support_source_vertices')
++            budget.tick('support_vertex_dots')
++            projection = _dot(direction, points[index])
++            if value is None or (projection > value if side == 0 else projection < value):
++                value, chosen = projection, index
++        extrema.append(value)
++        indices.append(chosen)
++    if extrema[1] <= extrema[0]:
++        return None, 'spatial_support_not_strictly_separated'
++    return dict(proposal='first_public_nearest_points_difference', primitive_direction=list(direction),
++        left_max=extrema[0], right_min=extrema[1], left_vertex_index=indices[0], right_vertex_index=indices[1],
++        referenced_counts=[len(record[2]) for record in pair[0]],
++        origin=[[value.numerator, value.denominator] for value in pair[2]], factor=pair[3]), None
++
++
++def measure_spatial_relation(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
++                             prepared_holder=None):
++    """Prove sufficient support separation, or run the original classifier once."""
++    metrics = diagnostics if diagnostics is not None else {}
++    metrics.update(surface_pair_count=1, closed_solid_pair_count=0,
++                   closed_solid_work={}, support_work={})
++    surface_work = {}
++    metrics['surface_work'] = surface_work
++    holder = prepared_holder if prepared_holder is not None else {}
++    surface = measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work,
++        retain_exact_rank=retain_exact_rank, _prepared_holder=holder)
++    budget = holder['work']
++    before_support = budget.counts['work_units']
++    spatial = dict(measurement_valid=False, relation=None, method=SPATIAL_METHOD,
++                   geometry_scope=SPATIAL_SCOPE, relation_tolerance_m=0.0)
++    closed = None
++    budget_stopped = surface.get('reason') in _SURFACE_RESOURCE_STOPS
++    stop_reason = surface.get('reason') if budget_stopped else None
++    support_reason = stop_reason
++    if not budget_stopped:
++        try:
++            evidence, support_reason = _referenced_support_evidence(surface, holder, budget)
++            if evidence is not None:
++                spatial.update(measurement_valid=True, relation='separated',
++                    certificate='strict_all_referenced_vertex_support', support_evidence=evidence)
++        except _DomainError as exc:
++            support_reason = str(exc)
++            if support_reason in _SURFACE_RESOURCE_STOPS:
++                budget_stopped, stop_reason = True, support_reason
++    metrics['support_work'].update({key:budget.counts[key] for key in
++        ('support_direction_components', 'support_source_vertices', 'support_vertex_dots')})
++    metrics['support_work'].update(work_units_before=before_support,
++        work_units_after=budget.counts['work_units'], reason=support_reason)
++    if budget_stopped:
++        spatial['reason'] = stop_reason
++    elif spatial['measurement_valid'] is not True:
++        from .surface_geometry import classify_closed_solids
++        metrics['closed_solid_pair_count'] = 1
++        closed = classify_closed_solids(left, right, checkpoint, diagnostics=metrics['closed_solid_work'],
++            prepared_pair=holder.get('pair'), prepared_trees=holder.get('trees'), prepared_holder=holder)
++        spatial = {key:closed[key] for key in ('measurement_valid', 'relation', 'method', 'geometry_scope',
++            'relation_tolerance_m', 'certificate', 'local_evidence', 'reason') if key in closed}
++        if closed.get('reason') in _CLOSED_RESOURCE_STOPS:
++            budget_stopped, stop_reason = True, closed['reason']
++    checkpoint('spatial_relation_complete')
++    return dict(measurement_valid=surface.get('measurement_valid') is True
++                    and spatial.get('measurement_valid') is True,
++                surface=surface, spatial=spatial, closed=closed,
++                budget_stopped=budget_stopped, stop_reason=stop_reason)
+--- baseline/surface_geometry.py
++++ initial/surface_geometry.py
+@@ -251,6 +251,7 @@
+             candidate_frame_builds=0,candidate_frame_coefficients=0,candidate_projection_tests=0,
+             candidate_bound_faces=0,candidate_tree_builds=0,candidate_frame_fallbacks=0,
+             leaf_bounds_reused=0,cheap_pair_tests=0,plane_projection_tests=0,plane_side_tests=0,
++            prepared_trees_reused=False,
+             strict_plane_rejections=0,shared_index_tests=0,shared_simplex_tests=0,
+             shared_simplex_certificates=0,shared_edge_tests=0,shared_edge_certificates=0,
+             cheap_bit_fallbacks=0,cone_metadata_nodes=0,cone_face_tests=0,
+@@ -725,7 +726,8 @@
+     return b is not None and a*b<0
+ 
+ 
+-def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pair=None,prepared_holder=None):
++def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pair=None,prepared_holder=None,
++                           prepared_trees=None):
+     """Zero-tolerance relation of represented embedded, connected closed shells.
+ 
+     Interior overlap needs a strict containment or transverse-boundary witness.
+@@ -753,7 +755,13 @@
+         if prepared_holder is not None:prepared_holder['pair']=prepared_pair
+         records,_,_,_,prepared=prepared_pair
+         _closed_require(all(len(r[1])>=4 for r in records),'too_few_faces')
+-        world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
++        if (type(prepared_trees) is dict and prepared_trees.get('pair') is prepared_pair
++                and len(prepared_trees.get('triangles',())) == 2
++                and all(a is b for a,b in zip(prepared_trees['triangles'],prepared))):
++            world_trees = tuple(zip(prepared_trees['bounds'],prepared_trees['roots']))
++            budget.counts['prepared_trees_reused'] = True
++        else:
++            world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
+         if prepared_holder is not None:
+             prepared_holder['trees'] = dict(pair=prepared_pair,triangles=tuple(prepared),
+                 bounds=tuple(tree[0] for tree in world_trees),

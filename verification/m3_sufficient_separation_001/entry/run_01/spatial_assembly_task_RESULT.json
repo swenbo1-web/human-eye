@@ -1,0 +1,575 @@
+{
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "spatial_assembly_task",
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_scene_observe",
+      "arguments": {
+        "session_id": "m3-sufficient-separation-001",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "target": {
+            "id": "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322"
+          },
+          "candidates": [
+            {
+              "id": "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275"
+            },
+            {
+              "id": "blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25"
+            },
+            {
+              "id": "blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116"
+            }
+          ],
+          "requested_facts": [
+            "aabb",
+            "surface_proximity",
+            "spatial_relation"
+          ]
+        }
+      }
+    }
+  },
+  "started_ns": 575477140530800,
+  "ended_ns": 575479493939300,
+  "response": {
+    "jsonrpc": "2.0",
+    "id": "spatial_assembly_task",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result_kind\":\"task_query\",\"schema_version\":\"task-query-set-v2\",\"scope\":\"explicit_target_candidates\",\"status\":\"observed\",\"binding\":{\"scene_revision\":\"blender:c34c6a5c03a5ced82428be20f89336bb5c392194154a190a3ec733cc391c44a8\",\"scene_fingerprint\":\"7ce9279cd99f1f3f4741429a508c0908b47dee665bde000dc31ab5615cbbce94\",\"source\":\"blender\",\"objects\":[{\"object_id\":\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\",\"name\":\"Target\"},{\"object_id\":\"blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275\",\"name\":\"Peer_000\"},{\"object_id\":\"blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25\",\"name\":\"Competing_001\"},{\"object_id\":\"blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116\",\"name\":\"Near_003\"}],\"currentness\":\"capture_snapshot\",\"capture_scope\":\"selected_objects\",\"host_identity\":{\"schema_version\":\"1.0\",\"document_epoch\":\"0c98ccc089eb0bb0786ddcd9f04119f6d6592b1b13978fad9e0f3e5fe1914c3f\",\"object_instances\":{\"blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25\":\"160\",\"blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116\":\"163\",\"blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275\":\"172\",\"blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322\":\"173\"},\"capture_scope\":\"selected_objects\"},\"candidate_count\":14,\"selected_count\":4,\"runtime_source_sha256\":\"2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"pair_order\":\"target_to_candidate\",\"facts\":{\"aabb\":[{\"status\":\"measured\",\"value\":{\"min\":[0.1655239870802002,-0.3430005299002009,0.12272405673008246],\"max\":[1.0184321263402192,0.3337915478956436,0.24006570199967714],\"dimensions\":[0.852908139260019,0.6767920777958445,0.11734164526959467]}},{\"status\":\"measured\",\"value\":{\"min\":[0.130586294252861,-0.277990218026301,0.15310916671772157],\"max\":[0.9834944425870804,0.3988018617525161,0.27045081441298824],\"dimensions\":[0.8529081483342194,0.6767920797788171,0.11734164769526667]}},{\"status\":\"measured\",\"value\":{\"min\":[0.7579744568397258,0.20836823592468356,0.1537603053810318],\"max\":[1.6046545378166253,0.8739404899115203,0.27110194721992076],\"dimensions\":[0.8466800809768995,0.6655722539868367,0.11734164183888895]}},{\"status\":\"measured\",\"value\":{\"min\":[0.1154746620482851,-0.2683178854235483,0.1579303141949603],\"max\":[0.9621547430251847,0.39725436856328844,0.27527195603384924],\"dimensions\":[0.8466800809768995,0.6655722539868367,0.11734164183888895]}}]},\"pairs\":[{\"candidate_index\":0,\"object_id\":\"blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":545192233402388677157969040008,\"left_vertex_index\":132,\"origin\":[[3606543883506363,18014398509481984],[-2855277627059401,9007199254740992],[552700091327411,4503599627370496]],\"primitive_direction\":[-123008442336672,163237735255435,70379120421398],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[256,256],\"right_min\":568557661246554883837479897612,\"right_vertex_index\":125}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.00300000590495624,\"nearest_witness\":{\"a\":[0.5830180137958594,0.013580642739627093,0.24006569368391895],\"b\":[0.5813109287345413,0.015846021391730213,0.24104240018322773],\"direction_a_to_b\":[-0.5690272337457636,0.7551247310415422,0.3255681922809455]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.00300000590495624,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":1,\"object_id\":\"blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":227162396982963533271746201784,\"left_vertex_index\":4,\"origin\":[[3606543883506363,18014398509481984],[-2855277627059401,9007199254740992],[552700091327411,4503599627370496]],\"primitive_direction\":[-51253284435044,68015413549258,29324500080841],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[256,32],\"right_min\":243388240884257423827540526056,\"right_vertex_index\":29}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.004999987091379863,\"nearest_witness\":{\"a\":[0.8961604086813628,0.2495503382561447,0.2400656871395337],\"b\":[0.8933152798579904,0.2533259521637341,0.2416935238983023],\"direction_a_to_b\":[-0.569027233745763,0.7551247310415425,0.32556819228094563]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.004999987091379863,\"semantics\":\"separated_surface_gap_m\"}},{\"candidate_index\":2,\"object_id\":\"blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116\",\"facts\":{\"spatial_relation\":{\"status\":\"measured\",\"value\":\"separated\",\"method\":\"exact_sufficient_spatial_relation_v1\",\"geometry_scope\":\"referenced_triangle_unions_and_their_vertex_convex_hulls\",\"relation_tolerance_m\":0.0,\"certificate\":\"strict_all_referenced_vertex_support\",\"support_evidence\":{\"factor\":36028797018963968,\"left_max\":8723066605009639555709809021460,\"left_vertex_index\":125,\"origin\":[[3606543883506363,18014398509481984],[-2855277627059401,9007199254740992],[552700091327411,4503599627370496]],\"primitive_direction\":[-1968133017569504,2611801030616679,1126064748220520],\"proposal\":\"first_public_nearest_points_difference\",\"referenced_counts\":[256,32],\"right_min\":10218450856954607550894800097272,\"right_vertex_index\":20}},\"surface_proximity\":{\"status\":\"measured\",\"value\":{\"distance_m\":0.012000011060800278,\"nearest_witness\":{\"a\":[0.5200288561415489,-0.03388508721355998,0.24006569500033387],\"b\":[0.5132005230427031,-0.02482358208877764,0.24397251690874996],\"direction_a_to_b\":[-0.5690272337457631,0.7551247310415424,0.32556819228094575]},\"topology\":[{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"witness_status\":\"measured\",\"direction_status\":\"measured\"}},\"separation_gap\":{\"status\":\"measured\",\"value\":0.012000011060800278,\"semantics\":\"separated_surface_gap_m\"}}],\"coverage\":{\"requested_candidates\":3,\"resolved_candidates\":3,\"classified_candidates\":3,\"unresolved_candidates\":0},\"summary\":{\"penetration_set_complete\":true,\"known_penetrating_ids\":[],\"penetrating_ids\":[],\"nearest_separated_complete\":true,\"nearest_separated_ids\":[\"blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275\"],\"best_known_separated_ids\":[\"blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275\"],\"distance_m\":0.00300000590495624,\"best_known_distance_m\":0.00300000590495624,\"unresolved_relations\":[],\"unresolved_distances\":{}},\"execution_authority\":false,\"relation_fact\":\"spatial_relation\",\"trace_id\":\"814b4afc95a84f458d63fed990dc9abf\"}"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "stdio": {
+    "request_id": "spatial_assembly_task",
+    "method": "tools/call",
+    "started_ns": 575477140531800,
+    "elapsed_ns": 2352751500,
+    "sent_bytes": 635,
+    "attempted_send_bytes": 635,
+    "send_confirmed": true,
+    "received_bytes": 8677,
+    "error": null
+  },
+  "tool_ns": 2353408500,
+  "classification": "tool_response",
+  "visible_text_UTF8_bytes": 7987,
+  "body": {
+    "result_kind": "task_query",
+    "schema_version": "task-query-set-v2",
+    "scope": "explicit_target_candidates",
+    "status": "observed",
+    "binding": {
+      "scene_revision": "blender:c34c6a5c03a5ced82428be20f89336bb5c392194154a190a3ec733cc391c44a8",
+      "scene_fingerprint": "7ce9279cd99f1f3f4741429a508c0908b47dee665bde000dc31ab5615cbbce94",
+      "source": "blender",
+      "objects": [
+        {
+          "object_id": "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322",
+          "name": "Target"
+        },
+        {
+          "object_id": "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275",
+          "name": "Peer_000"
+        },
+        {
+          "object_id": "blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25",
+          "name": "Competing_001"
+        },
+        {
+          "object_id": "blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116",
+          "name": "Near_003"
+        }
+      ],
+      "currentness": "capture_snapshot",
+      "capture_scope": "selected_objects",
+      "host_identity": {
+        "schema_version": "1.0",
+        "document_epoch": "0c98ccc089eb0bb0786ddcd9f04119f6d6592b1b13978fad9e0f3e5fe1914c3f",
+        "object_instances": {
+          "blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25": "160",
+          "blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116": "163",
+          "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275": "172",
+          "blender:afcc51e411ca68b983a0694feb774b3957d8d7c8b77c3891c64370769c3b2322": "173"
+        },
+        "capture_scope": "selected_objects"
+      },
+      "candidate_count": 14,
+      "selected_count": 4,
+      "runtime_source_sha256": "2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390",
+      "source_status": "loaded_generation",
+      "disk_status": "disk_not_checked",
+      "source_check_scope": "bound_generation_identity"
+    },
+    "unit": "m",
+    "coordinate_frame": "world",
+    "pair_order": "target_to_candidate",
+    "facts": {
+      "aabb": [
+        {
+          "status": "measured",
+          "value": {
+            "min": [
+              0.1655239870802002,
+              -0.3430005299002009,
+              0.12272405673008246
+            ],
+            "max": [
+              1.0184321263402192,
+              0.3337915478956436,
+              0.24006570199967714
+            ],
+            "dimensions": [
+              0.852908139260019,
+              0.6767920777958445,
+              0.11734164526959467
+            ]
+          }
+        },
+        {
+          "status": "measured",
+          "value": {
+            "min": [
+              0.130586294252861,
+              -0.277990218026301,
+              0.15310916671772157
+            ],
+            "max": [
+              0.9834944425870804,
+              0.3988018617525161,
+              0.27045081441298824
+            ],
+            "dimensions": [
+              0.8529081483342194,
+              0.6767920797788171,
+              0.11734164769526667
+            ]
+          }
+        },
+        {
+          "status": "measured",
+          "value": {
+            "min": [
+              0.7579744568397258,
+              0.20836823592468356,
+              0.1537603053810318
+            ],
+            "max": [
+              1.6046545378166253,
+              0.8739404899115203,
+              0.27110194721992076
+            ],
+            "dimensions": [
+              0.8466800809768995,
+              0.6655722539868367,
+              0.11734164183888895
+            ]
+          }
+        },
+        {
+          "status": "measured",
+          "value": {
+            "min": [
+              0.1154746620482851,
+              -0.2683178854235483,
+              0.1579303141949603
+            ],
+            "max": [
+              0.9621547430251847,
+              0.39725436856328844,
+              0.27527195603384924
+            ],
+            "dimensions": [
+              0.8466800809768995,
+              0.6655722539868367,
+              0.11734164183888895
+            ]
+          }
+        }
+      ]
+    },
+    "pairs": [
+      {
+        "candidate_index": 0,
+        "object_id": "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275",
+        "facts": {
+          "spatial_relation": {
+            "status": "measured",
+            "value": "separated",
+            "method": "exact_sufficient_spatial_relation_v1",
+            "geometry_scope": "referenced_triangle_unions_and_their_vertex_convex_hulls",
+            "relation_tolerance_m": 0.0,
+            "certificate": "strict_all_referenced_vertex_support",
+            "support_evidence": {
+              "factor": 36028797018963968,
+              "left_max": 545192233402388677157969040008,
+              "left_vertex_index": 132,
+              "origin": [
+                [
+                  3606543883506363,
+                  18014398509481984
+                ],
+                [
+                  -2855277627059401,
+                  9007199254740992
+                ],
+                [
+                  552700091327411,
+                  4503599627370496
+                ]
+              ],
+              "primitive_direction": [
+                -123008442336672,
+                163237735255435,
+                70379120421398
+              ],
+              "proposal": "first_public_nearest_points_difference",
+              "referenced_counts": [
+                256,
+                256
+              ],
+              "right_min": 568557661246554883837479897612,
+              "right_vertex_index": 125
+            }
+          },
+          "surface_proximity": {
+            "status": "measured",
+            "value": {
+              "distance_m": 0.00300000590495624,
+              "nearest_witness": {
+                "a": [
+                  0.5830180137958594,
+                  0.013580642739627093,
+                  0.24006569368391895
+                ],
+                "b": [
+                  0.5813109287345413,
+                  0.015846021391730213,
+                  0.24104240018322773
+                ],
+                "direction_a_to_b": [
+                  -0.5690272337457636,
+                  0.7551247310415422,
+                  0.3255681922809455
+                ]
+              },
+              "topology": [
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                },
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                }
+              ]
+            },
+            "semantics": "current_evaluated_triangle_surfaces_world_metres",
+            "method": "exact_binary64_triangle_surface_hulls_v3",
+            "witness_status": "measured",
+            "direction_status": "measured"
+          }
+        },
+        "separation_gap": {
+          "status": "measured",
+          "value": 0.00300000590495624,
+          "semantics": "separated_surface_gap_m"
+        }
+      },
+      {
+        "candidate_index": 1,
+        "object_id": "blender:062df577dcad016bc47d3e4751883d679b4e30e6cbf9b94d4cf53f8bc2e77d25",
+        "facts": {
+          "spatial_relation": {
+            "status": "measured",
+            "value": "separated",
+            "method": "exact_sufficient_spatial_relation_v1",
+            "geometry_scope": "referenced_triangle_unions_and_their_vertex_convex_hulls",
+            "relation_tolerance_m": 0.0,
+            "certificate": "strict_all_referenced_vertex_support",
+            "support_evidence": {
+              "factor": 36028797018963968,
+              "left_max": 227162396982963533271746201784,
+              "left_vertex_index": 4,
+              "origin": [
+                [
+                  3606543883506363,
+                  18014398509481984
+                ],
+                [
+                  -2855277627059401,
+                  9007199254740992
+                ],
+                [
+                  552700091327411,
+                  4503599627370496
+                ]
+              ],
+              "primitive_direction": [
+                -51253284435044,
+                68015413549258,
+                29324500080841
+              ],
+              "proposal": "first_public_nearest_points_difference",
+              "referenced_counts": [
+                256,
+                32
+              ],
+              "right_min": 243388240884257423827540526056,
+              "right_vertex_index": 29
+            }
+          },
+          "surface_proximity": {
+            "status": "measured",
+            "value": {
+              "distance_m": 0.004999987091379863,
+              "nearest_witness": {
+                "a": [
+                  0.8961604086813628,
+                  0.2495503382561447,
+                  0.2400656871395337
+                ],
+                "b": [
+                  0.8933152798579904,
+                  0.2533259521637341,
+                  0.2416935238983023
+                ],
+                "direction_a_to_b": [
+                  -0.569027233745763,
+                  0.7551247310415425,
+                  0.32556819228094563
+                ]
+              },
+              "topology": [
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                },
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                }
+              ]
+            },
+            "semantics": "current_evaluated_triangle_surfaces_world_metres",
+            "method": "exact_binary64_triangle_surface_hulls_v3",
+            "witness_status": "measured",
+            "direction_status": "measured"
+          }
+        },
+        "separation_gap": {
+          "status": "measured",
+          "value": 0.004999987091379863,
+          "semantics": "separated_surface_gap_m"
+        }
+      },
+      {
+        "candidate_index": 2,
+        "object_id": "blender:1c2752f8185d38e88855c532967fc0309620ea0744c6d72a5dd1c462462dd116",
+        "facts": {
+          "spatial_relation": {
+            "status": "measured",
+            "value": "separated",
+            "method": "exact_sufficient_spatial_relation_v1",
+            "geometry_scope": "referenced_triangle_unions_and_their_vertex_convex_hulls",
+            "relation_tolerance_m": 0.0,
+            "certificate": "strict_all_referenced_vertex_support",
+            "support_evidence": {
+              "factor": 36028797018963968,
+              "left_max": 8723066605009639555709809021460,
+              "left_vertex_index": 125,
+              "origin": [
+                [
+                  3606543883506363,
+                  18014398509481984
+                ],
+                [
+                  -2855277627059401,
+                  9007199254740992
+                ],
+                [
+                  552700091327411,
+                  4503599627370496
+                ]
+              ],
+              "primitive_direction": [
+                -1968133017569504,
+                2611801030616679,
+                1126064748220520
+              ],
+              "proposal": "first_public_nearest_points_difference",
+              "referenced_counts": [
+                256,
+                32
+              ],
+              "right_min": 10218450856954607550894800097272,
+              "right_vertex_index": 20
+            }
+          },
+          "surface_proximity": {
+            "status": "measured",
+            "value": {
+              "distance_m": 0.012000011060800278,
+              "nearest_witness": {
+                "a": [
+                  0.5200288561415489,
+                  -0.03388508721355998,
+                  0.24006569500033387
+                ],
+                "b": [
+                  0.5132005230427031,
+                  -0.02482358208877764,
+                  0.24397251690874996
+                ],
+                "direction_a_to_b": [
+                  -0.5690272337457631,
+                  0.7551247310415424,
+                  0.32556819228094575
+                ]
+              },
+              "topology": [
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                },
+                {
+                  "boundary_edge_count": 0,
+                  "nonmanifold_edge_count": 0
+                }
+              ]
+            },
+            "semantics": "current_evaluated_triangle_surfaces_world_metres",
+            "method": "exact_binary64_triangle_surface_hulls_v3",
+            "witness_status": "measured",
+            "direction_status": "measured"
+          }
+        },
+        "separation_gap": {
+          "status": "measured",
+          "value": 0.012000011060800278,
+          "semantics": "separated_surface_gap_m"
+        }
+      }
+    ],
+    "coverage": {
+      "requested_candidates": 3,
+      "resolved_candidates": 3,
+      "classified_candidates": 3,
+      "unresolved_candidates": 0
+    },
+    "summary": {
+      "penetration_set_complete": true,
+      "known_penetrating_ids": [],
+      "penetrating_ids": [],
+      "nearest_separated_complete": true,
+      "nearest_separated_ids": [
+        "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275"
+      ],
+      "best_known_separated_ids": [
+        "blender:323b5565fcb5014a11333bca5ce3d9f10f7582ab3fe12ad54a3226cf8862f275"
+      ],
+      "distance_m": 0.00300000590495624,
+      "best_known_distance_m": 0.00300000590495624,
+      "unresolved_relations": [],
+      "unresolved_distances": {}
+    },
+    "execution_authority": false,
+    "relation_fact": "spatial_relation",
+    "trace_id": "814b4afc95a84f458d63fed990dc9abf"
+  },
+  "witness_fields": [
+    {
+      "path": [
+        "pairs",
+        0,
+        "facts",
+        "surface_proximity",
+        "value",
+        "nearest_witness"
+      ],
+      "value": {
+        "a": [
+          0.5830180137958594,
+          0.013580642739627093,
+          0.24006569368391895
+        ],
+        "b": [
+          0.5813109287345413,
+          0.015846021391730213,
+          0.24104240018322773
+        ],
+        "direction_a_to_b": [
+          -0.5690272337457636,
+          0.7551247310415422,
+          0.3255681922809455
+        ]
+      },
+      "value_JSON_UTF8_bytes": 212
+    },
+    {
+      "path": [
+        "pairs",
+        1,
+        "facts",
+        "surface_proximity",
+        "value",
+        "nearest_witness"
+      ],
+      "value": {
+        "a": [
+          0.8961604086813628,
+          0.2495503382561447,
+          0.2400656871395337
+        ],
+        "b": [
+          0.8933152798579904,
+          0.2533259521637341,
+          0.2416935238983023
+        ],
+        "direction_a_to_b": [
+          -0.569027233745763,
+          0.7551247310415425,
+          0.32556819228094563
+        ]
+      },
+      "value_JSON_UTF8_bytes": 206
+    },
+    {
+      "path": [
+        "pairs",
+        2,
+        "facts",
+        "surface_proximity",
+        "value",
+        "nearest_witness"
+      ],
+      "value": {
+        "a": [
+          0.5200288561415489,
+          -0.03388508721355998,
+          0.24006569500033387
+        ],
+        "b": [
+          0.5132005230427031,
+          -0.02482358208877764,
+          0.24397251690874996
+        ],
+        "direction_a_to_b": [
+          -0.5690272337457631,
+          0.7551247310415424,
+          0.32556819228094575
+        ]
+      },
+      "value_JSON_UTF8_bytes": 213
+    }
+  ],
+  "witness_bytes_scope": "unescaped compact JSON value bytes; full actual escaped MCP response retained in stdio RX.bin"
+}
