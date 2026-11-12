@@ -121,7 +121,7 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
             if material_readview_only and command not in ('capabilities','material_readview_header',
                     'observe_material_readview','last_material_readview_audit','shutdown'):
                 raise ValueError('Material readview worker has no setter or general capture commands')
-            capture_delta = (command in ('capture', 'capture_task', 'capture_nearest_candidates')
+            capture_delta = (command in ('capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan')
                              and '_scene_baseline' in params)
             scene_baseline = params.pop('_scene_baseline') if capture_delta else None
             if capture_delta and not callable(getattr(host, 'capture_delta', None)):
@@ -180,6 +180,10 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                         or not {'focal_id','deadline_ns','max_response_bytes'}.issubset(params)):
                     raise ValueError('Invalid nearest candidate capture arguments')
                 result = host.capture_nearest_candidates(**params)
+            elif command == 'capture_surface_scan':
+                if set(params) != {'threshold_m', 'deadline_ns', 'max_response_bytes'}:
+                    raise ValueError('Invalid surface scan capture arguments')
+                result = host.capture_surface_scan(**params)
             elif command in ('nonplanar_observation_capabilities','observe_nonplanar_patch'):
                 required=set() if command=='nonplanar_observation_capabilities' else {'request_id','object_id','patch','deadline_ns','mode'}
                 if set(params)!=required:raise ValueError('Invalid typed nonplanar observation arguments')
@@ -298,7 +302,7 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                 raise ValueError("unsupported worker command")
             if capture_delta:
                 result = host.capture_delta(result, scene_baseline)
-            if command == 'capture_nearest_candidates' and time.perf_counter_ns() >= params['deadline_ns']:
+            if command in ('capture_nearest_candidates', 'capture_surface_scan') and time.perf_counter_ns() >= params['deadline_ns']:
                 raise ValueError('acquisition_deadline_exceeded')
             _emit({"id": request_id, "result": result})
             if command=='correct_arm_axial' and type(result) is dict and result.get('status')=='execution_uncertain':

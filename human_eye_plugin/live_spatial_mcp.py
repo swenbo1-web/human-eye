@@ -67,7 +67,7 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
-        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
@@ -81,7 +81,7 @@ _QUERY_SCHEMA = {
             "description":"Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."},
         "request_id": {"type":"string","minLength":1,"maxLength":128},
         "near_m": {"type":"number","minimum":0,"maximum":0.001},
-        "threshold_m": {"type":"number","exclusiveMinimum":0,"maximum":0.01},
+        "threshold_m": {"type":"number","minimum":0},
         "reference_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
         "indices": {"type":"array","items":{"type":"integer","minimum":0,"maximum":4095},"minItems":1,"maxItems":64,"uniqueItems":True},
         "patch_ref": {"type":"string","pattern":"^[a-f0-9]{32}$"},
@@ -102,6 +102,10 @@ _QUERY_SCHEMA = {
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
+              {"if": {"properties": {"mode": {"const": "surface_scan"}}, "required": ["mode"]},
+               "then": {"required": ["threshold_m"], "properties": {"mode": {}, "threshold_m": {}},
+                        "additionalProperties": False},
+               "else": {"properties": {"threshold_m": {"exclusiveMinimum": 0, "maximum": 0.01}}}},
               {"if": {"anyOf": [{"properties": {"mode": {"const": "task"}}, "required": ["mode"]},
                                   {"required": ["target"]}, {"required": ["candidates"]}]},
                "then": {"required": ["mode", "requested_facts"], "properties": {"mode": {"const": "task"}}, "oneOf": [
@@ -162,6 +166,9 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "
             "Complete means global nearest; partial means best-known. scene_revision/fingerprint bind this capture/source/revision; "
             "runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria."
+            " For all current scene mesh pairs use query={\"mode\":\"surface_scan\",\"threshold_m\":0.002}. "
+            "This text-only scan includes hidden meshes, needs no selectors, includes threshold equality and reports coverage. "
+            "Its unsigned triangle-surface distance describes surface proximity. Solid relations require separate facts."
         ),
         "inputSchema": {
             "type": "object",
@@ -173,7 +180,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
                 "goal": copy.deepcopy(_GOAL_SCHEMA),
                 "query": copy.deepcopy(_QUERY_SCHEMA),
                 "include_image": {"type": "boolean", "default": True,
-                    "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
+                    "description": "False returns text evidence without rendering. surface_scan defaults to false and accepts only false. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
             },
             "allOf": [{"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "directory"}}}}},
@@ -190,6 +197,11 @@ LIVE_MCP_TOOLS_SCHEMA = [
                              {"not": {"required": ["focal_id"]}, "properties": {"query": {"required": ["objects"]}}},
                          ]},
             }, {"if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"const": "surface_scan"}}}}},
+                "then": {"properties": {"include_image": {"const": False}},
+                         "not": {"anyOf": [{"required": [field]} for field in
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}}},
+            {"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "task"}}}}},
                 "then": {"required": ["include_image"], "properties": {"include_image": {"const": False}},
                          "not": {"anyOf": [{"required": [field]} for field in
@@ -414,6 +426,10 @@ def _validate_arguments(name: str, arguments: Any) -> None:
                     or arguments.get('include_image', True)
                     or any(arguments.get(key) is not None for key in ('goal', 'reference_id', 'scene_delta'))):
                 raise ValueError('surface_nearest requires session_id, one target, include_image=false and no reference, goal or scene_delta')
+        if selected_query['mode'] == 'surface_scan':
+            if (arguments.get('include_image', False)
+                    or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
+                raise ValueError('surface_scan accepts only text observation without pair selectors, goal or scene_delta')
         if (selected_query.get('alignment_evidence') is False
                 and arguments.get('include_image', True)):
             raise ValueError('alignment_evidence=false requires include_image=false')
@@ -683,7 +699,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
-    if (value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory')
+    if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
             or value.get('schema') == 'arm-twist-expert-report-v1'):
         # Already selected structured facts. No full diagnostic, alias pass,
         # copy, model message, nested context JSON or second encoding.
@@ -795,12 +811,14 @@ class LiveSpatialMCPServer:
                       'human_eye_clearance_segment': 'mcp.clearance_segment',
                       'human_eye_connection_status': 'mcp.status'}
         args = arguments if isinstance(arguments, dict) else {}
+        query = args.get('query')
+        scan = isinstance(query, dict) and query.get('mode') == 'surface_scan'
         operation = operations.get(name, 'mcp.invalid') if isinstance(name, str) else 'mcp.invalid'
         with factory(operation,
                      session_id=args.get('session_id', self.default_session_id)) as trace:
             set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_surface_nearest', 'human_eye_arm_twist_observe'} else
                               args.get('include_image', False) if name == 'human_eye_clearance_segment' else
-                              args.get('include_image', True) if name == 'human_eye_scene_observe' else
+                              args.get('include_image', not scan) if name == 'human_eye_scene_observe' else
                               True if name == 'human_eye_transform' else None,
                               source_name='mcp_transport')
             if mcp_request_id is not _NO_RPC_ID:
@@ -856,6 +874,8 @@ class LiveSpatialMCPServer:
         context_kwargs = {'task_context': args['task_context']} if 'task_context' in args else {}
         delta_kwargs = {'scene_delta': args['scene_delta']} if 'scene_delta' in args else {}
         if name == "human_eye_scene_observe":
+            if isinstance(args.get('query'), dict) and args['query'].get('mode') == 'surface_scan':
+                args.setdefault('include_image', False)
             value = self.service.observe(
                 session_id,
                 task_instruction=args.get("task_instruction", ""),
@@ -869,6 +889,8 @@ class LiveSpatialMCPServer:
             is_error = value.get("status") not in {"observed", "overview", "partial"}
             if value.get('result_kind') in ('surface_nearest', 'scene_directory'):
                 is_error = value.get('status') not in {'complete', 'partial'}
+            if value.get('result_kind') == 'surface_scan':
+                is_error = value.get('status') not in {'complete', 'partial', 'unknown'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == 'human_eye_arm_twist_observe':
             value = self.service.observe_arm_twist(session_id, args['selection'], **context_kwargs)
@@ -891,7 +913,7 @@ class LiveSpatialMCPServer:
                 segment_brief=(name == 'human_eye_clearance_segment'),
                 compact_support_planes=(name == 'human_eye_scene_observe'
                     and 'support_plane_discovery' in args.get('query', {})))
-        if value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
+        if value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory'):
             self.service._check_request_budget('before_task_publication')
         return result
 

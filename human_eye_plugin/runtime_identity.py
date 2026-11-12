@@ -17,7 +17,7 @@ from types import MappingProxyType
 
 
 BASE_VERSION = "9.7.2"
-IMPLEMENTATION_REVISION = "v24-surface-nearest-observe-20261107"
+IMPLEMENTATION_REVISION = "v25-surface-scan-observe-20261112"
 MCP_PROTOCOL_VERSION = "2025-03-26"
 IDENTITY_SCHEMA_VERSION = "1.0"
 
@@ -147,6 +147,8 @@ def runtime_identity(*, mode: str = "live") -> dict:
             "host_connection": "not_checked",
             "live_host_required": mode == "live",
             "scene_observation": True,
+            "surface_scan": mode == "live",
+            "surface_scan_scope": "up_to_256_independent_static_triangle_meshes" if mode == "live" else None,
             "guarded_rigid_transform": mode == "live",
             "bounded_clearance_segment": mode == "live",
             "clearance_segment_support": "exact_world_axis_boxes_or_explicit_original_support_triangle" if mode == 'live' else None,

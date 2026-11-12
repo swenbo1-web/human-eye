@@ -25,6 +25,7 @@ class SceneResidency:
     def __init__(self,bpy):
         self.instance_id=uuid.uuid4().hex;self.epoch=1;self.revision=0
         self.resources={};self.captures={};self.nearest={};self.by_object_id={};self.wire={}
+        self.source_checks={}
         self.dirty={};self.serial=0;self.resource_serial=0;self.context=None;self.signature=None;self.callbacks=[]
         handlers=getattr(getattr(bpy,'app',None),'handlers',None)
         self.enabled=handlers is not None and hasattr(handlers,'depsgraph_update_post')
@@ -57,6 +58,7 @@ class SceneResidency:
     def reset(self):
         self.epoch+=1;self.revision+=1
         self.resources.clear();self.captures.clear();self.nearest.clear();self.wire.clear()
+        self.source_checks.clear()
         self.dirty.clear();self.context=None;self.signature=None
 
     def sync(self,context,signature,live):
@@ -66,6 +68,7 @@ class SceneResidency:
         if current!=self.signature:
             self.revision+=1;self.signature=current;self.captures.clear();self.nearest.clear()
         self.resources={k:v for k,v in self.resources.items() if k in live}
+        self.source_checks={k:v for k,v in self.source_checks.items() if k in live}
         self.dirty={k:v for k,v in self.dirty.items() if k in live}
 
     def token(self,selection_key):

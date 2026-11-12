@@ -405,12 +405,15 @@ class SpatialSceneCache:
                     self._trim()
             return copy.deepcopy(result)
 
-    def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version):
+    def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version,
+                         before_compute=None):
         """Return (detached_result, hit) for exactly the same ordered mesh pair.
 
         The caller supplies all evaluator parameters, including tolerances and
         requested output options. Failed/unknown results and exceptions are not
         memoized. Mesh metadata includes axes, pivot, identity and provenance.
+        The optional budget checkpoint runs only after an actual cache miss,
+        before invoking the evaluator or charging a computation.
         """
         if not isinstance(algorithm_version, str) or not algorithm_version:
             raise ValueError("an explicit measurement algorithm version is required")
@@ -426,6 +429,8 @@ class SpatialSceneCache:
                 self._estimated_saved_ms += cached[1]
                 return _decode(cached[0]), True
             self._misses += 1
+            if before_compute is not None:
+                before_compute()
             start = time.perf_counter()
             self._computations += 1
             value = compute()

@@ -43,7 +43,7 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
-_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_nearest_candidates','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -312,6 +312,33 @@ class BlenderMCPHost:
         self._record_observation_document(binding)
         return result
 
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        if type(threshold_m) not in (int, float):
+            raise ValueError('surface_scan_threshold')
+        try:
+            threshold_m = float(threshold_m)
+        except OverflowError as exc:
+            raise ValueError('surface_scan_threshold') from exc
+        if not math.isfinite(threshold_m) or threshold_m < 0:
+            raise ValueError('surface_scan_threshold')
+        now_ns = time.perf_counter_ns()
+        if type(deadline_ns) is not int or now_ns >= deadline_ns:
+            raise ValueError('acquisition_deadline_exceeded')
+        deadline_ns = min(deadline_ns, now_ns + int(self.timeout_s * 1_000_000_000))
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+            raise ValueError('acquisition_document_budget')
+        result = self._request('capture_surface_scan', dict(threshold_m=float(threshold_m),
+            deadline_ns=deadline_ns, max_response_bytes=max_response_bytes))
+        if time.perf_counter_ns() >= deadline_ns:
+            raise ValueError('acquisition_deadline_exceeded')
+        binding = result.get('binding')
+        if (type(binding) is not dict or result.get('protocol') != 'single-read-surface-scan-v1'
+                or result.get('threshold_m') != threshold_m or result.get('execution_authority') is not False
+                or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
+            raise ValueError('acquisition_response_binding')
+        self._record_observation_document(binding)
+        return result
+
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
 
@@ -492,7 +519,7 @@ class BlenderMCPHost:
         else:
             lines += ['    with _cl.redirect_stdout(_io.StringIO()):',
                       '        _result = getattr(_host, ' + repr(method) + ")(**_request['params'])"]
-        if command in {'capture', 'capture_task', 'capture_nearest_candidates'}:
+        if command in {'capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan'}:
             baseline = json.dumps(self._scene_decoder.baseline(), allow_nan=False, separators=(',', ':'))
             lines.append('    _result = _host.capture_delta(_result, _json.loads(' + repr(baseline) + '))')
         lines += [
@@ -514,6 +541,7 @@ class BlenderMCPHost:
         required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
             'capture_directory': {'deadline_ns', 'max_response_bytes'},
             'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
+            'capture_surface_scan': {'threshold_m', 'deadline_ns', 'max_response_bytes'},
             'native_observation_capabilities': set(),
             'observe_readonly_native': {'request_id', 'focal_id', 'reference_id', 'expected_capture_revision', 'deadline_ns', 'view'},
             'last_readonly_native_audit': {'request_id'}}
@@ -555,7 +583,7 @@ class BlenderMCPHost:
             payload = json.dumps({"type": "execute_code", "params": {"code": code}},
                                  allow_nan=False, separators=(",", ":")).encode("utf-8")
             request_limit = (_MAX_RESIDENT_INIT_BYTES if not self._resident_ready or command == 'observe_arm_twist' else
-                             64 * 1024 if command in {'capture', 'capture_task', 'capture_nearest_candidates'} else _MAX_REQUEST_BYTES)
+                             64 * 1024 if command in {'capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan'} else _MAX_REQUEST_BYTES)
             if len(payload) > request_limit:
                 raise ValueError("BlenderMCP request exceeds the transport size limit")
             try:
@@ -590,7 +618,7 @@ class BlenderMCPHost:
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
                 self._resident_ready = True
-                if command in {'capture', 'capture_task', 'capture_nearest_candidates'}:
+                if command in {'capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan'}:
                     result = self._scene_decoder.apply(result)
                 if command == 'capture_directory':
                     self._record_observation_document(result.get('binding', {}))

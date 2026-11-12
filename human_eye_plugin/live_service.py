@@ -212,7 +212,7 @@ def _request(operation):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
                     self._remember_execution_result(result)
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','scene_directory'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -233,7 +233,7 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            if result.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
+                            if result.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory'):
                                 result['trace_id'] = trace.trace_id
                             else:
                                 result['request_trace'] = {'trace_id': trace.trace_id,
@@ -1050,6 +1050,11 @@ class LiveSpatialService:
                     or goal is not None or scene_delta is not None):
                 raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
             return self._observe_directory(session_id)
+        if query['mode'] == 'surface_scan':
+            if (include_image or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('surface_scan requires text observation without pair selectors, goal or scene_delta')
+            return self._observe_surface_scan(session_id, query)
         if query['mode'] == 'surface_nearest':
             selector = query['objects'][0] if 'objects' in query else None
             if selector is not None and focal_id is not None:
@@ -1374,6 +1379,65 @@ class LiveSpatialService:
             ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
         if packet['directory_sha256'] != digest:
             raise ValueError('directory_digest_mismatch')
+
+    def _observe_surface_scan(self, session_id, query):
+        """Scan one source-bound scene through the existing read-only lifecycle."""
+        from .read_context import query_key
+        from .surface_scan import _packet, surface_scan_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            capture = getattr(self.host, 'capture_surface_scan', None)
+            if not callable(capture):
+                raise ValueError('surface_scan_host_not_supported')
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                captured = capture(query['threshold_m'], deadline, 64 * 1024 * 1024)
+            self._check_request_budget('after_host_capture')
+            if (type(captured) is not dict or captured.get('threshold_m') != query['threshold_m']):
+                raise ValueError('surface_scan_threshold_binding_mismatch')
+            with span('surface_scan.validate_packet'):
+                validated = _packet(captured, self._check_request_budget, self._identity)
+            selection = {'query': query, 'binding': captured['binding'],
+                         'scope_issues': captured['scope_issues']}
+            context.activate(captured.get('capture'), 'surface_scan', selection)
+            work = {'kernel_calls': 0, 'pair_calls': 0, 'cache_hits': 0, 'continuation_hits': 0,
+                    'normalization_requests': 0, 'normalizations': 0,
+                    'acquisition_work': copy.deepcopy(captured.get('work', {}))}
+            def normalize_capture():
+                work['normalizations'] += 1
+                return _validated_scene(captured.get('capture'),
+                    _surface_scan_capture=True, _annotate_scene=False)
+            def normalize():
+                work['normalization_requests'] += 1
+                return context.normalized(normalize_capture)
+            key = query_key(query)
+            progress = context.surface_scan_progress(key)
+            with span('observation.surface_scan'):
+                result, hit = context.result(key, lambda: surface_scan_result(
+                    captured, context.scene_cache, self._check_request_budget,
+                    diagnostics=work, _normalize=normalize, _identity=self._identity,
+                    _progress=progress, _validated_packet=validated), cache_partial=False)
+                work['result_cache_hit'] = hit
+                if hit:
+                    work['dispositions'] = copy.deepcopy(progress.get('last_dispositions', []))
+                    work.update(directory_objects=len(captured['coverage']),
+                        bound_pairs=len(captured['pairs']),
+                        candidate_pairs=sum(row['disposition'] == 'retained' for row in captured['pairs']),
+                        endpoint_union=len(captured['capture']['meshes']))
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=result['binding']['scene_revision'],
+            engine_invoked=work['kernel_calls'] > 0, task_work=work)
+        self._check_request_budget('before_surface_scan_result')
+        return result
 
     def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
         """One current candidate capture through the existing read-only boundary."""

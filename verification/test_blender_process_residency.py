@@ -189,6 +189,9 @@ class BlenderSceneHost:
     def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, selector=None):
         self.calls.append(('nearest', focal_id, selector))
         return dict(capture=fixture(selection='nearest')[0], directory=[{'id':'part'}])
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        self.calls.append(('scan', threshold_m))
+        return dict(capture=fixture(selection='scan')[0], pairs=[{'disposition':'retained'}])
     def capture_delta(self, packet, known=None):
         return encode_capture(packet, known, fixture()[1])
     def capture_evidence(self):
@@ -241,6 +244,17 @@ class ResidentWorkerTests(unittest.TestCase):
         self.assertIsNone(replies[0]['result']['scene_delta_protocol'])
         self.assertIn('no setter or general capture', replies[1]['error']['message'])
         self.assertTrue(replies[-1]['result']['closed'])
+
+    def test_surface_scan_dispatch_delta_and_strict_fields(self):
+        baseline = dict(instance_id='owned-a', epoch=1, resources={'a'*64:1})
+        params = dict(threshold_m=.01, deadline_ns=time.perf_counter_ns()+10_000_000_000,
+                      max_response_bytes=100000, _scene_baseline=baseline)
+        replies, module = self.run_worker([('capture_surface_scan', dict(params, extra=True)),
+            ('capture_surface_scan', params), ('shutdown', {})])
+        self.assertIn('Invalid surface scan', replies[0]['error']['message'])
+        self.assertEqual(replies[1]['result']['resources'], [])
+        self.assertEqual(replies[1]['result']['capture']['pairs'], [{'disposition':'retained'}])
+        self.assertEqual(module.constructed, 1)
 
 
 if __name__ == '__main__':

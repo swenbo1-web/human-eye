@@ -26,8 +26,8 @@ class TriangleObject(FakeObject):
         self.session_uid, self.is_evaluated = uid, True
         self.eval_calls = self.mesh_calls = 0
         self.data.vertices = [NS(co=p) for p in ((0., 0., 0.), (0., 1., 0.), (0., 0., 1.))]
-        self.data.polygons = [NS(vertices=(0, 1, 2))]
-        self.data.loops = [None] * 3
+        self.data.polygons = [NS(vertices=(0, 1, 2), loop_start=0, loop_total=3)]
+        self.data.loops = [NS(vertex_index=i) for i in (0, 1, 2)]
         self.data.loop_triangles = [NS(vertices=(0, 1, 2))]
         self.bound_box = list(itertools.product((0., 0.), (0., 1.), (0., 1.)))
 
@@ -168,7 +168,8 @@ class M4Capture001(unittest.TestCase):
     def test_08_real_triangle_witness(self):
         host, objs = fixture((0., 2., 100.))
         objs[2].data.vertices.insert(0, NS(co=(-100., 0., 0.)))
-        objs[2].data.polygons = [NS(vertices=(1, 2, 3))]
+        objs[2].data.polygons = [NS(vertices=(1, 2, 3), loop_start=0, loop_total=3)]
+        objs[2].data.loops = [NS(vertex_index=i) for i in (1, 2, 3)]
         objs[2].data.loop_triangles = [NS(vertices=(1, 2, 3))]
         objs[2].bound_box = list(itertools.product((-100., 0.), (0., 1.), (0., 1.)))
         packet = capture(host)
@@ -223,7 +224,7 @@ class M4Capture001(unittest.TestCase):
                 packet = transport.capture_nearest_candidates(**params)
             self.assertEqual(packet, response['result'])
         self.assertEqual(requests[0][1]['command'], 'capture_nearest_candidates')
-        self.assertIn('_host.capture_nearest_candidates(**', requests[0][0]['params']['code'])
+        self.assertIn("getattr(_host, 'capture_nearest_candidates')(**", requests[0][0]['params']['code'])
 
     def test_11_same_read_coverage(self):
         host, objs = fixture()

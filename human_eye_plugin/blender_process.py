@@ -337,6 +337,31 @@ class BlenderProcessHost:
                 raise ValueError('acquisition_deadline_exceeded')
             return result
 
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        with self._lock:
+            if type(threshold_m) not in (int, float):
+                raise ValueError('surface_scan_threshold')
+            try:
+                threshold_m = float(threshold_m)
+            except OverflowError as exc:
+                raise ValueError('surface_scan_threshold') from exc
+            if not math.isfinite(threshold_m) or threshold_m < 0:
+                raise ValueError('surface_scan_threshold')
+            now_ns = time.perf_counter_ns()
+            if type(deadline_ns) is not int or now_ns >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            deadline_ns = min(deadline_ns, now_ns + int(self.timeout * 1_000_000_000))
+            if deadline_ns <= now_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+                raise ValueError('acquisition_document_budget')
+            result = self._capture_request('capture_surface_scan', dict(threshold_m=float(threshold_m),
+                deadline_ns=deadline_ns, max_response_bytes=max_response_bytes),
+                timeout=(deadline_ns-now_ns)/1_000_000_000)
+            if time.perf_counter_ns() >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            return result
+
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
 
@@ -597,7 +622,7 @@ class BlenderProcessHost:
             # Validate before writing: a local serialization failure cannot mutate Blender.
             payload = json.dumps({"id": request_id, "command": command, "params": params},
                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
-            capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates')
+            capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan')
             limit = (_MAX_LINE_CHARS if command in ('observe_arm_twist','correct_arm_axial') else
                 _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS)
             if len(payload) > limit:

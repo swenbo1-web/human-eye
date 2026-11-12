@@ -368,6 +368,76 @@ def _acquisition_vertices(vertices, checkpoint):
         yield vertex
 
 
+def _scan_local_summary(local, faces, checkpoint):
+    """Exact dyadic local eligibility; the cache retains only small summaries."""
+    from fractions import Fraction as F
+    rational = []
+    for ordinal, point in enumerate(local):
+        if ordinal % 128 == 0:
+            checkpoint()
+        rational.append(tuple(F(value) for value in point))
+    minimum_cross = None
+    maximum_edge = F(0)
+    for ordinal, face in enumerate(faces):
+        if ordinal % 128 == 0:
+            checkpoint()
+        a, b, c = (rational[index] for index in face)
+        first = tuple(b[k] - a[k] for k in range(3))
+        second = tuple(c[k] - a[k] for k in range(3))
+        cross = _cross(first, second)
+        magnitude = max(abs(value) for value in cross)
+        if not magnitude:
+            raise BlenderHostError('degenerate_local_triangle_source')
+        minimum_cross = magnitude if minimum_cross is None else min(minimum_cross, magnitude)
+        maximum_edge = max(maximum_edge, *(abs(value) for value in first + second),
+                           *(abs(c[k] - b[k]) for k in range(3)))
+    checkpoint()
+    return dict(min_cross_inf=minimum_cross, max_edge_inf=maximum_edge,
+                local_abs_max=tuple(max(abs(point[k]) for point in rational) for k in range(3)))
+
+
+def _scan_world_precision(summary, matrix, scale):
+    """Certify every captured triangle stays finite and nondegenerate.
+
+    The local cross/edge summary covers all faces. Exact rational error bounds
+    follow capture's binary64 product, sum, translation and scale operations.
+    Failure is unresolved precision, not a claim of definite degeneracy.
+    """
+    from fractions import Fraction as F
+    unit, underflow = F(1, 2**52), F(1, 2**1074)
+    finite_limit = F(float.fromhex('0x1.fffffffffffffp+1023'))
+    physical_scale = F(scale)
+    linear = [[F(matrix[r][c]) * physical_scale for c in range(3)] for r in range(3)]
+    determinant = sum(linear[0][c] * (
+        linear[1][(c+1)%3] * linear[2][(c+2)%3]
+        - linear[1][(c+2)%3] * linear[2][(c+1)%3]) for c in range(3))
+    transpose_norm = max(sum(abs(linear[r][c]) for r in range(3)) for c in range(3))
+    if not determinant or not transpose_norm:
+        return False
+    cross_lower = abs(determinant) * summary['min_cross_inf'] / transpose_norm
+    edge_upper = max(sum(abs(value) for value in row) for row in linear) * summary['max_edge_inf']
+    delta = F(0)
+    for row in matrix[:3]:
+        amplitude = error = F(0)
+        for coefficient, local_maximum in zip(row[:3], summary['local_abs_max']):
+            product = abs(F(coefficient)) * local_maximum
+            product_error = unit * product + underflow
+            product_amplitude = product + product_error
+            operation_error = unit * (amplitude + product_amplitude) + underflow
+            amplitude += product_amplitude + operation_error
+            error += product_error + operation_error
+            if product_amplitude > finite_limit or amplitude > finite_limit:
+                return False
+        operation_error = unit * (amplitude + abs(F(row[3]))) + underflow
+        amplitude += abs(F(row[3])) + operation_error
+        error += operation_error
+        scale_error = unit * amplitude * physical_scale + underflow
+        if amplitude > finite_limit or amplitude * physical_scale + scale_error > finite_limit:
+            return False
+        delta = max(delta, error * physical_scale + scale_error)
+    return cross_lower > 8 * delta * edge_upper + 8 * delta * delta
+
+
 def _vector(value, name):
     if (not isinstance(value, (list, tuple)) or len(value) != 3
             or any(isinstance(x, (bool, str)) or not isinstance(x, (int, float))
@@ -482,7 +552,11 @@ class BlenderSceneHost:
         self._residency_module = self._residency = None
         self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
             world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
-            directory_builds=0, directory_vertices=0, directory_cache_hits=0)
+            directory_builds=0, directory_vertices=0, directory_cache_hits=0,
+            scan_cache_hits=0, source_qualification_vertices=0,
+            source_qualification_faces=0, source_qualification_cache_hits=0,
+            resource_vertices_read=0, resource_faces_read=0, world_vertices_transformed=0,
+            scan_directory_objects=0, scan_bound_tests=0)
 
     @staticmethod
     def _main_thread():
@@ -533,7 +607,7 @@ class BlenderSceneHost:
         return dict(self._residency_stats, enabled=self._residency is not None and self._residency.enabled,
                     resident_resources=len(self._residency.resources) if self._residency is not None else 0)
 
-    def _sync_residency(self, graph, scale):
+    def _sync_residency(self, graph, scale, *, _surface_scan=False):
         if self._residency is None:
             self._residency_module=_scene_residency_module()
             self._residency=self._residency_module.SceneResidency(self.bpy)
@@ -546,10 +620,19 @@ class BlenderSceneHost:
             live.add(key)
             live.add(ident(data))
             if getattr(obj,'type',None)=='MESH':by_id[self.object_id(obj)]=key
-            rows.append((key,ident(data),str(obj.name),str(getattr(obj,'name_full',obj.name)),
-                getattr(obj,'type',None),_matrix(obj.matrix_world),self._guard_description(obj),
+            try:
+                matrix = _matrix(obj.matrix_world)
+            except BlenderHostError:
+                if not _surface_scan:
+                    raise
+                matrix = 'invalid_world_matrix'
+            row = (key,ident(data),str(obj.name),str(getattr(obj,'name_full',obj.name)),
+                getattr(obj,'type',None),matrix,self._guard_description(obj),
                 list(getattr(obj,'color',())),getattr(obj,'hide_viewport',None),getattr(obj,'hide_render',None),
-                len(getattr(data,'vertices',())),len(getattr(data,'polygons',()))))
+                len(getattr(data,'vertices',())),len(getattr(data,'polygons',())))
+            if _surface_scan:
+                row += (getattr(obj, 'instance_type', 'NONE'), bool(getattr(obj, 'is_instancer', False)))
+            rows.append(row)
         namespace=getattr(getattr(self.bpy,'app',None),'driver_namespace',None)
         namespace_marker=None
         if isinstance(namespace,dict):
@@ -562,13 +645,29 @@ class BlenderSceneHost:
             getattr(self.scene.unit_settings,'length_unit',None),int(getattr(self.scene,'frame_current',0)),
             float(getattr(self.scene,'frame_subframe',0)),
             ident(getattr(getattr(self.view_layer,'objects',None),'active',None)))
+        if _surface_scan:
+            signature += (any(bool(getattr(item, 'is_instance', False))
+                              for item in getattr(graph, 'object_instances', ())),)
         state.sync(context,signature,live);state.by_object_id=by_id
         state.wire={oid:entry for oid,entry in state.wire.items() if oid in by_id}
         return True
 
-    def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition):
+    def _resource_stamp(self, obj):
+        state = self._residency
+        ident = self._residency_module.identity
+        key, data = ident(obj), getattr(obj, 'data', None)
+        guards = self._guard_description(obj)
+        dynamic = bool(guards['modifiers'] or guards['animation'] or guards['data_animation'] or guards['shape_keys'])
+        geometry_guards = dict(guards, parent=ident(getattr(obj, 'parent', None)),
+                              children=sorted(ident(child) for child in getattr(obj, 'children', ())))
+        return (ident(data), state.dirty.get(key, 0), state.dirty.get(ident(data), 0), geometry_guards,
+                int(getattr(self.scene, 'frame_current', 0)) if dynamic else None,
+                float(getattr(self.scene, 'frame_subframe', 0)) if dynamic else None)
+
+    def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition,
+                          acquisition_scope, prepared_local):
         state=self._residency
-        selection_key=_digest(['nearest_selected' if acquisition is not None else
+        selection_key=_digest([acquisition_scope if acquisition is not None else
             'task' if task_selection is not None else 'scene',
             task_selection['selectors'] if task_selection is not None else [self.object_id(o) for o in objects]])
         cached=state.captures.get(selection_key)
@@ -585,26 +684,26 @@ class BlenderSceneHost:
             evaluated=obj.evaluated_get(graph) if acquisition is None else acquisition[3][self.object_id(obj)]
             if not bool(getattr(evaluated,'is_evaluated',True)):
                 raise BlenderHostError('Mesh is not evaluated in the current view layer: '+obj.name)
-            matrix=_matrix(evaluated.matrix_world);key=ident(obj);data=getattr(obj,'data',None)
-            guards=self._guard_description(obj)
-            dynamic=bool(guards['modifiers'] or guards['animation'] or guards['data_animation'] or guards['shape_keys'])
-            geometry_guards=dict(guards,parent=ident(getattr(obj,'parent',None)),
-                children=sorted(ident(child) for child in getattr(obj,'children',())))
-            stamp=(ident(data),state.dirty.get(key,0),state.dirty.get(ident(data),0),geometry_guards,
-                int(getattr(self.scene,'frame_current',0)) if dynamic else None,
-                float(getattr(self.scene,'frame_subframe',0)) if dynamic else None)
+            matrix=_matrix(evaluated.matrix_world);key=ident(obj)
+            stamp=self._resource_stamp(obj)
             resource=state.resources.get(key)
             if resource is None or resource['stamp']!=stamp:
                 temporary=None
                 try:
-                    self._residency_stats['to_mesh']+=1;temporary=evaluated.to_mesh()
-                    if temporary is None:raise BlenderHostError('Evaluated mesh is unavailable: '+obj.name)
-                    if len(temporary.vertices)>500000:raise BlenderHostError('Scene geometry budget exceeded')
-                    self._residency_stats['triangulations']+=1;temporary.calc_loop_triangles()
-                    if len(temporary.loop_triangles)>1000000:raise BlenderHostError('Scene geometry budget exceeded')
-                    local=tuple(tuple(float(v.co[i]) for i in range(3)) for v in
-                                _acquisition_vertices(temporary.vertices,checkpoint))
-                    faces=tuple(tuple(int(i) for i in triangle.vertices) for triangle in temporary.loop_triangles)
+                    prepared = prepared_local.get(self.object_id(obj)) if prepared_local is not None else None
+                    if prepared is None:
+                        self._residency_stats['to_mesh']+=1;temporary=evaluated.to_mesh()
+                        if temporary is None:raise BlenderHostError('Evaluated mesh is unavailable: '+obj.name)
+                        if len(temporary.vertices)>500000:raise BlenderHostError('Scene geometry budget exceeded')
+                        self._residency_stats['triangulations']+=1;temporary.calc_loop_triangles()
+                        if len(temporary.loop_triangles)>1000000:raise BlenderHostError('Scene geometry budget exceeded')
+                        local=tuple(tuple(float(v.co[i]) for i in range(3)) for v in
+                                    _acquisition_vertices(temporary.vertices,checkpoint))
+                        faces=tuple(tuple(int(i) for i in triangle.vertices) for triangle in temporary.loop_triangles)
+                        self._residency_stats['resource_vertices_read'] += len(local)
+                        self._residency_stats['resource_faces_read'] += len(faces)
+                    else:
+                        local, faces = prepared
                     if (len(local)<3 or not faces or any(not math.isfinite(x) for p in local for x in p)
                             or any(len(f)!=3 or min(f)<0 or max(f)>=len(local) for f in faces)):
                         raise BlenderHostError('A mesh requires valid evaluated triangles: '+obj.name)
@@ -643,6 +742,7 @@ class BlenderSceneHost:
                     local_axes=axes,pivot_world=[matrix[r][3]*scale for r in range(3)],
                     axes_source='host',axes_confidence=confidence,axes_reason=reason)
                 resource['pose']=copy.deepcopy(pose);self._residency_stats['world_transforms']+=1
+                self._residency_stats['world_vertices_transformed'] += len(resource['vertices_local'])
             state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
             # Copy the small metadata dict; geometry remains private and is
             # detached once at the public capture boundary. Older selections
@@ -653,10 +753,10 @@ class BlenderSceneHost:
         scene=dict(unit='m',coordinate_frame='world',source='blender',meshes=meshes)
         if task_selection is not None:
             scene.update(capture_scope='selected_objects',task_selection=task_selection,host_identity=task_identity)
-        elif acquisition is not None:scene.update(capture_scope='surface_nearest_candidates',execution_authority=False)
+        elif acquisition is not None:scene.update(capture_scope=acquisition_scope,execution_authority=False)
         elif self.execution_metadata:scene['host_execution']=self._execution_status(objects)
         if task_selection is None and self.identity_metadata:
-            identity=self._identity_metadata(objects,capture_scope='surface_nearest_candidates') if acquisition is not None else self._identity_metadata(objects)
+            identity=self._identity_metadata(objects,capture_scope=acquisition_scope) if acquisition is not None else self._identity_metadata(objects)
             if identity is not None:scene['host_identity']=identity
         if task_selection is None:
             scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale,
@@ -677,8 +777,15 @@ class BlenderSceneHost:
             return copy.deepcopy(capture)
         return self._residency_module.encode_capture(capture,known,self._residency.wire)
 
-    def _objects(self, graph):
+    def _objects(self, graph, *, _surface_scan=False):
         objects = list(self.scene.objects)
+        if _surface_scan:
+            meshes = sorted((obj for obj in objects if getattr(obj, 'type', None) == 'MESH'), key=self.object_id)
+            if len(meshes) > 256:
+                raise BlenderHostError('surface_scan_scene_object_budget')
+            if self.object_names is not None and self.object_names != frozenset(obj.name for obj in meshes):
+                raise BlenderHostError('object_names must cover every scene mesh, including hidden meshes')
+            return meshes
         unsupported = {"CURVE", "SURFACE", "FONT", "META", "VOLUME", "POINTCLOUD", "CURVES", "GREASEPENCIL", "GPENCIL"}
         for obj in objects:
             if getattr(obj, "type", None) in unsupported:
@@ -806,7 +913,8 @@ class BlenderSceneHost:
                          'pair_reason': pair_reason, 'candidate_count': len(candidates)}
 
     def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None,
-                 _acquisition_context=None, _resident=False):
+                 _acquisition_context=None, _resident=False,
+                 _acquisition_scope='surface_nearest_candidates', _prepared_local=None):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
@@ -837,8 +945,9 @@ class BlenderSceneHost:
             if native_identity is None:
                 raise BlenderHostError("Native original-pose evidence requires complete host identity")
         active = getattr(getattr(self.view_layer, "objects", None), "active", None)
-        if _resident and self._sync_residency(graph,scale):
-            return self._resident_capture(graph,scale,objects,task_selection,task_identity,_acquisition_context)
+        if _resident and self._sync_residency(graph,scale,_surface_scan=_acquisition_scope=='surface_scan_candidates'):
+            return self._resident_capture(graph,scale,objects,task_selection,task_identity,
+                                          _acquisition_context,_acquisition_scope,_prepared_local)
         meshes, vertex_count, face_count = [], 0, 0
         for ordinal, obj in enumerate(objects, 1):
             if _acquisition_context is not None:
@@ -851,26 +960,34 @@ class BlenderSceneHost:
                 raise BlenderHostError("Native original and evaluated world matrices disagree: " + obj.name)
             temporary = None
             try:
-                temporary = evaluated.to_mesh()
-                if temporary is None:
-                    raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
-                temporary.calc_loop_triangles()
-                if (vertex_count + len(temporary.vertices) > 500_000
-                        or face_count + len(temporary.loop_triangles) > 1_000_000):
-                    raise BlenderHostError("Scene geometry budget exceeded")
+                prepared = _prepared_local.get(self.object_id(obj)) if _prepared_local is not None else None
+                if prepared is None:
+                    temporary = evaluated.to_mesh()
+                    if temporary is None:
+                        raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
+                    temporary.calc_loop_triangles()
+                    if (vertex_count + len(temporary.vertices) > 500_000
+                            or face_count + len(temporary.loop_triangles) > 1_000_000):
+                        raise BlenderHostError("Scene geometry budget exceeded")
                 vertices = []
                 evaluated_local = [] if _native_evidence else None
-                vertex_source = (temporary.vertices if _acquisition_context is None else
+                vertex_source = (prepared[0] if prepared is not None else temporary.vertices if _acquisition_context is None else
                                  _acquisition_vertices(temporary.vertices, _acquisition_context[4]))
-                for vertex in vertex_source:
-                    point = [float(vertex.co[i]) for i in range(3)]
+                for vertex_ordinal, vertex in enumerate(vertex_source):
+                    if prepared is not None and vertex_ordinal % 128 == 0:
+                        _acquisition_context[4]()
+                    point = list(vertex) if prepared is not None else [float(vertex.co[i]) for i in range(3)]
                     if _native_evidence:
                         evaluated_local.append(point)
                     world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale for r in range(3)]
                     if any(not math.isfinite(v) for v in world):
                         raise BlenderHostError("Nonfinite evaluated geometry: " + obj.name)
                     vertices.append(world)
-                faces = [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles]
+                faces = ([list(face) for face in prepared[1]] if prepared is not None else
+                         [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles])
+                if prepared is not None:
+                    self._residency_stats['world_transforms'] += 1
+                    self._residency_stats['world_vertices_transformed'] += len(vertices)
                 if len(vertices) < 3 or not faces or any(len(face) != 3 or min(face) < 0 or max(face) >= len(vertices) for face in faces):
                     raise BlenderHostError("A mesh requires valid evaluated triangles: " + obj.name)
                 vertex_count, face_count = vertex_count + len(vertices), face_count + len(faces)
@@ -937,12 +1054,12 @@ class BlenderSceneHost:
             scene['task_selection'] = task_selection
             scene['host_identity'] = task_identity
         elif _acquisition_context is not None:
-            scene['capture_scope'] = 'surface_nearest_candidates'
+            scene['capture_scope'] = _acquisition_scope
             scene['execution_authority'] = False
         elif self.execution_metadata:
             scene["host_execution"] = self._execution_status(objects)
         if task_selection is None and self.identity_metadata:
-            identity = self._identity_metadata(objects, capture_scope='surface_nearest_candidates') if _acquisition_context is not None else self._identity_metadata(objects)
+            identity = self._identity_metadata(objects, capture_scope=_acquisition_scope) if _acquisition_context is not None else self._identity_metadata(objects)
             if identity is not None:
                 scene['host_identity'] = identity
         # Guard changes must invalidate approvals even if displayed geometry did
@@ -1224,6 +1341,58 @@ class BlenderSceneHost:
             checkpoint()
             return result
 
+    def _acquisition_directory_source(self, obj, graph, scale, *, allow_hidden=False):
+        """Shared cheap static directory read; geometry expansion stays separate."""
+        oid = self.object_id(obj)
+        guards = self._guard_description(obj)
+        if (guards['parent'] is not None or guards['children'] or guards['constraints']
+                or guards['modifiers'] or guards['animation'] or guards['data_animation']
+                or guards['rigid_body'] or guards['rigid_body_constraint'] or guards['shape_keys']
+                or guards['linked'] or guards['edit_mode']
+                or getattr(getattr(obj, 'data', None), 'library', None) is not None
+                or getattr(obj, 'instance_type', 'NONE') != 'NONE'
+                or bool(getattr(obj, 'is_instancer', False))):
+            raise BlenderHostError('acquisition_static_triangle_source_required:' + oid)
+        evaluated = obj.evaluated_get(graph)
+        source_mode = 'evaluated_static'
+        if getattr(evaluated, 'is_evaluated', False) is not True:
+            hidden = bool(getattr(obj, 'hide_viewport', False))
+            hidden_get = getattr(obj, 'hide_get', None)
+            if callable(hidden_get):
+                hidden = hidden or bool(hidden_get())
+            if not allow_hidden or not hidden:
+                raise BlenderHostError('acquisition_evaluation_unavailable:' + oid)
+            from types import SimpleNamespace
+            evaluated = SimpleNamespace(data=obj.data, matrix_world=obj.matrix_world,
+                                        is_evaluated=True, bound_box=getattr(obj, 'bound_box', ()))
+            source_mode = 'static_original_hidden'
+        data = getattr(evaluated, 'data', None)
+        if (data is None or not hasattr(data, 'vertices') or not hasattr(data, 'polygons')
+                or not hasattr(data, 'loops') or len(data.vertices) < 3 or not len(data.polygons)
+                or len(data.loops) != 3 * len(data.polygons)):
+            raise BlenderHostError('acquisition_triangle_data_required:' + oid)
+        matrix = _matrix(evaluated.matrix_world)
+        try:
+            corners = evaluated.bound_box
+        except (AttributeError, RuntimeError):
+            corners = ()
+        return evaluated, guards, matrix, _acquisition_bounds(corners, matrix, scale), source_mode
+
+    def _scan_local_geometry(self, data, checkpoint, oid):
+        _acquisition_validate_triangles(data, check_coordinates=False, checkpoint=checkpoint, object_id=oid)
+        local = tuple(tuple(float(vertex.co[k]) for k in range(3)) for vertex in
+                      _acquisition_vertices(data.vertices, checkpoint))
+        if any(not math.isfinite(value) for point in local for value in point):
+            raise BlenderHostError('nonfinite_local_triangle_source')
+        faces = []
+        for ordinal, polygon in enumerate(data.polygons):
+            if ordinal % 256 == 0:
+                checkpoint()
+            faces.append(tuple(data.loops[polygon.loop_start + offset].vertex_index for offset in range(3)))
+        self._residency_stats['resource_vertices_read'] += len(local)
+        self._residency_stats['resource_faces_read'] += len(faces)
+        return local, tuple(faces)
+
     def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
         """Internal unsigned-surface acquisition, one synchronous host window.
 
@@ -1287,33 +1456,15 @@ class BlenderSceneHost:
                 nonlocal source_vertices, source_faces
                 checkpoint()
                 oid = self.object_id(obj)
-                guards = self._guard_description(obj)
-                if (guards['parent'] is not None or guards['children'] or guards['constraints']
-                        or guards['modifiers'] or guards['animation'] or guards['data_animation']
-                        or guards['rigid_body'] or guards['rigid_body_constraint'] or guards['shape_keys']
-                        or guards['linked'] or guards['edit_mode']
-                        or getattr(getattr(obj, 'data', None), 'library', None) is not None):
-                    raise BlenderHostError('acquisition_static_triangle_source_required:' + oid)
-                evaluated = obj.evaluated_get(graph)
-                if getattr(evaluated, 'is_evaluated', False) is not True:
-                    raise BlenderHostError('acquisition_evaluation_unavailable:' + oid)
-                data = getattr(evaluated, 'data', None)
-                if (data is None or not hasattr(data, 'vertices') or not hasattr(data, 'polygons')
-                        or not hasattr(data, 'loops') or len(data.vertices) < 3 or not len(data.polygons)
-                        or len(data.loops) != 3 * len(data.polygons)):
-                    raise BlenderHostError('acquisition_triangle_data_required:' + oid)
+                evaluated, guards, matrix, bounds, _ = self._acquisition_directory_source(obj, graph, scale)
+                data = evaluated.data
                 source_vertices += len(data.vertices)
                 source_faces += len(data.polygons)
                 if source_vertices > 500_000 or source_faces > 1_000_000:
                     raise BlenderHostError('acquisition_scene_geometry_budget')
-                matrix = _matrix(evaluated.matrix_world)
                 evaluated_by_id[oid] = evaluated
                 frozen[oid] = (guards, matrix, len(data.vertices), len(data.polygons))
-                try:
-                    corners = evaluated.bound_box
-                except (AttributeError, RuntimeError):
-                    corners = ()
-                row = {'object_id': oid, 'bounds_world_m': _acquisition_bounds(corners, matrix, scale),
+                row = {'object_id': oid, 'bounds_world_m': bounds,
                        'witness': _acquisition_witness(data, matrix, scale)}
                 if row['bounds_world_m'] is not None and row['witness'] is not None:
                     lo, hi = row['bounds_world_m']
@@ -1414,6 +1565,211 @@ class BlenderSceneHost:
             if resident:
                 if len(self._residency.nearest)>=8:self._residency.nearest.clear()
                 self._residency.nearest[nearest_key]=(copy.deepcopy(packet),packet_bytes)
+            return packet
+
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        """Acquire one complete mesh directory and one retained endpoint union."""
+        self._main_thread()
+        if type(threshold_m) not in (int, float):
+            raise BlenderHostError('surface_scan_threshold')
+        try:
+            threshold_m = float(threshold_m)
+        except OverflowError as exc:
+            raise BlenderHostError('surface_scan_threshold') from exc
+        if not math.isfinite(threshold_m) or threshold_m < 0:
+            raise BlenderHostError('surface_scan_threshold')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('acquisition_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('acquisition_document_budget')
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('acquisition_deadline_exceeded')
+        def instances():
+            return any(bool(getattr(item, 'is_instance', False)) for item in getattr(graph, 'object_instances', ()))
+        def current_scope_issues():
+            issues = ['evaluated_instances_not_supported'] if instances() else []
+            if any(getattr(obj, 'type', None) != 'MESH' and
+                   (getattr(obj, 'instance_type', 'NONE') != 'NONE' or bool(getattr(obj, 'is_instancer', False)))
+                   for obj in self.scene.objects):
+                issues.append('nonmesh_scene_instancers_not_supported')
+            return issues
+        checkpoint()
+        with self._lock:
+            before = dict(self._residency_stats)
+            graph, scale = self._depsgraph(), self._scale()
+            objects = self._objects(graph, _surface_scan=True)
+            ids = [self.object_id(obj) for obj in objects]
+            if len(set(ids)) != len(ids):
+                raise BlenderHostError('acquisition_object_coverage')
+            resident = self._sync_residency(graph, scale, _surface_scan=True)
+            state = self._residency
+            selection_key = _digest(['surface_scan', threshold_m])
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('acquisition_source_identity_unavailable')
+            scope_issues = current_scope_issues()
+            def current_work(work, cache_hit):
+                return dict(work, cache_hit=cache_hit,
+                            residency_delta={key: self._residency_stats[key] - value for key, value in before.items()})
+            cached = state.nearest.get(selection_key) if resident else None
+            if cached is not None and (cached[0]['binding']['host_identity'] != identity
+                                       or cached[0]['binding']['host_source_sha256'] != source_sha
+                                       or cached[0]['scope_issues'] != scope_issues):
+                cached = None
+            if cached is not None:
+                checkpoint()
+                result = copy.deepcopy(cached[0])
+                self._residency_stats['scan_cache_hits'] += 1
+                result['work'] = current_work(result['work'], True)
+                # Only current-request counters changed. Reuse the established
+                # full-document size without serializing all cached geometry.
+                def work_bytes(value):
+                    return len(json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+                packet_bytes = cached[1] - work_bytes(cached[0]['work']) + work_bytes(result['work'])
+                if packet_bytes > max_response_bytes:
+                    raise BlenderHostError('acquisition_document_budget_exceeded')
+                checkpoint()
+                return result
+            frame = (int(getattr(self.scene, 'frame_current', 0)), float(getattr(self.scene, 'frame_subframe', 0)))
+            rows, sources, frozen, prepared = {}, {}, {}, {}
+            source_vertices = source_faces = 0
+            ident = self._residency_module.identity
+            def source_observable(obj):
+                try:
+                    matrix = _matrix(obj.matrix_world)
+                except BlenderHostError:
+                    matrix = None
+                return (self._guard_description(obj), ident(getattr(obj, 'data', None)), matrix,
+                        getattr(obj, 'instance_type', 'NONE'), bool(getattr(obj, 'is_instancer', False)))
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                self._residency_stats['scan_directory_objects'] += 1
+                frozen[oid] = source_observable(obj)
+                row = dict(object_id=oid, name=str(obj.name), bounds_world_m=None, bounds_status='unknown',
+                           source_status='unsupported', source_mode=None, reason=None)
+                try:
+                    evaluated, guards, matrix, bounds, source_mode = self._acquisition_directory_source(
+                        obj, graph, scale, allow_hidden=True)
+                    data = evaluated.data
+                    source_vertices += len(data.vertices)
+                    source_faces += len(data.polygons)
+                    if source_vertices > 500_000 or source_faces > 1_000_000:
+                        raise BlenderHostError('acquisition_scene_geometry_budget')
+                    sources[oid] = (evaluated, matrix, self._resource_stamp(obj), len(data.vertices), len(data.polygons))
+                    row.update(bounds_world_m=bounds, bounds_status='enclosed' if bounds is not None else 'unknown',
+                               source_status='supported', source_mode=source_mode)
+                except (BlenderHostError, AttributeError, TypeError, ValueError, IndexError, RuntimeError) as exc:
+                    if str(exc).startswith(('acquisition_deadline', 'acquisition_scene_geometry_budget')):
+                        raise
+                    row['reason'] = str(exc)[:512] or type(exc).__name__
+                rows[oid] = row
+            pairs, provisional_union = [], set()
+            for index, oid in enumerate(ids):
+                checkpoint()
+                for other in ids[index + 1:]:
+                    lower = _acquisition_lower(rows[oid]['bounds_world_m'], rows[other]['bounds_world_m'])
+                    self._residency_stats['scan_bound_tests'] += 1
+                    unsupported = rows[oid]['source_status'] != 'supported' or rows[other]['source_status'] != 'supported'
+                    disposition = 'unknown_source' if unsupported else 'excluded_strict_bound' if lower > threshold_m else 'retained'
+                    pairs.append(dict(object_ids=[oid, other], lower_bound_m=lower, disposition=disposition))
+                    if disposition == 'retained':
+                        provisional_union.update((oid, other))
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                if oid not in sources:
+                    continue
+                evaluated, matrix, stamp, _, _ = sources[oid]
+                key = ident(obj)
+                resource = state.resources.get(key) if resident else None
+                if resource is not None and resource['stamp'] != stamp:
+                    resource = None
+                check = state.source_checks.get(key) if resident else None
+                local = faces = None
+                try:
+                    if check is not None and check['stamp'] == stamp:
+                        self._residency_stats['source_qualification_cache_hits'] += 1
+                        if check['reason'] is not None:
+                            raise BlenderHostError(check['reason'])
+                        summary = check['summary']
+                    else:
+                        if resource is not None:
+                            local, faces = resource['vertices_local'], resource['faces']
+                        else:
+                            local, faces = self._scan_local_geometry(evaluated.data, checkpoint, oid)
+                        self._residency_stats['source_qualification_vertices'] += len(local)
+                        self._residency_stats['source_qualification_faces'] += len(faces)
+                        summary = _scan_local_summary(local, faces, checkpoint)
+                        if resident:
+                            state.source_checks[key] = dict(stamp=copy.deepcopy(stamp), summary=summary, reason=None)
+                    if not _scan_world_precision(summary, matrix, scale):
+                        raise BlenderHostError('world_precision_unresolved')
+                    if oid in provisional_union and resource is None:
+                        if local is None:
+                            local, faces = self._scan_local_geometry(evaluated.data, checkpoint, oid)
+                        prepared[oid] = (local, faces)
+                except (BlenderHostError, AttributeError, TypeError, ValueError, IndexError, OverflowError) as exc:
+                    reason = str(exc)[:512] or type(exc).__name__
+                    if reason.startswith('acquisition_deadline'):
+                        raise
+                    if resident and reason != 'world_precision_unresolved':
+                        state.source_checks[key] = dict(stamp=copy.deepcopy(stamp), summary=None, reason=reason)
+                    rows[oid].update(source_status='unsupported', reason=reason)
+            union = set()
+            for ordinal, pair in enumerate(pairs):
+                if ordinal % 256 == 0:
+                    checkpoint()
+                oid, other = pair['object_ids']
+                if rows[oid]['source_status'] != 'supported' or rows[other]['source_status'] != 'supported':
+                    pair['disposition'] = 'unknown_source'
+                if pair['disposition'] == 'retained':
+                    union.update((oid, other))
+            selected = [obj for obj, oid in zip(objects, ids) if oid in union]
+            evaluated_by_id = {oid: value[0] for oid, value in sources.items()}
+            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint),
+                                  _resident=True, _acquisition_scope='surface_scan_candidates', _prepared_local=prepared)
+            checkpoint()
+            if (self._objects(graph, _surface_scan=True) != objects or self._scale() != scale
+                    or (int(getattr(self.scene, 'frame_current', 0)), float(getattr(self.scene, 'frame_subframe', 0))) != frame
+                    or self._identity_metadata(objects) != identity or current_scope_issues() != scope_issues):
+                raise BlenderHostError('acquisition_source_changed')
+            for obj, oid in zip(objects, ids):
+                if source_observable(obj) != frozen[oid]:
+                    raise BlenderHostError('acquisition_source_changed')
+                if oid in sources:
+                    evaluated, matrix, stamp, vertex_count, face_count = sources[oid]
+                    if (_matrix(evaluated.matrix_world) != matrix or self._resource_stamp(obj) != stamp
+                            or len(evaluated.data.vertices) != vertex_count or len(evaluated.data.polygons) != face_count):
+                        raise BlenderHostError('acquisition_source_changed')
+            coverage = [rows[oid] for oid in ids]
+            directory_sha = _digest(coverage)
+            # A far source or catalog-scope change can leave the endpoint union
+            # unchanged. Its revision still invalidates complete result reuse.
+            scene = dict(scene, revision='blender:' + _digest(dict(capture_revision=scene['revision'],
+                directory_sha256=directory_sha, scope_issues=scope_issues, host_identity=identity)))
+            scene = self._capture_state(scene, selection_key)
+            packet = dict(protocol='single-read-surface-scan-v1', result_kind='acquisition_only_not_surface_scan_result',
+                threshold_m=threshold_m, scope='independent_static_triangle_meshes_current_evaluated_surfaces',
+                scope_issues=scope_issues, capture=scene, coverage=coverage, pairs=pairs,
+                bound_method='outward_evaluated_local_box_affine_linf', M3_qualification_performed=False,
+                binding=dict(host_source_sha256=source_sha, host_identity=identity, directory_sha256=directory_sha,
+                    frame=frame[0], scale_length=scale, coordinate_frame='world', unit='m',
+                    same_main_thread_read=True, external_edit_history_proven=False),
+                execution_authority=False,
+                work=current_work(dict(directory_objects=len(objects), source_vertices=source_vertices, source_faces=source_faces,
+                    broad_pairs=len(pairs), retained_pairs=sum(pair['disposition']=='retained' for pair in pairs),
+                    expanded_objects=len(selected), expanded_vertices=sum(len(mesh['vertices']) for mesh in scene['meshes']),
+                    expanded_faces=sum(len(mesh['faces']) for mesh in scene['meshes'])), False))
+            checkpoint()
+            packet_bytes = len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+            if packet_bytes > max_response_bytes:
+                raise BlenderHostError('acquisition_document_budget_exceeded')
+            checkpoint()
+            if resident:
+                if len(state.nearest) >= 8:
+                    state.nearest.clear()
+                state.nearest[selection_key] = (copy.deepcopy(packet), packet_bytes)
             return packet
 
     def capture_task_scene(self, selectors):

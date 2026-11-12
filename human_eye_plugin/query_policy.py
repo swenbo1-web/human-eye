@@ -56,6 +56,9 @@ def validate_query(query, *, object_ids=None, focal_id=None):
             raise ValueError('surface_nearest query accepts only mode and optionally one object selector')
         from .task_query import validate_object_selector
         return {'mode': 'surface_nearest', 'objects': [validate_object_selector(query['objects'][0])]}
+    if type(query) is dict and query.get('mode') == 'surface_scan':
+        from .surface_scan import validate_surface_scan_query
+        return validate_surface_scan_query(query)
     if type(query) is dict and query.get('mode') == 'task':
         from .task_query import validate_task_query
         return validate_task_query(query)

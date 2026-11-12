@@ -35,6 +35,8 @@ class ReadContext:
         self._selections = OrderedDict()
         self._normalized = None
         self._results = OrderedDict()
+        self._surface_scan_key = None
+        self._surface_scan_progress = {}
         self.scene_cache._bind_read_meshes(None, ())
 
     def activate(self, capture, entry, selection=None):
@@ -66,15 +68,30 @@ class ReadContext:
                 self.scene_cache._bind_read_meshes(self._capture, self._normalized[1])
         return self._normalized
 
-    def result(self, key, compute):
+    def surface_scan_progress(self, key):
+        """Resume one current scan with summaries under the same private capture."""
+        binding = (self._capture, key)
+        if binding != self._surface_scan_key:
+            # A complete cached scan needs its matching negative diagnostics.
+            # Rebuild that one result after switching away from this progress.
+            self._results.pop(key, None)
+            self._surface_scan_progress = {}
+            self._surface_scan_key = binding
+        return self._surface_scan_progress
+
+    def result(self, key, compute, *, cache_partial=True):
         cached = self._results.get(key)
         if cached is not None:
-            self._results.move_to_end(key)
-            return copy.deepcopy(cached), True
+            if cache_partial or isinstance(cached, dict) and cached.get('status') == 'complete':
+                self._results.move_to_end(key)
+                return copy.deepcopy(cached), True
+            self._results.pop(key)
         value = compute()
         # No request trace or caller mutation is retained. Exceptions never
-        # populate this map; partial/unknown retain their original status.
-        self._results[key] = value
-        if len(self._results) > 16:
-            self._results.popitem(last=False)
+        # populate this map. Existing entries retain their original status.
+        # A resumable scan opts out of retaining incomplete terminal results.
+        if cache_partial or isinstance(value, dict) and value.get('status') == 'complete':
+            self._results[key] = value
+            if len(self._results) > 16:
+                self._results.popitem(last=False)
         return copy.deepcopy(value), False

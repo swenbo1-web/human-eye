@@ -252,7 +252,7 @@ def project_task_geometry(result, meshes, request, checkpoint):
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
                               diagnostics, retain_exact_rank=False, prepared_pair=None,
-                              boundary_contact=None, prepared_trees=None):
+                              boundary_contact=None, prepared_trees=None, before_compute=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -272,6 +272,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     if (sum(face_counts) > MAX_FACES
             or any(len(mesh.vertices) > 3 * count
                    for mesh, count in zip((left, right), face_counts))):
+        if before_compute is not None:
+            before_compute()
         return compute_surface()
     parameters = {'source': source, 'unit': 'm', 'coordinate_frame': 'world',
                   'world_witness_tolerance_m': COLLISION_TOLERANCE_M}
@@ -280,7 +282,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
         parameters['retain_exact_rank'] = True
         version = 'task-surface-proximity-exact-world-rank-v3'
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
-        left, right, compute_surface, parameters=parameters, algorithm_version=version)
+        left, right, compute_surface, parameters=parameters, algorithm_version=version,
+        before_compute=before_compute)
     return result
 
 
