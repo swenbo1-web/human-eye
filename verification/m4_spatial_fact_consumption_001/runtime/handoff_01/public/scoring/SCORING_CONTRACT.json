@@ -1,0 +1,69 @@
+{
+  "schema": "M4-spatial-fact-anonymous-quality-v1",
+  "cycle_id": "M4-SPATIAL-FACT-CONSUMPTION-001",
+  "frozen_before_consumers": true,
+  "scope": "One previously analyzed synthetic G508 scene. Six fresh fixed consumers. Model input contains the common task text and zero images.",
+  "input_materials": {
+    "actual_geometry": "scoring/ACTUAL_SNAPSHOT.json",
+    "independent_truth": "scoring/TRUTH.json",
+    "geometry_unit": "m",
+    "coordinate_frame": "world",
+    "candidate_scope": ["Peer_000", "Competing_001", "Near_003"],
+    "target": "Target"
+  },
+  "primary_fixed_denominators": {
+    "relations": 3,
+    "minimum_surface_gaps": 3,
+    "minimum_4mm_decisions": 3,
+    "localized_nearest_point_pairs": 3,
+    "three_candidate_nearest_or_true_tie": 1,
+    "consumer_slots": 6
+  },
+  "complete_correct": "All three requested relations, actual shortest surface gaps, 4 mm decisions and surface witness pairs, plus the nearest candidate or genuine tie in the specified three-candidate set, must be correct and supported by the current geometry. Contradictory claims about these requested facts prevent complete correctness. No weighted compensation is applied.",
+  "status_categories": {
+    "complete_correct": "Every requested fact is correct under the shared evidence and numerical contract.",
+    "incomplete": "One or more requested facts are absent or explicitly uncertain, including honest unknown or refusal.",
+    "incorrect": "A requested fact is asserted with a materially wrong relation, value, threshold, witness or nearest result.",
+    "execution_failure": "Entered execution cannot supply a confirmed complete answer. Preserve partial answers and all attempts.",
+    "not_run": "The frozen slot never started after a preserved stop condition. Retain it in the six-slot denominator."
+  },
+  "distance_policy": {
+    "absolute_error_m": 0.000001,
+    "requested_display_precision_mm": 0.001,
+    "equivalent_units_accepted": true,
+    "comparison": "Check the claimed shortest gap against independent bounds on the actual captured triangles. The 4 mm threshold is applied to the true gap. Numerical formatting cannot expand the gap error tolerance."
+  },
+  "witness_policy": {
+    "final_coordinate_component_error_m": 0.000001,
+    "each_rounded_point_euclidean_bound": "sqrt(3)*1e-6 m",
+    "rounded_pair_distance_bound": "2*sqrt(3)*1e-6 m in addition to an independently established valid nearest pair",
+    "nonunique_points": "Any valid globally nearest pair on the two actual triangle surfaces is eligible. It may use different triangles or different equal-distance points from the reference or plugin.",
+    "full_precision_first": "First verify any complete-precision witness in the original business tool results or recorded computation, its surface membership and global minimality against independent geometry, then verify final text rounding component by component.",
+    "rounded_only": "When only rounded coordinates are available, establish that a genuine nearest point pair exists within both coordinate error boxes, or supply an equivalent independent analytic certificate.",
+    "necessary_conditions": "Closeness of each point to its surface and an allowed point-distance discrepancy are necessary checks. Those two checks alone do not establish a valid globally nearest pair.",
+    "proof_choices": "An attained surface pair with a matching global lower bound, independently verifiable full-feature computation, or equivalent valid geometric argument is sufficient. No particular algorithm, reference triangle index or fixed witness pair is required."
+  },
+  "evidence_policy": {
+    "common_standard": "Apply the same correctness, source-binding and numerical rules to every anonymous answer.",
+    "source_binding": "Evidence concerns the unchanged current captured geometry, correct target and requested candidate. A correct final answer need not repeat administrative hashes or object IDs.",
+    "native_shortcuts": "Batch reads, native Blender APIs, NumPy or BVH, per-cell caches and mathematically sound analytic shortcuts are eligible. Native execution may establish the answer directly.",
+    "tool_facts": "A source-bound reliable tool fact may be directly used without requiring the consumer to reproduce proof integers or rerun the algorithm. The scorer checks that fact against independent truth.",
+    "approximate_methods": "AABB or vertex distances qualify only when the recorded current-geometry argument actually establishes the shortest surface distance. A coincidentally correct approximation does not establish complete correctness.",
+    "no_forced_route": "Tool discovery, adoption and duplicate work are assessed separately after anonymous quality is frozen. Correct native answers retain full quality credit.",
+    "shell_health": "The task does not require embedded-shell health, self-intersection exclusion or a claim about every object in the scene. Record unsupported extensions such as healthy closed shells, no self-intersection or global collision freedom separately."
+  },
+  "language_policy": {
+    "no_required_JSON_or_field_spelling": true,
+    "equivalent_unambiguous_names_or_scene_bound_IDs_accepted": true,
+    "no_required_triangle_indices_or_hashes": true,
+    "additional_correct_material_has_no_extra_credit": true,
+    "no_required_manual_algorithm_revalidation": true
+  },
+  "fixed_sample_policy": "N/P each three planned slots with order N1/P1, P2/N2, N3/P3. Keep every entered failure, tool error and not_run tail. No replacement, historical pooling or surviving-slot redefinition.",
+  "anonymization_policy": "Publish common task text, all six anonymous answer slots, full business requests/results, necessary geometry scoring material and recorded failures. Seal the pre-frozen map, administrative timings, usage and mechanism or cost conclusions separately. Tool names and business content can reveal a route, so this is group-label and cost masking with imperfect blinding.",
+  "administrative_projection_policy": "Only explicit known producer or RPC envelope fields are removed in the anonymous copy. Preserve nested facts, unknowns, proof data, native stdout, business strings, failed attempts and duplicates. Keep complete original archives and a pointer/hash projection audit privately.",
+  "quality_before_cost": "The root and independent reviewers freeze anonymous quality judgments before group costs, usage, adoption or benefit results are unsealed. This packer supplies evidence and performs no scoring.",
+  "model_consumers_executed_by_contract_creation": 0,
+  "product_calls_executed_by_contract_creation": 0,
+  "Blender_sessions_executed_by_contract_creation": 0
+}

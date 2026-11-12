@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_2ddce3bf74c84d978eb440e23c7b811f",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1ced5-0249-7582-bbc3-b54313790719",
+        "thread_id": "01a1ced5-0249-7582-bbc3-b54313790719",
+        "turn_started_at_unix_ms": 1794471428854,
+        "turn_id": "01a1ced5-02ef-7760-8f99-77438823133b",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "02c7784ec4e23e9b03a3485367d8db54b4d5db34",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1ced5-0249-7582-bbc3-b54313790719",
+      "itemId": "fc_071883d577bb5f23016af57620888c87d0ac0cd762a8e65cc6",
+      "progressToken": 2
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "# Read mesh coordinates and apply the stored world matrices in double precision.\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(depsgraph)\n mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64)\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n geo[name]=(local @ matrix[:3,:3].T + matrix[:3,3],np.array([tuple(tri.vertices) for tri in mesh.loop_triangles],dtype=np.int64))\n obj.to_mesh_clear()\ndef point_triangle(points, triangles):\n first=triangles[:,0]; side1=triangles[:,1]-first; side2=triangles[:,2]-first\n normal=np.cross(side1,side2); norm2=np.einsum('ij,ij->i',normal,normal)\n signed=np.einsum('ij,ij->i',points-first,normal)/norm2\n projection=points-signed[:,None]*normal\n relative=projection-first\n dot11=np.einsum('ij,ij->i',side1,side1); dot12=np.einsum('ij,ij->i',side1,side2); dot22=np.einsum('ij,ij->i',side2,side2)\n rel1=np.einsum('ij,ij->i',relative,side1); rel2=np.einsum('ij,ij->i',relative,side2)\n denominator=dot11*dot22-dot12*dot12\n bary1=(dot22*rel1-dot12*rel2)/denominator; bary2=(dot11*rel2-dot12*rel1)/denominator\n valid=(bary1>=0)&(bary2>=0)&(bary1+bary2<=1)\n closest=projection.copy(); distance=np.where(valid,np.sum((points-projection)**2,axis=1),np.inf)\n for edge_index in range(3):\n  start=triangles[:,edge_index]; direction=triangles[:,(edge_index+1)%3]-start\n  parameter=np.clip(np.einsum('ij,ij->i',points-start,direction)/np.einsum('ij,ij->i',direction,direction),0,1)\n  candidate=start+parameter[:,None]*direction\n  trial=np.sum((points-candidate)**2,axis=1); better=trial<distance\n  closest[better]=candidate[better]; distance[better]=trial[better]\n return distance,closest\n\ndef surface_distance(name):\n vertices_a,indices_a=geo['Target']; vertices_b,indices_b=geo[name]\n tris_a=vertices_a[indices_a]; tris_b=vertices_b[indices_b]\n best=(float('inf'),None,None); intersections=0\n for offset in range(0,len(tris_a),16):\n  batch=tris_a[offset:offset+16]\n  first=np.repeat(batch,len(tris_b),axis=0); second=np.tile(tris_b,(len(batch),1,1))\n  def record(dist,point_a,point_b):\n   nonlocal best\n   index=int(np.argmin(dist))\n   if dist[index]<best[0]: best=(float(dist[index]),point_a[index].copy(),point_b[index].copy())\n  for corner in range(3):\n   dist,closest=point_triangle(first[:,corner],second); record(dist,first[:,corner],closest)\n   dist,closest=point_triangle(second[:,corner],first); record(dist,closest,second[:,corner])\n  for edge_a in range(3):\n   start_a=first[:,edge_a]; direction_a=first[:,(edge_a+1)%3]-start_a\n   for edge_b in range(3):\n    start_b=second[:,edge_b]; direction_b=second[:,(edge_b+1)%3]-start_b\n    relative=start_a-start_b\n    aa=np.einsum('ij,ij->i',direction_a,direction_a); bb=np.einsum('ij,ij->i',direction_a,direction_b); cc=np.einsum('ij,ij->i',direction_b,direction_b)\n    dd=np.einsum('ij,ij->i',direction_a,relative); ee=np.einsum('ij,ij->i',direction_b,relative)\n    denominator=aa*cc-bb*bb; stable=denominator>1e-14*aa*cc\n    param_a=np.divide(bb*ee-cc*dd,denominator,out=np.zeros_like(aa),where=stable)\n    param_b=np.divide(aa*ee-bb*dd,denominator,out=np.zeros_like(aa),where=stable)\n    valid=stable&(param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n    point_a=start_a+param_a[:,None]*direction_a; point_b=start_b+param_b[:,None]*direction_b\n    dist=np.where(valid,np.sum((point_a-point_b)**2,axis=1),np.inf); record(dist,point_a,point_b)\n  for source,target in [(first,second),(second,first)]:\n   side1=target[:,1]-target[:,0]; side2=target[:,2]-target[:,0]\n   for edge_index in range(3):\n    origin=source[:,edge_index]; direction=source[:,(edge_index+1)%3]-origin\n    cross=np.cross(direction,side2); determinant=np.einsum('ij,ij->i',side1,cross)\n    stable=np.abs(determinant)>1e-14*np.linalg.norm(direction,axis=1)*np.linalg.norm(side1,axis=1)*np.linalg.norm(side2,axis=1)\n    inverse=np.divide(1.,determinant,out=np.zeros_like(determinant),where=stable)\n    relative=origin-target[:,0]; bary1=np.einsum('ij,ij->i',relative,cross)*inverse\n    cross2=np.cross(relative,side1); bary2=np.einsum('ij,ij->i',direction,cross2)*inverse\n    parameter=np.einsum('ij,ij->i',side2,cross2)*inverse\n    hits=stable&(bary1>=0)&(bary2>=0)&(bary1+bary2<=1)&(parameter>=0)&(parameter<=1)\n    intersections+=int(hits.sum())\n return best,intersections\nresults={}\nfor name in names[1:]:\n result,hits=surface_distance(name); results[name]=result\n print(name,'distance_m',format(np.sqrt(result[0]),'.12f'),'Target_xyz',result[1].tolist(),'other_xyz',result[2].tolist(),'intersection_hits',hits)\n"
+    }
+  }
+}

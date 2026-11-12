@@ -1,0 +1,183 @@
+{
+  "binding_scope": "Owner-produced responses and consumer-public events are separate original records; unmatched/missing evidence does not prove delivery.",
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy\nfor name in ['Target','Peer_000','Competing_001','Near_003']:\n obj=bpy.data.objects.get(name)\n print(name, 'MISSING' if obj is None else {'type':obj.type,'matrix_world':[list(row) for row in obj.matrix_world], 'vertices':len(obj.data.vertices) if obj.type=='MESH' else None,'polygons':len(obj.data.polygons) if obj.type=='MESH' else None,'modifiers':[(mod.name,mod.type,mod.show_viewport) for mod in obj.modifiers]})\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Target {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.20999999344348907], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.33000001311302185], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17000000178813934], [0.0, 0.0, 0.0, 1.0]], 'vertices': 256, 'polygons': 508, 'modifiers': []}\\nPeer_000 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.2217537760734558], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.32399648427963257], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17661863565444946], [0.0, 0.0, 0.0, 1.0]], 'vertices': 256, 'polygons': 508, 'modifiers': []}\\nCompeting_001 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.8502799868583679], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, 0.14963190257549286], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17661863565444946], [0.0, 0.0, 0.0, 1.0]], 'vertices': 32, 'polygons': 60, 'modifiers': []}\\nNear_003 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.2117633819580078], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.3323400914669037], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.1785096675157547], [0.0, 0.0, 0.0, 1.0]], 'vertices': 32, 'polygons': 60, 'modifiers': []}\\nunits METRIC 1.0\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "efd6badac855d91e934736603d4c7b094af220d67ca905484b78b82653c29c73"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "ede1c4ccf30d5899cb6b650c8d124db278af689b5326ff990107b27383c63d42"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "523151804c330fcf347533ded986487609c755afe3d0383a3cc0a804aa1e0455"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import numpy as np\nfrom collections import Counter\nnames=['Target','Peer_000','Competing_001','Near_003']\ngeoms={}\ndeps=bpy.context.evaluated_depsgraph_get()\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(deps)\n mesh=obj.to_mesh()\n mesh.calc_loop_triangles()\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)@matrix[:3,:3].T+matrix[:3,3]\n faces=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.array(list({tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3)}))\n counts=Counter(tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3))\n geoms[name]=(verts,faces,edges)\n print(name,'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'closed_manifold_edges',all(v==2 for v in counts.values()))\n obj.to_mesh_clear()\n\ndef closest_vertex_face(points,triangles):\n best=(float('inf'),None,None)\n for start in range(0,len(points),64):\n  pts=points[start:start+64,None,:]\n  origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n  normal=np.cross(edge1,edge2); norm2=np.sum(normal*normal,axis=-1)\n  height=np.sum((pts-origin)*normal,axis=-1)/norm2\n  projection=pts-height[...,None]*normal\n  offset=projection-origin\n  dot11=np.sum(edge1*edge1,axis=-1); dot12=np.sum(edge1*edge2,axis=-1); dot22=np.sum(edge2*edge2,axis=-1)\n  dotp1=np.sum(offset*edge1,axis=-1); dotp2=np.sum(offset*edge2,axis=-1)\n  denom=dot11*dot22-dot12*dot12\n  bary1=(dot22*dotp1-dot12*dotp2)/denom; bary2=(dot11*dotp2-dot12*dotp1)/denom\n  dist2=np.where((bary1>=0)&(bary2>=0)&(bary1+bary2<=1),height*height*norm2,np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pts[idx[0],0].copy(),projection[idx].copy())\n return best\n\ndef closest_edges(va,ea,vb,eb):\n best=(float('inf'),None,None)\n other_start=vb[eb[:,0]][None,:,:]; other_delta=(vb[eb[:,1]]-vb[eb[:,0]])[None,:,:]\n cc=np.sum(other_delta*other_delta,axis=-1)\n for start in range(0,len(ea),64):\n  block=ea[start:start+64]\n  first=va[block[:,0]][:,None,:]; direction=(va[block[:,1]]-va[block[:,0]])[:,None,:]\n  difference=first-other_start\n  aa=np.sum(direction*direction,axis=-1); bb=np.sum(direction*other_delta,axis=-1); dd=np.sum(direction*difference,axis=-1); ee=np.sum(other_delta*difference,axis=-1)\n  denom=aa*cc-bb*bb\n  ss=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=denom>1e-28)\n  ss=np.clip(ss,0,1); tt=(bb*ss+ee)/cc\n  ss=np.where(tt<0,np.clip(-dd/aa,0,1),ss)\n  ss=np.where(tt>1,np.clip((bb-dd)/aa,0,1),ss)\n  tt=np.clip(tt,0,1)\n  pa=first+ss[...,None]*direction; pb=other_start+tt[...,None]*other_delta\n  dist2=np.sum((pa-pb)**2,axis=-1); idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pa[idx].copy(),pb[idx].copy())\n return best\n\ndef intersections(verts,edges,triangles):\n hits=[]\n origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n for start in range(0,len(edges),64):\n  block=edges[start:start+64]; base=verts[block[:,0]][:,None,:]; direction=(verts[block[:,1]]-verts[block[:,0]])[:,None,:]\n  cross=np.cross(direction,edge2); det=np.sum(edge1*cross,axis=-1)\n  inv=np.divide(1.,det,out=np.zeros_like(det),where=np.abs(det)>1e-24)\n  delta=base-origin; uu=np.sum(delta*cross,axis=-1)*inv\n  qq=np.cross(delta,edge1); vv=np.sum(direction*qq,axis=-1)*inv; tt=np.sum(edge2*qq,axis=-1)*inv\n  mask=(np.abs(det)>1e-24)&(uu>=0)&(vv>=0)&(uu+vv<=1)&(tt>=0)&(tt<=1)\n  if np.any(mask):\n   idx=tuple(np.argwhere(mask)[0]); return (base+tt[...,None]*direction)[idx].tolist()\n return None\n\ndef winding(point,triangles):\n delta=triangles-point\n lengths=np.linalg.norm(delta,axis=-1)\n num=np.einsum('ij,ij->i',delta[:,0],np.cross(delta[:,1],delta[:,2]))\n den=np.prod(lengths,axis=1)+np.einsum('ij,ij->i',delta[:,0],delta[:,1])*lengths[:,2]+np.einsum('ij,ij->i',delta[:,1],delta[:,2])*lengths[:,0]+np.einsum('ij,ij->i',delta[:,2],delta[:,0])*lengths[:,1]\n return float(np.sum(2*np.arctan2(num,den))/(4*np.pi))\n\nva,fa,ea=geoms['Target']; results={}\nfor name in names[1:]:\n vb,fb,eb=geoms[name]\n cand1=closest_vertex_face(va,vb[fb]); reverse=closest_vertex_face(vb,va[fa]); cand2=(reverse[0],reverse[2],reverse[1]); cand3=closest_edges(va,ea,vb,eb)\n best=min([cand1,cand2,cand3],key=lambda item:item[0])\n hit=intersections(va,ea,vb[fb]) or intersections(vb,eb,va[fa])\n wa=winding(va[0],vb[fb]); wb=winding(vb[0],va[fa])\n results[name]={'distance_m':float(np.sqrt(best[0])),'target_point_m':best[1].tolist(),'candidate_point_m':best[2].tolist(),'intersection_point':hit,'winding_target_in_other':wa,'winding_other_in_target':wb,'feature_type':['vertex-face','face-vertex','edge-edge'][[cand1,cand2,cand3].index(best)] if False else int(np.argmin([cand1[0],cand2[0],cand3[0]]))}\n print(name,results[name])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"Target world_bounds [0.1655239870802002, -0.3430005299002009, 0.12272405673008246] [1.0184321263402192, 0.3337915478956436, 0.24006570199967714] closed_manifold_edges True\\nPeer_000 world_bounds [0.130586294252861, -0.277990218026301, 0.15310916671772157] [0.9834944425870804, 0.3988018617525161, 0.27045081441298824] closed_manifold_edges True\\nCompeting_001 world_bounds [0.7579744568397258, 0.20836823592468356, 0.1537603053810318] [1.6046545378166253, 0.8739404899115203, 0.27110194721992076] closed_manifold_edges True\\nNear_003 world_bounds [0.1154746620482851, -0.2683178854235483, 0.1579303141949603] [0.9621547430251847, 0.39725436856328844, 0.27527195603384924] closed_manifold_edges True\\nPeer_000 {'distance_m': 0.003000005904956154, 'target_point_m': [0.9179297066838268, 0.26595467923695637, 0.24006568668457556], 'candidate_point_m': [0.9162226216225087, 0.26822005788905945, 0.24104239318388432], 'intersection_point': None, 'winding_target_in_other': -8.834874115176436e-18, 'winding_other_in_target': -3.092205940311753e-17, 'feature_type': 2}\\nCompeting_001 {'distance_m': 0.004999987091379856, 'target_point_m': [0.8624813075766086, 0.2620832725084271, 0.15213248290810252], 'candidate_point_m': [0.8596361787532362, 0.2658588864160165, 0.15376031966687112], 'intersection_point': None, 'winding_target_in_other': -2.760898160992636e-19, 'winding_other_in_target': 2.6504622345529306e-17, 'feature_type': 2}\\nNear_003 {'distance_m': 0.012000011060800224, 'target_point_m': [0.5418663358765196, -0.009263107335736865, 0.2211248236450002], 'candidate_point_m': [0.5350380027776739, -0.0002016022109545268, 0.22503164555341626], 'intersection_point': None, 'winding_target_in_other': 2.3667744824077818e-18, 'winding_other_in_target': 1.766974823035287e-17, 'feature_type': 2}\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "223cdf080540ee9412df35676b0c80e3a218b86f6da56808f395b155bbf1c33e"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "95952c6e51f316d82d475fb1aaa9f18fb8ff3f8be6596dc4f557e32a6c1b3837"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "6b2b6f649d838be92de1676d4132dceab69f6fb6cc3183ef899f5c74f6d68495"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy\nfor name in ['Target','Peer_000','Competing_001','Near_003']:\n obj=bpy.data.objects.get(name)\n print(name, 'MISSING' if obj is None else {'type':obj.type,'matrix_world':[list(row) for row in obj.matrix_world], 'vertices':len(obj.data.vertices) if obj.type=='MESH' else None,'polygons':len(obj.data.polygons) if obj.type=='MESH' else None,'modifiers':[(mod.name,mod.type,mod.show_viewport) for mod in obj.modifiers]})\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "355e857f5b1b81fd21ff644fb9fc0883bd37e6e5480ec5f60926e76ed0d8ab41",
+      "source_sha256": "7599a58bbdf4c1ffb773b3cfeebbf9e07952d7bd80bc9f12c8dd80d0dc2700e9"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy\nfor name in ['Target','Peer_000','Competing_001','Near_003']:\n obj=bpy.data.objects.get(name)\n print(name, 'MISSING' if obj is None else {'type':obj.type,'matrix_world':[list(row) for row in obj.matrix_world], 'vertices':len(obj.data.vertices) if obj.type=='MESH' else None,'polygons':len(obj.data.polygons) if obj.type=='MESH' else None,'modifiers':[(mod.name,mod.type,mod.show_viewport) for mod in obj.modifiers]})\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Target {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.20999999344348907], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.33000001311302185], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17000000178813934], [0.0, 0.0, 0.0, 1.0]], 'vertices': 256, 'polygons': 508, 'modifiers': []}\\nPeer_000 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.2217537760734558], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.32399648427963257], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17661863565444946], [0.0, 0.0, 0.0, 1.0]], 'vertices': 256, 'polygons': 508, 'modifiers': []}\\nCompeting_001 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.8502799868583679], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, 0.14963190257549286], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.17661863565444946], [0.0, 0.0, 0.0, 1.0]], 'vertices': 32, 'polygons': 60, 'modifiers': []}\\nNear_003 {'type': 'MESH', 'matrix_world': [[0.7986355423927307, -0.5690271854400635, 0.1959318071603775, 0.2117633819580078], [0.6018149852752686, 0.7551247477531433, -0.26001033186912537, -0.3323400914669037], [-1.6690741233560402e-08, 0.32556816935539246, 0.9455185532569885, 0.1785096675157547], [0.0, 0.0, 0.0, 1.0]], 'vertices': 32, 'polygons': 60, 'modifiers': []}\\nunits METRIC 1.0\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "debdc64d77c4d0265e162a932e80985c8e02d6253b23d988256b1a622e4d696e",
+      "source_sha256": "7599a58bbdf4c1ffb773b3cfeebbf9e07952d7bd80bc9f12c8dd80d0dc2700e9"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nfrom collections import Counter\nnames=['Target','Peer_000','Competing_001','Near_003']\ngeoms={}\ndeps=bpy.context.evaluated_depsgraph_get()\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(deps)\n mesh=obj.to_mesh()\n mesh.calc_loop_triangles()\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)@matrix[:3,:3].T+matrix[:3,3]\n faces=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.array(list({tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3)}))\n counts=Counter(tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3))\n geoms[name]=(verts,faces,edges)\n print(name,'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'closed_manifold_edges',all(v==2 for v in counts.values()))\n obj.to_mesh_clear()\n\ndef closest_vertex_face(points,triangles):\n best=(float('inf'),None,None)\n for start in range(0,len(points),64):\n  pts=points[start:start+64,None,:]\n  origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n  normal=np.cross(edge1,edge2); norm2=np.sum(normal*normal,axis=-1)\n  height=np.sum((pts-origin)*normal,axis=-1)/norm2\n  projection=pts-height[...,None]*normal\n  offset=projection-origin\n  dot11=np.sum(edge1*edge1,axis=-1); dot12=np.sum(edge1*edge2,axis=-1); dot22=np.sum(edge2*edge2,axis=-1)\n  dotp1=np.sum(offset*edge1,axis=-1); dotp2=np.sum(offset*edge2,axis=-1)\n  denom=dot11*dot22-dot12*dot12\n  bary1=(dot22*dotp1-dot12*dotp2)/denom; bary2=(dot11*dotp2-dot12*dotp1)/denom\n  dist2=np.where((bary1>=0)&(bary2>=0)&(bary1+bary2<=1),height*height*norm2,np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pts[idx[0],0].copy(),projection[idx].copy())\n return best\n\ndef closest_edges(va,ea,vb,eb):\n best=(float('inf'),None,None)\n other_start=vb[eb[:,0]][None,:,:]; other_delta=(vb[eb[:,1]]-vb[eb[:,0]])[None,:,:]\n cc=np.sum(other_delta*other_delta,axis=-1)\n for start in range(0,len(ea),64):\n  block=ea[start:start+64]\n  first=va[block[:,0]][:,None,:]; direction=(va[block[:,1]]-va[block[:,0]])[:,None,:]\n  difference=first-other_start\n  aa=np.sum(direction*direction,axis=-1); bb=np.sum(direction*other_delta,axis=-1); dd=np.sum(direction*difference,axis=-1); ee=np.sum(other_delta*difference,axis=-1)\n  denom=aa*cc-bb*bb\n  ss=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=denom>1e-28)\n  ss=np.clip(ss,0,1); tt=(bb*ss+ee)/cc\n  ss=np.where(tt<0,np.clip(-dd/aa,0,1),ss)\n  ss=np.where(tt>1,np.clip((bb-dd)/aa,0,1),ss)\n  tt=np.clip(tt,0,1)\n  pa=first+ss[...,None]*direction; pb=other_start+tt[...,None]*other_delta\n  dist2=np.sum((pa-pb)**2,axis=-1); idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pa[idx].copy(),pb[idx].copy())\n return best\n\ndef intersections(verts,edges,triangles):\n hits=[]\n origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n for start in range(0,len(edges),64):\n  block=edges[start:start+64]; base=verts[block[:,0]][:,None,:]; direction=(verts[block[:,1]]-verts[block[:,0]])[:,None,:]\n  cross=np.cross(direction,edge2); det=np.sum(edge1*cross,axis=-1)\n  inv=np.divide(1.,det,out=np.zeros_like(det),where=np.abs(det)>1e-24)\n  delta=base-origin; uu=np.sum(delta*cross,axis=-1)*inv\n  qq=np.cross(delta,edge1); vv=np.sum(direction*qq,axis=-1)*inv; tt=np.sum(edge2*qq,axis=-1)*inv\n  mask=(np.abs(det)>1e-24)&(uu>=0)&(vv>=0)&(uu+vv<=1)&(tt>=0)&(tt<=1)\n  if np.any(mask):\n   idx=tuple(np.argwhere(mask)[0]); return (base+tt[...,None]*direction)[idx].tolist()\n return None\n\ndef winding(point,triangles):\n delta=triangles-point\n lengths=np.linalg.norm(delta,axis=-1)\n num=np.einsum('ij,ij->i',delta[:,0],np.cross(delta[:,1],delta[:,2]))\n den=np.prod(lengths,axis=1)+np.einsum('ij,ij->i',delta[:,0],delta[:,1])*lengths[:,2]+np.einsum('ij,ij->i',delta[:,1],delta[:,2])*lengths[:,0]+np.einsum('ij,ij->i',delta[:,2],delta[:,0])*lengths[:,1]\n return float(np.sum(2*np.arctan2(num,den))/(4*np.pi))\n\nva,fa,ea=geoms['Target']; results={}\nfor name in names[1:]:\n vb,fb,eb=geoms[name]\n cand1=closest_vertex_face(va,vb[fb]); reverse=closest_vertex_face(vb,va[fa]); cand2=(reverse[0],reverse[2],reverse[1]); cand3=closest_edges(va,ea,vb,eb)\n best=min([cand1,cand2,cand3],key=lambda item:item[0])\n hit=intersections(va,ea,vb[fb]) or intersections(vb,eb,va[fa])\n wa=winding(va[0],vb[fb]); wb=winding(vb[0],va[fa])\n results[name]={'distance_m':float(np.sqrt(best[0])),'target_point_m':best[1].tolist(),'candidate_point_m':best[2].tolist(),'intersection_point':hit,'winding_target_in_other':wa,'winding_other_in_target':wb,'feature_type':['vertex-face','face-vertex','edge-edge'][[cand1,cand2,cand3].index(best)] if False else int(np.argmin([cand1[0],cand2[0],cand3[0]]))}\n print(name,results[name])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "b823cdb680043d51b25d1055e985927f0983e3dcccb9a701506cd6ce965c7e77",
+      "source_sha256": "7599a58bbdf4c1ffb773b3cfeebbf9e07952d7bd80bc9f12c8dd80d0dc2700e9"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import numpy as np\nfrom collections import Counter\nnames=['Target','Peer_000','Competing_001','Near_003']\ngeoms={}\ndeps=bpy.context.evaluated_depsgraph_get()\nfor name in names:\n obj=bpy.data.objects[name].evaluated_get(deps)\n mesh=obj.to_mesh()\n mesh.calc_loop_triangles()\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64)@matrix[:3,:3].T+matrix[:3,3]\n faces=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=int)\n edges=np.array(list({tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3)}))\n counts=Counter(tuple(sorted((int(face[k]),int(face[(k+1)%3])))) for face in faces for k in range(3))\n geoms[name]=(verts,faces,edges)\n print(name,'world_bounds',verts.min(axis=0).tolist(),verts.max(axis=0).tolist(),'closed_manifold_edges',all(v==2 for v in counts.values()))\n obj.to_mesh_clear()\n\ndef closest_vertex_face(points,triangles):\n best=(float('inf'),None,None)\n for start in range(0,len(points),64):\n  pts=points[start:start+64,None,:]\n  origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n  normal=np.cross(edge1,edge2); norm2=np.sum(normal*normal,axis=-1)\n  height=np.sum((pts-origin)*normal,axis=-1)/norm2\n  projection=pts-height[...,None]*normal\n  offset=projection-origin\n  dot11=np.sum(edge1*edge1,axis=-1); dot12=np.sum(edge1*edge2,axis=-1); dot22=np.sum(edge2*edge2,axis=-1)\n  dotp1=np.sum(offset*edge1,axis=-1); dotp2=np.sum(offset*edge2,axis=-1)\n  denom=dot11*dot22-dot12*dot12\n  bary1=(dot22*dotp1-dot12*dotp2)/denom; bary2=(dot11*dotp2-dot12*dotp1)/denom\n  dist2=np.where((bary1>=0)&(bary2>=0)&(bary1+bary2<=1),height*height*norm2,np.inf)\n  idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pts[idx[0],0].copy(),projection[idx].copy())\n return best\n\ndef closest_edges(va,ea,vb,eb):\n best=(float('inf'),None,None)\n other_start=vb[eb[:,0]][None,:,:]; other_delta=(vb[eb[:,1]]-vb[eb[:,0]])[None,:,:]\n cc=np.sum(other_delta*other_delta,axis=-1)\n for start in range(0,len(ea),64):\n  block=ea[start:start+64]\n  first=va[block[:,0]][:,None,:]; direction=(va[block[:,1]]-va[block[:,0]])[:,None,:]\n  difference=first-other_start\n  aa=np.sum(direction*direction,axis=-1); bb=np.sum(direction*other_delta,axis=-1); dd=np.sum(direction*difference,axis=-1); ee=np.sum(other_delta*difference,axis=-1)\n  denom=aa*cc-bb*bb\n  ss=np.divide(bb*ee-cc*dd,denom,out=np.zeros_like(denom),where=denom>1e-28)\n  ss=np.clip(ss,0,1); tt=(bb*ss+ee)/cc\n  ss=np.where(tt<0,np.clip(-dd/aa,0,1),ss)\n  ss=np.where(tt>1,np.clip((bb-dd)/aa,0,1),ss)\n  tt=np.clip(tt,0,1)\n  pa=first+ss[...,None]*direction; pb=other_start+tt[...,None]*other_delta\n  dist2=np.sum((pa-pb)**2,axis=-1); idx=np.unravel_index(np.argmin(dist2),dist2.shape)\n  if dist2[idx]<best[0]: best=(float(dist2[idx]),pa[idx].copy(),pb[idx].copy())\n return best\n\ndef intersections(verts,edges,triangles):\n hits=[]\n origin=triangles[None,:,0,:]; edge1=triangles[None,:,1,:]-origin; edge2=triangles[None,:,2,:]-origin\n for start in range(0,len(edges),64):\n  block=edges[start:start+64]; base=verts[block[:,0]][:,None,:]; direction=(verts[block[:,1]]-verts[block[:,0]])[:,None,:]\n  cross=np.cross(direction,edge2); det=np.sum(edge1*cross,axis=-1)\n  inv=np.divide(1.,det,out=np.zeros_like(det),where=np.abs(det)>1e-24)\n  delta=base-origin; uu=np.sum(delta*cross,axis=-1)*inv\n  qq=np.cross(delta,edge1); vv=np.sum(direction*qq,axis=-1)*inv; tt=np.sum(edge2*qq,axis=-1)*inv\n  mask=(np.abs(det)>1e-24)&(uu>=0)&(vv>=0)&(uu+vv<=1)&(tt>=0)&(tt<=1)\n  if np.any(mask):\n   idx=tuple(np.argwhere(mask)[0]); return (base+tt[...,None]*direction)[idx].tolist()\n return None\n\ndef winding(point,triangles):\n delta=triangles-point\n lengths=np.linalg.norm(delta,axis=-1)\n num=np.einsum('ij,ij->i',delta[:,0],np.cross(delta[:,1],delta[:,2]))\n den=np.prod(lengths,axis=1)+np.einsum('ij,ij->i',delta[:,0],delta[:,1])*lengths[:,2]+np.einsum('ij,ij->i',delta[:,1],delta[:,2])*lengths[:,0]+np.einsum('ij,ij->i',delta[:,2],delta[:,0])*lengths[:,1]\n return float(np.sum(2*np.arctan2(num,den))/(4*np.pi))\n\nva,fa,ea=geoms['Target']; results={}\nfor name in names[1:]:\n vb,fb,eb=geoms[name]\n cand1=closest_vertex_face(va,vb[fb]); reverse=closest_vertex_face(vb,va[fa]); cand2=(reverse[0],reverse[2],reverse[1]); cand3=closest_edges(va,ea,vb,eb)\n best=min([cand1,cand2,cand3],key=lambda item:item[0])\n hit=intersections(va,ea,vb[fb]) or intersections(vb,eb,va[fa])\n wa=winding(va[0],vb[fb]); wb=winding(vb[0],va[fa])\n results[name]={'distance_m':float(np.sqrt(best[0])),'target_point_m':best[1].tolist(),'candidate_point_m':best[2].tolist(),'intersection_point':hit,'winding_target_in_other':wa,'winding_other_in_target':wb,'feature_type':['vertex-face','face-vertex','edge-edge'][[cand1,cand2,cand3].index(best)] if False else int(np.argmin([cand1[0],cand2[0],cand3[0]]))}\n print(name,results[name])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"Target world_bounds [0.1655239870802002, -0.3430005299002009, 0.12272405673008246] [1.0184321263402192, 0.3337915478956436, 0.24006570199967714] closed_manifold_edges True\\nPeer_000 world_bounds [0.130586294252861, -0.277990218026301, 0.15310916671772157] [0.9834944425870804, 0.3988018617525161, 0.27045081441298824] closed_manifold_edges True\\nCompeting_001 world_bounds [0.7579744568397258, 0.20836823592468356, 0.1537603053810318] [1.6046545378166253, 0.8739404899115203, 0.27110194721992076] closed_manifold_edges True\\nNear_003 world_bounds [0.1154746620482851, -0.2683178854235483, 0.1579303141949603] [0.9621547430251847, 0.39725436856328844, 0.27527195603384924] closed_manifold_edges True\\nPeer_000 {'distance_m': 0.003000005904956154, 'target_point_m': [0.9179297066838268, 0.26595467923695637, 0.24006568668457556], 'candidate_point_m': [0.9162226216225087, 0.26822005788905945, 0.24104239318388432], 'intersection_point': None, 'winding_target_in_other': -8.834874115176436e-18, 'winding_other_in_target': -3.092205940311753e-17, 'feature_type': 2}\\nCompeting_001 {'distance_m': 0.004999987091379856, 'target_point_m': [0.8624813075766086, 0.2620832725084271, 0.15213248290810252], 'candidate_point_m': [0.8596361787532362, 0.2658588864160165, 0.15376031966687112], 'intersection_point': None, 'winding_target_in_other': -2.760898160992636e-19, 'winding_other_in_target': 2.6504622345529306e-17, 'feature_type': 2}\\nNear_003 {'distance_m': 0.012000011060800224, 'target_point_m': [0.5418663358765196, -0.009263107335736865, 0.2211248236450002], 'candidate_point_m': [0.5350380027776739, -0.0002016022109545268, 0.22503164555341626], 'intersection_point': None, 'winding_target_in_other': 2.3667744824077818e-18, 'winding_other_in_target': 1.766974823035287e-17, 'feature_type': 2}\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "79af836ed9d7107b2a415a8ee6abfdaae3eabdfc5c2d74952d0dc280ea027fcf",
+      "source_sha256": "7599a58bbdf4c1ffb773b3cfeebbf9e07952d7bd80bc9f12c8dd80d0dc2700e9"
+    }
+  ]
+}
