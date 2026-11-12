@@ -1,0 +1,3285 @@
+{
+  "schema": "independent-grooved-rail-cost-audit-v1",
+  "original_commit": "4a90bbe95ef46c6666050ef1a1096fc6719c3b97",
+  "implementation_head": "ea70339772159e5f0279784ebe18b1bf16e70439",
+  "quality_seal_sha256": "a493bd997b2003c595795ad90ae3bc9420e9a2a884a0adcf6225493f880f0c21",
+  "denominator": {
+    "cells": 6,
+    "arms": 2,
+    "per_arm": 3,
+    "pairs": 3,
+    "distinct_tasks": 1,
+    "distinct_scenes": 1,
+    "facts_per_cell": 13
+  },
+  "contract": {
+    "all_six_retained": true,
+    "full_correct_per_arm_required": 3,
+    "missing_usage_or_failed_or_not_run": "main useful-benefit gate cannot pass",
+    "quality_before_cost": true,
+    "unmeasured": [
+      "fees unless exposed",
+      "resolved model/effort unless exposed",
+      "provider request count unless exposed"
+    ],
+    "usage": "final cumulative per cell; deduplicate request-level data and exclude overlapping cached/reasoning subitems",
+    "useful_benefit": "P median full-cell time <=N and P cumulative actual input+output tokens <=N, at least one improves >=10%"
+  },
+  "cells": [
+    {
+      "cell": "grc01",
+      "group": "N",
+      "round": 1,
+      "task": "T1",
+      "anonymous_id": "answer_1e64fe6d4aa9d4b6",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 26996,
+        "cached_input_tokens": 18944,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2112,
+        "reasoning_output_tokens": 51,
+        "input_plus_output": 29108,
+        "uncached_input": 8052
+      },
+      "full_ns": 64364423400,
+      "segments_ns": {
+        "pre_consumer": 1188704400,
+        "consumer_to_popen": 956000,
+        "popen_to_prompt": 6971800,
+        "prompt_to_final": 60285891500,
+        "final_to_turn": 878600,
+        "turn_to_exit": 2671052000,
+        "exit_to_cleanup": 5763500,
+        "cleanup_to_cell_end": 204205600
+      },
+      "consumer_wall_ns": 62971513400,
+      "nested": {
+        "owner_finish_ns": 202475600,
+        "native_startup_ns": 749697800,
+        "public_tool_interval_union_ns": 457858900,
+        "actor_handlers_ns": 434068500,
+        "prompt_outside_public_tool_intervals_ns": 59828032600
+      },
+      "budgets": {
+        "original_cell_start_ns": 588243903532900,
+        "original_cell_deadline_ns": 588813903532900,
+        "inherited_deadlines": {
+          "row": 588813903532900,
+          "launch": 588813903532900,
+          "actor_config": 588813903532900,
+          "endpoint": 588813903532900,
+          "native_config": 588813903532900,
+          "session": 588813903532900,
+          "ready": 588813903532900,
+          "closed": 588813903532900,
+          "close": 588813903532900,
+          "close_response": 588813903532900
+        },
+        "native_receipt_deadlines": {
+          "owner/tool_01/NATIVE_RECEIPT.json": 588813903532900,
+          "owner/tool_02/NATIVE_RECEIPT.json": 588813903532900,
+          "owner/tool_03/NATIVE_RECEIPT.json": 588813903532900,
+          "owner/INITIAL.json.receipt.json": 588813903532900,
+          "owner/FINAL.json.receipt.json": 588813903532900
+        },
+        "consumer_started_ns": 588245092237300,
+        "consumer_deadline_ns": 588695092237300,
+        "consumer_turn_elapsed_ns": 60294697900,
+        "prepare_started_ns": 588244093376800,
+        "actor_deadline_ns": 588284093376800,
+        "actor_ready_elapsed_upper_bound_ns": 998860500,
+        "attempts": 3,
+        "host_physical_including_close": 6,
+        "host_nonclose": 5,
+        "response_prefixes": [
+          545,
+          3942,
+          6017
+        ],
+        "max_code_utf8_bytes": 4434,
+        "product_absolute_cell_deadline_exposed": null
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588257383957100,
+          "handler_ns": 146282800,
+          "public_started_ns": 588257366710000,
+          "public_ended_ns": 588257531782900,
+          "tx_bytes": 1474,
+          "rx_bytes": 545,
+          "text_utf8_bytes": 438,
+          "cumulative_rx_bytes": 545,
+          "code_utf8_bytes": 466,
+          "arguments": {
+            "code": "import bpy, numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nfor name in ['Target','Part_A','Part_B','Part_C']:\n obj=bpy.data.objects.get(name)\n print(name, 'MISSING' if obj is None else (obj.type,tuple(obj.location),len(obj.data.vertices) if obj.type=='MESH' else None,[(mod.name,mod.type,mod.show_viewport) for mod in obj.modifiers]))\n"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588264627067900,
+          "handler_ns": 36109300,
+          "public_started_ns": 588264625686800,
+          "public_ended_ns": 588264664302400,
+          "tx_bytes": 1642,
+          "rx_bytes": 3397,
+          "text_utf8_bytes": 3287,
+          "cumulative_rx_bytes": 3942,
+          "code_utf8_bytes": 628,
+          "arguments": {
+            "code": "dg=bpy.context.evaluated_depsgraph_get()\ngeom={}\nfor name in ['Target','Part_A','Part_B','Part_C']:\n obj=bpy.data.objects[name].evaluated_get(dg)\n mesh=obj.to_mesh();mesh.calc_loop_triangles()\n matrix=np.array(obj.matrix_world,dtype=np.float64)\n verts=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n verts=verts@matrix[:3,:3].T+matrix[:3,3]\n tris=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=int)\n geom[name]=(verts,tris)\n print(name,'world vertices',verts.tolist(),'triangles',tris.tolist())\n print('edges',[(tuple(edge.vertices),edge.is_loose) for edge in mesh.edges])\n obj.to_mesh_clear()\n"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 3,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588294638859600,
+          "handler_ns": 251676400,
+          "public_started_ns": 588294637551000,
+          "public_ended_ns": 588294891721400,
+          "tx_bytes": 5498,
+          "rx_bytes": 2075,
+          "text_utf8_bytes": 1964,
+          "cumulative_rx_bytes": 6017,
+          "code_utf8_bytes": 4434,
+          "arguments": {
+            "code": "def point_segment(point,start,end):\n direction=end-start\n param=np.clip(np.dot(point-start,direction)/np.dot(direction,direction),0.,1.)\n return start+param*direction\n\ndef point_triangle(point,triangle):\n start,second,third=triangle\n first_edge=second-start;second_edge=third-start\n normal=np.cross(first_edge,second_edge)\n projected=point-normal*(np.dot(point-start,normal)/np.dot(normal,normal))\n bary=np.linalg.solve(np.array([[np.dot(first_edge,first_edge),np.dot(first_edge,second_edge)],[np.dot(first_edge,second_edge),np.dot(second_edge,second_edge)]]),np.array([np.dot(projected-start,first_edge),np.dot(projected-start,second_edge)]))\n if min(bary)>=-1e-14 and sum(bary)<=1.+1e-14:return projected\n candidates=[point_segment(point,triangle[index],triangle[(index+1)%3]) for index in range(3)]\n return min(candidates,key=lambda candidate:np.dot(candidate-point,candidate-point))\n\ndef segment_segment(first_start,first_end,second_start,second_end):\n first_dir=first_end-first_start;second_dir=second_end-second_start;offset=first_start-second_start\n candidates=[(first_start,point_segment(first_start,second_start,second_end)),(first_end,point_segment(first_end,second_start,second_end)),(point_segment(second_start,first_start,first_end),second_start),(point_segment(second_end,first_start,first_end),second_end)]\n system=np.array([[np.dot(first_dir,first_dir),-np.dot(first_dir,second_dir)],[-np.dot(first_dir,second_dir),np.dot(second_dir,second_dir)]])\n if abs(np.linalg.det(system))>1e-28:\n  params=np.linalg.solve(system,np.array([-np.dot(first_dir,offset),np.dot(second_dir,offset)]))\n  if np.all(params>=0) and np.all(params<=1):candidates.append((first_start+params[0]*first_dir,second_start+params[1]*second_dir))\n return min(candidates,key=lambda pair:np.dot(pair[0]-pair[1],pair[0]-pair[1]))\n\ndef segment_triangle(start,end,triangle):\n first_edge=triangle[1]-triangle[0];second_edge=triangle[2]-triangle[0]\n system=np.column_stack((end-start,-first_edge,-second_edge))\n if abs(np.linalg.det(system))<1e-22:return None\n params=np.linalg.solve(system,triangle[0]-start)\n if 0<=params[0]<=1 and params[1]>=0 and params[2]>=0 and params[1]+params[2]<=1:return start+params[0]*(end-start)\n return None\n\ndef winding(point,vertices,triangles):\n total=0.\n for triangle in vertices[triangles]:\n  offsets=triangle-point;lengths=np.linalg.norm(offsets,axis=1)\n  numerator=np.dot(offsets[0],np.cross(offsets[1],offsets[2]))\n  denominator=np.prod(lengths)+np.dot(offsets[0],offsets[1])*lengths[2]+np.dot(offsets[1],offsets[2])*lengths[0]+np.dot(offsets[2],offsets[0])*lengths[1]\n  total+=2*np.arctan2(numerator,denominator)\n return total/(4*np.pi)\n\nresults={}\nfor name in ['Part_A','Part_B','Part_C']:\n target_verts,target_tris=geom['Target'];part_verts,part_tris=geom[name]\n candidates=[];intersections=[]\n for target_index,target_tri in enumerate(target_verts[target_tris]):\n  for part_index,part_tri in enumerate(part_verts[part_tris]):\n   for vertex in target_tri:candidates.append((vertex,point_triangle(vertex,part_tri),'target vertex / part face',target_index,part_index))\n   for vertex in part_tri:candidates.append((point_triangle(vertex,target_tri),vertex,'target face / part vertex',target_index,part_index))\n   for edge_index in range(3):\n    hit=segment_triangle(target_tri[edge_index],target_tri[(edge_index+1)%3],part_tri)\n    if hit is not None:intersections.append(hit)\n    hit=segment_triangle(part_tri[edge_index],part_tri[(edge_index+1)%3],target_tri)\n    if hit is not None:intersections.append(hit)\n    for other_edge in range(3):\n     point_target,point_part=segment_segment(target_tri[edge_index],target_tri[(edge_index+1)%3],part_tri[other_edge],part_tri[(other_edge+1)%3])\n     candidates.append((point_target,point_part,'edge / edge',target_index,part_index))\n best=min(candidates,key=lambda item:np.linalg.norm(item[0]-item[1]))\n distance=np.linalg.norm(best[0]-best[1])\n results[name]=(distance,best)\n print(name,'distance_m',format(distance,'.15f'),'distance_mm',format(distance*1000,'.12f'),'target_point', [format(value,'.12f') for value in best[0]],'part_point',[format(value,'.12f') for value in best[1]],'feature',best[2:],'intersections',len(intersections))\n print('part vertex windings in target',[round(winding(vertex,target_verts,target_tris),9) for vertex in part_verts])\n print('target vertex windings in part',[round(winding(vertex,part_verts,part_tris),9) for vertex in target_verts])\n"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 26479600
+        },
+        {
+          "sequence": 2,
+          "kind": "consumer_native",
+          "utf8_bytes": 466,
+          "disk_bytes": 473,
+          "elapsed_ns": 138254800
+        },
+        {
+          "sequence": 3,
+          "kind": "consumer_native",
+          "utf8_bytes": 628,
+          "disk_bytes": 641,
+          "elapsed_ns": 28234400
+        },
+        {
+          "sequence": 4,
+          "kind": "consumer_native",
+          "utf8_bytes": 4434,
+          "disk_bytes": 4497,
+          "elapsed_ns": 242763600
+        },
+        {
+          "sequence": 5,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 20721400
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "consumer_native": 3
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "consumer_frames_tx_bytes": 8973,
+      "consumer_frames_rx_bytes": 6747,
+      "public_schema_rx_bytes": 575,
+      "public_schema_tool_count": 1,
+      "plugin_frames": [],
+      "plugin_receipts": [],
+      "traces": [],
+      "task_work": [],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": null,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    },
+    {
+      "cell": "grc02",
+      "group": "P",
+      "round": 1,
+      "task": "T1",
+      "anonymous_id": "answer_05363860e6cd01e3",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 13977,
+        "cached_input_tokens": 5760,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 499,
+        "reasoning_output_tokens": 0,
+        "input_plus_output": 14476,
+        "uncached_input": 8217
+      },
+      "full_ns": 24171870500,
+      "segments_ns": {
+        "pre_consumer": 1980544900,
+        "consumer_to_popen": 729100,
+        "popen_to_prompt": 6549700,
+        "prompt_to_final": 18533967500,
+        "final_to_turn": 967100,
+        "turn_to_exit": 3358909200,
+        "exit_to_cleanup": 5624100,
+        "cleanup_to_cell_end": 284578900
+      },
+      "consumer_wall_ns": 21906746700,
+      "nested": {
+        "owner_finish_ns": 283150600,
+        "native_startup_ns": 723857400,
+        "public_tool_interval_union_ns": 124057700,
+        "actor_handlers_ns": 120827700,
+        "prompt_outside_public_tool_intervals_ns": 18409909800
+      },
+      "budgets": {
+        "original_cell_start_ns": 588308273289800,
+        "original_cell_deadline_ns": 588878273289800,
+        "inherited_deadlines": {
+          "row": 588878273289800,
+          "launch": 588878273289800,
+          "actor_config": 588878273289800,
+          "endpoint": 588878273289800,
+          "native_config": 588878273289800,
+          "session": 588878273289800,
+          "ready": 588878273289800,
+          "closed": 588878273289800,
+          "close": 588878273289800,
+          "close_response": 588878273289800
+        },
+        "native_receipt_deadlines": {
+          "owner/INITIAL.json.receipt.json": 588878273289800,
+          "owner/FINAL.json.receipt.json": 588878273289800
+        },
+        "consumer_started_ns": 588310253834700,
+        "consumer_deadline_ns": 588760253834700,
+        "consumer_turn_elapsed_ns": 18542213400,
+        "prepare_started_ns": 588308482436100,
+        "actor_deadline_ns": 588348482436100,
+        "actor_ready_elapsed_upper_bound_ns": 1771398600,
+        "attempts": 1,
+        "host_physical_including_close": 4,
+        "host_nonclose": 3,
+        "response_prefixes": [
+          7997
+        ],
+        "max_code_utf8_bytes": 88728,
+        "product_absolute_cell_deadline_exposed": false
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "failed": false,
+          "handler_started_ns": 588316646282500,
+          "handler_ns": 120827700,
+          "public_started_ns": 588316644573500,
+          "public_ended_ns": 588316768631200,
+          "tx_bytes": 1244,
+          "rx_bytes": 7997,
+          "text_utf8_bytes": 7341,
+          "cumulative_rx_bytes": 7997,
+          "code_utf8_bytes": 0,
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "mode": "task",
+              "target": {
+                "name": "Target"
+              },
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "requested_facts": [
+                "closed_solid_relation",
+                "surface_proximity",
+                "spatial_relation"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 12710400
+        },
+        {
+          "sequence": 2,
+          "kind": "product_capture",
+          "utf8_bytes": 88728,
+          "disk_bytes": 88760,
+          "elapsed_ns": 67035900
+        },
+        {
+          "sequence": 3,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 12297600
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "product_capture": 1
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "consumer_frames_tx_bytes": 1603,
+      "consumer_frames_rx_bytes": 20937,
+      "public_schema_rx_bytes": 12785,
+      "public_schema_tool_count": 2,
+      "plugin_frames": [
+        {
+          "path": "cells/grc02/owner/plugin/001",
+          "tx_bytes": 205,
+          "rx_bytes": 2152,
+          "method": "initialize"
+        },
+        {
+          "path": "cells/grc02/owner/plugin/002",
+          "tx_bytes": 55,
+          "rx_bytes": 0,
+          "method": "notifications/initialized"
+        },
+        {
+          "path": "cells/grc02/owner/plugin/003",
+          "tx_bytes": 60,
+          "rx_bytes": 24221,
+          "method": "tools/list"
+        },
+        {
+          "path": "cells/grc02/owner/plugin/004",
+          "tx_bytes": 54,
+          "rx_bytes": 56,
+          "method": "ping"
+        },
+        {
+          "path": "cells/grc02/owner/plugin/005",
+          "tx_bytes": 1244,
+          "rx_bytes": 8009,
+          "method": "tools/call"
+        }
+      ],
+      "plugin_receipts": [
+        {
+          "request_id": "private-init",
+          "method": "initialize",
+          "started_ns": 588309433549400,
+          "elapsed_ns": 776567200,
+          "sent_bytes": 205,
+          "attempted_send_bytes": 205,
+          "send_confirmed": true,
+          "received_bytes": 2152,
+          "error": null
+        },
+        {
+          "request_id": null,
+          "method": "notifications/initialized",
+          "started_ns": 588310211200200,
+          "elapsed_ns": 405800,
+          "sent_bytes": 55,
+          "attempted_send_bytes": 55,
+          "send_confirmed": true,
+          "received_bytes": 0,
+          "error": null
+        },
+        {
+          "request_id": "private-list",
+          "method": "tools/list",
+          "started_ns": 588310212185000,
+          "elapsed_ns": 2315200,
+          "sent_bytes": 60,
+          "attempted_send_bytes": 60,
+          "send_confirmed": true,
+          "received_bytes": 24221,
+          "error": null
+        },
+        {
+          "request_id": "private-ping",
+          "method": "ping",
+          "started_ns": 588310216313400,
+          "elapsed_ns": 874800,
+          "sent_bytes": 54,
+          "attempted_send_bytes": 54,
+          "send_confirmed": true,
+          "received_bytes": 56,
+          "error": null
+        },
+        {
+          "request_id": 2,
+          "method": "tools/call",
+          "started_ns": 588316646844300,
+          "elapsed_ns": 118885000,
+          "sent_bytes": 1244,
+          "attempted_send_bytes": 1244,
+          "send_confirmed": true,
+          "received_bytes": 8009,
+          "error": null
+        }
+      ],
+      "traces": [
+        {
+          "trace_id": "9bde1705cb694a0d95748a7cda7bf3e5",
+          "operation": "startup.service_construct",
+          "outcome": "configured",
+          "duration_ns": 34241700,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "45631f737fdf4b20b2281f8960408483",
+              "parent_span_id": null,
+              "name": "startup.service_construct",
+              "kind": "startup",
+              "source_name": "service_constructor",
+              "start_offset_ns": 1451700,
+              "duration_ns": 32772500,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "d15b5f5b8c084c80bacd59cb45d9d300",
+              "parent_span_id": "45631f737fdf4b20b2281f8960408483",
+              "name": "runtime.source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 34015000,
+              "duration_ns": 20500,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "fe651047ff7f4efeaab50924f52afe31",
+              "parent_span_id": "45631f737fdf4b20b2281f8960408483",
+              "name": "runtime.host_source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 34050300,
+              "duration_ns": 169500,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "request_origin": "production_launcher",
+            "source_name": "service_constructor_only"
+          },
+          "peak_rss": {
+            "bytes": 93843456,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        },
+        {
+          "trace_id": "b65ea3b0594e4019b28a24c7a0fee710",
+          "operation": "mcp.observe",
+          "outcome": "observed",
+          "duration_ns": 117286900,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "94e8d0ed82094ab4860e31ea288ead37",
+              "parent_span_id": null,
+              "name": "service.observe",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 363000,
+              "duration_ns": 116474000,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "6648b6f4ebd042a987d365cd990462e7",
+              "parent_span_id": "94e8d0ed82094ab4860e31ea288ead37",
+              "name": "host.capture",
+              "kind": "host",
+              "source_name": "live_service",
+              "start_offset_ns": 396500,
+              "duration_ns": 72270200,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "da3e7641f3504acab87455792648355e",
+              "parent_span_id": "94e8d0ed82094ab4860e31ea288ead37",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 72717000,
+              "duration_ns": 4341700,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "03c5b37cba014129b6ab97cea61e576f",
+              "parent_span_id": "da3e7641f3504acab87455792648355e",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 72740300,
+              "duration_ns": 4313700,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "c455ed0248e345eab0d56e4d17ee02f9",
+              "parent_span_id": "03c5b37cba014129b6ab97cea61e576f",
+              "name": "scene.hash",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 76915000,
+              "duration_ns": 118800,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "421a82a8ada84b97ad2e7855323a7e20",
+              "parent_span_id": "94e8d0ed82094ab4860e31ea288ead37",
+              "name": "observation.task_facts",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 77063700,
+              "duration_ns": 39164000,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "0cc953000d5f4cffabef2d06e062d338",
+              "parent_span_id": null,
+              "name": "mcp.content_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 116863900,
+              "duration_ns": 67900,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "332702647966480d95d69a5e7a2caa05",
+              "parent_span_id": null,
+              "name": "mcp.wire_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 116947500,
+              "duration_ns": 298500,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "80b14a9374c0469da555a5e384b34798",
+              "parent_span_id": null,
+              "name": "mcp.stdio_write",
+              "kind": "io",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 117250200,
+              "duration_ns": 26900,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 38348,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "build_id": "sha256:2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390",
+            "include_image": false,
+            "image_request_source": "mcp_transport",
+            "image_request_scope": "outer_request_not_nested_stage",
+            "mcp_request_id": 2,
+            "mcp_request_id_type": "integer",
+            "request_origin": "mcp",
+            "request_budget_s": 30.0,
+            "request_budget_scope": "cooperative_service_entry_through_mcp_prewrite_checkpoints",
+            "scene_fingerprint": "ed5c92db6db0b2cf5feba414017d5480f644795319d61a9e9e32787dc3725b07",
+            "object_count": 4,
+            "vertex_count": 26,
+            "face_count": 36,
+            "service_image_present": false,
+            "image_artifact_scope": "local_result_payload_not_model_consumption",
+            "status": "observed",
+            "mcp_native_image_block_count": 0,
+            "delivery": "stdio_write_completed",
+            "output_bytes": 8008
+          },
+          "peak_rss": {
+            "bytes": 93843456,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        }
+      ],
+      "task_work": [
+        {
+          "exact_pair_count": 0,
+          "surface_pair_count": 3,
+          "closed_solid_pair_count": 3,
+          "pair_cache_hit": false,
+          "surface_pair_cache_hits": 0,
+          "closed_solid_pair_cache_hits": 0,
+          "pair_calls": 3,
+          "rank_calls": 1,
+          "pairs": [
+            {
+              "candidate_index": 0,
+              "object_id": "blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 89,
+                "point_face_tests": 534,
+                "point_edge_tests": 1602,
+                "edge_edge_tests": 801,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 7,
+                "work_units": 3953,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 89,
+                "plane_projection_tests": 534,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 3914,
+                "work_units_after": 3953,
+                "reason": "spatial_support_not_strictly_separated"
+              },
+              "closed_solid_work": {
+                "work_units": 2618,
+                "pair_tests": 26,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 0,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 195,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 183,
+                "plane_projection_tests": 795,
+                "plane_side_tests": 265,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 47,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 1,
+              "object_id": "blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 36,
+                "point_face_tests": 216,
+                "point_edge_tests": 648,
+                "edge_edge_tests": 324,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 60,
+                "work_units": 1780,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 36,
+                "plane_projection_tests": 216,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 1741,
+                "work_units_after": 1780,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2594,
+                "pair_tests": 32,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 6,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 204,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 174,
+                "plane_projection_tests": 792,
+                "plane_side_tests": 264,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 32,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 2,
+              "object_id": "blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 56,
+                "point_face_tests": 336,
+                "point_edge_tests": 1008,
+                "edge_edge_tests": 504,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 40,
+                "work_units": 2600,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 56,
+                "plane_projection_tests": 336,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 2561,
+                "work_units_after": 2600,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2498,
+                "pair_tests": 28,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 2,
+                "ray_tests": 2,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 74,
+                "leaf_pair_visits": 279,
+                "aabb_pruned_pairs": 209,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 169,
+                "plane_projection_tests": 762,
+                "plane_side_tests": 254,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 31,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            }
+          ],
+          "spatial_pair_count": 3,
+          "spatial_pair_cache_hits": 0,
+          "surface_pair_cache_hit": false,
+          "closed_solid_pair_cache_hit": false,
+          "spatial_pair_cache_hit": false,
+          "result_cache_hit": false
+        }
+      ],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": true,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    },
+    {
+      "cell": "grc03",
+      "group": "P",
+      "round": 2,
+      "task": "T1",
+      "anonymous_id": "answer_2c2752bff20d064c",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 20745,
+        "cached_input_tokens": 11776,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 591,
+        "reasoning_output_tokens": 0,
+        "input_plus_output": 21336,
+        "uncached_input": 8969
+      },
+      "full_ns": 26864474000,
+      "segments_ns": {
+        "pre_consumer": 1931224700,
+        "consumer_to_popen": 808600,
+        "popen_to_prompt": 6331200,
+        "prompt_to_final": 20807089800,
+        "final_to_turn": 926500,
+        "turn_to_exit": 3793666300,
+        "exit_to_cleanup": 5700000,
+        "cleanup_to_cell_end": 318726900
+      },
+      "consumer_wall_ns": 24614522400,
+      "nested": {
+        "owner_finish_ns": 316888800,
+        "native_startup_ns": 717289600,
+        "public_tool_interval_union_ns": 132110800,
+        "actor_handlers_ns": 97983000,
+        "prompt_outside_public_tool_intervals_ns": 20674979000
+      },
+      "budgets": {
+        "original_cell_start_ns": 588332454276800,
+        "original_cell_deadline_ns": 588902454276800,
+        "inherited_deadlines": {
+          "row": 588902454276800,
+          "launch": 588902454276800,
+          "actor_config": 588902454276800,
+          "endpoint": 588902454276800,
+          "native_config": 588902454276800,
+          "session": 588902454276800,
+          "ready": 588902454276800,
+          "closed": 588902454276800,
+          "close": 588902454276800,
+          "close_response": 588902454276800
+        },
+        "native_receipt_deadlines": {
+          "owner/INITIAL.json.receipt.json": 588902454276800,
+          "owner/FINAL.json.receipt.json": 588902454276800
+        },
+        "consumer_started_ns": 588334385501500,
+        "consumer_deadline_ns": 588784385501500,
+        "consumer_turn_elapsed_ns": 20815156100,
+        "prepare_started_ns": 588332655174700,
+        "actor_deadline_ns": 588372655174700,
+        "actor_ready_elapsed_upper_bound_ns": 1730326800,
+        "attempts": 2,
+        "host_physical_including_close": 4,
+        "host_nonclose": 3,
+        "response_prefixes": [
+          857,
+          9898
+        ],
+        "max_code_utf8_bytes": 88728,
+        "product_absolute_cell_deadline_exposed": false
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "failed": true,
+          "handler_started_ns": 588341003388200,
+          "handler_ns": 4113500,
+          "public_started_ns": 588340993001200,
+          "public_ended_ns": 588341008878900,
+          "tx_bytes": 1269,
+          "rx_bytes": 857,
+          "text_utf8_bytes": 718,
+          "cumulative_rx_bytes": 857,
+          "code_utf8_bytes": 0,
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "mode": "task",
+              "target": {
+                "name": "Target"
+              },
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "requested_facts": [
+                "aabb",
+                "spatial_relation",
+                "surface_proximity",
+                "closed_solid_relation",
+                "nearest_witness"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 2,
+          "name": "human_eye_scene_observe",
+          "failed": false,
+          "handler_started_ns": 588344892787000,
+          "handler_ns": 93869500,
+          "public_started_ns": 588344871954000,
+          "public_ended_ns": 588344988187100,
+          "tx_bytes": 1251,
+          "rx_bytes": 9041,
+          "text_utf8_bytes": 8335,
+          "cumulative_rx_bytes": 9898,
+          "code_utf8_bytes": 0,
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "mode": "task",
+              "target": {
+                "name": "Target"
+              },
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "requested_facts": [
+                "aabb",
+                "spatial_relation",
+                "surface_proximity",
+                "closed_solid_relation"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 11949200
+        },
+        {
+          "sequence": 2,
+          "kind": "product_capture",
+          "utf8_bytes": 88728,
+          "disk_bytes": 88760,
+          "elapsed_ns": 42901900
+        },
+        {
+          "sequence": 3,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 32881800
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "product_capture": 1
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 2
+      },
+      "consumer_frames_tx_bytes": 2879,
+      "consumer_frames_rx_bytes": 22838,
+      "public_schema_rx_bytes": 12785,
+      "public_schema_tool_count": 2,
+      "plugin_frames": [
+        {
+          "path": "cells/grc03/owner/plugin/001",
+          "tx_bytes": 205,
+          "rx_bytes": 2152,
+          "method": "initialize"
+        },
+        {
+          "path": "cells/grc03/owner/plugin/002",
+          "tx_bytes": 55,
+          "rx_bytes": 0,
+          "method": "notifications/initialized"
+        },
+        {
+          "path": "cells/grc03/owner/plugin/003",
+          "tx_bytes": 60,
+          "rx_bytes": 24221,
+          "method": "tools/list"
+        },
+        {
+          "path": "cells/grc03/owner/plugin/004",
+          "tx_bytes": 54,
+          "rx_bytes": 56,
+          "method": "ping"
+        },
+        {
+          "path": "cells/grc03/owner/plugin/005",
+          "tx_bytes": 1269,
+          "rx_bytes": 869,
+          "method": "tools/call"
+        },
+        {
+          "path": "cells/grc03/owner/plugin/006",
+          "tx_bytes": 1251,
+          "rx_bytes": 9053,
+          "method": "tools/call"
+        }
+      ],
+      "plugin_receipts": [
+        {
+          "request_id": "private-init",
+          "method": "initialize",
+          "started_ns": 588333593566800,
+          "elapsed_ns": 758354100,
+          "sent_bytes": 205,
+          "attempted_send_bytes": 205,
+          "send_confirmed": true,
+          "received_bytes": 2152,
+          "error": null
+        },
+        {
+          "request_id": null,
+          "method": "notifications/initialized",
+          "started_ns": 588334353106900,
+          "elapsed_ns": 616900,
+          "sent_bytes": 55,
+          "attempted_send_bytes": 55,
+          "send_confirmed": true,
+          "received_bytes": 0,
+          "error": null
+        },
+        {
+          "request_id": "private-list",
+          "method": "tools/list",
+          "started_ns": 588334354328600,
+          "elapsed_ns": 2173200,
+          "sent_bytes": 60,
+          "attempted_send_bytes": 60,
+          "send_confirmed": true,
+          "received_bytes": 24221,
+          "error": null
+        },
+        {
+          "request_id": "private-ping",
+          "method": "ping",
+          "started_ns": 588334358251200,
+          "elapsed_ns": 795800,
+          "sent_bytes": 54,
+          "attempted_send_bytes": 54,
+          "send_confirmed": true,
+          "received_bytes": 56,
+          "error": null
+        },
+        {
+          "request_id": 2,
+          "method": "tools/call",
+          "started_ns": 588341004438100,
+          "elapsed_ns": 1723200,
+          "sent_bytes": 1269,
+          "attempted_send_bytes": 1269,
+          "send_confirmed": true,
+          "received_bytes": 869,
+          "error": null
+        },
+        {
+          "request_id": 3,
+          "method": "tools/call",
+          "started_ns": 588344893855300,
+          "elapsed_ns": 90761900,
+          "sent_bytes": 1251,
+          "attempted_send_bytes": 1251,
+          "send_confirmed": true,
+          "received_bytes": 9053,
+          "error": null
+        }
+      ],
+      "traces": [
+        {
+          "trace_id": "5fd3ce6cdd154d66aff25b7435a2b2cf",
+          "operation": "startup.service_construct",
+          "outcome": "configured",
+          "duration_ns": 33833300,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "c539b8d8f2d0481e82e1802cf0cd73b5",
+              "parent_span_id": null,
+              "name": "startup.service_construct",
+              "kind": "startup",
+              "source_name": "service_constructor",
+              "start_offset_ns": 1072000,
+              "duration_ns": 32744300,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "5333bdd8aa91442382e1dcca2529e792",
+              "parent_span_id": "c539b8d8f2d0481e82e1802cf0cd73b5",
+              "name": "runtime.source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 33607700,
+              "duration_ns": 19300,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "a494b34e27c14f5688f74a7311736e11",
+              "parent_span_id": "c539b8d8f2d0481e82e1802cf0cd73b5",
+              "name": "runtime.host_source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 33642100,
+              "duration_ns": 170100,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "request_origin": "production_launcher",
+            "source_name": "service_constructor_only"
+          },
+          "peak_rss": {
+            "bytes": 94162944,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        },
+        {
+          "trace_id": "34be2fb2f533435199989e58e83f527e",
+          "operation": "mcp.observe",
+          "outcome": "completed",
+          "duration_ns": 428600,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "39f10e3fdee84b469c6bfb596f248ee2",
+              "parent_span_id": null,
+              "name": "mcp.wire_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 348000,
+              "duration_ns": 45000,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "35105c0aa7144a8ba50cadfe5d24a008",
+              "parent_span_id": null,
+              "name": "mcp.stdio_write",
+              "kind": "io",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 398100,
+              "duration_ns": 21200,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "build_id": "sha256:2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390",
+            "include_image": false,
+            "image_request_source": "mcp_transport",
+            "image_request_scope": "outer_request_not_nested_stage",
+            "mcp_request_id": 2,
+            "mcp_request_id_type": "integer",
+            "request_origin": "mcp",
+            "mcp_native_image_block_count": 0,
+            "image_artifact_scope": "local_result_payload_not_model_consumption",
+            "output_bytes": 868,
+            "delivery": "stdio_write_completed"
+          },
+          "peak_rss": {
+            "bytes": 94162944,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        },
+        {
+          "trace_id": "d3a0eb63a1384e58a7c619a6945ac804",
+          "operation": "mcp.observe",
+          "outcome": "observed",
+          "duration_ns": 89216200,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "e2f8ae3af49f46dc810d1edc20ce80e4",
+              "parent_span_id": null,
+              "name": "service.observe",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 333600,
+              "duration_ns": 88391400,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "3aa8ef035905463da0d6e31f3152a9ee",
+              "parent_span_id": "e2f8ae3af49f46dc810d1edc20ce80e4",
+              "name": "host.capture",
+              "kind": "host",
+              "source_name": "live_service",
+              "start_offset_ns": 366600,
+              "duration_ns": 47599400,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "9c87a6d65939468982999aacc4e6e30f",
+              "parent_span_id": "e2f8ae3af49f46dc810d1edc20ce80e4",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 48015700,
+              "duration_ns": 1552300,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "00894135589f4729b3a2b562b6e96a9b",
+              "parent_span_id": "9c87a6d65939468982999aacc4e6e30f",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 48042400,
+              "duration_ns": 1521400,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "861d3eb230fb4765b8e10b1661bcb4db",
+              "parent_span_id": "00894135589f4729b3a2b562b6e96a9b",
+              "name": "scene.hash",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 49424100,
+              "duration_ns": 121500,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "b11dc71e38c04d288b2f2778f28ffb9d",
+              "parent_span_id": "e2f8ae3af49f46dc810d1edc20ce80e4",
+              "name": "observation.task_facts",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 49573000,
+              "duration_ns": 38543200,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "c00e2d0a49f34cb9a7717c5185f622a1",
+              "parent_span_id": null,
+              "name": "mcp.content_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 88753500,
+              "duration_ns": 82800,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "1f7617c5a7df4f30a4aeb92d97ad1f84",
+              "parent_span_id": null,
+              "name": "mcp.wire_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 88853500,
+              "duration_ns": 323000,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "911f2023eee34989b05f7d7e4581b346",
+              "parent_span_id": null,
+              "name": "mcp.stdio_write",
+              "kind": "io",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 89180100,
+              "duration_ns": 26900,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 16936,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "build_id": "sha256:2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390",
+            "include_image": false,
+            "image_request_source": "mcp_transport",
+            "image_request_scope": "outer_request_not_nested_stage",
+            "mcp_request_id": 3,
+            "mcp_request_id_type": "integer",
+            "request_origin": "mcp",
+            "request_budget_s": 30.0,
+            "request_budget_scope": "cooperative_service_entry_through_mcp_prewrite_checkpoints",
+            "scene_fingerprint": "291067c6f8a53d79a2181ebf2b0bd56b13be804a9ddb30767dc83c9ff605a503",
+            "object_count": 4,
+            "vertex_count": 26,
+            "face_count": 36,
+            "service_image_present": false,
+            "image_artifact_scope": "local_result_payload_not_model_consumption",
+            "status": "observed",
+            "mcp_native_image_block_count": 0,
+            "delivery": "stdio_write_completed",
+            "output_bytes": 9052
+          },
+          "peak_rss": {
+            "bytes": 94162944,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        }
+      ],
+      "task_work": [
+        {
+          "exact_pair_count": 0,
+          "surface_pair_count": 3,
+          "closed_solid_pair_count": 3,
+          "pair_cache_hit": false,
+          "surface_pair_cache_hits": 0,
+          "closed_solid_pair_cache_hits": 0,
+          "pair_calls": 3,
+          "rank_calls": 1,
+          "pairs": [
+            {
+              "candidate_index": 0,
+              "object_id": "blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 89,
+                "point_face_tests": 534,
+                "point_edge_tests": 1602,
+                "edge_edge_tests": 801,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 7,
+                "work_units": 3953,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 89,
+                "plane_projection_tests": 534,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 3914,
+                "work_units_after": 3953,
+                "reason": "spatial_support_not_strictly_separated"
+              },
+              "closed_solid_work": {
+                "work_units": 2618,
+                "pair_tests": 26,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 0,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 195,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 183,
+                "plane_projection_tests": 795,
+                "plane_side_tests": 265,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 47,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 1,
+              "object_id": "blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 36,
+                "point_face_tests": 216,
+                "point_edge_tests": 648,
+                "edge_edge_tests": 324,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 60,
+                "work_units": 1780,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 36,
+                "plane_projection_tests": 216,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 1741,
+                "work_units_after": 1780,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2594,
+                "pair_tests": 32,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 6,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 204,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 174,
+                "plane_projection_tests": 792,
+                "plane_side_tests": 264,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 32,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 2,
+              "object_id": "blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 56,
+                "point_face_tests": 336,
+                "point_edge_tests": 1008,
+                "edge_edge_tests": 504,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 40,
+                "work_units": 2600,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 56,
+                "plane_projection_tests": 336,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 2561,
+                "work_units_after": 2600,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2498,
+                "pair_tests": 28,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 2,
+                "ray_tests": 2,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 74,
+                "leaf_pair_visits": 279,
+                "aabb_pruned_pairs": 209,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 169,
+                "plane_projection_tests": 762,
+                "plane_side_tests": 254,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 31,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            }
+          ],
+          "spatial_pair_count": 3,
+          "spatial_pair_cache_hits": 0,
+          "surface_pair_cache_hit": false,
+          "closed_solid_pair_cache_hit": false,
+          "spatial_pair_cache_hit": false,
+          "result_cache_hit": false
+        }
+      ],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": true,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    },
+    {
+      "cell": "grc04",
+      "group": "N",
+      "round": 2,
+      "task": "T1",
+      "anonymous_id": "answer_553b560ed3826c4e",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 24264,
+        "cached_input_tokens": 17664,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2515,
+        "reasoning_output_tokens": 140,
+        "input_plus_output": 26779,
+        "uncached_input": 6600
+      },
+      "full_ns": 74184604800,
+      "segments_ns": {
+        "pre_consumer": 1175456000,
+        "consumer_to_popen": 654500,
+        "popen_to_prompt": 6695600,
+        "prompt_to_final": 69576578900,
+        "final_to_turn": 848600,
+        "turn_to_exit": 3234021300,
+        "exit_to_cleanup": 5642700,
+        "cleanup_to_cell_end": 184707200
+      },
+      "consumer_wall_ns": 72824441600,
+      "nested": {
+        "owner_finish_ns": 183119100,
+        "native_startup_ns": 753263900,
+        "public_tool_interval_union_ns": 350762300,
+        "actor_handlers_ns": 339666000,
+        "prompt_outside_public_tool_intervals_ns": 69225816600
+      },
+      "budgets": {
+        "original_cell_start_ns": 588359329288400,
+        "original_cell_deadline_ns": 588929329288400,
+        "inherited_deadlines": {
+          "row": 588929329288400,
+          "launch": 588929329288400,
+          "actor_config": 588929329288400,
+          "endpoint": 588929329288400,
+          "native_config": 588929329288400,
+          "session": 588929329288400,
+          "ready": 588929329288400,
+          "closed": 588929329288400,
+          "close": 588929329288400,
+          "close_response": 588929329288400
+        },
+        "native_receipt_deadlines": {
+          "owner/tool_01/NATIVE_RECEIPT.json": 588929329288400,
+          "owner/tool_02/NATIVE_RECEIPT.json": 588929329288400,
+          "owner/tool_03/NATIVE_RECEIPT.json": 588929329288400,
+          "owner/INITIAL.json.receipt.json": 588929329288400,
+          "owner/FINAL.json.receipt.json": 588929329288400
+        },
+        "consumer_started_ns": 588360504744400,
+        "consumer_deadline_ns": 588810504744400,
+        "consumer_turn_elapsed_ns": 69584777600,
+        "prepare_started_ns": 588359526009500,
+        "actor_deadline_ns": 588399526009500,
+        "actor_ready_elapsed_upper_bound_ns": 978734900,
+        "attempts": 3,
+        "host_physical_including_close": 6,
+        "host_nonclose": 5,
+        "response_prefixes": [
+          217,
+          1075,
+          3253
+        ],
+        "max_code_utf8_bytes": 5631,
+        "product_absolute_cell_deadline_exposed": null
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588365934078100,
+          "handler_ns": 20670900,
+          "public_started_ns": 588365932856600,
+          "public_ended_ns": 588365956021400,
+          "tx_bytes": 1083,
+          "rx_bytes": 217,
+          "text_utf8_bytes": 111,
+          "cumulative_rx_bytes": 217,
+          "code_utf8_bytes": 79,
+          "arguments": {
+            "code": "import bpy\nfor obj in bpy.context.scene.objects:\n    print(obj.name, obj.type)\n"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588380298300800,
+          "handler_ns": 84773900,
+          "public_started_ns": 588380293645400,
+          "public_ended_ns": 588380384421400,
+          "tx_bytes": 1865,
+          "rx_bytes": 858,
+          "text_utf8_bytes": 751,
+          "cumulative_rx_bytes": 1075,
+          "code_utf8_bytes": 849,
+          "arguments": {
+            "code": "import numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\ndepsgraph=bpy.context.evaluated_depsgraph_get()\ngeometry={}\nfor name in ('Target','Part_A','Part_B','Part_C'):\n    evaluated=bpy.data.objects[name].evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    vertices=np.array([tuple(evaluated.matrix_world @ vertex.co) for vertex in mesh.vertices], dtype=np.float64)\n    triangles=np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles],dtype=np.int64)\n    geometry[name]=(vertices,triangles)\n    print(name, 'vertices',len(vertices),'triangles',len(triangles),'bounds',vertices.min(axis=0).tolist(),vertices.max(axis=0).tolist())\n    evaluated.to_mesh_clear()\nprint('unit_settings',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\n"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 3,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588419232376400,
+          "handler_ns": 234221200,
+          "public_started_ns": 588419231115500,
+          "public_ended_ns": 588419467937000,
+          "tx_bytes": 6726,
+          "rx_bytes": 2178,
+          "text_utf8_bytes": 2063,
+          "cumulative_rx_bytes": 3253,
+          "code_utf8_bytes": 5631,
+          "arguments": {
+            "code": "import math\nfor name in geometry:\n    evaluated=bpy.data.objects[name].evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64)\n    matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n    vertices=local @ matrix[:3,:3].T+matrix[:3,3]\n    triangles=np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles],dtype=np.int64)\n    geometry[name]=(vertices,triangles)\n    evaluated.to_mesh_clear()\n\ndef point_segment(point, start, end):\n    direction=end-start\n    denominator=np.dot(direction,direction)\n    factor=np.clip(np.dot(point-start,direction)/denominator,0.,1.) if denominator else 0.\n    return start+factor*direction\n\ndef point_triangle(point,triangle):\n    start,second,third=triangle\n    first_edge=second-start; second_edge=third-start\n    normal=np.cross(first_edge,second_edge)\n    normal_squared=np.dot(normal,normal)\n    candidates=[point_segment(point,triangle[index],triangle[(index+1)%3]) for index in range(3)]\n    if normal_squared>1e-30:\n        projected=point-normal*(np.dot(point-start,normal)/normal_squared)\n        relative=projected-start\n        gram=np.array([[np.dot(first_edge,first_edge),np.dot(first_edge,second_edge)],[np.dot(first_edge,second_edge),np.dot(second_edge,second_edge)]])\n        bary=np.linalg.solve(gram,np.array([np.dot(relative,first_edge),np.dot(relative,second_edge)]))\n        if bary[0]>=-1e-13 and bary[1]>=-1e-13 and bary.sum()<=1+1e-13:\n            candidates.append(projected)\n    return min(candidates,key=lambda candidate:np.dot(point-candidate,point-candidate))\n\ndef segment_segment(start_a,end_a,start_b,end_b):\n    direction_a=end_a-start_a; direction_b=end_b-start_b; relative=start_a-start_b\n    aa=np.dot(direction_a,direction_a); bb=np.dot(direction_a,direction_b); cc=np.dot(direction_b,direction_b)\n    dd=np.dot(direction_a,relative); ee=np.dot(direction_b,relative)\n    candidates=[(start_a,point_segment(start_a,start_b,end_b)),(end_a,point_segment(end_a,start_b,end_b)),(point_segment(start_b,start_a,end_a),start_b),(point_segment(end_b,start_a,end_a),end_b)]\n    denominator=aa*cc-bb*bb\n    if denominator>1e-28:\n        factor_a=(bb*ee-cc*dd)/denominator\n        factor_b=(aa*ee-bb*dd)/denominator\n        if 0<=factor_a<=1 and 0<=factor_b<=1:\n            candidates.append((start_a+factor_a*direction_a,start_b+factor_b*direction_b))\n    return min(candidates,key=lambda pair:np.sum((pair[0]-pair[1])**2))\n\ndef segment_triangle(start,end,triangle):\n    edge_a=triangle[1]-triangle[0]; edge_b=triangle[2]-triangle[0]; direction=end-start\n    crossed=np.cross(direction,edge_b); determinant=np.dot(edge_a,crossed)\n    if abs(determinant)<1e-22:return None\n    relative=start-triangle[0]; factor_u=np.dot(relative,crossed)/determinant\n    crossed2=np.cross(relative,edge_a); factor_v=np.dot(direction,crossed2)/determinant\n    factor_t=np.dot(edge_b,crossed2)/determinant\n    if -1e-12<=factor_u and -1e-12<=factor_v and factor_u+factor_v<=1+1e-12 and -1e-12<=factor_t<=1+1e-12:\n        return start+factor_t*direction\n    return None\n\ndef winding(point,vertices,triangles):\n    vectors=vertices[triangles]-point\n    norms=np.linalg.norm(vectors,axis=2)\n    numerator=np.einsum('ij,ij->i',vectors[:,0],np.cross(vectors[:,1],vectors[:,2]))\n    denominator=norms.prod(axis=1)+np.einsum('ij,ij->i',vectors[:,0],vectors[:,1])*norms[:,2]+np.einsum('ij,ij->i',vectors[:,1],vectors[:,2])*norms[:,0]+np.einsum('ij,ij->i',vectors[:,2],vectors[:,0])*norms[:,1]\n    return np.sum(2*np.arctan2(numerator,denominator))/(4*np.pi)\n\nresults={}\nvertices_a,indices_a=geometry['Target']\nfor name in ('Part_A','Part_B','Part_C'):\n    vertices_b,indices_b=geometry[name]\n    best=(float('inf'),None,None,None)\n    crossings=[]\n    for index_a,tri_a in enumerate(vertices_a[indices_a]):\n        for index_b,tri_b in enumerate(vertices_b[indices_b]):\n            candidates=[]\n            for point in tri_a:candidates.append((point,point_triangle(point,tri_b)))\n            for point in tri_b:candidates.append((point_triangle(point,tri_a),point))\n            for edge_a in range(3):\n                hit=segment_triangle(tri_a[edge_a],tri_a[(edge_a+1)%3],tri_b)\n                if hit is not None: crossings.append(hit); candidates.append((hit,hit))\n                hit=segment_triangle(tri_b[edge_a],tri_b[(edge_a+1)%3],tri_a)\n                if hit is not None: crossings.append(hit); candidates.append((hit,hit))\n                for edge_b in range(3):\n                    candidates.append(segment_segment(tri_a[edge_a],tri_a[(edge_a+1)%3],tri_b[edge_b],tri_b[(edge_b+1)%3]))\n            for point_a,point_b in candidates:\n                distance=np.linalg.norm(point_a-point_b)\n                if distance<best[0]:best=(distance,point_a.copy(),point_b.copy(),(index_a,index_b))\n    results[name]=best\n    print(name,'distance_m',format(best[0],'.15f'),'distance_mm',format(best[0]*1000,'.12f'),'Target_point',best[1].tolist(),'Part_point',best[2].tolist(),'triangles',best[3],'crossings',len(crossings))\n    print('part_vertices_winding_in_target',[round(winding(point,vertices_a,indices_a),9) for point in vertices_b])\n    print('target_vertices_winding_in_part',[round(winding(point,vertices_b,indices_b),9) for point in vertices_a])\nfor name,(vertices,triangles) in geometry.items():\n    counts={}\n    for triangle in triangles:\n        for index in range(3):\n            edge=tuple(sorted((int(triangle[index]),int(triangle[(index+1)%3])))); counts[edge]=counts.get(edge,0)+1\n    print(name,'edge_face_counts',sorted(set(counts.values())))\n"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 12354200
+        },
+        {
+          "sequence": 2,
+          "kind": "consumer_native",
+          "utf8_bytes": 79,
+          "disk_bytes": 82,
+          "elapsed_ns": 11792200
+        },
+        {
+          "sequence": 3,
+          "kind": "consumer_native",
+          "utf8_bytes": 849,
+          "disk_bytes": 864,
+          "elapsed_ns": 76203800
+        },
+        {
+          "sequence": 4,
+          "kind": "consumer_native",
+          "utf8_bytes": 5631,
+          "disk_bytes": 5725,
+          "elapsed_ns": 225406100
+        },
+        {
+          "sequence": 5,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 25588600
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "consumer_native": 3
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "consumer_frames_tx_bytes": 10033,
+      "consumer_frames_rx_bytes": 3983,
+      "public_schema_rx_bytes": 575,
+      "public_schema_tool_count": 1,
+      "plugin_frames": [],
+      "plugin_receipts": [],
+      "traces": [],
+      "task_work": [],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": null,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    },
+    {
+      "cell": "grc05",
+      "group": "N",
+      "round": 3,
+      "task": "T1",
+      "anonymous_id": "answer_3f52891e54cefc9d",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 26087,
+        "cached_input_tokens": 18816,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2274,
+        "reasoning_output_tokens": 23,
+        "input_plus_output": 28361,
+        "uncached_input": 7271
+      },
+      "full_ns": 63248572000,
+      "segments_ns": {
+        "pre_consumer": 1175615600,
+        "consumer_to_popen": 668300,
+        "popen_to_prompt": 6157000,
+        "prompt_to_final": 59667377800,
+        "final_to_turn": 658700,
+        "turn_to_exit": 2216481700,
+        "exit_to_cleanup": 4799800,
+        "cleanup_to_cell_end": 176813100
+      },
+      "consumer_wall_ns": 61896143300,
+      "nested": {
+        "owner_finish_ns": 175204700,
+        "native_startup_ns": 725338400,
+        "public_tool_interval_union_ns": 247122700,
+        "actor_handlers_ns": 201607300,
+        "prompt_outside_public_tool_intervals_ns": 59420255100
+      },
+      "budgets": {
+        "original_cell_start_ns": 588433519687100,
+        "original_cell_deadline_ns": 589003519687100,
+        "inherited_deadlines": {
+          "row": 589003519687100,
+          "launch": 589003519687100,
+          "actor_config": 589003519687100,
+          "endpoint": 589003519687100,
+          "native_config": 589003519687100,
+          "session": 589003519687100,
+          "ready": 589003519687100,
+          "closed": 589003519687100,
+          "close": 589003519687100,
+          "close_response": 589003519687100
+        },
+        "native_receipt_deadlines": {
+          "owner/tool_01/NATIVE_RECEIPT.json": 589003519687100,
+          "owner/tool_02/NATIVE_RECEIPT.json": 589003519687100,
+          "owner/tool_03/NATIVE_RECEIPT.json": 589003519687100,
+          "owner/INITIAL.json.receipt.json": 589003519687100,
+          "owner/FINAL.json.receipt.json": 589003519687100
+        },
+        "consumer_started_ns": 588434695302700,
+        "consumer_deadline_ns": 588884695302700,
+        "consumer_turn_elapsed_ns": 59674861800,
+        "prepare_started_ns": 588433721704100,
+        "actor_deadline_ns": 588473721704100,
+        "actor_ready_elapsed_upper_bound_ns": 973598600,
+        "attempts": 3,
+        "host_physical_including_close": 6,
+        "host_nonclose": 5,
+        "response_prefixes": [
+          1577,
+          2491,
+          4471
+        ],
+        "max_code_utf8_bytes": 4518,
+        "product_absolute_cell_deadline_exposed": null
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588440944937400,
+          "handler_ns": 19868600,
+          "public_started_ns": 588440931942900,
+          "public_ended_ns": 588440966091000,
+          "tx_bytes": 1421,
+          "rx_bytes": 1577,
+          "text_utf8_bytes": 1469,
+          "cumulative_rx_bytes": 1577,
+          "code_utf8_bytes": 415,
+          "arguments": {
+            "code": "import bpy\nfor obj in bpy.context.scene.objects:\n    if obj.name in ['Target','Part_A','Part_B','Part_C']:\n        print(obj.name, obj.type, 'matrix', [list(row) for row in obj.matrix_world], 'modifiers', [(mod.name,mod.type) for mod in obj.modifiers])\nprint('units',bpy.context.scene.unit_settings.system,bpy.context.scene.unit_settings.scale_length)\nprint('names', [obj.name for obj in bpy.context.scene.objects])"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 2,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588448715861100,
+          "handler_ns": 65135800,
+          "public_started_ns": 588448698327700,
+          "public_ended_ns": 588448782336900,
+          "tx_bytes": 1828,
+          "rx_bytes": 914,
+          "text_utf8_bytes": 808,
+          "cumulative_rx_bytes": 2491,
+          "code_utf8_bytes": 813,
+          "arguments": {
+            "code": "import numpy as np\nfrom collections import Counter\ngeo={}\ndeps=bpy.context.evaluated_depsgraph_get()\nfor name in ['Target','Part_A','Part_B','Part_C']:\n    obj=bpy.data.objects[name].evaluated_get(deps)\n    mesh=obj.to_mesh(); mesh.calc_loop_triangles()\n    local=np.array([tuple(v.co) for v in mesh.vertices], dtype=np.float64)\n    mat=np.array(obj.matrix_world,dtype=np.float64)\n    verts=local@mat[:3,:3].T+mat[:3,3]\n    tris=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64)\n    edges=Counter(tuple(sorted((int(face[i]),int(face[(i+1)%3])))) for face in tris for i in range(3))\n    geo[name]=(verts,tris)\n    print(name,'verts',len(verts),'triangles',len(tris),'bounds',verts.min(0).tolist(),verts.max(0).tolist(),'edge_incidence',dict(Counter(edges.values())))\n    obj.to_mesh_clear()"
+          },
+          "image_blocks": 0
+        },
+        {
+          "attempt": 3,
+          "name": "execute_blender_code",
+          "failed": false,
+          "handler_started_ns": 588481510724500,
+          "handler_ns": 116602900,
+          "public_started_ns": 588481499398300,
+          "public_ended_ns": 588481628363700,
+          "tx_bytes": 5589,
+          "rx_bytes": 1980,
+          "text_utf8_bytes": 1869,
+          "cumulative_rx_bytes": 4471,
+          "code_utf8_bytes": 4518,
+          "arguments": {
+            "code": "def point_tri(point, triangle):\n    first,second,third=triangle\n    edge_ab=second-first; edge_ac=third-first; offset=point-first\n    dot_ab=offset@edge_ab; dot_ac=offset@edge_ac\n    if dot_ab<=0 and dot_ac<=0: return first\n    offset_b=point-second; dot_bab=offset_b@edge_ab; dot_bac=offset_b@edge_ac\n    if dot_bab>=0 and dot_bac<=dot_bab: return second\n    vc=dot_ab*dot_bac-dot_bab*dot_ac\n    if vc<=0 and dot_ab>=0 and dot_bab<=0: return first+dot_ab/(dot_ab-dot_bab)*edge_ab\n    offset_c=point-third; dot_cab=offset_c@edge_ab; dot_cac=offset_c@edge_ac\n    if dot_cac>=0 and dot_cab<=dot_cac: return third\n    vb=dot_cab*dot_ac-dot_ab*dot_cac\n    if vb<=0 and dot_ac>=0 and dot_cac<=0: return first+dot_ac/(dot_ac-dot_cac)*edge_ac\n    va=dot_bab*dot_cac-dot_cab*dot_bac\n    if va<=0 and dot_bac-dot_bab>=0 and dot_cab-dot_cac>=0:\n        return second+(dot_bac-dot_bab)/((dot_bac-dot_bab)+(dot_cab-dot_cac))*(third-second)\n    return first+(vb*edge_ab+vc*edge_ac)/(va+vb+vc)\ndef segment_pair(start_a,end_a,start_b,end_b):\n    direction_a=end_a-start_a; direction_b=end_b-start_b; offset=start_a-start_b\n    aa=direction_a@direction_a; bb=direction_a@direction_b; cc=direction_b@direction_b\n    dd=direction_a@offset; ee=direction_b@offset\n    denom=aa*cc-bb*bb\n    param_a=np.clip((bb*ee-cc*dd)/denom,0,1) if denom>1e-30 else 0.0\n    param_b=(bb*param_a+ee)/cc\n    if param_b<0: param_b=0.; param_a=np.clip(-dd/aa,0,1)\n    elif param_b>1: param_b=1.; param_a=np.clip((bb-dd)/aa,0,1)\n    return start_a+param_a*direction_a,start_b+param_b*direction_b\n\ndef segment_triangle(start,end,triangle):\n    edge_ab=triangle[1]-triangle[0]; edge_ac=triangle[2]-triangle[0]; direction=end-start\n    cross=np.cross(direction,edge_ac); determinant=edge_ab@cross\n    if abs(determinant)<1e-20: return None\n    offset=start-triangle[0]; param_u=(offset@cross)/determinant\n    cross2=np.cross(offset,edge_ab); param_v=(direction@cross2)/determinant\n    param_t=(edge_ac@cross2)/determinant\n    if 0<=param_u<=1 and 0<=param_v and param_u+param_v<=1 and 0<=param_t<=1:\n        return start+param_t*direction\n    return None\n\ndef winding(point,triangles):\n    offsets=triangles-point\n    lengths=np.linalg.norm(offsets,axis=2)\n    numerator=np.einsum('ij,ij->i', offsets[:,0], np.cross(offsets[:,1], offsets[:,2]))\n    denominator=lengths.prod(axis=1)+np.einsum('ij,ij->i',offsets[:,0],offsets[:,1])*lengths[:,2]+np.einsum('ij,ij->i',offsets[:,1],offsets[:,2])*lengths[:,0]+np.einsum('ij,ij->i',offsets[:,2],offsets[:,0])*lengths[:,1]\n    return np.sum(2*np.arctan2(numerator,denominator))/(4*np.pi)\n\nresults={}\ntarget_vertices,target_indices=geo['Target']; target_triangles=target_vertices[target_indices]\nfor name in ['Part_A','Part_B','Part_C']:\n    vertices,indices=geo[name]; triangles=vertices[indices]\n    best=(float('inf'),None,None,None); intersections=0\n    def consider(point_a,point_b,feature):\n        global best\n        squared=np.sum((point_a-point_b)**2)\n        if squared<best[0]: best=(squared,point_a.copy(),point_b.copy(),feature)\n    for ti,triangle_a in enumerate(target_triangles):\n        for pi,triangle_b in enumerate(triangles):\n            for corner in range(3):\n                consider(triangle_a[corner],point_tri(triangle_a[corner],triangle_b),('target_vertex',ti,pi,corner))\n                consider(point_tri(triangle_b[corner],triangle_a),triangle_b[corner],('part_vertex',ti,pi,corner))\n                hit=segment_triangle(triangle_a[corner],triangle_a[(corner+1)%3],triangle_b)\n                if hit is not None: intersections+=1; consider(hit,hit,('intersection',ti,pi))\n                hit=segment_triangle(triangle_b[corner],triangle_b[(corner+1)%3],triangle_a)\n                if hit is not None: intersections+=1; consider(hit,hit,('intersection',ti,pi))\n                for other in range(3):\n                    endpoint_a,endpoint_b=segment_pair(triangle_a[corner],triangle_a[(corner+1)%3],triangle_b[other],triangle_b[(other+1)%3])\n                    consider(endpoint_a,endpoint_b,('edge_edge',ti,pi,corner,other))\n    results[name]=best\n    print(name,'distance_mm',format(np.sqrt(best[0])*1000,'.12f'),'target_point', ['%.12f'%value for value in best[1]],'part_point',['%.12f'%value for value in best[2]],'feature',best[3], 'intersections',intersections)\n    print('part_vertices_winding_in_target',[round(winding(point,target_triangles),10) for point in vertices])\n    print('target_vertices_winding_in_part',[round(winding(point,triangles),10) for point in target_vertices])"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 23141100
+        },
+        {
+          "sequence": 2,
+          "kind": "consumer_native",
+          "utf8_bytes": 415,
+          "disk_bytes": 420,
+          "elapsed_ns": 12301400
+        },
+        {
+          "sequence": 3,
+          "kind": "consumer_native",
+          "utf8_bytes": 813,
+          "disk_bytes": 827,
+          "elapsed_ns": 55127500
+        },
+        {
+          "sequence": 4,
+          "kind": "consumer_native",
+          "utf8_bytes": 4518,
+          "disk_bytes": 4588,
+          "elapsed_ns": 108348200
+        },
+        {
+          "sequence": 5,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 13094100
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "consumer_native": 3
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 3
+      },
+      "consumer_frames_tx_bytes": 9197,
+      "consumer_frames_rx_bytes": 5201,
+      "public_schema_rx_bytes": 575,
+      "public_schema_tool_count": 1,
+      "plugin_frames": [],
+      "plugin_receipts": [],
+      "traces": [],
+      "task_work": [],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": null,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    },
+    {
+      "cell": "grc06",
+      "group": "P",
+      "round": 3,
+      "task": "T1",
+      "anonymous_id": "answer_199cffa37be50d12",
+      "quality": "complete_correct",
+      "usage": {
+        "input_tokens": 13981,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 476,
+        "reasoning_output_tokens": 0,
+        "input_plus_output": 14457,
+        "uncached_input": 13981
+      },
+      "full_ns": 25208574400,
+      "segments_ns": {
+        "pre_consumer": 1973577000,
+        "consumer_to_popen": 1047100,
+        "popen_to_prompt": 6375700,
+        "prompt_to_final": 19125990300,
+        "final_to_turn": 967500,
+        "turn_to_exit": 3809357800,
+        "exit_to_cleanup": 5905200,
+        "cleanup_to_cell_end": 285353800
+      },
+      "consumer_wall_ns": 22949643600,
+      "nested": {
+        "owner_finish_ns": 283924900,
+        "native_startup_ns": 729891400,
+        "public_tool_interval_union_ns": 107723600,
+        "actor_handlers_ns": 92236900,
+        "prompt_outside_public_tool_intervals_ns": 19018266700
+      },
+      "budgets": {
+        "original_cell_start_ns": 588496774833400,
+        "original_cell_deadline_ns": 589066774833400,
+        "inherited_deadlines": {
+          "row": 589066774833400,
+          "launch": 589066774833400,
+          "actor_config": 589066774833400,
+          "endpoint": 589066774833400,
+          "native_config": 589066774833400,
+          "session": 589066774833400,
+          "ready": 589066774833400,
+          "closed": 589066774833400,
+          "close": 589066774833400,
+          "close_response": 589066774833400
+        },
+        "native_receipt_deadlines": {
+          "owner/INITIAL.json.receipt.json": 589066774833400,
+          "owner/FINAL.json.receipt.json": 589066774833400
+        },
+        "consumer_started_ns": 588498748410400,
+        "consumer_deadline_ns": 588948748410400,
+        "consumer_turn_elapsed_ns": 19134380600,
+        "prepare_started_ns": 588496973237700,
+        "actor_deadline_ns": 588536973237700,
+        "actor_ready_elapsed_upper_bound_ns": 1775172700,
+        "attempts": 1,
+        "host_physical_including_close": 4,
+        "host_nonclose": 3,
+        "response_prefixes": [
+          7997
+        ],
+        "max_code_utf8_bytes": 88728,
+        "product_absolute_cell_deadline_exposed": false
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "name": "human_eye_scene_observe",
+          "failed": false,
+          "handler_started_ns": 588506091381900,
+          "handler_ns": 92236900,
+          "public_started_ns": 588506077414100,
+          "public_ended_ns": 588506185137700,
+          "tx_bytes": 1244,
+          "rx_bytes": 7997,
+          "text_utf8_bytes": 7341,
+          "cumulative_rx_bytes": 7997,
+          "code_utf8_bytes": 0,
+          "arguments": {
+            "include_image": false,
+            "query": {
+              "mode": "task",
+              "target": {
+                "name": "Target"
+              },
+              "candidates": [
+                {
+                  "name": "Part_A"
+                },
+                {
+                  "name": "Part_B"
+                },
+                {
+                  "name": "Part_C"
+                }
+              ],
+              "requested_facts": [
+                "closed_solid_relation",
+                "surface_proximity",
+                "spatial_relation"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "image_blocks": 0
+        }
+      ],
+      "scripts": [
+        {
+          "sequence": 1,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 26191700
+        },
+        {
+          "sequence": 2,
+          "kind": "product_capture",
+          "utf8_bytes": 88728,
+          "disk_bytes": 88760,
+          "elapsed_ns": 42749100
+        },
+        {
+          "sequence": 3,
+          "kind": "qa_snapshot",
+          "utf8_bytes": 379,
+          "disk_bytes": 382,
+          "elapsed_ns": 30328200
+        }
+      ],
+      "host_execution_counts": {
+        "qa_snapshot": 2,
+        "product_capture": 1
+      },
+      "consumer_frame_counts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/list": 1,
+        "tools/call": 1
+      },
+      "consumer_frames_tx_bytes": 1603,
+      "consumer_frames_rx_bytes": 20937,
+      "public_schema_rx_bytes": 12785,
+      "public_schema_tool_count": 2,
+      "plugin_frames": [
+        {
+          "path": "cells/grc06/owner/plugin/001",
+          "tx_bytes": 205,
+          "rx_bytes": 2152,
+          "method": "initialize"
+        },
+        {
+          "path": "cells/grc06/owner/plugin/002",
+          "tx_bytes": 55,
+          "rx_bytes": 0,
+          "method": "notifications/initialized"
+        },
+        {
+          "path": "cells/grc06/owner/plugin/003",
+          "tx_bytes": 60,
+          "rx_bytes": 24221,
+          "method": "tools/list"
+        },
+        {
+          "path": "cells/grc06/owner/plugin/004",
+          "tx_bytes": 54,
+          "rx_bytes": 56,
+          "method": "ping"
+        },
+        {
+          "path": "cells/grc06/owner/plugin/005",
+          "tx_bytes": 1244,
+          "rx_bytes": 8009,
+          "method": "tools/call"
+        }
+      ],
+      "plugin_receipts": [
+        {
+          "request_id": "private-init",
+          "method": "initialize",
+          "started_ns": 588497938581900,
+          "elapsed_ns": 763022500,
+          "sent_bytes": 205,
+          "attempted_send_bytes": 205,
+          "send_confirmed": true,
+          "received_bytes": 2152,
+          "error": null
+        },
+        {
+          "request_id": null,
+          "method": "notifications/initialized",
+          "started_ns": 588498702862800,
+          "elapsed_ns": 508100,
+          "sent_bytes": 55,
+          "attempted_send_bytes": 55,
+          "send_confirmed": true,
+          "received_bytes": 0,
+          "error": null
+        },
+        {
+          "request_id": "private-list",
+          "method": "tools/list",
+          "started_ns": 588498704168400,
+          "elapsed_ns": 2324100,
+          "sent_bytes": 60,
+          "attempted_send_bytes": 60,
+          "send_confirmed": true,
+          "received_bytes": 24221,
+          "error": null
+        },
+        {
+          "request_id": "private-ping",
+          "method": "ping",
+          "started_ns": 588498708230300,
+          "elapsed_ns": 779800,
+          "sent_bytes": 54,
+          "attempted_send_bytes": 54,
+          "send_confirmed": true,
+          "received_bytes": 56,
+          "error": null
+        },
+        {
+          "request_id": 2,
+          "method": "tools/call",
+          "started_ns": 588506092562100,
+          "elapsed_ns": 89445900,
+          "sent_bytes": 1244,
+          "attempted_send_bytes": 1244,
+          "send_confirmed": true,
+          "received_bytes": 8009,
+          "error": null
+        }
+      ],
+      "traces": [
+        {
+          "trace_id": "0c32bc597c834790b1e68f7e24d2626f",
+          "operation": "startup.service_construct",
+          "outcome": "configured",
+          "duration_ns": 34509100,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "9e3b02817df24553a6b9f7270b611d39",
+              "parent_span_id": null,
+              "name": "startup.service_construct",
+              "kind": "startup",
+              "source_name": "service_constructor",
+              "start_offset_ns": 1268500,
+              "duration_ns": 33223200,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "2c563b597925453cab40a60e59b5d138",
+              "parent_span_id": "9e3b02817df24553a6b9f7270b611d39",
+              "name": "runtime.source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 34273200,
+              "duration_ns": 22200,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "c2359b248a034abdb985f8460ecb8e1e",
+              "parent_span_id": "9e3b02817df24553a6b9f7270b611d39",
+              "name": "runtime.host_source_check",
+              "kind": "io",
+              "source_name": "live_service",
+              "start_offset_ns": 34310100,
+              "duration_ns": 177400,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "request_origin": "production_launcher",
+            "source_name": "service_constructor_only"
+          },
+          "peak_rss": {
+            "bytes": 94035968,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        },
+        {
+          "trace_id": "64762db6e8c24abea0547edc4ce6f83f",
+          "operation": "mcp.observe",
+          "outcome": "observed",
+          "duration_ns": 88099300,
+          "duration_semantics": "inclusive_do_not_sum_nested_spans",
+          "spans": [
+            {
+              "span_id": "e0e102a0360c46e6a6d1c6c35b858ef7",
+              "parent_span_id": null,
+              "name": "service.observe",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 345000,
+              "duration_ns": 87337900,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "e5780066e54a439c8cb843cb6236345f",
+              "parent_span_id": "e0e102a0360c46e6a6d1c6c35b858ef7",
+              "name": "host.capture",
+              "kind": "host",
+              "source_name": "live_service",
+              "start_offset_ns": 377500,
+              "duration_ns": 47967800,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "167bbd99f3994bff8503e501a692327d",
+              "parent_span_id": "e0e102a0360c46e6a6d1c6c35b858ef7",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 48392500,
+              "duration_ns": 773000,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "99775baec9e74926b7dd6532aab856d6",
+              "parent_span_id": "167bbd99f3994bff8503e501a692327d",
+              "name": "scene.validate",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 48416700,
+              "duration_ns": 744600,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "620d62e17f7743cc97bb81ed04eb6246",
+              "parent_span_id": "99775baec9e74926b7dd6532aab856d6",
+              "name": "scene.hash",
+              "kind": "cpu",
+              "source_name": "engine_numpy",
+              "start_offset_ns": 49020700,
+              "duration_ns": 114600,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "c22d3042628247ac981e93f0e1f32816",
+              "parent_span_id": "e0e102a0360c46e6a6d1c6c35b858ef7",
+              "name": "observation.task_facts",
+              "kind": "cpu",
+              "source_name": "live_service",
+              "start_offset_ns": 49169900,
+              "duration_ns": 37881300,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "9de9ee42568346fc803af6b721b91663",
+              "parent_span_id": null,
+              "name": "mcp.content_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 87711000,
+              "duration_ns": 68700,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "2fd6c114f2724c82892bb2766774d841",
+              "parent_span_id": null,
+              "name": "mcp.wire_encode",
+              "kind": "encoding",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 87795000,
+              "duration_ns": 268900,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            },
+            {
+              "span_id": "f09588178ebf4dd496bcdbae46499782",
+              "parent_span_id": null,
+              "name": "mcp.stdio_write",
+              "kind": "io",
+              "source_name": "mcp_transport",
+              "start_offset_ns": 88067400,
+              "duration_ns": 22100,
+              "outcome": "completed",
+              "error_type": null,
+              "thread_id": 27928,
+              "timing_semantics": "inclusive_wall_clock"
+            }
+          ],
+          "annotations": {
+            "build_id": "sha256:2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390",
+            "include_image": false,
+            "image_request_source": "mcp_transport",
+            "image_request_scope": "outer_request_not_nested_stage",
+            "mcp_request_id": 2,
+            "mcp_request_id_type": "integer",
+            "request_origin": "mcp",
+            "request_budget_s": 30.0,
+            "request_budget_scope": "cooperative_service_entry_through_mcp_prewrite_checkpoints",
+            "scene_fingerprint": "8c3ad0370e7d62a2e8e634e952ed3c05dee685af04b967decea6a88bb7f0a181",
+            "object_count": 4,
+            "vertex_count": 26,
+            "face_count": 36,
+            "service_image_present": false,
+            "image_artifact_scope": "local_result_payload_not_model_consumption",
+            "status": "observed",
+            "mcp_native_image_block_count": 0,
+            "delivery": "stdio_write_completed",
+            "output_bytes": 8008
+          },
+          "peak_rss": {
+            "bytes": 94035968,
+            "scope": "process_lifetime_peak",
+            "source": "GetProcessMemoryInfo.PeakWorkingSetSize"
+          },
+          "concurrency": {
+            "scope": "instrumented_traces_in_this_process",
+            "active_at_start": 1,
+            "max_observed": 1
+          }
+        }
+      ],
+      "task_work": [
+        {
+          "exact_pair_count": 0,
+          "surface_pair_count": 3,
+          "closed_solid_pair_count": 3,
+          "pair_cache_hit": false,
+          "surface_pair_cache_hits": 0,
+          "closed_solid_pair_cache_hits": 0,
+          "pair_calls": 3,
+          "rank_calls": 1,
+          "pairs": [
+            {
+              "candidate_index": 0,
+              "object_id": "blender:298ae964e7d560b4eff8444baeac9bd998dc13db3c9287b5882a8859edb93031",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 89,
+                "point_face_tests": 534,
+                "point_edge_tests": 1602,
+                "edge_edge_tests": 801,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 7,
+                "work_units": 3953,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 89,
+                "plane_projection_tests": 534,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 3914,
+                "work_units_after": 3953,
+                "reason": "spatial_support_not_strictly_separated"
+              },
+              "closed_solid_work": {
+                "work_units": 2618,
+                "pair_tests": 26,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 0,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 195,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 183,
+                "plane_projection_tests": 795,
+                "plane_side_tests": 265,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 47,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 1,
+              "object_id": "blender:6137afac2c05d778b81264591c35f386e413559c0355e385da28d6061c78ebb3",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 36,
+                "point_face_tests": 216,
+                "point_edge_tests": 648,
+                "edge_edge_tests": 324,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 60,
+                "work_units": 1780,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 36,
+                "plane_projection_tests": 216,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 1741,
+                "work_units_after": 1780,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2594,
+                "pair_tests": 32,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 6,
+                "ray_tests": 8,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 80,
+                "leaf_pair_visits": 303,
+                "aabb_pruned_pairs": 204,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 174,
+                "plane_projection_tests": 792,
+                "plane_side_tests": 264,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 32,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            },
+            {
+              "candidate_index": 2,
+              "object_id": "blender:491437427b116aa2dbda749f07bf66a920c074c28fea6272078674282db1124b",
+              "spatial_pair_count": 1,
+              "spatial_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_pair_cache_hit": false,
+              "closed_solid_pair_count": 1,
+              "closed_solid_pair_cache_hit": false,
+              "surface_work": {
+                "validated_faces": 28,
+                "referenced_vertices": 18,
+                "triangle_pairs": 96,
+                "intersection_tests": 56,
+                "point_face_tests": 336,
+                "point_edge_tests": 1008,
+                "edge_edge_tests": 504,
+                "predicate_steps": 0,
+                "aabb_bound_tests": 95,
+                "aabb_pruned_pairs": 40,
+                "work_units": 2600,
+                "prepared_triangles": 28,
+                "tree_builds": 0,
+                "tree_build_units": 0,
+                "node_pair_visits": 0,
+                "leaf_pair_visits": 96,
+                "queue_pushes": 0,
+                "queue_bound_tests": 0,
+                "narrow_phase_pairs": 56,
+                "plane_projection_tests": 336,
+                "plane_bound_tests": 0,
+                "plane_pruned_pairs": 0,
+                "subtree_pruned_pairs": 0,
+                "shared_trees": false,
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18
+              },
+              "support_work": {
+                "support_direction_components": 3,
+                "support_source_vertices": 18,
+                "support_vertex_dots": 18,
+                "work_units_before": 2561,
+                "work_units_after": 2600,
+                "reason": null
+              },
+              "closed_solid_work": {
+                "work_units": 2498,
+                "pair_tests": 28,
+                "self_pair_tests": 26,
+                "cross_pair_tests": 2,
+                "ray_tests": 2,
+                "point_queries": 2,
+                "ray_attempts": 2,
+                "validated_faces": 0,
+                "referenced_vertices": 0,
+                "node_pair_visits": 74,
+                "leaf_pair_visits": 279,
+                "aabb_pruned_pairs": 209,
+                "prepared_pair_reused": true,
+                "prepared_triangles": 0,
+                "world_tree_builds": 2,
+                "world_bound_faces": 28,
+                "candidate_frame_builds": 0,
+                "candidate_frame_coefficients": 0,
+                "candidate_projection_tests": 0,
+                "candidate_bound_faces": 0,
+                "candidate_tree_builds": 0,
+                "candidate_frame_fallbacks": 0,
+                "leaf_bounds_reused": 0,
+                "cheap_pair_tests": 169,
+                "plane_projection_tests": 762,
+                "plane_side_tests": 254,
+                "prepared_trees_reused": false,
+                "strict_plane_rejections": 31,
+                "shared_index_tests": 163,
+                "shared_simplex_tests": 176,
+                "shared_simplex_certificates": 95,
+                "shared_edge_tests": 15,
+                "shared_edge_certificates": 15,
+                "cheap_bit_fallbacks": 0,
+                "cone_metadata_nodes": 0,
+                "cone_face_tests": 0,
+                "cone_anchor_tests": 0,
+                "cone_vector_preparations": 0,
+                "cone_orientation_tests": 0,
+                "cone_support_tests": 0,
+                "cone_metadata_merges": 0,
+                "cone_boundary_id_visits": 0,
+                "cone_node_pair_checks": 0,
+                "cone_separation_tests": 0,
+                "cone_bit_fallbacks": 0,
+                "simplex_node_certificates": 0,
+                "simplex_covered_pairs": 0,
+                "candidate_frame": "world",
+                "predicate_steps": 54
+              }
+            }
+          ],
+          "spatial_pair_count": 3,
+          "spatial_pair_cache_hits": 0,
+          "surface_pair_cache_hit": false,
+          "closed_solid_pair_cache_hit": false,
+          "spatial_pair_cache_hit": false,
+          "result_cache_hit": false
+        }
+      ],
+      "exits": {
+        "consumer": true,
+        "owner": true,
+        "native": true,
+        "product": true,
+        "thin_client": null
+      },
+      "unmeasured_from_consumer": {
+        "provider_requests": null,
+        "fees": null,
+        "resolved_effort": null,
+        "image_tokens": null
+      },
+      "provider_retry_observations": []
+    }
+  ],
+  "groups": {
+    "N": {
+      "cells": [
+        "grc01",
+        "grc04",
+        "grc05"
+      ],
+      "usage": {
+        "input_tokens": 77347,
+        "cached_input_tokens": 55424,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 6901,
+        "reasoning_output_tokens": 214,
+        "input_plus_output": 84248,
+        "uncached_input": 21923
+      },
+      "full_ns": {
+        "sum": 201797600200,
+        "min": 63248572000,
+        "median": 64364423400,
+        "max": 74184604800
+      },
+      "prompt_to_final_ns": {
+        "sum": 189529848200,
+        "min": 59667377800,
+        "median": 60285891500,
+        "max": 69576578900
+      },
+      "tool_attempts": 9,
+      "failed_attempts": 0,
+      "tool_tx_bytes": 27126,
+      "tool_rx_bytes": 13741,
+      "tool_text_utf8_bytes": 12760
+    },
+    "P": {
+      "cells": [
+        "grc02",
+        "grc03",
+        "grc06"
+      ],
+      "usage": {
+        "input_tokens": 48703,
+        "cached_input_tokens": 17536,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1566,
+        "reasoning_output_tokens": 0,
+        "input_plus_output": 50269,
+        "uncached_input": 31167
+      },
+      "full_ns": {
+        "sum": 76244918900,
+        "min": 24171870500,
+        "median": 25208574400,
+        "max": 26864474000
+      },
+      "prompt_to_final_ns": {
+        "sum": 58467047600,
+        "min": 18533967500,
+        "median": 19125990300,
+        "max": 20807089800
+      },
+      "tool_attempts": 4,
+      "failed_attempts": 1,
+      "tool_tx_bytes": 5008,
+      "tool_rx_bytes": 25892,
+      "tool_text_utf8_bytes": 23735
+    }
+  },
+  "pairs": [
+    {
+      "round": 1,
+      "N": "grc01",
+      "P": "grc02",
+      "time_reduction_percent": 62.445293186608424,
+      "token_reduction_percent": 50.267967569053184
+    },
+    {
+      "round": 2,
+      "N": "grc04",
+      "P": "grc03",
+      "time_reduction_percent": 63.78699587006494,
+      "token_reduction_percent": 20.3256282908249
+    },
+    {
+      "round": 3,
+      "N": "grc05",
+      "P": "grc06",
+      "time_reduction_percent": 60.14364656327735,
+      "token_reduction_percent": 49.02506963788301
+    }
+  ],
+  "comparison": {
+    "full_median_reduction_percent": 60.83461473221245,
+    "input_output_reduction_percent": 40.332114708954514,
+    "uncached_input_P_increase_percent": 42.16576198512977
+  },
+  "gate": {
+    "all_six_complete_correct": true,
+    "median_no_regression": true,
+    "input_output_no_regression": true,
+    "at_least_10_percent_improvement": true,
+    "passed": true
+  },
+  "preparation": {
+    "original": {
+      "Blender_sessions": 0,
+      "coordinator_model_cost": null,
+      "freeze_utc": "2026-11-12T10:26:17.937738+00:00",
+      "installation_rebuilds": 0,
+      "live_product_processes": 0,
+      "model_consumers": 0,
+      "recorded_start_utc": "2026-11-12T10:19:59.952396+00:00",
+      "scope": "Local work-order through freeze; earlier reading, coordinator and review resource costs unmeasured.",
+      "smoke_sessions": 0
+    },
+    "recorded_local_window_seconds": 377.985342,
+    "earlier_reading_coordinator_review_cost": null,
+    "amortization_to_formal_cells": false
+  },
+  "historical_preparation": {
+    "qualification_window_seconds": 1399.879649,
+    "asset_controller_ns": 1747819600,
+    "nested_builder_ns": 606214300,
+    "nested_QA_close_ns": 139973000,
+    "oracle_analysis_ns": 876328800,
+    "oracle_with_publication_ns": 915346000,
+    "owned_Blender_sessions": 2,
+    "product_processes": 0,
+    "model_consumers": 0,
+    "candidate_count_reported": 1,
+    "prior_isolated_install_reused_ns": 3874802500,
+    "scope": "Historical preparation only; windows contain nested stages and cannot be added. Prior installation elapsed is recorded history, not repeated in this batch."
+  },
+  "frozen_limits": {
+    "max_session_seconds": 450,
+    "total_cell_seconds": 570,
+    "actor_startup_seconds": 40,
+    "tool_attempts": 32,
+    "physical_RPC_limit": 128,
+    "tool_timeout_s": 30,
+    "tool_response_bytes": 1048576,
+    "code_bytes": 262144
+  },
+  "batch": {
+    "full_cell_sum_ns": 278042519100,
+    "run_models_ns": 278469848200,
+    "run_models_outside_cells_ns": 427329100,
+    "outer_formal_process_ns": 278485393500,
+    "outer_process_outside_run_models_ns": 15545300,
+    "durations_nested_not_additive": true
+  },
+  "author_comparison": {
+    "gate": true,
+    "N_median": true,
+    "P_median": true,
+    "N_tokens": true,
+    "P_tokens": true
+  },
+  "observed_budget_checks_passed": true,
+  "limitations": [
+    "No currency fee or subscription debit measurement.",
+    "No provider request/retry count or provider wire bytes.",
+    "Requested model/effort metadata is not resolved-provider identity.",
+    "Six thin-client EXIT receipts absent; do not infer normal thin-client exit from owner/worker closure.",
+    "Product config supplies 30-second cooperative budget, not the full-cell absolute deadline; local internal absolute endpoints are not exposed.",
+    "All observed windows fit original deadlines; cancellation, exhaustion, near-deadline startup/cleanup, or boundary-failure paths were not exercised.",
+    "No independent closed-only or pure inference duration; inclusive trace spans overlap.",
+    "Native TCP/owner attach wire bytes, native algorithm cache/RSS, cache occupancy, and token price-weighted cost are unmeasured.",
+    "Single scene and task, three repeats per arm; no cross-scene or global-discovery denominator."
+  ],
+  "new_product_blender_consumer_api_runs": 0
+}
