@@ -1,0 +1,5 @@
+First independent audit failed its own overly strong expectation: connector_reconnect state change.
+The saved connector reconnect keeps the same live Blender resident host and current document,
+so capture_state may legitimately remain equal. The old client connection is not the owner epoch.
+Corrected root audit checks document facts and host identity remain equal, while real scene mutation
+records must change capture_state. Original audit_attempt1.py retained. No product change.
