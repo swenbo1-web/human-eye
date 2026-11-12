@@ -251,6 +251,7 @@ class _ClosedWork:
             candidate_frame_builds=0,candidate_frame_coefficients=0,candidate_projection_tests=0,
             candidate_bound_faces=0,candidate_tree_builds=0,candidate_frame_fallbacks=0,
             leaf_bounds_reused=0,cheap_pair_tests=0,plane_projection_tests=0,plane_side_tests=0,
+            prepared_trees_reused=False,
             strict_plane_rejections=0,shared_index_tests=0,shared_simplex_tests=0,
             shared_simplex_certificates=0,shared_edge_tests=0,shared_edge_certificates=0,
             cheap_bit_fallbacks=0,cone_metadata_nodes=0,cone_face_tests=0,
@@ -725,7 +726,8 @@ def _closed_separating_plane(triangle,left,right,budget):
     return b is not None and a*b<0
 
 
-def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pair=None,prepared_holder=None):
+def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pair=None,prepared_holder=None,
+                           prepared_trees=None):
     """Zero-tolerance relation of represented embedded, connected closed shells.
 
     Interior overlap needs a strict containment or transverse-boundary witness.
@@ -753,7 +755,13 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         if prepared_holder is not None:prepared_holder['pair']=prepared_pair
         records,_,_,_,prepared=prepared_pair
         _closed_require(all(len(r[1])>=4 for r in records),'too_few_faces')
-        world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
+        if (type(prepared_trees) is dict and prepared_trees.get('pair') is prepared_pair
+                and len(prepared_trees.get('triangles',())) == 2
+                and all(a is b for a,b in zip(prepared_trees['triangles'],prepared))):
+            world_trees = tuple(zip(prepared_trees['bounds'],prepared_trees['roots']))
+            budget.counts['prepared_trees_reused'] = True
+        else:
+            world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
         if prepared_holder is not None:
             prepared_holder['trees'] = dict(pair=prepared_pair,triangles=tuple(prepared),
                 bounds=tuple(tree[0] for tree in world_trees),

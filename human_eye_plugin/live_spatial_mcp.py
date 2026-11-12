@@ -72,10 +72,10 @@ _QUERY_SCHEMA = {
             "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
-            "description": "1..3 explicit candidates in request order; one capture with target. Requires closed_solid_relation and surface_proximity; aabb optional."},
+            "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},
         "requested_facts": {"type": "array", "items": {"type": "string", "enum": list(TASK_FACTS)},
             "minItems": 1, "uniqueItems": True,
-            "description": "task: closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."},
+            "description": "task: spatial_relation proves strict full-referenced-vertex support separation or uses closed-shell classification, with geometry_scope identifying the performed proof. closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."},
         'geometry': copy.deepcopy(_TASK_GEOMETRY_SCHEMA),
         "operation": {"type":"string","enum":["diagnose","patch","reference","restore_preview","reference_patch"],
             "description":"Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."},
@@ -108,8 +108,10 @@ _QUERY_SCHEMA = {
                    {"required": ["objects"], "properties": {"target": False, "candidates": False}},
                    {"required": ["target", "candidates"],
                     "additionalProperties": False,
-                    "properties": {"mode": {}, "target": {}, "candidates": {}, "geometry": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "surface_proximity", "aabb"]},
-                        "allOf": [{"contains": {"const": "closed_solid_relation"}}, {"contains": {"const": "surface_proximity"}}]}}}
+                    "properties": {"mode": {}, "target": {}, "candidates": {}, "geometry": {}, "requested_facts": {"items": {"enum": ["closed_solid_relation", "spatial_relation", "surface_proximity", "aabb"]},
+                        "allOf": [{"contains": {"const": "surface_proximity"}},
+                            {"anyOf": [{"contains": {"const": "closed_solid_relation"}},
+                                       {"contains": {"const": "spatial_relation"}}]}]}}}
                ]}},
               {"if": {"required": ["geometry"]},
                "then": {"required": ["mode", "target", "candidates"],
@@ -154,6 +156,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
         "description": (
             "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. Task set example: "
             "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. "
+            "Opt in to spatial_relation and surface_proximity for support-certified separation with closed-classification fallback. "
             "Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. "
             "Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, "
             "or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "

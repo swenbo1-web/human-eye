@@ -1,0 +1,15 @@
+# Initial candidate cost and code review
+
+The initial candidate has 137 sources with canonical SHA256 2c453e56f3abf83a49f9c8ef37a3a77728dd8f05168db4fd5217d3bad465c390. Its six pre-registered non-timing observations are saved in testing/initial_work_01. The results file SHA256 is 1583a056252448ed53ac0ede5e1b448b39d8dfc06d8e3322b42f9f990a6b28df. These instrumented observations supply work attribution. The primary sixty performance calls have not begun at this review.
+
+All six calls produce valid spatial and surface results. G508 Peer, Competing and Near, plus the simple control, prove strict support separation. Actual closed classifier, self-validation, closed candidate-tree and cone-metadata function entries are zero. The surface distance builds its own world trees when needed. Each call enters admission, integer-frame preparation, surface measurement and support once.
+
+The three G508 support passes check 512, 288 and 288 unique referenced source indices. Their work increments are exactly 1027, 579 and 579 units, following the frozen 2V+3 rule. The simple control checks 16 indices and adds 35 units. Existing integer coordinate dictionaries are retained by reference and reused. Surface distance remains the dominant counted geometric work in the separated cases.
+
+The intersecting-bars fallback obtains zero surface distance at its first full leaf. It adds only the three direction-component units before invoking the old classifier once. The full-containment fallback measures the existing positive surface distance with 120 full leaves, performs the complete support test and invokes the old classifier once. Its closed phase reports preparation reuse and zero additional face validation, referenced-coordinate preparation and triangle preparation. The shared request deadline remains in force.
+
+The core adds three focused operations for proposal, complete support and ordered orchestration. Task facts share the existing binding and collection ranking loop. New memo entries have a distinct semantic version. Runtime holders and Work objects are excluded from cache payloads. No repeated coordinate conversion, repeated fallback invocation or duplicate source capture was observed in this fixed pass.
+
+The review selects no substantive simplification. The intersecting control already has the cheap first-leaf zero path. There is no observed redundant preparation to remove from containment. Additional tree construction, zero-contact branches or persistent preparation caches have no demonstrated benefit in this fixed evidence. Distance-order and closed-tree changes fall outside this batch's selected design.
+
+The candidate therefore retains the initial algorithm for final same-source correctness, the fixed sixty calls and the isolated actual MCP sequence. This decision does not establish performance admission. The primary measurements decide all pre-registered cost gates. Any deterministic correctness or QA-adapter correction must preserve its original failed record and update the affected source binding.
