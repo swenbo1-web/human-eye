@@ -1,0 +1,165 @@
+{
+  "commit": "fac9b4373575d653cc96f39f1dcb225300cd5977",
+  "sources": {
+    "human_eye_plugin/surface_proximity.py": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3",
+    "human_eye_plugin/surface_geometry.py": "cbbf523e3db8f0150953344f39179ac8fb4cb6fc4b9469d054601ad2e43a2fb2"
+  },
+  "passed": true,
+  "cases": [
+    {
+      "subdivisions": 1,
+      "per_object": {
+        "vertices": 8,
+        "faces": 12,
+        "edges": 18,
+        "closed_edge_incidence": true,
+        "euler_characteristic": 2
+      },
+      "sum_faces": 24,
+      "face_product": 144,
+      "independent_truth": {
+        "distance_m": 1.0,
+        "relation": "separated",
+        "proof": "two identical closed cubes [-1,1]^3 and [2,4]x[-1,1]^2"
+      },
+      "proximity": {
+        "measurement_valid": true,
+        "distance_m": 1.0,
+        "point_a_world": [
+          1.0,
+          1.0,
+          -1.0
+        ],
+        "point_b_world": [
+          2.0,
+          1.0,
+          -1.0
+        ],
+        "direction_a_to_b": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "witness_status": "measured",
+        "direction_status": "measured",
+        "topology": [
+          {
+            "boundary_edge_count": 0,
+            "nonmanifold_edge_count": 0
+          },
+          {
+            "boundary_edge_count": 0,
+            "nonmanifold_edge_count": 0
+          }
+        ],
+        "method": "exact_binary64_triangle_surface_hulls_v3",
+        "work": {
+          "validated_faces": 24,
+          "referenced_vertices": 16,
+          "triangle_pairs": 144,
+          "intersection_tests": 104,
+          "point_face_tests": 624,
+          "point_edge_tests": 1872,
+          "edge_edge_tests": 936,
+          "predicate_steps": 158,
+          "aabb_bound_tests": 143,
+          "aabb_pruned_pairs": 40
+        }
+      },
+      "relation": {
+        "measurement_valid": true,
+        "relation": "separated",
+        "method": "bounded_exact_closed_shell_v1",
+        "geometry_scope": "two_connected_embedded_closed_orientable_triangle_shells_binary64_world_zero_tolerance",
+        "relation_tolerance_m": 0.0,
+        "work": {
+          "work_units": 708,
+          "pair_tests": 108,
+          "self_pair_tests": 108,
+          "cross_pair_tests": 0,
+          "ray_tests": 0,
+          "point_queries": 2,
+          "ray_attempts": 2,
+          "validated_faces": 24,
+          "referenced_vertices": 16,
+          "node_pair_visits": 33,
+          "leaf_pair_visits": 132,
+          "aabb_pruned_pairs": 168,
+          "prepared_pair_reused": false,
+          "predicate_steps": 120
+        },
+        "certificate": "disjoint_boundaries_with_exact_parity"
+      },
+      "checkpoint_calls": 4367
+    },
+    {
+      "subdivisions": 4,
+      "per_object": {
+        "vertices": 98,
+        "faces": 192,
+        "edges": 288,
+        "closed_edge_incidence": true,
+        "euler_characteristic": 2
+      },
+      "sum_faces": 384,
+      "face_product": 36864,
+      "independent_truth": {
+        "distance_m": 1.0,
+        "relation": "separated",
+        "proof": "two identical closed cubes [-1,1]^3 and [2,4]x[-1,1]^2"
+      },
+      "proximity": {
+        "measurement_valid": false,
+        "distance_m": null,
+        "point_a_world": null,
+        "point_b_world": null,
+        "direction_a_to_b": null,
+        "witness_status": "unknown",
+        "direction_status": "unknown",
+        "topology": null,
+        "method": "exact_binary64_triangle_surface_hulls_v3",
+        "work": {
+          "validated_faces": 0,
+          "referenced_vertices": 0,
+          "triangle_pairs": 0,
+          "intersection_tests": 0,
+          "point_face_tests": 0,
+          "point_edge_tests": 0,
+          "edge_edge_tests": 0,
+          "predicate_steps": 0,
+          "aabb_bound_tests": 0,
+          "aabb_pruned_pairs": 0
+        },
+        "reason": "surface_geometry_work_limit"
+      },
+      "relation": {
+        "measurement_valid": false,
+        "relation": null,
+        "method": "bounded_exact_closed_shell_v1",
+        "geometry_scope": "two_connected_embedded_closed_orientable_triangle_shells_binary64_world_zero_tolerance",
+        "relation_tolerance_m": 0.0,
+        "work": {
+          "work_units": 1,
+          "pair_tests": 0,
+          "self_pair_tests": 0,
+          "cross_pair_tests": 0,
+          "ray_tests": 0,
+          "point_queries": 0,
+          "ray_attempts": 0,
+          "validated_faces": 0,
+          "referenced_vertices": 0,
+          "node_pair_visits": 0,
+          "leaf_pair_visits": 0,
+          "aabb_pruned_pairs": 0,
+          "prepared_pair_reused": false
+        },
+        "reason": "closed_solid_geometry_work_limit"
+      },
+      "checkpoint_calls": 2
+    }
+  ],
+  "scope": "Two fixed pure-kernel admission checks. Not a consumer benchmark or large-asset qualification.",
+  "Blender_calls": 0,
+  "model_calls": 0,
+  "changed_limits": false
+}

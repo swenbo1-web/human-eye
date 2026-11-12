@@ -1,0 +1,291 @@
+{
+  "passed": true,
+  "source_scope": "saved sgc03 tool records plus c013/fac source inspection; no new model/Blender",
+  "first_call_object_count": 28,
+  "first_call_reference_bounds_and_centers": [
+    {
+      "name": "N24",
+      "mesh": "G05",
+      "bounds": [
+        [
+          -0.5099999904632568,
+          0.06749999523162842,
+          0.25
+        ],
+        [
+          0.5099999904632568,
+          0.1525000035762787,
+          0.30000001192092896
+        ]
+      ],
+      "center": [
+        0.0,
+        0.10999999940395355,
+        0.2750000059604645
+      ]
+    },
+    {
+      "name": "N12",
+      "mesh": "G05",
+      "bounds": [
+        [
+          -0.5099999904632568,
+          0.06749999523162842,
+          0.6200000047683716
+        ],
+        [
+          0.5099999904632568,
+          0.1525000035762787,
+          0.6699999570846558
+        ]
+      ],
+      "center": [
+        0.0,
+        0.10999999940395355,
+        0.6449999809265137
+      ]
+    },
+    {
+      "name": "N04",
+      "mesh": "G12",
+      "bounds": [
+        [
+          0.37199997901916504,
+          0.13699999451637268,
+          0.23000001907348633
+        ],
+        [
+          0.40799999237060547,
+          0.1730000078678131,
+          0.75
+        ]
+      ],
+      "center": [
+        0.38999998569488525,
+        0.1550000011920929,
+        0.49000000953674316
+      ]
+    },
+    {
+      "name": "N19",
+      "mesh": "G13",
+      "bounds": [
+        [
+          0.4519999921321869,
+          0.13699999451637268,
+          0.23000001907348633
+        ],
+        [
+          0.4880000054836273,
+          0.1730000078678131,
+          0.75
+        ]
+      ],
+      "center": [
+        0.4699999988079071,
+        0.1550000011920929,
+        0.49000000953674316
+      ]
+    }
+  ],
+  "first_call_code": "import bpy, json\nfrom mathutils import Vector\nobjs={o.name:o for o in bpy.context.scene.objects if o.type=='MESH'}\ndef worldverts(o): return [o.matrix_world@v.co for v in o.data.vertices]\ndef bounds(o):\n v=worldverts(o); return [[min(p[i] for p in v) for i in range(3)],[max(p[i] for p in v) for i in range(3)]]\nprint(json.dumps([{'name':o.name,'mesh':o.data.name,'bounds':bounds(o),'center':[(a+b)/2 for a,b in zip(*bounds(o))]} for o in objs.values()],indent=1))",
+  "relation_call_arguments": {
+    "target": {
+      "name": "N16"
+    },
+    "candidates": [
+      {
+        "name": "N13"
+      },
+      {
+        "name": "N08"
+      },
+      {
+        "name": "N28"
+      }
+    ],
+    "include_aabb": true,
+    "geometry": {
+      "include_triangles": true,
+      "objects": [
+        {
+          "name": "N16"
+        },
+        {
+          "name": "N13"
+        },
+        {
+          "name": "N08"
+        },
+        {
+          "name": "N28"
+        }
+      ]
+    }
+  },
+  "third_call_code": "import math\nfor name in ['N24','N12','N04','N19']:\n o=objs[name]\n print(name,'local vertices', [tuple(round(float(c),6) for c in v.co) for v in o.data.vertices], 'matrix', [list(r) for r in o.matrix_world])\nmid=(.43,.155)\nfor name in ['N15','N18','N25','N16']:\n lo,hi=bounds(objs[name]); c=[(a+b)/2 for a,b in zip(lo,hi)]\n print(name,'center',c,'pipe_midpoint_XY_distance',math.hypot(c[0]-mid[0],c[1]-mid[1]))",
+  "third_call_new_reference_shape_text": "N24 local vertices [(-0.51, -0.0425, -0.025), (-0.51, 0.0425, -0.025), (-0.51, 0.0425, 0.025), (-0.51, -0.0425, 0.025), (-0.51, -0.03, -0.015), (-0.51, 0.03, -0.015), (-0.51, 0.03, 0.015), (-0.51, -0.03, 0.015), (0.51, -0.0425, -0.025), (0.51, 0.0425, -0.025), (0.51, 0.0425, 0.025), (0.51, -0.0425, 0.025), (0.51, -0.03, -0.015), (0.51, 0.03, -0.015), (0.51, 0.03, 0.015), (0.51, -0.03, 0.015)] matrix [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.10999999940395355], [0.0, 0.0, 1.0, 0.2750000059604645], [0.0, 0.0, 0.0, 1.0]]\nN12 local vertices [(-0.51, -0.0425, -0.025), (-0.51, 0.0425, -0.025), (-0.51, 0.0425, 0.025), (-0.51, -0.0425, 0.025), (-0.51, -0.03, -0.015), (-0.51, 0.03, -0.015), (-0.51, 0.03, 0.015), (-0.51, -0.03, 0.015), (0.51, -0.0425, -0.025), (0.51, 0.0425, -0.025), (0.51, 0.0425, 0.025), (0.51, -0.0425, 0.025), (0.51, -0.03, -0.015), (0.51, 0.03, -0.015), (0.51, 0.03, 0.015), (0.51, -0.03, 0.015)] matrix [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.10999999940395355], [0.0, 0.0, 1.0, 0.6449999809265137], [0.0, 0.0, 0.0, 1.0]]\nN04 local vertices [(0.018, 0.0, -0.26), (0.015588, 0.009, -0.26), (0.009, 0.015588, -0.26), (0.0, 0.018, -0.26), (-0.009, 0.015588, -0.26), (-0.015588, 0.009, -0.26), (-0.018, 0.0, -0.26), (-0.015588, -0.009, -0.26), (-0.009, -0.015588, -0.26), (-0.0, -0.018, -0.26), (0.009, -0.015588, -0.26), (0.015588, -0.009, -0.26), (0.018, 0.0, 0.26), (0.015588, 0.009, 0.26), (0.009, 0.015588, 0.26), (0.0, 0.018, 0.26), (-0.009, 0.015588, 0.26), (-0.015588, 0.009, 0.26), (-0.018, 0.0, 0.26), (-0.015588, -0.009, 0.26), (-0.009, -0.015588, 0.26), (-0.0, -0.018, 0.26), (0.009, -0.015588, 0.26), (0.015588, -0.009, 0.26)] matrix [[-1.0, 1.5099580252808664e-07, 0.0, 0.38999998569488525], [-1.5099580252808664e-07, -1.0, 0.0, 0.1550000011920929], [0.0, 0.0, 1.0, 0.49000000953674316], [0.0, 0.0, 0.0, 1.0]]\nN19 local vertices [(0.018, 0.0, -0.26), (0.015588, 0.009, -0.26), (0.009, 0.015588, -0.26), (0.0, 0.018, -0.26), (-0.009, 0.015588, -0.26), (-0.015588, 0.009, -0.26), (-0.018, 0.0, -0.26), (-0.015588, -0.009, -0.26), (-0.009, -0.015588, -0.26), (-0.0, -0.018, -0.26), (0.009, -0.015588, -0.26), (0.015588, -0.009, -0.26), (0.018, 0.0, 0.26), (0.015588, 0.009, 0.26), (0.009, 0.015588, 0.26), (0.0, 0.018, 0.26), (-0.009, 0.015588, 0.26), (-0.015588, 0.009, 0.26), (-0.018, 0.0, 0.26), (-0.015588, -0.009, 0.26), (-0.009, -0.015588, 0.26), (-0.0, -0.018, 0.26), (0.009, -0.015588, 0.26), (0.015588, -0.009, 0.26)] matrix [[-1.0, 1.5099580252808664e-07, 0.0, 0.4699999988079071], [-1.5099580252808664e-07, -1.0, 0.0, 0.1550000011920929], [0.0, 0.0, 1.0, 0.49000000953674316], [0.0, 0.0, 0.0, 1.0]]\nN15 center [-0.30000001192092896, -0.02999999839812517, 0.36000001430511475] pipe_midpoint_XY_distance 0.7530770324554206\nN18 center [0.18000000342726707, 0.1599999964237213, 0.7300000190734863] pipe_midpoint_XY_distance 0.2500499915029067\nN25 center [-0.05999999679625034, -0.27000001072883606, 0.36000001430511475] pipe_midpoint_XY_distance 0.6486331829160732\nN16 center [0.18000000342726707, 0.10000000149011612, 0.36000001430511475] pipe_midpoint_XY_distance 0.25597851105601366\n",
+  "third_call_classification": [
+    "four reference local vertex arrays and matrices",
+    "repeat bounds/centers for N15 N18 N25 N16",
+    "XY distance computations"
+  ],
+  "relation_geometry": [
+    {
+      "name": "N16",
+      "vertices": 16,
+      "triangles": 32
+    },
+    {
+      "name": "N13",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "N08",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "N28",
+      "vertices": 24,
+      "triangles": 44
+    }
+  ],
+  "existing_relation_local_evidence": [
+    {
+      "name": "N13",
+      "local_evidence": {
+        "point_scope": "boundary_crossing_localization_not_volume_interior_or_penetration_depth",
+        "point_status": "approximate",
+        "point_world_m": [
+          0.2500000074505806,
+          0.11500000115483999,
+          0.3900000136345625
+        ],
+        "publication_tolerance_m": 1e-09,
+        "triangle_indices": [
+          12,
+          11
+        ],
+        "triangle_scope": "current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids",
+        "triangle_vertices_world_m": [
+          [
+            [
+              0.2500000074505806,
+              0.08000000193715096,
+              0.30000001564621925
+            ],
+            [
+              0.2500000074505806,
+              0.12000000104308128,
+              0.30000001564621925
+            ],
+            [
+              0.2500000074505806,
+              0.12000000104308128,
+              0.42000001296401024
+            ]
+          ],
+          [
+            [
+              0.24000000022351742,
+              0.07000000216066837,
+              0.3900000136345625
+            ],
+            [
+              0.2599999997764826,
+              0.13000000081956387,
+              0.3900000136345625
+            ],
+            [
+              0.24000000022351742,
+              0.13000000081956387,
+              0.3900000136345625
+            ]
+          ]
+        ],
+        "type": "transverse_triangle_crossing"
+      },
+      "nearest_witness": {
+        "a": [
+          0.2500000074505806,
+          0.1100000012665987,
+          0.3900000136345625
+        ],
+        "b": [
+          0.2500000074505806,
+          0.1100000012665987,
+          0.3900000136345625
+        ],
+        "direction_a_to_b": null
+      }
+    },
+    {
+      "name": "N08",
+      "local_evidence": null,
+      "nearest_witness": {
+        "a": [
+          0.11000000685453415,
+          0.08000000193715096,
+          0.3350000139325857
+        ],
+        "b": [
+          0.10989999957382679,
+          0.08000000193715096,
+          0.3350000139325857
+        ],
+        "direction_a_to_b": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "name": "N28",
+      "local_evidence": null,
+      "nearest_witness": {
+        "a": [
+          0.18000000715255737,
+          0.08000000193715096,
+          0.32500001415610313
+        ],
+        "b": [
+          0.18000000715255737,
+          0.08000000193715096,
+          0.3480000142008066
+        ],
+        "direction_a_to_b": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    }
+  ],
+  "findings": {
+    "reference_bounds_were_already_delivered": true,
+    "reference_bounds_only_proves_round_elimination": false,
+    "geometry_default_off": true,
+    "explicit_geometry_triangles_default": false,
+    "original_polygons_preserved_in_relation_resource": false,
+    "local_crossing_and_distance_witnesses_already_present": true,
+    "current_surface_sum_faces_limit": 4096,
+    "current_surface_triangle_pairs_limit": 16384
+  },
+  "source_files": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\REQUEST.json": "3cd1d68b719aeeafaad5726ecfe1fdcb9b6cbe829c6b1795cba9b91e8053f704",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\REQUEST.json": "24fb401c2ddff236ef304102e7da06181b8a941fc15dab4b7d66f1371b9c96eb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\REQUEST.json": "8315f1d602a388410146f897ff0746d4173108bbcc87278a2795c7e70f7bc9e0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_01\\RESPONSE.json": "b2cc61ff06207ef12b4f80528508801d11095a17cb79f4da2d180f2b1babd0db",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_02\\RESPONSE.json": "30d4654817146fd054ae96647ec7e279e8d6ce3c47dbe08d63be42cccdb01f27",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_selected_geometry_consumption_001\\cells\\sgc03\\owner\\tool_03\\RESPONSE.json": "1878c383ee18636e6b4b5d1fbed386ea40000406a3b2dfca3a77c3fe9417b54b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\task_query.py": "def312ae4b67192e4a3e71feb80fa5122c08fd8a5c2853406c8de4f692df5fd8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\live_spatial_mcp.py": "5c72ab123ad65ee330c32229f1eaaee1cf1b84f4ebf2175bb770770e434e5f78",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\blender_host.py": "e3cdbbf1c8a3775dfbad8e1c0aecfa147279f4ab178b152df3f2d81792813f19",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\scene_residency.py": "62a9f51ac65dbaad358217da766fd0e0b9b1ed903e5b7876dafb9f4f5484a0ba",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\surface_proximity.py": "2c471262b29101439293a172820c7d9183f840492d6ca2250f72122c5548cce3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\live_service.py": "05790c8bb14706982c3ec8e0a4b7db0ab9dc18333482b9ad589ca32a20aed3fe"
+  }
+}
