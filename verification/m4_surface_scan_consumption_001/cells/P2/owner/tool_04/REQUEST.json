@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_2d7bfd553f8b43459bbaf18f96cf2403",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d044-2146-7010-bab0-4278c72e8c6a",
+        "thread_id": "01a1d044-2146-7010-bab0-4278c72e8c6a",
+        "turn_started_at_unix_ms": 1794495488494,
+        "turn_id": "01a1d044-21e7-7ce3-a8f3-2ad61c830b75",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "bedcc827ec548e3afab816c0986db0c99eb42bb8",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d044-2146-7010-bab0-4278c72e8c6a",
+      "itemId": "fc_0269b149976864b2016af5d426146087d0a5df22ab7b391c4f",
+      "progressToken": 4
+    },
+    "name": "execute_blender_code",
+    "arguments": {
+      "code": "import numpy as np\nimport itertools\nmesh_triangles={}\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nfor obj in bpy.context.scene.objects:\n    if obj.type!='MESH': continue\n    evaluated=obj.evaluated_get(depsgraph)\n    mesh=evaluated.to_mesh()\n    mesh.calc_loop_triangles()\n    vertices=np.array([tuple(evaluated.matrix_world @ vertex.co) for vertex in mesh.vertices],dtype=float)\n    mesh_triangles[obj.name]=vertices[np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles])]\n    evaluated.to_mesh_clear()\ndef point_triangle_min(points, triangles):\n    offsets=points[:,None,:]-triangles[None,:,0,:]\n    edge_first=triangles[:,1]-triangles[:,0]\n    edge_second=triangles[:,2]-triangles[:,0]\n    normals=np.cross(edge_first,edge_second)\n    norm_squared=np.sum(normals*normals,axis=-1)\n    signed=np.einsum('ptj,tj->pt',offsets,normals)\n    projected=offsets-signed[:,:,None]*normals[None,:,:]/norm_squared[None,:,None]\n    first_squared=np.sum(edge_first*edge_first,axis=-1)\n    second_squared=np.sum(edge_second*edge_second,axis=-1)\n    mixed=np.sum(edge_first*edge_second,axis=-1)\n    projected_first=np.einsum('ptj,tj->pt',projected,edge_first)\n    projected_second=np.einsum('ptj,tj->pt',projected,edge_second)\n    determinant=first_squared*second_squared-mixed*mixed\n    bary_first=(second_squared*projected_first-mixed*projected_second)/determinant\n    bary_second=(first_squared*projected_second-mixed*projected_first)/determinant\n    inside=(bary_first>=0)&(bary_second>=0)&(bary_first+bary_second<=1)\n    return np.min(np.where(inside,signed*signed/norm_squared,np.inf))\ndef edges_for(triangles):\n    return triangles[:,[0,1,2]].reshape(-1,3),triangles[:,[1,2,0]].reshape(-1,3)\ndef segment_triangle_hit(starts,ends,triangles):\n    directions=ends-starts\n    first=triangles[:,1]-triangles[:,0]\n    second=triangles[:,2]-triangles[:,0]\n    cross=np.cross(directions[:,None,:],second[None,:,:])\n    determinant=np.einsum('tj,stj->st',first,cross)\n    valid=np.abs(determinant)>1e-25\n    inverse=np.divide(1.,determinant,out=np.zeros_like(determinant),where=valid)\n    offset=starts[:,None,:]-triangles[None,:,0,:]\n    bary_first=np.sum(offset*cross,axis=-1)*inverse\n    cross_second=np.cross(offset,first[None,:,:])\n    bary_second=np.einsum('sj,stj->st',directions,cross_second)*inverse\n    fraction=np.einsum('tj,stj->st',second,cross_second)*inverse\n    return np.any(valid&(bary_first>=0)&(bary_second>=0)&(bary_first+bary_second<=1)&(fraction>=0)&(fraction<=1))\ndef segment_min(starts_a,ends_a,starts_b,ends_b):\n    direction_a=(ends_a-starts_a)[:,None,:]\n    direction_b=(ends_b-starts_b)[None,:,:]\n    offset=starts_a[:,None,:]-starts_b[None,:,:]\n    length_a=np.sum(direction_a*direction_a,axis=-1)\n    length_b=np.sum(direction_b*direction_b,axis=-1)\n    mixed=np.sum(direction_a*direction_b,axis=-1)\n    offset_a=np.sum(direction_a*offset,axis=-1)\n    offset_b=np.sum(direction_b*offset,axis=-1)\n    determinant=length_a*length_b-mixed*mixed\n    parameter_a=np.divide(mixed*offset_b-length_b*offset_a,determinant,out=np.zeros_like(determinant),where=determinant>1e-30)\n    parameter_b=np.divide(length_a*offset_b-mixed*offset_a,determinant,out=np.zeros_like(determinant),where=determinant>1e-30)\n    inside=(determinant>1e-30)&(parameter_a>=0)&(parameter_a<=1)&(parameter_b>=0)&(parameter_b<=1)\n    interior=np.sum((offset+parameter_a[:,:,None]*direction_a-parameter_b[:,:,None]*direction_b)**2,axis=-1)\n    minimum=np.min(np.where(inside,interior,np.inf))\n    for parameter_a in (0.,1.):\n        parameter_b=np.clip((offset_b+parameter_a*mixed)/length_b,0,1)\n        minimum=min(minimum,np.min(np.sum((offset+parameter_a*direction_a-parameter_b[:,:,None]*direction_b)**2,axis=-1)))\n    for parameter_b in (0.,1.):\n        parameter_a=np.clip((parameter_b*mixed-offset_a)/length_a,0,1)\n        minimum=min(minimum,np.min(np.sum((offset+parameter_a[:,:,None]*direction_a-parameter_b*direction_b)**2,axis=-1)))\n    return minimum\nsurface_matches=[]\nfor name_a,name_b in itertools.combinations(sorted(mesh_triangles),2):\n    triangles_a=mesh_triangles[name_a]; triangles_b=mesh_triangles[name_b]\n    gap=np.maximum(np.maximum(triangles_a.min(axis=(0,1))-triangles_b.max(axis=(0,1)),triangles_b.min(axis=(0,1))-triangles_a.max(axis=(0,1))),0)\n    if np.linalg.norm(gap)>0.002: continue\n    starts_a,ends_a=edges_for(triangles_a); starts_b,ends_b=edges_for(triangles_b)\n    if segment_triangle_hit(starts_a,ends_a,triangles_b) or segment_triangle_hit(starts_b,ends_b,triangles_a): distance=0.\n    else: distance=float(np.sqrt(min(point_triangle_min(triangles_a.reshape(-1,3),triangles_b),point_triangle_min(triangles_b.reshape(-1,3),triangles_a),segment_min(starts_a,ends_a,starts_b,ends_b))))\n    if distance<=0.002: surface_matches.append((name_a,name_b,distance*1000))\nprint('Matches:',len(surface_matches))\nfor name_a,name_b,distance_mm in surface_matches: print(name_a,name_b,format(distance_mm,'.9f'))"
+    }
+  }
+}
