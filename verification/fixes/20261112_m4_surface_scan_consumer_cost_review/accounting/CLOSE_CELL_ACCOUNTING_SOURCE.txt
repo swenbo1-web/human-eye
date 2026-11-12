@@ -1,0 +1,33 @@
+def close_cell_accounting(folder, row, records, stop):
+    """Observe completion after business receipts and owned cleanup have closed.
+
+    These two controller timing receipts describe their own publication
+    separately. Their final self-publication is outside the business window.
+    File close is the existing durability level, with no fsync assertion.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    save(HERE/'RUN_RESULT.json', {'records': records, 'stop': stop,
+        'started_cells': len(records), 'maximum_consumers': 6,
+        'all_planned_dispatched': len(records) == 6, 'no_replacements': True})
+    business_closed_ns = time.perf_counter_ns()
+    elapsed = business_closed_ns-row['cell_started_ns']
+    timing = {
+        'cell': row['cell'], 'cell_started_ns': row['cell_started_ns'],
+        'business_receipts_closed_ns': business_closed_ns,
+        'full_cell_wall_ns': elapsed, 'within_570s': elapsed < 570*10**9,
+        'owner_cleanup_confirmed': bool(row.get('finish') and row['finish'].get('confirmed')),
+        'scope': 'Before cell input checks through final CONSUMER, OWNER_FINISH and per-cell RUN_RESULT write/close and owned cleanup; controller timing-receipt publication is separate',
+        'durability': 'existing buffered write and close; fsync persistence unmeasured',
+    }
+    publication_started_ns = time.perf_counter_ns()
+    save(folder/'CELL_FINAL_TIMING.json', timing)
+    publication_closed_ns = time.perf_counter_ns()
+    save(folder/'CELL_TIMING_PUBLICATION.json', {
+        'cell': row['cell'], 'business_receipts_closed_ns': business_closed_ns,
+        'timing_receipt_publication_started_ns': publication_started_ns,
+        'timing_receipt_publication_closed_ns': publication_closed_ns,
+        'timing_receipt_publication_ns': publication_closed_ns-publication_started_ns,
+        'controller_tail_ns': publication_closed_ns-business_closed_ns,
+        'scope': 'CELL_FINAL_TIMING serialization, write and close; this publication receipt itself and later batch summaries excluded',
+    })
+    return timing
