@@ -339,6 +339,10 @@ class BlenderMCPHost:
         self._record_observation_document(binding)
         return result
 
+    def surface_scan_dependencies(self, capture):
+        """Return a decoded scan's private dependencies without adding wire fields."""
+        return self._scene_decoder.surface_scan_dependencies(capture)
+
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
 

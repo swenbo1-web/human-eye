@@ -1405,12 +1405,16 @@ class LiveSpatialService:
                 raise ValueError('surface_scan_threshold_binding_mismatch')
             with span('surface_scan.validate_packet'):
                 validated = _packet(captured, self._check_request_budget, self._identity)
+            dependency_reader = getattr(self.host, 'surface_scan_dependencies', None)
+            dependencies = dependency_reader(captured) if callable(dependency_reader) else None
             selection = {'query': query, 'binding': captured['binding'],
                          'scope_issues': captured['scope_issues']}
             context.activate(captured.get('capture'), 'surface_scan', selection)
             work = {'kernel_calls': 0, 'pair_calls': 0, 'cache_hits': 0, 'continuation_hits': 0,
                     'normalization_requests': 0, 'normalizations': 0,
-                    'acquisition_work': copy.deepcopy(captured.get('work', {}))}
+                    'acquisition_work': copy.deepcopy(captured.get('work', {})),
+                    'measurement_cache_max_measurements': context.scene_cache.max_measurements,
+                    'measurement_cache_before': context.scene_cache.stats()}
             def normalize_capture():
                 work['normalizations'] += 1
                 return _validated_scene(captured.get('capture'),
@@ -1424,7 +1428,8 @@ class LiveSpatialService:
                 result, hit = context.result(key, lambda: surface_scan_result(
                     captured, context.scene_cache, self._check_request_budget,
                     diagnostics=work, _normalize=normalize, _identity=self._identity,
-                    _progress=progress, _validated_packet=validated), cache_partial=False)
+                    _progress=progress, _validated_packet=validated,
+                    _dependencies=dependencies), cache_partial=False)
                 work['result_cache_hit'] = hit
                 if hit:
                     work['dispositions'] = copy.deepcopy(progress.get('last_dispositions', []))
@@ -1432,6 +1437,7 @@ class LiveSpatialService:
                         bound_pairs=len(captured['pairs']),
                         candidate_pairs=sum(row['disposition'] == 'retained' for row in captured['pairs']),
                         endpoint_union=len(captured['capture']['meshes']))
+                work['measurement_cache_after'] = context.scene_cache.stats()
             self._bind_read_result(result, source_check)
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=result['binding']['scene_revision'],

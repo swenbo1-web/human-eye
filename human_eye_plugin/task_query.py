@@ -252,10 +252,14 @@ def project_task_geometry(result, meshes, request, checkpoint):
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
                               diagnostics, retain_exact_rank=False, prepared_pair=None,
-                              boundary_contact=None, prepared_trees=None, before_compute=None):
+                              boundary_contact=None, prepared_trees=None, before_compute=None,
+                              _surface_scan=False):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
+    if _surface_scan:
+        diagnostics.update(surface_dependency_used=False, surface_dependency_key=None,
+                           surface_dependency_objects=None, surface_dependency_cache_hit=False)
     surface_work = {}
     diagnostics['surface_work'] = surface_work
     def compute_surface():
@@ -281,9 +285,13 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     if retain_exact_rank:
         parameters['retain_exact_rank'] = True
         version = 'task-surface-proximity-exact-world-rank-v3'
+    cache_options = {'_surface_scan': True, '_diagnostics': diagnostics} if _surface_scan else {}
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version,
-        before_compute=before_compute)
+        before_compute=before_compute, **cache_options)
+    if _surface_scan:
+        diagnostics['surface_dependency_cache_hit'] = (diagnostics['surface_dependency_used']
+                                                       and diagnostics['surface_pair_cache_hit'])
     return result
 
 

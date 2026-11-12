@@ -167,14 +167,40 @@ class SpatialSceneCache:
         self._support_hits = self._support_misses = 0
         self._estimated_saved_ms = 0.0
         self._read_meshes = {}
+        self._surface_scan_meshes = {}
 
     def _bind_read_meshes(self, version, meshes):
         """Only the resident owner binds its private normalized mesh objects."""
         with self._lock:
             self._read_meshes = ({id(mesh): (mesh, (version, mesh.object_id)) for mesh in meshes}
                                  if version is not None else {})
+            self._surface_scan_meshes = {}
 
-    def _measurement_mesh(self, mesh):
+    def _bind_surface_scan_meshes(self, meshes, dependencies, runtime_source_sha256, *, capture):
+        """Bind one decoded scan's private resource dependencies to its meshes."""
+        with self._lock:
+            self._surface_scan_meshes = {}
+            if dependencies is None:
+                return False
+            from .scene_residency import SurfaceScanDependencies
+            if (type(dependencies) is not SurfaceScanDependencies
+                    or not dependencies.matches_capture(capture)):
+                return False
+            if (type(runtime_source_sha256) is not str or len(runtime_source_sha256) != 64
+                    or any(c not in '0123456789abcdef' for c in runtime_source_sha256)):
+                raise ValueError('Invalid surface scan runtime source binding')
+            if len(meshes) > 256 or set(dependencies.objects) != {mesh.object_id for mesh in meshes}:
+                return False
+            self._surface_scan_meshes = {id(mesh): (mesh, _digest(_encode((
+                'surface-scan-object-dependency-v1', runtime_source_sha256,
+                dependencies.objects[mesh.object_id])))) for mesh in meshes}
+            return True
+
+    def _measurement_mesh(self, mesh, *, surface_scan=False):
+        if surface_scan:
+            entry = self._surface_scan_meshes.get(id(mesh))
+            if entry is not None and entry[0] is mesh:
+                return {'surface_scan_resource_dependency': entry[1]}
         entry = self._read_meshes.get(id(mesh))
         if entry is not None and entry[0] is mesh:
             return {'read_resource_version': entry[1]}
@@ -406,7 +432,7 @@ class SpatialSceneCache:
             return copy.deepcopy(result)
 
     def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version,
-                         before_compute=None):
+                         before_compute=None, _surface_scan=False, _diagnostics=None):
         """Return (detached_result, hit) for exactly the same ordered mesh pair.
 
         The caller supplies all evaluator parameters, including tolerances and
@@ -419,8 +445,19 @@ class SpatialSceneCache:
             raise ValueError("an explicit measurement algorithm version is required")
         if parameters is not None and not isinstance(parameters, dict):
             raise ValueError("measurement parameters must be a mapping")
+        left = self._measurement_mesh(focal, surface_scan=_surface_scan)
+        right = self._measurement_mesh(reference, surface_scan=_surface_scan)
         key = _digest(_encode({"algorithm": algorithm_version, "parameters": parameters or {},
-                              "focal": self._measurement_mesh(focal), "reference": self._measurement_mesh(reference)}))
+                              "focal": left, "reference": right}))
+        left_binding = self._surface_scan_meshes.get(id(focal))
+        right_binding = self._surface_scan_meshes.get(id(reference))
+        dependency_bound = (_surface_scan and left_binding is not None and left_binding[0] is focal
+                            and right_binding is not None and right_binding[0] is reference)
+        if _surface_scan and _diagnostics is not None:
+            _diagnostics.update(surface_dependency_used=dependency_bound,
+                surface_dependency_key=key if dependency_bound else None,
+                surface_dependency_objects=[left['surface_scan_resource_dependency'],
+                    right['surface_scan_resource_dependency']] if dependency_bound else None)
         with self._lock:
             cached = self._measurements.get(key)
             if cached is not None:

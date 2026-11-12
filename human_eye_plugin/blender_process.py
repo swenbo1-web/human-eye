@@ -362,6 +362,11 @@ class BlenderProcessHost:
                 raise ValueError('acquisition_deadline_exceeded')
             return result
 
+    def surface_scan_dependencies(self, capture):
+        """Return a decoded scan's private dependencies without adding wire fields."""
+        decoder = self._scene_decoder
+        return decoder.surface_scan_dependencies(capture) if decoder is not None else None
+
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
 

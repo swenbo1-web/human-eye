@@ -182,7 +182,7 @@ def _deliver(result, matches, budget, checkpoint):
 def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normalize=None,
                         _identity=None, max_new_pairs=DEFAULT_NEW_PAIR_BUDGET,
                         _progress=None, max_delivery_bytes=DEFAULT_DELIVERY_BYTES,
-                        _validated_packet=None):
+                        _validated_packet=None, _dependencies=None):
     from .auto_router import _validated_scene
     from .runtime_identity import runtime_identity
     from .task_query import _surface_pair_measurement
@@ -205,6 +205,7 @@ def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normali
             or any(mesh.name != directory[oid]['name'] for oid, mesh in by_id.items())
             or any(token != full['object_instances'][oid] for oid, token in current['object_instances'].items())):
         raise ValueError('Surface scan endpoint union identity mismatch')
+    cache._bind_surface_scan_meshes(meshes, _dependencies, identity['source_sha256'], capture=packet)
     progress = {} if _progress is None else _progress
     key = (fingerprint, packet['binding']['directory_sha256'], threshold)
     if progress.get('binding') != key:
@@ -254,7 +255,7 @@ def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normali
                 try:
                     measured = _surface_pair_measurement(by_id[ids[0]], by_id[ids[1]], cache,
                         checkpoint, source=scene['source'], diagnostics=work,
-                        retain_exact_rank=True, before_compute=reserve)
+                        retain_exact_rank=True, before_compute=reserve, _surface_scan=True)
                 except _PairDeferred:
                     measured = None
                 metrics['cache_hits'] += int(work.get('surface_pair_cache_hit', False))
