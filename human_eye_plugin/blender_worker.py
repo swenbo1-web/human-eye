@@ -167,6 +167,10 @@ def run_worker(root: Path, *, material_readview_only=False) -> None:
                 result=getattr(host,command)(**params)
             elif command == "capture":
                 result = host.capture_scene()
+            elif command == 'capture_directory':
+                if set(params) != {'deadline_ns', 'max_response_bytes'}:
+                    raise ValueError('Invalid directory capture arguments')
+                result = host.capture_directory(**params)
             elif command == 'capture_task':
                 if set(params) != {'selectors'}:
                     raise ValueError('Invalid task capture arguments')

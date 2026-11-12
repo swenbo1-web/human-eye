@@ -45,6 +45,10 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode') == 'directory':
+        if set(query) != {'mode'}:
+            raise ValueError('directory query accepts only mode')
+        return {'mode': 'directory'}
     if type(query) is dict and query.get('mode') == 'surface_nearest':
         if set(query) == {'mode'}:
             return {'mode': 'surface_nearest'}

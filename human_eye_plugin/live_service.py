@@ -9,6 +9,7 @@ from functools import wraps, partial
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import stat
@@ -211,7 +212,7 @@ def _request(operation):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
                     self._remember_execution_result(result)
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','scene_directory'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
@@ -232,7 +233,7 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            if result.get('result_kind') in ('task_query', 'surface_nearest'):
+                            if result.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
                                 result['trace_id'] = trace.trace_id
                             else:
                                 result['request_trace'] = {'trace_id': trace.trace_id,
@@ -1044,6 +1045,11 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'directory':
+            if (include_image or task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
+            return self._observe_directory(session_id)
         if query['mode'] == 'surface_nearest':
             selector = query['objects'][0] if 'objects' in query else None
             if selector is not None and focal_id is not None:
@@ -1276,6 +1282,98 @@ class LiveSpatialService:
         self.record_event('arm_twist_observe', session_id=session_id, status=result['status'])
         self._check_request_budget('before_arm_twist_result')
         return result
+
+    def _observe_directory(self, session_id):
+        """Read a source-bound directory without establishing a full-scene baseline."""
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            capture = getattr(self.host, 'capture_directory', None)
+            if not callable(capture):
+                raise ValueError('directory_host_not_supported')
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                result = capture(deadline, 64 * 1024 * 1024)
+            self._check_request_budget('after_host_capture')
+            self._validate_directory(result)
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            directory_sha256=result['directory_sha256'], engine_invoked=False)
+        self._check_request_budget('before_directory_result')
+        return result
+
+    def _validate_directory(self, packet):
+        from .blender_host import _bounds_midpoint
+        core_keys = {'schema', 'result_kind', 'status', 'unit', 'coordinate_frame',
+                     'objects', 'coverage', 'binding', 'execution_authority'}
+        if (type(packet) is not dict or set(packet) != core_keys | {'directory_sha256', 'capture_state', 'cache_hit'}
+                or packet.get('schema') != 'human-eye-directory-v1'
+                or packet.get('result_kind') != 'scene_directory' or packet.get('status') != 'complete'
+                or packet.get('unit') != 'm' or packet.get('coordinate_frame') != 'world'
+                or packet.get('execution_authority') is not False or type(packet.get('cache_hit')) is not bool):
+            raise ValueError('directory_response_contract')
+        rows = packet['objects']
+        if type(rows) is not list or not 1 <= len(rows) <= 256:
+            raise ValueError('directory_object_coverage')
+        ids = []
+        for row in rows:
+            self._check_request_budget('directory_validate_object')
+            if (type(row) is not dict or set(row) != {'object_id', 'name', 'bbox_min', 'bbox_max', 'center'}
+                    or any(type(row.get(key)) is not str or not row[key] for key in ('object_id', 'name'))
+                    or len(row['object_id'].encode('utf8')) > 256):
+                raise ValueError('directory_object_contract')
+            vectors = [row[key] for key in ('bbox_min', 'bbox_max', 'center')]
+            if any(type(vector) is not list or len(vector) != 3
+                    or any(type(value) not in (int, float) or not math.isfinite(value) for value in vector)
+                    for vector in vectors):
+                raise ValueError('directory_bounds_contract')
+            if (any(a > b for a, b in zip(*vectors[:2]))
+                    or vectors[2] != [_bounds_midpoint(a, b) for a, b in zip(*vectors[:2])]):
+                raise ValueError('directory_bounds_contract')
+            ids.append(row['object_id'])
+        if (type(packet['coverage']) is not dict
+                or any(type(packet['coverage'].get(key)) is not int for key in ('mesh_objects', 'measured_objects'))
+                or len(set(ids)) != len(ids) or packet['coverage'] !=
+                {'status': 'complete', 'mesh_objects': len(rows), 'measured_objects': len(rows)}):
+            raise ValueError('directory_object_coverage')
+        binding = packet['binding']
+        expected_host_sha = next(item['sha256'] for item in self._identity['source_files']
+                                 if item['path'] == 'human_eye_plugin/blender_host.py')
+        if (type(binding) is not dict or set(binding) != {'host_source_sha256', 'host_identity', 'frame', 'subframe', 'scale_length'}
+                or binding['host_source_sha256'] != expected_host_sha or type(binding['frame']) is not int
+                or type(binding['subframe']) not in (int, float) or not math.isfinite(binding['subframe'])
+                or type(binding['scale_length']) not in (int, float)
+                or not math.isfinite(binding['scale_length']) or binding['scale_length'] <= 0):
+            raise ValueError('directory_source_binding')
+        identity = binding['host_identity']
+        if (type(identity) is not dict
+                or set(identity) != {'schema_version', 'document_epoch', 'object_instances', 'capture_scope'}
+                or identity['schema_version'] != '1.0' or identity['capture_scope'] != 'scene_directory'
+                or not _diagnostic_sha256(identity['document_epoch'])
+                or type(identity['object_instances']) is not dict or set(identity['object_instances']) != set(ids)
+                or any(type(value) is not str or not value for value in identity['object_instances'].values())
+                or len(set(identity['object_instances'].values())) != len(rows)):
+            raise ValueError('directory_source_binding')
+        state = packet['capture_state']
+        selection_key = hashlib.sha256(b'["directory"]').hexdigest()
+        if state is not None and (type(state) is not dict
+                or set(state) != {'instance_id', 'epoch', 'revision', 'selection_key'}
+                or type(state['instance_id']) is not str or not state['instance_id']
+                or any(type(state[key]) is not int or state[key] < 0 for key in ('epoch', 'revision'))
+                or state['selection_key'] != selection_key):
+            raise ValueError('directory_capture_state')
+        core = {key: packet[key] for key in core_keys}
+        digest = hashlib.sha256(json.dumps(core, sort_keys=True, separators=(',', ':'),
+            ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
+        if packet['directory_sha256'] != digest:
+            raise ValueError('directory_digest_mismatch')
 
     def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
         """One current candidate capture through the existing read-only boundary."""

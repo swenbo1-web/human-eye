@@ -67,7 +67,7 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
-        "mode": {"type": "string", "enum": ["task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
@@ -98,7 +98,9 @@ _QUERY_SCHEMA = {
         "visual_diagnostic": {"type": "string", "enum": ["contact_section"],
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
-    "allOf": [{"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
+    "allOf": [{"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
+               "then": {"properties": {"mode": {}}, "additionalProperties": False}},
+              {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
               {"if": {"anyOf": [{"properties": {"mode": {"const": "task"}}, "required": ["mode"]},
                                   {"required": ["target"]}, {"required": ["candidates"]}]},
@@ -150,7 +152,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Current Blender facts. Task set example: "
+            "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. Task set example: "
             "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. "
             "Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. "
             "Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, "
@@ -170,7 +172,12 @@ LIVE_MCP_TOOLS_SCHEMA = [
                 "include_image": {"type": "boolean", "default": True,
                     "description": "False returns text evidence without rendering. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
             },
-            "allOf": [{
+            "allOf": [{"if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"const": "directory"}}}}},
+                "then": {"required": ["include_image"],
+                         "properties": {"include_image": {"const": False}, "task_instruction": {"const": ""}},
+                         "not": {"anyOf": [{"required": [field]} for field in
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}}}, {
                 "if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "surface_nearest"}}}}},
                 "then": {"required": ["session_id", "include_image"],
@@ -393,6 +400,10 @@ def _validate_arguments(name: str, arguments: Any) -> None:
             raise ValueError('include_image must be boolean')
         if 'query' not in arguments:
             selected_query = validate_query(None)
+        if selected_query['mode'] == 'directory':
+            if (arguments.get('include_image', True) or arguments.get('task_instruction', '')
+                    or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
+                raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
         if selected_query['mode'] == 'surface_nearest':
             if 'objects' in selected_query and 'focal_id' in arguments:
                 raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
@@ -669,7 +680,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
-    if (value.get('result_kind') in ('task_query', 'surface_nearest')
+    if (value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory')
             or value.get('schema') == 'arm-twist-expert-report-v1'):
         # Already selected structured facts. No full diagnostic, alias pass,
         # copy, model message, nested context JSON or second encoding.
@@ -853,7 +864,7 @@ class LiveSpatialMCPServer:
                 **delta_kwargs,
             )
             is_error = value.get("status") not in {"observed", "overview", "partial"}
-            if value.get('result_kind') == 'surface_nearest':
+            if value.get('result_kind') in ('surface_nearest', 'scene_directory'):
                 is_error = value.get('status') not in {'complete', 'partial'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == 'human_eye_arm_twist_observe':
@@ -877,7 +888,7 @@ class LiveSpatialMCPServer:
                 segment_brief=(name == 'human_eye_clearance_segment'),
                 compact_support_planes=(name == 'human_eye_scene_observe'
                     and 'support_plane_discovery' in args.get('query', {})))
-        if value.get('result_kind') in ('task_query', 'surface_nearest'):
+        if value.get('result_kind') in ('task_query', 'surface_nearest', 'scene_directory'):
             self.service._check_request_budget('before_task_publication')
         return result
 

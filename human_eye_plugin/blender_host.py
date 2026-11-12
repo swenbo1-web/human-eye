@@ -190,6 +190,11 @@ def validate_prewrite_refusal(value, *, action, expected_revision,
     return json.loads(json.dumps(refusal, allow_nan=False))
 
 
+def _bounds_midpoint(low, high):
+    total = low + high
+    return total / 2 if math.isfinite(total) else low / 2 + high / 2
+
+
 def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
                                      ensure_ascii=False, allow_nan=False).encode()).hexdigest()
@@ -476,7 +481,8 @@ class BlenderSceneHost:
         self._lock = threading.RLock()
         self._residency_module = self._residency = None
         self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
-            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0)
+            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
+            directory_builds=0, directory_vertices=0, directory_cache_hits=0)
 
     @staticmethod
     def _main_thread():
@@ -1124,6 +1130,99 @@ class BlenderSceneHost:
         self._main_thread()
         with self._lock:
             return self._capture_state(self._capture(_resident=True),_digest(['scene']))
+
+    def capture_directory(self, deadline_ns, max_response_bytes):
+        """Aggregate evaluated vertex bounds without creating a mesh capture."""
+        self._main_thread()
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('directory_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('directory_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('directory_deadline_exceeded')
+
+        checkpoint()
+        with self._lock:
+            graph, scale = self._depsgraph(), self._scale()
+            checkpoint()
+            objects = self._objects(graph)
+            resident = self._sync_residency(graph, scale)
+            selection_key = _digest(['directory'])
+            cached = self._residency.captures.get(selection_key) if resident else None
+            if cached is not None:
+                result = self._capture_state(cached, selection_key)
+                result['cache_hit'] = True
+                self._residency_stats['directory_cache_hits'] += 1
+            else:
+                identity = self._identity_metadata(objects, capture_scope='scene_directory')
+                source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+                if identity is None or not _hex_string(source_sha, 64):
+                    raise BlenderHostError('directory_source_identity_unavailable')
+                rows = []
+                vertex_count = triangle_budget = 0
+                for obj in objects:
+                    checkpoint()
+                    evaluated = obj.evaluated_get(graph)
+                    if not bool(getattr(evaluated, 'is_evaluated', True)):
+                        raise BlenderHostError('directory_object_not_evaluated: ' + obj.name)
+                    matrix = _matrix(evaluated.matrix_world)
+                    temporary = None
+                    try:
+                        self._residency_stats['to_mesh'] += 1
+                        temporary = evaluated.to_mesh()
+                        if temporary is None or not len(temporary.vertices):
+                            raise BlenderHostError('directory_empty_or_unavailable_mesh: ' + obj.name)
+                        vertex_count += len(temporary.vertices)
+                        # A polygon with n loops has at most n-2 triangles.
+                        # Read collection lengths without triangulating or walking faces.
+                        triangle_budget += max(0, len(temporary.loops) - 2 * len(temporary.polygons))
+                        if vertex_count > 500000 or triangle_budget > 1000000:
+                            raise BlenderHostError('Scene geometry budget exceeded')
+                        low = [math.inf] * 3
+                        high = [-math.inf] * 3
+                        for vertex in _acquisition_vertices(temporary.vertices, checkpoint):
+                            point = tuple(float(vertex.co[i]) for i in range(3))
+                            world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale
+                                     for r in range(3)]
+                            self._residency_stats['directory_vertices'] += 1
+                            if any(not math.isfinite(value) for value in world):
+                                raise BlenderHostError('directory_nonfinite_geometry: ' + obj.name)
+                            for axis in range(3):
+                                low[axis] = min(low[axis], world[axis])
+                                high[axis] = max(high[axis], world[axis])
+                        rows.append(dict(object_id=self.object_id(obj), name=str(obj.name),
+                            bbox_min=low, bbox_max=high,
+                            center=[_bounds_midpoint(a, b) for a, b in zip(low, high)]))
+                    finally:
+                        if temporary is not None:
+                            evaluated.to_mesh_clear()
+                packet = dict(schema='human-eye-directory-v1', result_kind='scene_directory',
+                    status='complete', unit='m', coordinate_frame='world', objects=rows,
+                    coverage=dict(status='complete', mesh_objects=len(objects), measured_objects=len(rows)),
+                    binding=dict(host_source_sha256=source_sha, host_identity=identity,
+                        frame=int(getattr(self.scene, 'frame_current', 0)),
+                        subframe=float(getattr(self.scene, 'frame_subframe', 0.)), scale_length=scale),
+                    execution_authority=False)
+                packet['directory_sha256'] = _digest(packet)
+                packet['capture_state'] = None
+                packet['cache_hit'] = False
+                checkpoint()
+                # Cache only a complete independent directory. Mesh resources,
+                # delta baselines and action state retain their own ownership.
+                if resident:
+                    if len(self._residency.captures) >= 8:
+                        self._residency.captures.clear()
+                    self._residency.captures[selection_key] = packet
+                self._residency_stats['directory_builds'] += 1
+                result = self._capture_state(packet, selection_key)
+            checkpoint()
+            encoded = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+            if len(encoded) > max_response_bytes:
+                raise BlenderHostError('directory_document_budget_exceeded')
+            checkpoint()
+            return result
 
     def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
         """Internal unsigned-surface acquisition, one synchronous host window.

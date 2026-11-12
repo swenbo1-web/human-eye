@@ -294,6 +294,19 @@ class BlenderProcessHost:
     def capture_task_scene(self, selectors) -> dict[str, Any]:
         return self._capture_request('capture_task', {'selectors': selectors})
 
+    def capture_directory(self, deadline_ns, max_response_bytes):
+        now = time.perf_counter_ns()
+        if type(deadline_ns) is not int or now >= deadline_ns:
+            raise ValueError('directory_deadline_exceeded')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+            raise ValueError('directory_document_budget')
+        deadline_ns = min(deadline_ns, now + int(self.timeout * 1e9))
+        result = self._request('capture_directory', dict(deadline_ns=deadline_ns,
+            max_response_bytes=max_response_bytes), timeout=(deadline_ns - now) / 1e9)
+        if time.perf_counter_ns() >= deadline_ns:
+            raise ValueError('directory_deadline_exceeded')
+        return result
+
     def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
         with self._lock:
             if selector is None:
