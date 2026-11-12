@@ -168,7 +168,10 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria."
             " For all current scene mesh pairs use query={\"mode\":\"surface_scan\",\"threshold_m\":0.002}. "
             "This text-only scan includes hidden meshes, needs no selectors, includes threshold equality and reports coverage. "
-            "Its unsigned triangle-surface distance describes surface proximity. Solid relations require separate facts."
+            "Its unsigned triangle-surface distance describes surface proximity. Solid relations require separate facts. "
+            "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
+            "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
+            "evidence with witnesses. Combine observations using their scene/source binding."
         ),
         "inputSchema": {
             "type": "object",
@@ -198,9 +201,11 @@ LIVE_MCP_TOOLS_SCHEMA = [
                          ]},
             }, {"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "surface_scan"}}}}},
-                "then": {"properties": {"include_image": {"const": False}},
+                "then": {"properties": {"include_image": {"const": False},
+                                         "response_detail": {"default": "brief"}},
                          "not": {"anyOf": [{"required": [field]} for field in
-                             ("focal_id", "reference_id", "goal", "scene_delta")]}}},
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}},
+                "else": {"properties": {"response_detail": {"default": "full"}}}},
             {"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "task"}}}}},
                 "then": {"required": ["include_image"], "properties": {"include_image": {"const": False}},
@@ -285,10 +290,14 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
     if _tool['name'] == 'human_eye_scene_observe':
         _tool['inputSchema']['properties']['scene_delta'] = copy.deepcopy(SCENE_DELTA_REQUEST_SCHEMA)
         _tool['inputSchema']['properties']['response_detail'] = {
-            'type': 'string', 'enum': ['full', 'brief'], 'default': 'full',
-            'description': ('Optional display projection. Brief preserves measurements, scopes, unknowns and '
-                'native image bytes while omitting named camera/raster diagnostics. Full is a new current '
-                'observation, not retrieval of a previous observation. Errors and insufficient savings keep full.'),
+            'type': 'string', 'enum': ['full', 'brief'],
+            'description': ('Optional display projection. surface_scan defaults to brief: a versioned table preserves '
+                'all delivered matches, raw metre distances, derived millimetres, identities, scopes and unknowns. '
+                'distance_mm uses a number, or an exact decimal string when binary64 millimetres overflow. '
+                'Its object table covers matched endpoints. Full requests a new current observation with detailed '
+                'witnesses; combine observations by scene/source binding. Other modes default to full; their brief '
+                'omits named camera/raster diagnostics while preserving measurements and native images. '
+                'Errors and unsupported projections retain the detailed response.'),
         }
     if _tool['name'] == 'human_eye_clearance_segment':
         _tool['inputSchema']['properties']['response_detail'] = {
@@ -695,15 +704,107 @@ def _project_spatial_relations(value):
     return result
 
 
-def _tool_result(value: Any, *, is_error: bool, response_detail: str = 'full',
+def project_surface_scan_brief(value):
+    """Project delivered scan facts into a detached, source-bound display table."""
+    display_fields = ('display_encoding', 'objects', 'object_table_scope', 'object_reference',
+                      'match_columns', 'match_metadata', 'match_exceptions',
+                      'match_metadata_semantics', 'distance_mm_semantics', 'detail')
+    if (type(value) is not dict or value.get('result_kind') != 'surface_scan'
+            or value.get('status') not in ('complete', 'partial', 'unknown')
+            or value.get('unit') != 'm' or value.get('coordinate_frame') != 'world'
+            or type(value.get('matches')) is not list
+            or any(field in value for field in display_fields)):
+        return None
+    objects = []
+    object_refs = {}
+    matches = []
+    annotations = []
+    for match in value['matches']:
+        if (type(match) is not dict or type(match.get('objects')) is not list
+                or len(match['objects']) != 2
+                or type(match.get('distance_m')) not in (int, float)):
+            return None
+        distance = match['distance_m']
+        if distance < 0 or type(distance) is float and not math.isfinite(distance):
+            return None
+        refs = []
+        for obj in match['objects']:
+            if (type(obj) is not dict or type(obj.get('id')) is not str or not obj['id']
+                    or type(obj.get('name')) is not str):
+                return None
+            object_id = obj['id']
+            if object_id not in object_refs:
+                object_refs[object_id] = len(objects)
+                objects.append(copy.deepcopy(obj))
+            reference = object_refs[object_id]
+            if json.dumps(objects[reference], ensure_ascii=False, allow_nan=False) != json.dumps(
+                    obj, ensure_ascii=False, allow_nan=False):
+                return None
+            refs.append(reference)
+        for key in ('point_a_world', 'point_b_world'):
+            if key in match:
+                point = match[key]
+                if (type(point) is not list or len(point) != 3
+                        or any(type(number) not in (int, float)
+                               or type(number) is float and not math.isfinite(number)
+                               for number in point)):
+                    return None
+        distance_mm = distance * 1000
+        if type(distance_mm) is float and not math.isfinite(distance_mm):
+            # A finite binary64 this large already has integral metre value.
+            distance_mm = str(int(distance) * 1000)
+        matches.append([match['objects'][0]['name'], match['objects'][1]['name'],
+                        refs[0], refs[1], distance, distance_mm])
+        annotations.append({key: copy.deepcopy(item) for key, item in match.items()
+                            if key not in ('objects', 'distance_m', 'point_a_world', 'point_b_world')})
+    encoded_annotations = [
+        {key: json.dumps(item, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+         for key, item in annotation.items()} for annotation in annotations]
+    common = {}
+    if annotations:
+        common = {key: item for key, item in annotations[0].items()
+                  if all(annotation.get(key) == encoded_annotations[0][key]
+                         for annotation in encoded_annotations)}
+    exceptions = []
+    for index, annotation in enumerate(annotations):
+        varying = {key: item for key, item in annotation.items() if key not in common}
+        if varying:
+            exceptions.append({'match_index': index, 'metadata': varying})
+    result = {key: copy.deepcopy(item) for key, item in value.items() if key != 'matches'}
+    result.update(display_encoding='surface-scan-task-table-v1', objects=objects,
+        object_table_scope='matched_endpoints_only',
+        object_reference='zero_based_index_in_objects; scoped_to_this_result_binding',
+        match_columns=['object_a', 'object_b', 'object_a_ref', 'object_b_ref', 'distance_m', 'distance_mm'],
+        matches=matches, match_metadata=common, match_exceptions=exceptions,
+        match_metadata_semantics='common_fields_apply_to_every_match; merge_exceptions_by_zero_based_match_index',
+        distance_mm_semantics='derived_display_only; number_or_exact_decimal_string_on_binary64_overflow; '
+                              'threshold_membership_uses_original_distance_m',
+        detail='response_detail=full requests a new current observation with witnesses; compare binding before combining')
+    return result
+
+
+def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
                  compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
+    if response_detail is None:
+        response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
             or value.get('schema') == 'arm-twist-expert-report-v1'):
-        # Already selected structured facts. No full diagnostic, alias pass,
-        # copy, model message, nested context JSON or second encoding.
+        # Validate the complete response before optional display-only omission.
         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+        if value.get('result_kind') == 'surface_scan' and response_detail == 'brief' and not is_error:
+            try:
+                with span('mcp.surface_scan_compact_projection'):
+                    compact = project_surface_scan_brief(value)
+                if compact is not None:
+                    text = json.dumps(compact, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+                    annotate(surface_scan_display='compact')
+                else:
+                    annotate(surface_scan_display='full_unsupported_projection')
+            except Exception as error:
+                annotate(surface_scan_display='full_projection_fallback',
+                         surface_scan_display_error=type(error).__name__)
         record_image_artifact('mcp_content', native_block_count=0)
         return {'content': [{'type': 'text', 'text': text}], 'isError': bool(is_error)}
     metadata = copy.deepcopy(value)
@@ -909,7 +1010,7 @@ class LiveSpatialMCPServer:
             if spatial_relations:
                 value = _project_spatial_relations(value)
             result = _tool_result(value, is_error=is_error,
-                response_detail=args.get('response_detail', 'full'),
+                response_detail=args.get('response_detail'),
                 segment_brief=(name == 'human_eye_clearance_segment'),
                 compact_support_planes=(name == 'human_eye_scene_observe'
                     and 'support_plane_discovery' in args.get('query', {})))
