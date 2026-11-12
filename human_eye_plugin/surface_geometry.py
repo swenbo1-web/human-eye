@@ -119,17 +119,18 @@ def validate_tessellation(raw,triangles,polygons,budget):
     require(counts==[len(p)-2 for p in raw['polygons']],'tessellation_coverage')
 
 
-def _bvh(bounds,budget,ids=None):
+def _bvh(bounds,budget,ids=None,*,leaf_size=4):
     ids=list(range(len(bounds))) if ids is None else ids
     budget.consume(1+len(ids),'surface_bvh_build')
     lo=tuple(min(bounds[i][0][k] for i in ids) for k in range(3))
     hi=tuple(max(bounds[i][1][k] for i in ids) for k in range(3))
-    if len(ids)<=4:return (lo,hi,len(ids),ids,None,None)
+    if len(ids)<=leaf_size:return (lo,hi,len(ids),ids,None,None)
     axis=max(range(3),key=lambda k:hi[k]-lo[k]);ids.sort(key=lambda i:(bounds[i][0][axis]+bounds[i][1][axis],i));mid=len(ids)//2
-    return (lo,hi,len(ids),None,_bvh(bounds,budget,ids[:mid]),_bvh(bounds,budget,ids[mid:]))
+    return (lo,hi,len(ids),None,_bvh(bounds,budget,ids[:mid],leaf_size=leaf_size),
+            _bvh(bounds,budget,ids[mid:],leaf_size=leaf_size))
 
 
-def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None):
+def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None,node_exclusion=None):
     """Exact outward BVH; disjoint node pairs certify all descendant pairs.
 
     Nodes partition source triangle ids. Self traversal visits LL, LR, RR;
@@ -145,12 +146,17 @@ def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None):
         budget.consume(1,'surface_bvh_node_pair');a,b=pending.pop();stats['node_pair_visits']+=1
         if any(a[1][k]+pad<b[0][k] or b[1][k]+pad<a[0][k] for k in range(3)):
             stats['aabb_pruned_pairs']+=a[2]*(a[2]-1)//2 if a is b else a[2]*b[2];continue
+        if node_exclusion is not None and a is not b and node_exclusion(a,b):continue
         if a[3] is not None and b[3] is not None:
             for i in a[3]:
                 for j in b[3]:
                     if a is b and i>=j:continue
                     budget.consume(1,'surface_bvh_leaf_pair');stats['leaf_pair_visits']+=1
-                    if any(bounds[i][1][k]+pad<other[j][0][k] or other[j][1][k]+pad<bounds[i][0][k] for k in range(3)):
+                    singleton = a[2] == b[2] == 1
+                    if singleton:
+                        if 'leaf_bounds_reused' in stats:
+                            stats['leaf_bounds_reused'] += 1
+                    elif any(bounds[i][1][k]+pad<other[j][0][k] or other[j][1][k]+pad<bounds[i][0][k] for k in range(3)):
                         stats['aabb_pruned_pairs']+=1;continue
                     yield tuple(sorted((i,j))) if other_bounds is None else (i,j)
         elif a is b:pending.extend(((a[4],a[4]),(a[4],a[5]),(a[5],a[5])))
@@ -240,7 +246,18 @@ class _ClosedWork:
         self.counts=diagnostics if diagnostics is not None else {}
         self.counts.update(work_units=0,pair_tests=0,self_pair_tests=0,cross_pair_tests=0,
             ray_tests=0,point_queries=0,ray_attempts=0,validated_faces=0,referenced_vertices=0,
-            node_pair_visits=0,leaf_pair_visits=0,aabb_pruned_pairs=0,prepared_pair_reused=False)
+            node_pair_visits=0,leaf_pair_visits=0,aabb_pruned_pairs=0,prepared_pair_reused=False,
+            prepared_triangles=0,world_tree_builds=0,world_bound_faces=0,
+            candidate_frame_builds=0,candidate_frame_coefficients=0,candidate_projection_tests=0,
+            candidate_bound_faces=0,candidate_tree_builds=0,candidate_frame_fallbacks=0,
+            leaf_bounds_reused=0,cheap_pair_tests=0,plane_projection_tests=0,plane_side_tests=0,
+            strict_plane_rejections=0,shared_index_tests=0,shared_simplex_tests=0,
+            shared_simplex_certificates=0,shared_edge_tests=0,shared_edge_certificates=0,
+            cheap_bit_fallbacks=0,cone_metadata_nodes=0,cone_face_tests=0,
+            cone_anchor_tests=0,cone_vector_preparations=0,cone_orientation_tests=0,
+            cone_support_tests=0,cone_metadata_merges=0,cone_boundary_id_visits=0,
+            cone_node_pair_checks=0,cone_separation_tests=0,cone_bit_fallbacks=0,
+            simplex_node_certificates=0,simplex_covered_pairs=0,candidate_frame='world')
 
     def consume(self, amount, stage):
         self.checkpoint('closed_solid_'+stage)
@@ -262,7 +279,7 @@ def _closed_require(value, reason):
     if not value:raise _ClosedDomain('closed_solid_'+reason)
 
 
-def _closed_topology(mesh, faces, triangles, budget):
+def _closed_topology(mesh, faces, triangles, budget, *, tree=None):
     from collections import defaultdict
     e=budget.exact
     edges=defaultdict(list);links=defaultdict(list);used=set();unique=set()
@@ -301,8 +318,263 @@ def _closed_topology(mesh, faces, triangles, budget):
         budget.consume(1,'oriented_volume')
         volume=e._bounded(volume+e._dot(tri[0][0],e._cross(tri[0][1],tri[0][2])))
     _closed_require(volume!=0,'zero_volume')
-    bounds=[(tuple(row[0] for row in t[4]),tuple(row[1] for row in t[4])) for t in triangles]
-    return dict(vertices=vertices,faces=faces,triangles=triangles,bounds=bounds,root=_bvh(bounds,budget))
+    if tree is None:
+        tree = _closed_world_tree(triangles, budget)
+    bounds, root = tree
+    return dict(vertices=vertices,faces=faces,triangles=triangles,bounds=bounds,root=root)
+
+
+def _closed_world_tree(triangles, budget):
+    budget.tick('world_bound_faces', len(triangles))
+    bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
+              for triangle in triangles]
+    budget.tick('world_tree_builds')
+    return bounds, _bvh(bounds, budget)
+
+
+def _closed_candidate_trees(shells, budget):
+    """Replace intersection-candidate coordinates with one invertible integer map.
+
+    The rows u, n cross u, n are mutually orthogonal and nonzero. Primitive
+    row reduction and positive whole-row powers of two preserve invertibility.
+    Only overlap candidates use this map. World trees retain their metric and
+    remain available to point/ray queries and the same-pair distance consumer.
+    """
+    if len(shells[0]['triangles']) * len(shells[1]['triangles']) <= 256:
+        return
+    exact = budget.exact
+    budget.tick('candidate_frame_builds')
+    try:
+        triangle = shells[0]['triangles'][0]
+        edge = exact._sub(triangle[0][1], triangle[0][0])
+        normal = triangle[1]
+        rows = (edge, exact._cross(normal, edge), normal)
+        primitive = []
+        for row in rows:
+            divisor = math.gcd(*row)
+            if not divisor:
+                raise exact._DomainError('surface_candidate_frame_singular')
+            primitive.append(tuple(value // divisor for value in row))
+        widths = [max(abs(value).bit_length() for value in row) for row in primitive]
+        width = max(widths)
+        basis = []
+        for row, bits in zip(primitive, widths):
+            budget.tick('candidate_frame_coefficients', 3)
+            basis.append(tuple(exact._bounded(value << (width-bits)) for value in row))
+        trees = []
+        for shell in shells:
+            projected = {}
+            for index, point in shell['vertices'].items():
+                budget.tick('candidate_projection_tests', 3)
+                projected[index] = tuple(exact._dot(axis, point) for axis in basis)
+            bounds = []
+            for face in shell['faces']:
+                budget.tick('candidate_bound_faces')
+                points = [projected[index] for index in face]
+                bounds.append((tuple(min(point[k] for point in points) for k in range(3)),
+                               tuple(max(point[k] for point in points) for k in range(3))))
+            budget.tick('candidate_tree_builds')
+            trees.append((bounds, _bvh(bounds, budget, leaf_size=1), projected))
+    except exact._DomainError:
+        # An optional coordinate map cannot reduce the original bit domain.
+        # Cancellation, deadlines and total-work failures remain unsuppressed.
+        budget.tick('candidate_frame_fallbacks')
+        return
+    for shell, (bounds, root, projected) in zip(shells, trees):
+        shell['candidate_bounds'] = bounds
+        shell['candidate_root'] = root
+        shell['candidate_vertices'] = projected
+    budget.counts['candidate_frame'] = 'invertible_integer_triangle_basis'
+
+
+def _closed_cone_cross(left, right, budget):
+    budget.tick('cone_orientation_tests')
+    bounded=budget.exact._bounded
+    return bounded(bounded(left[0]*right[1])-bounded(left[1]*right[0]))
+
+
+def _closed_cone_cross_cache(first, second, budget):
+    """Reuse the two already-proved widths and each actual support determinant."""
+    values={(first['lo'],first['hi']):first['width'],
+            (second['lo'],second['hi']):second['width']}
+
+    def cross(left, right):
+        if left==right:return 0
+        key=(left,right)
+        if key in values:return values[key]
+        reverse=(right,left)
+        if reverse in values:return -values[reverse]
+        value=_closed_cone_cross(left,right,budget)
+        values[key]=value
+        return value
+    return cross
+
+
+def _closed_merge_cones(first, second, budget):
+    """Merge at most four support rays, retaining an angle strictly below pi."""
+    budget.tick('cone_metadata_merges')
+    cross=_closed_cone_cross_cache(first,second,budget)
+    lo,hi=first['lo'],first['hi']
+    for ray in (second['lo'],second['hi']):
+        budget.tick('cone_support_tests')
+        lower,upper=cross(lo,ray),cross(ray,hi)
+        if lower>=0 and upper>=0:continue
+        if lower<0 and upper>0:lo=ray
+        elif lower>0 and upper<0:hi=ray
+        else:return None
+    width=cross(lo,hi)
+    if width<=0:return None
+    supports=(first['lo'],first['hi'],second['lo'],second['hi'])
+    for ray in supports:
+        budget.tick('cone_support_tests')
+        if cross(lo,ray)<0 or cross(ray,hi)<0:return None
+    lower_ids=set();upper_ids=set()
+    for cone in (first,second):
+        for ray,ids in ((cone['lo'],cone['lo_ids']),(cone['hi'],cone['hi_ids'])):
+            if cross(lo,ray)==0:
+                budget.tick('cone_boundary_id_visits',len(ids));lower_ids.update(ids)
+            if cross(ray,hi)==0:
+                budget.tick('cone_boundary_id_visits',len(ids));upper_ids.update(ids)
+    return dict(lo=lo,hi=hi,width=width,
+                lo_ids=frozenset(lower_ids),hi_ids=frozenset(upper_ids))
+
+
+def _closed_cone_metadata(shell, budget):
+    """Bottom-up self-only certificates in the fixed first two candidate axes.
+
+    Every retained anchor belongs to every descendant face. Each such face has
+    a nondegenerate two-coordinate projection. The two support rays enclose
+    every projected vertex in a convex cone of angle strictly below pi, and
+    their id sets contain all source vertices on the respective boundary ray.
+    """
+    projected=shell.get('candidate_vertices')
+    if projected is None:return {}
+    metadata={};bounded=budget.exact._bounded
+
+    def visit(node):
+        budget.tick('cone_metadata_nodes')
+        rows={}
+        if node[3] is not None:
+            if len(node[3])!=1:return rows
+            budget.tick('cone_face_tests')
+            face=shell['faces'][node[3][0]]
+            try:
+                vectors=[]
+                for index,anchor in enumerate(face):
+                    origin=projected[anchor]
+                    pair=[]
+                    for other in (face[(index+1)%3],face[(index+2)%3]):
+                        budget.tick('cone_vector_preparations')
+                        point=projected[other]
+                        pair.append((bounded(point[0]-origin[0]),bounded(point[1]-origin[1])))
+                    vectors.append(pair)
+                area=_closed_cone_cross(*vectors[0],budget)
+                if not area:return rows
+                for index,anchor in enumerate(face):
+                    lo,hi=vectors[index]
+                    lower,upper=face[(index+1)%3],face[(index+2)%3]
+                    if area<0:lo,hi=hi,lo;lower,upper=upper,lower
+                    budget.tick('cone_boundary_id_visits',2)
+                    rows[anchor]=dict(lo=lo,hi=hi,width=abs(area),
+                        lo_ids=frozenset((lower,)),hi_ids=frozenset((upper,)))
+            except budget.exact._DomainError:
+                budget.tick('cone_bit_fallbacks');rows={}
+        else:
+            left=visit(node[4]);right=visit(node[5])
+            for anchor,first in left.items():
+                budget.tick('cone_anchor_tests')
+                if anchor not in right:continue
+                try:merged=_closed_merge_cones(first,right[anchor],budget)
+                except budget.exact._DomainError:
+                    budget.tick('cone_bit_fallbacks');continue
+                if merged is not None:rows[anchor]=merged
+        if rows:metadata[id(node)]=rows
+        return rows
+
+    visit(shell['candidate_root'])
+    return metadata
+
+
+def _closed_node_simplex(a, b, metadata, projected, budget):
+    """Certify only legal shared source simplices for two nodes of one shell.
+
+    Opposite closed halfplanes force every possible intersection onto their
+    separating line. At most two distinct projected source ids on that line
+    then give exactly the common source point or edge in three dimensions.
+    """
+    budget.tick('cone_node_pair_checks')
+    left=metadata.get(id(a),{});right=metadata.get(id(b),{})
+    for anchor,first in left.items():
+        budget.tick('cone_anchor_tests')
+        if anchor not in right:continue
+        second=right[anchor]
+        try:
+            cross=_closed_cone_cross_cache(first,second,budget)
+            lines=((first['lo'],1),(first['hi'],-1),
+                   (second['lo'],-1),(second['hi'],1))
+            for line,sign in lines:
+                budget.tick('cone_separation_tests')
+                first_sides=(cross(line,first['lo']),cross(line,first['hi']))
+                second_sides=(cross(line,second['lo']),cross(line,second['hi']))
+                if any(value*sign<0 for value in first_sides):continue
+                if any(value*sign>0 for value in second_sides):continue
+                budget.tick('cone_boundary_id_visits')
+                online={anchor}
+                for cone,sides in ((first,first_sides),(second,second_sides)):
+                    for value,ids in zip(sides,(cone['lo_ids'],cone['hi_ids'])):
+                        if value==0:
+                            budget.tick('cone_boundary_id_visits',len(ids));online.update(ids)
+                if len(online)>2:continue
+                if len(online)==2:
+                    start,end=online
+                    if projected[start][:2]==projected[end][:2]:continue
+                budget.tick('simplex_node_certificates')
+                budget.counts['simplex_covered_pairs']+=a[2]*b[2]
+                return True
+        except budget.exact._DomainError:
+            budget.tick('cone_bit_fallbacks')
+    return False
+
+
+def _closed_precheck(a, b, budget, *, shared=(), faces=None):
+    """Certify strict plane separation or a legal shared simplex before slicing."""
+    exact = budget.exact
+    budget.tick('cheap_pair_tests')
+    projections = [None, None]
+    for side, (triangle, other) in enumerate(((a,b), (b,a))):
+        distances = exact._plane_distances(other[0], triangle[0][0], triangle[1], budget)
+        projections[side] = distances
+        budget.tick('plane_side_tests')
+        if all(value > 0 for value in distances) or all(value < 0 for value in distances):
+            budget.tick('strict_plane_rejections')
+            return True, tuple(projections)
+        if shared and (all(value >= 0 for value in distances) or all(value <= 0 for value in distances)):
+            budget.tick('shared_simplex_tests')
+            other_indices = faces[1-side]
+            zeros = {other_indices[index] for index,value in enumerate(distances) if value == 0}
+            if zeros and zeros.issubset(shared):
+                budget.tick('shared_simplex_certificates')
+                return True, tuple(projections)
+    if (len(shared) == 2 and all(value == 0 for row in projections for value in row)):
+        # In the common plane, a nonzero normal component gives an injective
+        # two-coordinate projection. Opposite open sides of the common edge
+        # have exactly that edge in common. Same-side overlap is unresolved.
+        budget.tick('shared_edge_tests')
+        start, end = [a[0][faces[0].index(index)] for index in shared]
+        left = next(point for index,point in zip(faces[0],a[0]) if index not in shared)
+        right = next(point for index,point in zip(faces[1],b[0]) if index not in shared)
+        drop = max(range(3), key=lambda axis: abs(a[1][axis]))
+        axes = tuple(axis for axis in range(3) if axis != drop)
+        try:
+            sa = exact._orient(start, end, left, axes)
+            sb = exact._orient(start, end, right, axes)
+        except exact._DomainError:
+            budget.tick('cheap_bit_fallbacks')
+        else:
+            if sa < 0 < sb or sb < 0 < sa:
+                budget.tick('shared_edge_certificates')
+                return True, tuple(projections)
+    return False, tuple(projections)
 
 
 def _closed_legal_contact(points, shared, vertices, budget):
@@ -316,12 +588,23 @@ def _closed_legal_contact(points, shared, vertices, budget):
 
 def _closed_validate_embedded(shell,budget):
     e=budget.exact
-    for i,j in candidate_pairs(shell['bounds'],0,budget,budget.counts,roots=(shell['root'],shell['root'])):
-        budget.pair('self_pair_tests')
+    bounds = shell.get('candidate_bounds', shell['bounds'])
+    root = shell.get('candidate_root', shell['root'])
+    metadata=_closed_cone_metadata(shell,budget)
+    exclusion=None
+    if metadata:
+        exclusion=lambda a,b:_closed_node_simplex(a,b,metadata,shell['candidate_vertices'],budget)
+    for i,j in candidate_pairs(bounds,0,budget,budget.counts,roots=(root,root),node_exclusion=exclusion):
         a,b=shell['triangles'][i],shell['triangles'][j]
-        points=e._intersection(a[0],b[0],a[1],b[1],budget)
+        faces = (shell['faces'][i], shell['faces'][j])
+        budget.tick('shared_index_tests')
+        shared = sorted(set(faces[0]) & set(faces[1]))
+        excluded, projections = _closed_precheck(a,b,budget,shared=shared,faces=faces)
+        if excluded:
+            continue
+        budget.pair('self_pair_tests')
+        points=e._intersection(a[0],b[0],a[1],b[1],budget,plane_distances=projections)
         if points:
-            shared=sorted(set(shell['faces'][i])&set(shell['faces'][j]))
             _closed_require(_closed_legal_contact(points,shared,shell['vertices'],budget),'self_intersection')
 
 
@@ -449,7 +732,10 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
     Contact needs a global separating plane certificate. Unresolved coincident
     or mesh-edge boundary arrangements remain unknown, never guessed touching.
     """
-    if prepared_holder is not None:prepared_holder.pop('boundary_contact',None)
+    if prepared_holder is not None:
+        prepared_holder.pop('boundary_contact',None)
+        prepared_holder.pop('trees',None)
+        prepared_holder.pop('pair',None)
     from . import surface_proximity as exact
     budget=_ClosedWork(checkpoint,diagnostics,exact)
     result=dict(measurement_valid=False,relation=None,method=CLOSED_SOLID_METHOD,
@@ -458,7 +744,8 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         budget.consume(1,'admission')
         _closed_require(sum(len(mesh.vertices) for mesh in (left,right))<=LIMITS['vertices'],
                         'vertex_budget')
-        if prepared_pair is None:
+        if (prepared_pair is None or prepared_pair[0][0][0] is not left
+                or prepared_pair[0][1][0] is not right):
             records,topology=exact._admit((left,right),budget)
             origin,factor,prepared=exact._integer_frame(records,budget)
             prepared_pair=(records,topology,origin,factor,prepared)
@@ -466,15 +753,27 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         if prepared_holder is not None:prepared_holder['pair']=prepared_pair
         records,_,_,_,prepared=prepared_pair
         _closed_require(all(len(r[1])>=4 for r in records),'too_few_faces')
-        shells=[_closed_topology(record[0],record[1],triangles,budget)
-                for record,triangles in zip(records,prepared)]
+        world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
+        if prepared_holder is not None:
+            prepared_holder['trees'] = dict(pair=prepared_pair,triangles=tuple(prepared),
+                bounds=tuple(tree[0] for tree in world_trees),
+                roots=tuple(tree[1] for tree in world_trees))
+        shells=[_closed_topology(record[0],record[1],triangles,budget,tree=tree)
+                for record,triangles,tree in zip(records,prepared,world_trees)]
+        _closed_candidate_trees(shells,budget)
         for shell in shells:_closed_validate_embedded(shell,budget)
         a,b=shells;contacts=[];middle_holder={}
-        for i,j in candidate_pairs(a['bounds'],0,budget,budget.counts,
-                other_bounds=b['bounds'],roots=(a['root'],b['root'])):
-            budget.pair('cross_pair_tests')
+        a_bounds = a.get('candidate_bounds', a['bounds'])
+        b_bounds = b.get('candidate_bounds', b['bounds'])
+        roots = (a.get('candidate_root', a['root']), b.get('candidate_root', b['root']))
+        for i,j in candidate_pairs(a_bounds,0,budget,budget.counts,
+                other_bounds=b_bounds,roots=roots):
             ta,tb=a['triangles'][i],b['triangles'][j]
-            points=exact._intersection(ta[0],tb[0],ta[1],tb[1],budget)
+            excluded, projections = _closed_precheck(ta,tb,budget)
+            if excluded:
+                continue
+            budget.pair('cross_pair_tests')
+            points=exact._intersection(ta[0],tb[0],ta[1],tb[1],budget,plane_distances=projections)
             if not points:continue
             if prepared_holder is not None and 'boundary_contact' not in prepared_holder:
                 prepared_holder['boundary_contact']=dict(pair=prepared_pair,

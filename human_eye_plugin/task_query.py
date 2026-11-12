@@ -11,7 +11,7 @@ import sys
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
 from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
-from .surface_proximity import MAX_FACES, MAX_TRIANGLE_PAIRS, measure_surface_proximity, _rank_surface_results
+from .surface_proximity import MAX_FACES, measure_surface_proximity, _rank_surface_results
 from .surface_geometry import classify_closed_solids
 
 
@@ -250,7 +250,7 @@ def project_task_geometry(result, meshes, request, checkpoint):
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
                               diagnostics, retain_exact_rank=False, prepared_pair=None,
-                              boundary_contact=None):
+                              boundary_contact=None, prepared_trees=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -263,18 +263,20 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
             options['_prepared_pair'] = prepared_pair
         if boundary_contact is not None:
             options['_boundary_contact'] = boundary_contact
+        if prepared_trees is not None:
+            options['_prepared_trees'] = prepared_trees
         return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
     face_counts = len(left.faces), len(right.faces)
-    if (sum(face_counts) > MAX_FACES or face_counts[0] * face_counts[1] > MAX_TRIANGLE_PAIRS
+    if (sum(face_counts) > MAX_FACES
             or any(len(mesh.vertices) > 3 * count
                    for mesh, count in zip((left, right), face_counts))):
         return compute_surface()
     parameters = {'source': source, 'unit': 'm', 'coordinate_frame': 'world',
                   'world_witness_tolerance_m': COLLISION_TOLERANCE_M}
-    version = 'task-surface-proximity-exact-aabb-v3'
+    version = 'task-surface-proximity-exact-bvh-v4'
     if retain_exact_rank:
         parameters['retain_exact_rank'] = True
-        version = 'task-surface-proximity-exact-world-rank-v2'
+        version = 'task-surface-proximity-exact-world-rank-v3'
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version)
     return result
@@ -292,12 +294,12 @@ def _closed_solid_pair_measurement(left, right, cache, checkpoint, *, source,
         options = {'prepared_holder': prepared_holder} if prepared_holder is not None else {}
         return classify_closed_solids(left, right, checkpoint, diagnostics=work, **options)
     counts = len(left.faces), len(right.faces)
-    if (sum(counts) > MAX_FACES or counts[0] * counts[1] > MAX_TRIANGLE_PAIRS
+    if (sum(counts) > MAX_FACES
             or any(len(mesh.vertices) > 3 * count for mesh, count in zip((left, right), counts))):
         return compute()
     result, diagnostics['closed_solid_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute, parameters={'source': source, 'unit': 'm', 'coordinate_frame': 'world',
-            'relation_tolerance_m': 0.0}, algorithm_version='task-closed-solid-exact-local-evidence-v2')
+            'relation_tolerance_m': 0.0}, algorithm_version='task-closed-solid-exact-local-evidence-v3')
     return result
 
 
@@ -330,6 +332,7 @@ def _closed_surface_facts(left, right, requested, cache, checkpoint, source, dia
         surface = _surface_pair_measurement(left, right, cache, checkpoint,
             source=source, diagnostics=diagnostics, retain_exact_rank=rank,
             prepared_pair=holder.get('pair') if holder is not None else None,
+            prepared_trees=holder.get('trees') if holder is not None else None,
             boundary_contact=holder.get('boundary_contact') if holder is not None else None)
         checkpoint('after_surface_pair_measurement')
         facts['surface_proximity'] = _surface_proximity_fact(surface)

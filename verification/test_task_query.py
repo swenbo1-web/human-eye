@@ -306,8 +306,14 @@ class TaskQueryTests(unittest.TestCase):
     def test_does_not_reuse_prior_write_prepare_context(self):
         self.service.observe('s', focal_id='part', reference_id='base', include_image=False)
         self.assertTrue(json.loads((self.base/'state.json').read_text())['runtime']['sessions'])
-        self.observe()
-        self.assertFalse(json.loads((self.base/'state.json').read_text())['runtime']['sessions'])
+        prior_state=(self.base/'state.json').read_bytes()
+        result=self.observe()
+        self.assertEqual((self.base/'state.json').read_bytes(),prior_state)
+        self.assertEqual(set(result['facts']),{'aabb'})
+        self.assertEqual(len(result['facts']['aabb']),1)
+        task_events=[event for line in self.service.audit_path.read_text(encoding='utf8').splitlines()
+                     if 'task_work' in (event:=json.loads(line))]
+        self.assertEqual(task_events[-1]['task_work']['exact_pair_count'],0)
         self.assertEqual(self.host.calls, 0)
 
     def test_mcp_task_response_and_expired_publication(self):

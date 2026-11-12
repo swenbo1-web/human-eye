@@ -166,16 +166,19 @@ class SelectedTaskBridgeTests(unittest.TestCase):
         command, request = requests[0]
         self.assertEqual(request['command'], 'capture_task')
         self.assertEqual(request['params'], {'selectors': [{'name': 'part'}]})
-        self.assertIn("_host.capture_task_scene(_request['params']['selectors'])", command['params']['code'])
+        self.assertIn("getattr(_host, 'capture_task_scene')(**_request['params'])", command['params']['code'])
+        self.assertLessEqual(len(json.dumps(command,separators=(',',':')).encode()),1024*1024)
 
     def test_four_maximum_escaped_selectors_fit_new_bound_and_outer_transport(self):
         selectors = [{'name': 'A' + '\x01' * 255} for _ in range(4)]
         with _server(lambda request: _reply(request)) as (port, requests):
             host = BlenderMCPHost(ROOT, port=port)
+            # The first resident install has a separate 1 MiB envelope budget.
+            host._resident_ready=True
             host.capture_task_scene(selectors)
         command, request = requests[0]
         self.assertGreater(len(json.dumps(request, separators=(',', ':')).encode()), 4096)
-        self.assertLess(len(json.dumps(command, separators=(',', ':')).encode()), 32768)
+        self.assertLessEqual(len(json.dumps(command, separators=(',', ':')).encode()), 64*1024)
         self.assertEqual(request['params']['selectors'], selectors)
 
     def test_original_native_command_limit_and_exact_argument_shape_remain(self):

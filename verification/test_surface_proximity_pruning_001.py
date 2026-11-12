@@ -240,7 +240,7 @@ class SurfaceAABBCacheTests(unittest.TestCase):
             self.set_pair(changed, right, 'r3')
             updated = self.observe()
             updated_work = self.work()
-        self.assertEqual(versions, ['task-surface-proximity-exact-aabb-v3'] * 4)
+        self.assertEqual(versions, ['task-surface-proximity-exact-bvh-v4'] * 4)
         for result, distance in ((cold, 1.), (hot, 1.), (revised, 1.), (updated, 2.)):
             fact = result['facts']['surface_proximity']
             self.assertEqual(result['status'], 'observed')

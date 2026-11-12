@@ -7,12 +7,16 @@ from collections import Counter
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from functools import cmp_to_key
+import heapq
 import math
 from numbers import Integral
 
 
 MAX_FACES = 4096
 MAX_TRIANGLE_PAIRS = 16384
+MAX_NARROW_PHASE_PAIRS = MAX_TRIANGLE_PAIRS
+MAX_WORK_UNITS = MAX_FACES * 32 + MAX_TRIANGLE_PAIRS * 64
+LINEAR_PAIR_LIMIT = 256
 MAX_BITS = 4096
 _MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
 METHOD = 'exact_binary64_triangle_surface_hulls_v3'
@@ -111,10 +115,18 @@ def _plane_slice(triangle, distances):
     return list(dict.fromkeys(points))
 
 
-def _intersection(a, b, normal_a, normal_b, budget):
+def _plane_distances(points, origin, normal, budget):
+    budget.tick('plane_projection_tests', len(points))
+    return tuple(_dot(normal, _sub(point, origin)) for point in points)
+
+
+def _intersection(a, b, normal_a, normal_b, budget, *, plane_distances=None):
     # Same bidirectional slices and common-line interval as the existing kernel.
-    da = [_dot(normal_a, _sub(point, a[0])) for point in b]
-    db = [_dot(normal_b, _sub(point, b[0])) for point in a]
+    da, db = (None, None) if plane_distances is None else plane_distances
+    if da is None:
+        da = _plane_distances(b, a[0], normal_a, budget)
+    if db is None:
+        db = _plane_distances(a, b[0], normal_b, budget)
     if (all(value > 0 for value in da) or all(value < 0 for value in da)
             or all(value > 0 for value in db) or all(value < 0 for value in db)):
         return []
@@ -139,16 +151,35 @@ class _Work:
         self.counts.update(validated_faces=0, referenced_vertices=0, triangle_pairs=0,
                            intersection_tests=0, point_face_tests=0,
                            point_edge_tests=0, edge_edge_tests=0, predicate_steps=0,
-                           aabb_bound_tests=0, aabb_pruned_pairs=0)
+                           aabb_bound_tests=0, aabb_pruned_pairs=0,
+                           work_units=0, prepared_triangles=0, tree_builds=0,
+                           tree_build_units=0, node_pair_visits=0, leaf_pair_visits=0,
+                           queue_pushes=0, queue_bound_tests=0, narrow_phase_pairs=0,
+                           plane_projection_tests=0, plane_bound_tests=0,
+                           plane_pruned_pairs=0, subtree_pruned_pairs=0, shared_trees=False)
+
+    def consume(self, amount, stage):
+        self.checkpoint('surface_proximity_' + stage)
+        if self.counts['work_units'] + amount > MAX_WORK_UNITS:
+            raise _DomainError('surface_work_budget')
+        self.counts['work_units'] += amount
+        if stage == 'surface_bvh_build':
+            self.counts['tree_build_units'] += amount
 
     def tick(self, kind, amount=1):
-        self.checkpoint('surface_proximity_' + kind)
-        self.counts[kind] += amount
+        self.consume(amount, kind)
+        self.counts[kind] = self.counts.get(kind, 0) + amount
+
+    def narrow_pair(self):
+        if self.counts['narrow_phase_pairs'] >= MAX_NARROW_PHASE_PAIRS:
+            self.checkpoint('surface_proximity_pair_budget')
+            raise _DomainError('surface_pair_budget')
+        self.tick('narrow_phase_pairs')
 
 
 def _admit(meshes, budget):
     sizes = [len(mesh.faces) for mesh in meshes]
-    if not all(sizes) or sum(sizes) > MAX_FACES or sizes[0] * sizes[1] > MAX_TRIANGLE_PAIRS:
+    if not all(sizes) or sum(sizes) > MAX_FACES:
         raise _DomainError('surface_geometry_work_limit')
     records, topology = [], []
     for mesh in meshes:
@@ -196,6 +227,7 @@ def _integer_frame(records, budget):
         triangles = []
         for face in faces:
             budget.checkpoint('surface_proximity_triangle_prepare')
+            budget.tick('prepared_triangles')
             points = tuple(integers[index] for index in face)
             normal = _normal(points)
             if not any(normal):
@@ -316,48 +348,167 @@ def _aabb_exceeds_best(left, right, best):
     return False
 
 
-def _nearest(prepared, budget):
+def _plane_exceeds_best(distances, normal_squared, best):
+    if not normal_squared or not distances or not (
+            all(value > 0 for value in distances) or all(value < 0 for value in distances)):
+        return False
+    gap = min(abs(value) for value in distances)
+    # g²*d > n*n² iff integer g² > floor(n*n²/d). Both factors of the
+    # sole product have <=4096 bits; g itself never needs to be squared.
+    threshold = _scratch(best[0] * normal_squared) // best[1]
+    return gap > math.isqrt(threshold)
+
+
+def _triangle_plane_bounds(left, right, best, budget):
+    if not left[2] or not right[2]:
+        return False, None
+    da = _plane_distances(right[0], left[0][0], left[1], budget)
+    budget.tick('plane_bound_tests')
+    if _plane_exceeds_best(da, left[2], best):
+        return True, (da, None)
+    db = _plane_distances(left[0], right[0][0], right[1], budget)
+    budget.tick('plane_bound_tests')
+    return _plane_exceeds_best(db, right[2], best), (da, db)
+
+
+def _nearest_pair(left, right, best, budget, plane_distances=None):
+    budget.narrow_pair()
+    budget.tick('intersection_tests')
+    if left[2] and right[2]:
+        contact = _intersection(left[0], right[0], left[1], right[1], budget,
+                                plane_distances=plane_distances)
+        if contact:
+            return 0, 1, ('contact', contact[0])
+    elif left[2] or right[2]:
+        contact = (_segment_face_contact(right, left) if left[2]
+                   else _segment_face_contact(left, right))
+        if contact:
+            return 0, 1, contact
+    elif len(left[0]) == len(right[0]) == 1:
+        delta = _sub(right[0][0], left[0][0])
+        distance = _closer(_dot(delta, delta), 1, best)
+        if distance:
+            best = (*distance, ('points', left[0][0], right[0][0]))
+    for point in left[0]:
+        if right[2]:
+            best = _point_faces(point, right, False, best, budget)
+        for edge in right[3]:
+            best = _point_edges(point, edge, False, best, budget)
+    for point in right[0]:
+        if left[2]:
+            best = _point_faces(point, left, True, best, budget)
+        for edge in left[3]:
+            best = _point_edges(point, edge, True, best, budget)
+    for edge_a in left[3]:
+        for edge_b in right[3]:
+            best = _edge_edges(edge_a, edge_b, best, budget)
+    return best
+
+
+def _nearest_linear(prepared, budget):
     best = None
     for left in prepared[0]:
         for right in prepared[1]:
             budget.checkpoint('surface_proximity_pair')
+            budget.tick('leaf_pair_visits')
             budget.counts['triangle_pairs'] += 1
             if best is not None:
-                budget.counts['aabb_bound_tests'] += 1
+                budget.tick('aabb_bound_tests')
                 if _aabb_exceeds_best(left[4], right[4], best):
                     budget.counts['aabb_pruned_pairs'] += 1
                     continue
-            budget.tick('intersection_tests')
-            if left[2] and right[2]:
-                contact = _intersection(left[0], right[0], left[1], right[1], budget)
-                if contact:
-                    return 0, 1, ('contact', contact[0])
-            elif left[2] or right[2]:
-                contact = (_segment_face_contact(right, left) if left[2]
-                           else _segment_face_contact(left, right))
-                if contact:
-                    return 0, 1, contact
-            elif len(left[0]) == len(right[0]) == 1:
-                delta = _sub(right[0][0], left[0][0])
-                distance = _closer(_dot(delta, delta), 1, best)
-                if distance:
-                    best = (*distance, ('points', left[0][0], right[0][0]))
-            for point in left[0]:
-                if right[2]:
-                    best = _point_faces(point, right, False, best, budget)
-                for edge in right[3]:
-                    best = _point_edges(point, edge, False, best, budget)
-            for point in right[0]:
-                if left[2]:
-                    best = _point_faces(point, left, True, best, budget)
-                for edge in left[3]:
-                    best = _point_edges(point, edge, True, best, budget)
-            for edge_a in left[3]:
-                for edge_b in right[3]:
-                    best = _edge_edges(edge_a, edge_b, best, budget)
+            best = _nearest_pair(left, right, best, budget)
             if best[0] == 0:
                 return best
     return best
+
+
+def _distance_roots(prepared, budget):
+    from .surface_geometry import _bvh
+    roots = []
+    for triangles in prepared:
+        budget.tick('tree_build_units', len(triangles))
+        bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
+                  for triangle in triangles]
+        budget.tick('tree_builds')
+        roots.append(_bvh(bounds, budget))
+    return tuple(roots)
+
+
+def _queue_distance(left, right, shift, budget):
+    budget.tick('queue_bound_tests')
+    gaps = [max(left[0][axis]-right[1][axis], right[0][axis]-left[1][axis], 0) >> shift
+            for axis in range(3)]
+    return _scratch(sum(gap*gap for gap in gaps))
+
+
+def _nearest_tree(prepared, roots, budget):
+    largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
+        zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
+    # One common priority scale protects extreme inputs. Safe pruning below
+    # always uses unshifted bounds, regardless of this queue-only ordering.
+    shift = max(0, largest_span.bit_length()-(MAX_BITS-1))
+    pending = []
+    serial = 0
+    def push(left, right):
+        nonlocal serial
+        key = _queue_distance(left, right, shift, budget)
+        budget.tick('queue_pushes')
+        heapq.heappush(pending, (key, serial, left, right))
+        serial += 1
+    push(*roots)
+    best = best_pair = None
+    while pending:
+        budget.tick('node_pair_visits')
+        _, _, left, right = heapq.heappop(pending)
+        if best is not None:
+            budget.tick('aabb_bound_tests')
+            if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best):
+                budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
+                continue
+        if left[3] is not None and right[3] is not None:
+            for i in left[3]:
+                for j in right[3]:
+                    budget.tick('leaf_pair_visits')
+                    budget.counts['triangle_pairs'] += 1
+                    a,b = prepared[0][i], prepared[1][j]
+                    planes = None
+                    if best is not None:
+                        budget.tick('aabb_bound_tests')
+                        if _aabb_exceeds_best(a[4], b[4], best):
+                            budget.counts['aabb_pruned_pairs'] += 1
+                            continue
+                        pruned,planes = _triangle_plane_bounds(a,b,best,budget)
+                        if pruned:
+                            budget.counts['plane_pruned_pairs'] += 1
+                            continue
+                    pair = (i,j)
+                    candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
+                                              budget,planes)
+                    if best is None:
+                        best,best_pair = candidate,pair
+                    else:
+                        comparison = candidate[0]*best[1]-best[0]*candidate[1]
+                        if comparison < 0 or comparison == 0 and pair < best_pair:
+                            best,best_pair = candidate,pair
+        elif right[3] is not None or left[3] is None and left[2] >= right[2]:
+            push(left[4],right)
+            push(left[5],right)
+        else:
+            push(left,right[4])
+            push(left,right[5])
+    return best
+
+
+def _nearest(prepared, budget, *, prepared_trees=None):
+    if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
+        return _nearest_linear(prepared,budget)
+    if prepared_trees is None:
+        roots = _distance_roots(prepared,budget)
+    else:
+        roots = prepared_trees['roots']
+        budget.counts['shared_trees'] = True
+    return _nearest_tree(prepared,roots,budget)
 
 
 def _witness(descriptor):
@@ -541,7 +692,7 @@ def _boundary_witness(contact, pair, budget):
 
 
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
-                              _prepared_pair=None, _boundary_contact=None):
+                              _prepared_pair=None, _boundary_contact=None, _prepared_trees=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
@@ -560,7 +711,13 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
             budget.counts['shared_preparation'] = True
             contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
         if contact is None:
-            numerator, denominator, descriptor = _nearest(prepared, budget)
+            trees = None
+            if (_prepared_pair is not None and type(_prepared_trees) is dict
+                    and _prepared_trees.get('pair') is _prepared_pair
+                    and len(_prepared_trees.get('triangles', ())) == 2
+                    and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
+                trees = _prepared_trees
+            numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees)
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)

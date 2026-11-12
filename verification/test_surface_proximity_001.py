@@ -368,7 +368,7 @@ class SurfaceProximityMathTests(unittest.TestCase):
                 self.assertFalse(result['measurement_valid'], result)
                 self.assertTrue(result['reason'])
 
-    def test_g09_face_and_pair_budgets_precede_face_expansion(self):
+    def test_g09_static_faces_precede_expansion_and_high_product_uses_actual_work(self):
         class CountOnlyFaces:
             def __init__(self, count):
                 self.count = count
@@ -383,13 +383,24 @@ class SurfaceProximityMathTests(unittest.TestCase):
                 raise AssertionError('Over-budget faces indexed')
 
         vertices = np.array([(0, 0, 0), (1, 0, 0), (0, 1, 0)], dtype=float)
-        for counts in ((4096, 1), (129, 128)):
+        for counts in ((4096, 1),):
             with self.subTest(counts=counts):
                 left = SimpleNamespace(vertices=vertices, faces=CountOnlyFaces(counts[0]))
                 right = SimpleNamespace(vertices=vertices, faces=CountOnlyFaces(counts[1]))
                 result = self.measure(left, right)
                 self.assertFalse(result['measurement_valid'], result)
                 self.assertRegex(result['reason'], 'budget|limit')
+
+        # Exact parallel planes have gap one, attained by 128 matching XY triangles.
+        def separated_triangles(count, z):
+            values=[(10*i+x,y,z) for i in range(count) for x,y in ((0,0),(1,0),(0,1))]
+            return SimpleNamespace(vertices=np.asarray(values,dtype=float),
+                faces=np.arange(count*3).reshape(count,3))
+        result=self.measure(separated_triangles(129,0),separated_triangles(128,1))
+        self.assertTrue(result['measurement_valid'],result)
+        self.assertEqual(result['distance_m'],1.)
+        self.assertGreater(result['work']['node_pair_visits'],0)
+        self.assertLessEqual(result['work']['narrow_phase_pairs'],16384)
 
     def test_g09_cancel_and_deadline_propagate_from_exact_pair_work(self):
         left, right = open_slanted_pair()
