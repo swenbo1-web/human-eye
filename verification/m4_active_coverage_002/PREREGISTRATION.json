@@ -1,0 +1,156 @@
+{
+  "cycle": "M4-ACTIVE-COVERAGE-002",
+  "baseline_commit": "bfcc35e32aab0b724261a5140fc5d05df9ddad48",
+  "root_dispatch_commit": "a7faeaca",
+  "root_plan_sha256": "9f2d398d10998242ac6bbecbc7e34f8ab970fb98eee4d68b73fa680f694bf27c",
+  "main": [
+    {
+      "id": "main_p01_A",
+      "pair": 1,
+      "arm": "A",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p01_B",
+      "pair": 1,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p02_B",
+      "pair": 2,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p02_A",
+      "pair": 2,
+      "arm": "A",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p03_A",
+      "pair": 3,
+      "arm": "A",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p03_B",
+      "pair": 3,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p04_B",
+      "pair": 4,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p04_A",
+      "pair": 4,
+      "arm": "A",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p05_A",
+      "pair": 5,
+      "arm": "A",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p05_B",
+      "pair": 5,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p06_B",
+      "pair": 6,
+      "arm": "B",
+      "scenario": "main"
+    },
+    {
+      "id": "main_p06_A",
+      "pair": 6,
+      "arm": "A",
+      "scenario": "main"
+    }
+  ],
+  "control": [
+    {
+      "id": "control_A",
+      "pair": null,
+      "arm": "A",
+      "scenario": "pixel_shortfall"
+    },
+    {
+      "id": "control_B",
+      "pair": null,
+      "arm": "B",
+      "scenario": "pixel_shortfall"
+    }
+  ],
+  "expected_main": {
+    "A_render_calls": 6,
+    "A_pixel_tests": 36,
+    "B_render_calls": 2,
+    "B_view_names": [
+      "SCENE",
+      "BACK"
+    ],
+    "B_pixel_tests": 12,
+    "discovered_regions": 6,
+    "covered_regions": 5,
+    "candidate_pool_uncovered": 1,
+    "equal_actual_coverage": true,
+    "repeat_query_render_calls": 0
+  },
+  "limits": {
+    "main_render_attempts": 48,
+    "control_render_attempts": 12,
+    "all_render_attempts_including_preparation_and_failures": 60,
+    "per_process_timeout_seconds": 120
+  },
+  "time_contract": {
+    "clock": "perf_counter_ns",
+    "primary_start": "Immediately before Popen, after output directory allocation and frozen hash verification.",
+    "primary_end": "After process exit and full result, PNG, NPZ and trace reads plus image and counter validation.",
+    "included": [
+      "Python startup/imports",
+      "JSON decode",
+      "optimized geometric index",
+      "all actual full-scene raster attempts",
+      "only generated frame pixel qualification",
+      "PNG and symmetric NPZ serialization",
+      "local receipts and state",
+      "result and trace publication",
+      "parent full image/array/count verification"
+    ],
+    "batch_window": "From run() entry before first integrity/reservation through common parent setup, per-run preparation, source verification, progress and summary analysis. Controller startup/standard-library imports/initial freeze read and final self-publication are outside this batch window and explicitly unmeasured. Each primary child window includes its full startup/import.",
+    "cold_scope": "Fresh processes with empty application image caches. OS caches untouched."
+  },
+  "gates": {
+    "qualification_before_time": true,
+    "time": "Median of the six full-process paired B/A ratios < 1. Ratio of arm medians also reported.",
+    "hard_stop": [
+      "Any failed child or invalid result",
+      "Main B requires third frame",
+      "Main coverage or ordered B views mismatch",
+      "Any source drift or render cap risk",
+      "Control does not show real pixel shortfall/recovery or A/B coverage differs"
+    ],
+    "no_added_samples_or_tuning": true
+  },
+  "array_policy": "Both arms save PNG plus compressed RGB/depth/owner NPZ and matching frame metadata once per generated frame. Payload nbytes separate from RSS.",
+  "preparation_actual_raster_attempts": 0,
+  "new_experimental_model_provider_Blender_API_runs": 0,
+  "expected_control": {
+    "BACK_real_geometric_complete_but_pixel_shortfall": true,
+    "B_later_steps_recover_at_least_one_BACK_shortfall": true,
+    "final_pixel_shortfall_empty": true,
+    "final_unresolved_equals_geometric_pool_uncovered": true,
+    "A_and_B_actual_final_coverage_equal": true,
+    "no_repeat_render": true
+  }
+}
