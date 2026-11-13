@@ -142,11 +142,11 @@ def validate_preparation(frozen, require_committed=True):
     if require_committed:
         head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         assert head != frozen['preparation_parent_commit'], 'preparation_must_be_committed'
-        committed = subprocess.check_output(['git', 'show', head + ':' + relative], cwd=ROOT)
+        committed = subprocess.check_output(['git', 'cat-file', 'blob', head + ':' + relative], cwd=ROOT)
         assert committed == path.read_bytes(), 'current_preparation_commit_required'
         for row in frozen['files']:
             source = BATCH / row['path']
-            committed = subprocess.check_output(['git', 'show', head + ':' + source.relative_to(ROOT).as_posix()], cwd=ROOT)
+            committed = subprocess.check_output(['git', 'cat-file', 'blob', head + ':' + source.relative_to(ROOT).as_posix()], cwd=ROOT)
             assert digest(committed) == row['sha256'], 'frozen_source_not_committed:' + row['path']
     return {'preparation_path': relative, 'files': len(frozen['files']),
             'external_files': len(frozen['external_sha256']), 'committed_verified': require_committed}

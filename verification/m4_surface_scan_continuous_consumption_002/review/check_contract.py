@@ -1,6 +1,7 @@
 """Bounded offline review of the changed 002 entry points and fixed inputs."""
 
 import ast
+import copy
 import hashlib
 import importlib.util
 import json
@@ -98,6 +99,22 @@ def main():
             new_node = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
             check('existing_' + name + '_flow_preserved', ast.dump(old_node, include_attributes=False)
                   == ast.dump(new_node, include_attributes=False))
+        expected_validation = copy.deepcopy(next(node for node in old_tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == 'validate_preparation'))
+        substitutions = 0
+        for node in ast.walk(expected_validation):
+            if isinstance(node, ast.Constant) and node.value == 'm4_surface_scan_continuous_consumption_001':
+                node.value = 'm4_surface_scan_continuous_consumption_002'
+            if (isinstance(node, ast.List) and len(node.elts) >= 2
+                    and all(isinstance(item, ast.Constant) for item in node.elts[:2])
+                    and [item.value for item in node.elts[:2]] == ['git', 'show']):
+                node.elts[1:2] = [ast.Constant(value='cat-file'), ast.Constant(value='blob')]
+                substitutions += 1
+        actual_validation = next(node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == 'validate_preparation')
+        check('committed_validation_only_two_blob_read_substitutions', substitutions == 2
+              and ast.dump(expected_validation, include_attributes=False)
+              == ast.dump(actual_validation, include_attributes=False))
     offline = BATCH / 'runtime/offline/a01'
     result_path = offline / 'RESULT.json'
     check('targeted_offline_result_present', result_path.is_file())

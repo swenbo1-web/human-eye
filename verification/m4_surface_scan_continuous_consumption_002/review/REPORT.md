@@ -20,7 +20,7 @@ runtime 使用全新 `.m4cc2/<cell>`，没有复用 `.m4cc1`。六个匿名 epis
 
 ## 定向离线验证
 
-`check_contract.py` 的三十三项文件、AST、纯导入及离线归档检查全部通过。已有14成功、3真实错误和四场景进程回放作为已审来源复用，本审查没有重跑该矩阵。最终检查与源码摘要见 `CHECK.json`。
+`check_contract.py` 的三十四项文件、AST、纯导入及离线归档检查全部通过。已有14成功、3真实错误和四场景进程回放作为已审来源复用，本审查没有重跑该矩阵。最终检查与源码摘要见 `CHECK.json`。
 
 已逐段审查 `runtime/test_wiring.py` 并核验 `runtime/offline/a01/RESULT.json`，三项必要接线测试通过。
 
@@ -29,6 +29,12 @@ runtime 使用全新 `.m4cc2/<cell>`，没有复用 `.m4cc1`。六个匿名 epis
 - 两项调度测试调用真实 run_batch，run_one 替身提供具体 attempt 原件和已收尾记录。双端明确成功但正文不同的绑定故障只运行 N1，保留一 failed、十七 not_run 后停止。owner true／CLI failed 的普通工具错误走完六个既定集，保留六 failed、十二 not_run，无该停批原因。实际唯一收尾调用另由完整 run_one 测试证明。
 
 `publish` 与 `run_batch` 的 AST 继续同001一致，新增分支通过既有 stop_reasons 与固定余槽逻辑接入。上述合成成绩只说明新增入口、归档、发布及调度接线符合合同。
+
+## 准备提交后的深路径修正
+
+准备提交 `012daa93` 的 committed 验证遇到 Git 深路径 stat 报错，正式尚未开始。root 已保留 `PREPARATION_ATTEMPT_01` 并实证 `git cat-file blob REV:path` 能精确读取同一对象字节。本次只读源码复核确认 `validate_preparation` 的两处 `git show` 改为该 blob 读取，其余比较、SHA256、当前目录及提交绑定不变。
+
+AST 逐函数证明该验证函数相对既有版本只有当前002目录名与这两处读取命令差异。三份固定 wrapper 字节保持，run_one、publish 及 run_batch 不受影响，因此原三项定向离线证据继续复用。修正前检查保留在 `CHECK_BEFORE_PATH_FIX.json`，本子任务没有运行 Git 或新增模型预试。
 
 ## 实际证据边界
 
