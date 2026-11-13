@@ -1,0 +1,145 @@
+{
+  "schema": "continuity_future_consumer_configuration_draft_v1",
+  "status": "draft_pending_preparation_review_and_formal_freeze",
+  "model_consumer_launch_enabled": false,
+  "new_model_API_calls": 0,
+  "administrator_plan_sha256": "9e8adc0eac4dea5ce5d1afd40c8e484a72d79ab99564cbc5f81af80d58e8d4bc",
+  "CLI": {
+    "executable": "C:\\Users\\Administrator\\.codex\\packages\\standalone\\releases\\0.152.1-x86_64-pc-windows-msvc\\bin\\codex.exe",
+    "sha256": "01b0fd4167393e004b9174c77ae5f8570486118e19dc4216cfc62a62a74b6ee6",
+    "version": "codex-cli 0.152.1",
+    "first_turn": "persisted exec, previous argv with --ephemeral removed",
+    "continuation": "exec parent -C/--color, resume options, exact first-turn UUID, stdin prompt",
+    "session_selection": "explicit UUID only",
+    "true_model_resume_verified": false
+  },
+  "groups": {
+    "N": {
+      "tools": [
+        "execute_blender_code"
+      ],
+      "product_runtime": false
+    },
+    "C": {
+      "tools": [
+        "execute_blender_code",
+        "human_eye_scene_observe"
+      ],
+      "product_commit": "452b44d2dcf231d6675bef54e568db0431a29261",
+      "source_sha256": "4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6"
+    }
+  },
+  "episode_binding": {
+    "turns": [
+      "BASE",
+      "REPEAT",
+      "EDIT"
+    ],
+    "same_model_thread": "first actual thread.started UUID required on both resume turns",
+    "workdir": "one directory per episode, retained across all three turns",
+    "endpoint": "one owner endpoint retained across all three turns",
+    "session_id": "one backend session retained across all three turns",
+    "native_namespace_and_geometry_cache": "preserved for both groups",
+    "finish": "one final owned finish after the episode",
+    "engineering_instances_reused_by_model": false
+  },
+  "prompts": {
+    "T1": {
+      "path": "cli/PROMPT_T1.txt",
+      "bytes": 405,
+      "sha256": "6a78e38a474647c0c0c49558be215864cb672932273b3e15ca6ba7f9fa02b4fc"
+    },
+    "T2_T3": {
+      "path": "cli/PROMPT_RECHECK.txt",
+      "bytes": 435,
+      "sha256": "1556e86013d52b1ca222237f6e5df33d389d33e95c8e3df3bd218edb4e5549d6",
+      "exact_prefix": "请重新检查当前场景。",
+      "construction": "prefix UTF-8 bytes directly followed by unmodified T1 bytes",
+      "change_answer_or_object_hint": false
+    }
+  },
+  "settings_reused_from_previous": {
+    "path": "verification/m4_surface_scan_compact_consumption_001/runtime/consumer_transport.py",
+    "sha256": "6fc55226901be5251b7a6601b9a438f0f8506bac74c25ecd31909d29695ca378",
+    "settings": {
+      "model": "gpt-6.1-sol",
+      "model_reasoning_effort": "medium",
+      "model_provider": "openai_http",
+      "service_tier": "default",
+      "model_providers.openai_http": {
+        "name": "OpenAI",
+        "wire_api": "responses",
+        "requires_openai_auth": true,
+        "supports_websockets": false,
+        "supports_standalone_web_search": true,
+        "base_url": "https://chatgpt.com/backend-api/codex"
+      },
+      "forced_login_method": "chatgpt",
+      "hide_agent_reasoning": true,
+      "show_raw_agent_reasoning": false,
+      "web_search": "disabled",
+      "features.hooks": false,
+      "features.apps": false,
+      "features.memories": false,
+      "memories.use_memories": false,
+      "features.multi_agent": false,
+      "features.multi_agent_v2": false,
+      "features.goals": false,
+      "features.remote_plugin": false,
+      "features.plugins": false,
+      "features.skip_host_skill_discovery": true,
+      "skills.bundled.enabled": false,
+      "skills.include_instructions": false,
+      "project_doc_max_bytes": 0,
+      "features.shell_tool": false,
+      "features.view_image": false,
+      "sandbox_mode": "read-only",
+      "approval_policy": "never",
+      "plugins.\"codex-app-tools@openai-bundled\".enabled": false,
+      "plugins.\"visualize@openai-bundled\".enabled": false,
+      "plugins.\"documents@openai-primary-runtime\".enabled": false,
+      "plugins.\"pdf@openai-primary-runtime\".enabled": false,
+      "plugins.\"spreadsheets@openai-primary-runtime\".enabled": false,
+      "plugins.\"presentations@openai-primary-runtime\".enabled": false,
+      "plugins.\"template-creator@openai-primary-runtime\".enabled": false,
+      "plugins.\"agent-learning@agent-learning-local\".enabled": false
+    }
+  },
+  "engineering_budgets": {
+    "absolute_episode_seconds": 590,
+    "tool_seconds": 30
+  },
+  "future_formal_choices_unfrozen": {
+    "episode_count": null,
+    "sequence": null,
+    "episode_seconds": null,
+    "turn_seconds": null,
+    "quality_and_benefit_gate": null
+  },
+  "usage_contract": {
+    "raw_events": "preserve each actual turn.completed usage payload and field names",
+    "turn_or_session_scope": "unknown until actual resume receipts",
+    "aggregation": null,
+    "interrupted_stream_coverage": "unknown",
+    "provider_requests": null,
+    "fees": null,
+    "resolved_model_version": null,
+    "resolved_effort": null
+  },
+  "quality_contract": {
+    "execution_error": "retained failure even when later final and exit0 are present",
+    "content_quality": "independent unscored until sealed",
+    "fixed_three_turn_denominator": true,
+    "stale_BASE_complete_answer_for_EDIT": "incorrect",
+    "replacement_context_or_retry": "not authorized by this preparation"
+  },
+  "integration_remaining": [
+    "Adapt the existing consume process loop in the new preparation namespace to accept an explicit output folder, shared episode workdir, expected thread ID, and absolute deadlines.",
+    "Call cli/continuity_cli.py argv_for_turn with the actual per-turn final path and the same endpoint/config; first turn persists, T2/T3 resume the exact first actual UUID.",
+    "Retain raw stdout events and process lifecycle, apply summarize_turn plus existing tool-isolation/deadline/cleanup checks; a failed or mismatched resume ends the episode without new-context replacement.",
+    "Bind actual model thread history and the backend continuity receipts; determine raw usage semantics before choosing sum or difference.",
+    "Wire the existing raw archive/business projection to the fixed anonymous episode_manifest envelope, preserving three slots, errors and final bytes.",
+    "Freeze future formal quantity, order, original deadlines and gates only after this preparation is independently reviewed."
+  ],
+  "scope": "CLI --help and synthetic parser evidence only; this draft cannot execute a formal consumer."
+}
