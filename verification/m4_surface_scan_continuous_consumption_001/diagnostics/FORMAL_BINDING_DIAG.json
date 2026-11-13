@@ -1,0 +1,1222 @@
+{
+  "cycle": "M4-SURFACE-SCAN-CONTINUOUS-CONSUMPTION-001",
+  "scope": "Closed episodes, execution errors and result-envelope structure only. Final answers, quality, group costs and usage remain sealed.",
+  "run_result_source_sha256": "b129699402f34d7d243596ca83723d8c9aeec5da9f247cd741ec2d443709939d",
+  "strict_execution_failure_preserved": true,
+  "execution_counts": {
+    "planned": 18,
+    "completed": 0,
+    "failed": 6,
+    "not_run": 12
+  },
+  "actual_episodes": 6,
+  "consumer_error_counts": [
+    {
+      "stage": "business_original_binding",
+      "reason": "CLI_result_differs_from_owner",
+      "count": 14
+    }
+  ],
+  "summary_error_counts": {},
+  "compared_binding_failure_attempts": 14,
+  "all_compared_requests_equal": true,
+  "all_compared_business_content_exact_equal": true,
+  "all_compared_cli_status_completed_without_error": true,
+  "difference_counts": [
+    {
+      "path": "$/isError",
+      "difference": "owner_only",
+      "owner_type": "bool",
+      "cli_type": "absent",
+      "count": 14
+    },
+    {
+      "path": "$/structured_content",
+      "difference": "cli_only",
+      "owner_type": "absent",
+      "cli_type": "NoneType",
+      "count": 14
+    }
+  ],
+  "thin_EXIT_unknown_turns": 6,
+  "missing_thin_EXIT_receipts": 6,
+  "all_owner_close_confirmed": true,
+  "all_postclose_passed": true,
+  "all_consumer_process_cleanup_confirmed": true,
+  "algorithm_quality": "unscored; no algorithm accuracy or continuous REPEAT/EDIT benefit conclusion from this structural report",
+  "conclusion": "The recorded successful tool contents and requests match exactly. CLI result envelopes omit owner isError=false and add structured_content=null. Existing strict binding rejects these envelopes. Failed-tool error-state preservation remains untested here.",
+  "episodes": [
+    {
+      "cell": "N1",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 2
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 3
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "cd0ae3f09cab168c71844eb299bf72ed9735994a100be4a9d128200556c4d1b2",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "1f00a10846a3a81cc6b1e5fe8e7baac46fec5c9a8eeb624688d0b0c0852f7d55",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "f6d0f5bbf78ff7d792c6cc0f6a18594518efb559ad73e55cdc7f0cc60540e567",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 4677,
+                "sha256": "abcf2049839a35dc92a3a48eb995aa4b9eadf0ec5db2ebaaed39ef3f7eda91c7",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 4687,
+                "sha256": "c29049d2c81a23322bd8d6ba258900f9fdec36d871370dfc393a8f98d46064e6",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_02\\REQUEST.json",
+              "owner_request_source_sha256": "c4b3bee1ac4f957db4fa34715b3987334502becc68c3b0dba252701d3d03a586",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_02\\RESPONSE.json",
+              "owner_response_source_sha256": "461fba3999e739dc42b8ba553e0429d93e541a26991df7f04259ffb9dcea6a52",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "f6d0f5bbf78ff7d792c6cc0f6a18594518efb559ad73e55cdc7f0cc60540e567",
+              "cli_completed_index": 2,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 4863,
+                "sha256": "2506158bb9887b087a991f424c168650a20dab72de2fe5d9119460c0ffe53984",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 4873,
+                "sha256": "48abc61ef6443ff12f62d5fac847bc604948823da480ce9c32b51dbef3ff846d",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 3,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_03\\REQUEST.json",
+              "owner_request_source_sha256": "f5185f5fc2c3db5c0e5d2991a517eec8ccb60d18d4e9ce628ad68c7ffc3af4e3",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\owner\\tool_03\\RESPONSE.json",
+              "owner_response_source_sha256": "933972951ea81c7486368e373499df6f866b7773e3638e490421f812fde0527d",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N1\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "f6d0f5bbf78ff7d792c6cc0f6a18594518efb559ad73e55cdc7f0cc60540e567",
+              "cli_completed_index": 3,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 249,
+                "sha256": "22cfc93f1497d1256c4290ff49e78a418dfa8d7a55e83b2edac38110474d08e8",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 259,
+                "sha256": "1c0f5729d8e82b7f22e659f80abf2ae847a78bd2d0151215eb19d40d676f6e63",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    },
+    {
+      "cell": "C1",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C1\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "71bc71bb8c55ad8050018c66b2fe5bd9cbf566a6d0bf6bf626db010177e3ba2d",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C1\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "a209c2bb044e91a05d4ba363cbf5121e58ffa5477882de0ecb84bebd89bd2c62",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C1\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "2db762850e99ae30e7d164f511499a07836d7adb352472fb69751eac71ace2e2",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8610,
+                "sha256": "2bd76263ad6acf5e11a018e42e046c37a610278fd025746d5f50fc14844246ae",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8620,
+                "sha256": "05a2e832a537c9d421e0b1f367b0bcb4133d0c39d128f554da6adc93d783e0b5",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    },
+    {
+      "cell": "C2",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C2\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "753d76745c207d401d93a4f0a0b145082e68fbb519c96bd284fc0f2a7f2f3b54",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C2\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "0e57c9ffa549b50778574ca9fca8c8b783e87bd059aaa9e44d8ebde48f33357c",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C2\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "a76babc5bde030f453c2fd8f7554bbcdad01e8c1cc083a18ad864508c37415e8",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8610,
+                "sha256": "8bf8714436c9fdac9f1fcae7a48f0e01c494e1ac69aab641af71de3336789da1",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8620,
+                "sha256": "19fc1c4e684e1a05645a0e5844b3e55911d1dc090ad9ffaa0f35f243be61958b",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    },
+    {
+      "cell": "N2",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 2
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 3
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 4
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "f5ef7dc492d60cd629926cd48875f9d1ad10ca13fc5709577526ed2127a618a8",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "404f87ef3758bdbb4e396ebec4d401a2e1415bf0e7eef716c495890354c6c2e9",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 1037,
+                "sha256": "c2e03661b3548322ab58cc13ee8114fddc3e3e335369adb77a67ed012ded8991",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 1047,
+                "sha256": "7f114786af89bdfd6e5b3b4546ec47017fe0994bb92ef173b2123b8e464b9c56",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_02\\REQUEST.json",
+              "owner_request_source_sha256": "0d8e7607a8da481914eed3a32ecfeaebc70cfe373fa10a5271f13921d73c7f96",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_02\\RESPONSE.json",
+              "owner_response_source_sha256": "a83ed897a5f224b8bdabbdb6fb45346d18a5008a37cf1631b4c4ff781bc6cc22",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d",
+              "cli_completed_index": 2,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3576,
+                "sha256": "31c10fa0d107c57427d24ec415cc897fbd88780748d9125041a24500346f2008",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3586,
+                "sha256": "774b679dd03ff278cc00c086089a5e4db34e3bd980ee72615ca510fa15da4903",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 3,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_03\\REQUEST.json",
+              "owner_request_source_sha256": "41ff22a186c344983db221c212c8a685ee27ec6db125ada351b7603d77e1047b",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_03\\RESPONSE.json",
+              "owner_response_source_sha256": "d5dc4b206c2f49e6672053410ab319d9b105133d4c103080c875aaf636afe957",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d",
+              "cli_completed_index": 3,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3076,
+                "sha256": "1a9a16f7e74f96b5da640bc35b56885c48c36f3a55509a353ee5c49747f3bb1a",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3086,
+                "sha256": "56a2d16dbea24e62f3e9fd0250b63117294c85e784b78a3f3e04dd4b8f4c6edc",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 4,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_04\\REQUEST.json",
+              "owner_request_source_sha256": "7d50b4faf654483330a82d76014d967a11e6c8301fe79ab6f506a7e3b036c873",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\owner\\tool_04\\RESPONSE.json",
+              "owner_response_source_sha256": "f54b6b9c066ab87d59ab8563f67f7328ab1d346e80866b437dbf11bc98961b56",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N2\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d",
+              "cli_completed_index": 4,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 528,
+                "sha256": "16a2f0545b224b4aa2b4aa0b4763a79aa19dc2897d3ee7093f224b983af309d0",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 538,
+                "sha256": "a36d03f3774324226acdab1f4962ff724f3a2d39e633b8f7dedb39a7a890088f",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    },
+    {
+      "cell": "N3",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 2
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 3
+            },
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 4
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "40ebdb9c21081b18336bdd4ced191e943cc5f6f488665313d7ea00f694427938",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "83f328ffb967f4a3aaf95af9b26b63f96a4f0a780533d8a1bd3942819b0c835d",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "75f40824267f359647d48e5bdff5fa8e184d989091f9bbb1abbffa36d09bc3ba",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 993,
+                "sha256": "409a3c1e8c34e40506448d1a1c376fbf98c65932873afd0cffe694a546dd8cd3",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 1003,
+                "sha256": "95151c5962363e7023d6082202b7fbe6664bb579f8bcc2ae4cab78866b9b6044",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 2,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_02\\REQUEST.json",
+              "owner_request_source_sha256": "400ca0cb457b25ff88cac873aaaabd39f5be67b340f8e91a423eb9d4bbff25ef",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_02\\RESPONSE.json",
+              "owner_response_source_sha256": "0aadae85627760f27b838baf8802eec728de60e35a04e386e9f95f323c795c45",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "75f40824267f359647d48e5bdff5fa8e184d989091f9bbb1abbffa36d09bc3ba",
+              "cli_completed_index": 2,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3707,
+                "sha256": "84c51a54f3186553789b18ed4436d69d9377de7358e4cdefb88957dce062abdf",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3717,
+                "sha256": "25b9908852c2d339db2dfa6f1b7759baedbc172973aee1afc793f31abf6b752b",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 3,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_03\\REQUEST.json",
+              "owner_request_source_sha256": "38a56c4d52d5cef59fe0ed359f15cdd5ddd37c40acda8f94ceabed3e309c2765",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_03\\RESPONSE.json",
+              "owner_response_source_sha256": "d6ecaf71701b732db054c6fb222aef9106c46f5e7864d4afa7ff55246ffca154",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "75f40824267f359647d48e5bdff5fa8e184d989091f9bbb1abbffa36d09bc3ba",
+              "cli_completed_index": 3,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3314,
+                "sha256": "cfa6cb6ecd6d56a6b26892e5250d71a9825108ed0023edd7e287be57230a3145",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 3324,
+                "sha256": "6808b800e4ddfdae12f2eb9bbcd866d1626013d2ee14090f33793e681066e5c5",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            },
+            {
+              "attempt": 4,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_04\\REQUEST.json",
+              "owner_request_source_sha256": "c9e62ebdd754dde7b0cfbb03e203e681e951acef9e5d72ea5ed18e6992b894ec",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\owner\\tool_04\\RESPONSE.json",
+              "owner_response_source_sha256": "5442dada9ec6567630d70ffcceaa670779306ab7098f914366515ceae525f0a9",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\N3\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "75f40824267f359647d48e5bdff5fa8e184d989091f9bbb1abbffa36d09bc3ba",
+              "cli_completed_index": 4,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 245,
+                "sha256": "77cf367dc031002fa4a3ee185ccfa7c5f35b36d1b60d09949cdafed6946b4d44",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 255,
+                "sha256": "006a2d7998468e9c7939ebedc48eb2f17192fd4e45c2f2ce2c69e0ef89b81987",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    },
+    {
+      "cell": "C3",
+      "execution_counts": {
+        "planned": 3,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "outer_error_types": [],
+      "coordinator_error_types": [],
+      "stop_reason_types": [],
+      "owner_finish_confirmed": true,
+      "owner_finish_exit_code": 0,
+      "owner_close": {
+        "confirmed": true,
+        "asset_unchanged": true,
+        "expected_terminal_geometry_matches": true,
+        "accepted_worker_geometry_matches": true,
+        "registered_pose_applied": false,
+        "zero_new_images_budget_met": true,
+        "original_deadline_met": true
+      },
+      "owner_close_error_types": [],
+      "postclose_passed": true,
+      "terminal_wire_passed": true,
+      "turns": [
+        {
+          "turn_label": "BASE",
+          "consumer_record_present": true,
+          "status": "failed",
+          "valid_completion": false,
+          "safe_to_continue": true,
+          "process_reaped": true,
+          "readers_stopped": true,
+          "exit_code": 0,
+          "mutation_unknown": false,
+          "bridge_protocol_error_count": 0,
+          "unexpected_tool_deviation_count": 0,
+          "bridge_exit_receipts": {
+            "confirmed": null,
+            "receipt_status": "unknown",
+            "missing_exit_count": 1
+          },
+          "error_reasons": [
+            {
+              "stage": "business_original_binding",
+              "reason": "CLI_result_differs_from_owner",
+              "attempt": 1
+            }
+          ],
+          "summary_error_types": [],
+          "attempt_comparisons": [
+            {
+              "attempt": 1,
+              "owner_request_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C3\\owner\\tool_01\\REQUEST.json",
+              "owner_request_source_sha256": "df3f0f4ebbdf4b43f48f6b6b529e893d2b6df65a8f79b2c5d299312b3bfa1217",
+              "owner_response_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C3\\owner\\tool_01\\RESPONSE.json",
+              "owner_response_source_sha256": "79cb27fcc080e9a1ce677d9c73c778bc302155c15330d71bd456a774dba74454",
+              "cli_events_source": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.m4cc1\\C3\\c\\turns\\BASE\\events.jsonl",
+              "cli_events_source_sha256": "38062a03a26414c1831f856df393b8bfa4a0e4083d9fe6102d799e607ae0aa3b",
+              "cli_completed_index": 1,
+              "request_tool_name_equal": true,
+              "request_arguments_equal": true,
+              "owner_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8610,
+                "sha256": "6b2919f35cc03a16b0fdc46cebc7a0586408f3dcbbcb9493f1a8f9d7d81762c3",
+                "keys": [
+                  "content",
+                  "isError"
+                ]
+              },
+              "cli_result": {
+                "type": "dict",
+                "canonical_json_bytes": 8620,
+                "sha256": "c20d30887cd5fc55167d35772f642d4e158376dc0083105b2e0646b77979d78a",
+                "keys": [
+                  "content",
+                  "structured_content"
+                ]
+              },
+              "content_exact_equal": true,
+              "strict_result_equal": false,
+              "cli_item_status": "completed",
+              "cli_item_error_is_null": true,
+              "differences": [
+                {
+                  "path": "$/isError",
+                  "difference": "owner_only",
+                  "owner": {
+                    "type": "bool",
+                    "canonical_json_bytes": 5,
+                    "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+                    "metadata_scalar": false
+                  }
+                },
+                {
+                  "path": "$/structured_content",
+                  "difference": "cli_only",
+                  "cli": {
+                    "type": "NoneType",
+                    "canonical_json_bytes": 4,
+                    "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+                    "metadata_scalar": null
+                  }
+                }
+              ]
+            }
+          ],
+          "completed_owner_count_binding_matches": true
+        }
+      ]
+    }
+  ],
+  "all_omitted_isError_flags_false": true,
+  "all_added_structured_content_null": true,
+  "all_differences_limited_to_two_envelope_fields": true,
+  "all_action_states_known_and_safe_to_continue": true,
+  "outer_and_coordinator_error_count": 0,
+  "stop_reason_count": 0
+}

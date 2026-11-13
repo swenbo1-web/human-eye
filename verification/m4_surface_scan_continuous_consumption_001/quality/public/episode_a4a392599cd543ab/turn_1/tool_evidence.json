@@ -1,0 +1,359 @@
+{
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndeps=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',len(objs))\nfor o in objs:\n e=o.evaluated_get(deps); m=e.to_mesh(); m.calc_loop_triangles()\n print(repr(o.name),len(m.vertices),len(m.loop_triangles),'hidden',o.hide_get(),o.hide_render)\n e.to_mesh_clear()\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmeshes 24\\n'Obj_001' 8 12 hidden False False\\n'Obj_002' 16 28 hidden False False\\n'Obj_003' 16 28 hidden False False\\n'Obj_004' 16 28 hidden False False\\n'Obj_005' 12 20 hidden False False\\n'Obj_006' 16 28 hidden False False\\n'Obj_007' 12 20 hidden False False\\n'Obj_008' 8 12 hidden False False\\n'Obj_009' 8 12 hidden False False\\n'Obj_010' 8 12 hidden False False\\n'Obj_011' 8 12 hidden False False\\n'Obj_012' 4 2 hidden False False\\n'Obj_013' 64 128 hidden False False\\n'Obj_014' 64 128 hidden False False\\n'Obj_015' 64 128 hidden False False\\n'Obj_016' 64 128 hidden False False\\n'Obj_017' 8 12 hidden False False\\n'Obj_018' 8 12 hidden False False\\n'Obj_019' 8 12 hidden False False\\n'Obj_020' 8 12 hidden False False\\n'Obj_021' 34 64 hidden False False\\n'Obj_022' 34 64 hidden False False\\n'Obj_023' 34 64 hidden False False\\n'Obj_024' 8 12 hidden False False\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "f5ef7dc492d60cd629926cd48875f9d1ad10ca13fc5709577526ed2127a618a8"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "404f87ef3758bdbb4e396ebec4d401a2e1415bf0e7eef716c495890354c6c2e9"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "4adeca6019cd2e7b19bf940231deb69f289d8551686da336c9dd14a5501982df"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "geom=[]\nfor o in objs:\n e=o.evaluated_get(deps); mesh=e.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n mat=np.array([list(r) for r in e.matrix_world],dtype=np.float64)\n world=verts@mat[:3,:3].T+mat[:3,3]\n inds=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=int)\n tris=world[inds]\n geom.append({'name':o.name,'tri':tris,'lo':tris.min(axis=(0,1)),'hi':tris.max(axis=(0,1))})\n e.to_mesh_clear()\nprint('total_triangles',sum(len(g['tri']) for g in geom))\nprint('bounds',[(g['name'],g['lo'].tolist(),g['hi'].tolist()) for g in geom])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"total_triangles 978\\nbounds [('Obj_001', [-0.07999999821186066, -0.054999999701976776, -0.009999999776482582], [0.07999999821186066, 0.054999999701976776, 0.0]), ('Obj_002', [-0.0728503167629242, -0.04447570815682411, 0.0], [0.0728503167629242, 0.016475709155201912, 0.01600000075995922]), ('Obj_003', [-0.0728503167629242, -0.016475709155201912, 0.0], [0.0728503167629242, 0.04447570815682411, 0.01600000075995922]), ('Obj_004', [-0.07500000298023224, -0.05000000074505806, 0.0], [0.07500000298023224, 0.05000000074505806, 0.019999999552965164]), ('Obj_005', [-0.06499999761581421, -0.04500000178813934, 0.0010000000474974513], [0.06499999761581421, 0.04500000178813934, 0.028999999165534973]), ('Obj_006', [-0.054999999701976776, -0.03999999910593033, 0.0005000000237487257], [0.054999999701976776, 0.03999999910593033, 0.0364999994635582]), ('Obj_007', [-0.04500000178813934, -0.03500000014901161, 0.001500000013038516], [0.04500000178813934, 0.03500000014901161, 0.045499999076128006]), ('Obj_008', [-0.049649678170681, -0.03829171881079674, 0.0182499997317791], [-0.026350321248173714, -0.013708282262086868, 0.026249999180436134]), ('Obj_009', [0.026350321248173714, -0.010291717946529388, 0.01600000075995922], [0.049649678170681, 0.014291717670857906, 0.024000000208616257]), ('Obj_010', [-0.07199999690055847, -0.04699999839067459, 0.020250000059604645], [0.07199999690055847, 0.04699999839067459, 0.02174999937415123]), ('Obj_011', [-0.05299999937415123, -0.03799999877810478, 0.03669999912381172], [0.05299999937415123, 0.03799999877810478, 0.037700001150369644]), ('Obj_012', [-0.0430000014603138, -0.032999999821186066, 0.04699999839067459], [0.0430000014603138, 0.032999999821186066, 0.04699999839067459]), ('Obj_013', [-0.04399999976158142, -0.03200000151991844, 0.016249999403953552], [-0.03200000151991844, -0.019999999552965164, 0.017750000581145287]), ('Obj_014', [-0.03099999949336052, -0.02800000086426735, 0.016249999403953552], [-0.01899999938905239, -0.01600000075995922, 0.017750000581145287]), ('Obj_015', [0.03200000151991844, -0.004000000189989805, 0.016249999403953552], [0.04399999976158142, 0.00800000037997961, 0.017750000581145287]), ('Obj_016', [0.04399999976158142, -0.00800000037997961, 0.016249999403953552], [0.0560000017285347, 0.004000000189989805, 0.017750000581145287]), ('Obj_017', [-0.06949999928474426, -0.04399999976158142, 0.0], [-0.060499999672174454, -0.026000000536441803, 0.012000000104308128]), ('Obj_018', [0.060499999672174454, -0.0020000000949949026, 0.0], [0.06949999928474426, 0.01600000075995922, 0.012000000104308128]), ('Obj_019', [-0.06949999928474426, 0.026000000536441803, 0.0], [-0.060499999672174454, 0.04399999976158142, 0.012000000104308128]), ('Obj_020', [0.060499999672174454, -0.01600000075995922, 0.0], [0.06949999928474426, 0.0020000000949949026, 0.012000000104308128]), ('Obj_021', [-0.04039999842643738, -0.0284000001847744, 0.014000000432133675], [-0.035599999129772186, -0.023600000888109207, 0.026000000536441803]), ('Obj_022', [0.035599999129772186, -0.00039999998989515007, 0.014000000432133675], [0.04039999842643738, 0.004399999976158142, 0.026000000536441803]), ('Obj_023', [-0.002400000113993883, -0.002400000113993883, 0.004000000189989805], [0.002400000113993883, 0.002400000113993883, 0.01600000075995922]), ('Obj_024', [-0.003000000026077032, -0.003000000026077032, -0.007000000216066837], [0.003000000026077032, 0.003000000026077032, -0.003000000026077032])]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "0d8e7607a8da481914eed3a32ecfeaebc70cfe373fa10a5271f13921d73c7f96"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "a83ed897a5f224b8bdabbdb6fb45346d18a5008a37cf1631b4c4ff781bc6cc22"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "fa27ba47114186151fa477e57f299a693352c864b34de2a53421dfdc176ae081"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef pseg(p,a,b):\n v=b-a; den=dot(v,v)\n t=np.divide(dot(p-a,v),den,out=np.zeros_like(den),where=den>0)\n d=p-(a+np.clip(t,0,1)[...,None]*v)\n return dot(d,d)\ndef ptri(p,tri):\n a,b,c=tri[:,0],tri[:,1],tri[:,2]\n u=b-a; v=c-a; w=p-a\n n=np.cross(u,v); nn=dot(n,n)\n wu=dot(w,u); wv=dot(w,v); uu=dot(u,u); uv=dot(u,v); vv=dot(v,v)\n det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n plane=np.divide(dot(w,n)**2,nn,out=np.full_like(nn,np.inf),where=nn>0)\n inside=(det>0)&(s>=0)&(t>=0)&(s+t<=1)\n return np.minimum(np.where(inside,plane,np.inf),np.minimum.reduce([pseg(p,a,b),pseg(p,b,c),pseg(p,c,a)]))\ndef segseg(a,b,c,d):\n u=b-a; v=d-c; w=a-c\n aa=dot(u,u); bb=dot(u,v); cc=dot(v,v); dd=dot(u,w); ee=dot(v,w)\n det=aa*cc-bb*bb\n s=np.divide(bb*ee-cc*dd,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(aa*ee-bb*dd,det,out=np.zeros_like(det),where=det>0)\n delta=w+s[:,None]*u-t[:,None]*v\n interior=(det>0)&(s>=0)&(s<=1)&(t>=0)&(t<=1)\n return np.minimum(np.where(interior,dot(delta,delta),np.inf),np.minimum.reduce([pseg(a,c,d),pseg(b,c,d),pseg(c,a,b),pseg(d,a,b)]))\ndef seg_hit(a,b,tri):\n orig=tri[:,0]; u=tri[:,1]-orig; v=tri[:,2]-orig\n n=np.cross(u,v); denom=dot(b-a,n)\n fraction=np.divide(dot(orig-a,n),denom,out=np.full_like(denom,np.inf),where=denom!=0)\n valid=(denom!=0)&(fraction>=0)&(fraction<=1)\n fraction=np.where(valid,fraction,0)\n w=a+fraction[:,None]*(b-a)-orig\n uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); wu=dot(w,u); wv=dot(w,v); det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n return valid&(det>0)&(s>=0)&(t>=0)&(s+t<=1)\ndef tri_dist2(a,b):\n dist=np.full(len(a),np.inf); hit=np.zeros(len(a),dtype=bool)\n for i in range(3):\n  dist=np.minimum(dist,ptri(a[:,i],b)); dist=np.minimum(dist,ptri(b[:,i],a))\n  hit |= seg_hit(a[:,i],a[:,(i+1)%3],b)|seg_hit(b[:,i],b[:,(i+1)%3],a)\n  for j in range(3): dist=np.minimum(dist,segseg(a[:,i],a[:,(i+1)%3],b[:,j],b[:,(j+1)%3]))\n return np.where(hit,0,dist)\nthreshold=0.002/scene.unit_settings.scale_length\nresults=[]; counts={'object_pairs':0,'object_aabb_excluded':0,'triangle_aabb_excluded_pairs':0,'tested_triangle_pairs':0,'tested_object_pairs':0}\nt0=time.time()\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  counts['object_pairs']+=1\n  gap=np.maximum(np.maximum(g['lo']-h['hi'],h['lo']-g['hi']),0)\n  if dot(gap,gap)>threshold**2:\n   counts['object_aabb_excluded']+=1; continue\n  a=g['tri']; b=h['tri']\n  gaps=np.maximum(np.maximum(a.min(axis=1)[:,None,:]-b.max(axis=1)[None,:,:],b.min(axis=1)[None,:,:]-a.max(axis=1)[:,None,:]),0)\n  ai,bi=np.where(dot(gaps,gaps)<=threshold**2)\n  if not len(ai): counts['triangle_aabb_excluded_pairs']+=1; continue\n  counts['tested_object_pairs']+=1; counts['tested_triangle_pairs']+=len(ai)\n  ds=tri_dist2(a[ai],b[bi]); best=float(np.min(ds))\n  if best<=threshold**2: results.append((g['name'],h['name'],math.sqrt(best)*scene.unit_settings.scale_length*1000))\nprint('counts',counts,'seconds',time.time()-t0)\nprint('qualifying',len(results))\nfor row in results: print('%s %s %.9f mm'%row)\nprint('degenerate_triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geom])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"counts {'object_pairs': 276, 'object_aabb_excluded': 164, 'triangle_aabb_excluded_pairs': 36, 'tested_triangle_pairs': 20998, 'tested_object_pairs': 76} seconds 0.17632055282592773\\nqualifying 71\\nObj_001 Obj_002 0.000000000 mm\\nObj_001 Obj_003 0.000000000 mm\\nObj_001 Obj_004 0.000000000 mm\\nObj_001 Obj_005 1.000000047 mm\\nObj_001 Obj_006 0.500000024 mm\\nObj_001 Obj_007 1.500000013 mm\\nObj_001 Obj_017 0.000000000 mm\\nObj_001 Obj_018 0.000000000 mm\\nObj_001 Obj_019 0.000000000 mm\\nObj_001 Obj_020 0.000000000 mm\\nObj_002 Obj_003 0.000000000 mm\\nObj_002 Obj_004 0.000000000 mm\\nObj_002 Obj_005 0.000000000 mm\\nObj_002 Obj_006 0.000000000 mm\\nObj_002 Obj_007 0.000000000 mm\\nObj_002 Obj_009 0.000000000 mm\\nObj_002 Obj_013 0.249998644 mm\\nObj_002 Obj_014 0.249998644 mm\\nObj_002 Obj_015 0.249998644 mm\\nObj_002 Obj_016 0.249998644 mm\\nObj_002 Obj_017 0.000000000 mm\\nObj_002 Obj_018 0.000000000 mm\\nObj_002 Obj_020 0.000000000 mm\\nObj_002 Obj_022 0.000000000 mm\\nObj_003 Obj_004 0.000000000 mm\\nObj_003 Obj_005 0.000000000 mm\\nObj_003 Obj_006 0.000000000 mm\\nObj_003 Obj_007 0.000000000 mm\\nObj_003 Obj_009 0.000000000 mm\\nObj_003 Obj_015 0.249998644 mm\\nObj_003 Obj_016 0.249998644 mm\\nObj_003 Obj_018 0.000000000 mm\\nObj_003 Obj_019 0.000000000 mm\\nObj_003 Obj_020 0.000000000 mm\\nObj_004 Obj_005 0.999998301 mm\\nObj_004 Obj_010 0.250000507 mm\\nObj_004 Obj_017 1.500003040 mm\\nObj_004 Obj_018 1.500003040 mm\\nObj_004 Obj_019 1.500003040 mm\\nObj_004 Obj_020 1.500003040 mm\\nObj_005 Obj_006 1.000002027 mm\\nObj_005 Obj_010 0.000000000 mm\\nObj_005 Obj_017 0.000000000 mm\\nObj_005 Obj_019 0.000000000 mm\\nObj_006 Obj_007 0.999998301 mm\\nObj_006 Obj_008 0.000000000 mm\\nObj_006 Obj_009 1.350320876 mm\\nObj_006 Obj_010 0.000000000 mm\\nObj_006 Obj_011 0.199999660 mm\\nObj_006 Obj_016 0.000000000 mm\\nObj_007 Obj_008 0.000000000 mm\\nObj_007 Obj_010 0.000000000 mm\\nObj_007 Obj_011 0.000000000 mm\\nObj_007 Obj_012 1.499999315 mm\\nObj_007 Obj_013 0.000000000 mm\\nObj_007 Obj_021 0.600002706 mm\\nObj_008 Obj_010 0.000000000 mm\\nObj_008 Obj_013 0.499999151 mm\\nObj_008 Obj_014 0.499999151 mm\\nObj_008 Obj_021 0.000000000 mm\\nObj_009 Obj_010 0.000000000 mm\\nObj_009 Obj_015 0.249998644 mm\\nObj_009 Obj_016 0.000000000 mm\\nObj_009 Obj_022 0.000000000 mm\\nObj_010 Obj_021 0.000000000 mm\\nObj_010 Obj_022 0.000000000 mm\\nObj_013 Obj_014 1.761146088 mm\\nObj_013 Obj_021 0.588469463 mm\\nObj_015 Obj_016 0.780363777 mm\\nObj_015 Obj_022 0.588469685 mm\\nObj_018 Obj_020 0.000000000 mm\\ndegenerate_triangles [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "41ff22a186c344983db221c212c8a685ee27ec6db125ada351b7603d77e1047b"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "d5dc4b206c2f49e6672053410ab319d9b105133d4c103080c875aaf636afe957"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "9b490f80caab640750f10b7f75571d56f1b4e99325a1f3dc61c484bb5cb359a5"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "full_results=[]; excluded=[]; total_tests=0\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  a=g['tri']; b=h['tri']; aa=np.repeat(a,len(b),axis=0); bb=np.tile(b,(len(a),1,1))\n  distance=math.sqrt(float(tri_dist2(aa,bb).min()))*scene.unit_settings.scale_length*1000\n  total_tests+=len(aa)\n  (full_results if distance<=2 else excluded).append((g['name'],h['name'],distance))\nprint('full_triangle_pair_tests',total_tests,'same_results',full_results==results,'qualifying',len(full_results),'excluded',len(excluded))\nprint('nearest_excluded',sorted(excluded,key=lambda r:r[2])[:5])\nprint('exact_zeros',sum(r[2]==0 for r in full_results),'positive',sum(r[2]>0 for r in full_results))\nprint('frame',scene.frame_current,'mode',bpy.context.mode)\nprint('mesh_instances',[(inst.object.name,inst.is_instance) for inst in deps.object_instances if inst.object.type=='MESH' and inst.is_instance])\nprint('modifiers',[(o.name,[(m.name,m.type,m.show_viewport,m.show_render) for m in o.modifiers]) for o in objs if len(o.modifiers)])\n"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"full_triangle_pair_tests 436640 same_results True qualifying 71 excluded 205\\nnearest_excluded [('Obj_002', 'Obj_008', 2.2499989718198776), ('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_003', 'Obj_022', 2.277432384163671), ('Obj_010', 'Obj_013', 2.499999478459358), ('Obj_010', 'Obj_014', 2.499999478459358)]\\nexact_zeros 43 positive 28\\nframe 1 mode OBJECT\\nmesh_instances []\\nmodifiers []\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "7d50b4faf654483330a82d76014d967a11e6c8301fe79ab6f506a7e3b036c873"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "f54b6b9c066ab87d59ab8563f67f7328ab1d346e80866b437dbf11bc98961b56"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "bc3964d19f8bbd024bf27d32edfbd228868cb81bbf161e1c3989c538d999affb"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndeps=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',len(objs))\nfor o in objs:\n e=o.evaluated_get(deps); m=e.to_mesh(); m.calc_loop_triangles()\n print(repr(o.name),len(m.vertices),len(m.loop_triangles),'hidden',o.hide_get(),o.hide_render)\n e.to_mesh_clear()\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "75e746e9ddf07ad17256dde7fadd276289f863e0a3f82831fe84cbb7a8b458e3",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np, math, time\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndeps=bpy.context.evaluated_depsgraph_get()\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('meshes',len(objs))\nfor o in objs:\n e=o.evaluated_get(deps); m=e.to_mesh(); m.calc_loop_triangles()\n print(repr(o.name),len(m.vertices),len(m.loop_triangles),'hidden',o.hide_get(),o.hide_render)\n e.to_mesh_clear()\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmeshes 24\\n'Obj_001' 8 12 hidden False False\\n'Obj_002' 16 28 hidden False False\\n'Obj_003' 16 28 hidden False False\\n'Obj_004' 16 28 hidden False False\\n'Obj_005' 12 20 hidden False False\\n'Obj_006' 16 28 hidden False False\\n'Obj_007' 12 20 hidden False False\\n'Obj_008' 8 12 hidden False False\\n'Obj_009' 8 12 hidden False False\\n'Obj_010' 8 12 hidden False False\\n'Obj_011' 8 12 hidden False False\\n'Obj_012' 4 2 hidden False False\\n'Obj_013' 64 128 hidden False False\\n'Obj_014' 64 128 hidden False False\\n'Obj_015' 64 128 hidden False False\\n'Obj_016' 64 128 hidden False False\\n'Obj_017' 8 12 hidden False False\\n'Obj_018' 8 12 hidden False False\\n'Obj_019' 8 12 hidden False False\\n'Obj_020' 8 12 hidden False False\\n'Obj_021' 34 64 hidden False False\\n'Obj_022' 34 64 hidden False False\\n'Obj_023' 34 64 hidden False False\\n'Obj_024' 8 12 hidden False False\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "cf11071954c7d66c56845f53ee655149eb8922a348a72d444437dd7bf37d88ee",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "geom=[]\nfor o in objs:\n e=o.evaluated_get(deps); mesh=e.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n mat=np.array([list(r) for r in e.matrix_world],dtype=np.float64)\n world=verts@mat[:3,:3].T+mat[:3,3]\n inds=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=int)\n tris=world[inds]\n geom.append({'name':o.name,'tri':tris,'lo':tris.min(axis=(0,1)),'hi':tris.max(axis=(0,1))})\n e.to_mesh_clear()\nprint('total_triangles',sum(len(g['tri']) for g in geom))\nprint('bounds',[(g['name'],g['lo'].tolist(),g['hi'].tolist()) for g in geom])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "3f61217d7dc9d2ca668b68e08143c32b29f245d44b6ecf50fec9f3acf3e35e2d",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "geom=[]\nfor o in objs:\n e=o.evaluated_get(deps); mesh=e.to_mesh(); mesh.calc_loop_triangles()\n verts=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n mat=np.array([list(r) for r in e.matrix_world],dtype=np.float64)\n world=verts@mat[:3,:3].T+mat[:3,3]\n inds=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=int)\n tris=world[inds]\n geom.append({'name':o.name,'tri':tris,'lo':tris.min(axis=(0,1)),'hi':tris.max(axis=(0,1))})\n e.to_mesh_clear()\nprint('total_triangles',sum(len(g['tri']) for g in geom))\nprint('bounds',[(g['name'],g['lo'].tolist(),g['hi'].tolist()) for g in geom])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"total_triangles 978\\nbounds [('Obj_001', [-0.07999999821186066, -0.054999999701976776, -0.009999999776482582], [0.07999999821186066, 0.054999999701976776, 0.0]), ('Obj_002', [-0.0728503167629242, -0.04447570815682411, 0.0], [0.0728503167629242, 0.016475709155201912, 0.01600000075995922]), ('Obj_003', [-0.0728503167629242, -0.016475709155201912, 0.0], [0.0728503167629242, 0.04447570815682411, 0.01600000075995922]), ('Obj_004', [-0.07500000298023224, -0.05000000074505806, 0.0], [0.07500000298023224, 0.05000000074505806, 0.019999999552965164]), ('Obj_005', [-0.06499999761581421, -0.04500000178813934, 0.0010000000474974513], [0.06499999761581421, 0.04500000178813934, 0.028999999165534973]), ('Obj_006', [-0.054999999701976776, -0.03999999910593033, 0.0005000000237487257], [0.054999999701976776, 0.03999999910593033, 0.0364999994635582]), ('Obj_007', [-0.04500000178813934, -0.03500000014901161, 0.001500000013038516], [0.04500000178813934, 0.03500000014901161, 0.045499999076128006]), ('Obj_008', [-0.049649678170681, -0.03829171881079674, 0.0182499997317791], [-0.026350321248173714, -0.013708282262086868, 0.026249999180436134]), ('Obj_009', [0.026350321248173714, -0.010291717946529388, 0.01600000075995922], [0.049649678170681, 0.014291717670857906, 0.024000000208616257]), ('Obj_010', [-0.07199999690055847, -0.04699999839067459, 0.020250000059604645], [0.07199999690055847, 0.04699999839067459, 0.02174999937415123]), ('Obj_011', [-0.05299999937415123, -0.03799999877810478, 0.03669999912381172], [0.05299999937415123, 0.03799999877810478, 0.037700001150369644]), ('Obj_012', [-0.0430000014603138, -0.032999999821186066, 0.04699999839067459], [0.0430000014603138, 0.032999999821186066, 0.04699999839067459]), ('Obj_013', [-0.04399999976158142, -0.03200000151991844, 0.016249999403953552], [-0.03200000151991844, -0.019999999552965164, 0.017750000581145287]), ('Obj_014', [-0.03099999949336052, -0.02800000086426735, 0.016249999403953552], [-0.01899999938905239, -0.01600000075995922, 0.017750000581145287]), ('Obj_015', [0.03200000151991844, -0.004000000189989805, 0.016249999403953552], [0.04399999976158142, 0.00800000037997961, 0.017750000581145287]), ('Obj_016', [0.04399999976158142, -0.00800000037997961, 0.016249999403953552], [0.0560000017285347, 0.004000000189989805, 0.017750000581145287]), ('Obj_017', [-0.06949999928474426, -0.04399999976158142, 0.0], [-0.060499999672174454, -0.026000000536441803, 0.012000000104308128]), ('Obj_018', [0.060499999672174454, -0.0020000000949949026, 0.0], [0.06949999928474426, 0.01600000075995922, 0.012000000104308128]), ('Obj_019', [-0.06949999928474426, 0.026000000536441803, 0.0], [-0.060499999672174454, 0.04399999976158142, 0.012000000104308128]), ('Obj_020', [0.060499999672174454, -0.01600000075995922, 0.0], [0.06949999928474426, 0.0020000000949949026, 0.012000000104308128]), ('Obj_021', [-0.04039999842643738, -0.0284000001847744, 0.014000000432133675], [-0.035599999129772186, -0.023600000888109207, 0.026000000536441803]), ('Obj_022', [0.035599999129772186, -0.00039999998989515007, 0.014000000432133675], [0.04039999842643738, 0.004399999976158142, 0.026000000536441803]), ('Obj_023', [-0.002400000113993883, -0.002400000113993883, 0.004000000189989805], [0.002400000113993883, 0.002400000113993883, 0.01600000075995922]), ('Obj_024', [-0.003000000026077032, -0.003000000026077032, -0.007000000216066837], [0.003000000026077032, 0.003000000026077032, -0.003000000026077032])]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "2edaf89b83b77293c6a591825b4a841e6edae7b2c0db25973d438463c30e5711",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef pseg(p,a,b):\n v=b-a; den=dot(v,v)\n t=np.divide(dot(p-a,v),den,out=np.zeros_like(den),where=den>0)\n d=p-(a+np.clip(t,0,1)[...,None]*v)\n return dot(d,d)\ndef ptri(p,tri):\n a,b,c=tri[:,0],tri[:,1],tri[:,2]\n u=b-a; v=c-a; w=p-a\n n=np.cross(u,v); nn=dot(n,n)\n wu=dot(w,u); wv=dot(w,v); uu=dot(u,u); uv=dot(u,v); vv=dot(v,v)\n det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n plane=np.divide(dot(w,n)**2,nn,out=np.full_like(nn,np.inf),where=nn>0)\n inside=(det>0)&(s>=0)&(t>=0)&(s+t<=1)\n return np.minimum(np.where(inside,plane,np.inf),np.minimum.reduce([pseg(p,a,b),pseg(p,b,c),pseg(p,c,a)]))\ndef segseg(a,b,c,d):\n u=b-a; v=d-c; w=a-c\n aa=dot(u,u); bb=dot(u,v); cc=dot(v,v); dd=dot(u,w); ee=dot(v,w)\n det=aa*cc-bb*bb\n s=np.divide(bb*ee-cc*dd,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(aa*ee-bb*dd,det,out=np.zeros_like(det),where=det>0)\n delta=w+s[:,None]*u-t[:,None]*v\n interior=(det>0)&(s>=0)&(s<=1)&(t>=0)&(t<=1)\n return np.minimum(np.where(interior,dot(delta,delta),np.inf),np.minimum.reduce([pseg(a,c,d),pseg(b,c,d),pseg(c,a,b),pseg(d,a,b)]))\ndef seg_hit(a,b,tri):\n orig=tri[:,0]; u=tri[:,1]-orig; v=tri[:,2]-orig\n n=np.cross(u,v); denom=dot(b-a,n)\n fraction=np.divide(dot(orig-a,n),denom,out=np.full_like(denom,np.inf),where=denom!=0)\n valid=(denom!=0)&(fraction>=0)&(fraction<=1)\n fraction=np.where(valid,fraction,0)\n w=a+fraction[:,None]*(b-a)-orig\n uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); wu=dot(w,u); wv=dot(w,v); det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n return valid&(det>0)&(s>=0)&(t>=0)&(s+t<=1)\ndef tri_dist2(a,b):\n dist=np.full(len(a),np.inf); hit=np.zeros(len(a),dtype=bool)\n for i in range(3):\n  dist=np.minimum(dist,ptri(a[:,i],b)); dist=np.minimum(dist,ptri(b[:,i],a))\n  hit |= seg_hit(a[:,i],a[:,(i+1)%3],b)|seg_hit(b[:,i],b[:,(i+1)%3],a)\n  for j in range(3): dist=np.minimum(dist,segseg(a[:,i],a[:,(i+1)%3],b[:,j],b[:,(j+1)%3]))\n return np.where(hit,0,dist)\nthreshold=0.002/scene.unit_settings.scale_length\nresults=[]; counts={'object_pairs':0,'object_aabb_excluded':0,'triangle_aabb_excluded_pairs':0,'tested_triangle_pairs':0,'tested_object_pairs':0}\nt0=time.time()\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  counts['object_pairs']+=1\n  gap=np.maximum(np.maximum(g['lo']-h['hi'],h['lo']-g['hi']),0)\n  if dot(gap,gap)>threshold**2:\n   counts['object_aabb_excluded']+=1; continue\n  a=g['tri']; b=h['tri']\n  gaps=np.maximum(np.maximum(a.min(axis=1)[:,None,:]-b.max(axis=1)[None,:,:],b.min(axis=1)[None,:,:]-a.max(axis=1)[:,None,:]),0)\n  ai,bi=np.where(dot(gaps,gaps)<=threshold**2)\n  if not len(ai): counts['triangle_aabb_excluded_pairs']+=1; continue\n  counts['tested_object_pairs']+=1; counts['tested_triangle_pairs']+=len(ai)\n  ds=tri_dist2(a[ai],b[bi]); best=float(np.min(ds))\n  if best<=threshold**2: results.append((g['name'],h['name'],math.sqrt(best)*scene.unit_settings.scale_length*1000))\nprint('counts',counts,'seconds',time.time()-t0)\nprint('qualifying',len(results))\nfor row in results: print('%s %s %.9f mm'%row)\nprint('degenerate_triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geom])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "e3671a2acb194925cd0914eccc689a7cfd703a160b5c0813c45c8d40c4007e80",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot(a,b): return np.einsum('...i,...i->...',a,b)\ndef pseg(p,a,b):\n v=b-a; den=dot(v,v)\n t=np.divide(dot(p-a,v),den,out=np.zeros_like(den),where=den>0)\n d=p-(a+np.clip(t,0,1)[...,None]*v)\n return dot(d,d)\ndef ptri(p,tri):\n a,b,c=tri[:,0],tri[:,1],tri[:,2]\n u=b-a; v=c-a; w=p-a\n n=np.cross(u,v); nn=dot(n,n)\n wu=dot(w,u); wv=dot(w,v); uu=dot(u,u); uv=dot(u,v); vv=dot(v,v)\n det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n plane=np.divide(dot(w,n)**2,nn,out=np.full_like(nn,np.inf),where=nn>0)\n inside=(det>0)&(s>=0)&(t>=0)&(s+t<=1)\n return np.minimum(np.where(inside,plane,np.inf),np.minimum.reduce([pseg(p,a,b),pseg(p,b,c),pseg(p,c,a)]))\ndef segseg(a,b,c,d):\n u=b-a; v=d-c; w=a-c\n aa=dot(u,u); bb=dot(u,v); cc=dot(v,v); dd=dot(u,w); ee=dot(v,w)\n det=aa*cc-bb*bb\n s=np.divide(bb*ee-cc*dd,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(aa*ee-bb*dd,det,out=np.zeros_like(det),where=det>0)\n delta=w+s[:,None]*u-t[:,None]*v\n interior=(det>0)&(s>=0)&(s<=1)&(t>=0)&(t<=1)\n return np.minimum(np.where(interior,dot(delta,delta),np.inf),np.minimum.reduce([pseg(a,c,d),pseg(b,c,d),pseg(c,a,b),pseg(d,a,b)]))\ndef seg_hit(a,b,tri):\n orig=tri[:,0]; u=tri[:,1]-orig; v=tri[:,2]-orig\n n=np.cross(u,v); denom=dot(b-a,n)\n fraction=np.divide(dot(orig-a,n),denom,out=np.full_like(denom,np.inf),where=denom!=0)\n valid=(denom!=0)&(fraction>=0)&(fraction<=1)\n fraction=np.where(valid,fraction,0)\n w=a+fraction[:,None]*(b-a)-orig\n uu=dot(u,u); uv=dot(u,v); vv=dot(v,v); wu=dot(w,u); wv=dot(w,v); det=uu*vv-uv*uv\n s=np.divide(wu*vv-wv*uv,det,out=np.zeros_like(det),where=det>0)\n t=np.divide(wv*uu-wu*uv,det,out=np.zeros_like(det),where=det>0)\n return valid&(det>0)&(s>=0)&(t>=0)&(s+t<=1)\ndef tri_dist2(a,b):\n dist=np.full(len(a),np.inf); hit=np.zeros(len(a),dtype=bool)\n for i in range(3):\n  dist=np.minimum(dist,ptri(a[:,i],b)); dist=np.minimum(dist,ptri(b[:,i],a))\n  hit |= seg_hit(a[:,i],a[:,(i+1)%3],b)|seg_hit(b[:,i],b[:,(i+1)%3],a)\n  for j in range(3): dist=np.minimum(dist,segseg(a[:,i],a[:,(i+1)%3],b[:,j],b[:,(j+1)%3]))\n return np.where(hit,0,dist)\nthreshold=0.002/scene.unit_settings.scale_length\nresults=[]; counts={'object_pairs':0,'object_aabb_excluded':0,'triangle_aabb_excluded_pairs':0,'tested_triangle_pairs':0,'tested_object_pairs':0}\nt0=time.time()\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  counts['object_pairs']+=1\n  gap=np.maximum(np.maximum(g['lo']-h['hi'],h['lo']-g['hi']),0)\n  if dot(gap,gap)>threshold**2:\n   counts['object_aabb_excluded']+=1; continue\n  a=g['tri']; b=h['tri']\n  gaps=np.maximum(np.maximum(a.min(axis=1)[:,None,:]-b.max(axis=1)[None,:,:],b.min(axis=1)[None,:,:]-a.max(axis=1)[:,None,:]),0)\n  ai,bi=np.where(dot(gaps,gaps)<=threshold**2)\n  if not len(ai): counts['triangle_aabb_excluded_pairs']+=1; continue\n  counts['tested_object_pairs']+=1; counts['tested_triangle_pairs']+=len(ai)\n  ds=tri_dist2(a[ai],b[bi]); best=float(np.min(ds))\n  if best<=threshold**2: results.append((g['name'],h['name'],math.sqrt(best)*scene.unit_settings.scale_length*1000))\nprint('counts',counts,'seconds',time.time()-t0)\nprint('qualifying',len(results))\nfor row in results: print('%s %s %.9f mm'%row)\nprint('degenerate_triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geom])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"counts {'object_pairs': 276, 'object_aabb_excluded': 164, 'triangle_aabb_excluded_pairs': 36, 'tested_triangle_pairs': 20998, 'tested_object_pairs': 76} seconds 0.17632055282592773\\nqualifying 71\\nObj_001 Obj_002 0.000000000 mm\\nObj_001 Obj_003 0.000000000 mm\\nObj_001 Obj_004 0.000000000 mm\\nObj_001 Obj_005 1.000000047 mm\\nObj_001 Obj_006 0.500000024 mm\\nObj_001 Obj_007 1.500000013 mm\\nObj_001 Obj_017 0.000000000 mm\\nObj_001 Obj_018 0.000000000 mm\\nObj_001 Obj_019 0.000000000 mm\\nObj_001 Obj_020 0.000000000 mm\\nObj_002 Obj_003 0.000000000 mm\\nObj_002 Obj_004 0.000000000 mm\\nObj_002 Obj_005 0.000000000 mm\\nObj_002 Obj_006 0.000000000 mm\\nObj_002 Obj_007 0.000000000 mm\\nObj_002 Obj_009 0.000000000 mm\\nObj_002 Obj_013 0.249998644 mm\\nObj_002 Obj_014 0.249998644 mm\\nObj_002 Obj_015 0.249998644 mm\\nObj_002 Obj_016 0.249998644 mm\\nObj_002 Obj_017 0.000000000 mm\\nObj_002 Obj_018 0.000000000 mm\\nObj_002 Obj_020 0.000000000 mm\\nObj_002 Obj_022 0.000000000 mm\\nObj_003 Obj_004 0.000000000 mm\\nObj_003 Obj_005 0.000000000 mm\\nObj_003 Obj_006 0.000000000 mm\\nObj_003 Obj_007 0.000000000 mm\\nObj_003 Obj_009 0.000000000 mm\\nObj_003 Obj_015 0.249998644 mm\\nObj_003 Obj_016 0.249998644 mm\\nObj_003 Obj_018 0.000000000 mm\\nObj_003 Obj_019 0.000000000 mm\\nObj_003 Obj_020 0.000000000 mm\\nObj_004 Obj_005 0.999998301 mm\\nObj_004 Obj_010 0.250000507 mm\\nObj_004 Obj_017 1.500003040 mm\\nObj_004 Obj_018 1.500003040 mm\\nObj_004 Obj_019 1.500003040 mm\\nObj_004 Obj_020 1.500003040 mm\\nObj_005 Obj_006 1.000002027 mm\\nObj_005 Obj_010 0.000000000 mm\\nObj_005 Obj_017 0.000000000 mm\\nObj_005 Obj_019 0.000000000 mm\\nObj_006 Obj_007 0.999998301 mm\\nObj_006 Obj_008 0.000000000 mm\\nObj_006 Obj_009 1.350320876 mm\\nObj_006 Obj_010 0.000000000 mm\\nObj_006 Obj_011 0.199999660 mm\\nObj_006 Obj_016 0.000000000 mm\\nObj_007 Obj_008 0.000000000 mm\\nObj_007 Obj_010 0.000000000 mm\\nObj_007 Obj_011 0.000000000 mm\\nObj_007 Obj_012 1.499999315 mm\\nObj_007 Obj_013 0.000000000 mm\\nObj_007 Obj_021 0.600002706 mm\\nObj_008 Obj_010 0.000000000 mm\\nObj_008 Obj_013 0.499999151 mm\\nObj_008 Obj_014 0.499999151 mm\\nObj_008 Obj_021 0.000000000 mm\\nObj_009 Obj_010 0.000000000 mm\\nObj_009 Obj_015 0.249998644 mm\\nObj_009 Obj_016 0.000000000 mm\\nObj_009 Obj_022 0.000000000 mm\\nObj_010 Obj_021 0.000000000 mm\\nObj_010 Obj_022 0.000000000 mm\\nObj_013 Obj_014 1.761146088 mm\\nObj_013 Obj_021 0.588469463 mm\\nObj_015 Obj_016 0.780363777 mm\\nObj_015 Obj_022 0.588469685 mm\\nObj_018 Obj_020 0.000000000 mm\\ndegenerate_triangles [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "8d294b7c55d8c7590d9871c37b04b310e129d8904cb255197bc7210e4882c591",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "full_results=[]; excluded=[]; total_tests=0\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  a=g['tri']; b=h['tri']; aa=np.repeat(a,len(b),axis=0); bb=np.tile(b,(len(a),1,1))\n  distance=math.sqrt(float(tri_dist2(aa,bb).min()))*scene.unit_settings.scale_length*1000\n  total_tests+=len(aa)\n  (full_results if distance<=2 else excluded).append((g['name'],h['name'],distance))\nprint('full_triangle_pair_tests',total_tests,'same_results',full_results==results,'qualifying',len(full_results),'excluded',len(excluded))\nprint('nearest_excluded',sorted(excluded,key=lambda r:r[2])[:5])\nprint('exact_zeros',sum(r[2]==0 for r in full_results),'positive',sum(r[2]>0 for r in full_results))\nprint('frame',scene.frame_current,'mode',bpy.context.mode)\nprint('mesh_instances',[(inst.object.name,inst.is_instance) for inst in deps.object_instances if inst.object.type=='MESH' and inst.is_instance])\nprint('modifiers',[(o.name,[(m.name,m.type,m.show_viewport,m.show_render) for m in o.modifiers]) for o in objs if len(o.modifiers)])\n"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "b4dd9400e7a2592814ea531bbdd8b6ffd031f70755ebe161663d804949a02a55",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "full_results=[]; excluded=[]; total_tests=0\nfor i,g in enumerate(geom):\n for h in geom[i+1:]:\n  a=g['tri']; b=h['tri']; aa=np.repeat(a,len(b),axis=0); bb=np.tile(b,(len(a),1,1))\n  distance=math.sqrt(float(tri_dist2(aa,bb).min()))*scene.unit_settings.scale_length*1000\n  total_tests+=len(aa)\n  (full_results if distance<=2 else excluded).append((g['name'],h['name'],distance))\nprint('full_triangle_pair_tests',total_tests,'same_results',full_results==results,'qualifying',len(full_results),'excluded',len(excluded))\nprint('nearest_excluded',sorted(excluded,key=lambda r:r[2])[:5])\nprint('exact_zeros',sum(r[2]==0 for r in full_results),'positive',sum(r[2]>0 for r in full_results))\nprint('frame',scene.frame_current,'mode',bpy.context.mode)\nprint('mesh_instances',[(inst.object.name,inst.is_instance) for inst in deps.object_instances if inst.object.type=='MESH' and inst.is_instance])\nprint('modifiers',[(o.name,[(m.name,m.type,m.show_viewport,m.show_render) for m in o.modifiers]) for o in objs if len(o.modifiers)])\n"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"full_triangle_pair_tests 436640 same_results True qualifying 71 excluded 205\\nnearest_excluded [('Obj_002', 'Obj_008', 2.2499989718198776), ('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_003', 'Obj_022', 2.277432384163671), ('Obj_010', 'Obj_013', 2.499999478459358), ('Obj_010', 'Obj_014', 2.499999478459358)]\\nexact_zeros 43 positive 28\\nframe 1 mode OBJECT\\nmesh_instances []\\nmodifiers []\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "60f62c1c830919ed43bdbb5a7dd803a69243d1d8d3a7608e98bb4480fc7aedfc",
+      "source_sha256": "213f9b482223475900eb3fd51c795bf8431bf99e9ccd97482d3f5e15f181af3d"
+    }
+  ],
+  "scope": "Actual owner records and consumer-visible events are independently bound; no missing delivery is inferred."
+}
