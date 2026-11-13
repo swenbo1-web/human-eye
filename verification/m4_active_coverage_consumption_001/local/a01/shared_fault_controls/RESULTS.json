@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "case": "ordinary_tool_error",
+      "expected_shared_fault": false,
+      "observed_faults": [],
+      "passed": true
+    },
+    {
+      "case": "post_encoding_failure",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "constructed_image_delivery_preparation_failed",
+          "count": 1
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "actual_send_failure",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "actual_owner_socket_send_failed_or_unknown",
+          "count": 1
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "actual_serialization_failure",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "actual_tool_response_serialization_failed",
+          "attempt": 1,
+          "original_error": {
+            "type": "ValueError",
+            "message": "fixture"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "common_runtime_failure",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "common_observation_runtime_failed",
+          "original_faults": [
+            {
+              "stage": "render",
+              "type": "ValueError"
+            }
+          ]
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "unknown_render_ledger",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "common_render_attempt_ledger_invalid",
+          "observed": null
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "missing_image_completion",
+      "expected_shared_fault": true,
+      "observed_faults": [
+        {
+          "reason": "image_tool_completed_receipt_count_binding",
+          "owner_image_attempts_without_CLI_receipt": [
+            1
+          ],
+          "CLI_image_items_without_owner_receipt": [],
+          "owner_tool_count": 1,
+          "CLI_completed_count": 0
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "explicit_terminal_503",
+      "passed": true
+    },
+    {
+      "case": "recovered_terminal_observation",
+      "passed": true
+    },
+    {
+      "case": "ordinary_quota_word",
+      "passed": true
+    }
+  ],
+  "driver_sha256": "6f397e3cd4bbbfaefd0d63a477bc8c907e464d2e8faa1c9a0a53f98b258b1ce6",
+  "new_processes": 0,
+  "new_renders": 0,
+  "real_Pro_sessions": 0,
+  "scope": "Actual shared-fault classifier against synthetic receipt files, plus terminal availability controls."
+}

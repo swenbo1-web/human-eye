@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "execute_python",
+    "arguments": {
+      "code": "assert len(geometry['objects']) == 28\nrows = render_views(['SCENE', 'BACK'], include_images=True)\nassert set(buffers) == {'SCENE', 'BACK'}\nassert buffers['SCENE']['owners'].shape == (512, 512)\nprint(rows)"
+    }
+  }
+}
