@@ -1,0 +1,13 @@
+# Root completion after child quota interruption
+
+Three child review turns ended with an account usage-limit error after writing partial artifacts. No child or provider was restarted to evade that limit. The user's subsequent “继续” kept the existing root task active. Root completed the offline review using the preserved artifacts and fixed source; no new model experiment, Blender process or paid API call was started.
+
+The cost child completed 675 passing assertions and reported its arithmetic before the interrupted final publication. Its RESULTS, CHECKS, INPUT_HASHES and recheck.py remain its evidence; it did not finish a separate REPORT. Root's independent root_crosscheck.py also reconstructs the three views from original integer timestamps and one terminal CLI usage per invocation. The root review document is the final narrative, not a fabricated child completion.
+
+The binding/mechanism child's initial run had 197 checks with 12 failures. Root preserved its script, checks, result and input hashes as ATTEMPT_01. Two incorrect cross-layer assumptions caused the failures: it compared the complete host binding to the enriched service binding; and it treated the content-derived scene revision string as the numeric capture-state revision. Root replaced those assumptions with explicit mappings of source/directory, scene revision, document epoch, units, coordinates and actual capture-state revision.
+
+Root's next run retained 9 failures because the inner candidate capture identity and complete directory identity intentionally have different capture_scope values. ATTEMPT_02 preserves this run and script. Fixed-source blender_host.py defines the inner surface_scan_candidates acquisition and the outer complete_scene_meshes identity. The final checker asserts both precise scopes and equality of schema/document/object instances, rather than dropping arbitrary fields. All 197 checks then passed. Formal originals and author results were never changed.
+
+A root diagnostic snippet first tried to read binding from an observe audit record and raised KeyError; binding is in the actual tool response. A targeted source search also named a nonexistent blender_embedded.py before using the existing blender_host.py. These were review read errors, not product failures.
+
+The active_scan_design files are an unfinished prospective design fixture. They are not a completed product, a rendered test, or a model experiment. In particular, its two-direction optimum is not an image-count optimum for local cameras. The next task contract resolves this by using fully specified global camera poses and separate geometric coverage and pixel-readability checks. The original draft is retained unchanged.
