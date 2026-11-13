@@ -1,0 +1,84 @@
+{
+  "summary": "Inspected all 28 objects and all 6 registered cameras. Found 6 independent rectangular panels: 5 covered and 1 uncovered within this finite camera pool.",
+  "verification": "Exact rational checks established four distinct coplanar vertices, nonzero rectangular area, and two consistently wound triangles per panel. All panels are front-facing and fully inside every camera viewport. Exact projected-triangle clipping tested positive-area interior occlusion; boundary-only tangency was not counted. Readability counts use actual current-session RGB/owner buffers, unique target-owned boundary pixels, and squared RGB contrast >=576.",
+  "panels": [
+    {
+      "object": "Obj_001",
+      "status": "covered",
+      "views": [
+        {
+          "view": "LEFT",
+          "ref": "image-03",
+          "surface_pixels": 792,
+          "boundary_pixels": 110
+        }
+      ],
+      "reason": "Complete, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_002",
+      "status": "covered",
+      "views": [
+        {
+          "view": "TOP",
+          "ref": "image-02",
+          "surface_pixels": 676,
+          "boundary_pixels": 100
+        }
+      ],
+      "reason": "Complete, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_003",
+      "status": "covered",
+      "views": [
+        {
+          "view": "LEFT",
+          "ref": "image-03",
+          "surface_pixels": 759,
+          "boundary_pixels": 108
+        }
+      ],
+      "reason": "Complete, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_004",
+      "status": "covered",
+      "views": [
+        {
+          "view": "SCENE",
+          "ref": "image-01",
+          "surface_pixels": 340,
+          "boundary_pixels": 72
+        }
+      ],
+      "reason": "Complete, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_005",
+      "status": "covered",
+      "views": [
+        {
+          "view": "SCENE",
+          "ref": "image-01",
+          "surface_pixels": 340,
+          "boundary_pixels": 72
+        }
+      ],
+      "reason": "Complete, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_006",
+      "status": "uncovered",
+      "views": [
+        {"view": "SCENE", "ref": "image-01", "occluder": "Obj_023"},
+        {"view": "TOP", "ref": "image-02", "occluder": "Obj_024"},
+        {"view": "LEFT", "ref": "image-03", "occluder": "Obj_025"},
+        {"view": "RIGHT", "ref": "image-04", "occluder": "Obj_026"},
+        {"view": "FRONT", "ref": "image-05", "occluder": "Obj_027"},
+        {"view": "BACK", "ref": "image-06", "occluder": "Obj_028"}
+      ],
+      "reason": "Every registered camera has positive-area interior occlusion. Actual surface and qualifying boundary counts are both zero in all six views. No complete readable observation exists in this finite pool; visibility and defects outside these observations remain unknown."
+    }
+  ]
+}

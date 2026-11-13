@@ -1,0 +1,69 @@
+{
+  "schema": "consumer-error-contract-001-static-connections-v1",
+  "verification_stage": "AST/source inspection, runtime pointer assertions reserved for the root-frozen offline harness",
+  "derived_functions": [
+    "consumer.archive_turn",
+    "driver.common_image_faults"
+  ],
+  "rebound_functions": [
+    {
+      "candidate": "consumer.consume_turn",
+      "code_source": "legacy.consume_turn.__code__",
+      "globals_snapshot_replacements": [
+        "archive_turn"
+      ],
+      "expected_archive_pointer": "consumer.consume_turn.__globals__['archive_turn'] is consumer.archive_turn"
+    },
+    {
+      "candidate": "driver.run_route",
+      "code_source": "legacy.run_route.__code__",
+      "globals_snapshot_replacements": [
+        "consumer",
+        "common_image_faults"
+      ],
+      "expected_consumer_pointer": "driver.run_route.__globals__['consumer'] is driver.consumer",
+      "expected_check_pointer": "driver.run_route.__globals__['common_image_faults'] is driver.common_image_faults"
+    },
+    {
+      "candidate": "driver.run_batch",
+      "code_source": "legacy.run_batch.__code__",
+      "globals_snapshot_replacements": [
+        "run_route"
+      ],
+      "expected_route_pointer": "driver.run_batch.__globals__['run_route'] is driver.run_route"
+    }
+  ],
+  "unchanged_original_objects": [
+    "consumer.safe_environment is consumer.legacy.safe_environment",
+    "driver.outer_accepted is driver.legacy.outer_accepted",
+    "driver.terminal_service_faults is driver.legacy.terminal_service_faults",
+    "driver.publish_route is driver.legacy.publish_route"
+  ],
+  "original_module_guards": [
+    "consumer.legacy.consume_turn.__globals__['archive_turn'] is consumer.legacy.archive_turn",
+    "driver.legacy.run_route.__globals__['consumer'] is driver.legacy.consumer",
+    "driver.legacy.run_route.__globals__['common_image_faults'] is driver.legacy.common_image_faults",
+    "driver.legacy.run_batch.__globals__['run_route'] is driver.legacy.run_route"
+  ],
+  "result_rule": "result_contract.bind_tool_result(owner_response, cli_item)",
+  "outer_binding_rules": [
+    "owner attempt identity and contiguous original order",
+    "owner/CLI item count",
+    "request tool name and full arguments",
+    "request/response JSON-RPC id identity and value",
+    "unified result matcher for every result"
+  ],
+  "historical_results": "Original six-slot acceptance, answers, usage and raw artifacts remain the replay inputs.",
+  "new_services_or_model_sessions": 0,
+  "new_renders": 0,
+  "static_run_route_consumer_attributes": {
+    "required": [
+      "consume_turn",
+      "packer",
+      "safe_environment"
+    ],
+    "all_explicitly_exported": true,
+    "module_proxy_added": false
+  },
+  "kwdefaults_binding": "None remains None. Existing keyword-default dictionaries are copied with identical values."
+}

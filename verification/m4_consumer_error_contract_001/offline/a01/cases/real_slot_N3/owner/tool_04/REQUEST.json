@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_ba8a352346bf4da28df575124d1e4770",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d4af-1e3f-77e1-b6bb-58f38fc2d620",
+        "thread_id": "01a1d4af-1e3f-77e1-b6bb-58f38fc2d620",
+        "turn_started_at_unix_ms": 1794569609037,
+        "turn_id": "01a1d4af-1f43-7d73-b616-e7f609743981",
+        "workspaces": {
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe": {
+            "associated_remote_urls": {
+              "origin": "https://github.com/swenbo1-web/human-eye.git"
+            },
+            "latest_git_commit_hash": "28105d629416cbfe8e15e7414ea008a08e74a269",
+            "has_changes": false
+          }
+        },
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "node_repl_disabled": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d4af-1e3f-77e1-b6bb-58f38fc2d620",
+      "itemId": "fc_02b4f6c962ef5139016af6f5ca55cc87d0a29f0a5ce484fda5",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "def sub(a,b): return [x-y for x,y in zip(a,b)]\ndef dot(a,b): return sum(x*y for x,y in zip(a,b))\ndef cross(a,b): return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]\nfrom collections import Counter\npanels=[]\nfor index,obj in enumerate(geometry['objects']):\n points=verts[index]; triangles=obj['triangles']\n if len(points)!=4 or len(set(map(tuple,points)))!=4 or len(triangles)!=2: continue\n normals=[cross(sub(points[t[1]],points[t[0]]),sub(points[t[2]],points[t[0]])) for t in triangles]\n if not all(dot(n,n)>0 for n in normals) or dot(normals[0],normals[1])<=0: continue\n if any(dot(normals[0],sub(p,points[0]))!=0 for p in points): continue\n edges=Counter(tuple(sorted((t[k],t[(k+1)%3]))) for t in triangles for k in range(3))\n shared=[e for e,count in edges.items() if count==2]\n if len(shared)!=1: continue\n a,b=shared[0]\n if not any(a==t[k] and b==t[(k+1)%3] for k in range(3) for t in [triangles[0]]) != any(a==t[k] and b==t[(k+1)%3] for k in range(3) for t in [triangles[1]]): continue\n order=[0]; boundary=[e for e,count in edges.items() if count==1]\n while len(order)<4:\n  candidates=[q for e in boundary if order[-1] in e for q in e if q!=order[-1] and q not in order]\n  if not candidates: break\n  order.append(candidates[0])\n if len(order)!=4: continue\n sides=[sub(points[order[(k+1)%4]],points[order[k]]) for k in range(4)]\n if any(dot(sides[k],sides[(k+1)%4])!=0 for k in range(4)): continue\n panels.append(index)\nprint('validated panels',panels)\ndef clip(poly,axis,bound,sign):\n result=[]\n if not poly:return result\n previous=poly[-1]; previous_value=sign*(previous[axis]-bound)\n for point in poly:\n  value=sign*(point[axis]-bound)\n  if (value>=0)!=(previous_value>=0):\n   ratio=previous_value/(previous_value-value)\n   result.append([previous[k]+ratio*(point[k]-previous[k]) for k in range(len(point))])\n  if value>=0: result.append(point)\n  previous=point;previous_value=value\n return result\ndef area(poly):\n return abs(sum(poly[k][0]*poly[(k+1)%len(poly)][1]-poly[k][1]*poly[(k+1)%len(poly)][0] for k in range(len(poly))))/2 if len(poly)>=3 else Fraction(0)\nresults={}\nfor camera in cameras['views']:\n name=camera['name']; direction=list(map(Fraction,camera['direction_rational']))\n buffer=buffers[name]; owners=buffer['owners']; rgb=buffer['color'].astype(np.int32)\n boundary=np.zeros(owners.shape,bool)\n for axis in (0,1):\n  first=(slice(None,-1),slice(None)) if axis==0 else (slice(None),slice(None,-1))\n  second=(slice(1,None),slice(None)) if axis==0 else (slice(None),slice(1,None))\n  qualifies=(owners[first]!=owners[second]) & (np.sum((rgb[first]-rgb[second])**2,axis=2)>=576)\n  boundary[first]|=qualifies; boundary[second]|=qualifies\n results[name]={}\n for index in panels:\n  points=verts[index]; assert all(p[2]==0 for p in points)\n  bounds=[(min(p[axis] for p in points),max(p[axis] for p in points)) for axis in (0,1)]\n  blockers=[]; max_area=Fraction(0)\n  for other,obj in enumerate(geometry['objects']):\n   if other==index:continue\n   shadow_area=Fraction(0)\n   for triangle in obj['triangles']:\n    polygon=clip([verts[other][vertex] for vertex in triangle],2,Fraction(0),1)\n    if not polygon or not any(p[2]>0 for p in polygon):continue\n    shadow=[[p[axis]-p[2]*direction[axis]/direction[2] for axis in (0,1)] for p in polygon]\n    for axis,(lower,upper) in enumerate(bounds):\n     shadow=clip(shadow,axis,lower,1);shadow=clip(shadow,axis,upper,-1)\n    shadow_area+=area(shadow)\n   if shadow_area>0: blockers.append(obj['name']);max_area=max(max_area,shadow_area)\n  homogeneous=np.array([[float(c) for c in p]+[1.] for p in points])\n  camera_points=homogeneous@np.asarray(camera['view_matrix']).T\n  projected=camera_points@np.asarray(camera['projection_matrix']).T\n  ndc=projected[:,:3]/projected[:,3,None]\n  inside=bool(np.all(np.abs(ndc)<=1) and np.all(camera_points[:,2]<0))\n  normal=cross(sub(points[1],points[0]),sub(points[2],points[0]))\n  front=dot(normal,direction)>0\n  surface=int(np.sum(owners==index)); edge=int(np.sum((owners==index)&boundary))\n  results[name][geometry['objects'][index]['name']]={'complete':front and inside and not blockers,'surface':surface,'boundary':edge,'blockers':blockers,'front':front,'inside':inside}\nprint(results)"
+    }
+  }
+}
