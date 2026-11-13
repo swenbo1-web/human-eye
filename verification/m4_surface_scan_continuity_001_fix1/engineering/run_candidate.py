@@ -213,7 +213,8 @@ def run_episode(group, frozen, transport, attach, qualification, driver):
 def main():
     frozen = read(BATCH / 'PREPARATION.json')
     assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != frozen['preparation_parent_commit'], 'preparation_must_be_committed_before_engineering'
-    assert subprocess.check_output(['git', 'show', 'HEAD:verification/m4_surface_scan_continuity_001/PREPARATION.json'], cwd=ROOT) == (BATCH / 'PREPARATION.json').read_bytes()
+    preparation_path = (BATCH / 'PREPARATION.json').relative_to(ROOT).as_posix()
+    assert subprocess.check_output(['git', 'show', 'HEAD:' + preparation_path], cwd=ROOT) == (BATCH / 'PREPARATION.json').read_bytes()
     for record in frozen['files']:
         assert sha(BATCH / record['path']) == record['sha256'], record['path']
     for path, expected in frozen['external_sha256'].items():
