@@ -1,0 +1,2811 @@
+{
+  "schema": "m4-active-coverage-003-cost-review-v1",
+  "status": "passed",
+  "review_kind": "author-side independent standard-library evidence and arithmetic audit",
+  "administrator_review": "pending",
+  "checks_passed": 7800,
+  "source_preparation_commit": "ca33b639",
+  "frozen_source_count": 158,
+  "source_manifest_sha256": "07984188b354370e05051482a367b9617a997c6586cc928e06c020969ec265b3",
+  "script_sha256": "1c9c86e7e513eb5e2333f86d0b12ebb7cdb80466c3f5c5bdd310f2cbda16f6bf",
+  "pairs": [
+    {
+      "pair": 1,
+      "order": "AB",
+      "A_ns": 1101011000,
+      "B_ns": 902310000,
+      "B_over_A": {
+        "numerator": 902310,
+        "denominator": 1101011,
+        "value": 0.8195285968986686
+      }
+    },
+    {
+      "pair": 2,
+      "order": "BA",
+      "A_ns": 1332204700,
+      "B_ns": 977163300,
+      "B_over_A": {
+        "numerator": 9771633,
+        "denominator": 13322047,
+        "value": 0.7334933587908825
+      }
+    },
+    {
+      "pair": 3,
+      "order": "AB",
+      "A_ns": 1425617800,
+      "B_ns": 972741700,
+      "B_over_A": {
+        "numerator": 9727417,
+        "denominator": 14256178,
+        "value": 0.6823299344326369
+      }
+    },
+    {
+      "pair": 4,
+      "order": "BA",
+      "A_ns": 1177866900,
+      "B_ns": 929797500,
+      "B_over_A": {
+        "numerator": 3099325,
+        "denominator": 3926223,
+        "value": 0.7893909744810725
+      }
+    },
+    {
+      "pair": 5,
+      "order": "AB",
+      "A_ns": 1268617300,
+      "B_ns": 831781200,
+      "B_over_A": {
+        "numerator": 8317812,
+        "denominator": 12686173,
+        "value": 0.6556596697837874
+      }
+    },
+    {
+      "pair": 6,
+      "order": "BA",
+      "A_ns": 1177522900,
+      "B_ns": 871968600,
+      "B_over_A": {
+        "numerator": 8719686,
+        "denominator": 11775229,
+        "value": 0.7405109488741153
+      }
+    }
+  ],
+  "A_median_ns": 1223242100.0,
+  "B_median_ns": 916053750.0,
+  "median_pair_ratio": {
+    "numerator": 231227282996199,
+    "denominator": 313740308347526,
+    "value": 0.7370021538324989
+  },
+  "ratio_of_medians": {
+    "numerator": 18321075,
+    "denominator": 24464842,
+    "value": 0.7488736285319153
+  },
+  "formal_run_count": 12,
+  "control_run_count": 2,
+  "strict_PID_cleanup_confirmed": 14,
+  "main_render_attempts": 48,
+  "control_render_attempts": 10,
+  "qualification_render_attempts": 0,
+  "old_002_render_attempts": 6,
+  "cross_002_003_render_attempts": 64,
+  "qualification": {
+    "elapsed_ns": 3153099200,
+    "including_RESULTS_publication_ns": 3155142200,
+    "timing": {
+      "scope": "Freeze checks, four registered probes, handle cleanup, readback and per-case publication. Final RESULTS publication is separate.",
+      "started_ns": 53008632824700,
+      "work_closed_before_result_publication_ns": 53011785923900
+    },
+    "final_timing": {
+      "closed_ns": 53011787966900,
+      "elapsed_ns": 3155142200,
+      "scope": "Qualification including RESULTS write/close. This timing receipt publication is separate.",
+      "started_ns": 53008632824700
+    },
+    "cases": [
+      {
+        "scenario": "normal",
+        "expected_outcome_verified": true,
+        "actual_pid": 9672,
+        "child_exit_code": 0,
+        "child_phase": "completed",
+        "receipt_valid": true,
+        "receipt_validation": {
+          "passed": true
+        },
+        "marker_actions": 0,
+        "cleanup_confirmed": true,
+        "full_case_ns": 586182200,
+        "Popen_to_readback_ns": 583760700
+      },
+      {
+        "scenario": "nonzero",
+        "expected_outcome_verified": true,
+        "actual_pid": 17952,
+        "child_exit_code": 1,
+        "child_phase": "failed",
+        "receipt_valid": false,
+        "receipt_validation": {
+          "passed": false,
+          "reason": "registered_nonzero_exception"
+        },
+        "marker_actions": 0,
+        "cleanup_confirmed": true,
+        "full_case_ns": 576942900,
+        "Popen_to_readback_ns": 574568900
+      },
+      {
+        "scenario": "timeout",
+        "expected_outcome_verified": true,
+        "actual_pid": 21920,
+        "child_exit_code": 1,
+        "child_phase": "waiting",
+        "receipt_valid": false,
+        "receipt_validation": {
+          "passed": false,
+          "reason": "registered_timeout_after_waiting_handshake"
+        },
+        "marker_actions": 0,
+        "cleanup_confirmed": true,
+        "full_case_ns": 1031313200,
+        "Popen_to_readback_ns": 1016758300
+      },
+      {
+        "scenario": "receipt_failure",
+        "expected_outcome_verified": true,
+        "actual_pid": 18280,
+        "child_exit_code": 0,
+        "child_phase": "action_executed_receipt_omitted",
+        "receipt_valid": false,
+        "receipt_validation": {
+          "passed": false,
+          "reason": "registered_missing_receipt_after_marker"
+        },
+        "marker_actions": 1,
+        "cleanup_confirmed": true,
+        "full_case_ns": 720831500,
+        "Popen_to_readback_ns": 718071700
+      }
+    ],
+    "expected_outcome_case_count": 4,
+    "successful_business_actions_claimed": 0,
+    "marker_actions": 1,
+    "raster_attempts": 0,
+    "publication_scope": "Both pre-summary and including-RESULTS intervals retained. FINAL_TIMING self-publication unmeasured."
+  },
+  "grouped": {
+    "main_A": {
+      "runs": 6,
+      "render_attempts": 36,
+      "pixel_tests": 216,
+      "primary_sum_ns": 7482840600,
+      "primary_median_ns": 1223242100.0,
+      "primary_min_ns": 1101011000,
+      "primary_max_ns": 1425617800,
+      "bytes": {
+        "PNG_bytes": 94410,
+        "NPZ_bytes": 820512,
+        "array_payload_bytes": 141557760,
+        "frame_metadata_bytes": 282739,
+        "RESULT_bytes": 1104735,
+        "publication_bytes": 2610,
+        "TRACE_bytes": 179621,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 1569705,
+        "disk_bytes": 2484627
+      },
+      "phase_ns": {
+        "parent_before_child_start": 368244400,
+        "child_work": 5889794400,
+        "work_close_to_process_exit": 147236400,
+        "process_exit_to_cleanup_boundary": 180100,
+        "parent_readback_after_cleanup": 1077385300
+      }
+    },
+    "main_B": {
+      "runs": 6,
+      "render_attempts": 12,
+      "pixel_tests": 72,
+      "primary_sum_ns": 5485762300,
+      "primary_median_ns": 916053750.0,
+      "primary_min_ns": 831781200,
+      "primary_max_ns": 977163300,
+      "bytes": {
+        "PNG_bytes": 41700,
+        "NPZ_bytes": 289500,
+        "array_payload_bytes": 47185920,
+        "frame_metadata_bytes": 95893,
+        "RESULT_bytes": 792981,
+        "publication_bytes": 2610,
+        "TRACE_bytes": 84929,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 976413,
+        "disk_bytes": 1307613
+      },
+      "phase_ns": {
+        "parent_before_child_start": 407337000,
+        "child_work": 4487406900,
+        "work_close_to_process_exit": 132986900,
+        "process_exit_to_cleanup_boundary": 174700,
+        "parent_readback_after_cleanup": 457856800
+      }
+    },
+    "pixel_shortfall_A": {
+      "runs": 1,
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "primary_sum_ns": 1305292800,
+      "primary_median_ns": 1305292800,
+      "primary_min_ns": 1305292800,
+      "primary_max_ns": 1305292800,
+      "bytes": {
+        "PNG_bytes": 15484,
+        "NPZ_bytes": 123785,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47001,
+        "RESULT_bytes": 184026,
+        "publication_bytes": 435,
+        "TRACE_bytes": 31383,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 262845,
+        "disk_bytes": 402114
+      },
+      "phase_ns": {
+        "parent_before_child_start": 56246500,
+        "child_work": 1048515300,
+        "work_close_to_process_exit": 24505800,
+        "process_exit_to_cleanup_boundary": 28700,
+        "parent_readback_after_cleanup": 175996500
+      }
+    },
+    "pixel_shortfall_B": {
+      "runs": 1,
+      "render_attempts": 4,
+      "pixel_tests": 24,
+      "primary_sum_ns": 1024561800,
+      "primary_median_ns": 1024561800,
+      "primary_min_ns": 1024561800,
+      "primary_max_ns": 1024561800,
+      "bytes": {
+        "PNG_bytes": 11033,
+        "NPZ_bytes": 77745,
+        "array_payload_bytes": 15728640,
+        "frame_metadata_bytes": 31294,
+        "RESULT_bytes": 157741,
+        "publication_bytes": 435,
+        "TRACE_bytes": 23065,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 212535,
+        "disk_bytes": 301313
+      },
+      "phase_ns": {
+        "parent_before_child_start": 61516600,
+        "child_work": 806615700,
+        "work_close_to_process_exit": 25094300,
+        "process_exit_to_cleanup_boundary": 23500,
+        "parent_readback_after_cleanup": 131311700
+      }
+    }
+  },
+  "arm_totals_including_control": {
+    "A": {
+      "runs": 7,
+      "render_attempts": 42,
+      "pixel_tests": 252,
+      "primary_sum_ns": 8788133400,
+      "primary_median_ns": 1268617300,
+      "primary_min_ns": 1101011000,
+      "primary_max_ns": 1425617800,
+      "bytes": {
+        "PNG_bytes": 109894,
+        "NPZ_bytes": 944297,
+        "array_payload_bytes": 165150720,
+        "frame_metadata_bytes": 329740,
+        "RESULT_bytes": 1288761,
+        "publication_bytes": 3045,
+        "TRACE_bytes": 211004,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 1832550,
+        "disk_bytes": 2886741
+      },
+      "phase_ns": {
+        "parent_before_child_start": 424490900,
+        "child_work": 6938309700,
+        "work_close_to_process_exit": 171742200,
+        "process_exit_to_cleanup_boundary": 208800,
+        "parent_readback_after_cleanup": 1253381800
+      }
+    },
+    "B": {
+      "runs": 7,
+      "render_attempts": 16,
+      "pixel_tests": 96,
+      "primary_sum_ns": 6510324100,
+      "primary_median_ns": 929797500,
+      "primary_min_ns": 831781200,
+      "primary_max_ns": 1024561800,
+      "bytes": {
+        "PNG_bytes": 52733,
+        "NPZ_bytes": 367245,
+        "array_payload_bytes": 62914560,
+        "frame_metadata_bytes": 127187,
+        "RESULT_bytes": 950722,
+        "publication_bytes": 3045,
+        "TRACE_bytes": 107994,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 1188948,
+        "disk_bytes": 1608926
+      },
+      "phase_ns": {
+        "parent_before_child_start": 468853600,
+        "child_work": 5294022600,
+        "work_close_to_process_exit": 158081200,
+        "process_exit_to_cleanup_boundary": 198200,
+        "parent_readback_after_cleanup": 589168500
+      }
+    }
+  },
+  "all_formal_and_control": {
+    "runs": 14,
+    "render_attempts": 58,
+    "pixel_tests": 348,
+    "primary_sum_ns": 15298457500,
+    "primary_median_ns": 1062786400.0,
+    "primary_min_ns": 831781200,
+    "primary_max_ns": 1425617800,
+    "bytes": {
+      "PNG_bytes": 162627,
+      "NPZ_bytes": 1311542,
+      "array_payload_bytes": 228065280,
+      "frame_metadata_bytes": 456927,
+      "RESULT_bytes": 2239483,
+      "publication_bytes": 6090,
+      "TRACE_bytes": 318998,
+      "STDOUT_bytes": 0,
+      "STDERR_bytes": 0,
+      "text_bytes": 3021498,
+      "disk_bytes": 4495667
+    },
+    "phase_ns": {
+      "parent_before_child_start": 893344500,
+      "child_work": 12232332300,
+      "work_close_to_process_exit": 329823400,
+      "process_exit_to_cleanup_boundary": 407000,
+      "parent_readback_after_cleanup": 1842550300
+    }
+  },
+  "rows": [
+    {
+      "id": "main_p01_A",
+      "pair": 1,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 3468,
+      "primary_ns": 1101011000,
+      "started_ns": 53140598439400,
+      "closed_ns": 53141699450400,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47122,
+        "RESULT_bytes": 184116,
+        "publication_bytes": 435,
+        "TRACE_bytes": 29865,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261538,
+        "disk_bytes": 414025
+      },
+      "phase_ns": {
+        "parent_before_child_start": 55891100,
+        "child_work": 856356400,
+        "work_close_to_process_exit": 21135800,
+        "process_exit_to_cleanup_boundary": 32400,
+        "parent_readback_after_cleanup": 167595300
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9500,
+        "dependency_import": 401712900,
+        "frame_01.NPZ": 21010700,
+        "frame_01.PNG": 17942800,
+        "frame_01.array_metadata": 2229800,
+        "frame_01.metadata": 657200,
+        "frame_01.observe": 370200,
+        "frame_01.pixels": 6103900,
+        "frame_01.raster": 21235700,
+        "frame_01.render_attempt_publication": 6150900,
+        "frame_02.NPZ": 16747800,
+        "frame_02.PNG": 2767900,
+        "frame_02.array_metadata": 2134900,
+        "frame_02.metadata": 531400,
+        "frame_02.observe": 380500,
+        "frame_02.pixels": 5071400,
+        "frame_02.raster": 16577800,
+        "frame_02.render_attempt_publication": 2401300,
+        "frame_03.NPZ": 16656100,
+        "frame_03.PNG": 5613500,
+        "frame_03.array_metadata": 2264900,
+        "frame_03.metadata": 652800,
+        "frame_03.observe": 354400,
+        "frame_03.pixels": 6361800,
+        "frame_03.raster": 18534300,
+        "frame_03.render_attempt_publication": 2564800,
+        "frame_04.NPZ": 17443300,
+        "frame_04.PNG": 6285200,
+        "frame_04.array_metadata": 2190800,
+        "frame_04.metadata": 558000,
+        "frame_04.observe": 372500,
+        "frame_04.pixels": 7449700,
+        "frame_04.raster": 18735500,
+        "frame_04.render_attempt_publication": 2541500,
+        "frame_05.NPZ": 16568200,
+        "frame_05.PNG": 2897200,
+        "frame_05.array_metadata": 2703200,
+        "frame_05.metadata": 587300,
+        "frame_05.observe": 354600,
+        "frame_05.pixels": 6438500,
+        "frame_05.raster": 17986200,
+        "frame_05.render_attempt_publication": 2555100,
+        "frame_06.NPZ": 16630600,
+        "frame_06.PNG": 5906200,
+        "frame_06.array_metadata": 2259500,
+        "frame_06.metadata": 637600,
+        "frame_06.observe": 466700,
+        "frame_06.pixels": 4892600,
+        "frame_06.raster": 19488600,
+        "frame_06.render_attempt_publication": 2595800,
+        "geometry_index": 48382700,
+        "index_serialization": 128600,
+        "read_inputs": 1445300,
+        "resident_meshes": 7577200,
+        "same_version_repeat_query": 428600,
+        "stdlib_import": 17149100
+      },
+      "RESULT_publication_ns": 1584200
+    },
+    {
+      "id": "main_p01_B",
+      "pair": 1,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 3268,
+      "primary_ns": 902310000,
+      "started_ns": 53141758915400,
+      "closed_ns": 53142661225400,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15982,
+        "RESULT_bytes": 132161,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14113,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162691,
+        "disk_bytes": 217891
+      },
+      "phase_ns": {
+        "parent_before_child_start": 83529900,
+        "child_work": 723241900,
+        "work_close_to_process_exit": 20933300,
+        "process_exit_to_cleanup_boundary": 31900,
+        "parent_readback_after_cleanup": 74573000
+      },
+      "child_stages_ns": {
+        "dependency_binding": 13300,
+        "dependency_import": 475274200,
+        "frame_01.NPZ": 20590800,
+        "frame_01.PNG": 18549400,
+        "frame_01.array_metadata": 2389200,
+        "frame_01.metadata": 602200,
+        "frame_01.observe": 434200,
+        "frame_01.pixels": 5568700,
+        "frame_01.raster": 21354000,
+        "frame_01.render_attempt_publication": 6242500,
+        "frame_02.NPZ": 17182700,
+        "frame_02.PNG": 3162100,
+        "frame_02.array_metadata": 2333900,
+        "frame_02.metadata": 688200,
+        "frame_02.observe": 401800,
+        "frame_02.pixels": 5864700,
+        "frame_02.raster": 20281200,
+        "frame_02.render_attempt_publication": 2391400,
+        "geometry_index": 56329700,
+        "index_serialization": 129100,
+        "read_inputs": 2145400,
+        "resident_meshes": 8168600,
+        "same_version_repeat_query": 432600,
+        "stdlib_import": 26889200
+      },
+      "RESULT_publication_ns": 1608500
+    },
+    {
+      "id": "main_p02_B",
+      "pair": 2,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 23228,
+      "primary_ns": 977163300,
+      "started_ns": 53142726645000,
+      "closed_ns": 53143703808300,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15983,
+        "RESULT_bytes": 132169,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14178,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162765,
+        "disk_bytes": 217965
+      },
+      "phase_ns": {
+        "parent_before_child_start": 60921100,
+        "child_work": 819174600,
+        "work_close_to_process_exit": 23391600,
+        "process_exit_to_cleanup_boundary": 34200,
+        "parent_readback_after_cleanup": 73641800
+      },
+      "child_stages_ns": {
+        "dependency_binding": 10100,
+        "dependency_import": 541688600,
+        "frame_01.NPZ": 31421600,
+        "frame_01.PNG": 31753600,
+        "frame_01.array_metadata": 2516200,
+        "frame_01.metadata": 2112100,
+        "frame_01.observe": 1611200,
+        "frame_01.pixels": 7383600,
+        "frame_01.raster": 23079600,
+        "frame_01.render_attempt_publication": 2493800,
+        "frame_02.NPZ": 16892300,
+        "frame_02.PNG": 3907700,
+        "frame_02.array_metadata": 2652100,
+        "frame_02.metadata": 1108000,
+        "frame_02.observe": 589900,
+        "frame_02.pixels": 7312300,
+        "frame_02.raster": 33484600,
+        "frame_02.render_attempt_publication": 2191700,
+        "geometry_index": 49983500,
+        "index_serialization": 139800,
+        "read_inputs": 1950100,
+        "resident_meshes": 8638000,
+        "same_version_repeat_query": 557300,
+        "stdlib_import": 20720500
+      },
+      "RESULT_publication_ns": 1587500
+    },
+    {
+      "id": "main_p02_A",
+      "pair": 2,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 20728,
+      "primary_ns": 1332204700,
+      "started_ns": 53143772414800,
+      "closed_ns": 53145104619500,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47123,
+        "RESULT_bytes": 184124,
+        "publication_bytes": 435,
+        "TRACE_bytes": 30006,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261688,
+        "disk_bytes": 414175
+      },
+      "phase_ns": {
+        "parent_before_child_start": 62757600,
+        "child_work": 1049547500,
+        "work_close_to_process_exit": 25996500,
+        "process_exit_to_cleanup_boundary": 27900,
+        "parent_readback_after_cleanup": 193875200
+      },
+      "child_stages_ns": {
+        "dependency_binding": 10000,
+        "dependency_import": 529528700,
+        "frame_01.NPZ": 29008400,
+        "frame_01.PNG": 28792900,
+        "frame_01.array_metadata": 2359300,
+        "frame_01.metadata": 2058200,
+        "frame_01.observe": 1340300,
+        "frame_01.pixels": 5661100,
+        "frame_01.raster": 23531700,
+        "frame_01.render_attempt_publication": 2726300,
+        "frame_02.NPZ": 21823800,
+        "frame_02.PNG": 4707200,
+        "frame_02.array_metadata": 2345900,
+        "frame_02.metadata": 669400,
+        "frame_02.observe": 468900,
+        "frame_02.pixels": 5636900,
+        "frame_02.raster": 29073400,
+        "frame_02.render_attempt_publication": 2140800,
+        "frame_03.NPZ": 20433100,
+        "frame_03.PNG": 4048300,
+        "frame_03.array_metadata": 2287200,
+        "frame_03.metadata": 685000,
+        "frame_03.observe": 429800,
+        "frame_03.pixels": 6416900,
+        "frame_03.raster": 18716600,
+        "frame_03.render_attempt_publication": 2192600,
+        "frame_04.NPZ": 18285800,
+        "frame_04.PNG": 3383500,
+        "frame_04.array_metadata": 2401300,
+        "frame_04.metadata": 744200,
+        "frame_04.observe": 477700,
+        "frame_04.pixels": 5337600,
+        "frame_04.raster": 19372400,
+        "frame_04.render_attempt_publication": 2276000,
+        "frame_05.NPZ": 18347900,
+        "frame_05.PNG": 3997800,
+        "frame_05.array_metadata": 2378300,
+        "frame_05.metadata": 710200,
+        "frame_05.observe": 455400,
+        "frame_05.pixels": 6340000,
+        "frame_05.raster": 18490100,
+        "frame_05.render_attempt_publication": 2107200,
+        "frame_06.NPZ": 18679000,
+        "frame_06.PNG": 3600300,
+        "frame_06.array_metadata": 2554700,
+        "frame_06.metadata": 899100,
+        "frame_06.observe": 594100,
+        "frame_06.pixels": 6129200,
+        "frame_06.raster": 28081200,
+        "frame_06.render_attempt_publication": 2341500,
+        "geometry_index": 53867300,
+        "index_serialization": 200000,
+        "read_inputs": 1593000,
+        "resident_meshes": 9082800,
+        "same_version_repeat_query": 577600,
+        "stdlib_import": 19102300
+      },
+      "RESULT_publication_ns": 2263600
+    },
+    {
+      "id": "main_p03_A",
+      "pair": 3,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 1988,
+      "primary_ns": 1425617800,
+      "started_ns": 53145184939400,
+      "closed_ns": 53146610557200,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47125,
+        "RESULT_bytes": 184128,
+        "publication_bytes": 435,
+        "TRACE_bytes": 29871,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261559,
+        "disk_bytes": 414046
+      },
+      "phase_ns": {
+        "parent_before_child_start": 64606300,
+        "child_work": 1134231100,
+        "work_close_to_process_exit": 26157300,
+        "process_exit_to_cleanup_boundary": 34400,
+        "parent_readback_after_cleanup": 200588700
+      },
+      "child_stages_ns": {
+        "dependency_binding": 13000,
+        "dependency_import": 564037900,
+        "frame_01.NPZ": 26530000,
+        "frame_01.PNG": 20973100,
+        "frame_01.array_metadata": 2630000,
+        "frame_01.metadata": 2296900,
+        "frame_01.observe": 1785400,
+        "frame_01.pixels": 6915800,
+        "frame_01.raster": 29565100,
+        "frame_01.render_attempt_publication": 2273200,
+        "frame_02.NPZ": 24546400,
+        "frame_02.PNG": 6796400,
+        "frame_02.array_metadata": 2632500,
+        "frame_02.metadata": 1776600,
+        "frame_02.observe": 1213600,
+        "frame_02.pixels": 9942100,
+        "frame_02.raster": 29058400,
+        "frame_02.render_attempt_publication": 2011100,
+        "frame_03.NPZ": 19514400,
+        "frame_03.PNG": 3701500,
+        "frame_03.array_metadata": 2489400,
+        "frame_03.metadata": 694800,
+        "frame_03.observe": 488400,
+        "frame_03.pixels": 5305600,
+        "frame_03.raster": 25510100,
+        "frame_03.render_attempt_publication": 2339200,
+        "frame_04.NPZ": 21296900,
+        "frame_04.PNG": 4439600,
+        "frame_04.array_metadata": 2444600,
+        "frame_04.metadata": 721300,
+        "frame_04.observe": 527300,
+        "frame_04.pixels": 11270700,
+        "frame_04.raster": 32660000,
+        "frame_04.render_attempt_publication": 2161900,
+        "frame_05.NPZ": 21541900,
+        "frame_05.PNG": 3901600,
+        "frame_05.array_metadata": 2671100,
+        "frame_05.metadata": 918100,
+        "frame_05.observe": 595900,
+        "frame_05.pixels": 5897600,
+        "frame_05.raster": 18453100,
+        "frame_05.render_attempt_publication": 2343200,
+        "frame_06.NPZ": 22099500,
+        "frame_06.PNG": 4552200,
+        "frame_06.array_metadata": 2584400,
+        "frame_06.metadata": 877700,
+        "frame_06.observe": 562400,
+        "frame_06.pixels": 7254400,
+        "frame_06.raster": 21366400,
+        "frame_06.render_attempt_publication": 2391600,
+        "geometry_index": 59226700,
+        "index_serialization": 150800,
+        "read_inputs": 2536500,
+        "resident_meshes": 8976900,
+        "same_version_repeat_query": 587600,
+        "stdlib_import": 21915900
+      },
+      "RESULT_publication_ns": 2032300
+    },
+    {
+      "id": "main_p03_B",
+      "pair": 3,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 16680,
+      "primary_ns": 972741700,
+      "started_ns": 53146710969500,
+      "closed_ns": 53147683711200,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15982,
+        "RESULT_bytes": 132163,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14175,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162755,
+        "disk_bytes": 217955
+      },
+      "phase_ns": {
+        "parent_before_child_start": 75978400,
+        "child_work": 790825300,
+        "work_close_to_process_exit": 22944000,
+        "process_exit_to_cleanup_boundary": 32600,
+        "parent_readback_after_cleanup": 82961400
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9900,
+        "dependency_import": 519335300,
+        "frame_01.NPZ": 21314900,
+        "frame_01.PNG": 23141100,
+        "frame_01.array_metadata": 3000700,
+        "frame_01.metadata": 783000,
+        "frame_01.observe": 545200,
+        "frame_01.pixels": 6643700,
+        "frame_01.raster": 25239600,
+        "frame_01.render_attempt_publication": 5377000,
+        "frame_02.NPZ": 22653800,
+        "frame_02.PNG": 4100900,
+        "frame_02.array_metadata": 2932000,
+        "frame_02.metadata": 706400,
+        "frame_02.observe": 597600,
+        "frame_02.pixels": 5233900,
+        "frame_02.raster": 25365000,
+        "frame_02.render_attempt_publication": 2512500,
+        "geometry_index": 56706500,
+        "index_serialization": 208600,
+        "read_inputs": 1961600,
+        "resident_meshes": 10577900,
+        "same_version_repeat_query": 501200,
+        "stdlib_import": 25379600
+      },
+      "RESULT_publication_ns": 1311700
+    },
+    {
+      "id": "main_p04_B",
+      "pair": 4,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 19332,
+      "primary_ns": 929797500,
+      "started_ns": 53147753329000,
+      "closed_ns": 53148683126500,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15982,
+        "RESULT_bytes": 132163,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14175,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162755,
+        "disk_bytes": 217955
+      },
+      "phase_ns": {
+        "parent_before_child_start": 60842100,
+        "child_work": 771649200,
+        "work_close_to_process_exit": 22750700,
+        "process_exit_to_cleanup_boundary": 31500,
+        "parent_readback_after_cleanup": 74524000
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9600,
+        "dependency_import": 499949300,
+        "frame_01.NPZ": 26044000,
+        "frame_01.PNG": 23663800,
+        "frame_01.array_metadata": 2354500,
+        "frame_01.metadata": 899400,
+        "frame_01.observe": 494800,
+        "frame_01.pixels": 8475200,
+        "frame_01.raster": 32002300,
+        "frame_01.render_attempt_publication": 2351500,
+        "frame_02.NPZ": 21457100,
+        "frame_02.PNG": 3538200,
+        "frame_02.array_metadata": 2608100,
+        "frame_02.metadata": 965000,
+        "frame_02.observe": 545200,
+        "frame_02.pixels": 5160300,
+        "frame_02.raster": 19938900,
+        "frame_02.render_attempt_publication": 2276100,
+        "geometry_index": 62007100,
+        "index_serialization": 141500,
+        "read_inputs": 1675200,
+        "resident_meshes": 10784000,
+        "same_version_repeat_query": 500800,
+        "stdlib_import": 19262600
+      },
+      "RESULT_publication_ns": 1423100
+    },
+    {
+      "id": "main_p04_A",
+      "pair": 4,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 3884,
+      "primary_ns": 1177866900,
+      "started_ns": 53148769141100,
+      "closed_ns": 53149947008000,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47122,
+        "RESULT_bytes": 184119,
+        "publication_bytes": 435,
+        "TRACE_bytes": 29867,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261543,
+        "disk_bytes": 414030
+      },
+      "phase_ns": {
+        "parent_before_child_start": 68923100,
+        "child_work": 929867100,
+        "work_close_to_process_exit": 20547900,
+        "process_exit_to_cleanup_boundary": 22600,
+        "parent_readback_after_cleanup": 158506200
+      },
+      "child_stages_ns": {
+        "dependency_binding": 10100,
+        "dependency_import": 470774500,
+        "frame_01.NPZ": 20757100,
+        "frame_01.PNG": 19124200,
+        "frame_01.array_metadata": 2316600,
+        "frame_01.metadata": 799700,
+        "frame_01.observe": 416100,
+        "frame_01.pixels": 5136000,
+        "frame_01.raster": 20903900,
+        "frame_01.render_attempt_publication": 2353200,
+        "frame_02.NPZ": 16700100,
+        "frame_02.PNG": 3726100,
+        "frame_02.array_metadata": 2264600,
+        "frame_02.metadata": 678400,
+        "frame_02.observe": 423600,
+        "frame_02.pixels": 5400200,
+        "frame_02.raster": 16881700,
+        "frame_02.render_attempt_publication": 2301800,
+        "frame_03.NPZ": 17560700,
+        "frame_03.PNG": 3388700,
+        "frame_03.array_metadata": 2324600,
+        "frame_03.metadata": 936700,
+        "frame_03.observe": 474700,
+        "frame_03.pixels": 5218400,
+        "frame_03.raster": 19249300,
+        "frame_03.render_attempt_publication": 2457400,
+        "frame_04.NPZ": 18782000,
+        "frame_04.PNG": 3191000,
+        "frame_04.array_metadata": 2571100,
+        "frame_04.metadata": 1260700,
+        "frame_04.observe": 514800,
+        "frame_04.pixels": 6803100,
+        "frame_04.raster": 20541700,
+        "frame_04.render_attempt_publication": 2364500,
+        "frame_05.NPZ": 16628100,
+        "frame_05.PNG": 3695600,
+        "frame_05.array_metadata": 2233100,
+        "frame_05.metadata": 682100,
+        "frame_05.observe": 402700,
+        "frame_05.pixels": 5099100,
+        "frame_05.raster": 18500700,
+        "frame_05.render_attempt_publication": 2269500,
+        "frame_06.NPZ": 17923500,
+        "frame_06.PNG": 3197600,
+        "frame_06.array_metadata": 2378600,
+        "frame_06.metadata": 810300,
+        "frame_06.observe": 403100,
+        "frame_06.pixels": 5938500,
+        "frame_06.raster": 17993200,
+        "frame_06.render_attempt_publication": 2590300,
+        "geometry_index": 53423700,
+        "index_serialization": 129900,
+        "read_inputs": 1569900,
+        "resident_meshes": 8477600,
+        "same_version_repeat_query": 393900,
+        "stdlib_import": 20179900
+      },
+      "RESULT_publication_ns": 1452300
+    },
+    {
+      "id": "main_p05_A",
+      "pair": 5,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 11664,
+      "primary_ns": 1268617300,
+      "started_ns": 53150015356300,
+      "closed_ns": 53151283973600,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47125,
+        "RESULT_bytes": 184128,
+        "publication_bytes": 435,
+        "TRACE_bytes": 30008,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261696,
+        "disk_bytes": 414183
+      },
+      "phase_ns": {
+        "parent_before_child_start": 57833800,
+        "child_work": 991668000,
+        "work_close_to_process_exit": 30981000,
+        "process_exit_to_cleanup_boundary": 37900,
+        "parent_readback_after_cleanup": 188096600
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9900,
+        "dependency_import": 479304100,
+        "frame_01.NPZ": 20103300,
+        "frame_01.PNG": 19925200,
+        "frame_01.array_metadata": 2384800,
+        "frame_01.metadata": 1011700,
+        "frame_01.observe": 467500,
+        "frame_01.pixels": 6706500,
+        "frame_01.raster": 22166800,
+        "frame_01.render_attempt_publication": 3108200,
+        "frame_02.NPZ": 16120200,
+        "frame_02.PNG": 3544800,
+        "frame_02.array_metadata": 2366600,
+        "frame_02.metadata": 836900,
+        "frame_02.observe": 399000,
+        "frame_02.pixels": 5960700,
+        "frame_02.raster": 19295500,
+        "frame_02.render_attempt_publication": 2487700,
+        "frame_03.NPZ": 21108900,
+        "frame_03.PNG": 4237900,
+        "frame_03.array_metadata": 2464100,
+        "frame_03.metadata": 903200,
+        "frame_03.observe": 509100,
+        "frame_03.pixels": 6589100,
+        "frame_03.raster": 19008200,
+        "frame_03.render_attempt_publication": 2370300,
+        "frame_04.NPZ": 27026000,
+        "frame_04.PNG": 6077100,
+        "frame_04.array_metadata": 2790700,
+        "frame_04.metadata": 1074500,
+        "frame_04.observe": 1011400,
+        "frame_04.pixels": 10816800,
+        "frame_04.raster": 24275900,
+        "frame_04.render_attempt_publication": 2247500,
+        "frame_05.NPZ": 19125300,
+        "frame_05.PNG": 3881300,
+        "frame_05.array_metadata": 2502700,
+        "frame_05.metadata": 935500,
+        "frame_05.observe": 524500,
+        "frame_05.pixels": 10197700,
+        "frame_05.raster": 25862000,
+        "frame_05.render_attempt_publication": 2149400,
+        "frame_06.NPZ": 18432500,
+        "frame_06.PNG": 3833200,
+        "frame_06.array_metadata": 2471700,
+        "frame_06.metadata": 872900,
+        "frame_06.observe": 430600,
+        "frame_06.pixels": 5143800,
+        "frame_06.raster": 21005500,
+        "frame_06.render_attempt_publication": 2520600,
+        "geometry_index": 54168200,
+        "index_serialization": 190800,
+        "read_inputs": 2195900,
+        "resident_meshes": 8274000,
+        "same_version_repeat_query": 445200,
+        "stdlib_import": 20325200
+      },
+      "RESULT_publication_ns": 1693100
+    },
+    {
+      "id": "main_p05_B",
+      "pair": 5,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 7956,
+      "primary_ns": 831781200,
+      "started_ns": 53151353955500,
+      "closed_ns": 53152185736700,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15982,
+        "RESULT_bytes": 132163,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14114,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162694,
+        "disk_bytes": 217894
+      },
+      "phase_ns": {
+        "parent_before_child_start": 58661900,
+        "child_work": 668245000,
+        "work_close_to_process_exit": 21709500,
+        "process_exit_to_cleanup_boundary": 21600,
+        "parent_readback_after_cleanup": 83143200
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9300,
+        "dependency_import": 429409900,
+        "frame_01.NPZ": 20274900,
+        "frame_01.PNG": 19443000,
+        "frame_01.array_metadata": 2354400,
+        "frame_01.metadata": 675000,
+        "frame_01.observe": 414200,
+        "frame_01.pixels": 5771200,
+        "frame_01.raster": 23410900,
+        "frame_01.render_attempt_publication": 1991200,
+        "frame_02.NPZ": 16226400,
+        "frame_02.PNG": 3224000,
+        "frame_02.array_metadata": 2303300,
+        "frame_02.metadata": 1012800,
+        "frame_02.observe": 390400,
+        "frame_02.pixels": 6730000,
+        "frame_02.raster": 21636300,
+        "frame_02.render_attempt_publication": 2230600,
+        "geometry_index": 53066400,
+        "index_serialization": 196800,
+        "read_inputs": 1745400,
+        "resident_meshes": 10504100,
+        "same_version_repeat_query": 416500,
+        "stdlib_import": 19130500
+      },
+      "RESULT_publication_ns": 1698600
+    },
+    {
+      "id": "main_p06_B",
+      "pair": 6,
+      "arm": "B",
+      "scenario": "main",
+      "process_id": 21112,
+      "primary_ns": 871968600,
+      "started_ns": 53152324216200,
+      "closed_ns": 53153196184800,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK"
+      ],
+      "render_attempts": 2,
+      "pixel_tests": 12,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 3,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 6950,
+        "NPZ_bytes": 48250,
+        "array_payload_bytes": 7864320,
+        "frame_metadata_bytes": 15982,
+        "RESULT_bytes": 132162,
+        "publication_bytes": 435,
+        "TRACE_bytes": 14174,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 162753,
+        "disk_bytes": 217953
+      },
+      "phase_ns": {
+        "parent_before_child_start": 67403600,
+        "child_work": 714270900,
+        "work_close_to_process_exit": 21257800,
+        "process_exit_to_cleanup_boundary": 22900,
+        "parent_readback_after_cleanup": 69013400
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9800,
+        "dependency_import": 485342100,
+        "frame_01.NPZ": 19682800,
+        "frame_01.PNG": 18527800,
+        "frame_01.array_metadata": 2420400,
+        "frame_01.metadata": 652500,
+        "frame_01.observe": 423100,
+        "frame_01.pixels": 5172600,
+        "frame_01.raster": 21398100,
+        "frame_01.render_attempt_publication": 2597300,
+        "frame_02.NPZ": 16669400,
+        "frame_02.PNG": 3559800,
+        "frame_02.array_metadata": 2316600,
+        "frame_02.metadata": 745900,
+        "frame_02.observe": 423100,
+        "frame_02.pixels": 5331800,
+        "frame_02.raster": 18470000,
+        "frame_02.render_attempt_publication": 2376600,
+        "geometry_index": 48566700,
+        "index_serialization": 137700,
+        "read_inputs": 1599300,
+        "resident_meshes": 8044900,
+        "same_version_repeat_query": 395000,
+        "stdlib_import": 22940100
+      },
+      "RESULT_publication_ns": 1305100
+    },
+    {
+      "id": "main_p06_A",
+      "pair": 6,
+      "arm": "A",
+      "scenario": "main",
+      "process_id": 23800,
+      "primary_ns": 1177522900,
+      "started_ns": 53153256572800,
+      "closed_ns": 53154434095700,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15735,
+        "NPZ_bytes": 136752,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47122,
+        "RESULT_bytes": 184120,
+        "publication_bytes": 435,
+        "TRACE_bytes": 30004,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 261681,
+        "disk_bytes": 414168
+      },
+      "phase_ns": {
+        "parent_before_child_start": 58232500,
+        "child_work": 928124300,
+        "work_close_to_process_exit": 22417900,
+        "process_exit_to_cleanup_boundary": 24900,
+        "parent_readback_after_cleanup": 168723300
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9700,
+        "dependency_import": 455162000,
+        "frame_01.NPZ": 22284300,
+        "frame_01.PNG": 19061000,
+        "frame_01.array_metadata": 2594900,
+        "frame_01.metadata": 1020400,
+        "frame_01.observe": 473500,
+        "frame_01.pixels": 5292800,
+        "frame_01.raster": 22319200,
+        "frame_01.render_attempt_publication": 2692400,
+        "frame_02.NPZ": 18317800,
+        "frame_02.PNG": 3522000,
+        "frame_02.array_metadata": 2607100,
+        "frame_02.metadata": 672100,
+        "frame_02.observe": 582100,
+        "frame_02.pixels": 5954200,
+        "frame_02.raster": 19794300,
+        "frame_02.render_attempt_publication": 2605600,
+        "frame_03.NPZ": 20460600,
+        "frame_03.PNG": 3298000,
+        "frame_03.array_metadata": 2314000,
+        "frame_03.metadata": 686800,
+        "frame_03.observe": 426900,
+        "frame_03.pixels": 5172300,
+        "frame_03.raster": 20690800,
+        "frame_03.render_attempt_publication": 2547000,
+        "frame_04.NPZ": 19322100,
+        "frame_04.PNG": 3558800,
+        "frame_04.array_metadata": 2504800,
+        "frame_04.metadata": 723500,
+        "frame_04.observe": 432300,
+        "frame_04.pixels": 7017000,
+        "frame_04.raster": 20182400,
+        "frame_04.render_attempt_publication": 2310300,
+        "frame_05.NPZ": 20117600,
+        "frame_05.PNG": 3263300,
+        "frame_05.array_metadata": 2331100,
+        "frame_05.metadata": 691900,
+        "frame_05.observe": 429200,
+        "frame_05.pixels": 5625700,
+        "frame_05.raster": 19294200,
+        "frame_05.render_attempt_publication": 2524300,
+        "frame_06.NPZ": 16896400,
+        "frame_06.PNG": 3519700,
+        "frame_06.array_metadata": 2401400,
+        "frame_06.metadata": 677100,
+        "frame_06.observe": 408800,
+        "frame_06.pixels": 6446500,
+        "frame_06.raster": 19276400,
+        "frame_06.render_attempt_publication": 2616800,
+        "geometry_index": 48749300,
+        "index_serialization": 128700,
+        "read_inputs": 1583800,
+        "resident_meshes": 8069200,
+        "same_version_repeat_query": 428000,
+        "stdlib_import": 19116000
+      },
+      "RESULT_publication_ns": 1701800
+    },
+    {
+      "id": "control_A",
+      "pair": null,
+      "arm": "A",
+      "scenario": "pixel_shortfall",
+      "process_id": 4452,
+      "primary_ns": 1305292800,
+      "started_ns": 53154503169300,
+      "closed_ns": 53155808462100,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "TOP",
+        "LEFT",
+        "RIGHT",
+        "FRONT",
+        "BACK"
+      ],
+      "render_attempts": 6,
+      "pixel_tests": 36,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "RIGHT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "FRONT",
+          "new_count": 0,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": []
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 3,
+          "shortfall_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ],
+          "new_roi_ids": []
+        }
+      ],
+      "history_shortfall_roi_ids": [
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 15484,
+        "NPZ_bytes": 123785,
+        "array_payload_bytes": 23592960,
+        "frame_metadata_bytes": 47001,
+        "RESULT_bytes": 184026,
+        "publication_bytes": 435,
+        "TRACE_bytes": 31383,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 262845,
+        "disk_bytes": 402114
+      },
+      "phase_ns": {
+        "parent_before_child_start": 56246500,
+        "child_work": 1048515300,
+        "work_close_to_process_exit": 24505800,
+        "process_exit_to_cleanup_boundary": 28700,
+        "parent_readback_after_cleanup": 175996500
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9800,
+        "dependency_import": 542644900,
+        "frame_01.NPZ": 20861100,
+        "frame_01.PNG": 27987900,
+        "frame_01.array_metadata": 2304200,
+        "frame_01.metadata": 807300,
+        "frame_01.observe": 461400,
+        "frame_01.pixels": 9457000,
+        "frame_01.raster": 36367800,
+        "frame_01.render_attempt_publication": 2575400,
+        "frame_02.NPZ": 17503700,
+        "frame_02.PNG": 3384500,
+        "frame_02.array_metadata": 2888900,
+        "frame_02.metadata": 915400,
+        "frame_02.observe": 493300,
+        "frame_02.pixels": 5985500,
+        "frame_02.raster": 16180700,
+        "frame_02.render_attempt_publication": 2311800,
+        "frame_03.NPZ": 17854500,
+        "frame_03.PNG": 3981400,
+        "frame_03.array_metadata": 2361200,
+        "frame_03.metadata": 813400,
+        "frame_03.observe": 441000,
+        "frame_03.pixels": 5896300,
+        "frame_03.raster": 18781300,
+        "frame_03.render_attempt_publication": 2441400,
+        "frame_04.NPZ": 18771100,
+        "frame_04.PNG": 3564800,
+        "frame_04.array_metadata": 2729700,
+        "frame_04.metadata": 784900,
+        "frame_04.observe": 493100,
+        "frame_04.pixels": 6237800,
+        "frame_04.raster": 18661700,
+        "frame_04.render_attempt_publication": 2272300,
+        "frame_05.NPZ": 18612500,
+        "frame_05.PNG": 3782600,
+        "frame_05.array_metadata": 2452800,
+        "frame_05.metadata": 948200,
+        "frame_05.observe": 442100,
+        "frame_05.pixels": 6014300,
+        "frame_05.raster": 25003100,
+        "frame_05.render_attempt_publication": 2435100,
+        "frame_06.NPZ": 16805700,
+        "frame_06.PNG": 7571200,
+        "frame_06.array_metadata": 2484800,
+        "frame_06.metadata": 838900,
+        "frame_06.observe": 490900,
+        "frame_06.pixels": 5318500,
+        "frame_06.raster": 18332900,
+        "frame_06.render_attempt_publication": 2505300,
+        "geometry_index": 55041200,
+        "index_serialization": 136600,
+        "read_inputs": 1616200,
+        "resident_meshes": 10637900,
+        "same_version_repeat_query": 580700,
+        "stdlib_import": 19788500
+      },
+      "RESULT_publication_ns": 1719700
+    },
+    {
+      "id": "control_B",
+      "pair": null,
+      "arm": "B",
+      "scenario": "pixel_shortfall",
+      "process_id": 4268,
+      "primary_ns": 1024561800,
+      "started_ns": 53155885959700,
+      "closed_ns": 53156910521500,
+      "cleanup_confirmed": true,
+      "views": [
+        "SCENE",
+        "BACK",
+        "LEFT",
+        "TOP"
+      ],
+      "render_attempts": 4,
+      "pixel_tests": 24,
+      "covered_roi_ids": [
+        "roi_7d1cc638104349b5e9ed0bba",
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_8b78c73dd311d66ca9237c77",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "unresolved_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "candidate_pool_uncovered_roi_ids": [
+        "roi_16a6e8906884476acdedfc96"
+      ],
+      "feedback": [
+        {
+          "view": "SCENE",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_7d1cc638104349b5e9ed0bba",
+            "roi_8b78c73dd311d66ca9237c77"
+          ]
+        },
+        {
+          "view": "BACK",
+          "new_count": 0,
+          "shortfall_count": 3,
+          "shortfall_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_afcfa31dc3a4a6ebae296ec5",
+            "roi_eba3ff5d7db525e09243484a"
+          ],
+          "new_roi_ids": []
+        },
+        {
+          "view": "LEFT",
+          "new_count": 2,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_80b72b523d1ba01efff5ee07",
+            "roi_eba3ff5d7db525e09243484a"
+          ]
+        },
+        {
+          "view": "TOP",
+          "new_count": 1,
+          "shortfall_count": 0,
+          "shortfall_roi_ids": [],
+          "new_roi_ids": [
+            "roi_afcfa31dc3a4a6ebae296ec5"
+          ]
+        }
+      ],
+      "history_shortfall_roi_ids": [
+        "roi_80b72b523d1ba01efff5ee07",
+        "roi_afcfa31dc3a4a6ebae296ec5",
+        "roi_eba3ff5d7db525e09243484a"
+      ],
+      "final_shortfall_roi_ids": [],
+      "bytes": {
+        "PNG_bytes": 11033,
+        "NPZ_bytes": 77745,
+        "array_payload_bytes": 15728640,
+        "frame_metadata_bytes": 31294,
+        "RESULT_bytes": 157741,
+        "publication_bytes": 435,
+        "TRACE_bytes": 23065,
+        "STDOUT_bytes": 0,
+        "STDERR_bytes": 0,
+        "text_bytes": 212535,
+        "disk_bytes": 301313
+      },
+      "phase_ns": {
+        "parent_before_child_start": 61516600,
+        "child_work": 806615700,
+        "work_close_to_process_exit": 25094300,
+        "process_exit_to_cleanup_boundary": 23500,
+        "parent_readback_after_cleanup": 131311700
+      },
+      "child_stages_ns": {
+        "dependency_binding": 9900,
+        "dependency_import": 456521400,
+        "frame_01.NPZ": 21907500,
+        "frame_01.PNG": 19375200,
+        "frame_01.array_metadata": 2371800,
+        "frame_01.metadata": 661500,
+        "frame_01.observe": 454100,
+        "frame_01.pixels": 6025300,
+        "frame_01.raster": 22581300,
+        "frame_01.render_attempt_publication": 2432300,
+        "frame_02.NPZ": 12049200,
+        "frame_02.PNG": 3215400,
+        "frame_02.array_metadata": 2265900,
+        "frame_02.metadata": 623600,
+        "frame_02.observe": 397000,
+        "frame_02.pixels": 4524700,
+        "frame_02.raster": 16784400,
+        "frame_02.render_attempt_publication": 2229700,
+        "frame_03.NPZ": 17515700,
+        "frame_03.PNG": 3600500,
+        "frame_03.array_metadata": 2567000,
+        "frame_03.metadata": 813900,
+        "frame_03.observe": 516300,
+        "frame_03.pixels": 6089600,
+        "frame_03.raster": 19313200,
+        "frame_03.render_attempt_publication": 2245000,
+        "frame_04.NPZ": 20631600,
+        "frame_04.PNG": 4196400,
+        "frame_04.array_metadata": 2982300,
+        "frame_04.metadata": 866900,
+        "frame_04.observe": 533300,
+        "frame_04.pixels": 5136400,
+        "frame_04.raster": 18619100,
+        "frame_04.render_attempt_publication": 2077200,
+        "geometry_index": 50864800,
+        "index_serialization": 138300,
+        "read_inputs": 1534700,
+        "resident_meshes": 8427100,
+        "same_version_repeat_query": 647000,
+        "stdlib_import": 24597400
+      },
+      "RESULT_publication_ns": 2631600
+    }
+  ],
+  "batch": {
+    "started_ns": 53140451428800,
+    "closed_before_final_publication_ns": 53156953439500,
+    "whole_batch_ns": 16502010700,
+    "common_parent_setup_ns": 81473400,
+    "primary_intervals_sum_ns": 15298457500,
+    "other_inclusive_batch_work_ns": 1122079800,
+    "qualification_plus_formal_measured_intervals_ns": 19657152900,
+    "gap_after_qualification_before_formal_ns": 128663461900
+  },
+  "scope": {
+    "primary": {
+      "batch_window": "From run() entry before first integrity/reservation through common parent setup, per-run preparation, source verification, progress and summary analysis. Controller startup/standard-library imports/initial freeze read and final self-publication are outside this batch window and explicitly unmeasured. Each primary child window includes its full startup/import.",
+      "clock": "perf_counter_ns",
+      "cold_scope": "Fresh processes with empty application image caches. OS caches untouched.",
+      "included": [
+        "Python startup/imports",
+        "JSON decode",
+        "optimized geometric index",
+        "all actual full-scene raster attempts",
+        "only generated frame pixel qualification",
+        "PNG and symmetric NPZ serialization",
+        "local receipts and state",
+        "result and trace publication",
+        "parent full image/array/count verification"
+      ],
+      "primary_end": "After process exit and full result, PNG, NPZ and trace reads plus image and counter validation.",
+      "primary_start": "Immediately before Popen, after output directory allocation and frozen hash verification."
+    },
+    "batch": "Whole batch starts at run() entry before first integrity/reservation. Controller process startup, standard-library imports and initial FROZEN JSON read are unmeasured. Primary per-child timing includes that child startup and all imports.",
+    "cold_scope": "Fresh processes with empty application image caches. OS caches untouched.",
+    "text_bytes": "UTF-8 result, publication, TRACE and frame JSON plus stdout/stderr files.",
+    "array_payload": "Uncompressed .npy data bytes decoded and hashed from existing NPZ. RSS unmeasured.",
+    "model_consumption": "No model/provider/Blender/API test. Local PNG receipts only.",
+    "audit_method": "Existing JSON/JSONL, raw file bytes and .npy headers only. No experiment or product imports.",
+    "unknown": [
+      "Controller process startup, stdlib imports and initial FROZEN read",
+      "Final batch summary and qualification FINAL_TIMING self-publication",
+      "RSS, OS cache cold-start effects, GPU costs and model task benefit",
+      "Other geometry, camera pools, environments or production entry points"
+    ]
+  },
+  "inputs_sha256": {
+    "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe": "50f885251e42eb8cd1fbf5d4fbcc01efdbe8b9f4d4379e16664d4d0f3d4a9869",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_foveated_renderer.py": "4f36e7d18c9c5c19d64c5aee6fdd26d0f09f0daa89c7ae3ed493e0763e264b6f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_hook.py": "5a426c8db3a6aa6004127c77623e1c39299db6ff4775ff079815a8f1b17053c2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\__init__.py": "d8ad332876c6ac47cf582ed7c5ead63ce131074d8c7cba4f627cf5baac951509",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\native_3d_spatial_scratchpad.py": "eb30c52c7f5ba492366e5248a929d354ecd61d33d5b5b400c20f9d94bc4b2d71",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_1_mesh_entity.py": "ef25a6e60dea458eec553f2a4c8423f98510131c944cd89d5172723c4af5db98",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_2_sub_frustum_gaze.py": "43f43b8eb552bb0fcb49d127ade1bace4c20cba0d16d70869438f51c037ed8f4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_3_se3_alignment_math.py": "e61504653cbc30eef5ee5772fb98a2df2ff1228525d02adf434f504d7ade0351",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_4_spatial_sniffer.py": "c3c891831bb859874b40c69fab204b7fd040ad5b4a292778901f556f91389f0f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_5_alignment_verifier.py": "cf3b372e9e4360c93cc0364c45905b7f2e98b0a8c79c3203948177c44c66274c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_module1_operators\\submodule_1_6_quad_compositor.py": "e01bbb2cab8273ad2a531595df48d7914efb91673d6181e1803ca79c9c786998",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\__init__.py": "fb42948514c927451f59391b56234208cba9bb33b598ba993c874b9cbb02a72f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\agent_adapters.py": "2fdeee4d01af7b3f41d5905ac6281e0942c2cb70b514bd54f51ff5802b8c466c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\agent_hooks.py": "a30ea38d30eac1a8aa38a458d8ea5b06181b8e07518958855534d573eaa62981",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\agent_setup.py": "b6fa79c038ba4dc97a9070e2b30e4864835378d61751d660aaa382818d7e163e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\arm_twist_correction.py": "4d127c56b44747beed38462422abc4b6e9233ec7a32162b95e007d0893186eda",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\arm_twist_expert.py": "25a9b0d4040104107f0d507126c111d34f0418547798f7ca81a25d3828d20d45",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\arm_twist_source.py": "9579805b0894b1505a46cf977a1715ab80155d53a97f469f448276059d8535ee",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\arm_twist_weights.py": "f9f1aced3003728f797d37a5c9a48786bc65425d4ddc0c5f83a81751b6952f1a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\attention_policy.py": "c65f2340566947d8e6a847b4062459f38459d50fe86ae7495cbe21b701d96b68",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\attention_raster.py": "2d62c4ef45d9382b0b59257c521c1d7dfeca37e7615952c453f539f0ab05a170",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\attention_rendering.py": "b8e0a95548fe7d852bfc725d9acd6f07b02b8628650dbce57839d786a8e86b8d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\auto_router.py": "77f349cad5e604cfee01ca72ccfad649e3ee0cb3d3b993e89e884b6a498c94dd",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\blender_host.py": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\blender_mcp_host.py": "ee28330bd69d4f43d4e23178b10e047672fe76a51729012fc483a9eae0e81ebe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\blender_process.py": "c6ca5c4626012c6f75cafb7718eb0982d1a61c3a73fe75ecf802584ffc12b9ae",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\blender_worker.py": "0be1560c9774689c2b322ac22d7f48905a18b3995e1c1a91e534eda177876daa",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\contact_section.py": "e93470f82b172f981011907e528d2706740a5d7e95f26b92917719a9998b793d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_anchors.py": "83f1ea4a558e62b3988c7f3a362e4c476544fcdeaf7978cb11e0efb97644447d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_closure.py": "f47f17fbf8126f3ad7c3ee204c543ed87c86de40e57185b6b6b0f98372d7820e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_context.py": "f85efa9d697d1390042e1aebbdf117432e7b521b821c9e20c22dce21f02f6b2f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_core_facts.py": "80bfdc35afa6b631b145fa9f9b7bb3940865f3f6a99c677216ea0312314fbe90",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_delivery.py": "8b6484d6bc203c620d5d55ee2876add18799ed700ca12584cc90385b406c5d83",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_reader.py": "ee2dd2dd6f965d3639b50edfee1acb42d61c3a044a0a8232aef46359cca6c57a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_region.py": "67b70c3fadae1747a53d24d266801874b49d860ca8a2fc28f04b71c4fa10e4ea",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\deformation_task_view.py": "1bb1b0c65b8b80010ad57d34047a4a5b4b46ad4f8664ec087d29f4f9024618dc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\episode_candidates.py": "78b9d206bf9662e6c9b216f459d45c798b2e15b9f875d86bb9c3c80584ccd4dd",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\episode_gateway.py": "11bddcf41f775ccb7ee8d01e8c03369258367865f2ec6e0698bd99b3507c88cb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\forward_deadline.py": "72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\geometry_safety.py": "e0434a82097d7faa9364a13e4399c0c03f19617cd944e984e493423669543cba",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_budget.py": "b75d207e49594d335d5496c8a3b0b41d93ddad818f412e4eda31cad6888b4d27",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_continuation.py": "d64b2c786a713ec33290ef836c9f92f2bea56a3e93eec0971ce3b8ac42399813",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_execution.py": "89b23b2f902bf3c790749f2a47fa82dc79a5a32e8184813ec071f48b20e566bc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_journal.py": "de7d2e0590a8a8247b66239bf8e49467c8b708b45d689dbcefd413f435bf59d6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_scheduler.py": "c3b9bfeed30573e9fbfc41b34d33e939e7cb9b85af6e14d6ad19dc96e175bcd5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_segment.py": "b936470f7d4b574a9eb0c0d544dd1cc30cdc6a028d786542f6b9089a0cb6157d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\goal_supervision.py": "be761dee060961e86f6fd458b582fecfdd221bb1e3dae0a916bc32c3cb8493b7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\hook_context.py": "26e28a124c509914f08693cff05b4454780b8498c5971c69ac818b7dad820058",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\host_motion_ledger.py": "6c4a7527b520b4352ca935b590bc0d4a1d02e7d68c4ccf8eea57a8d4af8b60d9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\host_runtime.py": "e8b168b7d01ebd9b920f7f24701e5dde7310444d78bbf3bc6650b4d93da52eec",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\live_hooks.py": "c49713779c0cb4366f8e34db75236340aee51354b2ce14b8501a35a09a39137d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\live_service.py": "dd92cd45c3b1fbd12c62233376ad0b461ab3ed0924733120f04e8d72e0d9a952",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\live_spatial_mcp.py": "6fc5a4b8286130f2e6847ee4d7f4efee94c65a0591940e72b924f24ccd55081f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\llm_tool_schemas.py": "c6edeed24bff73f6c92ebf176bfa0ce9bd415d66d0350e31abc6b651dfe683b4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\local_view.py": "0a09f901e0204e5a6d6e9f5651f42dd7fba9db86f4968f6b2531e4ed35873baf",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\mcp_server.py": "4b122feed16ad56fe50fe951a1ad116e6700256bf5e90ae6300e783619946965",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\mcp_transport.py": "1cea0a0a6f918947e801767185d22a472469376a003b24c6decb7495eedcd702",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\measurement_presentation.py": "ae59afb6fe1653515c46a385a2c740b8528e61b18d798264036bf93a99a389b4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\mesh_structure.py": "a9c50cdf2141158a2eff16a5827581cbae5e506a8e40f64b236f4ee676752d5d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\mesh_structure_service.py": "e371aef6e6141902080af1d3d6346a84a9f6710d5e5fe2dd549e2241539ff567",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\native_observation.py": "11b66d601a6e8fa06d1ad9098e59ace8d14a0490ff00f6dce719d89366e8edf7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\nonplanar_exact.py": "50121cf817a1e3a752847a8ae0f140a429a6a56e7ef1141c3bb56cdd379802ef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\nonplanar_focus.py": "fad0fd0d5eebebf7f6de907cb74005777b442538998867a342d3e0b218e41c02",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\nonplanar_observation.py": "388aa665c6436b82498623f98c57b316c7c2bcd086e27384a53c41da1efc8a30",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\nonplanar_replay.py": "d6ed1a18713dc8305643388e2e0283b25b15b34ba9a3e448cd53c213674b319c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\orthogonal_solid.py": "c309847a4fe7d624e5a54d7a06778ffea214d33cf0ed0e57a4cab59a771f09e8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\owned_clearance_task.py": "e4aa0eca7138a5cefbaa58039f2eef1291183ea6a981e41152324a8b8f1ba7fb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\owned_task_mcp.py": "1f40ed653a20f991fa0ded0b3c76d2532d65972347c9ea70ff3a3075fd26cd52",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\patch_focus.py": "cd54ed3f2ea100b5cc7662a30523c5f6548c4315d73dc4047c3d93d337964bc8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\patch_observation.py": "cead0b51863fdd8a1fd114ee4cd3b9d1e2384efb7b7478f8a4e7013cd48f413a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\plugin_facade.py": "dd54b4ec38f1b39d7191ef5b2f112e99347e12edf94a38b97113f2bbaf21d2ab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\production_server.py": "57afb43c9d081da23807fa79ecb32e89b79dd619270d9bebe03facfc8e2fc609",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\prompt_pairing.py": "c417095e6b029171077be68070f155520816bc8a6c5055c7a4ce7f88c0a9b0f9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\query_policy.py": "0ce2772eb4729c2f357eff550877707a2c20603269e5d9fd1d36a155cba3b199",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\read_context.py": "146c1f5846ad9b3022be2b2516a1ffa283d88620af1fb592d1140467f18010ef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\reference_view.py": "4680b2c52be8494a59f53283cd2294e066cdfd9de36b062fcf7e5c9d016d4265",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\reference_view_consumer.py": "e98ee90c68efe2ad3443f9b81eb0d35375dab611b15957f0555b402b72f24556",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\refill_budget.py": "ee674032bc0d8f22c715a4f2fc220fd618b985a6b4e8fae1036540228e99d22d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\refill_recovery.py": "10a4c08ef1e4f38189f8cd84c0225a566a929aff8ed7c1aff0fa33b928e44175",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\request_context.py": "489193f2898212598783c7bd9efe5969efd9314fb8def29082fa7f8718b0f33d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\result_contract.py": "00d843df1d68482b72230abebe23c08a8d19aae86a9cac6985aa07e50b27b746",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_constraint.py": "33754cced05162a2d81562ac781e4321d12cd34c8faa38469e024be37aea6f89",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_constraint_process.py": "cfab9db0b52c0507ae207122d56d371a5daf8a8abab058921fecb040a56c04bf",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_constraint_worker.py": "f9239d7efaddb24afeb351ccd2d5869742d49bbb941b7a87ed694d2216a8d63e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_pose.py": "fb7e3c380395ec9d00bb290b07990991b9986f0dc12c538af5a49ab66a172468",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_pose_process.py": "61bf295cd1477eec25da1b12337e9a2ef48d827b0daa3697aaab6dac880bbb5f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rig_pose_worker.py": "0ae74673534ce720c027fdcd12c78b84246cc6620f17de58ae99db8905eac562",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\rigid_frame.py": "30a73067470300f8b7bb63cd301d04a95b0e942d54bf43fa56abb543aad3d356",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\router_process.py": "01509e89ea98fecc9e27a3ba9e6710f8efd908ee8d6ff5b9101c3ad8f5d24a83",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\router_server.py": "a923d569e7b0d5de65c018a2b07d2c15cc535a9bb7af6ed953a7a2e3e9f169ce",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\runtime_identity.py": "aa85a613c7c144942b1d2fb390e9e53595e249cd83f100cbc353c43455053613",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\scene_cache.py": "2af13585e0f404fab3068dd38e78b9f8d4382582a67e43233903aa27f7615e76",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\scene_capabilities.py": "ca25433ee4d6678b5bd01768a88291ac67ecb92b8a4892af0e2257e9d4b40ce0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\scene_delta.py": "9fc3abc81d532edb2ab0e27a31a471d89918d4fc7b2ed6799491f95b0566fb8b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\scene_rendering.py": "5197188a645ac7ddb50e3d0739536331054e88997ea4661c25a303c58374603c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\scene_residency.py": "8c9afb1b894b9a1a59f25d1d2723af6e91a1bdae9f7293ce57ce56ccb1f78202",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\skin_source.py": "e412988a74cec82bba0092a3e4feaf530025f0d082b74c0889090fe0b49349de",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\skin_source_process.py": "562525597add3df94888963fe0179dcf3227fbfd19444175ba9a101d01c670b1",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\skin_source_worker.py": "949cdec7fa53de01f50cc9e1adda968d92afda097cd75efbb86716f17de07bf9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\small_skin_source.py": "a748b9399ee51b3988915237a04645bb4a29e1b6ccfd02c06ca4c411ab8c9206",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\small_skin_source_process.py": "44a35f11bca90530dee34cad2b7315e9063413a31ab15f758e8b2fa5de6b9784",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\small_skin_source_worker.py": "fff3557a720c2d41e6ddb889607e95917bb9e94010557268700e51924e064f62",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\spatial_index.py": "669fda9c6d05fd7fd9f870d6b21890ff1ca2d49b91464765d44726be9011185e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\structure_task.py": "f85f73b93de065921e1a0fa02ad9ffd1ebf701e07e8818f2d01380df6065ed06",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\structure_task_control.py": "b17057dd9effe4f760ffc9b4585b80819e86e1dfb22032e4b1800c88e558a71c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\structure_task_service.py": "8988a1870a547888b631870925050c1c9f22d4ba10e6f2a4c4b57c37679da760",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\support_plane_candidate.py": "ee08c0259058905511b2ee1b7d20789262262a3b2a18d4f9d49f1d4c08548883",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\support_plane_discovery.py": "f1edcd6d7e3ad265aacf478b9395bfab8ded628c6eea5f064a10e77bad63b974",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_deformation.py": "cfe08586f34a728b86be34503c3c23ae1857b45aedcc981d3b2324dedc9804bb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_geometry.py": "a7f4375b2e4552a93ddfd2253184cda92b51c1212f55b3768d3f745e23cfee95",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_owned.py": "8065947877f8dc2aae415474c5c73ac3b9e4cbd0edd5012e1f8a2e8dd5a1ce49",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_owned_mcp.py": "77b728859024b6bbfdcfea75f67fc01303ba40c7d60aebae364a8b4e7a21e9f2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_owned_process.py": "196ea69253bf94a971ac650b0ed7ca1fe0cee70256779eb3c06099492b87655c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_owned_task.py": "70534abb9747dcf4fa78be7750f6378924de75098b687a4d7095f1779c56b453",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_owned_worker.py": "7b3e5dd1362a3ddb11c1a123a0ebfafaa644a364e3de8b6898463acd37b12027",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_proximity.py": "e310e6c81b284efe0e0070297d298359ea5a0c3c71b62a250e855eed2b4cb66b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_reference.py": "c3805f6c79e569cfdda95dbfdce3b0c52059ee4e2f05770527303de7194e082b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_restore.py": "497dc8b601a8d6674c244dd1fc8e11836fd49a0d594c24e6a7cf5b2def81e6e9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_scan.py": "c234d40b1b7f3e5a6dcc9a0a3b8e2f0f2013fde0838cd3fc59c66205010bee94",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\surface_task_service.py": "d307e5f9a22a899456f60fbdb05e5529e58dee3d58915acd38c8203e6545e642",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_authority.py": "208f78808a3ad516e43ce87e8f712984a5c6cb15bdb994cc53e33d43d6e3526e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_brief.py": "f4a87dcfd3c2362f19add084ca8a2bd001468294dda1cbcbe0c5f07bd405ef3e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_entry.py": "12b4736d1c37b443ca9ec29f802537207cd6903cf8e999f04c78c365ca305de8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_episode.py": "89c061d2be54d4a0771f9a0ea515d68e58d268469e5a0a1210a34af75c77e6d0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_episode_archive.py": "4f1ae7cb3c3499d81b06bc90d67813afc40c436cca73f43d977642e52496b225",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_intent.py": "4ca023f33b3125db9f7d0a34522131730fb13b6d22751eb123bbced856f2389a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_labels.py": "feffc269d490e525a6a043aad73a64d975dd14176631de6bf6b44608883c31ed",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_metrics.py": "306f9ab29263bf7fbe2b57533544b9524c1bb43659086c044131206117ee3975",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_query.py": "d16a6652cd9a32058ed7d16fbd6f64e6cbc6bb34bf896ec9cbcdeeff3fec412a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\task_verification.py": "18daf1689b674669e487bd983d08d66d1673326f0b708ddccd688f9c4f7325a0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\telemetry.py": "837739949beeab661b70035c5df7e95b4d0d316fffcc3c2e9bd11def5c965904",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\top1_query.py": "003e2417f09b71f3cb5c00b4d972422b42a1424fc2726cec6308fc26a6e21da7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\verified_source_loader.py": "1f5d42ce9e30e397f90f28e7e268b6bb4024640e91328a5f692ad8471969bd47",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\human_eye_plugin\\visible_refill.py": "8f4135e7b7e11bf313e6818a5629b656e10b213f7f3fb8984522cd594c7ceb03",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\module_2_low_token_mcp_scene_bridge.py": "0761679f7affc44b596c3bacc7415ae0e4d72fb26a31150705c2f05434a5b076",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\module_3_1_mcp_protocol_ipc_engine.py": "5644171a22e9c584ee1d64c997c2f994951970b407b59967e6ecffef4a979567",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\module_3_2_vlm_grounding_closed_loop_agent.py": "e0c8f7402ac4246e176b4ce78b9759dbe4badec6c9f13c9bfdd42872dfcab119",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\module_3_3_closed_loop_control_engine.py": "4fa670a25947fa6be3334a000c79db2167a2e3fbb8e9d9e31aabf8b6e1ae0001",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\.human-eye\\releases\\9.7.2+m4.surface.scan.compact.r1\\site-packages\\native_3d_spatial_scratchpad.py": "7d1d04b4757db9e1310d2299b11556b5105daa79ae3fac98feb5ed2d007f88c7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\CONTENT_MANIFEST.json": "f107617a7eb444bfdadc315672f44de19108ed057a9235a19c4b829dfe90e824",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\coverage.py": "2561ecaf2f2df98ec7c03ed48cb95dd08c34f10ce73c1e9ecc2e32f31c41daf4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\render\\adapter.py": "df7e207ebd38c2876c54683e29899fccbe23187a4dd544cde1fcd9ed6ace82cd",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_002\\RESULTS.json": "b7297c34462e773df9107e76c52e99b5e5c62ca72f005ef6602ad341ac13fcdb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_002\\runs\\main_p01_A\\TRACE.jsonl": "98799ff7aa9f1dafdc501d99c96eb01f58c1e1f98fce7e9330695be76b57c80b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\FROZEN.json": "07984188b354370e05051482a367b9617a997c6586cc928e06c020969ec265b3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\PREREGISTRATION.json": "7af58527d3ab9a3d8c1ec6ae1f5990ad495072a813652b9ee0cc14a6ee15baae",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\RESULTS.json": "4203adf425e5437f5e0c0e00563c92574c03850d0e539b6db3021300e83d6d89",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\bootstrap.py": "d064956653c40c4d4db73fcb0932bb98eca7b0c9ef1e1bf157e76807cbead31b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\CAMERAS.json": "3db530d292c0e300792173b793d4ed29506d3ed5bd8ec8649ef5a2de406637c6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\CAMERAS_PIXEL_SHORTFALL.json": "1468391bba3910f5c107fd38974f4ef984a6d346dfd5444804ce8b9f3a2692d2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\DEPENDENCIES.json": "f63bb8cf7197254a0cfa309e46068dc2e87786cbd5dc0b86bf9462c862468537",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\SCENE_GEOMETRY_RATIONAL.json": "491aa0fc1cd8c52bc04bf2d12b1c43c7898c7487a61e3d0ef3dcaf814f54d617",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\launch.py": "ec14fa508c471059612bd9d8c379104d4045c1e3dfb56b8b5979f7eb619c2953",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\probe.py": "52c43fb722bdedfe572130d9cfc5fa8ec863db6c9b4f4f49c33cd45bf7eea63d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\FINAL_TIMING.json": "10358abca735ad9fa7976bc177258b30c754e1c8fd7e5d6dcb3af6fc7877a81e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\RESULTS.json": "90902020207d16e618cde14d4cc99698f9348b640fbb9313dda1167659d4ec64",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\AUDIT.json": "b3af52a65bf434be1e1908d26dac7fcbe59a0c775fd524a1d1d86e7c94960a4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\ENVIRONMENT.json": "b03ac36618b2260d7e955ebc978fc49885b3322c6d29eeec4478c6300cdcce67",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\HANDSHAKE.json": "6b542e502705caa482c7caa361543445676cbe3171157882fca64cd9fba09d74",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\PARENT_START.json": "ce0a6ec80278c791f622581ee88f9e60c3b2b12f3d2da7fd88d255b3ef901537",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\STATE.json": "c03db277478c9faa47f78c3ebaeaa9dc45a15ce6c2f7dc785e5bb0f0a1615a9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\TRACE.jsonl": "7fc15a0e62ccc291265fcd9c30f63ad56f484e97022940ab8a1886ab893ef028",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\stderr.bin": "841541c01317af248ee3fecfddf2d3adc364ad1171f994aa9dc90b6a6d020bb9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\nonzero\\stdout.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\AUDIT.json": "b3af52a65bf434be1e1908d26dac7fcbe59a0c775fd524a1d1d86e7c94960a4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\ENVIRONMENT.json": "0d8e4e63a67a0731306751f7cca4c083451d48d97838e938ecad312bc4dbae18",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\HANDSHAKE.json": "b7e45648051db5014a28bbbbf14dd3936f68c0581548602c086f0de4eb7c3c33",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\PARENT_START.json": "59f97e280901c49647fed4dc261c3bb6fc2b64fcec0c9b7ededba0e0a8ea891b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\RECEIPT.json": "bbbc1407565c80e1296a437dcd71bb63a0d299cff2fc21d8c577110be095cbc4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\STATE.json": "f2444172d8ad011e69b2d92783fb6a3caa7d1283711c23c99b4f6fb6d4416253",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\TRACE.jsonl": "4c604ef9a8f07191479560d0794537658302d3ad306fea839cd659e0d2037dc5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\stderr.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\normal\\stdout.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\AUDIT.json": "b3af52a65bf434be1e1908d26dac7fcbe59a0c775fd524a1d1d86e7c94960a4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\ENVIRONMENT.json": "dac62362b31a56150abcf4126825c533f275e49767d7a3cd895a4af8a3280353",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\HANDSHAKE.json": "333be024be5e90cce575591f93d20d6cae84cea3b2e6a19d3f7b87cf8845d126",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\MARKER.json": "6b3ce362cd8f844108141fda34aa803b5211df6063ce6ace46bcce1041eaafc5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\PARENT_START.json": "77e88a7eeae3dd8288dfda4caeb4a4d2e6a687b92dc1d05b6a12c22b1634ef7b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\STATE.json": "d4f4f1d524b089167a4129f3589fb145a537f9f573874fc647fa0770830dbd22",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\TRACE.jsonl": "7c834c723c81b9e336d1d127e02c7951f6f7d808b29a30b01190258c88f4879c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\stderr.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\receipt_failure\\stdout.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\AUDIT.json": "b3af52a65bf434be1e1908d26dac7fcbe59a0c775fd524a1d1d86e7c94960a4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\ENVIRONMENT.json": "391b5d160b45e416fc5d2654ae9bdf3df0938870aee50e05f7109da6bfb4baab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\HANDSHAKE.json": "324d6726890ef112436eea38b7c0685ceda567651232358a201a55d618328e3a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\PARENT_START.json": "d917eea4adfe812d70790bdacbd13b198ebfe67ced04ead09fc5de0432183f52",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\STATE.json": "87f330b390279e8ef2782404a709ef44961fbcf92a3d2082f3a4ba954b5069ef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\TRACE.jsonl": "8ce41929f1f2542b8c0d64f03a0bec2a4086b12013f88fc78f957e3b4614ce1e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\stderr.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualification\\timeout\\stdout.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\qualify.py": "378f6c92d49e6b4ad371d3cca5f358b7e779edd7641c956d0920c1248e49cbaa",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runner.py": "1e8e522fd95b0ad216989f871f870c82c3487cc6aeac59c527746ff4348f9711",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\RESULT.json": "19759599e1633de0365af1ea1acb7725196bf8fcb7eee887896a4d1217cc80d6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\RESULT_PUBLICATION.json": "1e55de9cbace4c6fb2add1f7abcbebca6a85955a94dbf19b384fed6f552db6b6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\TRACE.jsonl": "b5195c6c2432f2f7e0307d6e13b9d158f95efa8c6ad2475fde8d86ebcbdb6d42",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\01_SCENE\\FRAME.json": "dfe4b74f0cd0ea9e9cee5c81047aee59c0519288754e4dc71bbd968ff4a56d4f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\02_TOP\\FRAME.json": "ef5731d7134ad40fddbf24f28cf90144da0f28700f00293b5453c8adc74913c5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\03_LEFT\\FRAME.json": "a5c19b1e7bb2a8a4d91efaa2a70cc50519e783326a8a77cd9484088592d63de2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\04_RIGHT\\FRAME.json": "53ebfdb5f7819c09cfd1169ba4a4c1eb4149b5c2f885ba19c803b74ef3583f5c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\05_FRONT\\FRAME.json": "b4c99150c94ee26478f16e48cfb3d360db80bcd242583a83888ac25254b5f737",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\06_BACK\\BACK.npz": "8b4c9e5f6ad9a02eeb21f36925135506b25f9dc057d3dcd575c105321b39ece4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\06_BACK\\BACK.png": "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_A\\frames\\06_BACK\\FRAME.json": "90cf3d1491c29c389db32b9a1cb43910c08df7748378e21a3cba4d692bd3fc26",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\RESULT.json": "e9835e967da23a500df6bac4457ca46dc9b5ac178b0b2644abe6bd682c3ab07c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\RESULT_PUBLICATION.json": "a0fc642ba930a8e7de01216265b6e2adc5deebe1063fb1c4accef506a51d8e00",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\TRACE.jsonl": "c0056e897bb9725e03d3a4b8fcee6398da5c42515e1fd694f2808986c74f119a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\01_SCENE\\FRAME.json": "ccb7f25086ed257ae27977c5fe775af672757df391a1440c70f415107912bfab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\02_BACK\\BACK.npz": "8b4c9e5f6ad9a02eeb21f36925135506b25f9dc057d3dcd575c105321b39ece4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\02_BACK\\BACK.png": "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\02_BACK\\FRAME.json": "e5da4396107745beb8e4f0f94aa6a09b18b0a99bd574913fa5e90220f7e595de",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\03_LEFT\\FRAME.json": "f4387a3dcd72bb365318446ac4f95c5515d6f18cf24a1331adb7374bee33a446",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\04_TOP\\FRAME.json": "d0909227ccf51d4b1681e55e8dbb3ebd53f054ef703322d73f4aa59f07139e32",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\04_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\control_B\\frames\\04_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\RESULT.json": "724d5f3a0a153ccfb4ee6f09fd6e931cb595baa76f8b150170f73ad66f9b14b0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\RESULT_PUBLICATION.json": "952f4790e3c8ae3aab242b4d35a767ae7cb72cfa1d754adf2109a2e939e84a4e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\TRACE.jsonl": "cba9d6c66bcd0b6d1e3a53eb7e99e096b75df726f98251133cb7d3c1494851c6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\01_SCENE\\FRAME.json": "fa8d7fb2bf08b8bb5bb6af74233cd435c75a70f991b7c7be389638ae0584bb35",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\02_TOP\\FRAME.json": "f708c40a4f207a2b462c03cc38e07a8960b8b83c28d845d73306d2b339b503d9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\03_LEFT\\FRAME.json": "9b249b81ff31ff5fb9661646b9bc0e141e168203b9e7445de441a66cbb5a3091",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\04_RIGHT\\FRAME.json": "0b506b699146222cafdff3126b10374af049acaa549ab8561c0d459c1f095c47",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\05_FRONT\\FRAME.json": "29e98fad7eed9693b76478828af5cca45d091cef7cb07fc3bddfe3a1f00c4a39",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\frames\\06_BACK\\FRAME.json": "f9380ae90b561d12c28bd0c1f8cb69efae47735bdd467df7176245996ec2112c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\RESULT.json": "8c6025be3da461317927fcfe95024c9a6efd921fe311e35afb197806448470c6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\RESULT_PUBLICATION.json": "72d09fe4b53a22eaf497959b4ccf7228243cc44ac585e0cb0330dde48a5dbde3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\TRACE.jsonl": "1553cd4e48ac339ef689db49b1fcde4e40b1def888649796a43839df130f540a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\01_SCENE\\FRAME.json": "95baf13de6bf37fa87a33afc1df8b0afd426b5708684703f88071cae44abdec6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_B\\frames\\02_BACK\\FRAME.json": "e4a9e035d80497e804d7002594589cd4982ed4c518996fa18ba414f7d206cb58",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\RESULT.json": "70c200d7baa9000d216a6322c62762c9346ac40803ee0e5273a318948293f32e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\RESULT_PUBLICATION.json": "10fa5018341cd7b3d10a7dad4b1df68906b406fc19190cac041bd62d2b50b049",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\TRACE.jsonl": "48354d2a47574aad0cd714a3526e581ff2f8b973a7e0b524d203f23e7aa770ae",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\01_SCENE\\FRAME.json": "3602cc97e844bd8084bf74da19c6e01b80e6d84627c199d72970e24368d504e2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\02_TOP\\FRAME.json": "3134562301103e167bed310896679d23eae71fcde4cf080877378f1f0f552fee",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\03_LEFT\\FRAME.json": "e532a836a13bd18806c280357a6c35cd1d78ea9b12e94227883bead268988e17",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\04_RIGHT\\FRAME.json": "1c77e51e7eb8b1c52e8a3629001cd7d53b649e20ab757ff6907b8fc1d247df04",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\05_FRONT\\FRAME.json": "22432d7c0b0e552a4d58e7804ff2620eb9c5187b2c383705eb138bb27ee0846e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_A\\frames\\06_BACK\\FRAME.json": "f5a847bbaf7ea8bbb33b99e6e7225b4e32902b1d43e3c42514de2377caa90432",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\RESULT.json": "21f8a2167afe9536548efe2a68e1e40c8e9a4ff41616df157323d6133975c6a6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\RESULT_PUBLICATION.json": "d678da1ecfb3119cc60b342a7ca5e33f1a48b35c50859bf71e8217e902abed4e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\TRACE.jsonl": "749cdf22a42b011cef5efe725583a276fb98e506766de8d130d11c0be22e35a5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\01_SCENE\\FRAME.json": "465c6036ad00e0b18df1e17771e7545571f2175d05bd66200ce882346252538b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p02_B\\frames\\02_BACK\\FRAME.json": "25d1d8d9dc9cb342ebd8db67b6b361ecc2a7c3538e1bb41e3014b88cd19ea3bd",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\RESULT.json": "79a12cafd558b70708acd62cfd21a597d29c1406447533f0b8b32c46c493564f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\RESULT_PUBLICATION.json": "7d0da7c8f6b1b59cc66b2813a8e07848c4dcca3d80ff823306dde46d65b73425",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\TRACE.jsonl": "2406e01bc76299b23a8aaed9244ec50591bd9f66f05eb70d75e00016c3133622",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\01_SCENE\\FRAME.json": "7273f9fc215d8557865c309b27574387f75c589f2cccc4a5b02dd47a9108986d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\02_TOP\\FRAME.json": "65b87e41afcf24b446dc8e114c22117dc31234ba698f681f2026288310e4814b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\03_LEFT\\FRAME.json": "ad4ea1c1893f3643ec39b20f2844f742b18ab7d23240c70f4db6343620168e46",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\04_RIGHT\\FRAME.json": "1adf2c323c6cc0c01e9b826789184cfc715851b69b78d4913eacc16ea0e7820a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\05_FRONT\\FRAME.json": "4c4f3bfdc31c0c1d24266d3ce2be1039317af1003f7cba7b5ff700f23f41313d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_A\\frames\\06_BACK\\FRAME.json": "cc2816fd695efed709a7314a2b6e7939a8d9c25978f1e6cb83b2f12220b5aef7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\RESULT.json": "12d7905086a7669172266a2810f74a2fe4d3a62db799eabf46e7315ac341155b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\RESULT_PUBLICATION.json": "3b592c3d43553321b3a379595bfc2d0dececed9a5803c92b9656b17ad75651b8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\TRACE.jsonl": "a8f1a6d946254bc17f0e8c64605b1c654251271f414b278e9b931accceb4e705",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\01_SCENE\\FRAME.json": "f047c2af55d3687c92cbe442984f68a4e1bf16b29cb793e79e28f4b8382ae5d0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p03_B\\frames\\02_BACK\\FRAME.json": "a4a331c81a69ee45d6be482d8b6837e6ed7f20c51145347ffaaafd701f220729",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\RESULT.json": "2cc0f8363164b694e4a7e94ad873a415e17e7e65d36925ce2e5d127d9dc38b05",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\RESULT_PUBLICATION.json": "07c6715b5b6a4062931b88a213eec7686d9079157fbc7a71e8f20bc32307e823",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\TRACE.jsonl": "98808df9d95bf8c34358a10cbf651a44b5367554c98a05db09118f1d8df42d21",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\01_SCENE\\FRAME.json": "dc5fa81b59609dfb09510310bb2cc06593a8e667641c896bfde9c8e5090685ad",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\02_TOP\\FRAME.json": "a6d1232668265cba328bae89402bd2c22aa7a8b4e58243ad88acf455faa0c6f9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\03_LEFT\\FRAME.json": "a29adf08d8d43e181330d228d4110afcd1c472f3e27782c4bc24e3868d806a00",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\04_RIGHT\\FRAME.json": "94027246cbbcffc37e144e49a2b7bf239e69c938c89aae71a3b9ae09e5770bf1",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\05_FRONT\\FRAME.json": "8ea5c5ad1016bb0069c75e62b4d1bb83d8072bb7f807695e092e3e9be9c17bea",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_A\\frames\\06_BACK\\FRAME.json": "6f743f88587daec6d7137932b99e7ccab2ed2bc4c326abf6cac20baba5e2975f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\RESULT.json": "88dec9e292187a1f1d9f3ff0a6f74428ba50eed35cf6348ba6d66b1c9108dde6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\RESULT_PUBLICATION.json": "28c9742ff95f70124ed534171667e88d60388830926c6833c23b60afbc7e2d3a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\TRACE.jsonl": "30daaecde5af3ee5978a7f0aff745fc9b67e5e1df10d2c443c880b23165f5de2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\01_SCENE\\FRAME.json": "ec84389813a529dcbd524445512574d150e935b6b397716b3e3959b22218e112",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p04_B\\frames\\02_BACK\\FRAME.json": "ae259b32ffd1d2ead4a3b53c503096e97d04d21fbb38cec6893ab6ff54d3f445",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\RESULT.json": "08ba45b98013b729666e08fe6b3e45302eb69479719ab9e7b245508eba2b1cf5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\RESULT_PUBLICATION.json": "fe6e9dcc280b1dc1b4fd45bad427ce7a778c2dd719f64e48f8cb9faea23c83ef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\TRACE.jsonl": "c67f2ec40076bfa8b49b86b138ea503bd787d675e31d03ccb09ed12cacadfcde",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\01_SCENE\\FRAME.json": "16ba0a4c179a56ef71ef453d761b2e550752ba52dca492ad8036b7a25b77ab77",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\02_TOP\\FRAME.json": "88d52cbb663cc788b9d10d6f2a275319201e7c0878f1dacc06ee50bb8c8cdae7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\03_LEFT\\FRAME.json": "952cbc2f6203593e11fdef62d0ad05ae459f82c3d8c5bc81a8b1d2b5fbd0ceef",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\04_RIGHT\\FRAME.json": "b7397c86eda42ea35d899b7b4bdf73621011d47bb744616da24fbb9fb807de5f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\05_FRONT\\FRAME.json": "9d26ba3458d9ea3e5454e2751254af91f5db845c3630f35e6ac12bfd591c273f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_A\\frames\\06_BACK\\FRAME.json": "a7d55e6007d43e6b059875765e3302b7df8f6b4fc0ed0f25709f162288b0b86f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\RESULT.json": "dd6570c799d1bbd740c9a0244eb0f0cc58f5503712d2fe07d2ec8353396a6a24",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\RESULT_PUBLICATION.json": "bf60db1e216a5711fe1604a53a110d270e203384ed399397c4099814f034e949",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\TRACE.jsonl": "497704a257249151c8b541fa3421aaaec4779333c21e70e699a8341426bf5c6d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\01_SCENE\\FRAME.json": "98174494c5663b395381f01c31ebbb526f471248ce6d22cccb92c2b3becdac90",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p05_B\\frames\\02_BACK\\FRAME.json": "b80dc7d8832fde4a28684aba1e9eb0cb38561b3b8d3899640c626f6ae7807541",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\RESULT.json": "6bfb57b8fc8d73d9a401e1da4b201d5d887e55cf8992b3329a03dab7c963903d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\RESULT_PUBLICATION.json": "014826aad530b4cbbb76e5a4daf92a2001856f2e819df81c5c02f48c8df23257",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\TRACE.jsonl": "086821b993d2e21e6a4097db734c5dfcad920bf2ea3dd0a784b23a5aae8967f3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\01_SCENE\\FRAME.json": "7d6f4731bcaaea20aa35ec9c28b3352a22a1f87c05a7536722f00c67fd8622e4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\02_TOP\\FRAME.json": "1bf03ec29b686a3fa8288ee5eb21a4877a7d5b2adfaf378197d2ddf6512c4be8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\02_TOP\\TOP.npz": "325f3efd0dec0e8fd4dee81a9db0e9e0d42dfab327c9eab292171cb56a404d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\02_TOP\\TOP.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\03_LEFT\\FRAME.json": "d26dfb264364422100620079e61bd4e4f6e58e585faa4165103bd6831ef58055",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\03_LEFT\\LEFT.npz": "c9828189967711cb56d010dcaa9655a8489125855ea22afa8f8c8925d502a662",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\03_LEFT\\LEFT.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\04_RIGHT\\FRAME.json": "89ff8ce9fb4811f2044af78af49c9696e4a3e2d358e248c827a6a496e05a0cc8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\04_RIGHT\\RIGHT.npz": "5ec5a2dd1c2b84a8e2678542c830014c9f9653a344f8124e9492e48226236e3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\04_RIGHT\\RIGHT.png": "d2c1e76a433b59bdcb6d56ad2faf07a7b738dfa0a5b2b34a5f2e8f252e6d9194",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\05_FRONT\\FRAME.json": "68ac69a6f482943f05ef7c4c6360fd2275c0e96c8cef99e4018bc310530cc7ac",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\05_FRONT\\FRONT.npz": "775150b085113c907220aa18bb3cfb25e186e47559a2d4df93f81011961c3d9b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\05_FRONT\\FRONT.png": "1a06d5c1b513f3d256e251b94168074ee2f440938d7be2aebded2f54b6442dab",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\06_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\06_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_A\\frames\\06_BACK\\FRAME.json": "ce9a944b3b8b8d08ad4df551de6b07150f4cd40700f45c7815d54a9b901728a7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\RESULT.json": "fc5c6e2d0f882f5907ee799af8a8e68f3e4b3a4a4a0d3b437b87f91cad0d7931",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\RESULT_PUBLICATION.json": "06f72587c861445df5fc8bf3c9ed5440540e68394a48007275a4c75aa1c01fa7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\STDERR.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\STDOUT.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\TRACE.jsonl": "d05bf5870df393b15981541813380c36fcd821cf31987c0d4468a35a38cb7193",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\01_SCENE\\FRAME.json": "540a7b4d06c69ba06d5c602bf1235c63bfbef9305a933dbeacacc278bcf42eb5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\01_SCENE\\SCENE.npz": "d9f27c0f601360b8e7a5307f5a6eeaebd8748fa0b28e9ebc919a0be8be3d4f8f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\01_SCENE\\SCENE.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\02_BACK\\BACK.npz": "e3dc0d9f12384217d59fc9c2d684cc8fbbb1c985517f7a7b93e199ad6a465cbe",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\02_BACK\\BACK.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p06_B\\frames\\02_BACK\\FRAME.json": "ba0c3895616475f2a0e27951f518ad7b105bb08003e449d05569136c6ff031d7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runtime.py": "e99fd1bb73b6e82cfd5103181cdbd0ba24fc26c9b9a72be99a70dfaf6e5272c0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\validate.py": "788fcba5c3569ad0917636967661a759c436d0fd754f04ba894ac60fe21227ed",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_compact_facts_001\\installation\\run_01\\FIXED_BUILD_INPUTS.json": "30d8ddb1d0cb0c74a766683858be5577739cd3adbfb44cdd45b16f44792c854b",
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Lib\\site-packages\\PIL\\__init__.py": "3fffff8502f4b59ca61d39cce713d55ffef046954262fce1abac3e97f3803734",
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Lib\\site-packages\\numpy\\__init__.py": "a1792c20af1146952a6dfce4c0daeb197b2832b23d27434a97544544c497742d",
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe": "d59c9a894b319828d023f3aa83d9a3488d2339f9e27e60e49b02abb0d53cf538"
+  }
+}
