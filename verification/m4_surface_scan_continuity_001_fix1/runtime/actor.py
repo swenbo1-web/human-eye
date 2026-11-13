@@ -1,0 +1,359 @@
+"""M4 continuity owner, derived from the frozen compact-consumption actor.
+
+Derived from native_plugin_complex_005/actor.py; the native worker and TCP
+owner remain the original native_plugin_complex_003 implementation.
+Importing this file starts no service, Blender process or model consumer.
+"""
+import argparse,copy,importlib.util,json,os,queue,socket,struct,subprocess,sys,threading,time,traceback,types
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;PREVIOUS=HERE.parents[1]/'native_plugin_complex_003'
+spec=importlib.util.spec_from_file_location('complex003_owner',PREVIOUS/'actor.py');base=importlib.util.module_from_spec(spec);spec.loader.exec_module(base)
+save,sha,encoded=base.save,base.sha,base.encoded
+RUNTIME_PATH=HERE.parents[1]/'m1_task_entry_001_eval/preflight_client.py'
+runtime_spec=importlib.util.spec_from_file_location('_spatial_fact_runtime_proof',RUNTIME_PATH)
+runtime=importlib.util.module_from_spec(runtime_spec);runtime_spec.loader.exec_module(runtime)
+MAX_WIRE=24*1024*1024
+TOOLS_BY_GROUP={
+    'N':frozenset(),
+    'P':frozenset({'human_eye_scene_observe'}),
+}
+TURN_ORDER=('BASE','REPEAT','EDIT')
+
+
+def expected_edit_snapshot(initial):
+    """The registered patch changes one float32 translation in the fixed asset."""
+    expected=copy.deepcopy(initial)
+    objects=[row for row in expected['objects'] if row['name']=='Obj_008']
+    if len(objects)!=1:raise ValueError('registered_edit_target_missing')
+    matrix=objects[0]['matrix_world']
+    matrix[2][3]=struct.unpack('<f',struct.pack('<f',matrix[2][3]-.00075))[0]
+    return expected
+
+class Peer:
+    """One real stdio MCP process, owned by this actor, with no request retry."""
+    def __init__(self,config,out):
+        self.out=out;out.mkdir();self.process=None;self.reader=None;self.poisoned=False;self.records=[];self.close_record=None
+        self.tx_bytes=0;self.rx_bytes=0;self.events=queue.Queue();self.stderr=None
+        try:
+            command=[config['dependency_python'],'-I','-B',config['entry'],'serve','--config',str(config['product_config'])]
+            self.stderr=(out/'stderr.bin').open('wb')
+            self.process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.stderr,
+                cwd=out,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            save(out/'START.json',{'launcher_pid':self.process.pid,'command':command,'started_ns':time.perf_counter_ns()})
+            def read():
+                try:
+                    while True:
+                        raw=self.process.stdout.readline(MAX_WIRE+1)
+                        if not raw:break
+                        if len(raw)>MAX_WIRE:raise ValueError('product_response_frame_limit')
+                        self.events.put(('reply',raw,time.perf_counter_ns()))
+                except BaseException as exc:self.events.put(('error',repr(exc),time.perf_counter_ns()))
+                finally:self.events.put(('eof',None,time.perf_counter_ns()))
+            self.reader=threading.Thread(target=read,daemon=True);self.reader.start()
+        except BaseException:
+            self.close();raise
+    def call(self,request,timeout_s=30):
+        if self.poisoned:raise RuntimeError('product_channel_poisoned_no_replay')
+        started=time.perf_counter_ns();index=len(self.records)+1;folder=self.out/str(index).zfill(3);folder.mkdir()
+        tx=encoded(request);(folder/'TX.bin').write_bytes(tx);rx=None;error=None;sent=False
+        try:
+            self.process.stdin.write(tx);self.process.stdin.flush();self.tx_bytes+=len(tx);sent=True
+            if 'id' not in request:return None
+            left=timeout_s-(time.perf_counter_ns()-started)/1e9
+            kind,raw,received=self.events.get(timeout=max(.001,left))
+            if kind!='reply':raise RuntimeError('product_'+kind+':'+str(raw))
+            rx=raw;self.rx_bytes+=len(rx);(folder/'RX.bin').write_bytes(rx);value=json.loads(rx)
+            if value.get('id')!=request['id']:raise ValueError('product_response_id_mismatch_no_replay')
+            return value
+        except BaseException as exc:
+            error={'type':type(exc).__name__,'message':str(exc)};self.poisoned=True;raise
+        finally:
+            row={'request_id':request.get('id'),'method':request.get('method'),'started_ns':started,
+                 'elapsed_ns':time.perf_counter_ns()-started,'sent_bytes':len(tx) if sent else None,
+                 'attempted_send_bytes':len(tx),'send_confirmed':sent,'received_bytes':0 if rx is None else len(rx),'error':error}
+            self.records.append(row);save(folder/'RECEIPT.json',row)
+            save(self.out/'RPC.json',{'requests':self.records,'tx_bytes':self.tx_bytes,'rx_bytes':self.rx_bytes,'poisoned':self.poisoned})
+    def close(self):
+        if self.close_record is not None:return self.close_record
+        error=None
+        try:
+            if self.process is not None and self.process.poll() is None:
+                self.process.stdin.close()
+                try:self.process.wait(timeout=8)
+                except subprocess.TimeoutExpired:self.process.kill();self.process.wait(timeout=5);error='forced_product_stop'
+        except BaseException as exc:
+            error=repr(exc)
+            if self.process is not None and self.process.poll() is None:self.process.kill();self.process.wait(timeout=5)
+        finally:
+            if self.reader is not None and self.reader.ident is not None:self.reader.join(timeout=1)
+            if self.stderr is not None:self.stderr.close()
+        self.close_record={'launcher_pid':None if self.process is None else self.process.pid,
+            'process_reaped':self.process is not None and self.process.poll() is not None,
+            'exit_code':None if self.process is None else self.process.poll(),'reader_stopped':self.reader is None or not self.reader.is_alive(),
+            'error':error,'ended_ns':time.perf_counter_ns()}
+        self.close_record['confirmed']=self.close_record['process_reaped'] and self.close_record['exit_code']==0 and self.close_record['reader_stopped'] and error is None
+        save(self.out/'CLOSE.json',self.close_record)
+        if not self.close_record['confirmed']:raise RuntimeError('product_close_unconfirmed:'+str(self.close_record))
+        return self.close_record
+
+class Owner(base.Owner):
+    def __init__(self,config):
+        if config['group'] not in TOOLS_BY_GROUP:raise ValueError('unknown_evaluation_group')
+        self.read_names=TOOLS_BY_GROUP[config['group']]
+        self.config=config;self.out=Path(config['output']);self.out.mkdir(parents=True,exist_ok=False)
+        self.started=time.perf_counter_ns();self.calls=0;self.bytes=0;self.logs=[];self.service=None;self.he=None;self.peer=None
+        self.runtime_handle=None
+        self.image_construction_violation=False
+        self.episode_id=config['episode_id'];self.active_turn=None;self.completed_turns=[]
+        self.control_events=[];self.edit_attempted=False;self.edit_verified=False
+        self.expected_final=None;self.close_record=None
+        self.observed_product_sessions=set()
+        helper_spec=importlib.util.spec_from_file_location('_m4_continuity_native',HERE.parents[1]/'m4_surface_scan_001_opt1/engineering/pose_native_metered.py')
+        self.helper=importlib.util.module_from_spec(helper_spec);helper_spec.loader.exec_module(self.helper)
+        self.native=self.helper.NativeSession.start(blender=config['blender'],asset=config['asset'],workspace=self.out/'native',
+            deadline_ns=config['worker_deadline_ns'],condition='N' if config['group']=='N' else 'P',expected_asset_sha256=config['asset_sha256'],max_calls=128,
+            qa_pose_patch=HERE.parents[1]/'m4_surface_scan_001/worker/POSE_PATCH.json')
+        self.initial=self.snapshot('INITIAL.json');self.initial_QA_completed_ns=time.perf_counter_ns();self.tools=[copy.deepcopy(base.NATIVE)];self.identity=None
+        if config['group']!='N':
+            cfg={'schema_version':'1.0','enabled':True,'observe_on_prompt':False,'project_root':config['install_root'],
+                'state_file':str(self.out/'state.json'),'audit_file':str(self.out/'audit.jsonl'),'quad_size':128,'request_budget_s':30.,'max_sessions':4,
+                'expected_identity':{'source_sha256':config['source_sha256']},'blender':{'host':self.native.host,'port':self.native.port,'timeout_s':30.}}
+            save(self.out/'product_config.json',cfg)
+            self.peer=Peer.__new__(Peer)
+            self.peer.__init__(dict(config,product_config=self.out/'product_config.json'),self.out/'plugin')
+            # base.close performs final mesh readback, host.close, then native.close.
+            self.service=types.SimpleNamespace(host=self.peer)
+            init=self.peer.call({'jsonrpc':'2.0','id':'private-init','method':'initialize','params':{'protocolVersion':'2025-03-26','capabilities':{},'clientInfo':{'name':'owned-comparison','version':'m4-surface-scan-compact-consumption-001'}}})
+            save(self.out/'PLUGIN_INITIALIZE.json',init);self.identity=init['result']['_meta']['human_eye']
+            assert self.identity['source_sha256']==config['source_sha256'] and self.identity['source_kind']=='installed_distribution'
+            self.peer.call({'jsonrpc':'2.0','method':'notifications/initialized'})
+            listed=self.peer.call({'jsonrpc':'2.0','id':'private-list','method':'tools/list'});save(self.out/'PLUGIN_TOOLS.json',listed)
+            read_tools=[t for t in listed['result']['tools'] if t['name'] in self.read_names]
+            assert len(read_tools)==1 and {t['name'] for t in read_tools}==self.read_names
+            assert read_tools==config['read_schemas'],'profile_read_schemas_differ_from_frozen_installed_candidate'
+            self.tools+=copy.deepcopy(read_tools)
+            # The same metadata-only probe for P; never warm geometry.
+            ping=self.peer.call({'jsonrpc':'2.0','id':'private-ping','method':'ping'})
+            assert ping.get('result')=={},'product_startup_ping_failed'
+            save(self.out/'PLUGIN_PING.json',ping)
+            events=[json.loads(line) for line in (self.out/'audit.jsonl').read_bytes().splitlines() if line]
+            pids={row['pid'] for row in events if row.get('event')=='request_trace'}
+            assert len(pids)==1,'one_actual_product_runtime_required'
+            metadata_completed_ns=time.perf_counter_ns()
+            proof,self.runtime_handle=runtime._windows_runtime_proof(
+                self.peer.process,pids.pop(),config['worker_deadline_ns'])
+            proof.update(before_stdin=False,before_consumer_business=True,
+                initial_QA_completed_ns=self.initial_QA_completed_ns,metadata_completed_ns=metadata_completed_ns,
+                scope='after initial QA snapshot and four metadata calls, before consumer business')
+            save(self.out/'PRODUCT_RUNTIME_PROOF.json',proof)
+            assert proof['confirmed'] is True,'actual_product_runtime_ownership_unconfirmed'
+        save(self.out/'IDENTITY.json',{'group':config['group'],'external_group':config.get('external_group',config['group']),'runtime_identity':self.identity,'actor_pid':os.getpid(),'actor_parent_pid':os.getppid(),
+            'python':sys.executable,'asset_sha256':sha(config['asset']),'common_native_sha256':__import__('hashlib').sha256(encoded(base.NATIVE)).hexdigest(),
+            'startup_ns':time.perf_counter_ns()-self.started,'product_serve_entry':config.get('entry'),
+            'profile':config['group'],'exposed_tool_names':[t['name'] for t in self.tools],
+            'product_spatial_task_only':False,'private_geometry_warmup':False})
+    def image_construction_status(self):
+        path=self.out/'native/WORKER_EVENTS.jsonl';observed=[];error=None
+        try:
+            for line in path.read_text(encoding='utf8').splitlines():
+                row=json.loads(line)
+                render=row.get('event') in ('render_started','render_completed','render_cancelled')
+                changed=row.get('changed_or_new_PNG_files')
+                delta=row.get('render_events_after',0)-row.get('render_events_before',0)
+                if render or changed or delta>0:
+                    observed.append({key:row[key] for key in ('event','sequence','render_events_before',
+                        'render_events_after','changed_or_new_PNG_files') if key in row})
+        except (OSError,ValueError,TypeError) as exc:error=repr(exc)
+        return {'new_image_budget':0,'observed':bool(observed),'events':observed,
+            'status':'unknown' if error else 'observed' if observed else 'not_observed_in_recorded_scope',
+            'error':error,'source':str(path),
+            'scope':'original native helper workspace PNG scan and render hooks only; arbitrary Python is not a security sandbox and transient activity can escape this scope'}
+    def continuity_status(self):
+        return {'episode_id':self.episode_id,'owner_pid':os.getpid(),
+            'native_pid':self.native.config['pid'],'native_host':self.native.host,'native_port':self.native.port,
+            'native_workspace':str(self.native.workspace),
+            'product_launcher_pid':None if self.peer is None else self.peer.process.pid,
+            'product_runtime_proof':None if self.peer is None else json.loads((self.out/'PRODUCT_RUNTIME_PROOF.json').read_bytes()),
+            'session_id':None if self.peer is None else self.config.get('session_id','current-scene'),
+            'observed_product_session_ids':sorted(self.observed_product_sessions),
+            'session_binding_scope':'configured session and actual accepted observe arguments; product query/session evidence is recorded separately',
+            'worker_deadline_ns':self.config['worker_deadline_ns'],'active_turn':copy.deepcopy(self.active_turn),
+            'completed_turns':copy.deepcopy(self.completed_turns),'business_attempts':self.calls,
+            'edit_attempted':self.edit_attempted,'edit_verified':self.edit_verified,
+            'owner_close_called':self.close_record is not None}
+    def continuity_control(self,req):
+        method=req['method'];params=req.get('params',{})
+        if type(params) is not dict or params.get('episode_id')!=self.episode_id:
+            raise ValueError('continuity_episode_binding')
+        if time.perf_counter_ns()>=self.config['worker_deadline_ns']:
+            raise TimeoutError('original_episode_deadline')
+        operation=method.removeprefix('continuity/')
+        folder=self.out/('control_'+str(len(self.control_events)+1).zfill(3));folder.mkdir()
+        mark=time.perf_counter_ns();save(folder/'REQUEST.json',req)
+        error=None;result=None
+        try:
+            if operation=='begin_turn':
+                if set(params)!={'episode_id','turn_id','deadline_ns'}:raise ValueError('begin_turn_fields')
+                if self.active_turn is not None:raise ValueError('turn_already_active')
+                index=len(self.completed_turns)
+                if index>=len(TURN_ORDER) or params['turn_id']!=TURN_ORDER[index]:raise ValueError('fixed_turn_order')
+                if params['turn_id']=='EDIT' and not self.edit_verified:raise ValueError('edit_barrier_not_verified')
+                deadline=params['deadline_ns']
+                if type(deadline) is not int or not mark<deadline<=self.config['worker_deadline_ns']:
+                    raise ValueError('turn_original_deadline')
+                self.active_turn={'turn_id':params['turn_id'],'started_ns':mark,'deadline_ns':deadline,'first_business_attempt':self.calls+1}
+                result=self.continuity_status()
+            elif operation=='end_turn':
+                if set(params)!={'episode_id','turn_id'}:raise ValueError('end_turn_fields')
+                if self.active_turn is None or params['turn_id']!=self.active_turn['turn_id']:raise ValueError('active_turn_binding')
+                if mark>=self.active_turn['deadline_ns']:raise TimeoutError('original_turn_deadline')
+                row=dict(self.active_turn,ended_ns=mark,last_business_attempt=self.calls)
+                row['business_attempts']=self.calls-row['first_business_attempt']+1
+                self.completed_turns.append(row);self.active_turn=None
+                result=self.continuity_status()
+            elif operation=='qa_advance':
+                if set(params)!={'episode_id'}:raise ValueError('qa_advance_fields')
+                if self.active_turn is not None or [r['turn_id'] for r in self.completed_turns]!=['BASE','REPEAT']:
+                    raise ValueError('registered_edit_barrier')
+                if self.edit_attempted:raise ValueError('registered_edit_no_replay')
+                self.edit_attempted=True
+                before=self.snapshot('PRE_EDIT.json')
+                if before!=self.initial:raise ValueError('unexpected_pre_edit_geometry')
+                receipt=self.native.qa_advance(timeout_s=min(30.,(self.config['worker_deadline_ns']-time.perf_counter_ns())/1e9))
+                save(self.out/'POSE_ADVANCE.json',receipt)
+                self.expected_final=expected_edit_snapshot(self.initial)
+                actual=self.snapshot('EDIT.json')
+                if actual!=self.expected_final:raise ValueError('registered_edit_snapshot_mismatch')
+                self.edit_verified=True
+                result={'advance':receipt,'snapshot':actual,'status':self.continuity_status()}
+            elif operation=='snapshot':
+                if set(params)!={'episode_id','label'}:raise ValueError('snapshot_fields')
+                label=params['label']
+                if type(label) is not str or not 1<=len(label)<=64 or not label.replace('_','').replace('-','').isalnum():
+                    raise ValueError('snapshot_label')
+                result={'snapshot':self.snapshot('QA_'+str(len(self.control_events)+1).zfill(3)+'_'+label+'.json'),
+                    'status':self.continuity_status()}
+            elif operation=='status':
+                if set(params)!={'episode_id'}:raise ValueError('status_fields')
+                result=self.continuity_status()
+            else:raise ValueError('unknown_continuity_control')
+            if time.perf_counter_ns()>=self.config['worker_deadline_ns']:raise TimeoutError('original_episode_deadline')
+            save(folder/'RESPONSE.json',result)
+            return {'jsonrpc':'2.0','id':req['id'],'result':result}
+        except BaseException as exc:
+            error={'type':type(exc).__name__,'message':str(exc)}
+            save(folder/'ERROR.json',error)
+            raise
+        finally:
+            row={'operation':operation,'started_ns':mark,'ended_ns':time.perf_counter_ns(),'error':error}
+            self.control_events.append(row);save(folder/'RECEIPT.json',row)
+            save(self.out/'CONTINUITY.json',{'episode_id':self.episode_id,'events':self.control_events,
+                'active_turn':self.active_turn,'completed_turns':self.completed_turns,
+                'edit_attempted':self.edit_attempted,'edit_verified':self.edit_verified})
+    def handle(self,req):
+        method=req.get('method');rid=req.get('id')
+        if type(method) is str and method.startswith('continuity/'):
+            if rid is None:raise ValueError('continuity_control_id_required')
+            return self.continuity_control(req)
+        if method!='tools/call':return super().handle(req)
+        if rid is None:return None
+        if self.active_turn is None:raise ValueError('business_requires_active_turn')
+        if time.perf_counter_ns()>=self.active_turn['deadline_ns']:raise TimeoutError('original_turn_deadline')
+        self.calls+=1;mark=time.perf_counter_ns();folder=self.out/('tool_'+str(self.calls).zfill(2));folder.mkdir();save(folder/'REQUEST.json',req)
+        response=None;failure=None;produced_bytes=None;wire_bytes=0;name=None;args=None
+        try:
+            if self.calls>32:raise RuntimeError('common_tool_attempt_budget_32')
+            if self.image_construction_violation:raise ValueError('zero_new_image_budget_already_violated_or_unknown')
+            params=req.get('params',{})
+            if type(params) is not dict:raise ValueError('tool_params_object_required')
+            name=params.get('name');args=params.get('arguments',{})
+            if type(args) is not dict:raise ValueError('tool_arguments_object_required')
+            if name=='execute_blender_code':
+                assert set(args)=={'code'} and type(args['code']) is str
+                receipt=self.native.run(args['code'],timeout_s=min(30.,(self.active_turn['deadline_ns']-time.perf_counter_ns())/1e9));save(folder/'NATIVE_RECEIPT.json',receipt)
+                raw=receipt['response'];result={'content':[{'type':'text','text':encoded(raw).decode().rstrip()}],'isError':raw.get('status')!='success'}
+            elif name in self.read_names and self.peer is not None:
+                if name=='human_eye_scene_observe':
+                    session_id=args.get('session_id','current-scene')
+                    if session_id!=self.config.get('session_id','current-scene'):raise ValueError('episode_product_session_binding')
+                    self.observed_product_sessions.add(session_id)
+                    query=args.get('query')
+                    scan=type(query) is dict and query.get('mode')=='surface_scan'
+                    if args.get('include_image', not scan) is not False:
+                        raise ValueError('zero_image_budget_requires_effective_include_image_false')
+                answer=self.peer.call(req,timeout_s=max(.001,min(30-(time.perf_counter_ns()-mark)/1e9,(self.active_turn['deadline_ns']-time.perf_counter_ns())/1e9)))
+                result=answer.get('result',{'content':[{'type':'text','text':json.dumps(answer)}],'isError':True})
+            else:raise ValueError('tool_not_available')
+            construction=self.image_construction_status();save(folder/'IMAGE_CONSTRUCTION.json',construction)
+            if construction['observed'] or construction['status']=='unknown':
+                self.image_construction_violation=True
+                raise ValueError('zero_new_image_construction_budget_violated_or_unknown')
+            if any(block.get('type')=='image' for block in result.get('content',[])):
+                raise ValueError('zero_image_delivery_budget')
+            response={'jsonrpc':'2.0','id':rid,'result':result};produced_bytes=len(encoded(response))
+            if time.perf_counter_ns()>=self.active_turn['deadline_ns']:raise TimeoutError('original_turn_deadline')
+            if self.bytes+produced_bytes>1048576:raise ValueError('common_tool_response_byte_budget_1MiB')
+            wire_bytes=produced_bytes;self.bytes+=wire_bytes;save(folder/'RESPONSE.json',response);return response
+        except BaseException as exc:
+            failure={'type':type(exc).__name__,'message':str(exc),'traceback':traceback.format_exc()}
+            response={'jsonrpc':'2.0','id':rid,'result':{'content':[{'type':'text','text':json.dumps({'status':'error','error':str(exc),'automatic_retry':False})}],'isError':True}}
+            size=len(encoded(response))
+            if self.bytes+size<=1048576:
+                wire_bytes=size;self.bytes+=size;save(folder/'ERROR_RESPONSE.json',response);return response
+            raise
+        finally:
+            row={'attempt':self.calls,'name':name,'started_ns':mark,'elapsed_ns':time.perf_counter_ns()-mark,
+                'response_bytes':wire_bytes,'produced_response_bytes':produced_bytes,'exception':failure,
+                'is_error':failure is not None or bool((response or {}).get('result',{}).get('isError'))}
+            self.logs.append(row);save(folder/'ATTEMPT.json',row)
+            save(self.out/'TOOLS.json',{'attempts':self.calls,'calls':self.calls,'wire_tool_bytes':self.bytes,'tools':self.logs})
+    def close(self):
+        if self.close_record is not None:return self.close_record
+        result={'errors':[],'actor_pid':os.getpid(),'actor_parent_pid':os.getppid(),'tool_attempts':self.calls,'tools':self.logs,'started_ns':self.started}
+        try:
+            try:
+                final=self.snapshot('FINAL.json');result['geometry_unchanged']=final==self.initial
+                expected=self.initial if self.expected_final is None else self.expected_final
+                result['expected_terminal_geometry_matches']=final==expected
+                result['registered_pose_applied']=self.edit_verified
+            except BaseException as exc:result['errors'].append({'stage':'final_snapshot','error':repr(exc)})
+        finally:
+            # A failed final read never skips the still-owned product process.
+            try:
+                if self.peer is not None:result['plugin_close']=self.peer.close()
+                else:result['plugin_close']=None
+            except BaseException as exc:
+                result['errors'].append({'stage':'product_close','error':repr(exc)})
+                result['plugin_close']=getattr(self.peer,'close_record',None)
+            finally:
+                try:
+                    result['product_runtime_exit']=runtime._runtime_exit(self.runtime_handle) if self.peer is not None else None
+                    self.runtime_handle=None
+                except BaseException as exc:result['errors'].append({'stage':'product_runtime_exit','error':repr(exc)})
+                finally:
+                    try:
+                        result['native_close']=self.native.close();result['worker_closed']=self.native.status().get('closed')
+                    except BaseException as exc:result['errors'].append({'stage':'native_close','error':repr(exc)})
+        result['asset_unchanged']=sha(self.config['asset'])==self.config['asset_sha256'];result['ended_ns']=time.perf_counter_ns()
+        n=result.get('native_close',{});p=result.get('plugin_close');r=result.get('product_runtime_exit')
+        result['image_construction']=self.image_construction_status()
+        result['zero_new_images_budget_met']=not self.image_construction_violation and result['image_construction']['status']=='not_observed_in_recorded_scope'
+        worker=result.get('worker_closed') or {}
+        result['accepted_worker_geometry_matches']=bool(worker
+            and worker.get('final_geometry_fingerprint')==worker.get('accepted_geometry_fingerprint')
+            and worker.get('qa_patch_applied')==self.edit_verified and not worker.get('poisoned'))
+        result['original_deadline_met']=result['ended_ns']<self.config['worker_deadline_ns']
+        result['completed_turns']=self.completed_turns;result['active_turn']=self.active_turn
+        result['confirmed']=bool(not result['errors'] and result.get('expected_terminal_geometry_matches') and result['asset_unchanged']
+            and result['accepted_worker_geometry_matches'] and result['original_deadline_met']
+            and (not self.edit_attempted or self.edit_verified)
+            and n.get('process_reaped') and n.get('exit_code')==0 and result.get('worker_closed')
+            and result['zero_new_images_budget_met']
+            and (self.peer is None or p and p.get('confirmed') and r and r.get('confirmed') is True
+                and r.get('exited') is True and r.get('exit_code')==0 and r.get('handle_closed') is True))
+        self.close_record=result
+        save(self.out/'CLOSE.json',result);return result
+
+if __name__=='__main__':
+    # Reuse the proven single-owner TCP broker and stdin lifetime unchanged.
+    base.Owner=Owner;base.main()

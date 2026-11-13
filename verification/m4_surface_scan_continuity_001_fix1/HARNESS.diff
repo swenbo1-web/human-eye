@@ -1,0 +1,268 @@
+--- continuity_001/qualification/verify_continuity.py
++++ fix1/qualification/verify_continuity.py
+@@ -19,0 +20 @@
++HOST_SOURCE_SHA = "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9"
+@@ -58 +59,158 @@
+-def verify_c_turn(result, audit_rows, host_events, source_snapshot, turn, request):
++def canonical(value):
++    return json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")).encode("utf8")
++
++
++def bind_source_snapshot(actual, reference):
++    """Bind the complete owner geometry projection or the original rich packet.
++
++    Rich metadata absent from an owner packet stays unrecorded. Every observed
++    vertex, face index, matrix entry and unit is checked against frozen truth.
++    """
++    require(type(actual) is dict, "source_snapshot_object")
++    narrow = set(actual) == {"unit_scale_m", "objects"}
++    if not narrow:
++        previous_verifier().bind_snapshot(actual, reference)
++    scale = actual["unit_scale_m"]
++    require(type(scale) is float and math.isfinite(scale), "source_finite_float_unit")
++    require(canonical(scale) == canonical(reference["unit_scale_m"]), "source_unit_matches_reference")
++    objects = actual["objects"]
++    require(type(objects) is list and len(objects) == 24, "source_complete_24_objects")
++    require(all(type(row) is dict and type(row.get("name")) is str for row in objects), "source_object_names")
++    names = [row["name"] for row in objects]
++    require(names == sorted(row["name"] for row in reference["objects"]), "source_unique_sorted_object_names")
++    fields = {"name", "vertices_local", "matrix_world", "faces"}
++    expected = {row["name"]: row for row in reference["objects"]}
++    for row in objects:
++        require((set(row) == fields) if narrow else fields <= set(row), "source_object_geometry_fields")
++        vertices, faces, matrix = row["vertices_local"], row["faces"], row["matrix_world"]
++        require(type(vertices) is list and bool(vertices), "source_vertices_list")
++        require(all(type(vertex) is list and len(vertex) == 3 for vertex in vertices), "source_vertex_shape")
++        require(all(type(value) is float and math.isfinite(value) for vertex in vertices for value in vertex), "source_finite_float_vertices")
++        require(type(faces) is list and all(type(face) is list and len(face) == 3 for face in faces), "source_triangle_faces")
++        require(all(type(index) is int and 0 <= index < len(vertices) for face in faces for index in face), "source_integer_face_indices")
++        require(type(matrix) is list and len(matrix) == 4 and all(type(axis) is list and len(axis) == 4 for axis in matrix), "source_matrix_shape")
++        require(all(type(value) is float and math.isfinite(value) for axis in matrix for value in axis), "source_finite_float_matrix")
++        for field in ("vertices_local", "faces", "matrix_world"):
++            require(canonical(row[field]) == canonical(expected[row["name"]][field]), "source_geometry_matches:" + row["name"] + ":" + field)
++    projection = {"unit_scale_m": scale, "objects": [{field: row[field] for field in sorted(fields)} for row in objects]}
++    return {"passed": True, "schema": "owner_complete_geometry_projection" if narrow else "qualified_rich_snapshot",
++            "objects": len(objects), "vertices": sum(len(row["vertices_local"]) for row in objects),
++            "faces": sum(len(row["faces"]) for row in objects),
++            "observed_geometry_sha256": digest(canonical(projection)),
++            "missing_rich_top_fields": sorted(set(reference) - set(actual)),
++            "missing_rich_object_fields": sorted(set(reference["objects"][0]) - set(objects[0])),
++            "rich_source_metadata_verified": not narrow,
++            "scope": "complete observed geometry and units match frozen input; absent rich fields remain unrecorded"}
++
++
++def read_capture(native_workspace, host_event):
++    """Read this capture and the earlier resource deliveries in the same worker.
++
++    Repeated captures may send zero resources. Their references must resolve to
++    immutable resource bytes previously delivered in this worker's actual wire.
++    """
++    wire = Path(native_workspace) / "WIRE"
++    sequence = host_event["sequence"]
++    require(type(sequence) is int and 0 < sequence <= 128, "capture_sequence")
++    index = json.loads((wire / "INDEX.json").read_bytes())
++    sequences = [row["sequence"] for row in index]
++    require(sequences == sorted(set(sequences)) and sequence in sequences, "capture_wire_index")
++    resources, records, origins = {}, [], {}
++    current = None
++    origin = None
++    current_script_sha = None
++    for row in index:
++        number = row["sequence"]
++        if number > sequence:
++            break
++        folder = wire / str(number).zfill(3)
++        request_raw = (folder / "REQUEST.bin").read_bytes()
++        response_raw = (folder / "RESPONSE.bin").read_bytes()
++        require(len(request_raw) == row["request_bytes"] and len(response_raw) == row["response_attempted_bytes"]
++                and row["response_sendall_completed"] is True, "capture_wire_complete")
++        request, response = json.loads(request_raw), json.loads(response_raw)
++        stdout = response.get("result", {}).get("result", "")
++        if type(stdout) is not str:
++            continue
++        lines = [line[len("HUMAN_EYE_BLENDER_MCP:"):] for line in stdout.splitlines() if line.startswith("HUMAN_EYE_BLENDER_MCP:")]
++        if not lines:
++            continue
++        require(len(lines) == 1 and response["status"] == "success", "capture_single_success_envelope")
++        envelope = json.loads(lines[0])
++        require("error" not in envelope and type(envelope.get("result")) is dict, "capture_envelope_result")
++        delta = envelope["result"]
++        require(delta.get("schema") == "human-eye-scene-delta-v1", "capture_delta_schema")
++        require(request.get("type") == "execute_code" and type(request.get("params", {}).get("code")) is str, "capture_executed_request")
++        binding = delta["capture"]["binding"]
++        identity = (binding["host_source_sha256"], binding["host_identity"]["document_epoch"])
++        require(identity[0] == HOST_SOURCE_SHA and (origin is None or origin == identity), "capture_history_same_host_document")
++        origin = identity
++        sent = set()
++        for resource in delta["resources"]:
++            key = (resource["id"], resource["revision"])
++            require(type(key[0]) is str and type(key[1]) is int and key[1] > 0 and key not in sent, "capture_resource_identity")
++            require(key not in resources or canonical(resources[key]) == canonical(resource), "capture_resource_revision_immutable")
++            sent.add(key)
++            resources[key] = resource
++            origins[key] = number
++        records.append({"sequence": number, "request_sha256": digest(request_raw), "response_sha256": digest(response_raw)})
++        if number == sequence:
++            current = delta
++            current_script_sha = digest(request["params"]["code"].encode("utf8"))
++    require(current is not None, "current_capture_record_required")
++    require(current_script_sha == host_event["script_sha256"], "capture_executed_script_binding")
++    return {"sequence": sequence, "script_sha256": current_script_sha, "delta": current,
++            "retained_resources": list(resources.values()),
++            "resource_origins": [{"id": key[0], "revision": key[1], "sequence": origins[key]} for key in resources],
++            "wire_sources": records, "scope": "current capture plus prior immutable resource deliveries in this worker"}
++
++
++def bind_capture(captured, host_event, source_snapshot, reference, result):
++    """Bind actual current poses and retained wire resources to observed geometry."""
++    require(captured["sequence"] == host_event["sequence"] and captured["script_sha256"] == host_event["script_sha256"], "capture_host_event_binding")
++    delta = captured["delta"]
++    require(delta.get("schema") == "human-eye-scene-delta-v1", "capture_delta_schema")
++    capture = delta["capture"]
++    binding = capture["binding"]
++    require(capture["scope_issues"] == [], "capture_scope_complete")
++    require(binding["same_main_thread_read"] is True, "capture_single_main_thread")
++    require(type(binding["scale_length"]) is float and canonical(binding["scale_length"]) == canonical(source_snapshot["unit_scale_m"]), "capture_unit_scale")
++    require(type(binding["frame"]) is int and binding["frame"] == reference["frame_current"], "capture_fixed_frame")
++    require(binding["coordinate_frame"] == result["coordinate_frame"] == "world" and binding["unit"] == "m", "capture_world_m_units")
++    require(binding["host_source_sha256"] == result["binding"]["host_source_sha256"] == HOST_SOURCE_SHA, "capture_fixed_host_source")
++    require(binding["host_identity"]["document_epoch"] == result["binding"]["document_epoch"], "capture_document_binding")
++    require(binding["directory_sha256"] == result["binding"]["directory_sha256"], "capture_directory_binding")
++    ids = previous_verifier().object_ids(source_snapshot)
++    coverage = capture["coverage"]
++    require(len(coverage) == 24 and {row["object_id"]: row["name"] for row in coverage} == ids, "capture_all_24_object_coverage")
++    require(all(row["source_status"] == "supported" for row in coverage), "capture_host_supported_sources")
++    resources = {(row["id"], row["revision"]): row for row in captured["retained_resources"]}
++    require(len(resources) == len(captured["retained_resources"]), "capture_unique_retained_resources")
++    meshes = capture["capture"]["meshes"]
++    require(len(meshes) == 24, "capture_all_24_meshes")
++    expected = {row["name"]: row for row in source_snapshot["objects"]}
++    seen, referenced_ids = set(), set()
++    for mesh in meshes:
++        name = mesh["name"]
++        require(name in expected and name not in seen and ids.get(mesh["object_id"]) == name, "capture_mesh_identity")
++        seen.add(name)
++        resource_ref = mesh["_scene_resource"]
++        key = (resource_ref["id"], resource_ref["revision"])
++        require(type(key[0]) is str and type(key[1]) is int and key in resources, "capture_resolved_resource_reference")
++        resource = resources[key]
++        referenced_ids.add(key[0])
++        for field in ("vertices_local", "faces"):
++            require(canonical(resource[field]) == canonical(expected[name][field]), "capture_geometry_matches:" + name + ":" + field)
++        require(canonical(resource_ref["matrix"]) == canonical(expected[name]["matrix_world"]), "capture_geometry_matches:" + name + ":matrix_world")
++        require(type(resource_ref["scale"]) is float and canonical(resource_ref["scale"]) == canonical(source_snapshot["unit_scale_m"]), "capture_mesh_unit_scale")
++    live = delta["live_resources"]
++    require(type(live) is list and len(live) == len(set(live)) == 24 and set(live) == referenced_ids, "capture_live_resource_set")
++    return {"passed": True, "objects": 24, "vertices": sum(len(row["vertices_local"]) for row in expected.values()),
++            "faces": sum(len(row["faces"]) for row in expected.values()), "sequence": captured["sequence"],
++            "transmitted_resources_this_capture": len(delta["resources"]), "resolved_resource_count": len(referenced_ids),
++            "resource_origins": captured["resource_origins"], "wire_sources": captured["wire_sources"],
++            "host_source_sha256": binding["host_source_sha256"], "rich_source_metadata_verified": False,
++            "source_status_scope": "fixed host static-source guard declaration; absent rich fields remain unrecorded"}
++
++
++def verify_c_turn(result, audit_rows, host_events, source_snapshot, turn, request, *, capture):
+@@ -91 +249,2 @@
+-    previous.bind_snapshot(source_snapshot, reference)
++    source_report = bind_source_snapshot(source_snapshot, reference)
++    capture_report = bind_capture(capture, host, source_snapshot, reference, result)
+@@ -107,0 +267 @@
++        "source_report": source_report, "capture_report": capture_report,
+--- continuity_001/engineering/run_episodes.py
++++ fix1/engineering/run_candidate.py
+@@ -1 +1 @@
+-"""Run the frozen N then C engineering episodes once, with no model consumer."""
++"""Run the frozen FIX1 C engineering episode once, with no model consumer."""
+@@ -49,12 +48,0 @@
+-def n_code(turn):
+-    initialize = "assert '_human_eye_continuity_marker' not in globals()\n_human_eye_continuity_marker = {'marker_token':'continuity-engineering-N-001','marker_generation':1}\n" if turn == 'BASE' else ''
+-    return initialize + """import json as _continuity_json, os as _continuity_os
+-_continuity_marker = globals()['_human_eye_continuity_marker']
+-print(_continuity_json.dumps({**_continuity_marker, 'pid':_continuity_os.getpid(),
+-'namespace_id':id(globals()), 'unit_scale':float(bpy.context.scene.unit_settings.scale_length),
+-'objects':[{'name':obj.name,'session_uid':int(obj.session_uid),
+-'matrix_world':[[float(x) for x in row] for row in obj.matrix_world]}
+-for obj in sorted(bpy.context.scene.objects,key=lambda obj:obj.name) if obj.type=='MESH']},allow_nan=False))
+-"""
+-
+-
+@@ -62,6 +50,4 @@
+-    if group == 'N':
+-        name, args = 'execute_blender_code', {'code': n_code(turn)}
+-    else:
+-        name = 'human_eye_scene_observe'
+-        args = {'session_id': 'continuity-engineering-C-001', 'include_image': False,
+-                'query': {'mode': 'surface_scan', 'threshold_m': .002}}
++    assert group == 'C'
++    name = 'human_eye_scene_observe'
++    args = {'session_id': 'continuity-fix1-engineering-C-001', 'include_image': False,
++            'query': {'mode': 'surface_scan', 'threshold_m': .002}}
+@@ -71,0 +58,12 @@
++def verify_business(row, folder, source, qualification):
++    """Bind the actual runner response, capture and owner geometry in one path."""
++    body = json.loads(row['response']['result']['content'][0]['text'])
++    row['body'] = body
++    audit = [json.loads(line) for line in (folder / 'owner/audit.jsonl').read_bytes().splitlines()]
++    host = [json.loads(line) for line in (folder / 'owner/native/WORKER_EVENTS.jsonl').read_bytes().splitlines()]
++    host = [item for item in host if row['started_ns'] <= item.get('started_ns', -1) <= row['ended_ns']]
++    assert len(host) == 1, 'single_capture_before_source_binding'
++    capture = qualification.read_capture(folder / 'owner/native', host[0])
++    return qualification.verify_c_turn(body, audit, host, source, row['turn'], row['request'], capture=capture)
++
++
+@@ -72,0 +71 @@
++    assert group == 'C'
+@@ -77 +76 @@
+-    result = {'group': group, 'episode_id': 'continuity-engineering-' + group + '-001',
++    result = {'group': group, 'episode_id': 'continuity-fix1-engineering-C-001',
+@@ -103 +102 @@
+-        config = {'group': 'N' if group == 'N' else 'P', 'external_group': group, 'task': 'T1',
++        config = {'group': 'P', 'external_group': group, 'task': 'T1',
+@@ -108,4 +107,3 @@
+-                  'read_schemas': [] if group == 'N' else read(BATCH / 'inputs/C_PUBLIC_TOOLS.json'),
+-                  'entry': None if group == 'N' else ready['entry'],
+-                  'install_root': None if group == 'N' else ready['install_root'],
+-                  'source_sha256': None if group == 'N' else ready['source_sha256']}
++                  'read_schemas': read(BATCH / 'inputs/C_PUBLIC_TOOLS.json'),
++                  'entry': ready['entry'], 'install_root': ready['install_root'],
++                  'source_sha256': ready['source_sha256']}
+@@ -130 +128 @@
+-        c_reports, n_reports = [], []
++        c_reports = []
+@@ -172,15 +170,3 @@
+-                if group == 'C':
+-                    body = json.loads(answer['result']['content'][0]['text'])
+-                    row['body'] = body
+-                    audit = [json.loads(line) for line in (folder / 'owner/audit.jsonl').read_bytes().splitlines()]
+-                    host = [json.loads(line) for line in (folder / 'owner/native/WORKER_EVENTS.jsonl').read_bytes().splitlines()]
+-                    host = [item for item in host if row['started_ns'] <= item.get('started_ns', -1) <= row['ended_ns']]
+-                    report = qualification.verify_c_turn(body, audit, host, sources[row['state']], turn, request)
+-                    c_reports.append(report)
+-                    row['verification'] = report
+-                else:
+-                    native = json.loads(answer['result']['content'][0]['text'])
+-                    stdout = native['result']['result']
+-                    report = json.loads(stdout)
+-                    n_reports.append(report)
+-                    row['native_state'] = report
++                report = verify_business(row, folder, sources[row['state']], qualification)
++                c_reports.append(report)
++                row['verification'] = report
+@@ -195 +181 @@
+-        result['sequence_verification'] = qualification.verify_c_sequence(c_reports) if group == 'C' else qualification.verify_n_sequence(n_reports)
++        result['sequence_verification'] = qualification.verify_c_sequence(c_reports)
+@@ -237 +223 @@
+-        json.dump({'started_ns': time.perf_counter_ns(), 'groups': ['N', 'C'], 'maximum_episodes': 2, 'model_calls': 0,
++        json.dump({'started_ns': time.perf_counter_ns(), 'groups': ['C'], 'maximum_episodes': 1, 'model_calls': 0,
+@@ -244,7 +230,4 @@
+-    for group in ('N', 'C'):
+-        row = run_episode(group, frozen, transport, attach, qualification, driver)
+-        results.append({'group': group, **row})
+-        if not row['accepted_success']:
+-            break
+-    value = {'episodes': results, 'planned_episodes': 2, 'started_episodes': len(results),
+-             'model_calls': 0, 'API_calls': 0, 'passed': len(results) == 2 and all(row['accepted_success'] for row in results)}
++    row = run_episode('C', frozen, transport, attach, qualification, driver)
++    results.append({'group': 'C', **row})
++    value = {'episodes': results, 'planned_episodes': 1, 'started_episodes': 1, 'N_episodes': 0,
++             'model_calls': 0, 'API_calls': 0, 'passed': row['accepted_success']}

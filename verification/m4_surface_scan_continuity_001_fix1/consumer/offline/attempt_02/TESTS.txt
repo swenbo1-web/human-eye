@@ -1,0 +1,151 @@
+test_archive_failure_keeps_completed_turns_and_failed_episode (__main__.EpisodeEndToEnd.test_archive_failure_keeps_completed_turns_and_failed_episode) ... FAIL
+test_compact_three_turn_loop_and_archives (__main__.EpisodeEndToEnd.test_compact_three_turn_loop_and_archives) ... FAIL
+test_malformed_stream_originals_are_retained (__main__.EpisodeEndToEnd.test_malformed_stream_originals_are_retained) ... FAIL
+test_missing_final_keeps_slot_failed (__main__.EpisodeEndToEnd.test_missing_final_keeps_slot_failed) ... FAIL
+test_native_three_turn_loop_and_archives (__main__.EpisodeEndToEnd.test_native_three_turn_loop_and_archives) ... FAIL
+test_nonzero_exit_after_final_remains_failed (__main__.EpisodeEndToEnd.test_nonzero_exit_after_final_remains_failed) ... FAIL
+test_original_deadline_stops_consumer_and_later_turn (__main__.EpisodeEndToEnd.test_original_deadline_stops_consumer_and_later_turn) ... FAIL
+test_provider_disabled_path_never_launches_consumer (__main__.EpisodeEndToEnd.test_provider_disabled_path_never_launches_consumer) ... ok
+test_recovered_error_preserves_final_and_failure (__main__.EpisodeEndToEnd.test_recovered_error_preserves_final_and_failure) ... FAIL
+test_wrong_thread_never_falls_back_to_fresh_context (__main__.EpisodeEndToEnd.test_wrong_thread_never_falls_back_to_fresh_context) ... FAIL
+
+======================================================================
+FAIL: test_archive_failure_keeps_completed_turns_and_failed_episode (__main__.EpisodeEndToEnd.test_archive_failure_keeps_completed_turns_and_failed_episode)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 197, in test_archive_failure_keeps_completed_turns_and_failed_episode
+    self.assertEqual(result['counts'], {'completed': 3, 'failed': 0, 'not_run': 0})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 3, 'failed': 0, 'not_run': 0}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^            ^             ^
+
++ {'completed': 3, 'failed': 0, 'not_run': 0}
+?               ^            ^             ^
+
+
+======================================================================
+FAIL: test_compact_three_turn_loop_and_archives (__main__.EpisodeEndToEnd.test_compact_three_turn_loop_and_archives)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 138, in test_compact_three_turn_loop_and_archives
+    self.verify_success('C')
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 81, in verify_success
+    self.assertTrue(result['qualified_execution'], result['errors'])
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_malformed_stream_originals_are_retained (__main__.EpisodeEndToEnd.test_malformed_stream_originals_are_retained)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 181, in test_malformed_stream_originals_are_retained
+    folder, _, second = self.verify_failed_second('malformed')
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+======================================================================
+FAIL: test_missing_final_keeps_slot_failed (__main__.EpisodeEndToEnd.test_missing_final_keeps_slot_failed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 163, in test_missing_final_keeps_slot_failed
+    _, _, second = self.verify_failed_second('missing_final', 'C')
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+======================================================================
+FAIL: test_native_three_turn_loop_and_archives (__main__.EpisodeEndToEnd.test_native_three_turn_loop_and_archives)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 135, in test_native_three_turn_loop_and_archives
+    self.verify_success('N')
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 81, in verify_success
+    self.assertTrue(result['qualified_execution'], result['errors'])
+AssertionError: False is not true : []
+
+======================================================================
+FAIL: test_nonzero_exit_after_final_remains_failed (__main__.EpisodeEndToEnd.test_nonzero_exit_after_final_remains_failed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 176, in test_nonzero_exit_after_final_remains_failed
+    _, _, second = self.verify_failed_second('nonzero_exit', 'C')
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+======================================================================
+FAIL: test_original_deadline_stops_consumer_and_later_turn (__main__.EpisodeEndToEnd.test_original_deadline_stops_consumer_and_later_turn)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 171, in test_original_deadline_stops_consumer_and_later_turn
+    _, _, second = self.verify_failed_second('timeout', turn_budget_ns=1500 * 10**6)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+======================================================================
+FAIL: test_recovered_error_preserves_final_and_failure (__main__.EpisodeEndToEnd.test_recovered_error_preserves_final_and_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 154, in test_recovered_error_preserves_final_and_failure
+    folder, result, second = self.verify_failed_second('recovered_error')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+======================================================================
+FAIL: test_wrong_thread_never_falls_back_to_fresh_context (__main__.EpisodeEndToEnd.test_wrong_thread_never_falls_back_to_fresh_context)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 167, in test_wrong_thread_never_falls_back_to_fresh_context
+    _, _, second = self.verify_failed_second('wrong_thread')
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-single-pass-acquisition\hefe\verification\m4_surface_scan_continuity_001_fix1\consumer\test_episode_e2e.py", line 143, in verify_failed_second
+    self.assertEqual(result['counts'], {'completed': 1, 'failed': 1, 'not_run': 1})
+AssertionError: {'completed': 0, 'failed': 1, 'not_run': 2} != {'completed': 1, 'failed': 1, 'not_run': 1}
+- {'completed': 0, 'failed': 1, 'not_run': 2}
+?               ^                          ^
+
++ {'completed': 1, 'failed': 1, 'not_run': 1}
+?               ^                          ^
+
+
+----------------------------------------------------------------------
+Ran 10 tests in 3.514s
+
+FAILED (failures=9)

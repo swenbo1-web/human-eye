@@ -1,0 +1,100 @@
+{
+  "scope": "Fixed loop/coordinator integration with real local fake CLI and unchanged thin client against local synthetic owner; no Blender/model/provider operation",
+  "source_files": [
+    {
+      "path": "verification/m4_surface_scan_continuity_001_fix1/consumer/episode.py",
+      "bytes": 12405,
+      "sha256": "efe96f08d2986b7b176a9b3b1eb2ccbe17b2fb0fb3a078cc1d664b0e9da804cf"
+    },
+    {
+      "path": "verification/m4_surface_scan_continuity_001_fix1/consumer/fake_cli.py",
+      "bytes": 5094,
+      "sha256": "2fea58aeda2df78d1fad32fe6c74c8ea9cde91de59fbdfffbc62535f093c8b6b"
+    },
+    {
+      "path": "verification/m4_surface_scan_continuity_001_fix1/consumer/fake_owner.py",
+      "bytes": 6833,
+      "sha256": "9f3412410e14cb1b806cac4e4abd7a5683451533eb918cf04d56b54764621cd5"
+    },
+    {
+      "path": "verification/m4_surface_scan_continuity_001_fix1/consumer/test_episode_e2e.py",
+      "bytes": 13133,
+      "sha256": "81330ee15cc658f4bf043790ab8051e1ca45ad0cc7bcf304bc633d5fdd5c1c91"
+    },
+    {
+      "path": "verification/m4_surface_scan_continuity_001_fix1/runtime/consumer_transport.py",
+      "bytes": 23019,
+      "sha256": "df33f821fda0a973e9901db691b9ab9fafa1ed64313a51bd92b6544909ba9823"
+    },
+    {
+      "path": "verification/m4_surface_scan_continuity_001/cli/continuity_cli.py",
+      "bytes": 7484,
+      "sha256": "3c7404d134d449de217bed808757632c9db60088230b863e485f955ed6e3ad95"
+    },
+    {
+      "path": "verification/m4_surface_scan_compact_consumption_001/runtime/pack_quality.py",
+      "bytes": 30738,
+      "sha256": "02a4a587574f821a13ab4e3cb9098b875db01ebf67ca1e7133eb101f1b63b04d"
+    },
+    {
+      "path": "verification/native_plugin_complex_003/reused/stdio_attach.py",
+      "bytes": 3569,
+      "sha256": "210539d6a728fd63cc8f8b3925bb866e1929dce4a8e5db85a7ceece7c183cb00"
+    }
+  ],
+  "test_phases": [
+    {
+      "directory": "offline/attempt_01",
+      "result": {
+        "error": "TypeError: 'WindowsPath' object is not callable",
+        "cause": "Test class attribute run shadowed unittest.TestCase.run",
+        "correction": "Rename output-directory attribute to run_directory",
+        "scope": "Offline test harness, before any case or CLI fixture started",
+        "new_model_provider_Blender_calls": 0
+      }
+    },
+    {
+      "directory": "offline/attempt_02",
+      "result": {
+        "tests": 10,
+        "failures": 9,
+        "errors": 0,
+        "passed": false,
+        "wall_ns": 3514683100,
+        "new_provider_model_Blender_calls": 0,
+        "scope": "Actual consume loop/coordinator with synthetic CLI and local socket owner only"
+      }
+    },
+    {
+      "directory": "offline/attempt_03",
+      "result": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "passed": true,
+        "wall_ns": 10438280900,
+        "new_provider_model_Blender_calls": 0,
+        "scope": "Actual consume loop/coordinator with synthetic CLI and local socket owner only"
+      }
+    },
+    {
+      "directory": "offline/attempt_04",
+      "result": {
+        "scope": "Final archive exception guards, actual consumer/coordinator loops with local fixture only",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "passed": true,
+        "wall_ns": 2470592800,
+        "new_model_provider_Blender_calls": 0
+      }
+    }
+  ],
+  "final_coverage": "Complete 10-method suite in attempt_03, then 2 targeted archive guards in attempt_04, overlapping one method; 11 unique methods covered.",
+  "final_consume_transport_source_stable": "consume agent confirmed final source unchanged after its publication/deadline hardening; actual E2E uses this recorded source",
+  "synthetic_usage_aggregation": null,
+  "real_model_resume_verified": false,
+  "real_provider_usage_scope_verified": false,
+  "new_provider_model_Blender_calls": 0,
+  "original_actor_worker_stdio_or_product_changed": false
+}
