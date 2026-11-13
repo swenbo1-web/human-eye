@@ -1,0 +1,225 @@
+{
+  "cycle": "M4-ACTIVE-COVERAGE-001",
+  "root_plan_sha256": "0cf023abe16b8c5670f7890fb9f9fcd9243ea227178f597928068c98168aa328",
+  "status": "preregistered_before_algorithm_or_input_freeze",
+  "formal_pair_count": 20,
+  "formal_run_count": 40,
+  "sequence": [
+    {
+      "pair": 1,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 2,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 3,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 4,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 5,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 6,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 7,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 8,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 9,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 10,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 11,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 12,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 13,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 14,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 15,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 16,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 17,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 18,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    },
+    {
+      "pair": 19,
+      "order": [
+        "reference",
+        "optimized"
+      ]
+    },
+    {
+      "pair": 20,
+      "order": [
+        "optimized",
+        "reference"
+      ]
+    }
+  ],
+  "input_contract": {
+    "runtime_inputs": [
+      "complete scene geometry",
+      "six fully specified registered cameras",
+      "common full-frame raster evidence if used by planning"
+    ],
+    "administrator_answers_in_runtime": false,
+    "target_ids_or_count_in_runtime": false,
+    "oracle_imports_in_candidate": false,
+    "same_scene_cameras_precision_and_narrow_phase": true,
+    "new_planning_state_and_indices_per_run": true,
+    "shared_preexisting_images_are_immutable": true
+  },
+  "timing": {
+    "clock": "time.perf_counter_ns",
+    "start": "Before fresh geometry/camera JSON decoding and any run-specific ROI discovery, resident/index construction or candidate evaluation.",
+    "stop": "After ROI discovery, all registered-candidate coverage, selected-view state/bitset updates, final result encoding and output byte count.",
+    "included": [
+      "fresh common geometry/camera decoding",
+      "ROI discovery",
+      "per-run scene and projected index construction",
+      "candidate evaluation",
+      "shared directional projections",
+      "narrow-phase exact clipping",
+      "bitset coverage update and stopping",
+      "result serialization"
+    ],
+    "shared_setup_separate": [
+      "module imports",
+      "input file reads and frozen SHA verification",
+      "loading immutable already-generated raster buffers"
+    ],
+    "rendering": "All actual fixed-image generation is reported separately. Planning reuses original images and never renders while sorting candidates.",
+    "samples": "All 40 raw integer start/end/delta values are retained. No warm-up samples, retries, replacements, extra performance samples or timer-overhead subtraction.",
+    "timing_resolution": "Record get_clock_info metadata. A difference within two rounded clock-resolution units is unresolved. Other timing conclusions are descriptive observations with all pair differences and spread retained.",
+    "primary_median_comparison": "median(optimized full planning ns) <= median(reference full planning ns)",
+    "auxiliary": [
+      "each paired optimized/reference ratio",
+      "median paired ratio",
+      "ratio of medians",
+      "each paired ns difference",
+      "all raw values"
+    ]
+  },
+  "workload_gate": {
+    "precise_clip_reduction_minimum": "3/10",
+    "comparison": "1 - sum(optimized exact clip invocations)/sum(reference exact clip invocations)",
+    "same_counter_semantics": true,
+    "all_paired_semantic_results_equal": true,
+    "array_payload_bytes_are_not_RSS": true,
+    "all_preparation_and_render_cost_scopes_preserved": true
+  },
+  "correctness_controls": [
+    {
+      "name": "rename_and_object_order",
+      "seed": 704513,
+      "changes": "Rename all objects independently of geometry and reverse their enumeration. Compare geometry-normalized ROI/visibility/planning outputs."
+    },
+    {
+      "name": "vertex_and_triangle_enumeration",
+      "seed": 704513,
+      "changes": "Permute each mesh vertex list with exact index remapping and permute triangle enumeration while preserving winding. Compare geometry-normalized outputs."
+    },
+    {
+      "name": "off_center_positive_area_occlusion",
+      "description": "A front +Z rectangle has center and four corners visible while a small separate box blocks a strictly interior off-center region. Continuous complete visibility must be false. The input supplies full geometry and camera only."
+    }
+  ],
+  "execution_guard": {
+    "source_and_input_hashes_frozen_before_formal": true,
+    "exclusive_reservation_before_first_formal_pair": true,
+    "one_formal_batch_only": true,
+    "source_or_input_change": "Stop and retain all entered and not-run slots. No replacement.",
+    "ordinary_pure_algorithm_failure": "Record the failed scheduled run and retain the fixed denominator. No successful subset can pass the gate.",
+    "no_new_model_provider_Blender_API_calls": true
+  }
+}
