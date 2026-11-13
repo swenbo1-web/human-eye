@@ -1,0 +1,84 @@
+{
+  "summary": "Inspected all 28 objects and all 6 registered cameras. Exactly 6 independent meshes satisfy the rectangular-panel definition: 5 covered, 1 uncovered within this finite camera pool.",
+  "computation": "Validated distinct vertices, nondegeneracy, coplanarity, rectangular boundaries, and consistent triangle winding using exact rational arithmetic. All panels are front-facing and wholly inside every camera viewport. Tested positive-area occluder shadows by exact triangle projection and clipping; zero-area tangencies do not count as occlusion. Pixel counts come from actual session buffers, counting unique target-owned boundary pixels at owner changes with squared RGB contrast >= 576. Covered rows provide one sufficient observation each.",
+  "panels": [
+    {
+      "object": "Obj_001",
+      "status": "covered",
+      "views": [
+        {
+          "view": "LEFT",
+          "ref": "image-03",
+          "surface_pixels": 792,
+          "boundary_pixels": 110
+        }
+      ],
+      "reason": "Complete and readable: front-facing, wholly in frame, no positive-area occlusion; both pixel thresholds pass."
+    },
+    {
+      "object": "Obj_002",
+      "status": "covered",
+      "views": [
+        {
+          "view": "TOP",
+          "ref": "image-02",
+          "surface_pixels": 676,
+          "boundary_pixels": 100
+        }
+      ],
+      "reason": "Complete and readable: front-facing, wholly in frame, no positive-area occlusion; both pixel thresholds pass."
+    },
+    {
+      "object": "Obj_003",
+      "status": "covered",
+      "views": [
+        {
+          "view": "LEFT",
+          "ref": "image-03",
+          "surface_pixels": 759,
+          "boundary_pixels": 108
+        }
+      ],
+      "reason": "Complete and readable: front-facing, wholly in frame, no positive-area occlusion; both pixel thresholds pass."
+    },
+    {
+      "object": "Obj_004",
+      "status": "covered",
+      "views": [
+        {
+          "view": "SCENE",
+          "ref": "image-01",
+          "surface_pixels": 340,
+          "boundary_pixels": 72
+        }
+      ],
+      "reason": "Complete and readable: front-facing, wholly in frame, no positive-area occlusion; both pixel thresholds pass."
+    },
+    {
+      "object": "Obj_005",
+      "status": "covered",
+      "views": [
+        {
+          "view": "SCENE",
+          "ref": "image-01",
+          "surface_pixels": 340,
+          "boundary_pixels": 72
+        }
+      ],
+      "reason": "SCENE is complete and readable, with no positive-area occlusion and both pixel thresholds passing. Every other registered view is occluded."
+    },
+    {
+      "object": "Obj_006",
+      "status": "uncovered",
+      "views": [
+        {"view": "SCENE", "ref": "image-01", "occluder": "Obj_023"},
+        {"view": "TOP", "ref": "image-02", "occluder": "Obj_024"},
+        {"view": "LEFT", "ref": "image-03", "occluder": "Obj_025"},
+        {"view": "RIGHT", "ref": "image-04", "occluder": "Obj_026"},
+        {"view": "FRONT", "ref": "image-05", "occluder": "Obj_027"},
+        {"view": "BACK", "ref": "image-06", "occluder": "Obj_028"}
+      ],
+      "reason": "Positive-area occlusion in every registered camera; actual surface and qualifying boundary counts are both 0 in all six buffers. No complete readable observation exists within this finite pool; views outside it remain unknown."
+    }
+  ]
+}
