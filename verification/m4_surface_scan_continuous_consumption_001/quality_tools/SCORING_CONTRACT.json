@@ -1,0 +1,66 @@
+{
+  "schema": "continuous_quality_contract_v1",
+  "cycle": "M4-SURFACE-SCAN-CONTINUOUS-CONSUMPTION-001",
+  "frozen_before_formal_consumers": true,
+  "quality_before_cost": true,
+  "denominators": {
+    "episodes": 6,
+    "turns_per_episode": 3,
+    "turns": 18,
+    "all_pairs_per_turn": 276,
+    "positive_facts_by_turn": [71, 71, 72],
+    "positive_facts_per_episode": 214,
+    "positive_facts_all_episodes": 1284
+  },
+  "turn_order": ["BASE", "REPEAT", "EDIT"],
+  "truth_by_turn": ["BASE_TRUTH.json", "BASE_TRUTH.json", "EDIT_TRUTH.json"],
+  "snapshot_by_turn": ["BASE_SNAPSHOT.json", "BASE_SNAPSHOT.json", "EDIT_SNAPSHOT.json"],
+  "prompt_by_turn": ["PROMPT_T1.txt", "PROMPT_T2_T3.txt", "PROMPT_T2_T3.txt"],
+  "base_contract": "BASE_SCORING_CONTRACT.json",
+  "reused_scorer": "score_answer.py",
+  "precedence": "This continuous contract supplies the fixed denominators and current-list/context/evidence rules. Base numerical, label, distance presentation, error priority and completeness rules apply to each expanded current answer.",
+  "distance_tolerance_mm": "0.000500001",
+  "primary_current_list": {
+    "dimension": "content correctness, presentation and completeness",
+    "requires": "Each turn establishes its full current matching-pair list, distances and explicit completeness. Score the exact current truth for every turn independently.",
+    "prior_reference_only": "incomplete",
+    "delta_only": "incomplete",
+    "wrong_current_facts": "incorrect",
+    "same_standard_all_answers": true
+  },
+  "auxiliary_context_reconstruction": {
+    "dimension": "separate auxiliary content result",
+    "eligible": "An explicit reference to an earlier correct complete answer in this same episode, with all current additions, removals and distance changes, can be expanded and scored against current truth.",
+    "implicit_reference_or_missing_changes": "unresolved or incomplete",
+    "must_not_replace_primary": true
+  },
+  "current_state_basis": {
+    "dimension": "independent evidence result",
+    "eligible": "Actual current reads or current version/dependency checks supporting reuse of previous results.",
+    "insufficient": "Previous answer text alone, without current state evidence, cannot support a claim of a complete current check.",
+    "administrative_QA": "Used only for input and execution binding. It cannot serve as consumer current-state evidence.",
+    "no_fixed_tool_count_or_algorithm": true
+  },
+  "execution": {
+    "dimension": "independent strict execution result",
+    "episode_authority": "New outer FINAL_TIMING covering input checks, owner startup, all turns, EDIT, close, originals, post-readback and OUTER_RESULT write/close.",
+    "turn_authority": "Actual consumer FINAL_TIMING, errors, final, public thread event and explicit resume binding.",
+    "failures_retained": "error/turn.failed, missing final, thread discontinuity, unexpected tool, original deadline, close and archive failures remain failures even when later content is correct.",
+    "failed_episode_does_not_erase_turn_content": true,
+    "not_run_slots_preserved": true,
+    "usage_failure": "Existing consumer parser failure remains visible. Missing or ambiguous usage prevents a later token gate and does not change separate content judgment."
+  },
+  "judgment": {
+    "implementation_scores_content": false,
+    "independent_root_reviews_exact_final_and_business_evidence": true,
+    "free_text_unparsed_requires_review": true,
+    "reused_parser_is_regression_aid": true,
+    "no_group_winner_or_adoption_before_quality_seal": true
+  },
+  "public_projection": {
+    "order": "Anonymous episode ID lexicographic order, original internal turn order retained.",
+    "preserve": "Exact confirmed final bytes, original error/message bodies, complete owner attempts and CLI tool events, native code/stdout and opaque JSON-looking strings.",
+    "remove": "Only identified administrative envelope group, timing, usage, argv, paths and global thread identities. Known global context IDs have episode-local stable aliases.",
+    "limit": "Tool content and preserved error messages can reveal route. This package does not claim perfect blindness."
+  }
+}
