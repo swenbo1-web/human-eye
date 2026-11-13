@@ -1,0 +1,115 @@
+{
+  "camera": {
+    "path": "inputs/CAMERAS.json",
+    "scope": "Exact source bytes, including original seed provenance metadata.",
+    "sha256": "3db530d292c0e300792173b793d4ed29506d3ed5bd8ec8649ef5a2de406637c6"
+  },
+  "candidate_results_seen": false,
+  "controls": {
+    "hole_grid4": {
+      "counts": {
+        "objects": 1,
+        "triangles": 30,
+        "vertices": 25
+      },
+      "expected_region_count": 0,
+      "path": "inputs/control_hole_grid4.json",
+      "removed_internal_cell": [
+        1,
+        1
+      ],
+      "sha256": "5e15071e97b5cda34db0ef810c18978b4e58662534ab721c9efa8961b4e1eb91"
+    },
+    "rotated_grid4": {
+      "counts": {
+        "objects": 1,
+        "triangles": 32,
+        "vertices": 25
+      },
+      "expected_region_count": 1,
+      "path": "inputs/control_rotated_grid4.json",
+      "removed_internal_cell": null,
+      "sha256": "010978dbaaab9262cf7d380fe92502d0d743873ed31567895de49f99cb0cbfa5"
+    }
+  },
+  "expected": {
+    "path": "proof/EXPECTED.json",
+    "sha256": "d8a2bf9f8657d6b8772df8b8e75f037fb157e296b647cea66cecd1b1f77c354a"
+  },
+  "fixed_benchmark_scene": "grid16_permuted_alternating",
+  "fixed_observation_scenes": [
+    "grid4_permuted_alternating",
+    "grid16_permuted_alternating"
+  ],
+  "new_discovery_coverage_renderer_model_calls": 0,
+  "proof": {
+    "path": "proof/PROOF.json",
+    "sha256": "e9bbee1896133b1580839f9ad10c504865749a144a3ab4fe42c91326fc02c92c"
+  },
+  "scenes": {
+    "grid16_permuted_alternating": {
+      "counts": {
+        "objects": 28,
+        "triangles": 3336,
+        "vertices": 1910
+      },
+      "path": "inputs/scene_grid16_permuted_alternating.json",
+      "sha256": "a1996369aa5808dca7f049a2701ae9b9d0d64e7890879618e8ee44bad6cb3fdc"
+    },
+    "grid16_uniform": {
+      "counts": {
+        "objects": 28,
+        "triangles": 3336,
+        "vertices": 1910
+      },
+      "path": "inputs/scene_grid16_uniform.json",
+      "sha256": "0e0847ad5c921852b57a241baf8dcf469a4ba8feaac551f4859f15fe775169b5"
+    },
+    "grid4_permuted_alternating": {
+      "counts": {
+        "objects": 28,
+        "triangles": 456,
+        "vertices": 326
+      },
+      "path": "inputs/scene_grid4_permuted_alternating.json",
+      "sha256": "e8d71ce88811a17d9ecda6ae6de2274f73214f6eec33117a64e3b3e34a419aa3"
+    },
+    "grid4_uniform": {
+      "counts": {
+        "objects": 28,
+        "triangles": 456,
+        "vertices": 326
+      },
+      "path": "inputs/scene_grid4_uniform.json",
+      "sha256": "b350a0c8dfa623e059581f7262b7a89f8a7b856643cc819010f5d04a150477ad"
+    },
+    "original": {
+      "counts": {
+        "objects": 28,
+        "triangles": 276,
+        "vertices": 200
+      },
+      "path": "inputs/scene_original.json",
+      "sha256": "491aa0fc1cd8c52bc04bf2d12b1c43c7898c7487a61e3d0ef3dcaf814f54d617"
+    }
+  },
+  "schema": "triangulation-invariant-discovery-001-input-manifest-v1",
+  "source_code_sha256": "3a3f149c825a7a5b1a6fa88287aaf00072fb6b99a5252b719919a121161d588e",
+  "sources_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\oracle\\ADMIN_ORACLE.json": "b82d73c0a93166c26d4696c4588250f891b561622e7d74d7389356118e353f53",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\oracle\\CAMERA_CHECK.json": "636c1d9627bd65bf243a0307cda0e9ee3155d9be0e12037bb527d5914417e796",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_001\\oracle\\PUBLIC_SUMMARY.json": "a129d45ab24fc8953a8f14a3dbea66b62c386a2add5b272938d49efd20af0a49",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\CAMERAS.json": "3db530d292c0e300792173b793d4ed29506d3ed5bd8ec8649ef5a2de406637c6",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\inputs\\SCENE_GEOMETRY_RATIONAL.json": "491aa0fc1cd8c52bc04bf2d12b1c43c7898c7487a61e3d0ef3dcaf814f54d617",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_003\\runs\\main_p01_A\\RESULT.json": "724d5f3a0a153ccfb4ee6f09fd6e931cb595baa76f8b150170f73ad66f9b14b0"
+  },
+  "transform_rules": {
+    "alternation": "other diagonal exactly when(i+j)odd",
+    "box_rule": "All22 other object dictionaries unchanged",
+    "grid": "q0+u*i/n+v*j/n; all(n+1)^2 vertices retained",
+    "hole": "Remove exactly internal cell(1,1) of4x4, retain remaining mesh points",
+    "triangle_permutation": "odd original face positions followed by even positions; rotate each face cyclically by new_position%3",
+    "uniform_diagonal": "lower-left to upper-right",
+    "vertex_permutation": "reverse full vertex list, remap all indices"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "triangulation-invariant-discovery-001-benchmark-protocol-v1",
+  "scene": "inputs/scene_grid16_permuted_alternating.json",
+  "pairs": [["reference", "candidate"], ["candidate", "reference"], ["reference", "candidate"], ["candidate", "reference"], ["reference", "candidate"]],
+  "pair_count": 5,
+  "trial_count": 10,
+  "trial_scope": "before scene/camera read+hash+JSON, Fraction geometry and scene identity, discovery, through index return",
+  "occlusion": "Both variants use the unchanged old optimized occlusion path",
+  "fresh_input_per_trial": true,
+  "render_calls_in_benchmark": 0,
+  "source_binding_and_module_import_scope": "Shared setup recorded separately, outside measured trials",
+  "selection": {
+    "same_correctness_and_new_pixels_required": true,
+    "documented_actual_Fraction_work_reduction_required": true,
+    "median_candidate_over_reference_maximum": 1,
+    "candidate_total_ns_at_most_reference_total_ns": true,
+    "otherwise": "retain the clear reference implementation",
+    "minimum_percentage_improvement": null,
+    "additional_timing_samples": 0,
+    "statistical_significance_claim": false
+  },
+  "observations": {
+    "chains": [["grid4_permuted_alternating", "reference"], ["grid4_permuted_alternating", "candidate"], ["grid16_permuted_alternating", "reference"], ["grid16_permuted_alternating", "candidate"]],
+    "fresh_application_cache": true,
+    "expected_new_renders": 8,
+    "global_new_render_hard_cap": 16,
+    "failed_intents_count": true,
+    "selection": "unchanged CoverageState.next_view, geometric gain restricted to actual uncovered state after readable-pixel feedback",
+    "extra_views": "record actual pixel shortfalls and their remaining unresolved targets, preserving finite-pool unknowns",
+    "independent_pixel_recount": "Integer Python owner counts and sets of target-owned endpoints of horizontal/vertical owner-change pairs with squared RGB contrast >=576",
+    "readability_thresholds": {"surface_pixels": 16, "boundary_pixels": 4, "RGB_contrast": 24},
+    "quality_comparison": "Reference/candidate ROI geometry and 36 classifications, actual pixel counts, selected views, delivered incremental/final coverage and finite-pool unresolved state",
+    "image_comparison": "Compare PNG bytes and raw RGB/depth/owner hashes for each same-scene same-view pair; retain any actual triangulation raster differences",
+    "timing_scope": "Single-chain descriptive time includes real rendering, production pixels, independent recount and publication"
+  },
+  "RSS": "unmeasured; JSON and array bytes are separate payload metrics",
+  "new_model_CLI_Blender_provider_calls": 0
+}

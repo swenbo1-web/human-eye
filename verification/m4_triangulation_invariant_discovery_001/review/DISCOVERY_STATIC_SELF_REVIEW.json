@@ -1,0 +1,60 @@
+{
+  "schema": "triangulation-invariant-discovery-001-static-self-review-v1",
+  "review_type": "Source-owner follow-up mathematical and integration review",
+  "status": "no_concrete_in_domain_bug_identified_by_static_review",
+  "source_changed": false,
+  "candidate_functions_executed": 0,
+  "correctness_samples_executed": 0,
+  "timing_samples_executed": 0,
+  "renders_executed": 0,
+  "source_sha256": {
+    "discovery.py": "d048852ffaa114d67eccc0b42451eebef7e00bbe8760d108574ae9eaa5439fe7",
+    "engineering.py": "739648f76fe603b4857dcf30c73f06c10a98e6af32207c1daa091afa19017583",
+    "build_inputs_and_prove.py": "3a3f149c825a7a5b1a6fa88287aaf00072fb6b99a5252b719919a121161d588e",
+    "proof/EXPECTED.json": "d8a2bf9f8657d6b8772df8b8e75f037fb157e296b647cea66cecd1b1f77c354a",
+    "proof/PROOF.json": "e9bbee1896133b1580839f9ad10c504865749a144a3ab4fe42c91326fc02c92c",
+    "INPUT_MANIFEST.json": "ef2af35a1bba255157a7e6f122377df86de0fc599b4f2d97f9e893bebe17db08",
+    "BENCHMARK_PROTOCOL.json": "607f005d4f74e61d6102b174ec9894a8d3e7380fd3e085cf502eb016f9241022",
+    "../m4_active_coverage_001/coverage.py": "2561ecaf2f2df98ec7c03ed48cb95dd08c34f10ce73c1e9ecc2e32f31c41daf4"
+  },
+  "checks": [
+    {
+      "topic": "exact topology and one boundary",
+      "finding": "One incidence table records source-index directed edges. Internal pairs must reverse, face BFS must connect all faces, and a successor walk must consume every boundary edge in one cycle. Multiple rings and holes are rejected."
+    },
+    {
+      "topic": "rectangle filling",
+      "finding": "Opposite internal edges cancel as an oriented planar triangle chain. The remaining cycle simplifies only along positive collinear runs and equals the exact rectangle boundary. Every triangle is positive in one common plane. Off-edge triangle coverage multiplicity therefore equals that boundary winding, which is one inside and zero outside. Positive-area overlap or a gap would contradict this identity. Vertex containment and exact area equality add explicit consistency checks."
+    },
+    {
+      "topic": "reference and scalar candidate",
+      "finding": "All referenced vertices have already passed the exact plane equation. Each triangle normal is then parallel to its nonzero seed normal N. For a component k with N[k] nonzero, the selected 2D determinant is exactly that normal component. Its zero test, sign and area sum are equivalent to the vector tests used by the reference."
+    },
+    {
+      "topic": "representation invariance",
+      "finding": "Positive collinear boundary subdivisions disappear in one local-turn pass. Directed corners are rotated to their lexicographic minimum and hashed with the original fingerprint. Their full u-cross-v normal preserves old front magnitude. Source triangle_indices retain range(len(faces)). Names and source enumeration are metadata outside ROI hashing."
+    },
+    {
+      "topic": "same optimized coverage body",
+      "finding": "The old source SHA is checked before import. FunctionType receives legacy.build_index.__code__ with a private globals copy. Only the already parsed geometry and already discovered region suppliers are rebound, and variant is explicitly optimized. The original module globals and helper implementations remain unchanged."
+    },
+    {
+      "topic": "single parse and complete timing",
+      "finding": "The driver reads and hashes inputs, calls parse_geometry once, regions_from_objects once and build_index_from_parsed once. Its authoritative closed timestamp follows index return. Post-return diagnostics and qualification are outside that trial window. Shared module setup is recorded separately."
+    },
+    {
+      "topic": "independent input proof",
+      "finding": "The proof source uses the accepted original orthogonal edge basis to recover actual emitted grid coordinates and checks exact per-cell pairs, areas and shared edges. It imports no candidate discovery. The original, grid4, grid16, alternating/permuted, rational rotation and internal-hole inputs are represented in the frozen input manifest."
+    },
+    {
+      "topic": "pixel and observation wiring",
+      "finding": "The driver projects canonical four corners, uses the original production readability primitive with actual subdivided meshes, retains thresholds 16/4/24, and independently recounts surface and contrasting owner-boundary pixels. State updates read newly generated PNG receipts with current scene and camera identities."
+    }
+  ],
+  "limitations": [
+    "This follow-up review is authored by the discovery source owner. Root-controlled execution and other-agent review provide separate evidence.",
+    "The proof covers a whole-object exact planar rectangle with indexed edge adjacency. Other source domains retain their existing scope boundaries.",
+    "Prepared inputs have been inspected as source and JSON records. This record does not report a newly executed correctness matrix or empirical performance result.",
+    "Arithmetic counters describe source-level operations. Recorded bit lengths cover examined input coordinates and accepted final sums. Intermediate maxima, allocator use and RSS remain unmeasured."
+  ]
+}
