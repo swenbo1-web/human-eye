@@ -1,0 +1,267 @@
+{
+  "candidate_commit": "b638c499c049604902415965f500f50a9947d34f",
+  "scope": "Independent static AST/source audit and mathematical review; no candidate import or business execution.",
+  "check_count": 39,
+  "passed": 39,
+  "failed": [],
+  "checks": [
+    {
+      "name": "candidate_source_sha",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "old_core_sha",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "engineering_source_sha",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "parse_uses_geometry_once",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "top_entry_parses_once",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "top_entry_builds_from_parsed_once",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "parsed_entry_discovers_once",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "parsed_entry_covers_once",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "parsed_entry_no_legacy_geometry",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "regions_from_objects:explicit_reference_default",
+      "passed": true,
+      "evidence": {
+        "discovery_variant": "reference",
+        "stats": null
+      }
+    },
+    {
+      "name": "build_from_parsed:explicit_reference_default",
+      "passed": true,
+      "evidence": {
+        "discovery_variant": "reference",
+        "stats": null
+      }
+    },
+    {
+      "name": "build_index:explicit_reference_default",
+      "passed": true,
+      "evidence": {
+        "discovery_variant": "reference",
+        "stats": null
+      }
+    },
+    {
+      "name": "private_globals_only_geometry_regions",
+      "passed": true,
+      "evidence": {
+        "geometry": "lambda unused_scene: (objects, triangles, scene_identity)",
+        "regions_from_objects": "lambda unused_objects: regions"
+      }
+    },
+    {
+      "name": "private_globals_copied",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "same_old_code_ctor",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "same_old_defaults_closure",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "one_optimized_entry",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "entry_receives_no_scene_to_reparse",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "legacy_geometry_and_regions_sites_single",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "reference_counter:area_rational_multiply_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "reference_counter:area_rational_subtract_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "reference_counter:area_rational_add_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_counter:area_rational_multiply_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_counter:area_rational_subtract_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_counter:area_rational_add_calls",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "reference_cross_dot_once_per_face",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_no_full_cross_or_dot_in_area",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "cyclic_axis_pairs",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_sign_relative_to_plane",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_nonzero_axis_selected",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "topology_precedes_selected_area_then_boundary",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "full_source_face_indices_preserved",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "same_ROI_fingerprint",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "candidate_expected_area_scalar",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "reference_expected_area_vector",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "input_domain_not_rectangle_errors_rejected",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "global_ROI_sort_present",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "work_created_without_stats_gate",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "engineering_explicit_parse_and_discover",
+      "passed": true,
+      "evidence": null
+    }
+  ],
+  "reference_area_counter_increments": {
+    "face_orientation_visits": 1,
+    "full_area_cross_products": 1,
+    "orientation_vector_components_constructed": 3,
+    "area_rational_multiply_calls": 9,
+    "area_rational_subtract_calls": 9,
+    "orientation_dot_products": 1,
+    "area_rational_add_calls": 6,
+    "area_component_additions": 3
+  },
+  "candidate_area_counter_increments": {
+    "face_orientation_visits": 1,
+    "projected_area_determinants": 1,
+    "area_rational_multiply_calls": 2,
+    "area_rational_subtract_calls": 5,
+    "area_component_additions": 1,
+    "area_rational_add_calls": 1
+  },
+  "manual_findings": [
+    {
+      "topic": "rectangle_tiling",
+      "verdict": "valid_in_declared_domain",
+      "basis": "Internal directed index edges cancel. Every accepted coplanar triangle has the same positive orientation. The one simplified boundary is exactly the rectangle. Thus interior coverage multiplicity is its winding number (one inside, zero outside), excluding positive-area holes/overlaps. Connectivity and boundary-cycle constraints additionally reject disconnected/holed topology."
+    },
+    {
+      "topic": "2D_component_equivalence",
+      "verdict": "valid",
+      "basis": "After exact coplanarity each triangle normal is parallel to the nonzero seed normal. Selecting any nonzero seed component preserves zero/nonzero and relative orientation. Summing that component equals the corresponding full-vector area criterion because all summands and the boundary normal lie on the same one-dimensional normal subspace."
+    },
+    {
+      "topic": "boundary_identity",
+      "verdict": "valid",
+      "basis": "Only same-direction collinear internal boundary points are removed; no corner or backtracking point is removed. Lexicographic rotation preserves directed winding. ROI hash and boundary normal use the same canonical quad as the old contract. Geometry identity still changes with real mesh representation."
+    },
+    {
+      "topic": "complexity",
+      "verdict": "bounded_claim",
+      "basis": "Per-object incidence/connectivity/boundary and area are expected O(V+F+B) dictionary/set work. The final R-region sort is O(R log R). Fraction bit costs and old geometry/index sorting remain; no linear whole-index guarantee."
+    },
+    {
+      "topic": "cost_instrumentation",
+      "verdict": "disclose_not_block",
+      "basis": "work dict increments, bit-length collection and clocks remain even when stats=None. Reference/candidate execute different instrumentation in the area loop. The measured wrapper includes this cost; observed wall-time gain cannot be uniquely attributed to arithmetic reduction. This is a concrete productization simplification opportunity, not an error in retained measurements."
+    }
+  ],
+  "candidate_function_calls": 0,
+  "new_model_CLI_actor_Blender_raster_calls": 0,
+  "author_matrix_or_timing_reruns": 0,
+  "offline_static_parser_runs": 2,
+  "parser_note": "Both static runs passed; second made the control-flow ordering assertion inspect direct Try/If execution structure instead of AST traversal ordering.",
+  "AL_binding": "own child handle bound; parent_read_only"
+}
