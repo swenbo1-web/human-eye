@@ -1,0 +1,79 @@
+{
+  "recommendation_only": true,
+  "formal_driver_modified": false,
+  "cases": [
+    {
+      "case": "recorded_success_old_result_binding_fault",
+      "source_kind": "recorded_success_with_original_binding_reason",
+      "binding_reason": "CLI_result_differs_from_owner",
+      "owner_isError": false,
+      "CLI_status": "completed",
+      "should_stop": true,
+      "expected": true
+    },
+    {
+      "case": "recorded_success_request_binding_fault",
+      "source_kind": "synthetic_binding_reason_on_recorded_success",
+      "binding_reason": "CLI_request_differs_from_owner",
+      "owner_isError": false,
+      "CLI_status": "completed",
+      "should_stop": true,
+      "expected": true
+    },
+    {
+      "case": "fixed_success_without_binding_fault",
+      "source_kind": "recorded_success_after_narrow_compatibility",
+      "binding_reason": null,
+      "owner_isError": false,
+      "CLI_status": "completed",
+      "should_stop": false,
+      "expected": false
+    },
+    {
+      "case": "ordinary_answer_error_without_binding_fault",
+      "source_kind": "synthetic_content_error_reason",
+      "binding_reason": "incorrect_answer",
+      "owner_isError": false,
+      "CLI_status": "completed",
+      "should_stop": false,
+      "expected": false
+    },
+    {
+      "case": "CLI_failed_is_not_explicit_success",
+      "source_kind": "synthetic_failed_status",
+      "binding_reason": "CLI_result_differs_from_owner",
+      "owner_isError": false,
+      "CLI_status": "failed",
+      "should_stop": false,
+      "expected": false
+    },
+    {
+      "case": "P1_3_actual_tool_error_does_not_stop_batch",
+      "source_kind": "recorded_historical_tool_error",
+      "binding_reason": "CLI_result_differs_from_owner",
+      "owner_isError": true,
+      "CLI_status": "failed",
+      "should_stop": false,
+      "expected": false
+    },
+    {
+      "case": "P3_3_actual_tool_error_does_not_stop_batch",
+      "source_kind": "recorded_historical_tool_error",
+      "binding_reason": "CLI_result_differs_from_owner",
+      "owner_isError": true,
+      "CLI_status": "failed",
+      "should_stop": false,
+      "expected": false
+    },
+    {
+      "case": "P3_4_actual_tool_error_does_not_stop_batch",
+      "source_kind": "recorded_historical_tool_error",
+      "binding_reason": "CLI_result_differs_from_owner",
+      "owner_isError": true,
+      "CLI_status": "failed",
+      "should_stop": false,
+      "expected": false
+    }
+  ],
+  "scope": "A future frozen contract may map true to an existing stop_reason after sole cleanup. No rescheduling, correction or replacement is implemented."
+}

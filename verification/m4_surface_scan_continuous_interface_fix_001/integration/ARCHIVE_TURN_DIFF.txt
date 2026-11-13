@@ -1,0 +1,12 @@
+--- FIX1/archive_turn
++++ INTERFACE_FIX/archive_turn
+@@ -16,7 +16,8 @@
+             item = public['item']
+             if request['params']['name'] != item['tool'] or packer.encoded(request['params']['arguments']) != packer.encoded(item['arguments']):
+                 binding_errors.append({'attempt': owner['attempt'], 'reason': 'CLI_request_differs_from_owner'})
+-            if packer.encoded(response.get('result')) != packer.encoded(item.get('result')):
++            if (packer.encoded(response.get('result')) != packer.encoded(item.get('result'))
++                    and not compatibility.successful_result_matches(response, item)):
+                 binding_errors.append({'attempt': owner['attempt'], 'reason': 'CLI_result_differs_from_owner'})
+         except (OSError, ValueError, KeyError, TypeError) as error:
+             binding_errors.append({'attempt': owner['attempt'], 'reason': 'owner_original_unreadable', 'error': repr(error)})
