@@ -1,0 +1,575 @@
+{
+  "scope": "Independent offline AST-only snapshot adapter probes plus actual capture/resource/source-byte binding; no whole author checker, product, Blender, model or API execution.",
+  "parent_task": "3a93462f-7821-488b-89b9-ca8d2c0bed0e",
+  "parent_revision": 1,
+  "parent_write": 620,
+  "own_AL_assignment": "existing child assignment is stale; no parent handle borrowed or task updated",
+  "candidate_source_report": {
+    "passed": true,
+    "schema": "owner_complete_geometry_projection",
+    "objects": 24,
+    "vertices": 530,
+    "faces": 978,
+    "observed_geometry_sha256": "3e8221fb17d07509f244af95268b85acdbaf9fcc3c1edca547d054bac8dbe5ee",
+    "missing_rich_top_fields": [
+      "blend_filepath",
+      "blender_version",
+      "coordinate_frame",
+      "counts",
+      "frame_current",
+      "local_coordinate_unit",
+      "pid",
+      "scale_length",
+      "scene_custom_properties",
+      "schema",
+      "unit",
+      "unit_length",
+      "unit_system",
+      "world_vertex_evaluation"
+    ],
+    "missing_rich_object_fields": [
+      "animation_present",
+      "constraints",
+      "edges",
+      "evaluated_bound_box_local",
+      "hidden_render",
+      "hidden_viewport",
+      "location",
+      "material_names",
+      "matrix_basis",
+      "matrix_local",
+      "mesh_attributes",
+      "mesh_custom_properties",
+      "mesh_name",
+      "modifiers",
+      "object_custom_properties",
+      "parent",
+      "polygons",
+      "rotation_mode",
+      "rotation_quaternion",
+      "scale",
+      "shape_keys_present",
+      "topology",
+      "triangles",
+      "type",
+      "vertices_world"
+    ],
+    "rich_source_metadata_verified": false,
+    "scope": "all recorded geometry and units equal the frozen reference; absent provenance fields remain unproved"
+  },
+  "tests": [
+    {
+      "label": "actual_INITIAL_geometry_projection",
+      "passed": true,
+      "accepted": true,
+      "expected_accept": true,
+      "error": null
+    },
+    {
+      "label": "actual_FINAL_geometry_projection",
+      "passed": true,
+      "accepted": true,
+      "expected_accept": true,
+      "error": null
+    },
+    {
+      "label": "frozen_rich_reference",
+      "passed": true,
+      "accepted": true,
+      "expected_accept": true,
+      "error": null
+    },
+    {
+      "label": "INITIAL_FINAL_exact_geometry_bytes",
+      "passed": true
+    },
+    {
+      "label": "original_rich_rejection_independently_reproduced",
+      "passed": true
+    },
+    {
+      "label": "unit_bool",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_float"
+      }
+    },
+    {
+      "label": "unit_integer",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_float"
+      }
+    },
+    {
+      "label": "unit_changed",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_matches_reference"
+      }
+    },
+    {
+      "label": "unit_NaN",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_matches_reference"
+      }
+    },
+    {
+      "label": "unit_infinity",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_matches_reference"
+      }
+    },
+    {
+      "label": "unit_string",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "observed_unit_float"
+      }
+    },
+    {
+      "label": "unit_missing",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "actual geometry or source fields differ from qualified state"
+      }
+    },
+    {
+      "label": "missing_object",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_24_object_names"
+      }
+    },
+    {
+      "label": "duplicate_name",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_24_object_names"
+      }
+    },
+    {
+      "label": "name_changed",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_24_object_names"
+      }
+    },
+    {
+      "label": "object_order_reversed",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_24_object_names"
+      }
+    },
+    {
+      "label": "missing_object_field",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "explicit_geometry_projection_fields"
+      }
+    },
+    {
+      "label": "unexpected_narrow_field",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "explicit_geometry_projection_fields"
+      }
+    },
+    {
+      "label": "unexpected_top_field",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "actual geometry or source fields differ from qualified state"
+      }
+    },
+    {
+      "label": "vertex_changed",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:vertices_local"
+      }
+    },
+    {
+      "label": "vertex_NaN",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    },
+    {
+      "label": "vertex_infinity",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: inf"
+      }
+    },
+    {
+      "label": "vertex_string",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:vertices_local"
+      }
+    },
+    {
+      "label": "vertex_wrong_dimension",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:vertices_local"
+      }
+    },
+    {
+      "label": "face_missing",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:faces"
+      }
+    },
+    {
+      "label": "face_invalid_index",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:faces"
+      }
+    },
+    {
+      "label": "face_integer_to_float",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:faces"
+      }
+    },
+    {
+      "label": "face_integer_to_bool",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:faces"
+      }
+    },
+    {
+      "label": "face_wrong_dimension",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:faces"
+      }
+    },
+    {
+      "label": "matrix_translation",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:matrix_world"
+      }
+    },
+    {
+      "label": "matrix_NaN",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      }
+    },
+    {
+      "label": "matrix_infinity",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: inf"
+      }
+    },
+    {
+      "label": "matrix_float_to_bool",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:matrix_world"
+      }
+    },
+    {
+      "label": "matrix_wrong_dimension",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "complete_geometry_matches:Obj_001:matrix_world"
+      }
+    },
+    {
+      "label": "rich_parent_changed",
+      "passed": true,
+      "accepted": false,
+      "expected_accept": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "actual geometry or source fields differ from qualified state"
+      }
+    },
+    {
+      "label": "capture_single_prefixed_envelope",
+      "passed": true
+    },
+    {
+      "label": "actual_delta_capture_protocol",
+      "passed": true
+    },
+    {
+      "label": "capture_scope_and_source_status",
+      "passed": true
+    },
+    {
+      "label": "capture_units_frame_and_same_thread",
+      "passed": true
+    },
+    {
+      "label": "capture_loaded_host_SHA_matches_read_source",
+      "passed": true
+    },
+    {
+      "label": "capture_to_final_result_binding",
+      "passed": true
+    },
+    {
+      "label": "request_local_unique_capture_sequence_2",
+      "passed": true
+    },
+    {
+      "label": "request_script_bound_to_worker_event",
+      "passed": true
+    },
+    {
+      "label": "actual_request_embeds_exact_read_host_source",
+      "passed": true,
+      "embedded_sources": [
+        {
+          "bytes": 15091,
+          "sha256": "8c9afb1b894b9a1a59f25d1d2723af6e91a1bdae9f7293ce57ce56ccb1f78202"
+        },
+        {
+          "bytes": 221977,
+          "sha256": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9"
+        }
+      ]
+    },
+    {
+      "label": "capture_resources_unique_24",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_012",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_007",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_014",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_023",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_020",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_003",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_016",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_004",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_017",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_002",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_019",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_021",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_015",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_024",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_009",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_008",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_006",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_010",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_022",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_005",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_013",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_011",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_018",
+      "passed": true
+    },
+    {
+      "label": "resource_revision_scale:Obj_001",
+      "passed": true
+    },
+    {
+      "label": "actual_capture_resources_match_owner_full_geometry",
+      "passed": true
+    },
+    {
+      "label": "actual_capture_full_geometry_matches_frozen_reference",
+      "passed": true,
+      "accepted": true,
+      "expected_accept": true,
+      "error": null
+    },
+    {
+      "label": "narrow_not_mislabeled_rich",
+      "passed": true
+    },
+    {
+      "label": "original_C_failure_denominator_retained",
+      "passed": true,
+      "original_counts": {
+        "planned": 3,
+        "attempted": 1,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      }
+    }
+  ],
+  "summary": {
+    "checks": 73,
+    "passed": 73,
+    "failed": 0
+  },
+  "original_C_counts": {
+    "planned": 3,
+    "attempted": 1,
+    "completed": 0,
+    "failed": 1,
+    "not_run": 2
+  }
+}
