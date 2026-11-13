@@ -1,0 +1,359 @@
+{
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, math, numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nfor o in objs:\n print(o.name, len(o.data.vertices),len(o.data.polygons), 'mods',[(m.name,m.type,m.show_viewport) for m in o.modifiers], 'hidden',o.hide_viewport,o.hide_get())"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmesh_count 24\\nObj_001 8 12 mods [] hidden False False\\nObj_002 16 28 mods [] hidden False False\\nObj_003 16 28 mods [] hidden False False\\nObj_004 16 28 mods [] hidden False False\\nObj_005 12 20 mods [] hidden False False\\nObj_006 16 28 mods [] hidden False False\\nObj_007 12 20 mods [] hidden False False\\nObj_008 8 12 mods [] hidden False False\\nObj_009 8 12 mods [] hidden False False\\nObj_010 8 12 mods [] hidden False False\\nObj_011 8 12 mods [] hidden False False\\nObj_012 4 2 mods [] hidden False False\\nObj_013 64 128 mods [] hidden False False\\nObj_014 64 128 mods [] hidden False False\\nObj_015 64 128 mods [] hidden False False\\nObj_016 64 128 mods [] hidden False False\\nObj_017 8 12 mods [] hidden False False\\nObj_018 8 12 mods [] hidden False False\\nObj_019 8 12 mods [] hidden False False\\nObj_020 8 12 mods [] hidden False False\\nObj_021 34 64 mods [] hidden False False\\nObj_022 34 64 mods [] hidden False False\\nObj_023 34 64 mods [] hidden False False\\nObj_024 8 12 mods [] hidden False False\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "a56fca0d46cc2999f234f67b942759adfae0e0f6155ee989a9fa7deed61bbb1e"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "d11e5034d335183be8d2b004a1bb57067a250db152e03e01be9f061c188a0fe9"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "b6da92099b7028936273ae534bfefaea64105f00dfb0825a19defeb945374e14"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "geometry=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  transform=np.array(evaluated.matrix_world,dtype=np.float64)\n  verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  world=verts@transform[:3,:3].T+transform[:3,3]\n  indices=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64).reshape((-1,3))\n  triangles=world[indices]\n  geometry.append({'name':obj.name,'tri':triangles,'lo':world.min(axis=0) if len(world) else None,'hi':world.max(axis=0) if len(world) else None})\n finally:\n  evaluated.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nthreshold=2.0/mm_per_unit\ncandidates=[]\nexcluded=[]\nfor first in range(len(geometry)):\n for second in range(first+1,len(geometry)):\n  ga,gb=geometry[first],geometry[second]\n  if not len(ga['tri']) or not len(gb['tri']):\n   print('EMPTY',ga['name'],gb['name']);continue\n  separation=np.maximum(np.maximum(ga['lo']-gb['hi'],gb['lo']-ga['hi']),0)\n  lower=float(np.linalg.norm(separation))\n  if lower<=threshold+1e-12:\n   candidates.append((first,second,lower))\n  else:excluded.append((first,second,lower))\nprint('total triangles',sum(len(g['tri']) for g in geometry),'all pairs',len(objs)*(len(objs)-1)//2,'candidates',len(candidates),'AABB excluded',len(excluded))\nfor first,second,lower in candidates:print(geometry[first]['name'],geometry[second]['name'],'lower_mm',lower*mm_per_unit)\nprint('degenerate triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geometry])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"total triangles 978 all pairs 276 candidates 112 AABB excluded 164\\nObj_001 Obj_002 lower_mm 0.0\\nObj_001 Obj_003 lower_mm 0.0\\nObj_001 Obj_004 lower_mm 0.0\\nObj_001 Obj_005 lower_mm 1.0000000474974513\\nObj_001 Obj_006 lower_mm 0.5000000237487257\\nObj_001 Obj_007 lower_mm 1.500000013038516\\nObj_001 Obj_017 lower_mm 0.0\\nObj_001 Obj_018 lower_mm 0.0\\nObj_001 Obj_019 lower_mm 0.0\\nObj_001 Obj_020 lower_mm 0.0\\nObj_001 Obj_024 lower_mm 0.0\\nObj_002 Obj_003 lower_mm 0.0\\nObj_002 Obj_004 lower_mm 0.0\\nObj_002 Obj_005 lower_mm 0.0\\nObj_002 Obj_006 lower_mm 0.0\\nObj_002 Obj_007 lower_mm 0.0\\nObj_002 Obj_009 lower_mm 0.0\\nObj_002 Obj_013 lower_mm 0.24999864399433136\\nObj_002 Obj_014 lower_mm 0.24999864399433136\\nObj_002 Obj_015 lower_mm 0.24999864399433136\\nObj_002 Obj_016 lower_mm 0.24999864399433136\\nObj_002 Obj_017 lower_mm 0.0\\nObj_002 Obj_018 lower_mm 0.0\\nObj_002 Obj_020 lower_mm 0.0\\nObj_002 Obj_021 lower_mm 0.0\\nObj_002 Obj_022 lower_mm 0.0\\nObj_002 Obj_023 lower_mm 0.0\\nObj_003 Obj_004 lower_mm 0.0\\nObj_003 Obj_005 lower_mm 0.0\\nObj_003 Obj_006 lower_mm 0.0\\nObj_003 Obj_007 lower_mm 0.0\\nObj_003 Obj_009 lower_mm 0.0\\nObj_003 Obj_014 lower_mm 0.24999864399433136\\nObj_003 Obj_015 lower_mm 0.24999864399433136\\nObj_003 Obj_016 lower_mm 0.24999864399433136\\nObj_003 Obj_018 lower_mm 0.0\\nObj_003 Obj_019 lower_mm 0.0\\nObj_003 Obj_020 lower_mm 0.0\\nObj_003 Obj_022 lower_mm 0.0\\nObj_003 Obj_023 lower_mm 0.0\\nObj_004 Obj_005 lower_mm 0.0\\nObj_004 Obj_006 lower_mm 0.0\\nObj_004 Obj_007 lower_mm 0.0\\nObj_004 Obj_008 lower_mm 0.0\\nObj_004 Obj_009 lower_mm 0.0\\nObj_004 Obj_010 lower_mm 0.2500005066394806\\nObj_004 Obj_013 lower_mm 0.0\\nObj_004 Obj_014 lower_mm 0.0\\nObj_004 Obj_015 lower_mm 0.0\\nObj_004 Obj_016 lower_mm 0.0\\nObj_004 Obj_017 lower_mm 0.0\\nObj_004 Obj_018 lower_mm 0.0\\nObj_004 Obj_019 lower_mm 0.0\\nObj_004 Obj_020 lower_mm 0.0\\nObj_004 Obj_021 lower_mm 0.0\\nObj_004 Obj_022 lower_mm 0.0\\nObj_004 Obj_023 lower_mm 0.0\\nObj_005 Obj_006 lower_mm 0.0\\nObj_005 Obj_007 lower_mm 0.0\\nObj_005 Obj_008 lower_mm 0.0\\nObj_005 Obj_009 lower_mm 0.0\\nObj_005 Obj_010 lower_mm 0.0\\nObj_005 Obj_013 lower_mm 0.0\\nObj_005 Obj_014 lower_mm 0.0\\nObj_005 Obj_015 lower_mm 0.0\\nObj_005 Obj_016 lower_mm 0.0\\nObj_005 Obj_017 lower_mm 0.0\\nObj_005 Obj_018 lower_mm 0.0\\nObj_005 Obj_019 lower_mm 0.0\\nObj_005 Obj_020 lower_mm 0.0\\nObj_005 Obj_021 lower_mm 0.0\\nObj_005 Obj_022 lower_mm 0.0\\nObj_005 Obj_023 lower_mm 0.0\\nObj_006 Obj_007 lower_mm 0.0\\nObj_006 Obj_008 lower_mm 0.0\\nObj_006 Obj_009 lower_mm 0.0\\nObj_006 Obj_010 lower_mm 0.0\\nObj_006 Obj_011 lower_mm 0.19999966025352478\\nObj_006 Obj_013 lower_mm 0.0\\nObj_006 Obj_014 lower_mm 0.0\\nObj_006 Obj_015 lower_mm 0.0\\nObj_006 Obj_016 lower_mm 0.0\\nObj_006 Obj_021 lower_mm 0.0\\nObj_006 Obj_022 lower_mm 0.0\\nObj_006 Obj_023 lower_mm 0.0\\nObj_007 Obj_008 lower_mm 0.0\\nObj_007 Obj_009 lower_mm 0.0\\nObj_007 Obj_010 lower_mm 0.0\\nObj_007 Obj_011 lower_mm 0.0\\nObj_007 Obj_012 lower_mm 1.499999314546585\\nObj_007 Obj_013 lower_mm 0.0\\nObj_007 Obj_014 lower_mm 0.0\\nObj_007 Obj_015 lower_mm 0.0\\nObj_007 Obj_016 lower_mm 0.0\\nObj_007 Obj_021 lower_mm 0.0\\nObj_007 Obj_022 lower_mm 0.0\\nObj_007 Obj_023 lower_mm 0.0\\nObj_008 Obj_010 lower_mm 0.0\\nObj_008 Obj_013 lower_mm 0.49999915063381195\\nObj_008 Obj_014 lower_mm 0.49999915063381195\\nObj_008 Obj_021 lower_mm 0.0\\nObj_009 Obj_010 lower_mm 0.0\\nObj_009 Obj_015 lower_mm 0.0\\nObj_009 Obj_016 lower_mm 0.0\\nObj_009 Obj_022 lower_mm 0.0\\nObj_010 Obj_021 lower_mm 0.0\\nObj_010 Obj_022 lower_mm 0.0\\nObj_013 Obj_014 lower_mm 1.0000020265579224\\nObj_013 Obj_021 lower_mm 0.0\\nObj_015 Obj_016 lower_mm 0.0\\nObj_015 Obj_022 lower_mm 0.0\\nObj_018 Obj_020 lower_mm 0.0\\ndegenerate triangles [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "0d6ade421d737505c458fcb5efac652338db4cdbd354d4e57ff5687707a2ace5"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "024d8a489bc5334b29cb844f83146763d23c52988369977628c2330028ffc14b"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "4b484373a85cada5863b14eb92c6867c969b62e1aaf75b5bcdcd3e8262577dfa"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(points,start,end):\n direction=end-start\n parameter=np.clip(dot_rows(points-start,direction)/dot_rows(direction,direction),0,1)\n residual=points-start-parameter[...,None]*direction\n return dot_rows(residual,residual)\ndef point_triangle_sq(points,triangles):\n origin=triangles[:,0]; edge_u=triangles[:,1]-origin; edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v); normal_sq=dot_rows(normal,normal)\n offset=points-origin\n height=dot_rows(offset,normal)\n projected=offset-height[:,None]/normal_sq[:,None]*normal\n uu=dot_rows(edge_u,edge_u); uv=dot_rows(edge_u,edge_v); vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(projected,edge_u); pv=dot_rows(projected,edge_v)\n determinant=dot_rows(normal,normal)\n bary_u=(pu*vv-pv*uv)/determinant\n bary_v=(pv*uu-pu*uv)/determinant\n inside=(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\n distance=np.minimum.reduce([point_segment_sq(points,triangles[:,idx],triangles[:,(idx+1)%3]) for idx in range(3)])\n return np.where(inside,np.minimum(distance,height*height/normal_sq),distance)\ndef segments_sq(start_a,end_a,start_b,end_b):\n direction_a=end_a-start_a;direction_b=end_b-start_b;offset=start_a-start_b\n aa=dot_rows(direction_a,direction_a);bb=dot_rows(direction_a,direction_b);cc=dot_rows(direction_b,direction_b)\n dd=dot_rows(direction_a,offset);ee=dot_rows(direction_b,offset)\n determinant=aa*cc-bb*bb\n stable=determinant>1e-14*aa*cc\n safe=np.where(stable,determinant,1)\n param_a=(bb*ee-cc*dd)/safe;param_b=(aa*ee-bb*dd)/safe\n interior=stable&(param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n residual=offset+param_a[:,None]*direction_a-param_b[:,None]*direction_b\n endpoint=np.minimum.reduce([point_segment_sq(start_a,start_b,end_b),point_segment_sq(end_a,start_b,end_b),point_segment_sq(start_b,start_a,end_a),point_segment_sq(end_b,start_a,end_a)])\n return np.where(interior,np.minimum(endpoint,dot_rows(residual,residual)),endpoint)\ndef segment_triangle_hit(start,end,triangles):\n origin=triangles[:,0];edge_u=triangles[:,1]-origin;edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v);direction=end-start\n denominator=dot_rows(direction,normal)\n valid=np.abs(denominator)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n parameter=dot_rows(origin-start,normal)/np.where(valid,denominator,1)\n point=start+parameter[:,None]*direction\n offset=point-origin\n determinant=dot_rows(normal,normal)\n uu=dot_rows(edge_u,edge_u);uv=dot_rows(edge_u,edge_v);vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(offset,edge_u);pv=dot_rows(offset,edge_v)\n bary_u=(pu*vv-pv*uv)/determinant;bary_v=(pv*uu-pu*uv)/determinant\n return valid&(parameter>=0)&(parameter<=1)&(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\ndef surface_distance(tris_a,tris_b):\n count_a,count_b=len(tris_a),len(tris_b)\n repeated_a=np.repeat(tris_a,count_b,axis=0);repeated_b=np.tile(tris_b,(count_a,1,1))\n hits=np.zeros(len(repeated_a),dtype=bool)\n for edge_idx in range(3):\n  hits|=segment_triangle_hit(repeated_a[:,edge_idx],repeated_a[:,(edge_idx+1)%3],repeated_b)\n  hits|=segment_triangle_hit(repeated_b[:,edge_idx],repeated_b[:,(edge_idx+1)%3],repeated_a)\n if hits.any():return 0.0,True\n best=np.full(len(repeated_a),np.inf)\n for vertex_idx in range(3):\n  best=np.minimum(best,point_triangle_sq(repeated_a[:,vertex_idx],repeated_b))\n  best=np.minimum(best,point_triangle_sq(repeated_b[:,vertex_idx],repeated_a))\n for edge_a in range(3):\n  for edge_b in range(3):\n   best=np.minimum(best,segments_sq(repeated_a[:,edge_a],repeated_a[:,(edge_a+1)%3],repeated_b[:,edge_b],repeated_b[:,(edge_b+1)%3]))\n return float(np.sqrt(best.min())),False\nresults=[]\nfor first,second,lower in candidates:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n results.append((first,second,distance,hit))\nqualifying=[record for record in results if record[2]<=threshold]\nprint('QUALIFYING',len(qualifying))\nfor first,second,distance,hit in qualifying:\n print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.9f'),'intersection',hit)\nprint('remaining_candidates',len(results)-len(qualifying))\nprint('closest_excluded',sorted([(distance*mm_per_unit,geometry[first]['name'],geometry[second]['name']) for first,second,distance,hit in results if distance>threshold])[:8])\nprint('minimum_AABB_excluded_mm',min(record[2] for record in excluded)*mm_per_unit)"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"QUALIFYING 71\\nObj_001 Obj_002 0.000000000 intersection True\\nObj_001 Obj_003 0.000000000 intersection True\\nObj_001 Obj_004 0.000000000 intersection True\\nObj_001 Obj_005 1.000000047 intersection False\\nObj_001 Obj_006 0.500000024 intersection False\\nObj_001 Obj_007 1.500000013 intersection False\\nObj_001 Obj_017 0.000000000 intersection True\\nObj_001 Obj_018 0.000000000 intersection True\\nObj_001 Obj_019 0.000000000 intersection True\\nObj_001 Obj_020 0.000000000 intersection True\\nObj_002 Obj_003 0.000000000 intersection True\\nObj_002 Obj_004 0.000000000 intersection True\\nObj_002 Obj_005 0.000000000 intersection True\\nObj_002 Obj_006 0.000000000 intersection True\\nObj_002 Obj_007 0.000000000 intersection True\\nObj_002 Obj_009 0.000000000 intersection True\\nObj_002 Obj_013 0.249998644 intersection False\\nObj_002 Obj_014 0.249998644 intersection False\\nObj_002 Obj_015 0.249998644 intersection False\\nObj_002 Obj_016 0.249998644 intersection False\\nObj_002 Obj_017 0.000000000 intersection True\\nObj_002 Obj_018 0.000000000 intersection True\\nObj_002 Obj_020 0.000000000 intersection True\\nObj_002 Obj_022 0.000000000 intersection True\\nObj_003 Obj_004 0.000000000 intersection True\\nObj_003 Obj_005 0.000000000 intersection True\\nObj_003 Obj_006 0.000000000 intersection True\\nObj_003 Obj_007 0.000000000 intersection True\\nObj_003 Obj_009 0.000000000 intersection True\\nObj_003 Obj_015 0.249998644 intersection False\\nObj_003 Obj_016 0.249998644 intersection False\\nObj_003 Obj_018 0.000000000 intersection True\\nObj_003 Obj_019 0.000000000 intersection True\\nObj_003 Obj_020 0.000000000 intersection True\\nObj_004 Obj_005 0.999998301 intersection False\\nObj_004 Obj_010 0.250000507 intersection False\\nObj_004 Obj_017 1.500003040 intersection False\\nObj_004 Obj_018 1.500003040 intersection False\\nObj_004 Obj_019 1.500003040 intersection False\\nObj_004 Obj_020 1.500003040 intersection False\\nObj_005 Obj_006 1.000002027 intersection False\\nObj_005 Obj_010 0.000000000 intersection True\\nObj_005 Obj_017 0.000000000 intersection True\\nObj_005 Obj_019 0.000000000 intersection True\\nObj_006 Obj_007 0.999998301 intersection False\\nObj_006 Obj_008 0.000000000 intersection True\\nObj_006 Obj_009 1.350320876 intersection False\\nObj_006 Obj_010 0.000000000 intersection True\\nObj_006 Obj_011 0.199999660 intersection False\\nObj_006 Obj_016 0.000000000 intersection True\\nObj_007 Obj_008 0.000000000 intersection True\\nObj_007 Obj_010 0.000000000 intersection True\\nObj_007 Obj_011 0.000000000 intersection True\\nObj_007 Obj_012 1.499999315 intersection False\\nObj_007 Obj_013 0.000000000 intersection True\\nObj_007 Obj_021 0.600002706 intersection False\\nObj_008 Obj_010 0.000000000 intersection True\\nObj_008 Obj_013 0.499999151 intersection False\\nObj_008 Obj_014 0.499999151 intersection False\\nObj_008 Obj_021 0.000000000 intersection True\\nObj_009 Obj_010 0.000000000 intersection True\\nObj_009 Obj_015 0.249998644 intersection False\\nObj_009 Obj_016 0.000000000 intersection True\\nObj_009 Obj_022 0.000000000 intersection True\\nObj_010 Obj_021 0.000000000 intersection True\\nObj_010 Obj_022 0.000000000 intersection True\\nObj_013 Obj_014 1.761146088 intersection False\\nObj_013 Obj_021 0.588469463 intersection False\\nObj_015 Obj_016 0.780363777 intersection False\\nObj_015 Obj_022 0.588469685 intersection False\\nObj_018 Obj_020 0.000000000 intersection True\\nremaining_candidates 41\\nclosest_excluded [(2.2774309539222872, 'Obj_002', 'Obj_021'), (2.277432384163671, 'Obj_003', 'Obj_022'), (2.708282321691513, 'Obj_005', 'Obj_008'), (2.9221901092925178, 'Obj_002', 'Obj_023'), (2.9221901092925178, 'Obj_003', 'Obj_023'), (2.99999862909317, 'Obj_007', 'Obj_014'), (2.999999560415745, 'Obj_001', 'Obj_024'), (3.999996930360794, 'Obj_006', 'Obj_013')]\\nminimum_AABB_excluded_mm 2.2499989718198776\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "f5b2920cc5b0eb1e85c717a83c9f9f1c2e15deb8da9234eed401f996015cfbcd"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "720732ada2f72de297fb0fe9ad69567c513f217e87558b9350016e212625d07e"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "6b231b65e9535a68ab50a5dce3585a8a017b92c8d4bec1757325e03f465acff3"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "excluded_exact=[]\nfor first,second,lower in excluded:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n excluded_exact.append((first,second,distance,hit))\nall_results=results+excluded_exact\nmax_asymmetry=0.0\nfor first,second,distance,hit in all_results:\n reverse,reverse_hit=surface_distance(geometry[second]['tri'],geometry[first]['tri'])\n max_asymmetry=max(max_asymmetry,abs(reverse-distance))\nprint('all_pairs_exactly_checked',len(all_results))\nprint('additional_qualifying',sum(record[2]<=threshold for record in excluded_exact))\nprint('max_reverse_difference_mm',max_asymmetry*mm_per_unit)\nprint('nonzero_count',sum(record[2]>0 for record in qualifying),'zero_count',sum(record[2]==0 for record in qualifying))\nprint('nearest_nonqualifying_mm',min(record[2] for record in all_results if record[2]>threshold)*mm_per_unit)\nprint('DATA_SCENE_MESH_COUNT',len([obj for obj in bpy.data.objects if obj.type=='MESH']),'SCENE_MESH_COUNT',len(objs))\nprint('GROUPED_ZERO')\nfor first in range(len(geometry)):\n names=[geometry[second]['name'] for aa,second,distance,hit in qualifying if aa==first and distance==0]\n if names:print(geometry[first]['name'],','.join(names))\nprint('NONZERO')\nfor first,second,distance,hit in qualifying:\n if distance>0:print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.6f'))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"all_pairs_exactly_checked 276\\nadditional_qualifying 0\\nmax_reverse_difference_mm 0.0\\nnonzero_count 28 zero_count 43\\nnearest_nonqualifying_mm 2.2499989718198776\\nDATA_SCENE_MESH_COUNT 24 SCENE_MESH_COUNT 24\\nGROUPED_ZERO\\nObj_001 Obj_002,Obj_003,Obj_004,Obj_017,Obj_018,Obj_019,Obj_020\\nObj_002 Obj_003,Obj_004,Obj_005,Obj_006,Obj_007,Obj_009,Obj_017,Obj_018,Obj_020,Obj_022\\nObj_003 Obj_004,Obj_005,Obj_006,Obj_007,Obj_009,Obj_018,Obj_019,Obj_020\\nObj_005 Obj_010,Obj_017,Obj_019\\nObj_006 Obj_008,Obj_010,Obj_016\\nObj_007 Obj_008,Obj_010,Obj_011,Obj_013\\nObj_008 Obj_010,Obj_021\\nObj_009 Obj_010,Obj_016,Obj_022\\nObj_010 Obj_021,Obj_022\\nObj_018 Obj_020\\nNONZERO\\nObj_001 Obj_005 1.000000\\nObj_001 Obj_006 0.500000\\nObj_001 Obj_007 1.500000\\nObj_002 Obj_013 0.249999\\nObj_002 Obj_014 0.249999\\nObj_002 Obj_015 0.249999\\nObj_002 Obj_016 0.249999\\nObj_003 Obj_015 0.249999\\nObj_003 Obj_016 0.249999\\nObj_004 Obj_005 0.999998\\nObj_004 Obj_010 0.250001\\nObj_004 Obj_017 1.500003\\nObj_004 Obj_018 1.500003\\nObj_004 Obj_019 1.500003\\nObj_004 Obj_020 1.500003\\nObj_005 Obj_006 1.000002\\nObj_006 Obj_007 0.999998\\nObj_006 Obj_009 1.350321\\nObj_006 Obj_011 0.200000\\nObj_007 Obj_012 1.499999\\nObj_007 Obj_021 0.600003\\nObj_008 Obj_013 0.499999\\nObj_008 Obj_014 0.499999\\nObj_009 Obj_015 0.249999\\nObj_013 Obj_014 1.761146\\nObj_013 Obj_021 0.588469\\nObj_015 Obj_016 0.780364\\nObj_015 Obj_022 0.588470\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "dd3ade3c5c7e3814348f86871fe2de63efc6ac4128ee3c4cde1b675746674a8e"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "5e5c767bbb1613c941a953ee78d7f969fe439eecea711b44a25b05a1b1eb8374"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "e138bebf60068ce3c6100c55d21a85a6dded564bad6b7a297b8ee47de30cd784"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nfor o in objs:\n print(o.name, len(o.data.vertices),len(o.data.polygons), 'mods',[(m.name,m.type,m.show_viewport) for m in o.modifiers], 'hidden',o.hide_viewport,o.hide_get())"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "f87c86985b33c7e23afc65fcf4451599be0e5c029b83efad4c47b477b8efa0f4",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nprint('units',scene.unit_settings.system,scene.unit_settings.scale_length)\nobjs=[o for o in scene.objects if o.type=='MESH']\nprint('mesh_count',len(objs))\nfor o in objs:\n print(o.name, len(o.data.vertices),len(o.data.polygons), 'mods',[(m.name,m.type,m.show_viewport) for m in o.modifiers], 'hidden',o.hide_viewport,o.hide_get())"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"units METRIC 1.0\\nmesh_count 24\\nObj_001 8 12 mods [] hidden False False\\nObj_002 16 28 mods [] hidden False False\\nObj_003 16 28 mods [] hidden False False\\nObj_004 16 28 mods [] hidden False False\\nObj_005 12 20 mods [] hidden False False\\nObj_006 16 28 mods [] hidden False False\\nObj_007 12 20 mods [] hidden False False\\nObj_008 8 12 mods [] hidden False False\\nObj_009 8 12 mods [] hidden False False\\nObj_010 8 12 mods [] hidden False False\\nObj_011 8 12 mods [] hidden False False\\nObj_012 4 2 mods [] hidden False False\\nObj_013 64 128 mods [] hidden False False\\nObj_014 64 128 mods [] hidden False False\\nObj_015 64 128 mods [] hidden False False\\nObj_016 64 128 mods [] hidden False False\\nObj_017 8 12 mods [] hidden False False\\nObj_018 8 12 mods [] hidden False False\\nObj_019 8 12 mods [] hidden False False\\nObj_020 8 12 mods [] hidden False False\\nObj_021 34 64 mods [] hidden False False\\nObj_022 34 64 mods [] hidden False False\\nObj_023 34 64 mods [] hidden False False\\nObj_024 8 12 mods [] hidden False False\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "544b1c3dccc7b9ca0e3100d83573843121c8995d38c2abd7b0df15a69c7aa9e7",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "geometry=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  transform=np.array(evaluated.matrix_world,dtype=np.float64)\n  verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  world=verts@transform[:3,:3].T+transform[:3,3]\n  indices=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64).reshape((-1,3))\n  triangles=world[indices]\n  geometry.append({'name':obj.name,'tri':triangles,'lo':world.min(axis=0) if len(world) else None,'hi':world.max(axis=0) if len(world) else None})\n finally:\n  evaluated.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nthreshold=2.0/mm_per_unit\ncandidates=[]\nexcluded=[]\nfor first in range(len(geometry)):\n for second in range(first+1,len(geometry)):\n  ga,gb=geometry[first],geometry[second]\n  if not len(ga['tri']) or not len(gb['tri']):\n   print('EMPTY',ga['name'],gb['name']);continue\n  separation=np.maximum(np.maximum(ga['lo']-gb['hi'],gb['lo']-ga['hi']),0)\n  lower=float(np.linalg.norm(separation))\n  if lower<=threshold+1e-12:\n   candidates.append((first,second,lower))\n  else:excluded.append((first,second,lower))\nprint('total triangles',sum(len(g['tri']) for g in geometry),'all pairs',len(objs)*(len(objs)-1)//2,'candidates',len(candidates),'AABB excluded',len(excluded))\nfor first,second,lower in candidates:print(geometry[first]['name'],geometry[second]['name'],'lower_mm',lower*mm_per_unit)\nprint('degenerate triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geometry])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "a6386f1f06c3e87e7d4c9b95e77c97c51b5f6dca7997279ef4195ce2712b3528",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "geometry=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.to_mesh()\n try:\n  mesh.calc_loop_triangles()\n  transform=np.array(evaluated.matrix_world,dtype=np.float64)\n  verts=np.array([v.co[:] for v in mesh.vertices],dtype=np.float64).reshape((-1,3))\n  world=verts@transform[:3,:3].T+transform[:3,3]\n  indices=np.array([t.vertices[:] for t in mesh.loop_triangles],dtype=np.int64).reshape((-1,3))\n  triangles=world[indices]\n  geometry.append({'name':obj.name,'tri':triangles,'lo':world.min(axis=0) if len(world) else None,'hi':world.max(axis=0) if len(world) else None})\n finally:\n  evaluated.to_mesh_clear()\nmm_per_unit=scene.unit_settings.scale_length*1000.0\nthreshold=2.0/mm_per_unit\ncandidates=[]\nexcluded=[]\nfor first in range(len(geometry)):\n for second in range(first+1,len(geometry)):\n  ga,gb=geometry[first],geometry[second]\n  if not len(ga['tri']) or not len(gb['tri']):\n   print('EMPTY',ga['name'],gb['name']);continue\n  separation=np.maximum(np.maximum(ga['lo']-gb['hi'],gb['lo']-ga['hi']),0)\n  lower=float(np.linalg.norm(separation))\n  if lower<=threshold+1e-12:\n   candidates.append((first,second,lower))\n  else:excluded.append((first,second,lower))\nprint('total triangles',sum(len(g['tri']) for g in geometry),'all pairs',len(objs)*(len(objs)-1)//2,'candidates',len(candidates),'AABB excluded',len(excluded))\nfor first,second,lower in candidates:print(geometry[first]['name'],geometry[second]['name'],'lower_mm',lower*mm_per_unit)\nprint('degenerate triangles',[(g['name'],int(np.sum(np.linalg.norm(np.cross(g['tri'][:,1]-g['tri'][:,0],g['tri'][:,2]-g['tri'][:,0]),axis=1)==0))) for g in geometry])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"total triangles 978 all pairs 276 candidates 112 AABB excluded 164\\nObj_001 Obj_002 lower_mm 0.0\\nObj_001 Obj_003 lower_mm 0.0\\nObj_001 Obj_004 lower_mm 0.0\\nObj_001 Obj_005 lower_mm 1.0000000474974513\\nObj_001 Obj_006 lower_mm 0.5000000237487257\\nObj_001 Obj_007 lower_mm 1.500000013038516\\nObj_001 Obj_017 lower_mm 0.0\\nObj_001 Obj_018 lower_mm 0.0\\nObj_001 Obj_019 lower_mm 0.0\\nObj_001 Obj_020 lower_mm 0.0\\nObj_001 Obj_024 lower_mm 0.0\\nObj_002 Obj_003 lower_mm 0.0\\nObj_002 Obj_004 lower_mm 0.0\\nObj_002 Obj_005 lower_mm 0.0\\nObj_002 Obj_006 lower_mm 0.0\\nObj_002 Obj_007 lower_mm 0.0\\nObj_002 Obj_009 lower_mm 0.0\\nObj_002 Obj_013 lower_mm 0.24999864399433136\\nObj_002 Obj_014 lower_mm 0.24999864399433136\\nObj_002 Obj_015 lower_mm 0.24999864399433136\\nObj_002 Obj_016 lower_mm 0.24999864399433136\\nObj_002 Obj_017 lower_mm 0.0\\nObj_002 Obj_018 lower_mm 0.0\\nObj_002 Obj_020 lower_mm 0.0\\nObj_002 Obj_021 lower_mm 0.0\\nObj_002 Obj_022 lower_mm 0.0\\nObj_002 Obj_023 lower_mm 0.0\\nObj_003 Obj_004 lower_mm 0.0\\nObj_003 Obj_005 lower_mm 0.0\\nObj_003 Obj_006 lower_mm 0.0\\nObj_003 Obj_007 lower_mm 0.0\\nObj_003 Obj_009 lower_mm 0.0\\nObj_003 Obj_014 lower_mm 0.24999864399433136\\nObj_003 Obj_015 lower_mm 0.24999864399433136\\nObj_003 Obj_016 lower_mm 0.24999864399433136\\nObj_003 Obj_018 lower_mm 0.0\\nObj_003 Obj_019 lower_mm 0.0\\nObj_003 Obj_020 lower_mm 0.0\\nObj_003 Obj_022 lower_mm 0.0\\nObj_003 Obj_023 lower_mm 0.0\\nObj_004 Obj_005 lower_mm 0.0\\nObj_004 Obj_006 lower_mm 0.0\\nObj_004 Obj_007 lower_mm 0.0\\nObj_004 Obj_008 lower_mm 0.0\\nObj_004 Obj_009 lower_mm 0.0\\nObj_004 Obj_010 lower_mm 0.2500005066394806\\nObj_004 Obj_013 lower_mm 0.0\\nObj_004 Obj_014 lower_mm 0.0\\nObj_004 Obj_015 lower_mm 0.0\\nObj_004 Obj_016 lower_mm 0.0\\nObj_004 Obj_017 lower_mm 0.0\\nObj_004 Obj_018 lower_mm 0.0\\nObj_004 Obj_019 lower_mm 0.0\\nObj_004 Obj_020 lower_mm 0.0\\nObj_004 Obj_021 lower_mm 0.0\\nObj_004 Obj_022 lower_mm 0.0\\nObj_004 Obj_023 lower_mm 0.0\\nObj_005 Obj_006 lower_mm 0.0\\nObj_005 Obj_007 lower_mm 0.0\\nObj_005 Obj_008 lower_mm 0.0\\nObj_005 Obj_009 lower_mm 0.0\\nObj_005 Obj_010 lower_mm 0.0\\nObj_005 Obj_013 lower_mm 0.0\\nObj_005 Obj_014 lower_mm 0.0\\nObj_005 Obj_015 lower_mm 0.0\\nObj_005 Obj_016 lower_mm 0.0\\nObj_005 Obj_017 lower_mm 0.0\\nObj_005 Obj_018 lower_mm 0.0\\nObj_005 Obj_019 lower_mm 0.0\\nObj_005 Obj_020 lower_mm 0.0\\nObj_005 Obj_021 lower_mm 0.0\\nObj_005 Obj_022 lower_mm 0.0\\nObj_005 Obj_023 lower_mm 0.0\\nObj_006 Obj_007 lower_mm 0.0\\nObj_006 Obj_008 lower_mm 0.0\\nObj_006 Obj_009 lower_mm 0.0\\nObj_006 Obj_010 lower_mm 0.0\\nObj_006 Obj_011 lower_mm 0.19999966025352478\\nObj_006 Obj_013 lower_mm 0.0\\nObj_006 Obj_014 lower_mm 0.0\\nObj_006 Obj_015 lower_mm 0.0\\nObj_006 Obj_016 lower_mm 0.0\\nObj_006 Obj_021 lower_mm 0.0\\nObj_006 Obj_022 lower_mm 0.0\\nObj_006 Obj_023 lower_mm 0.0\\nObj_007 Obj_008 lower_mm 0.0\\nObj_007 Obj_009 lower_mm 0.0\\nObj_007 Obj_010 lower_mm 0.0\\nObj_007 Obj_011 lower_mm 0.0\\nObj_007 Obj_012 lower_mm 1.499999314546585\\nObj_007 Obj_013 lower_mm 0.0\\nObj_007 Obj_014 lower_mm 0.0\\nObj_007 Obj_015 lower_mm 0.0\\nObj_007 Obj_016 lower_mm 0.0\\nObj_007 Obj_021 lower_mm 0.0\\nObj_007 Obj_022 lower_mm 0.0\\nObj_007 Obj_023 lower_mm 0.0\\nObj_008 Obj_010 lower_mm 0.0\\nObj_008 Obj_013 lower_mm 0.49999915063381195\\nObj_008 Obj_014 lower_mm 0.49999915063381195\\nObj_008 Obj_021 lower_mm 0.0\\nObj_009 Obj_010 lower_mm 0.0\\nObj_009 Obj_015 lower_mm 0.0\\nObj_009 Obj_016 lower_mm 0.0\\nObj_009 Obj_022 lower_mm 0.0\\nObj_010 Obj_021 lower_mm 0.0\\nObj_010 Obj_022 lower_mm 0.0\\nObj_013 Obj_014 lower_mm 1.0000020265579224\\nObj_013 Obj_021 lower_mm 0.0\\nObj_015 Obj_016 lower_mm 0.0\\nObj_015 Obj_022 lower_mm 0.0\\nObj_018 Obj_020 lower_mm 0.0\\ndegenerate triangles [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "a4fb5520298ab3566257e4eab673ca3687fedb2c264aa6c8806afe3ce56b8e81",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(points,start,end):\n direction=end-start\n parameter=np.clip(dot_rows(points-start,direction)/dot_rows(direction,direction),0,1)\n residual=points-start-parameter[...,None]*direction\n return dot_rows(residual,residual)\ndef point_triangle_sq(points,triangles):\n origin=triangles[:,0]; edge_u=triangles[:,1]-origin; edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v); normal_sq=dot_rows(normal,normal)\n offset=points-origin\n height=dot_rows(offset,normal)\n projected=offset-height[:,None]/normal_sq[:,None]*normal\n uu=dot_rows(edge_u,edge_u); uv=dot_rows(edge_u,edge_v); vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(projected,edge_u); pv=dot_rows(projected,edge_v)\n determinant=dot_rows(normal,normal)\n bary_u=(pu*vv-pv*uv)/determinant\n bary_v=(pv*uu-pu*uv)/determinant\n inside=(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\n distance=np.minimum.reduce([point_segment_sq(points,triangles[:,idx],triangles[:,(idx+1)%3]) for idx in range(3)])\n return np.where(inside,np.minimum(distance,height*height/normal_sq),distance)\ndef segments_sq(start_a,end_a,start_b,end_b):\n direction_a=end_a-start_a;direction_b=end_b-start_b;offset=start_a-start_b\n aa=dot_rows(direction_a,direction_a);bb=dot_rows(direction_a,direction_b);cc=dot_rows(direction_b,direction_b)\n dd=dot_rows(direction_a,offset);ee=dot_rows(direction_b,offset)\n determinant=aa*cc-bb*bb\n stable=determinant>1e-14*aa*cc\n safe=np.where(stable,determinant,1)\n param_a=(bb*ee-cc*dd)/safe;param_b=(aa*ee-bb*dd)/safe\n interior=stable&(param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n residual=offset+param_a[:,None]*direction_a-param_b[:,None]*direction_b\n endpoint=np.minimum.reduce([point_segment_sq(start_a,start_b,end_b),point_segment_sq(end_a,start_b,end_b),point_segment_sq(start_b,start_a,end_a),point_segment_sq(end_b,start_a,end_a)])\n return np.where(interior,np.minimum(endpoint,dot_rows(residual,residual)),endpoint)\ndef segment_triangle_hit(start,end,triangles):\n origin=triangles[:,0];edge_u=triangles[:,1]-origin;edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v);direction=end-start\n denominator=dot_rows(direction,normal)\n valid=np.abs(denominator)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n parameter=dot_rows(origin-start,normal)/np.where(valid,denominator,1)\n point=start+parameter[:,None]*direction\n offset=point-origin\n determinant=dot_rows(normal,normal)\n uu=dot_rows(edge_u,edge_u);uv=dot_rows(edge_u,edge_v);vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(offset,edge_u);pv=dot_rows(offset,edge_v)\n bary_u=(pu*vv-pv*uv)/determinant;bary_v=(pv*uu-pu*uv)/determinant\n return valid&(parameter>=0)&(parameter<=1)&(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\ndef surface_distance(tris_a,tris_b):\n count_a,count_b=len(tris_a),len(tris_b)\n repeated_a=np.repeat(tris_a,count_b,axis=0);repeated_b=np.tile(tris_b,(count_a,1,1))\n hits=np.zeros(len(repeated_a),dtype=bool)\n for edge_idx in range(3):\n  hits|=segment_triangle_hit(repeated_a[:,edge_idx],repeated_a[:,(edge_idx+1)%3],repeated_b)\n  hits|=segment_triangle_hit(repeated_b[:,edge_idx],repeated_b[:,(edge_idx+1)%3],repeated_a)\n if hits.any():return 0.0,True\n best=np.full(len(repeated_a),np.inf)\n for vertex_idx in range(3):\n  best=np.minimum(best,point_triangle_sq(repeated_a[:,vertex_idx],repeated_b))\n  best=np.minimum(best,point_triangle_sq(repeated_b[:,vertex_idx],repeated_a))\n for edge_a in range(3):\n  for edge_b in range(3):\n   best=np.minimum(best,segments_sq(repeated_a[:,edge_a],repeated_a[:,(edge_a+1)%3],repeated_b[:,edge_b],repeated_b[:,(edge_b+1)%3]))\n return float(np.sqrt(best.min())),False\nresults=[]\nfor first,second,lower in candidates:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n results.append((first,second,distance,hit))\nqualifying=[record for record in results if record[2]<=threshold]\nprint('QUALIFYING',len(qualifying))\nfor first,second,distance,hit in qualifying:\n print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.9f'),'intersection',hit)\nprint('remaining_candidates',len(results)-len(qualifying))\nprint('closest_excluded',sorted([(distance*mm_per_unit,geometry[first]['name'],geometry[second]['name']) for first,second,distance,hit in results if distance>threshold])[:8])\nprint('minimum_AABB_excluded_mm',min(record[2] for record in excluded)*mm_per_unit)"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "1b7ac71a921844777fab22b1d026c2d759b3555cada7fb8fcccaca8508f9539e",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dot_rows(left,right):\n return np.sum(left*right,axis=-1)\ndef point_segment_sq(points,start,end):\n direction=end-start\n parameter=np.clip(dot_rows(points-start,direction)/dot_rows(direction,direction),0,1)\n residual=points-start-parameter[...,None]*direction\n return dot_rows(residual,residual)\ndef point_triangle_sq(points,triangles):\n origin=triangles[:,0]; edge_u=triangles[:,1]-origin; edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v); normal_sq=dot_rows(normal,normal)\n offset=points-origin\n height=dot_rows(offset,normal)\n projected=offset-height[:,None]/normal_sq[:,None]*normal\n uu=dot_rows(edge_u,edge_u); uv=dot_rows(edge_u,edge_v); vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(projected,edge_u); pv=dot_rows(projected,edge_v)\n determinant=dot_rows(normal,normal)\n bary_u=(pu*vv-pv*uv)/determinant\n bary_v=(pv*uu-pu*uv)/determinant\n inside=(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\n distance=np.minimum.reduce([point_segment_sq(points,triangles[:,idx],triangles[:,(idx+1)%3]) for idx in range(3)])\n return np.where(inside,np.minimum(distance,height*height/normal_sq),distance)\ndef segments_sq(start_a,end_a,start_b,end_b):\n direction_a=end_a-start_a;direction_b=end_b-start_b;offset=start_a-start_b\n aa=dot_rows(direction_a,direction_a);bb=dot_rows(direction_a,direction_b);cc=dot_rows(direction_b,direction_b)\n dd=dot_rows(direction_a,offset);ee=dot_rows(direction_b,offset)\n determinant=aa*cc-bb*bb\n stable=determinant>1e-14*aa*cc\n safe=np.where(stable,determinant,1)\n param_a=(bb*ee-cc*dd)/safe;param_b=(aa*ee-bb*dd)/safe\n interior=stable&(param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1)\n residual=offset+param_a[:,None]*direction_a-param_b[:,None]*direction_b\n endpoint=np.minimum.reduce([point_segment_sq(start_a,start_b,end_b),point_segment_sq(end_a,start_b,end_b),point_segment_sq(start_b,start_a,end_a),point_segment_sq(end_b,start_a,end_a)])\n return np.where(interior,np.minimum(endpoint,dot_rows(residual,residual)),endpoint)\ndef segment_triangle_hit(start,end,triangles):\n origin=triangles[:,0];edge_u=triangles[:,1]-origin;edge_v=triangles[:,2]-origin\n normal=np.cross(edge_u,edge_v);direction=end-start\n denominator=dot_rows(direction,normal)\n valid=np.abs(denominator)>1e-14*np.sqrt(dot_rows(direction,direction)*dot_rows(normal,normal))\n parameter=dot_rows(origin-start,normal)/np.where(valid,denominator,1)\n point=start+parameter[:,None]*direction\n offset=point-origin\n determinant=dot_rows(normal,normal)\n uu=dot_rows(edge_u,edge_u);uv=dot_rows(edge_u,edge_v);vv=dot_rows(edge_v,edge_v)\n pu=dot_rows(offset,edge_u);pv=dot_rows(offset,edge_v)\n bary_u=(pu*vv-pv*uv)/determinant;bary_v=(pv*uu-pu*uv)/determinant\n return valid&(parameter>=0)&(parameter<=1)&(bary_u>=0)&(bary_v>=0)&(bary_u+bary_v<=1)\ndef surface_distance(tris_a,tris_b):\n count_a,count_b=len(tris_a),len(tris_b)\n repeated_a=np.repeat(tris_a,count_b,axis=0);repeated_b=np.tile(tris_b,(count_a,1,1))\n hits=np.zeros(len(repeated_a),dtype=bool)\n for edge_idx in range(3):\n  hits|=segment_triangle_hit(repeated_a[:,edge_idx],repeated_a[:,(edge_idx+1)%3],repeated_b)\n  hits|=segment_triangle_hit(repeated_b[:,edge_idx],repeated_b[:,(edge_idx+1)%3],repeated_a)\n if hits.any():return 0.0,True\n best=np.full(len(repeated_a),np.inf)\n for vertex_idx in range(3):\n  best=np.minimum(best,point_triangle_sq(repeated_a[:,vertex_idx],repeated_b))\n  best=np.minimum(best,point_triangle_sq(repeated_b[:,vertex_idx],repeated_a))\n for edge_a in range(3):\n  for edge_b in range(3):\n   best=np.minimum(best,segments_sq(repeated_a[:,edge_a],repeated_a[:,(edge_a+1)%3],repeated_b[:,edge_b],repeated_b[:,(edge_b+1)%3]))\n return float(np.sqrt(best.min())),False\nresults=[]\nfor first,second,lower in candidates:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n results.append((first,second,distance,hit))\nqualifying=[record for record in results if record[2]<=threshold]\nprint('QUALIFYING',len(qualifying))\nfor first,second,distance,hit in qualifying:\n print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.9f'),'intersection',hit)\nprint('remaining_candidates',len(results)-len(qualifying))\nprint('closest_excluded',sorted([(distance*mm_per_unit,geometry[first]['name'],geometry[second]['name']) for first,second,distance,hit in results if distance>threshold])[:8])\nprint('minimum_AABB_excluded_mm',min(record[2] for record in excluded)*mm_per_unit)"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"QUALIFYING 71\\nObj_001 Obj_002 0.000000000 intersection True\\nObj_001 Obj_003 0.000000000 intersection True\\nObj_001 Obj_004 0.000000000 intersection True\\nObj_001 Obj_005 1.000000047 intersection False\\nObj_001 Obj_006 0.500000024 intersection False\\nObj_001 Obj_007 1.500000013 intersection False\\nObj_001 Obj_017 0.000000000 intersection True\\nObj_001 Obj_018 0.000000000 intersection True\\nObj_001 Obj_019 0.000000000 intersection True\\nObj_001 Obj_020 0.000000000 intersection True\\nObj_002 Obj_003 0.000000000 intersection True\\nObj_002 Obj_004 0.000000000 intersection True\\nObj_002 Obj_005 0.000000000 intersection True\\nObj_002 Obj_006 0.000000000 intersection True\\nObj_002 Obj_007 0.000000000 intersection True\\nObj_002 Obj_009 0.000000000 intersection True\\nObj_002 Obj_013 0.249998644 intersection False\\nObj_002 Obj_014 0.249998644 intersection False\\nObj_002 Obj_015 0.249998644 intersection False\\nObj_002 Obj_016 0.249998644 intersection False\\nObj_002 Obj_017 0.000000000 intersection True\\nObj_002 Obj_018 0.000000000 intersection True\\nObj_002 Obj_020 0.000000000 intersection True\\nObj_002 Obj_022 0.000000000 intersection True\\nObj_003 Obj_004 0.000000000 intersection True\\nObj_003 Obj_005 0.000000000 intersection True\\nObj_003 Obj_006 0.000000000 intersection True\\nObj_003 Obj_007 0.000000000 intersection True\\nObj_003 Obj_009 0.000000000 intersection True\\nObj_003 Obj_015 0.249998644 intersection False\\nObj_003 Obj_016 0.249998644 intersection False\\nObj_003 Obj_018 0.000000000 intersection True\\nObj_003 Obj_019 0.000000000 intersection True\\nObj_003 Obj_020 0.000000000 intersection True\\nObj_004 Obj_005 0.999998301 intersection False\\nObj_004 Obj_010 0.250000507 intersection False\\nObj_004 Obj_017 1.500003040 intersection False\\nObj_004 Obj_018 1.500003040 intersection False\\nObj_004 Obj_019 1.500003040 intersection False\\nObj_004 Obj_020 1.500003040 intersection False\\nObj_005 Obj_006 1.000002027 intersection False\\nObj_005 Obj_010 0.000000000 intersection True\\nObj_005 Obj_017 0.000000000 intersection True\\nObj_005 Obj_019 0.000000000 intersection True\\nObj_006 Obj_007 0.999998301 intersection False\\nObj_006 Obj_008 0.000000000 intersection True\\nObj_006 Obj_009 1.350320876 intersection False\\nObj_006 Obj_010 0.000000000 intersection True\\nObj_006 Obj_011 0.199999660 intersection False\\nObj_006 Obj_016 0.000000000 intersection True\\nObj_007 Obj_008 0.000000000 intersection True\\nObj_007 Obj_010 0.000000000 intersection True\\nObj_007 Obj_011 0.000000000 intersection True\\nObj_007 Obj_012 1.499999315 intersection False\\nObj_007 Obj_013 0.000000000 intersection True\\nObj_007 Obj_021 0.600002706 intersection False\\nObj_008 Obj_010 0.000000000 intersection True\\nObj_008 Obj_013 0.499999151 intersection False\\nObj_008 Obj_014 0.499999151 intersection False\\nObj_008 Obj_021 0.000000000 intersection True\\nObj_009 Obj_010 0.000000000 intersection True\\nObj_009 Obj_015 0.249998644 intersection False\\nObj_009 Obj_016 0.000000000 intersection True\\nObj_009 Obj_022 0.000000000 intersection True\\nObj_010 Obj_021 0.000000000 intersection True\\nObj_010 Obj_022 0.000000000 intersection True\\nObj_013 Obj_014 1.761146088 intersection False\\nObj_013 Obj_021 0.588469463 intersection False\\nObj_015 Obj_016 0.780363777 intersection False\\nObj_015 Obj_022 0.588469685 intersection False\\nObj_018 Obj_020 0.000000000 intersection True\\nremaining_candidates 41\\nclosest_excluded [(2.2774309539222872, 'Obj_002', 'Obj_021'), (2.277432384163671, 'Obj_003', 'Obj_022'), (2.708282321691513, 'Obj_005', 'Obj_008'), (2.9221901092925178, 'Obj_002', 'Obj_023'), (2.9221901092925178, 'Obj_003', 'Obj_023'), (2.99999862909317, 'Obj_007', 'Obj_014'), (2.999999560415745, 'Obj_001', 'Obj_024'), (3.999996930360794, 'Obj_006', 'Obj_013')]\\nminimum_AABB_excluded_mm 2.2499989718198776\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "1014ac2aaffb3a17efaebe4b6fd334601b17f8deefc4d8d74ae0f3664f9ba43b",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "excluded_exact=[]\nfor first,second,lower in excluded:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n excluded_exact.append((first,second,distance,hit))\nall_results=results+excluded_exact\nmax_asymmetry=0.0\nfor first,second,distance,hit in all_results:\n reverse,reverse_hit=surface_distance(geometry[second]['tri'],geometry[first]['tri'])\n max_asymmetry=max(max_asymmetry,abs(reverse-distance))\nprint('all_pairs_exactly_checked',len(all_results))\nprint('additional_qualifying',sum(record[2]<=threshold for record in excluded_exact))\nprint('max_reverse_difference_mm',max_asymmetry*mm_per_unit)\nprint('nonzero_count',sum(record[2]>0 for record in qualifying),'zero_count',sum(record[2]==0 for record in qualifying))\nprint('nearest_nonqualifying_mm',min(record[2] for record in all_results if record[2]>threshold)*mm_per_unit)\nprint('DATA_SCENE_MESH_COUNT',len([obj for obj in bpy.data.objects if obj.type=='MESH']),'SCENE_MESH_COUNT',len(objs))\nprint('GROUPED_ZERO')\nfor first in range(len(geometry)):\n names=[geometry[second]['name'] for aa,second,distance,hit in qualifying if aa==first and distance==0]\n if names:print(geometry[first]['name'],','.join(names))\nprint('NONZERO')\nfor first,second,distance,hit in qualifying:\n if distance>0:print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.6f'))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "07427ea394d900e0ba249fee711340a4b44f610b38f70a4d92b33dc382bb72c5",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "excluded_exact=[]\nfor first,second,lower in excluded:\n distance,hit=surface_distance(geometry[first]['tri'],geometry[second]['tri'])\n excluded_exact.append((first,second,distance,hit))\nall_results=results+excluded_exact\nmax_asymmetry=0.0\nfor first,second,distance,hit in all_results:\n reverse,reverse_hit=surface_distance(geometry[second]['tri'],geometry[first]['tri'])\n max_asymmetry=max(max_asymmetry,abs(reverse-distance))\nprint('all_pairs_exactly_checked',len(all_results))\nprint('additional_qualifying',sum(record[2]<=threshold for record in excluded_exact))\nprint('max_reverse_difference_mm',max_asymmetry*mm_per_unit)\nprint('nonzero_count',sum(record[2]>0 for record in qualifying),'zero_count',sum(record[2]==0 for record in qualifying))\nprint('nearest_nonqualifying_mm',min(record[2] for record in all_results if record[2]>threshold)*mm_per_unit)\nprint('DATA_SCENE_MESH_COUNT',len([obj for obj in bpy.data.objects if obj.type=='MESH']),'SCENE_MESH_COUNT',len(objs))\nprint('GROUPED_ZERO')\nfor first in range(len(geometry)):\n names=[geometry[second]['name'] for aa,second,distance,hit in qualifying if aa==first and distance==0]\n if names:print(geometry[first]['name'],','.join(names))\nprint('NONZERO')\nfor first,second,distance,hit in qualifying:\n if distance>0:print(geometry[first]['name'],geometry[second]['name'],format(distance*mm_per_unit,'.6f'))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"all_pairs_exactly_checked 276\\nadditional_qualifying 0\\nmax_reverse_difference_mm 0.0\\nnonzero_count 28 zero_count 43\\nnearest_nonqualifying_mm 2.2499989718198776\\nDATA_SCENE_MESH_COUNT 24 SCENE_MESH_COUNT 24\\nGROUPED_ZERO\\nObj_001 Obj_002,Obj_003,Obj_004,Obj_017,Obj_018,Obj_019,Obj_020\\nObj_002 Obj_003,Obj_004,Obj_005,Obj_006,Obj_007,Obj_009,Obj_017,Obj_018,Obj_020,Obj_022\\nObj_003 Obj_004,Obj_005,Obj_006,Obj_007,Obj_009,Obj_018,Obj_019,Obj_020\\nObj_005 Obj_010,Obj_017,Obj_019\\nObj_006 Obj_008,Obj_010,Obj_016\\nObj_007 Obj_008,Obj_010,Obj_011,Obj_013\\nObj_008 Obj_010,Obj_021\\nObj_009 Obj_010,Obj_016,Obj_022\\nObj_010 Obj_021,Obj_022\\nObj_018 Obj_020\\nNONZERO\\nObj_001 Obj_005 1.000000\\nObj_001 Obj_006 0.500000\\nObj_001 Obj_007 1.500000\\nObj_002 Obj_013 0.249999\\nObj_002 Obj_014 0.249999\\nObj_002 Obj_015 0.249999\\nObj_002 Obj_016 0.249999\\nObj_003 Obj_015 0.249999\\nObj_003 Obj_016 0.249999\\nObj_004 Obj_005 0.999998\\nObj_004 Obj_010 0.250001\\nObj_004 Obj_017 1.500003\\nObj_004 Obj_018 1.500003\\nObj_004 Obj_019 1.500003\\nObj_004 Obj_020 1.500003\\nObj_005 Obj_006 1.000002\\nObj_006 Obj_007 0.999998\\nObj_006 Obj_009 1.350321\\nObj_006 Obj_011 0.200000\\nObj_007 Obj_012 1.499999\\nObj_007 Obj_021 0.600003\\nObj_008 Obj_013 0.499999\\nObj_008 Obj_014 0.499999\\nObj_009 Obj_015 0.249999\\nObj_013 Obj_014 1.761146\\nObj_013 Obj_021 0.588469\\nObj_015 Obj_016 0.780364\\nObj_015 Obj_022 0.588470\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "c5131d0b38722e4243ace7a59b3e63ccd53c5376f83a6ab6d831150084786793",
+      "source_sha256": "228df81850dfaf046ac9fa69082d208f54d0fe09f4d3136fd50388939ce8b991"
+    }
+  ],
+  "scope": "Actual owner records and consumer-visible events are independently bound; no missing delivery is inferred."
+}

@@ -1,0 +1,95 @@
+{
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, numpy as np\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[obj for obj in scene.objects if obj.type=='MESH']\nunit_mm=float(scene.unit_settings.scale_length)*1000.0\ngeom=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.data\n mesh.calc_loop_triangles()\n local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape(-1,3)\n matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n world=(local@matrix[:3,:3].T+matrix[:3,3])*unit_mm\n indices=np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n geom.append({'name':obj.name,'triangles':world[indices]})\nfull_results=[]; incomplete=[]\nfor first in range(len(geom)):\n for second in range(first+1,len(geom)):\n  if not len(geom[first]['triangles']) or not len(geom[second]['triangles']):\n   incomplete.append((geom[first]['name'],geom[second]['name'],'empty triangle surface'))\n   continue\n  distance,hit,triangle_indices=triangle_surface_distance(geom[first]['triangles'],geom[second]['triangles'])\n  full_results.append((first,second,distance,hit,triangle_indices))\nqualifying=[result for result in full_results if result[2]<=2.0]\nprint('UNITS',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('TOTAL_OBJECTS',len(geom),'TOTAL_TRIANGLES',sum(len(item['triangles']) for item in geom),'EXHAUSTIVE_PAIRS',len(full_results),'WITHIN_2MM',len(qualifying),'ZERO',sum(result[2]==0 for result in qualifying))\nprint('OBJECTS',[(item['name'],len(item['triangles'])) for item in geom])\nfor first,second,distance,hit,triangle_indices in qualifying:\n print(geom[first]['name'],geom[second]['name'],f'{distance:.9f}','hit',hit)\nprint('INCOMPLETE',incomplete)\nprint('MIN_EXCLUDED',min((result[2] for result in full_results if result[2]>2),default=None))\nprint('FINITE',all(np.isfinite(result[2]) for result in full_results))\nprint('DEGENERATE',[(item['name'],int(np.sum(np.linalg.norm(np.cross(item['triangles'][:,1]-item['triangles'][:,0],item['triangles'][:,2]-item['triangles'][:,0]),axis=1)==0))) for item in geom if len(item['triangles'])])\nprint('INSTANCES',[(instance.object.name,instance.is_instance) for instance in depsgraph.object_instances if instance.is_instance])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"UNITS METRIC 1.0\\nTOTAL_OBJECTS 24 TOTAL_TRIANGLES 978 EXHAUSTIVE_PAIRS 276 WITHIN_2MM 72 ZERO 45\\nOBJECTS [('Obj_001', 12), ('Obj_002', 28), ('Obj_003', 28), ('Obj_004', 28), ('Obj_005', 20), ('Obj_006', 28), ('Obj_007', 20), ('Obj_008', 12), ('Obj_009', 12), ('Obj_010', 12), ('Obj_011', 12), ('Obj_012', 2), ('Obj_013', 128), ('Obj_014', 128), ('Obj_015', 128), ('Obj_016', 128), ('Obj_017', 12), ('Obj_018', 12), ('Obj_019', 12), ('Obj_020', 12), ('Obj_021', 64), ('Obj_022', 64), ('Obj_023', 64), ('Obj_024', 12)]\\nObj_001 Obj_002 0.000000000 hit True\\nObj_001 Obj_003 0.000000000 hit True\\nObj_001 Obj_004 0.000000000 hit True\\nObj_001 Obj_005 1.000000047 hit False\\nObj_001 Obj_006 0.500000024 hit False\\nObj_001 Obj_007 1.500000013 hit False\\nObj_001 Obj_017 0.000000000 hit True\\nObj_001 Obj_018 0.000000000 hit True\\nObj_001 Obj_019 0.000000000 hit True\\nObj_001 Obj_020 0.000000000 hit True\\nObj_002 Obj_003 0.000000000 hit True\\nObj_002 Obj_004 0.000000000 hit True\\nObj_002 Obj_005 0.000000000 hit True\\nObj_002 Obj_006 0.000000000 hit True\\nObj_002 Obj_007 0.000000000 hit True\\nObj_002 Obj_008 1.499998965 hit False\\nObj_002 Obj_009 0.000000000 hit True\\nObj_002 Obj_013 0.249998644 hit False\\nObj_002 Obj_014 0.249998644 hit False\\nObj_002 Obj_015 0.249998644 hit False\\nObj_002 Obj_016 0.249998644 hit False\\nObj_002 Obj_017 0.000000000 hit True\\nObj_002 Obj_018 0.000000000 hit True\\nObj_002 Obj_020 0.000000000 hit True\\nObj_002 Obj_022 0.000000000 hit True\\nObj_003 Obj_004 0.000000000 hit True\\nObj_003 Obj_005 0.000000000 hit True\\nObj_003 Obj_006 0.000000000 hit True\\nObj_003 Obj_007 0.000000000 hit True\\nObj_003 Obj_009 0.000000000 hit True\\nObj_003 Obj_015 0.249998644 hit False\\nObj_003 Obj_016 0.249998644 hit False\\nObj_003 Obj_018 0.000000000 hit True\\nObj_003 Obj_019 0.000000000 hit True\\nObj_003 Obj_020 0.000000000 hit True\\nObj_004 Obj_005 0.999998301 hit False\\nObj_004 Obj_010 0.250000507 hit False\\nObj_004 Obj_017 1.500003040 hit False\\nObj_004 Obj_018 1.500003040 hit False\\nObj_004 Obj_019 1.500003040 hit False\\nObj_004 Obj_020 1.500003040 hit False\\nObj_005 Obj_006 1.000002027 hit False\\nObj_005 Obj_010 0.000000000 hit True\\nObj_005 Obj_017 0.000000000 hit True\\nObj_005 Obj_019 0.000000000 hit True\\nObj_006 Obj_007 0.999998301 hit False\\nObj_006 Obj_008 0.000000000 hit True\\nObj_006 Obj_009 1.350320876 hit False\\nObj_006 Obj_010 0.000000000 hit True\\nObj_006 Obj_011 0.199999660 hit False\\nObj_006 Obj_016 0.000000000 hit True\\nObj_007 Obj_008 0.000000000 hit True\\nObj_007 Obj_010 0.000000000 hit True\\nObj_007 Obj_011 0.000000000 hit True\\nObj_007 Obj_012 1.499999315 hit False\\nObj_007 Obj_013 0.000000000 hit True\\nObj_007 Obj_021 0.600002706 hit False\\nObj_008 Obj_010 0.000000000 hit True\\nObj_008 Obj_013 0.000000000 hit True\\nObj_008 Obj_014 0.000000000 hit True\\nObj_008 Obj_021 0.000000000 hit True\\nObj_009 Obj_010 0.000000000 hit True\\nObj_009 Obj_015 0.249998644 hit False\\nObj_009 Obj_016 0.000000000 hit True\\nObj_009 Obj_022 0.000000000 hit True\\nObj_010 Obj_021 0.000000000 hit True\\nObj_010 Obj_022 0.000000000 hit True\\nObj_013 Obj_014 1.761146088 hit False\\nObj_013 Obj_021 0.588469463 hit False\\nObj_015 Obj_016 0.780363777 hit False\\nObj_015 Obj_022 0.588469685 hit False\\nObj_018 Obj_020 0.000000000 hit True\\nINCOMPLETE []\\nMIN_EXCLUDED 2.2774309539222846\\nFINITE True\\nDEGENERATE [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\nINSTANCES []\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "391d56f1b7c988c8937e1b19b291e1eabd423303c800b33872f90c799c86eff6"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "54e8156e67752ab683ed8c407a731bfee5e356fe211f6ee8fb760f6d5ace747c"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "2f98bc1412a0a76b852f5a4851440d991ca57591e85f046d6ef774bf0753eccb"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[obj for obj in scene.objects if obj.type=='MESH']\nunit_mm=float(scene.unit_settings.scale_length)*1000.0\ngeom=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.data\n mesh.calc_loop_triangles()\n local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape(-1,3)\n matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n world=(local@matrix[:3,:3].T+matrix[:3,3])*unit_mm\n indices=np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n geom.append({'name':obj.name,'triangles':world[indices]})\nfull_results=[]; incomplete=[]\nfor first in range(len(geom)):\n for second in range(first+1,len(geom)):\n  if not len(geom[first]['triangles']) or not len(geom[second]['triangles']):\n   incomplete.append((geom[first]['name'],geom[second]['name'],'empty triangle surface'))\n   continue\n  distance,hit,triangle_indices=triangle_surface_distance(geom[first]['triangles'],geom[second]['triangles'])\n  full_results.append((first,second,distance,hit,triangle_indices))\nqualifying=[result for result in full_results if result[2]<=2.0]\nprint('UNITS',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('TOTAL_OBJECTS',len(geom),'TOTAL_TRIANGLES',sum(len(item['triangles']) for item in geom),'EXHAUSTIVE_PAIRS',len(full_results),'WITHIN_2MM',len(qualifying),'ZERO',sum(result[2]==0 for result in qualifying))\nprint('OBJECTS',[(item['name'],len(item['triangles'])) for item in geom])\nfor first,second,distance,hit,triangle_indices in qualifying:\n print(geom[first]['name'],geom[second]['name'],f'{distance:.9f}','hit',hit)\nprint('INCOMPLETE',incomplete)\nprint('MIN_EXCLUDED',min((result[2] for result in full_results if result[2]>2),default=None))\nprint('FINITE',all(np.isfinite(result[2]) for result in full_results))\nprint('DEGENERATE',[(item['name'],int(np.sum(np.linalg.norm(np.cross(item['triangles'][:,1]-item['triangles'][:,0],item['triangles'][:,2]-item['triangles'][:,0]),axis=1)==0))) for item in geom if len(item['triangles'])])\nprint('INSTANCES',[(instance.object.name,instance.is_instance) for instance in depsgraph.object_instances if instance.is_instance])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "480ece2b473628814d32bc71034508e9544814c6f107352ca5d508b3c1cf89d7",
+      "source_sha256": "a365dc7c45a6e75f2a76e3c35cc47b120055c8306d01a506b253c1e708b5c2bc"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, numpy as np\nscene=bpy.context.scene\ndepsgraph=bpy.context.evaluated_depsgraph_get()\nobjs=[obj for obj in scene.objects if obj.type=='MESH']\nunit_mm=float(scene.unit_settings.scale_length)*1000.0\ngeom=[]\nfor obj in objs:\n evaluated=obj.evaluated_get(depsgraph)\n mesh=evaluated.data\n mesh.calc_loop_triangles()\n local=np.array([tuple(vertex.co) for vertex in mesh.vertices],dtype=np.float64).reshape(-1,3)\n matrix=np.array(evaluated.matrix_world,dtype=np.float64)\n world=(local@matrix[:3,:3].T+matrix[:3,3])*unit_mm\n indices=np.array([tuple(triangle.vertices) for triangle in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n geom.append({'name':obj.name,'triangles':world[indices]})\nfull_results=[]; incomplete=[]\nfor first in range(len(geom)):\n for second in range(first+1,len(geom)):\n  if not len(geom[first]['triangles']) or not len(geom[second]['triangles']):\n   incomplete.append((geom[first]['name'],geom[second]['name'],'empty triangle surface'))\n   continue\n  distance,hit,triangle_indices=triangle_surface_distance(geom[first]['triangles'],geom[second]['triangles'])\n  full_results.append((first,second,distance,hit,triangle_indices))\nqualifying=[result for result in full_results if result[2]<=2.0]\nprint('UNITS',scene.unit_settings.system,scene.unit_settings.scale_length)\nprint('TOTAL_OBJECTS',len(geom),'TOTAL_TRIANGLES',sum(len(item['triangles']) for item in geom),'EXHAUSTIVE_PAIRS',len(full_results),'WITHIN_2MM',len(qualifying),'ZERO',sum(result[2]==0 for result in qualifying))\nprint('OBJECTS',[(item['name'],len(item['triangles'])) for item in geom])\nfor first,second,distance,hit,triangle_indices in qualifying:\n print(geom[first]['name'],geom[second]['name'],f'{distance:.9f}','hit',hit)\nprint('INCOMPLETE',incomplete)\nprint('MIN_EXCLUDED',min((result[2] for result in full_results if result[2]>2),default=None))\nprint('FINITE',all(np.isfinite(result[2]) for result in full_results))\nprint('DEGENERATE',[(item['name'],int(np.sum(np.linalg.norm(np.cross(item['triangles'][:,1]-item['triangles'][:,0],item['triangles'][:,2]-item['triangles'][:,0]),axis=1)==0))) for item in geom if len(item['triangles'])])\nprint('INSTANCES',[(instance.object.name,instance.is_instance) for instance in depsgraph.object_instances if instance.is_instance])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"UNITS METRIC 1.0\\nTOTAL_OBJECTS 24 TOTAL_TRIANGLES 978 EXHAUSTIVE_PAIRS 276 WITHIN_2MM 72 ZERO 45\\nOBJECTS [('Obj_001', 12), ('Obj_002', 28), ('Obj_003', 28), ('Obj_004', 28), ('Obj_005', 20), ('Obj_006', 28), ('Obj_007', 20), ('Obj_008', 12), ('Obj_009', 12), ('Obj_010', 12), ('Obj_011', 12), ('Obj_012', 2), ('Obj_013', 128), ('Obj_014', 128), ('Obj_015', 128), ('Obj_016', 128), ('Obj_017', 12), ('Obj_018', 12), ('Obj_019', 12), ('Obj_020', 12), ('Obj_021', 64), ('Obj_022', 64), ('Obj_023', 64), ('Obj_024', 12)]\\nObj_001 Obj_002 0.000000000 hit True\\nObj_001 Obj_003 0.000000000 hit True\\nObj_001 Obj_004 0.000000000 hit True\\nObj_001 Obj_005 1.000000047 hit False\\nObj_001 Obj_006 0.500000024 hit False\\nObj_001 Obj_007 1.500000013 hit False\\nObj_001 Obj_017 0.000000000 hit True\\nObj_001 Obj_018 0.000000000 hit True\\nObj_001 Obj_019 0.000000000 hit True\\nObj_001 Obj_020 0.000000000 hit True\\nObj_002 Obj_003 0.000000000 hit True\\nObj_002 Obj_004 0.000000000 hit True\\nObj_002 Obj_005 0.000000000 hit True\\nObj_002 Obj_006 0.000000000 hit True\\nObj_002 Obj_007 0.000000000 hit True\\nObj_002 Obj_008 1.499998965 hit False\\nObj_002 Obj_009 0.000000000 hit True\\nObj_002 Obj_013 0.249998644 hit False\\nObj_002 Obj_014 0.249998644 hit False\\nObj_002 Obj_015 0.249998644 hit False\\nObj_002 Obj_016 0.249998644 hit False\\nObj_002 Obj_017 0.000000000 hit True\\nObj_002 Obj_018 0.000000000 hit True\\nObj_002 Obj_020 0.000000000 hit True\\nObj_002 Obj_022 0.000000000 hit True\\nObj_003 Obj_004 0.000000000 hit True\\nObj_003 Obj_005 0.000000000 hit True\\nObj_003 Obj_006 0.000000000 hit True\\nObj_003 Obj_007 0.000000000 hit True\\nObj_003 Obj_009 0.000000000 hit True\\nObj_003 Obj_015 0.249998644 hit False\\nObj_003 Obj_016 0.249998644 hit False\\nObj_003 Obj_018 0.000000000 hit True\\nObj_003 Obj_019 0.000000000 hit True\\nObj_003 Obj_020 0.000000000 hit True\\nObj_004 Obj_005 0.999998301 hit False\\nObj_004 Obj_010 0.250000507 hit False\\nObj_004 Obj_017 1.500003040 hit False\\nObj_004 Obj_018 1.500003040 hit False\\nObj_004 Obj_019 1.500003040 hit False\\nObj_004 Obj_020 1.500003040 hit False\\nObj_005 Obj_006 1.000002027 hit False\\nObj_005 Obj_010 0.000000000 hit True\\nObj_005 Obj_017 0.000000000 hit True\\nObj_005 Obj_019 0.000000000 hit True\\nObj_006 Obj_007 0.999998301 hit False\\nObj_006 Obj_008 0.000000000 hit True\\nObj_006 Obj_009 1.350320876 hit False\\nObj_006 Obj_010 0.000000000 hit True\\nObj_006 Obj_011 0.199999660 hit False\\nObj_006 Obj_016 0.000000000 hit True\\nObj_007 Obj_008 0.000000000 hit True\\nObj_007 Obj_010 0.000000000 hit True\\nObj_007 Obj_011 0.000000000 hit True\\nObj_007 Obj_012 1.499999315 hit False\\nObj_007 Obj_013 0.000000000 hit True\\nObj_007 Obj_021 0.600002706 hit False\\nObj_008 Obj_010 0.000000000 hit True\\nObj_008 Obj_013 0.000000000 hit True\\nObj_008 Obj_014 0.000000000 hit True\\nObj_008 Obj_021 0.000000000 hit True\\nObj_009 Obj_010 0.000000000 hit True\\nObj_009 Obj_015 0.249998644 hit False\\nObj_009 Obj_016 0.000000000 hit True\\nObj_009 Obj_022 0.000000000 hit True\\nObj_010 Obj_021 0.000000000 hit True\\nObj_010 Obj_022 0.000000000 hit True\\nObj_013 Obj_014 1.761146088 hit False\\nObj_013 Obj_021 0.588469463 hit False\\nObj_015 Obj_016 0.780363777 hit False\\nObj_015 Obj_022 0.588469685 hit False\\nObj_018 Obj_020 0.000000000 hit True\\nINCOMPLETE []\\nMIN_EXCLUDED 2.2774309539222846\\nFINITE True\\nDEGENERATE [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\nINSTANCES []\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "eb9cbdd5c7b99915b0084a9862302c4dd78c920c1995e107039348509b06ba3e",
+      "source_sha256": "a365dc7c45a6e75f2a76e3c35cc47b120055c8306d01a506b253c1e708b5c2bc"
+    }
+  ],
+  "scope": "Actual owner records and consumer-visible events are independently bound; no missing delivery is inferred."
+}

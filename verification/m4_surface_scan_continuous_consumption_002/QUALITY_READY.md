@@ -1,0 +1,40 @@
+# 连续消费002匿名质量交接
+
+本批为 M4-SURFACE-SCAN-CONTINUOUS-CONSUMPTION-002，执行管理员提交 79ed3bff7c87d4ac68e2b2bf382de05d41b731c6 的冻结合同。正式准备提交为 11ae08e791c300c58ae935f4f632a22b3d7f3342，计划 SHA256 为 43d19c8c94c4b4ec66ea5589f7ea64c21686501dab4dcfdc2d35d38a3c13a726。
+
+## 实际执行
+
+固定六个episode全部执行，十八槽为18 completed、0 failed、0 not_run。六个outer完整执行有效，独立owner/worker关闭、来源保护和登记EDIT终态回读全部通过，停止原因为空。
+
+六个实际模型UUID互异，每集三轮使用同一UUID、工作目录和owned后端，实际同线程续接共十二次。原生脚本及缓存、C产品runtime的身份连续性由各轮原件绑定。内容正确性、主项完整列表、辅助上下文重建及当前状态依据交管理员独立评分。
+
+十八个消费者进程及读取线程均确认结束。十八轮thin-client退出回执仍为unknown，独立owned后端的关闭证据另行保留。共享GUI内部场景前后状态未单独量测。已审QA namespace副作用见PREPARATION_NOTES.md。
+
+## 实际入口与准备修正
+
+正式driver加载已审接口修复wrapper，通过其legacy.pack完成完整归档。具体attempt关联的双方成功绑定故障停止分支及普通工具错误控制已通过必要离线检查，正式阶段没有触发该停止条件。
+
+首份准备提交012daa93的提交字节核验遇到Windows长路径限制，正式实例尚未启动。随后将两处git show读取改为git cat-file blob，逐一核验168个已提交对象，保留失败记录和最小diff，再形成上述正式准备提交。固定wrapper、transport和compatibility均通过原摘要核对。
+
+正式前后核准172份准备文件和425个复用来源。原14成功、3真实错误和四个本地进程场景沿既有独审证据复用，本次仅补实际外层wrapper、归档、发布和停止接线检查。
+
+## 匿名质量材料
+
+quality/ANONYMOUS_QUALITY.zip含六个匿名episode、十八份原始final、完整业务证据、精确真值及评分合同，共89个公开文件。集内顺序保留，公开episode顺序按冻结随机匿名ID排序。
+
+- 匿名包SHA256为21198b498acbbe0eb3ef68e399b468629094b325eb8cdd75eef532755b068610。
+- 私有来源绑定SHA256为9c25bfecffec73525b7ea7d22d21e092b76d8326f3b777fef39323fe5362b960。
+- 313项原件与匿名投影绑定检查通过，source_consistency_issues为空。
+- 实际全局UUID公开字节扫描通过。工具业务及原错误文本可能透露路线，该匿名限制随包保留。
+
+短路径.m4cc2原件继续保留，各集ORIGINALS.zip与RUNTIME_MANIFEST.json完整绑定。公开质量内容保持unscored，分组映射、管理时钟、usage和启动参数封存于私有材料。
+
+## Usage范围及成本边界
+
+六个授权UUID、十八个实际CLI调用和十二次resume逐一核对了task边界与必要token_count数字。每轮从零起点累计，其逐次增量、轮内终值与CLI原turn.completed字段完全对应，观察范围确认为per_turn_CLI_invocation_observed。原consumer记录中的未确认标签继续作为原始记录保留，派生证明另存review/actual_usage。
+
+ALL_NUMERIC_PROOF.json的SHA256为ec7e56a39f6d4632aee174a4c4ff19b8f4d9109d3d3da43ee9320de57590f2f1。核对只访问本批精确白名单会话的允许元数据与数值事件，正文、推理和其他会话未导出。
+
+成本继续封存，usage aggregation为空，分组及episode总量尚未计算，费用、provider请求次数和不可见服务开销保持未测。准备、审核及完整共享打包成本尚未汇总，未记为零。正式收益门等待质量封存后另行解封核验。
+
+原001六次失败、十二轮未运行及其成本账本继续封存，本批使用全新样本。Agent Learning上下文未绑定，任务状态未同步。本批提交后交管理员独立复核。

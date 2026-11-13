@@ -1,0 +1,359 @@
+{
+  "owner_attempts": [
+    {
+      "is_error": false,
+      "order": 1,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import bpy, math, time\nimport numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nsc=bpy.context.scene\nprint('UNITS',sc.unit_settings.system,sc.unit_settings.scale_length)\nprint('OBJECTS',[(o.name,o.type,o.hide_viewport,o.hide_render) for o in sc.objects])\nprint('INSTANCES',len(list(bpy.context.evaluated_depsgraph_get().object_instances)))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"UNITS METRIC 1.0\\nOBJECTS [('Obj_001', 'MESH', False, False), ('Obj_002', 'MESH', False, False), ('Obj_003', 'MESH', False, False), ('Obj_004', 'MESH', False, False), ('Obj_005', 'MESH', False, False), ('Obj_006', 'MESH', False, False), ('Obj_007', 'MESH', False, False), ('Obj_008', 'MESH', False, False), ('Obj_009', 'MESH', False, False), ('Obj_010', 'MESH', False, False), ('Obj_011', 'MESH', False, False), ('Obj_012', 'MESH', False, False), ('Obj_013', 'MESH', False, False), ('Obj_014', 'MESH', False, False), ('Obj_015', 'MESH', False, False), ('Obj_016', 'MESH', False, False), ('Obj_017', 'MESH', False, False), ('Obj_018', 'MESH', False, False), ('Obj_019', 'MESH', False, False), ('Obj_020', 'MESH', False, False), ('Obj_021', 'MESH', False, False), ('Obj_022', 'MESH', False, False), ('Obj_023', 'MESH', False, False), ('Obj_024', 'MESH', False, False)]\\nINSTANCES 24\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "1c0204953d723f64f16cd595d462c50506fc6907027dc3e23d5683a68154e85d"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "8d2484870366755b7451f7f23e22bc84f2704fd203032578638b3e9194738e3d"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "fb7afac5a878a5249a174fa26657d390d9388ccc98d78994d482b73acc94e13e"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 2,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "deps=bpy.context.evaluated_depsgraph_get()\nmeshes=[]\nfor obj in sc.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(deps)\n    mesh=ev.to_mesh()\n    mesh.calc_loop_triangles()\n    coords=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n    matrix=np.array(ev.matrix_world,dtype=np.float64)\n    coords=coords@matrix[:3,:3].T+matrix[:3,3]\n    indices=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n    triangles=coords[indices]\n    meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n    ev.to_mesh_clear()\nprint('MESHES',[(m['name'],len(m['tri']),m['lo'].tolist() if m['lo'] is not None else None,m['hi'].tolist() if m['hi'] is not None else None) for m in meshes])\nthreshold=.002/sc.unit_settings.scale_length\ncandidates=[]\nfor i,a in enumerate(meshes):\n    for j in range(i+1,len(meshes)):\n        b=meshes[j]\n        if a['lo'] is None or b['lo'] is None: continue\n        delta=np.maximum(0,np.maximum(a['lo']-b['hi'],b['lo']-a['hi']))\n        bound=np.linalg.norm(delta)\n        if bound<=threshold: candidates.append((i,j,float(bound)))\nprint('CANDIDATES',len(candidates),[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in candidates])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"MESHES [('Obj_001', 12, [-0.07999999821186066, -0.054999999701976776, -0.009999999776482582], [0.07999999821186066, 0.054999999701976776, 0.0]), ('Obj_002', 28, [-0.0728503167629242, -0.04447570815682411, 0.0], [0.0728503167629242, 0.016475709155201912, 0.01600000075995922]), ('Obj_003', 28, [-0.0728503167629242, -0.016475709155201912, 0.0], [0.0728503167629242, 0.04447570815682411, 0.01600000075995922]), ('Obj_004', 28, [-0.07500000298023224, -0.05000000074505806, 0.0], [0.07500000298023224, 0.05000000074505806, 0.019999999552965164]), ('Obj_005', 20, [-0.06499999761581421, -0.04500000178813934, 0.0010000000474974513], [0.06499999761581421, 0.04500000178813934, 0.028999999165534973]), ('Obj_006', 28, [-0.054999999701976776, -0.03999999910593033, 0.0005000000237487257], [0.054999999701976776, 0.03999999910593033, 0.0364999994635582]), ('Obj_007', 20, [-0.04500000178813934, -0.03500000014901161, 0.001500000013038516], [0.04500000178813934, 0.03500000014901161, 0.045499999076128006]), ('Obj_008', 12, [-0.049649678170681, -0.03829171881079674, 0.0182499997317791], [-0.026350321248173714, -0.013708282262086868, 0.026249999180436134]), ('Obj_009', 12, [0.026350321248173714, -0.010291717946529388, 0.01600000075995922], [0.049649678170681, 0.014291717670857906, 0.024000000208616257]), ('Obj_010', 12, [-0.07199999690055847, -0.04699999839067459, 0.020250000059604645], [0.07199999690055847, 0.04699999839067459, 0.02174999937415123]), ('Obj_011', 12, [-0.05299999937415123, -0.03799999877810478, 0.03669999912381172], [0.05299999937415123, 0.03799999877810478, 0.037700001150369644]), ('Obj_012', 2, [-0.0430000014603138, -0.032999999821186066, 0.04699999839067459], [0.0430000014603138, 0.032999999821186066, 0.04699999839067459]), ('Obj_013', 128, [-0.04399999976158142, -0.03200000151991844, 0.016249999403953552], [-0.03200000151991844, -0.019999999552965164, 0.017750000581145287]), ('Obj_014', 128, [-0.03099999949336052, -0.02800000086426735, 0.016249999403953552], [-0.01899999938905239, -0.01600000075995922, 0.017750000581145287]), ('Obj_015', 128, [0.03200000151991844, -0.004000000189989805, 0.016249999403953552], [0.04399999976158142, 0.00800000037997961, 0.017750000581145287]), ('Obj_016', 128, [0.04399999976158142, -0.00800000037997961, 0.016249999403953552], [0.0560000017285347, 0.004000000189989805, 0.017750000581145287]), ('Obj_017', 12, [-0.06949999928474426, -0.04399999976158142, 0.0], [-0.060499999672174454, -0.026000000536441803, 0.012000000104308128]), ('Obj_018', 12, [0.060499999672174454, -0.0020000000949949026, 0.0], [0.06949999928474426, 0.01600000075995922, 0.012000000104308128]), ('Obj_019', 12, [-0.06949999928474426, 0.026000000536441803, 0.0], [-0.060499999672174454, 0.04399999976158142, 0.012000000104308128]), ('Obj_020', 12, [0.060499999672174454, -0.01600000075995922, 0.0], [0.06949999928474426, 0.0020000000949949026, 0.012000000104308128]), ('Obj_021', 64, [-0.04039999842643738, -0.0284000001847744, 0.014000000432133675], [-0.035599999129772186, -0.023600000888109207, 0.026000000536441803]), ('Obj_022', 64, [0.035599999129772186, -0.00039999998989515007, 0.014000000432133675], [0.04039999842643738, 0.004399999976158142, 0.026000000536441803]), ('Obj_023', 64, [-0.002400000113993883, -0.002400000113993883, 0.004000000189989805], [0.002400000113993883, 0.002400000113993883, 0.01600000075995922]), ('Obj_024', 12, [-0.003000000026077032, -0.003000000026077032, -0.007000000216066837], [0.003000000026077032, 0.003000000026077032, -0.003000000026077032])]\\nCANDIDATES 112 [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0000000474974513), ('Obj_001', 'Obj_006', 0.5000000237487257), ('Obj_001', 'Obj_007', 1.500000013038516), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 0.0), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.24999864399433136), ('Obj_002', 'Obj_014', 0.24999864399433136), ('Obj_002', 'Obj_015', 0.24999864399433136), ('Obj_002', 'Obj_016', 0.24999864399433136), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 0.0), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 0.0), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 0.24999864399433136), ('Obj_003', 'Obj_015', 0.24999864399433136), ('Obj_003', 'Obj_016', 0.24999864399433136), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 0.0), ('Obj_003', 'Obj_023', 0.0), ('Obj_004', 'Obj_005', 0.0), ('Obj_004', 'Obj_006', 0.0), ('Obj_004', 'Obj_007', 0.0), ('Obj_004', 'Obj_008', 0.0), ('Obj_004', 'Obj_009', 0.0), ('Obj_004', 'Obj_010', 0.2500005066394806), ('Obj_004', 'Obj_013', 0.0), ('Obj_004', 'Obj_014', 0.0), ('Obj_004', 'Obj_015', 0.0), ('Obj_004', 'Obj_016', 0.0), ('Obj_004', 'Obj_017', 0.0), ('Obj_004', 'Obj_018', 0.0), ('Obj_004', 'Obj_019', 0.0), ('Obj_004', 'Obj_020', 0.0), ('Obj_004', 'Obj_021', 0.0), ('Obj_004', 'Obj_022', 0.0), ('Obj_004', 'Obj_023', 0.0), ('Obj_005', 'Obj_006', 0.0), ('Obj_005', 'Obj_007', 0.0), ('Obj_005', 'Obj_008', 0.0), ('Obj_005', 'Obj_009', 0.0), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 0.0), ('Obj_005', 'Obj_014', 0.0), ('Obj_005', 'Obj_015', 0.0), ('Obj_005', 'Obj_016', 0.0), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 0.0), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 0.0), ('Obj_005', 'Obj_021', 0.0), ('Obj_005', 'Obj_022', 0.0), ('Obj_005', 'Obj_023', 0.0), ('Obj_006', 'Obj_007', 0.0), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 0.0), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.19999966025352478), ('Obj_006', 'Obj_013', 0.0), ('Obj_006', 'Obj_014', 0.0), ('Obj_006', 'Obj_015', 0.0), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 0.0), ('Obj_006', 'Obj_022', 0.0), ('Obj_006', 'Obj_023', 0.0), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 0.0), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.499999314546585), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 0.0), ('Obj_007', 'Obj_015', 0.0), ('Obj_007', 'Obj_016', 0.0), ('Obj_007', 'Obj_021', 0.0), ('Obj_007', 'Obj_022', 0.0), ('Obj_007', 'Obj_023', 0.0), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.49999915063381195), ('Obj_008', 'Obj_014', 0.49999915063381195), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.0), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.0000020265579224), ('Obj_013', 'Obj_021', 0.0), ('Obj_015', 'Obj_016', 0.0), ('Obj_015', 'Obj_022', 0.0), ('Obj_018', 'Obj_020', 0.0)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "3554343e7ae17733154c8cc0aa3d6b861209e110069673275d7508e40a451c57"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "b981b8283a6e8d35339014f37a2a0c39925db84d73c270f991663566f5503686"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "66d651da2c417522e11f3a379b4fb835db64a2592c088f2142c9389320d669fa"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 3,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "def dotvec(a,b): return np.einsum('...i,...i->...',a,b)\ndef tri_pair_distances(first,second):\n    count=len(first)*len(second)\n    aa=np.repeat(first,len(second),axis=0)\n    bb=np.tile(second,(len(first),1,1))\n    best=np.full(count,np.inf)\n    def point_faces(points,faces):\n        origin=faces[:,0]; edge_u=faces[:,1]-origin; edge_v=faces[:,2]-origin\n        normal=np.cross(edge_u,edge_v); norm2=dotvec(normal,normal)\n        offset=points-origin\n        signed=dotvec(offset,normal)\n        projection=points-normal*np.divide(signed,norm2,out=np.zeros_like(signed),where=norm2>0)[:,None]\n        return projection,signed,norm2\n    def inside(points,faces):\n        edge_u=faces[:,1]-faces[:,0]; edge_v=faces[:,2]-faces[:,0]; offset=points-faces[:,0]\n        normal=np.cross(edge_u,edge_v); denom=dotvec(normal,normal)\n        bary_u=np.divide(dotvec(np.cross(offset,edge_v),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        bary_v=np.divide(dotvec(np.cross(edge_u,offset),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        return (bary_u>=-1e-13)&(bary_v>=-1e-13)&(bary_u+bary_v<=1+1e-13)\n    for source,target in ((aa,bb),(bb,aa)):\n        for vertex in range(3):\n            projected,signed,norm2=point_faces(source[:,vertex],target)\n            dist2=np.divide(signed*signed,norm2,out=np.full(count,np.inf),where=norm2>0)\n            best=np.minimum(best,np.where(inside(projected,target),dist2,np.inf))\n        normal=np.cross(target[:,1]-target[:,0],target[:,2]-target[:,0])\n        for edge in range(3):\n            start=source[:,edge]; end=source[:,(edge+1)%3]; direction=end-start\n            denom=dotvec(direction,normal)\n            param=np.divide(dotvec(target[:,0]-start,normal),denom,out=np.full(count,np.nan),where=denom!=0)\n            hit=start+np.nan_to_num(param)[:,None]*direction\n            intersects=(param>=0)&(param<=1)&inside(hit,target)\n            best=np.where(intersects,0,best)\n    for edge_a in range(3):\n        start_a=aa[:,edge_a]; direction_a=aa[:,(edge_a+1)%3]-start_a\n        for edge_b in range(3):\n            start_b=bb[:,edge_b]; direction_b=bb[:,(edge_b+1)%3]-start_b\n            offset=start_a-start_b\n            length_a=dotvec(direction_a,direction_a); length_b=dotvec(direction_b,direction_b)\n            mixed=dotvec(direction_a,direction_b); offset_a=dotvec(direction_a,offset); offset_b=dotvec(direction_b,offset)\n            denom=dotvec(np.cross(direction_a,direction_b),np.cross(direction_a,direction_b))\n            param_a=np.divide(mixed*offset_b-length_b*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            param_b=np.divide(length_a*offset_b-mixed*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            delta=offset+np.nan_to_num(param_a)[:,None]*direction_a-np.nan_to_num(param_b)[:,None]*direction_b\n            best=np.minimum(best,np.where((param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1),dotvec(delta,delta),np.inf))\n            for endpoint in (0,1):\n                point=start_a+endpoint*direction_a\n                param=np.clip(np.divide(dotvec(point-start_b,direction_b),length_b,out=np.zeros(count),where=length_b>0),0,1)\n                delta=point-start_b-param[:,None]*direction_b\n                best=np.minimum(best,dotvec(delta,delta))\n                point=start_b+endpoint*direction_b\n                param=np.clip(np.divide(dotvec(point-start_a,direction_a),length_a,out=np.zeros(count),where=length_a>0),0,1)\n                delta=point-start_a-param[:,None]*direction_a\n                best=np.minimum(best,dotvec(delta,delta))\n    return np.sqrt(best).reshape(len(first),len(second))\nstart_time=time.time()\nresults=[]\nfor i,j,bound in candidates:\n    distances=tri_pair_distances(meshes[i]['tri'],meshes[j]['tri'])\n    distance=float(distances.min())\n    results.append((i,j,distance))\nprint('SECONDS',time.time()-start_time)\nprint('RESULTS_MM',[(meshes[i]['name'],meshes[j]['name'],d*1000*sc.unit_settings.scale_length) for i,j,d in results])\nprint('DEGENERATE',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in meshes])"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"SECONDS 0.5657846927642822\\nRESULTS_MM [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0000000474974513), ('Obj_001', 'Obj_006', 0.5000000237487257), ('Obj_001', 'Obj_007', 1.500000013038516), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 2.999999560415745), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.24999864399433136), ('Obj_002', 'Obj_014', 0.24999864399433136), ('Obj_002', 'Obj_015', 0.24999864399433136), ('Obj_002', 'Obj_016', 0.24999864399433136), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 2.9221901092925178), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 27.98307316856691), ('Obj_003', 'Obj_015', 0.24999864399433136), ('Obj_003', 'Obj_016', 0.24999864399433136), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 2.2774323841636734), ('Obj_003', 'Obj_023', 2.9221901092925178), ('Obj_004', 'Obj_005', 0.9999983012676239), ('Obj_004', 'Obj_006', 6.000000983476639), ('Obj_004', 'Obj_007', 10.999999940395355), ('Obj_004', 'Obj_008', 7.708281278610229), ('Obj_004', 'Obj_009', 21.350324153900146), ('Obj_004', 'Obj_010', 0.2500005066394806), ('Obj_004', 'Obj_013', 13.999998569488527), ('Obj_004', 'Obj_014', 17.999999225139618), ('Obj_004', 'Obj_015', 27.00000256299973), ('Obj_004', 'Obj_016', 15.000000596046448), ('Obj_004', 'Obj_017', 1.5000030398368835), ('Obj_004', 'Obj_018', 1.5000030398368835), ('Obj_004', 'Obj_019', 1.5000030398368835), ('Obj_004', 'Obj_020', 1.5000030398368835), ('Obj_004', 'Obj_021', 17.59999990463257), ('Obj_004', 'Obj_022', 30.60000389814377), ('Obj_004', 'Obj_023', 43.599999975413084), ('Obj_005', 'Obj_006', 1.0000020265579224), ('Obj_005', 'Obj_007', 6.000000983476639), ('Obj_005', 'Obj_008', 2.708282321691513), ('Obj_005', 'Obj_009', 30.70828318595886), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 8.999999612569809), ('Obj_005', 'Obj_014', 13.0000002682209), ('Obj_005', 'Obj_015', 37.000000942498446), ('Obj_005', 'Obj_016', 33.00000075250864), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 39.00000103749334), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 25.000000372529026), ('Obj_005', 'Obj_021', 12.60000094771385), ('Obj_005', 'Obj_022', 40.600001142593094), ('Obj_005', 'Obj_023', 38.60000101849437), ('Obj_006', 'Obj_007', 0.9999983012676239), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 1.3503208756446838), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.19999966025352475), ('Obj_006', 'Obj_013', 3.999996930360794), ('Obj_006', 'Obj_014', 7.999997586011887), ('Obj_006', 'Obj_015', 6.999999284744264), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 7.599998265504836), ('Obj_006', 'Obj_022', 10.600000619888306), ('Obj_006', 'Obj_023', 33.599998336285346), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 20.70828154683113), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.4999993145465849), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 2.99999862909317), ('Obj_007', 'Obj_015', 26.999999303370714), ('Obj_007', 'Obj_016', 23.533512062916227), ('Obj_007', 'Obj_021', 0.6000027060508728), ('Obj_007', 'Obj_022', 30.59999950346537), ('Obj_007', 'Obj_023', 28.59999937936664), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.49999915063381195), ('Obj_008', 'Obj_014', 0.49999915063381195), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.24999864399433136), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.7611460879795748), ('Obj_013', 'Obj_021', 0.588469463209107), ('Obj_015', 'Obj_016', 0.780363776934969), ('Obj_015', 'Obj_022', 0.5884696848679267), ('Obj_018', 'Obj_020', 0.0)]\\nDEGENERATE [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "e61d776daa741a726dab2d8f9eb9c8928d811dd13dc5651d6447c1b5d0b7706d"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "b1f4c196210e0655c75ebc4ffcf4013dfe967a80e218981ee5d3988a69a9e014"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "eeadc3ed24bcf8ecf1bdd9e2949a300ac527f733779ce57621de144a354051fd"
+        }
+      ]
+    },
+    {
+      "is_error": false,
+      "order": 4,
+      "owner_exception": null,
+      "request": {
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "qualifying=[(i,j,d*1000*sc.unit_settings.scale_length) for i,j,d in results if d<=threshold]\nzero=[(i,j,d) for i,j,d in qualifying if d==0]\npositive=[(i,j,d) for i,j,d in qualifying if d>0]\nprint('COUNTS objects triangles allpairs candidates excluded_aabb excluded_exact included zero positive',len(meshes),sum(len(m['tri']) for m in meshes),len(meshes)*(len(meshes)-1)//2,len(candidates),276-len(candidates),len(results)-len(qualifying),len(qualifying),len(zero),len(positive))\nprint('ZERO_GROUPS')\nfor i in range(len(meshes)):\n    partners=[meshes[j]['name'] for a,j,d in zero if a==i]\n    if partners: print(meshes[i]['name'],', '.join(partners))\nprint('POSITIVE')\nfor i,j,d in positive: print(meshes[i]['name'],meshes[j]['name'],f'{d:.6f}')\nprint('THRESHOLD_NEAREST',sorted([(abs(d*1000-2),meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results])[:3])\n# Independently check triangle intersection with Blender BVH for positive-distance pairs.\nfor m in meshes:\n    vertices=m['tri'].reshape(-1,3)\n    m['bvh']=BVHTree.FromPolygons([Vector(v) for v in vertices],[(k,k+1,k+2) for k in range(0,len(vertices),3)],all_triangles=True,epsilon=0)\nprint('BVH_INTERSECTION_MISMATCH',[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results if bool(meshes[i]['bvh'].overlap(meshes[j]['bvh'])) and d>1e-10])\nprint('FINITE',all(np.isfinite(m['tri']).all() for m in meshes))"
+          },
+          "name": "execute_blender_code"
+        }
+      },
+      "request_missing": false,
+      "response_missing": false,
+      "responses": [
+        {
+          "kind": "RESPONSE.json",
+          "value": {
+            "result": {
+              "content": [
+                {
+                  "text": "{\"result\":{\"executed\":true,\"result\":\"COUNTS objects triangles allpairs candidates excluded_aabb excluded_exact included zero positive 24 978 276 112 164 41 71 43 28\\nZERO_GROUPS\\nObj_001 Obj_002, Obj_003, Obj_004, Obj_017, Obj_018, Obj_019, Obj_020\\nObj_002 Obj_003, Obj_004, Obj_005, Obj_006, Obj_007, Obj_009, Obj_017, Obj_018, Obj_020, Obj_022\\nObj_003 Obj_004, Obj_005, Obj_006, Obj_007, Obj_009, Obj_018, Obj_019, Obj_020\\nObj_005 Obj_010, Obj_017, Obj_019\\nObj_006 Obj_008, Obj_010, Obj_016\\nObj_007 Obj_008, Obj_010, Obj_011, Obj_013\\nObj_008 Obj_010, Obj_021\\nObj_009 Obj_010, Obj_016, Obj_022\\nObj_010 Obj_021, Obj_022\\nObj_018 Obj_020\\nPOSITIVE\\nObj_001 Obj_005 1.000000\\nObj_001 Obj_006 0.500000\\nObj_001 Obj_007 1.500000\\nObj_002 Obj_013 0.249999\\nObj_002 Obj_014 0.249999\\nObj_002 Obj_015 0.249999\\nObj_002 Obj_016 0.249999\\nObj_003 Obj_015 0.249999\\nObj_003 Obj_016 0.249999\\nObj_004 Obj_005 0.999998\\nObj_004 Obj_010 0.250001\\nObj_004 Obj_017 1.500003\\nObj_004 Obj_018 1.500003\\nObj_004 Obj_019 1.500003\\nObj_004 Obj_020 1.500003\\nObj_005 Obj_006 1.000002\\nObj_006 Obj_007 0.999998\\nObj_006 Obj_009 1.350321\\nObj_006 Obj_011 0.200000\\nObj_007 Obj_012 1.499999\\nObj_007 Obj_021 0.600003\\nObj_008 Obj_013 0.499999\\nObj_008 Obj_014 0.499999\\nObj_009 Obj_015 0.249999\\nObj_013 Obj_014 1.761146\\nObj_013 Obj_021 0.588469\\nObj_015 Obj_016 0.780364\\nObj_015 Obj_022 0.588470\\nTHRESHOLD_NEAREST [(0.23885391202042516, 'Obj_013', 'Obj_014', 1.7611460879795748), (0.2774309539222872, 'Obj_002', 'Obj_021', 2.2774309539222872), (0.27743238416367344, 'Obj_003', 'Obj_022', 2.2774323841636734)]\\nBVH_INTERSECTION_MISMATCH []\\nFINITE True\\n\"},\"status\":\"success\"}",
+                  "type": "text"
+                }
+              ],
+              "isError": false
+            }
+          }
+        }
+      ],
+      "source_files": [
+        {
+          "kind": "REQUEST.json",
+          "original_sha256": "8386dd32a14f11e4755e699a0e426b31f66a4a8bdbcde5206abefc54934d3786"
+        },
+        {
+          "kind": "RESPONSE.json",
+          "original_sha256": "34fbf3f4a5885b3e0863dab3a3d837b0297ae9e5ccd596d7148350294fbfc17a"
+        },
+        {
+          "kind": "ATTEMPT.json",
+          "original_sha256": "40d7a754911a52299708b130572c1c2d48463ec86a6c0f75f313be50b20d7172"
+        }
+      ]
+    }
+  ],
+  "public_tool_events": [
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, time\nimport numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nsc=bpy.context.scene\nprint('UNITS',sc.unit_settings.system,sc.unit_settings.scale_length)\nprint('OBJECTS',[(o.name,o.type,o.hide_viewport,o.hide_render) for o in sc.objects])\nprint('INSTANCES',len(list(bpy.context.evaluated_depsgraph_get().object_instances)))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 1,
+      "phase": "item.started",
+      "source_line_sha256": "82cd1f82d0160c83c727e948506cc7571249b7ca73d90f6f5a406698d3b06628",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "import bpy, math, time\nimport numpy as np\nfrom mathutils import Vector\nfrom mathutils.bvhtree import BVHTree\nsc=bpy.context.scene\nprint('UNITS',sc.unit_settings.system,sc.unit_settings.scale_length)\nprint('OBJECTS',[(o.name,o.type,o.hide_viewport,o.hide_render) for o in sc.objects])\nprint('INSTANCES',len(list(bpy.context.evaluated_depsgraph_get().object_instances)))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"UNITS METRIC 1.0\\nOBJECTS [('Obj_001', 'MESH', False, False), ('Obj_002', 'MESH', False, False), ('Obj_003', 'MESH', False, False), ('Obj_004', 'MESH', False, False), ('Obj_005', 'MESH', False, False), ('Obj_006', 'MESH', False, False), ('Obj_007', 'MESH', False, False), ('Obj_008', 'MESH', False, False), ('Obj_009', 'MESH', False, False), ('Obj_010', 'MESH', False, False), ('Obj_011', 'MESH', False, False), ('Obj_012', 'MESH', False, False), ('Obj_013', 'MESH', False, False), ('Obj_014', 'MESH', False, False), ('Obj_015', 'MESH', False, False), ('Obj_016', 'MESH', False, False), ('Obj_017', 'MESH', False, False), ('Obj_018', 'MESH', False, False), ('Obj_019', 'MESH', False, False), ('Obj_020', 'MESH', False, False), ('Obj_021', 'MESH', False, False), ('Obj_022', 'MESH', False, False), ('Obj_023', 'MESH', False, False), ('Obj_024', 'MESH', False, False)]\\nINSTANCES 24\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 2,
+      "phase": "item.completed",
+      "source_line_sha256": "0516ef6a9f82ce7b24588a3efb33e58fce4619e81e57fc9536e1096b4a8d18b2",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "deps=bpy.context.evaluated_depsgraph_get()\nmeshes=[]\nfor obj in sc.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(deps)\n    mesh=ev.to_mesh()\n    mesh.calc_loop_triangles()\n    coords=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n    matrix=np.array(ev.matrix_world,dtype=np.float64)\n    coords=coords@matrix[:3,:3].T+matrix[:3,3]\n    indices=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n    triangles=coords[indices]\n    meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n    ev.to_mesh_clear()\nprint('MESHES',[(m['name'],len(m['tri']),m['lo'].tolist() if m['lo'] is not None else None,m['hi'].tolist() if m['hi'] is not None else None) for m in meshes])\nthreshold=.002/sc.unit_settings.scale_length\ncandidates=[]\nfor i,a in enumerate(meshes):\n    for j in range(i+1,len(meshes)):\n        b=meshes[j]\n        if a['lo'] is None or b['lo'] is None: continue\n        delta=np.maximum(0,np.maximum(a['lo']-b['hi'],b['lo']-a['hi']))\n        bound=np.linalg.norm(delta)\n        if bound<=threshold: candidates.append((i,j,float(bound)))\nprint('CANDIDATES',len(candidates),[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in candidates])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 3,
+      "phase": "item.started",
+      "source_line_sha256": "8181dc7380233ea5d9d5052fe638e4a89227d11efe404ed95a5f51a2fddf185d",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "deps=bpy.context.evaluated_depsgraph_get()\nmeshes=[]\nfor obj in sc.objects:\n    if obj.type!='MESH': continue\n    ev=obj.evaluated_get(deps)\n    mesh=ev.to_mesh()\n    mesh.calc_loop_triangles()\n    coords=np.array([tuple(v.co) for v in mesh.vertices],dtype=np.float64)\n    matrix=np.array(ev.matrix_world,dtype=np.float64)\n    coords=coords@matrix[:3,:3].T+matrix[:3,3]\n    indices=np.array([tuple(t.vertices) for t in mesh.loop_triangles],dtype=np.int64).reshape(-1,3)\n    triangles=coords[indices]\n    meshes.append(dict(name=obj.name,tri=triangles,lo=triangles.min(axis=(0,1)) if len(triangles) else None,hi=triangles.max(axis=(0,1)) if len(triangles) else None))\n    ev.to_mesh_clear()\nprint('MESHES',[(m['name'],len(m['tri']),m['lo'].tolist() if m['lo'] is not None else None,m['hi'].tolist() if m['hi'] is not None else None) for m in meshes])\nthreshold=.002/sc.unit_settings.scale_length\ncandidates=[]\nfor i,a in enumerate(meshes):\n    for j in range(i+1,len(meshes)):\n        b=meshes[j]\n        if a['lo'] is None or b['lo'] is None: continue\n        delta=np.maximum(0,np.maximum(a['lo']-b['hi'],b['lo']-a['hi']))\n        bound=np.linalg.norm(delta)\n        if bound<=threshold: candidates.append((i,j,float(bound)))\nprint('CANDIDATES',len(candidates),[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in candidates])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"MESHES [('Obj_001', 12, [-0.07999999821186066, -0.054999999701976776, -0.009999999776482582], [0.07999999821186066, 0.054999999701976776, 0.0]), ('Obj_002', 28, [-0.0728503167629242, -0.04447570815682411, 0.0], [0.0728503167629242, 0.016475709155201912, 0.01600000075995922]), ('Obj_003', 28, [-0.0728503167629242, -0.016475709155201912, 0.0], [0.0728503167629242, 0.04447570815682411, 0.01600000075995922]), ('Obj_004', 28, [-0.07500000298023224, -0.05000000074505806, 0.0], [0.07500000298023224, 0.05000000074505806, 0.019999999552965164]), ('Obj_005', 20, [-0.06499999761581421, -0.04500000178813934, 0.0010000000474974513], [0.06499999761581421, 0.04500000178813934, 0.028999999165534973]), ('Obj_006', 28, [-0.054999999701976776, -0.03999999910593033, 0.0005000000237487257], [0.054999999701976776, 0.03999999910593033, 0.0364999994635582]), ('Obj_007', 20, [-0.04500000178813934, -0.03500000014901161, 0.001500000013038516], [0.04500000178813934, 0.03500000014901161, 0.045499999076128006]), ('Obj_008', 12, [-0.049649678170681, -0.03829171881079674, 0.0182499997317791], [-0.026350321248173714, -0.013708282262086868, 0.026249999180436134]), ('Obj_009', 12, [0.026350321248173714, -0.010291717946529388, 0.01600000075995922], [0.049649678170681, 0.014291717670857906, 0.024000000208616257]), ('Obj_010', 12, [-0.07199999690055847, -0.04699999839067459, 0.020250000059604645], [0.07199999690055847, 0.04699999839067459, 0.02174999937415123]), ('Obj_011', 12, [-0.05299999937415123, -0.03799999877810478, 0.03669999912381172], [0.05299999937415123, 0.03799999877810478, 0.037700001150369644]), ('Obj_012', 2, [-0.0430000014603138, -0.032999999821186066, 0.04699999839067459], [0.0430000014603138, 0.032999999821186066, 0.04699999839067459]), ('Obj_013', 128, [-0.04399999976158142, -0.03200000151991844, 0.016249999403953552], [-0.03200000151991844, -0.019999999552965164, 0.017750000581145287]), ('Obj_014', 128, [-0.03099999949336052, -0.02800000086426735, 0.016249999403953552], [-0.01899999938905239, -0.01600000075995922, 0.017750000581145287]), ('Obj_015', 128, [0.03200000151991844, -0.004000000189989805, 0.016249999403953552], [0.04399999976158142, 0.00800000037997961, 0.017750000581145287]), ('Obj_016', 128, [0.04399999976158142, -0.00800000037997961, 0.016249999403953552], [0.0560000017285347, 0.004000000189989805, 0.017750000581145287]), ('Obj_017', 12, [-0.06949999928474426, -0.04399999976158142, 0.0], [-0.060499999672174454, -0.026000000536441803, 0.012000000104308128]), ('Obj_018', 12, [0.060499999672174454, -0.0020000000949949026, 0.0], [0.06949999928474426, 0.01600000075995922, 0.012000000104308128]), ('Obj_019', 12, [-0.06949999928474426, 0.026000000536441803, 0.0], [-0.060499999672174454, 0.04399999976158142, 0.012000000104308128]), ('Obj_020', 12, [0.060499999672174454, -0.01600000075995922, 0.0], [0.06949999928474426, 0.0020000000949949026, 0.012000000104308128]), ('Obj_021', 64, [-0.04039999842643738, -0.0284000001847744, 0.014000000432133675], [-0.035599999129772186, -0.023600000888109207, 0.026000000536441803]), ('Obj_022', 64, [0.035599999129772186, -0.00039999998989515007, 0.014000000432133675], [0.04039999842643738, 0.004399999976158142, 0.026000000536441803]), ('Obj_023', 64, [-0.002400000113993883, -0.002400000113993883, 0.004000000189989805], [0.002400000113993883, 0.002400000113993883, 0.01600000075995922]), ('Obj_024', 12, [-0.003000000026077032, -0.003000000026077032, -0.007000000216066837], [0.003000000026077032, 0.003000000026077032, -0.003000000026077032])]\\nCANDIDATES 112 [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0000000474974513), ('Obj_001', 'Obj_006', 0.5000000237487257), ('Obj_001', 'Obj_007', 1.500000013038516), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 0.0), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.24999864399433136), ('Obj_002', 'Obj_014', 0.24999864399433136), ('Obj_002', 'Obj_015', 0.24999864399433136), ('Obj_002', 'Obj_016', 0.24999864399433136), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 0.0), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 0.0), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 0.24999864399433136), ('Obj_003', 'Obj_015', 0.24999864399433136), ('Obj_003', 'Obj_016', 0.24999864399433136), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 0.0), ('Obj_003', 'Obj_023', 0.0), ('Obj_004', 'Obj_005', 0.0), ('Obj_004', 'Obj_006', 0.0), ('Obj_004', 'Obj_007', 0.0), ('Obj_004', 'Obj_008', 0.0), ('Obj_004', 'Obj_009', 0.0), ('Obj_004', 'Obj_010', 0.2500005066394806), ('Obj_004', 'Obj_013', 0.0), ('Obj_004', 'Obj_014', 0.0), ('Obj_004', 'Obj_015', 0.0), ('Obj_004', 'Obj_016', 0.0), ('Obj_004', 'Obj_017', 0.0), ('Obj_004', 'Obj_018', 0.0), ('Obj_004', 'Obj_019', 0.0), ('Obj_004', 'Obj_020', 0.0), ('Obj_004', 'Obj_021', 0.0), ('Obj_004', 'Obj_022', 0.0), ('Obj_004', 'Obj_023', 0.0), ('Obj_005', 'Obj_006', 0.0), ('Obj_005', 'Obj_007', 0.0), ('Obj_005', 'Obj_008', 0.0), ('Obj_005', 'Obj_009', 0.0), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 0.0), ('Obj_005', 'Obj_014', 0.0), ('Obj_005', 'Obj_015', 0.0), ('Obj_005', 'Obj_016', 0.0), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 0.0), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 0.0), ('Obj_005', 'Obj_021', 0.0), ('Obj_005', 'Obj_022', 0.0), ('Obj_005', 'Obj_023', 0.0), ('Obj_006', 'Obj_007', 0.0), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 0.0), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.19999966025352478), ('Obj_006', 'Obj_013', 0.0), ('Obj_006', 'Obj_014', 0.0), ('Obj_006', 'Obj_015', 0.0), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 0.0), ('Obj_006', 'Obj_022', 0.0), ('Obj_006', 'Obj_023', 0.0), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 0.0), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.499999314546585), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 0.0), ('Obj_007', 'Obj_015', 0.0), ('Obj_007', 'Obj_016', 0.0), ('Obj_007', 'Obj_021', 0.0), ('Obj_007', 'Obj_022', 0.0), ('Obj_007', 'Obj_023', 0.0), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.49999915063381195), ('Obj_008', 'Obj_014', 0.49999915063381195), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.0), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.0000020265579224), ('Obj_013', 'Obj_021', 0.0), ('Obj_015', 'Obj_016', 0.0), ('Obj_015', 'Obj_022', 0.0), ('Obj_018', 'Obj_020', 0.0)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 4,
+      "phase": "item.completed",
+      "source_line_sha256": "528e7fb4043266b2f199536ae7963c72291aaef53e7ec891f5734a704d099de6",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dotvec(a,b): return np.einsum('...i,...i->...',a,b)\ndef tri_pair_distances(first,second):\n    count=len(first)*len(second)\n    aa=np.repeat(first,len(second),axis=0)\n    bb=np.tile(second,(len(first),1,1))\n    best=np.full(count,np.inf)\n    def point_faces(points,faces):\n        origin=faces[:,0]; edge_u=faces[:,1]-origin; edge_v=faces[:,2]-origin\n        normal=np.cross(edge_u,edge_v); norm2=dotvec(normal,normal)\n        offset=points-origin\n        signed=dotvec(offset,normal)\n        projection=points-normal*np.divide(signed,norm2,out=np.zeros_like(signed),where=norm2>0)[:,None]\n        return projection,signed,norm2\n    def inside(points,faces):\n        edge_u=faces[:,1]-faces[:,0]; edge_v=faces[:,2]-faces[:,0]; offset=points-faces[:,0]\n        normal=np.cross(edge_u,edge_v); denom=dotvec(normal,normal)\n        bary_u=np.divide(dotvec(np.cross(offset,edge_v),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        bary_v=np.divide(dotvec(np.cross(edge_u,offset),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        return (bary_u>=-1e-13)&(bary_v>=-1e-13)&(bary_u+bary_v<=1+1e-13)\n    for source,target in ((aa,bb),(bb,aa)):\n        for vertex in range(3):\n            projected,signed,norm2=point_faces(source[:,vertex],target)\n            dist2=np.divide(signed*signed,norm2,out=np.full(count,np.inf),where=norm2>0)\n            best=np.minimum(best,np.where(inside(projected,target),dist2,np.inf))\n        normal=np.cross(target[:,1]-target[:,0],target[:,2]-target[:,0])\n        for edge in range(3):\n            start=source[:,edge]; end=source[:,(edge+1)%3]; direction=end-start\n            denom=dotvec(direction,normal)\n            param=np.divide(dotvec(target[:,0]-start,normal),denom,out=np.full(count,np.nan),where=denom!=0)\n            hit=start+np.nan_to_num(param)[:,None]*direction\n            intersects=(param>=0)&(param<=1)&inside(hit,target)\n            best=np.where(intersects,0,best)\n    for edge_a in range(3):\n        start_a=aa[:,edge_a]; direction_a=aa[:,(edge_a+1)%3]-start_a\n        for edge_b in range(3):\n            start_b=bb[:,edge_b]; direction_b=bb[:,(edge_b+1)%3]-start_b\n            offset=start_a-start_b\n            length_a=dotvec(direction_a,direction_a); length_b=dotvec(direction_b,direction_b)\n            mixed=dotvec(direction_a,direction_b); offset_a=dotvec(direction_a,offset); offset_b=dotvec(direction_b,offset)\n            denom=dotvec(np.cross(direction_a,direction_b),np.cross(direction_a,direction_b))\n            param_a=np.divide(mixed*offset_b-length_b*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            param_b=np.divide(length_a*offset_b-mixed*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            delta=offset+np.nan_to_num(param_a)[:,None]*direction_a-np.nan_to_num(param_b)[:,None]*direction_b\n            best=np.minimum(best,np.where((param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1),dotvec(delta,delta),np.inf))\n            for endpoint in (0,1):\n                point=start_a+endpoint*direction_a\n                param=np.clip(np.divide(dotvec(point-start_b,direction_b),length_b,out=np.zeros(count),where=length_b>0),0,1)\n                delta=point-start_b-param[:,None]*direction_b\n                best=np.minimum(best,dotvec(delta,delta))\n                point=start_b+endpoint*direction_b\n                param=np.clip(np.divide(dotvec(point-start_a,direction_a),length_a,out=np.zeros(count),where=length_a>0),0,1)\n                delta=point-start_a-param[:,None]*direction_a\n                best=np.minimum(best,dotvec(delta,delta))\n    return np.sqrt(best).reshape(len(first),len(second))\nstart_time=time.time()\nresults=[]\nfor i,j,bound in candidates:\n    distances=tri_pair_distances(meshes[i]['tri'],meshes[j]['tri'])\n    distance=float(distances.min())\n    results.append((i,j,distance))\nprint('SECONDS',time.time()-start_time)\nprint('RESULTS_MM',[(meshes[i]['name'],meshes[j]['name'],d*1000*sc.unit_settings.scale_length) for i,j,d in results])\nprint('DEGENERATE',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in meshes])"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 5,
+      "phase": "item.started",
+      "source_line_sha256": "761c1247d1f5005df3caa1a008cfb62829017a2f08aa830af1e090d1b3aac57b",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "def dotvec(a,b): return np.einsum('...i,...i->...',a,b)\ndef tri_pair_distances(first,second):\n    count=len(first)*len(second)\n    aa=np.repeat(first,len(second),axis=0)\n    bb=np.tile(second,(len(first),1,1))\n    best=np.full(count,np.inf)\n    def point_faces(points,faces):\n        origin=faces[:,0]; edge_u=faces[:,1]-origin; edge_v=faces[:,2]-origin\n        normal=np.cross(edge_u,edge_v); norm2=dotvec(normal,normal)\n        offset=points-origin\n        signed=dotvec(offset,normal)\n        projection=points-normal*np.divide(signed,norm2,out=np.zeros_like(signed),where=norm2>0)[:,None]\n        return projection,signed,norm2\n    def inside(points,faces):\n        edge_u=faces[:,1]-faces[:,0]; edge_v=faces[:,2]-faces[:,0]; offset=points-faces[:,0]\n        normal=np.cross(edge_u,edge_v); denom=dotvec(normal,normal)\n        bary_u=np.divide(dotvec(np.cross(offset,edge_v),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        bary_v=np.divide(dotvec(np.cross(edge_u,offset),normal),denom,out=np.full(count,np.nan),where=denom>0)\n        return (bary_u>=-1e-13)&(bary_v>=-1e-13)&(bary_u+bary_v<=1+1e-13)\n    for source,target in ((aa,bb),(bb,aa)):\n        for vertex in range(3):\n            projected,signed,norm2=point_faces(source[:,vertex],target)\n            dist2=np.divide(signed*signed,norm2,out=np.full(count,np.inf),where=norm2>0)\n            best=np.minimum(best,np.where(inside(projected,target),dist2,np.inf))\n        normal=np.cross(target[:,1]-target[:,0],target[:,2]-target[:,0])\n        for edge in range(3):\n            start=source[:,edge]; end=source[:,(edge+1)%3]; direction=end-start\n            denom=dotvec(direction,normal)\n            param=np.divide(dotvec(target[:,0]-start,normal),denom,out=np.full(count,np.nan),where=denom!=0)\n            hit=start+np.nan_to_num(param)[:,None]*direction\n            intersects=(param>=0)&(param<=1)&inside(hit,target)\n            best=np.where(intersects,0,best)\n    for edge_a in range(3):\n        start_a=aa[:,edge_a]; direction_a=aa[:,(edge_a+1)%3]-start_a\n        for edge_b in range(3):\n            start_b=bb[:,edge_b]; direction_b=bb[:,(edge_b+1)%3]-start_b\n            offset=start_a-start_b\n            length_a=dotvec(direction_a,direction_a); length_b=dotvec(direction_b,direction_b)\n            mixed=dotvec(direction_a,direction_b); offset_a=dotvec(direction_a,offset); offset_b=dotvec(direction_b,offset)\n            denom=dotvec(np.cross(direction_a,direction_b),np.cross(direction_a,direction_b))\n            param_a=np.divide(mixed*offset_b-length_b*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            param_b=np.divide(length_a*offset_b-mixed*offset_a,denom,out=np.full(count,np.nan),where=denom>0)\n            delta=offset+np.nan_to_num(param_a)[:,None]*direction_a-np.nan_to_num(param_b)[:,None]*direction_b\n            best=np.minimum(best,np.where((param_a>=0)&(param_a<=1)&(param_b>=0)&(param_b<=1),dotvec(delta,delta),np.inf))\n            for endpoint in (0,1):\n                point=start_a+endpoint*direction_a\n                param=np.clip(np.divide(dotvec(point-start_b,direction_b),length_b,out=np.zeros(count),where=length_b>0),0,1)\n                delta=point-start_b-param[:,None]*direction_b\n                best=np.minimum(best,dotvec(delta,delta))\n                point=start_b+endpoint*direction_b\n                param=np.clip(np.divide(dotvec(point-start_a,direction_a),length_a,out=np.zeros(count),where=length_a>0),0,1)\n                delta=point-start_a-param[:,None]*direction_a\n                best=np.minimum(best,dotvec(delta,delta))\n    return np.sqrt(best).reshape(len(first),len(second))\nstart_time=time.time()\nresults=[]\nfor i,j,bound in candidates:\n    distances=tri_pair_distances(meshes[i]['tri'],meshes[j]['tri'])\n    distance=float(distances.min())\n    results.append((i,j,distance))\nprint('SECONDS',time.time()-start_time)\nprint('RESULTS_MM',[(meshes[i]['name'],meshes[j]['name'],d*1000*sc.unit_settings.scale_length) for i,j,d in results])\nprint('DEGENERATE',[(m['name'],int(np.sum(np.linalg.norm(np.cross(m['tri'][:,1]-m['tri'][:,0],m['tri'][:,2]-m['tri'][:,0]),axis=1)==0))) for m in meshes])"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"SECONDS 0.5657846927642822\\nRESULTS_MM [('Obj_001', 'Obj_002', 0.0), ('Obj_001', 'Obj_003', 0.0), ('Obj_001', 'Obj_004', 0.0), ('Obj_001', 'Obj_005', 1.0000000474974513), ('Obj_001', 'Obj_006', 0.5000000237487257), ('Obj_001', 'Obj_007', 1.500000013038516), ('Obj_001', 'Obj_017', 0.0), ('Obj_001', 'Obj_018', 0.0), ('Obj_001', 'Obj_019', 0.0), ('Obj_001', 'Obj_020', 0.0), ('Obj_001', 'Obj_024', 2.999999560415745), ('Obj_002', 'Obj_003', 0.0), ('Obj_002', 'Obj_004', 0.0), ('Obj_002', 'Obj_005', 0.0), ('Obj_002', 'Obj_006', 0.0), ('Obj_002', 'Obj_007', 0.0), ('Obj_002', 'Obj_009', 0.0), ('Obj_002', 'Obj_013', 0.24999864399433136), ('Obj_002', 'Obj_014', 0.24999864399433136), ('Obj_002', 'Obj_015', 0.24999864399433136), ('Obj_002', 'Obj_016', 0.24999864399433136), ('Obj_002', 'Obj_017', 0.0), ('Obj_002', 'Obj_018', 0.0), ('Obj_002', 'Obj_020', 0.0), ('Obj_002', 'Obj_021', 2.2774309539222872), ('Obj_002', 'Obj_022', 0.0), ('Obj_002', 'Obj_023', 2.9221901092925178), ('Obj_003', 'Obj_004', 0.0), ('Obj_003', 'Obj_005', 0.0), ('Obj_003', 'Obj_006', 0.0), ('Obj_003', 'Obj_007', 0.0), ('Obj_003', 'Obj_009', 0.0), ('Obj_003', 'Obj_014', 27.98307316856691), ('Obj_003', 'Obj_015', 0.24999864399433136), ('Obj_003', 'Obj_016', 0.24999864399433136), ('Obj_003', 'Obj_018', 0.0), ('Obj_003', 'Obj_019', 0.0), ('Obj_003', 'Obj_020', 0.0), ('Obj_003', 'Obj_022', 2.2774323841636734), ('Obj_003', 'Obj_023', 2.9221901092925178), ('Obj_004', 'Obj_005', 0.9999983012676239), ('Obj_004', 'Obj_006', 6.000000983476639), ('Obj_004', 'Obj_007', 10.999999940395355), ('Obj_004', 'Obj_008', 7.708281278610229), ('Obj_004', 'Obj_009', 21.350324153900146), ('Obj_004', 'Obj_010', 0.2500005066394806), ('Obj_004', 'Obj_013', 13.999998569488527), ('Obj_004', 'Obj_014', 17.999999225139618), ('Obj_004', 'Obj_015', 27.00000256299973), ('Obj_004', 'Obj_016', 15.000000596046448), ('Obj_004', 'Obj_017', 1.5000030398368835), ('Obj_004', 'Obj_018', 1.5000030398368835), ('Obj_004', 'Obj_019', 1.5000030398368835), ('Obj_004', 'Obj_020', 1.5000030398368835), ('Obj_004', 'Obj_021', 17.59999990463257), ('Obj_004', 'Obj_022', 30.60000389814377), ('Obj_004', 'Obj_023', 43.599999975413084), ('Obj_005', 'Obj_006', 1.0000020265579224), ('Obj_005', 'Obj_007', 6.000000983476639), ('Obj_005', 'Obj_008', 2.708282321691513), ('Obj_005', 'Obj_009', 30.70828318595886), ('Obj_005', 'Obj_010', 0.0), ('Obj_005', 'Obj_013', 8.999999612569809), ('Obj_005', 'Obj_014', 13.0000002682209), ('Obj_005', 'Obj_015', 37.000000942498446), ('Obj_005', 'Obj_016', 33.00000075250864), ('Obj_005', 'Obj_017', 0.0), ('Obj_005', 'Obj_018', 39.00000103749334), ('Obj_005', 'Obj_019', 0.0), ('Obj_005', 'Obj_020', 25.000000372529026), ('Obj_005', 'Obj_021', 12.60000094771385), ('Obj_005', 'Obj_022', 40.600001142593094), ('Obj_005', 'Obj_023', 38.60000101849437), ('Obj_006', 'Obj_007', 0.9999983012676239), ('Obj_006', 'Obj_008', 0.0), ('Obj_006', 'Obj_009', 1.3503208756446838), ('Obj_006', 'Obj_010', 0.0), ('Obj_006', 'Obj_011', 0.19999966025352475), ('Obj_006', 'Obj_013', 3.999996930360794), ('Obj_006', 'Obj_014', 7.999997586011887), ('Obj_006', 'Obj_015', 6.999999284744264), ('Obj_006', 'Obj_016', 0.0), ('Obj_006', 'Obj_021', 7.599998265504836), ('Obj_006', 'Obj_022', 10.600000619888306), ('Obj_006', 'Obj_023', 33.599998336285346), ('Obj_007', 'Obj_008', 0.0), ('Obj_007', 'Obj_009', 20.70828154683113), ('Obj_007', 'Obj_010', 0.0), ('Obj_007', 'Obj_011', 0.0), ('Obj_007', 'Obj_012', 1.4999993145465849), ('Obj_007', 'Obj_013', 0.0), ('Obj_007', 'Obj_014', 2.99999862909317), ('Obj_007', 'Obj_015', 26.999999303370714), ('Obj_007', 'Obj_016', 23.533512062916227), ('Obj_007', 'Obj_021', 0.6000027060508728), ('Obj_007', 'Obj_022', 30.59999950346537), ('Obj_007', 'Obj_023', 28.59999937936664), ('Obj_008', 'Obj_010', 0.0), ('Obj_008', 'Obj_013', 0.49999915063381195), ('Obj_008', 'Obj_014', 0.49999915063381195), ('Obj_008', 'Obj_021', 0.0), ('Obj_009', 'Obj_010', 0.0), ('Obj_009', 'Obj_015', 0.24999864399433136), ('Obj_009', 'Obj_016', 0.0), ('Obj_009', 'Obj_022', 0.0), ('Obj_010', 'Obj_021', 0.0), ('Obj_010', 'Obj_022', 0.0), ('Obj_013', 'Obj_014', 1.7611460879795748), ('Obj_013', 'Obj_021', 0.588469463209107), ('Obj_015', 'Obj_016', 0.780363776934969), ('Obj_015', 'Obj_022', 0.5884696848679267), ('Obj_018', 'Obj_020', 0.0)]\\nDEGENERATE [('Obj_001', 0), ('Obj_002', 0), ('Obj_003', 0), ('Obj_004', 0), ('Obj_005', 0), ('Obj_006', 0), ('Obj_007', 0), ('Obj_008', 0), ('Obj_009', 0), ('Obj_010', 0), ('Obj_011', 0), ('Obj_012', 0), ('Obj_013', 0), ('Obj_014', 0), ('Obj_015', 0), ('Obj_016', 0), ('Obj_017', 0), ('Obj_018', 0), ('Obj_019', 0), ('Obj_020', 0), ('Obj_021', 0), ('Obj_022', 0), ('Obj_023', 0), ('Obj_024', 0)]\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 6,
+      "phase": "item.completed",
+      "source_line_sha256": "a03fdbf8efd7e0878c29d5bab845a75a8f0a5b19a65cc029287a48f9099b9bd4",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "qualifying=[(i,j,d*1000*sc.unit_settings.scale_length) for i,j,d in results if d<=threshold]\nzero=[(i,j,d) for i,j,d in qualifying if d==0]\npositive=[(i,j,d) for i,j,d in qualifying if d>0]\nprint('COUNTS objects triangles allpairs candidates excluded_aabb excluded_exact included zero positive',len(meshes),sum(len(m['tri']) for m in meshes),len(meshes)*(len(meshes)-1)//2,len(candidates),276-len(candidates),len(results)-len(qualifying),len(qualifying),len(zero),len(positive))\nprint('ZERO_GROUPS')\nfor i in range(len(meshes)):\n    partners=[meshes[j]['name'] for a,j,d in zero if a==i]\n    if partners: print(meshes[i]['name'],', '.join(partners))\nprint('POSITIVE')\nfor i,j,d in positive: print(meshes[i]['name'],meshes[j]['name'],f'{d:.6f}')\nprint('THRESHOLD_NEAREST',sorted([(abs(d*1000-2),meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results])[:3])\n# Independently check triangle intersection with Blender BVH for positive-distance pairs.\nfor m in meshes:\n    vertices=m['tri'].reshape(-1,3)\n    m['bvh']=BVHTree.FromPolygons([Vector(v) for v in vertices],[(k,k+1,k+2) for k in range(0,len(vertices),3)],all_triangles=True,epsilon=0)\nprint('BVH_INTERSECTION_MISMATCH',[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results if bool(meshes[i]['bvh'].overlap(meshes[j]['bvh'])) and d>1e-10])\nprint('FINITE',all(np.isfinite(m['tri']).all() for m in meshes))"
+        },
+        "error": null,
+        "result": null,
+        "server": "arm_engine",
+        "status": "in_progress",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 7,
+      "phase": "item.started",
+      "source_line_sha256": "8d79384d16392d29bec7df59eb8a2d5cc30f06c68588aeaa3199c1e20cceff7c",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    },
+    {
+      "event": {
+        "arguments": {
+          "code": "qualifying=[(i,j,d*1000*sc.unit_settings.scale_length) for i,j,d in results if d<=threshold]\nzero=[(i,j,d) for i,j,d in qualifying if d==0]\npositive=[(i,j,d) for i,j,d in qualifying if d>0]\nprint('COUNTS objects triangles allpairs candidates excluded_aabb excluded_exact included zero positive',len(meshes),sum(len(m['tri']) for m in meshes),len(meshes)*(len(meshes)-1)//2,len(candidates),276-len(candidates),len(results)-len(qualifying),len(qualifying),len(zero),len(positive))\nprint('ZERO_GROUPS')\nfor i in range(len(meshes)):\n    partners=[meshes[j]['name'] for a,j,d in zero if a==i]\n    if partners: print(meshes[i]['name'],', '.join(partners))\nprint('POSITIVE')\nfor i,j,d in positive: print(meshes[i]['name'],meshes[j]['name'],f'{d:.6f}')\nprint('THRESHOLD_NEAREST',sorted([(abs(d*1000-2),meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results])[:3])\n# Independently check triangle intersection with Blender BVH for positive-distance pairs.\nfor m in meshes:\n    vertices=m['tri'].reshape(-1,3)\n    m['bvh']=BVHTree.FromPolygons([Vector(v) for v in vertices],[(k,k+1,k+2) for k in range(0,len(vertices),3)],all_triangles=True,epsilon=0)\nprint('BVH_INTERSECTION_MISMATCH',[(meshes[i]['name'],meshes[j]['name'],d*1000) for i,j,d in results if bool(meshes[i]['bvh'].overlap(meshes[j]['bvh'])) and d>1e-10])\nprint('FINITE',all(np.isfinite(m['tri']).all() for m in meshes))"
+        },
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "text": "{\"result\":{\"executed\":true,\"result\":\"COUNTS objects triangles allpairs candidates excluded_aabb excluded_exact included zero positive 24 978 276 112 164 41 71 43 28\\nZERO_GROUPS\\nObj_001 Obj_002, Obj_003, Obj_004, Obj_017, Obj_018, Obj_019, Obj_020\\nObj_002 Obj_003, Obj_004, Obj_005, Obj_006, Obj_007, Obj_009, Obj_017, Obj_018, Obj_020, Obj_022\\nObj_003 Obj_004, Obj_005, Obj_006, Obj_007, Obj_009, Obj_018, Obj_019, Obj_020\\nObj_005 Obj_010, Obj_017, Obj_019\\nObj_006 Obj_008, Obj_010, Obj_016\\nObj_007 Obj_008, Obj_010, Obj_011, Obj_013\\nObj_008 Obj_010, Obj_021\\nObj_009 Obj_010, Obj_016, Obj_022\\nObj_010 Obj_021, Obj_022\\nObj_018 Obj_020\\nPOSITIVE\\nObj_001 Obj_005 1.000000\\nObj_001 Obj_006 0.500000\\nObj_001 Obj_007 1.500000\\nObj_002 Obj_013 0.249999\\nObj_002 Obj_014 0.249999\\nObj_002 Obj_015 0.249999\\nObj_002 Obj_016 0.249999\\nObj_003 Obj_015 0.249999\\nObj_003 Obj_016 0.249999\\nObj_004 Obj_005 0.999998\\nObj_004 Obj_010 0.250001\\nObj_004 Obj_017 1.500003\\nObj_004 Obj_018 1.500003\\nObj_004 Obj_019 1.500003\\nObj_004 Obj_020 1.500003\\nObj_005 Obj_006 1.000002\\nObj_006 Obj_007 0.999998\\nObj_006 Obj_009 1.350321\\nObj_006 Obj_011 0.200000\\nObj_007 Obj_012 1.499999\\nObj_007 Obj_021 0.600003\\nObj_008 Obj_013 0.499999\\nObj_008 Obj_014 0.499999\\nObj_009 Obj_015 0.249999\\nObj_013 Obj_014 1.761146\\nObj_013 Obj_021 0.588469\\nObj_015 Obj_016 0.780364\\nObj_015 Obj_022 0.588470\\nTHRESHOLD_NEAREST [(0.23885391202042516, 'Obj_013', 'Obj_014', 1.7611460879795748), (0.2774309539222872, 'Obj_002', 'Obj_021', 2.2774309539222872), (0.27743238416367344, 'Obj_003', 'Obj_022', 2.2774323841636734)]\\nBVH_INTERSECTION_MISMATCH []\\nFINITE True\\n\"},\"status\":\"success\"}",
+              "type": "text"
+            }
+          ],
+          "structured_content": null
+        },
+        "server": "arm_engine",
+        "status": "completed",
+        "tool": "execute_blender_code",
+        "type": "mcp_tool_call"
+      },
+      "order": 8,
+      "phase": "item.completed",
+      "source_line_sha256": "38c2f047b087257a22097e68f553c9412fa6f432b283cae2dab1b2d22575a745",
+      "source_sha256": "0024c7535514556e8926e6e5610d183eefcdf13636ab1e53f03b244f6d039892"
+    }
+  ],
+  "scope": "Actual owner records and consumer-visible events are independently bound; no missing delivery is inferred."
+}
