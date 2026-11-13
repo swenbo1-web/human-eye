@@ -1,0 +1,81 @@
+{
+  "reason": "Reviewer initially interpreted BACK64 as 64 pixels. Registered input and REPORT state that the orthographic span is enlarged by 64 while the image remains 512x512. This is a reviewer expectation error, not an author experiment failure.",
+  "original_failure_preserved_in": "RESULTS.json and CHECKS.json",
+  "original_failure": {
+    "name": "control_B.BACK_64",
+    "passed": false,
+    "actual": [
+      512,
+      512
+    ],
+    "expected": [
+      64,
+      64
+    ]
+  },
+  "original_script_sha256": "df6359e96bff70d2a86b6cd5c051cc5b9c99f97bc7688c53a95eb1b032461f3f",
+  "original_results_sha256": "b85ff1b55a54eff15be9443935cd5094f6469804dbe40eeadb95b9ebaace8c4b",
+  "corrective_checks": [
+    {
+      "name": "preregistered_span_factor_64",
+      "passed": true
+    },
+    {
+      "name": "resolution_unchanged_512",
+      "passed": true
+    },
+    {
+      "name": "actual_binary64_span_exact_scale_64",
+      "passed": true
+    },
+    {
+      "name": "actual_binary64_halfspan_exact_scale_64",
+      "passed": true
+    },
+    {
+      "name": "registered_control_camera_matches",
+      "passed": true
+    }
+  ],
+  "qualification_storage": {
+    "normal": {
+      "stored_files": 11,
+      "stored_bytes": 106149,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "PNG_files": 0,
+      "NPZ_files": 0
+    },
+    "nonzero": {
+      "stored_files": 10,
+      "stored_bytes": 107480,
+      "stdout_bytes": 0,
+      "stderr_bytes": 1049,
+      "PNG_files": 0,
+      "NPZ_files": 0
+    },
+    "timeout": {
+      "stored_files": 10,
+      "stored_bytes": 105440,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "PNG_files": 0,
+      "NPZ_files": 0
+    },
+    "receipt_failure": {
+      "stored_files": 11,
+      "stored_bytes": 106945,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0,
+      "PNG_files": 0,
+      "NPZ_files": 0
+    },
+    "whole_qualification_directory": {
+      "stored_files": 45,
+      "stored_bytes": 684141
+    }
+  },
+  "modified_experiment_files": 0,
+  "new_engine_image_performance_model_runs": 0,
+  "disposition": "Initial 7339 valid checks passed; the one invalid expectation is replaced by these five explicit checks. No experiment rerun or denominator change."
+}
