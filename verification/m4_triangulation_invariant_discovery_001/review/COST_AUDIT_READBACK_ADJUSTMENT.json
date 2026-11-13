@@ -1,0 +1,24 @@
+{
+  "schema": "triangulation-invariant-discovery-001-cost-audit-readback-adjustment-v1",
+  "separate_from_contract_readback_adjustment": true,
+  "actual_failed_audit_invocations": 1,
+  "stage": "posthoc cost and raster audit, first invocation",
+  "script": "review/recount_cost_raster.py",
+  "exit_code": 1,
+  "error_type": "json.decoder.JSONDecodeError",
+  "error_message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+  "original_failure_location": {
+    "line": 143,
+    "operation": "json.loads(line) over TRACE.jsonl.splitlines()"
+  },
+  "cause": "Frozen TRACE.jsonl contains concatenated pretty-printed JSON objects spanning multiple lines. The first audit reader assumed one complete JSON object per line.",
+  "resolution": "Changed only the new audit reader to use JSONDecoder.raw_decode at complete object boundaries, then completed the read-only audit.",
+  "failed_script_sha256": null,
+  "failed_script_sha256_scope": "The pre-adjustment script hash was not separately captured at that invocation.",
+  "corrected_script_sha256": "11c20928e891324a5bd92670f03ea2ce33c79d2f8d3b703554c1f1f2c619ce0b",
+  "final_audit_sha256": "3c0b6d91840224450b2c68bd02374f963d9e8e93e3c79f8f5143ed6637609837",
+  "frozen_source_or_result_changes": 0,
+  "new_raster_geometry_discovery_model_or_benchmark_calls": 0,
+  "formal_phase_failures_added": 0,
+  "scope": "An additional actual posthoc reader failure owned by the cost-audit agent. The contract audit JSONDecodeError and root summary TypeError are separate events."
+}
