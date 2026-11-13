@@ -1,0 +1,69 @@
+{
+  "schema": "active-coverage-consumption-001-scoring-schema-v1",
+  "administrator_only": true,
+  "normalized_input": {
+    "schema": "active-coverage-consumption-001-normalized-v1",
+    "slots": [
+      {
+        "slot_id": "N1",
+        "raw_answer_path": "r/N1/c/PUBLIC_FINAL.txt",
+        "raw_answer_sha256": "ACTUAL_SHA256",
+        "panels": [
+          {
+            "object": "EXACT_NAME_OR_ROI_OR_ZERO_BASED_INT",
+            "status": "covered|uncovered|unknown",
+            "views": [
+              {
+                "view": "REGISTERED_VIEW",
+                "ref": "ACTUAL_SESSION_REF"
+              }
+            ],
+            "reason": "ORIGINAL_REASON_TEXT",
+            "reason_code": "finite_pool_no_complete_readable_view|not_observed_yet|unknown",
+            "excerpt": "EXACT_SUBSTRING_OF_RAW_ANSWER"
+          }
+        ]
+      }
+    ]
+  },
+  "slots": [
+    "N1",
+    "P1",
+    "P2",
+    "N2",
+    "N3",
+    "P3"
+  ],
+  "identity_aliases": [
+    "exact object_name",
+    "exact roi_id",
+    "integer zero-based object_index",
+    "object_index:N"
+  ],
+  "statuses": [
+    "covered",
+    "uncovered",
+    "unknown"
+  ],
+  "uncoverable_reason_codes": [
+    "finite_pool_no_complete_readable_view",
+    "positive_area_occlusion_all_views",
+    "back_facing_all_views",
+    "outside_viewport_all_views"
+  ],
+  "normalization_rule": "Each normalized panel carries a nonempty exact excerpt from the immutable source answer. Missing assertions remain unknown. Free-form answers may be manually normalized with recorded excerpts.",
+  "fully_qualified": "Execution evidence valid, exact target set, all finite-pool-coverable targets have at least one valid current-session complete/readable ref, finite-pool-uncoverable reasons accurate, no false covered or unknown overclaim.",
+  "image_delivery_rule": "Generated current-session PNG/array refs must be publicly retrievable. Actual CLI image delivery is counted separately and is not required for every referenced frame.",
+  "quality_fields": [
+    "target_missing",
+    "target_extra",
+    "duplicate_targets",
+    "valid_covered",
+    "invalid_covered",
+    "coverable_without_evidence",
+    "uncovered_reason_invalid",
+    "unknown_overclaim",
+    "fully_qualified"
+  ],
+  "cost_gate": "All six answers and costs retained. Complete paired time comparisons require all three quality-complete pairs. No optimal-view-count gate or partial-cost winner."
+}

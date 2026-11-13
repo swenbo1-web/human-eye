@@ -1,0 +1,335 @@
+{
+  "schema": "active-coverage-consumption-002-local-fixture-v1",
+  "pid": 6696,
+  "started_ns": 68223752809400,
+  "original_deadline_ns": 68672950197700,
+  "commands": [
+    "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "-I",
+    "-B",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\reused\\stdio_attach.py",
+    "--endpoint",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_consumption_002\\local\\N1\\LOCAL_N1\\ENDPOINT.json",
+    "--kind",
+    "native",
+    "--audit",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_consumption_002\\local\\N1\\LOCAL_N1\\c\\attachments"
+  ],
+  "RPC": [
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-03-26",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "newlocal-error-recovery-fixture",
+            "version": "1"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2025-03-26",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "finite-scene-observation",
+            "version": "1"
+          }
+        }
+      },
+      "request_bytes": 192,
+      "response_bytes": 158,
+      "received_ns": 68223879798100
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "tools": [
+            {
+              "name": "execute_python",
+              "description": "Execute ordinary persistent Python with stdout/stderr. All geometry and cameras are already in variables geometry={'objects':[{'name':str,'vertices':[[rational_x,rational_y,rational_z],...],'triangles':[[i,j,k],...]}],...} and cameras={'views':[{'name':str,'view_matrix':4x4,'projection_matrix':4x4,'direction_rational':[x,y,z],'size_px':[512,512],...}],...}. np and Fraction are available. render_views(names,include_images=False) batch-renders current cameras and returns [{ref,view,buffer_handle,...}]. Repeated views reuse their cache. buffers[view] exposes color uint8[H,W,3], owners int32[H,W] and depth float64[H,W]. Rows start at top-left. Owner is the zero-based geometry.objects index, background -1. Depth is positive camera depth, background infinity. Boundary count uses unique target-owned pixels incident to horizontal/vertical adjacent different-owner pairs with squared RGB distance >=24*24, marking both endpoints. read_images(refs) or attach_images(refs) requests actual image blocks appended to this same Python tool result. render_views(...,include_images=True) also attaches its images, so computing, batch rendering and delivering images can share one call. Scratch is a writable Path, image_files maps generated refs to PNG paths. Read supplied geometry, cameras, generated buffers/images and your own scratch. Keep source inputs unchanged. Use your own algorithms and cached variables.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "scene_data",
+              "description": "Return the complete current geometry and candidate camera parameters. The same objects are already in execute_python variables geometry and cameras.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "render_views",
+              "description": "Generate one or multiple full-scene views using the shared exact inputs and common RGB/depth/owner renderer. Return stable current-session refs and raw buffer handles. Repeated views reuse existing buffers and PNG. include_images requests actual image content in this result.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "names": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "SCENE",
+                        "TOP",
+                        "LEFT",
+                        "RIGHT",
+                        "FRONT",
+                        "BACK"
+                      ]
+                    }
+                  },
+                  "include_images": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "names"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "read_images",
+              "description": "Return actual 512x512 PNG image content for one or multiple generated current-session image refs. Input order is retained. The source views reuse their render cache.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "refs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "refs"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      },
+      "request_bytes": 66,
+      "response_bytes": 2856,
+      "received_ns": 68223899717600
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+          "name": "execute_python",
+          "arguments": {
+            "code": "raise ValueError('newlocal_m4_active_coverage_consumption_002_value_error')"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"stdout\": \"\", \"stderr\": \"Traceback (most recent call last):\\n  File \\\"C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\m4-single-pass-acquisition\\\\hefe\\\\verification\\\\m4_active_coverage_consumption_001\\\\actor.py\\\", line 256, in execute_python\\n    exec(compile(arguments[\\\"code\\\"], \\\"<consumer-python>\\\", \\\"exec\\\"), self.namespace, self.namespace)\\n  File \\\"<consumer-python>\\\", line 1, in <module>\\nValueError: newlocal_m4_active_coverage_consumption_002_value_error\\n\", \"error\": {\"type\": \"ValueError\", \"message\": \"newlocal_m4_active_coverage_consumption_002_value_error\"}}"
+            }
+          ],
+          "isError": true
+        }
+      },
+      "request_bytes": 192,
+      "response_bytes": 721,
+      "received_ns": 68223925862100
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+          "name": "execute_python",
+          "arguments": {
+            "code": "print(6 * 7)"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"stdout\": \"42\\n\", \"stderr\": \"\", \"error\": null}"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "request_bytes": 129,
+      "response_bytes": 148,
+      "received_ns": 68223938737200
+    }
+  ],
+  "tool_results": [
+    {
+      "attempt": 1,
+      "owner_isError": true,
+      "CLI_item": {
+        "id": "newlocal-tool-1",
+        "type": "mcp_tool_call",
+        "server": "arm_engine",
+        "tool": "execute_python",
+        "arguments": {
+          "code": "raise ValueError('newlocal_m4_active_coverage_consumption_002_value_error')"
+        },
+        "status": "failed",
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"stdout\": \"\", \"stderr\": \"Traceback (most recent call last):\\n  File \\\"C:\\\\Users\\\\Administrator\\\\.codex\\\\worktrees\\\\m4-single-pass-acquisition\\\\hefe\\\\verification\\\\m4_active_coverage_consumption_001\\\\actor.py\\\", line 256, in execute_python\\n    exec(compile(arguments[\\\"code\\\"], \\\"<consumer-python>\\\", \\\"exec\\\"), self.namespace, self.namespace)\\n  File \\\"<consumer-python>\\\", line 1, in <module>\\nValueError: newlocal_m4_active_coverage_consumption_002_value_error\\n\", \"error\": {\"type\": \"ValueError\", \"message\": \"newlocal_m4_active_coverage_consumption_002_value_error\"}}"
+            }
+          ],
+          "structured_content": null
+        }
+      },
+      "ordinary_Python_error": {
+        "type": "ValueError",
+        "message": "newlocal_m4_active_coverage_consumption_002_value_error"
+      },
+      "stdout": ""
+    },
+    {
+      "attempt": 2,
+      "owner_isError": false,
+      "CLI_item": {
+        "id": "newlocal-tool-2",
+        "type": "mcp_tool_call",
+        "server": "arm_engine",
+        "tool": "execute_python",
+        "arguments": {
+          "code": "print(6 * 7)"
+        },
+        "status": "completed",
+        "error": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"stdout\": \"42\\n\", \"stderr\": \"\", \"error\": null}"
+            }
+          ],
+          "structured_content": null
+        }
+      },
+      "ordinary_Python_error": null,
+      "stdout": "42\n"
+    }
+  ],
+  "normal_EOF_requested": true,
+  "normal_exit_observed": true,
+  "runtime_binding_confirmed": true,
+  "thin_cleanup": {
+    "pid": 9552,
+    "kill_requested": false,
+    "exit_code": 0,
+    "reaped": true,
+    "wait_timeout_s": 5,
+    "pipes_closed": {
+      "stdin": true,
+      "stdout": true,
+      "stderr": true
+    },
+    "process_handle_closed": true,
+    "errors": [],
+    "confirmed": true,
+    "started_ns": 68223952724500,
+    "closed_ns": 68223952760000,
+    "elapsed_ns": 35500
+  },
+  "error": null,
+  "new_model_provider_render_image_Blender_calls": 0,
+  "thin_pid": 9552,
+  "runtime_binding": {
+    "confirmed": true,
+    "status": "confirmed",
+    "method": "Windows Toolhelp + process creation times",
+    "launcher_pid": 6696,
+    "runtime_pid": 9552,
+    "max_parent_edges": 4,
+    "observed_ns": 68223872264300,
+    "parent_chain": [
+      {
+        "pid": 9552,
+        "parent_pid": 6696,
+        "exe": "python.exe",
+        "created_filetime": 134390501811366793
+      },
+      {
+        "pid": 6696,
+        "parent_pid": 4772,
+        "exe": "python.exe",
+        "created_filetime": 134390501810218279
+      }
+    ],
+    "snapshot_process_count": 352,
+    "error": null,
+    "launcher_created_filetime": 134390501810218279,
+    "runtime_created_filetime": 134390501811366793,
+    "parent_edges": 1,
+    "proved_ns": 68223878107600,
+    "after_stdio_STARTED": true,
+    "stdio_STARTED": {
+      "pid": 9552,
+      "kind": "native",
+      "started_ns": 68223821343700,
+      "instance_nonce": "74f39f87292d4fb0963aada78e7fcc6a"
+    },
+    "expected_executable": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "expected_executable_sha256": "50f885251e42eb8cd1fbf5d4fbcc01efdbe8b9f4d4379e16664d4d0f3d4a9869",
+    "actual_executable": "C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+    "actual_executable_sha256": "50f885251e42eb8cd1fbf5d4fbcc01efdbe8b9f4d4379e16664d4d0f3d4a9869",
+    "actual_image_checked_ns": 68223878871600,
+    "STARTED_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_coverage_consumption_002\\local\\N1\\LOCAL_N1\\c\\attachments\\bridge_c8c737481f3a4a3b94d941b758396169\\STARTED.json"
+  },
+  "normal_EOF_requested_ns": 68223945608900,
+  "thin_wait_exit_code": 0,
+  "closed_ns": 68223952761600,
+  "passed": true
+}
