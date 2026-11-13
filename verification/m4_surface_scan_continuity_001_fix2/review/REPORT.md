@@ -1,0 +1,48 @@
+# FIX2 runner 合同与固定依赖审查
+
+2026-11-13。审查runner摘要为 `e48be8fbc14f7a3a6c8d75e77b411af2d2a82b1456092c9cb2bf2910631d465d`。199项源码结构、固定字节和小范围纯函数检查通过。新增Blender、产品、模型、API运行及Git写入均为零。
+
+## 阶段顺序
+
+新runner保留固定三轮收集和在线执行状态检查。BASE与REPEAT使用原INITIAL，登记EDIT通过原actor在线核前态、单次执行与精确姿态回读，EDIT保存当时的回读来源。
+
+正常和异常路径均进入同一finally，driver.finish在该函数只有一处调用。关闭回执confirmed之后检查终态WIRE，再逐轮调用固定资格入口，最后核sequence。事实、距离和kernel报告没有流入后续收集或编辑决策。
+
+终态WIRE检查覆盖整个索引的连续序号、请求及响应尺寸、sendall确认、JSON和末尾close帧。逐轮原reader仍只回放目标sequence及其历史资源，后续资源没有参与较早阶段的事实输入。
+
+每轮started_ns在thin启动前记录，ended_ns在thin调用的finally中固定。后验函数不写该业务ended_ns，另存qualification_started_ns和qualification_ended_ns。宿主先按原业务起点窗口选候选，再验证正整数elapsed_ns及started_ns+elapsed_ns不晚于原业务终点，避免仅筛掉超尾事件后仍宣称单次捕获。当前worker没有ended_ns字段，新runner直接复用已有计量字段。
+
+## 在线状态与结果分母
+
+在线收集要求ordinary surface_scan返回complete，unknown/deferred为整数零，catalog_scope_confirmed为true，scope_issues、unsupported_objects及unresolved为空，delivery.complete为true。原C BASE回执通过上述小检查。unknown、partial、未解决列表、未确认catalog、布尔计数及不完整delivery的定向反例均按具体预期原因拒绝。
+
+成功返回、执行成功、执行失败和未运行与资格通过、资格失败及未核验分别统计。后验某轮失败可以保留三轮实际执行，未评分的行保留unverified。整体成功同时要求三次执行成功、三次资格通过、sequence通过、关闭确认、资产回读和期限条件。
+
+## 期限、来源与发布
+
+原绝对590秒从后台启动前起算，关闭、后验核验和RESULTS写入关闭都在该时界。各控制与收集阶段继续检查原deadline，后验只使用同一deadline。最终结果写入后的关闭时刻再次判断期限，计时文件发布独立记录。
+
+初始与EDIT几何来源分别保存，使用FIX1唯一活动bind_source_snapshot、verify_c_turn、verify_c_sequence和WIRE reader的固定路径。窄几何来源字段及rich元数据未记录的边界保持。
+
+准备检查从当前BATCH计算PREPARATION相对Git路径，明确要求FIX2目录。require_committed=false支持冻结前核当前输入及引用，正式入口再核当前HEAD中的准备字节，并在排他预留之后只运行一个C实例。
+
+本审查反馈过两个局部状态问题，末版均已修正。
+
+- sequence实际开始后异常会明确标failed，未进入时保留unverified，并存独立时界。
+- 最终计时发布或发布回执失败时，返回成功条件降为false，并有界尝试纠正磁盘FINAL_TIMING，另写PUBLICATION_ERROR与原分母。持续文件系统故障保留可写的失败回执。
+
+阶段集成套的具体行为与唯一新C资格由同批其他记录说明。本审查的199项包含源码检查及纯叶函数调用，没有运行新episode。
+
+## 固定依赖字节
+
+14份共享源码与基线 `1875bf45c09e8cca606f4de3fd8f0e821cc0d8a5` 的Git字节一致，覆盖actor、consumer、资格函数、CLI续接辅助、旧driver与打包、原stdio、worker和wire meter。
+
+141份固定C隔离安装记录与既有准备摘要一致。READY继续绑定产品 `452b44d2dcf231d6675bef54e568db0431a29261`、138源摘要 `4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6`。这些是磁盘及已接受固定输入的核对，新的实际加载身份由本批owned工程证据记录。
+
+SHARED_BYTES.json保留上述文件清单、长度与摘要，CONTRACT_RESULT.json保留199项标签和runner摘要。check_contract.py可用既有依赖Python加 `-I -B -X utf8` 复核，读取固定原件并只在本review目录写结果。
+
+## 审查器自身记录
+
+首版审查器遍历AST时误以为所有operator节点都有lineno，触发AttributeError。已改为检查该属性，首次失败及第二次通过日志保存在attempt_01和attempt_02。runner与旧原件在该修正中保持原字节。
+
+AL当前context_bound=false、host_epoch=5，无借用句柄。本审查仅写本review目录。

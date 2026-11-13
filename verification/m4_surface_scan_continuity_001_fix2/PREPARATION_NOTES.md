@@ -1,0 +1,17 @@
+# FIX2 工程阶段冻结准备
+
+2026-11-13。依据管理员b8c0a95c，改动限于工程runner的阶段及状态记账。
+
+固定路径为启动、BASE收集、REPEAT收集、登记EDIT及回读、EDIT收集、唯一finish、终态WIRE核对、逐轮事实及sequence验收、结果与完整计时。在线保留明确complete回执、thin退出、身份和端点、原deadline及原actor的EDIT前态/单次/回读保护。事实、kernel和sequence不参与后续固定操作。
+
+BASE与REPEAT使用INITIAL，EDIT使用当时回读。业务started_ns和ended_ns只在收集时记录，验收另计时。宿主事件完整落在原窗口，结束由started_ns加elapsed_ns确定。执行成功、真实错误、未运行与资格通过、失败、未核验分别保存。
+
+固定FIX1的唯一binder、verify_c_turn、verify_c_sequence和WIRE reader按原字节引用。actor、worker、stdio、产品及已接通consumer也保持固定引用。旧N三轮工程证据继续复用，新增N为零。
+
+实际新run_episode的阶段集成最终8方法通过，35份输入按SHA引用。替身在finish前拒绝WIRE，finish后才映射冻结资料。测试覆盖正常三轮、finish失败、WIRE缺失、后验单轮失败、宿主事件越窗、原期限、sequence异常及发布错误。结果仅发布摘要及原窗口，没有复制大矩阵。REPEAT使用旧brief事实并合成default请求标志，其范围明确为离线阶段回归。
+
+独立合同及固定字节审查199项通过，核14份共享源码和141份固定安装记录。审查发现的sequence失败状态及计时发布一致性已修正。根另有76项只读复核，确认8个阶段用例分母、先收集后关闭后验收及输入摘要。审查器自身首版AST节点lineno误读已修正并保留日志。
+
+冻结前由validate_preparation(require_committed=False)自检当前batch和PREPARATION，提交后再次只读核当前Git路径和字节，之后才排他预留唯一新C。590秒从启动前起算，包含三轮、登记EDIT、关闭、后验资格及RESULTS写入关闭；计时文件自身发布另列。每工具30秒。
+
+本准备新增Blender/provider/模型/API调用均为零。唯一实际C仍待冻结后执行，未来真实连续模型消费、usage范围和收益等待工程资格及管理员新合同。旧两批失败及未运行分母保留。AL当前未绑定，host_epoch为5。

@@ -1,0 +1,366 @@
+--- fix1/engineering/run_candidate.py
++++ fix2/engineering/run_candidate.py
+@@ -1 +1 @@
+-"""Run the frozen FIX1 C engineering episode once, with no model consumer."""
++"""Collect one FIX2 C episode, close it once, then qualify frozen records."""
+@@ -14,0 +15 @@
++FIX1 = ROOT / 'verification/m4_surface_scan_continuity_001_fix1'
+@@ -42,0 +44,4 @@
++def error_record(error, stage):
++    return {'stage': stage, 'type': type(error).__name__, 'message': str(error), 'traceback': traceback.format_exc()}
++
++
+@@ -51,3 +55,0 @@
+-    name = 'human_eye_scene_observe'
+-    args = {'session_id': 'continuity-fix1-engineering-C-001', 'include_image': False,
+-            'query': {'mode': 'surface_scan', 'threshold_m': .002}}
+@@ -55 +57,16 @@
+-            'params': {'name': name, 'arguments': args}}
++            'params': {'name': 'human_eye_scene_observe', 'arguments': {
++                'session_id': 'continuity-fix2-engineering-C-001', 'include_image': False,
++                'query': {'mode': 'surface_scan', 'threshold_m': .002}}}}
++
++
++def validate_online_body(body):
++    """Check explicit completion only; geometric qualification occurs after close."""
++    assert type(body) is dict, 'online_observe_body_object'
++    assert body.get('result_kind') == 'surface_scan' and body.get('status') == 'complete', 'online_observe_not_complete'
++    coverage = body.get('coverage')
++    assert type(coverage) is dict, 'online_coverage_object'
++    assert all(type(coverage.get(key)) is int and coverage[key] == 0 for key in ('unknown', 'deferred')), 'online_coverage_unresolved'
++    assert coverage.get('catalog_scope_confirmed') is True, 'online_catalog_scope_unconfirmed'
++    assert all(body.get(key) == [] for key in ('scope_issues', 'unsupported_objects', 'unresolved')), 'online_scope_unresolved'
++    delivery = body.get('delivery')
++    assert type(delivery) is dict and delivery.get('complete') is True, 'online_delivery_incomplete'
+@@ -59 +76 @@
+-    """Bind the actual runner response, capture and owner geometry in one path."""
++    """Qualify one original business interval using the closed worker's WIRE."""
+@@ -61 +77,0 @@
+-    row['body'] = body
+@@ -63,3 +79,7 @@
+-    host = [json.loads(line) for line in (folder / 'owner/native/WORKER_EVENTS.jsonl').read_bytes().splitlines()]
+-    host = [item for item in host if row['started_ns'] <= item.get('started_ns', -1) <= row['ended_ns']]
+-    assert len(host) == 1, 'single_capture_before_source_binding'
++    events = [json.loads(line) for line in (folder / 'owner/native/WORKER_EVENTS.jsonl').read_bytes().splitlines()]
++    host = [item for item in events if type(item.get('started_ns')) is int
++            and row['started_ns'] <= item['started_ns'] <= row['ended_ns']]
++    for event in host:
++        assert type(event.get('elapsed_ns')) is int and event['elapsed_ns'] > 0, 'host_event_positive_elapsed_required'
++        assert event['started_ns'] + event['elapsed_ns'] <= row['ended_ns'], 'host_event_outside_original_business_window'
++    assert len(host) == 1, 'single_capture_in_original_business_window'
+@@ -67,0 +88,126 @@
++
++
++def verify_terminal_wire(folder):
++    wire = folder / 'owner/native/WIRE'
++    index = read(wire / 'INDEX.json')
++    assert type(index) is list and bool(index), 'terminal_WIRE_index_required'
++    assert [row['sequence'] for row in index] == list(range(1, len(index) + 1)), 'terminal_WIRE_sequence'
++    last_request = last_response = None
++    for row in index:
++        sequence = row['sequence']
++        assert type(sequence) is int and row['response_sendall_completed'] is True, 'terminal_WIRE_send_unconfirmed'
++        request_raw = (wire / str(sequence).zfill(3) / 'REQUEST.bin').read_bytes()
++        response_raw = (wire / str(sequence).zfill(3) / 'RESPONSE.bin').read_bytes()
++        assert type(row['request_bytes']) is int and row['request_bytes'] == len(request_raw) > 0, 'terminal_WIRE_request_size'
++        assert type(row['response_attempted_bytes']) is int and row['response_attempted_bytes'] == len(response_raw) > 0, 'terminal_WIRE_response_size'
++        assert row['request_response_attempted_bytes'] == len(request_raw) + len(response_raw), 'terminal_WIRE_total_size'
++        last_request, last_response = json.loads(request_raw), json.loads(response_raw)
++    assert last_request.get('type') == 'close' and last_response.get('status') == 'closed', 'terminal_WIRE_close_frame'
++    return {'passed': True, 'frames': len(index), 'complete_sendall': True, 'closed_frame_verified': True}
++
++
++def qualify_after_finish(result, folder, sources, qualification, deadline):
++    """Read terminal artifacts only after the sole finish has been confirmed."""
++    result['qualification_started_ns'] = time.perf_counter_ns()
++    try:
++        check_deadline(deadline)
++        assert result.get('cleanup', {}).get('confirmed') is True, 'qualification_requires_confirmed_finish'
++        result['terminal_wire_verification'] = verify_terminal_wire(folder)
++        check_deadline(deadline)
++        reports = []
++        for row in result['business']:
++            if row['execution_state'] != 'succeeded':
++                continue
++            check_deadline(deadline)
++            row['qualification_started_ns'] = time.perf_counter_ns()
++            try:
++                report = verify_business(row, folder, sources[row['state']], qualification)
++                row['verification'] = report
++                assert type(report) is dict and report.get('passed') is True, 'business_qualification_not_passed'
++                check_deadline(deadline)
++                row['qualification_state'] = 'passed'
++                reports.append(report)
++            except BaseException as error:
++                row['qualification_state'] = 'failed'
++                row['qualification_errors'].append(error_record(error, 'business_qualification'))
++            finally:
++                row['qualification_ended_ns'] = time.perf_counter_ns()
++                save(folder / ('TURN_' + row['turn'] + '.json'), row)
++        if len(reports) == 3 and all(row['qualification_state'] == 'passed' for row in result['business']):
++            check_deadline(deadline)
++            result['sequence_qualification_started_ns'] = time.perf_counter_ns()
++            try:
++                result['sequence_verification'] = qualification.verify_c_sequence(reports)
++                assert result['sequence_verification'].get('passed') is True, 'sequence_qualification_not_passed'
++                check_deadline(deadline)
++                result['sequence_qualification_state'] = 'passed'
++            except BaseException as error:
++                result['sequence_qualification_state'] = 'failed'
++                result['qualification_errors'].append(error_record(error, 'sequence_qualification'))
++            finally:
++                result['sequence_qualification_ended_ns'] = time.perf_counter_ns()
++    except BaseException as error:
++        result['qualification_errors'].append(error_record(error, 'postclose_qualification'))
++    finally:
++        result['qualification_ended_ns'] = time.perf_counter_ns()
++        result['stages_ns']['qualification'] = result['qualification_ended_ns'] - result['qualification_started_ns']
++
++
++def publish_result(result, folder, deadline):
++    """Publish execution and qualification separately, retaining publication errors."""
++    business = result['business']
++    result['execution_counts'] = {
++        'planned': 3, 'attempted': len(business),
++        'successful_returns': sum(row['successful_return'] for row in business),
++        'succeeded': sum(row['execution_state'] == 'succeeded' for row in business),
++        'failed': sum(row['execution_state'] == 'failed' for row in business),
++        'not_run': 3 - len(business),
++    }
++    result['qualification_counts'] = {
++        'planned': 3,
++        'passed': sum(row['qualification_state'] == 'passed' for row in business),
++        'failed': sum(row['qualification_state'] == 'failed' for row in business),
++        'unverified': 3 - sum(row['qualification_state'] in ('passed', 'failed') for row in business),
++    }
++    result['passed_before_publication'] = bool(not result['errors'] and not result['qualification_errors']
++        and result['asset_unchanged'] and result.get('cleanup', {}).get('confirmed') is True
++        and result['execution_counts']['succeeded'] == 3 and result['qualification_counts']['passed'] == 3
++        and result['sequence_qualification_state'] == 'passed' and time.perf_counter_ns() < deadline)
++    result['publication_errors'] = []
++    try:
++        save(folder / 'RESULTS.json', result)
++    except BaseException as error:
++        result['publication_errors'].append(error_record(error, 'RESULTS_publication'))
++    closed = time.perf_counter_ns()
++    timing = {'started_ns': result['started_ns'], 'business_receipts_closed_ns': closed,
++              'full_episode_wall_ns': closed - result['started_ns'], 'original_deadline_ns': deadline,
++              'within_590s': closed < deadline,
++              'accepted_success': result['passed_before_publication'] and not result['publication_errors'] and closed < deadline,
++              'publication_errors': result['publication_errors'],
++              'scope': 'Input checks, startup, three thin lifecycles, pose/QA, sole finish, postclose qualification and RESULTS write/close',
++              'durability': 'Buffered write and close; fsync of these reports unmeasured'}
++    publication_started = time.perf_counter_ns()
++    try:
++        save(folder / 'FINAL_TIMING.json', timing)
++    except BaseException as error:
++        result['publication_errors'].append(error_record(error, 'FINAL_TIMING_publication'))
++        timing['accepted_success'] = False
++    publication_closed = time.perf_counter_ns()
++    try:
++        save(folder / 'TIMING_PUBLICATION.json', {'started_ns': publication_started, 'closed_ns': publication_closed,
++             'scope': 'FINAL_TIMING publication; this receipt publication is separate'})
++    except BaseException as error:
++        result['publication_errors'].append(error_record(error, 'TIMING_PUBLICATION_receipt'))
++        timing['accepted_success'] = False
++    if result['publication_errors']:
++        timing['accepted_success'] = False
++        try:
++            save(folder / 'FINAL_TIMING.json', timing)
++        except BaseException as error:
++            result['publication_errors'].append(error_record(error, 'failed_FINAL_TIMING_correction'))
++        try:
++            save(folder / 'PUBLICATION_ERROR.json', {'errors': result['publication_errors'], 'accepted_success': False,
++                'execution_counts': result['execution_counts'], 'qualification_counts': result['qualification_counts']})
++        except BaseException:
++            pass
++    return timing
+@@ -76 +222 @@
+-    result = {'group': group, 'episode_id': 'continuity-fix1-engineering-C-001',
++    result = {'group': group, 'episode_id': 'continuity-fix2-engineering-C-001',
+@@ -78,3 +224,4 @@
+-              'errors': [], 'model_calls': 0, 'API_calls': 0, 'automatic_retries': 0,
+-              'usage': None, 'usage_scope': 'No model consumer; no usage event exists.',
+-              'stages_ns': {}, 'same_thread_model_continuity': 'not_measured'}
++              'errors': [], 'qualification_errors': [], 'sequence_qualification_state': 'unverified',
++              'model_calls': 0, 'API_calls': 0, 'automatic_retries': 0, 'usage': None,
++              'usage_scope': 'No model consumer; no usage event exists.', 'stages_ns': {},
++              'same_thread_model_continuity': 'not_measured'}
+@@ -81,0 +229 @@
++    sources = {}
+@@ -86,4 +234,3 @@
+-        mark = time.perf_counter_ns()
+-        message = {'jsonrpc': '2.0', 'id': 'admin-' + str(len(result['administrative']) + 1),
+-                   'method': 'continuity/' + operation, 'params': {'episode_id': episode, **params}}
+-        row = {'request': message, 'started_ns': mark}
++        row = {'request': {'jsonrpc': '2.0', 'id': 'admin-' + str(len(result['administrative']) + 1),
++               'method': 'continuity/' + operation, 'params': {'episode_id': episode, **params}},
++               'started_ns': time.perf_counter_ns()}
+@@ -92 +239 @@
+-            row['response'] = attach.attach(read(folder / 'ENDPOINT.json'), 'native', message)
++            row['response'] = attach.attach(read(folder / 'ENDPOINT.json'), 'native', row['request'])
+@@ -102,2 +249,2 @@
+-        config = {'group': 'P', 'external_group': group, 'task': 'T1',
+-                  'episode_id': episode, 'session_id': episode, 'output': str(folder / 'owner'), 'endpoint': str(folder / 'ENDPOINT.json'),
++        config = {'group': 'P', 'external_group': group, 'task': 'T1', 'episode_id': episode, 'session_id': episode,
++                  'output': str(folder / 'owner'), 'endpoint': str(folder / 'ENDPOINT.json'),
+@@ -106,4 +253,2 @@
+-                  'dependency_python': ready['dependency_python'],
+-                  'read_schemas': read(BATCH / 'inputs/C_PUBLIC_TOOLS.json'),
+-                  'entry': ready['entry'], 'install_root': ready['install_root'],
+-                  'source_sha256': ready['source_sha256']}
++                  'dependency_python': ready['dependency_python'], 'read_schemas': read(BATCH / 'inputs/C_PUBLIC_TOOLS.json'),
++                  'entry': ready['entry'], 'install_root': ready['install_root'], 'source_sha256': ready['source_sha256']}
+@@ -111 +256 @@
+-        command = [ready['dependency_python'], '-I', '-B', '-X', 'utf8', str(BATCH / 'runtime/actor.py'), '--config', str(folder / 'ACTOR_CONFIG.json')]
++        command = [ready['dependency_python'], '-I', '-B', '-X', 'utf8', str(FIX1 / 'runtime/actor.py'), '--config', str(folder / 'ACTOR_CONFIG.json')]
+@@ -117 +262 @@
+-                                           'deadline_ns': deadline, 'startup_deadline_ns': startup_deadline})
++                                          'deadline_ns': deadline, 'startup_deadline_ns': startup_deadline})
+@@ -126 +271 @@
+-        sources = {'BASE': read(folder / 'owner/INITIAL.json')}
++        sources['BASE'] = read(folder / 'owner/INITIAL.json')
+@@ -128 +272,0 @@
+-        c_reports = []
+@@ -139 +283 @@
+-            assert backend_identity(before) == backend_identity(initial)
++            assert backend_identity(before) == backend_identity(initial), 'backend_identity_changed'
+@@ -141 +285 @@
+-            assert read(folder / 'ENDPOINT.json') == endpoint_before
++            assert read(folder / 'ENDPOINT.json') == endpoint_before, 'endpoint_changed'
+@@ -146 +290,3 @@
+-                   'status_before': before, 'started_ns': time.perf_counter_ns(), 'errors': []}
++                   'status_before': before, 'started_ns': time.perf_counter_ns(), 'ended_ns': None,
++                   'errors': [], 'execution_state': 'attempted', 'successful_return': False,
++                   'qualification_state': 'unverified', 'qualification_errors': []}
+@@ -149 +295,2 @@
+-                {'jsonrpc': '2.0', 'id': 'init-' + turn, 'method': 'initialize', 'params': {'protocolVersion': '2025-03-26', 'capabilities': {}, 'clientInfo': {'name': 'continuity-engineering-stub', 'version': '001'}}},
++                {'jsonrpc': '2.0', 'id': 'init-' + turn, 'method': 'initialize', 'params': {'protocolVersion': '2025-03-26',
++                 'capabilities': {}, 'clientInfo': {'name': 'continuity-engineering-stub', 'version': '001'}}},
+@@ -153,4 +300,13 @@
+-                thin = transport.thin_turn(python=ready['dependency_python'], endpoint=folder / 'ENDPOINT.json',
+-                                           folder=folder / turn, requests=requests, deadline_ns=deadline)
+-                row['thin'] = thin
+-                row['ended_ns'] = time.perf_counter_ns()
++                try:
++                    row['thin'] = transport.thin_turn(python=ready['dependency_python'], endpoint=folder / 'ENDPOINT.json',
++                        folder=folder / turn, requests=requests, deadline_ns=deadline)
++                finally:
++                    row['ended_ns'] = time.perf_counter_ns()
++                thin = row['thin']
++                answer = next(value for value in thin['responses'] if value.get('id') == request['id'])
++                row['response'] = answer
++                assert 'error' not in answer and type(answer.get('result')) is dict, 'online_RPC_error'
++                assert not answer['result'].get('isError'), 'online_tool_error'
++                row['body'] = json.loads(answer['result']['content'][0]['text'])
++                validate_online_body(row['body'])
++                row['successful_return'] = True
+@@ -158,4 +313,0 @@
+-                responses = thin['responses']
+-                answer = next(value for value in responses if value.get('id') == request['id'])
+-                assert not answer['result'].get('isError'), answer
+-                row['response'] = answer
+@@ -163 +315 @@
+-                assert backend_identity(row['status_after']) == backend_identity(initial)
++                assert backend_identity(row['status_after']) == backend_identity(initial), 'backend_identity_changed'
+@@ -167,6 +319,3 @@
+-                assert not (folder / 'owner/CLOSE.json').exists()
+-                assert process.poll() is None
+-                assert read(folder / 'ENDPOINT.json') == endpoint_before
+-                report = verify_business(row, folder, sources[row['state']], qualification)
+-                c_reports.append(report)
+-                row['verification'] = report
++                assert not (folder / 'owner/CLOSE.json').exists(), 'owner_finished_during_collection'
++                assert process.poll() is None, 'actor_stopped_during_collection'
++                assert read(folder / 'ENDPOINT.json') == endpoint_before, 'endpoint_changed'
+@@ -173,0 +323 @@
++                row['execution_state'] = 'succeeded'
+@@ -175,2 +325,2 @@
+-                row['ended_ns'] = time.perf_counter_ns()
+-                row['errors'].append({'type': type(error).__name__, 'message': str(error), 'traceback': traceback.format_exc()})
++                row['execution_state'] = 'failed'
++                row['errors'].append(error_record(error, 'collection'))
+@@ -181 +330,0 @@
+-        result['sequence_verification'] = qualification.verify_c_sequence(c_reports)
+@@ -184 +333 @@
+-        result['errors'].append({'type': type(error).__name__, 'message': str(error), 'traceback': traceback.format_exc()})
++        result['errors'].append(error_record(error, 'collection'))
+@@ -190 +339 @@
+-                assert result['cleanup']['confirmed'], result['cleanup']
++                assert result['cleanup']['confirmed'], 'owner_finish_unconfirmed'
+@@ -192 +341 @@
+-                result['errors'].append({'stage': 'owned_cleanup', 'message': repr(error), 'traceback': traceback.format_exc()})
++                result['errors'].append(error_record(error, 'owned_cleanup'))
+@@ -194,16 +343,7 @@
+-        result['asset_unchanged'] = sha(QUAL / 'assembly.blend') == frozen['scene_sha256']
+-        result['execution_counts'] = {'planned': 3, 'attempted': len(result['business']),
+-                                      'completed': sum(not row['errors'] for row in result['business']),
+-                                      'failed': sum(bool(row['errors']) for row in result['business']),
+-                                      'not_run': 3 - len(result['business'])}
+-        result['passed_before_publication'] = not result['errors'] and result['asset_unchanged'] and len(result['business']) == 3
+-        save(folder / 'RESULTS.json', result)
+-        closed = time.perf_counter_ns()
+-        timing = {'started_ns': started, 'business_receipts_closed_ns': closed, 'full_episode_wall_ns': closed - started,
+-                  'original_deadline_ns': deadline, 'within_590s': closed < deadline,
+-                  'accepted_success': result['passed_before_publication'] and closed < deadline,
+-                  'scope': 'input checks, owned startup, three thin lifecycles, pose/QA, verification, cleanup and RESULTS write/close',
+-                  'durability': 'buffered write and close; fsync of this report unmeasured'}
+-        mark = time.perf_counter_ns()
+-        save(folder / 'FINAL_TIMING.json', timing)
+-        save(folder / 'TIMING_PUBLICATION.json', {'started_ns': mark, 'closed_ns': time.perf_counter_ns(), 'scope': 'FINAL_TIMING publication; this receipt write is separate'})
++        qualify_after_finish(result, folder, sources, qualification, deadline)
++        try:
++            result['asset_unchanged'] = sha(QUAL / 'assembly.blend') == frozen['scene_sha256']
++        except BaseException as error:
++            result['asset_unchanged'] = False
++            result['errors'].append(error_record(error, 'asset_readback'))
++        timing = publish_result(result, folder, deadline)
+@@ -210,0 +351,19 @@
++
++
++def validate_preparation(frozen, require_committed=True):
++    preparation = BATCH / 'PREPARATION.json'
++    relative = preparation.relative_to(ROOT).as_posix()
++    assert BATCH.name == 'm4_surface_scan_continuity_001_fix2', 'current_FIX2_batch_required'
++    assert read(preparation) == frozen, 'current_preparation_bytes_required'
++    for record in frozen['files']:
++        path = BATCH / record['path']
++        assert path.resolve().is_relative_to(BATCH.resolve()), 'preparation_path_outside_batch'
++        assert sha(path) == record['sha256'], record['path']
++    for path, expected in frozen['external_sha256'].items():
++        assert sha(Path(path)) == expected, path
++    if require_committed:
++        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
++        assert head != frozen['preparation_parent_commit'], 'preparation_must_be_committed_before_engineering'
++        assert subprocess.check_output(['git', 'show', head + ':' + relative], cwd=ROOT) == preparation.read_bytes(), 'committed_current_preparation_required'
++    return {'preparation_path': relative, 'file_count': len(frozen['files']),
++            'external_count': len(frozen['external_sha256']), 'committed_verified': require_committed}
+@@ -215,9 +374,2 @@
+-    assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != frozen['preparation_parent_commit'], 'preparation_must_be_committed_before_engineering'
+-    preparation_path = (BATCH / 'PREPARATION.json').relative_to(ROOT).as_posix()
+-    assert subprocess.check_output(['git', 'show', 'HEAD:' + preparation_path], cwd=ROOT) == (BATCH / 'PREPARATION.json').read_bytes()
+-    for record in frozen['files']:
+-        assert sha(BATCH / record['path']) == record['sha256'], record['path']
+-    for path, expected in frozen['external_sha256'].items():
+-        assert sha(Path(path)) == expected, path
+-    reservation = BATCH / 'ENGINEERING_STARTED.json'
+-    with reservation.open('x', encoding='utf8') as stream:
++    validate_preparation(frozen)
++    with (BATCH / 'ENGINEERING_STARTED.json').open('x', encoding='utf8') as stream:
+@@ -226,9 +378,7 @@
+-    transport = load('_continuity_transport', BATCH / 'runtime/consumer_transport.py')
+-    attach = load('_continuity_attach', ROOT / 'verification/native_plugin_complex_003/reused/stdio_attach.py')
+-    qualification = load('_continuity_qualification', BATCH / 'qualification/verify_continuity.py')
+-    driver = load('_continuity_reused_driver', ROOT / 'verification/m4_surface_scan_compact_consumption_001/runtime/driver.py')
+-    results = []
+-    row = run_episode('C', frozen, transport, attach, qualification, driver)
+-    results.append({'group': 'C', **row})
+-    value = {'episodes': results, 'planned_episodes': 1, 'started_episodes': 1, 'N_episodes': 0,
+-             'model_calls': 0, 'API_calls': 0, 'passed': row['accepted_success']}
++    transport = load('_fix2_fixed_transport', FIX1 / 'runtime/consumer_transport.py')
++    attach = load('_fix2_fixed_attach', ROOT / 'verification/native_plugin_complex_003/reused/stdio_attach.py')
++    qualification = load('_fix2_fixed_qualification', FIX1 / 'qualification/verify_continuity.py')
++    driver = load('_fix2_fixed_driver', ROOT / 'verification/m4_surface_scan_compact_consumption_001/runtime/driver.py')
++    timing = run_episode('C', frozen, transport, attach, qualification, driver)
++    value = {'episodes': [{'group': 'C', **timing}], 'planned_episodes': 1, 'started_episodes': 1,
++             'N_episodes': 0, 'model_calls': 0, 'API_calls': 0, 'passed': timing['accepted_success']}
