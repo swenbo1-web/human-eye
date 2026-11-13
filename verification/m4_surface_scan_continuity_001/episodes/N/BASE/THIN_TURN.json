@@ -1,0 +1,152 @@
+{
+  "started_ns": 21585575189700,
+  "deadline_ns": 22174326728900,
+  "argv": [
+    "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+    "-I",
+    "-B",
+    "-X",
+    "utf8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\reused\\stdio_attach.py",
+    "--endpoint",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\N\\BASE\\ENDPOINT.json",
+    "--kind",
+    "native",
+    "--audit",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\N\\BASE\\attachments"
+  ],
+  "requests": [
+    {
+      "jsonrpc": "2.0",
+      "id": "init-BASE",
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-03-26",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "continuity-engineering-stub",
+          "version": "001"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "notifications/initialized"
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "list-BASE",
+      "method": "tools/list"
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "N-BASE",
+      "method": "tools/call",
+      "params": {
+        "name": "execute_blender_code",
+        "arguments": {
+          "code": "assert '_human_eye_continuity_marker' not in globals()\n_human_eye_continuity_marker = {'marker_token':'continuity-engineering-N-001','marker_generation':1}\nimport json as _continuity_json, os as _continuity_os\n_continuity_marker = globals()['_human_eye_continuity_marker']\nprint(_continuity_json.dumps({**_continuity_marker, 'pid':_continuity_os.getpid(),\n'namespace_id':id(globals()), 'unit_scale':float(bpy.context.scene.unit_settings.scale_length),\n'objects':[{'name':obj.name,'session_uid':int(obj.session_uid),\n'matrix_world':[[float(x) for x in row] for row in obj.matrix_world]}\nfor obj in sorted(bpy.context.scene.objects,key=lambda obj:obj.name) if obj.type=='MESH']},allow_nan=False))\n"
+        }
+      }
+    }
+  ],
+  "request_ids": [
+    "init-BASE",
+    "list-BASE",
+    "N-BASE"
+  ],
+  "responses": [
+    {
+      "jsonrpc": "2.0",
+      "id": "init-BASE",
+      "result": {
+        "protocolVersion": "2025-03-26",
+        "capabilities": {
+          "tools": {}
+        },
+        "serverInfo": {
+          "name": "owned-spatial-session",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "list-BASE",
+      "result": {
+        "tools": [
+          {
+            "name": "execute_blender_code",
+            "description": "Execute ordinary read-only bpy/Python in this session persistent private Blender namespace. NumPy, mathutils BVH, mesh/triangle reading, your own Python computations and cached variables are allowed. Only this scene and your own computations may be read; no fixture sources, management files or scoring data. No scene edits or saving. Image delivery disabled.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "N-BASE",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"result\":{\"executed\":true,\"result\":\"{\\\"marker_token\\\": \\\"continuity-engineering-N-001\\\", \\\"marker_generation\\\": 1, \\\"pid\\\": 16484, \\\"namespace_id\\\": 2966403339776, \\\"unit_scale\\\": 1.0, \\\"objects\\\": [{\\\"name\\\": \\\"Obj_001\\\", \\\"session_uid\\\": 162, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_002\\\", \\\"session_uid\\\": 163, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_003\\\", \\\"session_uid\\\": 164, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_004\\\", \\\"session_uid\\\": 165, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_005\\\", \\\"session_uid\\\": 166, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_006\\\", \\\"session_uid\\\": 167, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_007\\\", \\\"session_uid\\\": 168, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_008\\\", \\\"session_uid\\\": 169, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_009\\\", \\\"session_uid\\\": 170, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_010\\\", \\\"session_uid\\\": 171, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_011\\\", \\\"session_uid\\\": 172, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_012\\\", \\\"session_uid\\\": 173, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_013\\\", \\\"session_uid\\\": 174, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_014\\\", \\\"session_uid\\\": 175, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_015\\\", \\\"session_uid\\\": 176, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_016\\\", \\\"session_uid\\\": 177, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_017\\\", \\\"session_uid\\\": 178, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_018\\\", \\\"session_uid\\\": 179, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_019\\\", \\\"session_uid\\\": 180, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_020\\\", \\\"session_uid\\\": 181, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_021\\\", \\\"session_uid\\\": 182, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_022\\\", \\\"session_uid\\\": 183, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_023\\\", \\\"session_uid\\\": 184, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}, {\\\"name\\\": \\\"Obj_024\\\", \\\"session_uid\\\": 185, \\\"matrix_world\\\": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]}]}\\n\"},\"status\":\"success\"}"
+          }
+        ],
+        "isError": false
+      }
+    }
+  ],
+  "error": null,
+  "model_or_API_calls": 0,
+  "backend_lifetime": "external owner; stdin EOF closes this client only",
+  "pid": 9292,
+  "exit_code": 0,
+  "confirmed": true,
+  "process_exit_ns": 21585703583200,
+  "process_reaped": true,
+  "bridge_cleanup": {
+    "confirmed": true,
+    "scope": "thin-client EXIT receipts only; backend lifetime is external",
+    "receipt_status": "confirmed",
+    "missing_exit_count": 0,
+    "instances": [
+      {
+        "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\N\\BASE\\attachments\\bridge_1fdace9db4d7497eaf79484eedb51641",
+        "started": {
+          "pid": 21180,
+          "kind": "native",
+          "started_ns": 21585646513400,
+          "instance_nonce": "645295d66dd64eedb36bf87e57f618d6"
+        },
+        "exit": {
+          "pid": 21180,
+          "kind": "native",
+          "started_ns": 21585646513400,
+          "instance_nonce": "645295d66dd64eedb36bf87e57f618d6",
+          "normal_exit": true,
+          "ended_ns": 21585697830800,
+          "requests": 4,
+          "complete_tx_bytes": 1154,
+          "complete_rx_bytes": 5216,
+          "backend_close_requested": false
+        },
+        "confirmed": true
+      }
+    ],
+    "backend_close_confirmed": null
+  },
+  "ended_ns": 21585711035100,
+  "wall_ns": 135845400
+}

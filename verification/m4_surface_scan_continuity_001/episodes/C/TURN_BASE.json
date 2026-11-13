@@ -1,0 +1,1949 @@
+{
+  "turn": "BASE",
+  "state": "BASE",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "C-BASE",
+    "method": "tools/call",
+    "params": {
+      "name": "human_eye_scene_observe",
+      "arguments": {
+        "session_id": "continuity-engineering-C-001",
+        "include_image": false,
+        "query": {
+          "mode": "surface_scan",
+          "threshold_m": 0.002
+        }
+      }
+    }
+  },
+  "waiting_and_barrier_before_turn_ns": 33939300,
+  "status_before": {
+    "episode_id": "continuity-engineering-C-001",
+    "owner_pid": 6628,
+    "native_pid": 20132,
+    "native_host": "127.0.0.1",
+    "native_port": 60296,
+    "native_workspace": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\C\\owner\\native",
+    "product_launcher_pid": 20552,
+    "product_runtime_proof": {
+      "confirmed": true,
+      "status": "confirmed",
+      "method": "Windows Toolhelp + process creation times",
+      "launcher_pid": 20552,
+      "runtime_pid": 4756,
+      "max_parent_edges": 4,
+      "observed_ns": 21588270412800,
+      "parent_chain": [
+        {
+          "pid": 4756,
+          "parent_pid": 20552,
+          "exe": "python.exe",
+          "created_filetime": 134390035448385901
+        },
+        {
+          "pid": 20552,
+          "parent_pid": 6628,
+          "exe": "python.exe",
+          "created_filetime": 134390035448240406
+        }
+      ],
+      "snapshot_process_count": 300,
+      "before_stdin": false,
+      "error": null,
+      "launcher_created_filetime": 134390035448240406,
+      "runtime_created_filetime": 134390035448385901,
+      "parent_edges": 1,
+      "proved_ns": 21588278069900,
+      "before_consumer_business": true,
+      "initial_QA_completed_ns": 21587439752200,
+      "metadata_completed_ns": 21588270410700,
+      "scope": "after initial QA snapshot and four metadata calls, before consumer business"
+    },
+    "session_id": "continuity-engineering-C-001",
+    "observed_product_session_ids": [],
+    "session_binding_scope": "configured session and actual accepted observe arguments; product query/session evidence is recorded separately",
+    "worker_deadline_ns": 22176584843400,
+    "active_turn": null,
+    "completed_turns": [],
+    "business_attempts": 0,
+    "edit_attempted": false,
+    "edit_verified": false,
+    "owner_close_called": false
+  },
+  "started_ns": 21588350553800,
+  "errors": [
+    {
+      "type": "AssertionError",
+      "message": "actual geometry or source fields differ from qualified state",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\engineering\\run_episodes.py\", line 178, in run_episode\n    report = qualification.verify_c_turn(body, audit, host, sources[row['state']], turn, request)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\qualification\\verify_continuity.py\", line 91, in verify_c_turn\n    previous.bind_snapshot(source_snapshot, reference)\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_001_opt1\\engineering\\common.py\", line 68, in bind_snapshot\n    assert actual == expected, 'actual geometry or source fields differ from qualified state'\n           ^^^^^^^^^^^^^^^^^^\nAssertionError: actual geometry or source fields differ from qualified state\n"
+    }
+  ],
+  "thin": {
+    "started_ns": 21588350562100,
+    "deadline_ns": 22176584843400,
+    "argv": [
+      "D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe",
+      "-I",
+      "-B",
+      "-X",
+      "utf8",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\native_plugin_complex_003\\reused\\stdio_attach.py",
+      "--endpoint",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\C\\BASE\\ENDPOINT.json",
+      "--kind",
+      "native",
+      "--audit",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\C\\BASE\\attachments"
+    ],
+    "requests": [
+      {
+        "jsonrpc": "2.0",
+        "id": "init-BASE",
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-03-26",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "continuity-engineering-stub",
+            "version": "001"
+          }
+        }
+      },
+      {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": "list-BASE",
+        "method": "tools/list"
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": "C-BASE",
+        "method": "tools/call",
+        "params": {
+          "name": "human_eye_scene_observe",
+          "arguments": {
+            "session_id": "continuity-engineering-C-001",
+            "include_image": false,
+            "query": {
+              "mode": "surface_scan",
+              "threshold_m": 0.002
+            }
+          }
+        }
+      }
+    ],
+    "request_ids": [
+      "init-BASE",
+      "list-BASE",
+      "C-BASE"
+    ],
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": "init-BASE",
+        "result": {
+          "protocolVersion": "2025-03-26",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "owned-spatial-session",
+            "version": "1"
+          }
+        }
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": "list-BASE",
+        "result": {
+          "tools": [
+            {
+              "name": "execute_blender_code",
+              "description": "Execute ordinary read-only bpy/Python in this session persistent private Blender namespace. NumPy, mathutils BVH, mesh/triangle reading, your own Python computations and cached variables are allowed. Only this scene and your own computations may be read; no fixture sources, management files or scoring data. No scene edits or saving. Image delivery disabled.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "human_eye_scene_observe",
+              "description": "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. Task set example: {\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. Opt in to spatial_relation and surface_proximity for support-certified separation with closed-classification fallback. Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. Complete means global nearest; partial means best-known. scene_revision/fingerprint bind this capture/source/revision; runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria. For all current scene mesh pairs use query={\"mode\":\"surface_scan\",\"threshold_m\":0.002}. This text-only scan includes hidden meshes, needs no selectors, includes threshold equality and reports coverage. Its unsigned triangle-surface distance describes surface proximity. Solid relations require separate facts. For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current evidence with witnesses. Combine observations using their scene/source binding.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "task_instruction": {
+                    "type": "string"
+                  },
+                  "focal_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "reference_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "session_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "goal": {
+                    "type": "object",
+                    "description": "Optional caller-supplied task criteria, evaluated separately from execution. Omitted object IDs bind to the selected observation/action pair. These criteria are not independently verified as the human user's intent.",
+                    "properties": {
+                      "focal_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "reference_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "target_clearance_m": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "clearance_tolerance_m": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "target_focal_pivot_world_m": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 3,
+                        "maxItems": 3
+                      },
+                      "position_tolerance_m": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "max_contact_normal_angle_deg": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 180
+                      },
+                      "max_tangent_yaw_mismatch_deg": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 180
+                      },
+                      "yaw_symmetry_order": {
+                        "type": "integer",
+                        "enum": [
+                          1,
+                          2,
+                          4
+                        ]
+                      }
+                    },
+                    "anyOf": [
+                      {
+                        "required": [
+                          "target_clearance_m"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "target_focal_pivot_world_m"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "max_contact_normal_angle_deg"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "max_tangent_yaw_mismatch_deg"
+                        ]
+                      }
+                    ],
+                    "dependentRequired": {
+                      "target_clearance_m": [
+                        "clearance_tolerance_m"
+                      ],
+                      "clearance_tolerance_m": [
+                        "target_clearance_m"
+                      ],
+                      "target_focal_pivot_world_m": [
+                        "position_tolerance_m"
+                      ],
+                      "position_tolerance_m": [
+                        "target_focal_pivot_world_m"
+                      ]
+                    },
+                    "additionalProperties": false
+                  },
+                  "query": {
+                    "type": "object",
+                    "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "directory",
+                          "task",
+                          "surface_nearest",
+                          "surface_scan",
+                          "overview",
+                          "exact_pairs",
+                          "nearest",
+                          "top1",
+                          "mesh_structure",
+                          "mesh_surface"
+                        ]
+                      },
+                      "objects": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            }
+                          },
+                          "oneOf": [
+                            {
+                              "required": [
+                                "id"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "name"
+                              ]
+                            }
+                          ],
+                          "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."
+                      },
+                      "target": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256
+                          }
+                        },
+                        "oneOf": [
+                          {
+                            "required": [
+                              "id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "name"
+                            ]
+                          }
+                        ],
+                        "additionalProperties": false
+                      },
+                      "candidates": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            }
+                          },
+                          "oneOf": [
+                            {
+                              "required": [
+                                "id"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "name"
+                              ]
+                            }
+                          ],
+                          "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 3,
+                        "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."
+                      },
+                      "requested_facts": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "aabb",
+                            "center_delta",
+                            "axis_gap",
+                            "surface_clearance",
+                            "solid_relation",
+                            "nearest_witness",
+                            "pair_relation",
+                            "surface_proximity",
+                            "closed_solid_relation",
+                            "spatial_relation"
+                          ]
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "description": "task: spatial_relation proves strict full-referenced-vertex support separation or uses closed-shell classification, with geometry_scope identifying the performed proof. closed_solid_relation is zero-tolerance separated/touching/penetrating (positive-volume overlap, including containment) for represented connected closed triangle shells; invalid/ambiguous is unknown. surface_proximity independently gives nonnegative triangle-surface distance, original world witness points and positive-distance A-to-B direction; zero-distance direction is inapplicable. Boundary/nonmanifold counts do not certify solids. Penetrating/contained distances are not separated gaps. pair_relation's escape of A is not surface distance, nearest direction or minimum depth."
+                      },
+                      "geometry": {
+                        "type": "object",
+                        "description": "Opt-in geometry from the original relation bindings. Vertices use world metres; captured triangles are optional.",
+                        "properties": {
+                          "objects": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                }
+                              },
+                              "oneOf": [
+                                {
+                                  "required": [
+                                    "id"
+                                  ]
+                                },
+                                {
+                                  "required": [
+                                    "name"
+                                  ]
+                                }
+                              ],
+                              "additionalProperties": false
+                            },
+                            "minItems": 1,
+                            "maxItems": 4
+                          },
+                          "include_triangles": {
+                            "type": "boolean",
+                            "default": false
+                          }
+                        },
+                        "required": [
+                          "objects"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "operation": {
+                        "type": "string",
+                        "enum": [
+                          "diagnose",
+                          "patch",
+                          "reference",
+                          "restore_preview",
+                          "reference_patch"
+                        ],
+                        "description": "Registered target reads. mesh_structure: diagnose text or patch images. mesh_surface (local opt-in): diagnose/reference/restore_preview require include_image=false; reference_patch uses a returned opaque patch_ref and optional native images. References are locally trusted; previews do not execute; the original task budget applies."
+                      },
+                      "request_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "near_m": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.001
+                      },
+                      "threshold_m": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "reference_ref": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                      },
+                      "indices": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 4095
+                        },
+                        "minItems": 1,
+                        "maxItems": 64,
+                        "uniqueItems": true
+                      },
+                      "patch_ref": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                      },
+                      "task_ref": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$",
+                        "description": "Trusted begin handoff, required in local lifecycle mode; selects the active generation without creating or renewing a task."
+                      },
+                      "object_ids": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1,
+                        "maxItems": 255,
+                        "uniqueItems": true
+                      },
+                      "label_object_ids": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "uniqueItems": true,
+                        "description": "Current full IDs for image annotation, separate from measurement object_ids: up to six related labels plus A/B. Missing pair/image, occlusion or undersampling is explicit; display only."
+                      },
+                      "max_exact_pairs": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 255
+                      },
+                      "alignment_evidence": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "False omits optional face angles and requires include_image=false; strict distance, host rigid-frame and action checks remain."
+                      },
+                      "support_plane_discovery": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Read-only discovery of bounded original support-plane selectors for the current focal/reference pair. Omit direction for geometry only; no action direction is invented.",
+                        "properties": {
+                          "direction_world": {
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "max_candidates": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6,
+                            "default": 4
+                          }
+                        }
+                      },
+                      "native_visual": {
+                        "type": "object",
+                        "description": "Display policy only; never execution permission. Auto uses a negotiated read-only native host, otherwise the analytical projection. Projection skips negotiation; multiscale requires support. Labels and contact sections require projection.",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "auto",
+                              "projection",
+                              "multiscale"
+                            ]
+                          },
+                          "view": {
+                            "type": "string",
+                            "enum": [
+                              "SCENE",
+                              "XY",
+                              "XZ"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "visual_diagnostic": {
+                        "type": "string",
+                        "enum": [
+                          "contact_section"
+                        ],
+                        "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "mode": {
+                              "const": "directory"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "mode": {}
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "mode": {
+                              "const": "surface_nearest"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "mode": {},
+                            "objects": {
+                              "maxItems": 1
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "mode": {
+                              "const": "surface_scan"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "threshold_m"
+                          ],
+                          "properties": {
+                            "mode": {},
+                            "threshold_m": {}
+                          },
+                          "additionalProperties": false
+                        },
+                        "else": {
+                          "properties": {
+                            "threshold_m": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 0.01
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "anyOf": [
+                            {
+                              "properties": {
+                                "mode": {
+                                  "const": "task"
+                                }
+                              },
+                              "required": [
+                                "mode"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "target"
+                              ]
+                            },
+                            {
+                              "required": [
+                                "candidates"
+                              ]
+                            }
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "mode",
+                            "requested_facts"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "task"
+                            }
+                          },
+                          "oneOf": [
+                            {
+                              "required": [
+                                "objects"
+                              ],
+                              "properties": {
+                                "target": false,
+                                "candidates": false
+                              }
+                            },
+                            {
+                              "required": [
+                                "target",
+                                "candidates"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "mode": {},
+                                "target": {},
+                                "candidates": {},
+                                "geometry": {},
+                                "requested_facts": {
+                                  "items": {
+                                    "enum": [
+                                      "closed_solid_relation",
+                                      "spatial_relation",
+                                      "surface_proximity",
+                                      "aabb"
+                                    ]
+                                  },
+                                  "allOf": [
+                                    {
+                                      "contains": {
+                                        "const": "surface_proximity"
+                                      }
+                                    },
+                                    {
+                                      "anyOf": [
+                                        {
+                                          "contains": {
+                                            "const": "closed_solid_relation"
+                                          }
+                                        },
+                                        {
+                                          "contains": {
+                                            "const": "spatial_relation"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "if": {
+                          "required": [
+                            "geometry"
+                          ]
+                        },
+                        "then": {
+                          "required": [
+                            "mode",
+                            "target",
+                            "candidates"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "task"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "additionalProperties": false
+                  },
+                  "include_image": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "False returns text evidence without rendering. surface_scan defaults to false and accepts only false. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."
+                  },
+                  "task_context": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "task_id",
+                      "task_run_id"
+                    ],
+                    "properties": {
+                      "task_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "task_run_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    }
+                  },
+                  "scene_delta": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Optional observation-only snapshot transport. Empty object asks for full resync; a complete base revision and SHA256 enables a delta when worthwhile.",
+                    "properties": {
+                      "base_revision": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256
+                      },
+                      "base_fingerprint": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    },
+                    "dependentRequired": {
+                      "base_revision": [
+                        "base_fingerprint"
+                      ],
+                      "base_fingerprint": [
+                        "base_revision"
+                      ]
+                    }
+                  },
+                  "response_detail": {
+                    "type": "string",
+                    "enum": [
+                      "full",
+                      "brief"
+                    ],
+                    "description": "Optional display projection. surface_scan defaults to brief: a versioned table preserves all delivered matches, raw metre distances, derived millimetres, identities, scopes and unknowns. distance_mm uses a number, or an exact decimal string when binary64 millimetres overflow. Its object table covers matched endpoints. Full requests a new current observation with detailed witnesses; combine observations by scene/source binding. Other modes default to full; their brief omits named camera/raster diagnostics while preserving measurements and native images. Errors and unsupported projections retain the detailed response."
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "query"
+                      ],
+                      "properties": {
+                        "query": {
+                          "required": [
+                            "mode"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "directory"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "include_image"
+                      ],
+                      "properties": {
+                        "include_image": {
+                          "const": false
+                        },
+                        "task_instruction": {
+                          "const": ""
+                        }
+                      },
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "focal_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "reference_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "goal"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "scene_delta"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "query"
+                      ],
+                      "properties": {
+                        "query": {
+                          "required": [
+                            "mode"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "surface_nearest"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "session_id",
+                        "include_image"
+                      ],
+                      "properties": {
+                        "include_image": {
+                          "const": false
+                        }
+                      },
+                      "oneOf": [
+                        {
+                          "required": [
+                            "focal_id"
+                          ],
+                          "properties": {
+                            "query": {
+                              "not": {
+                                "required": [
+                                  "objects"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "not": {
+                            "required": [
+                              "focal_id"
+                            ]
+                          },
+                          "properties": {
+                            "query": {
+                              "required": [
+                                "objects"
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "query"
+                      ],
+                      "properties": {
+                        "query": {
+                          "required": [
+                            "mode"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "surface_scan"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "include_image": {
+                          "const": false
+                        },
+                        "response_detail": {
+                          "default": "brief"
+                        }
+                      },
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "focal_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "reference_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "goal"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "scene_delta"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "else": {
+                      "properties": {
+                        "response_detail": {
+                          "default": "full"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "query"
+                      ],
+                      "properties": {
+                        "query": {
+                          "required": [
+                            "mode"
+                          ],
+                          "properties": {
+                            "mode": {
+                              "const": "task"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "include_image"
+                      ],
+                      "properties": {
+                        "include_image": {
+                          "const": false
+                        }
+                      },
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "focal_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "reference_id"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "goal"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "scene_delta"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": "C-BASE",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"result_kind\":\"surface_scan\",\"status\":\"complete\",\"scope\":\"all_scene_mesh_triangle_surfaces\",\"threshold_m\":0.002,\"source_envelope\":{\"max_objects\":256,\"geometry\":\"independent_static_triangle_meshes\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"coverage\":{\"objects\":24,\"total_pairs\":276,\"bound_excluded\":164,\"measured_match\":71,\"measured_nonmatch\":41,\"unknown\":0,\"deferred\":0,\"catalog_scope_confirmed\":true},\"scope_issues\":[],\"unsupported_objects\":[],\"unresolved\":[],\"measurement_semantics\":{\"distance\":\"unsigned_triangle_surface_distance\",\"predicate\":\"exact_surface_distance_lte_threshold\",\"pair_order\":\"lexical_object_id\",\"solid_relation\":\"not_evaluated\"},\"binding\":{\"scene_revision\":\"blender:91782f8500ae4176563949ba461d8abd516de742a1c467a8eadc8f645d38bfee\",\"scene_fingerprint\":\"e2fb6f764eb339f0d402f7aabbba94464227b7c1f56619ffbb17c997636950b4\",\"document_epoch\":\"993c25f4d0af0c3ecb4cff38840d8d957cb4f26817877c20ff13e0d4fe911c3a\",\"directory_sha256\":\"85f4275984761c85fb4645e3e91b613c4281717c6498179c08d6fd0466164df0\",\"host_source_sha256\":\"9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9\",\"runtime_source_sha256\":\"4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\"},\"execution_authority\":false,\"delivery\":{\"matches_total\":71,\"delivered_matches\":71,\"complete\":true,\"byte_budget\":524288,\"scope\":\"reducer_result_before_service_binding_and_trace\"},\"trace_id\":\"0053dac97edf492eaa2b4a761e79c9eb\",\"display_encoding\":\"surface-scan-task-table-v1\",\"objects\":[{\"id\":\"blender:186bade14ed5ee6943ed072ea475d88561fea374ef0bbe6e6dd81cccf6bf4a09\",\"name\":\"Obj_012\"},{\"id\":\"blender:1e89c1526e34e6525a0dcdeeafb22bc370435cd26137de4c5a2ee18c022edb03\",\"name\":\"Obj_007\"},{\"id\":\"blender:3c24f9e074e9840a1220b4ec4d1d55b13d239601500d61bd5bd0fd0ab3a4b152\",\"name\":\"Obj_003\"},{\"id\":\"blender:764bab8526781ac1167808a4a312369375966d70bb7b68911bd957f1377c2f52\",\"name\":\"Obj_002\"},{\"id\":\"blender:7f20347b6a4d83d2b576b8d1b04af5330e9b95b6a8f3683ba4316669bd0023ca\",\"name\":\"Obj_021\"},{\"id\":\"blender:93f53af546d45b5fe019941175ca97151d54f23f140f633ae09f482714079b0e\",\"name\":\"Obj_008\"},{\"id\":\"blender:a0cfdfdb94732cfcbebc3f7e097042616ab539bd26869efc4b22c98301efcc37\",\"name\":\"Obj_006\"},{\"id\":\"blender:a6ade34d7a3c8475b13b13e70669dece12335884bf281fdfb17bc71d0a7a9899\",\"name\":\"Obj_010\"},{\"id\":\"blender:cd740e814ca9f7f969c5b9107715eb8f14ba081554815808917b700824a4f056\",\"name\":\"Obj_013\"},{\"id\":\"blender:dfef55c25dec0c4445aa37e74f5a083d222f307bf8cba6d1d982218c75d9929a\",\"name\":\"Obj_011\"},{\"id\":\"blender:ff2f1f5b67df01d3c8bf3e8e945715ef74080ca954d3e29fcdd85beccee13299\",\"name\":\"Obj_001\"},{\"id\":\"blender:2675138d5c8cf9c6b97285309b61693606fa58eacc55334c1a356f93f9885bf1\",\"name\":\"Obj_014\"},{\"id\":\"blender:32da1affd44ac39e0a77541a70ec41a72e24d786397bed60628e518253850b4a\",\"name\":\"Obj_020\"},{\"id\":\"blender:615f777164bdb9c357c5e059cfae41e7cf95dfce3a1706cc33c96df23bfc3dd4\",\"name\":\"Obj_004\"},{\"id\":\"blender:f5b092a2e0cd67d3afacbc273de836d7477f87c87ac377f5ecc3363bb4fff3ed\",\"name\":\"Obj_018\"},{\"id\":\"blender:48658f6bbf94a66cf41e9339f71188e136437a30616b051687c896fd6a25c853\",\"name\":\"Obj_016\"},{\"id\":\"blender:77f8cb13b040afbde58753341261322df189c408b81f3b061a51121bc58f7d0a\",\"name\":\"Obj_019\"},{\"id\":\"blender:7f990ea54e2e932c3088e195733a91bc63567b42595a22fad034a39c0a4e5b22\",\"name\":\"Obj_015\"},{\"id\":\"blender:88c9fc7ae6740e8c2c3e05ac9783cb4325815cee86427e8004cfe4288a57f24e\",\"name\":\"Obj_009\"},{\"id\":\"blender:bfee678825c7b3685e384de4752fa776590a6470b4ac8cc11300153056e94b31\",\"name\":\"Obj_005\"},{\"id\":\"blender:64feea85516a901cf8dea75e9bb244a47d8e00cde26e57b72506257ee6f83ae6\",\"name\":\"Obj_017\"},{\"id\":\"blender:a8c5e46f5c48a881d3ee93430fff11a568ccd8e86296de7e7c8a6bbd5b24218c\",\"name\":\"Obj_022\"}],\"object_table_scope\":\"matched_endpoints_only\",\"object_reference\":\"zero_based_index_in_objects; scoped_to_this_result_binding\",\"match_columns\":[\"object_a\",\"object_b\",\"object_a_ref\",\"object_b_ref\",\"distance_m\",\"distance_mm\"],\"matches\":[[\"Obj_012\",\"Obj_007\",0,1,0.001499999314546585,1.499999314546585],[\"Obj_007\",\"Obj_003\",1,2,0.0,0.0],[\"Obj_007\",\"Obj_002\",1,3,0.0,0.0],[\"Obj_007\",\"Obj_021\",1,4,0.0006000027060508728,0.6000027060508728],[\"Obj_007\",\"Obj_008\",1,5,0.0,0.0],[\"Obj_007\",\"Obj_006\",1,6,0.000999998301267624,0.9999983012676239],[\"Obj_007\",\"Obj_010\",1,7,0.0,0.0],[\"Obj_007\",\"Obj_013\",1,8,0.0,0.0],[\"Obj_007\",\"Obj_011\",1,9,0.0,0.0],[\"Obj_007\",\"Obj_001\",1,10,0.001500000013038516,1.500000013038516],[\"Obj_014\",\"Obj_002\",11,3,0.00024999864399433136,0.24999864399433136],[\"Obj_014\",\"Obj_008\",11,5,0.000499999150633812,0.49999915063381195],[\"Obj_014\",\"Obj_013\",11,8,0.001761146087979575,1.7611460879795748],[\"Obj_020\",\"Obj_003\",12,2,0.0,0.0],[\"Obj_020\",\"Obj_004\",12,13,0.0015000030398368835,1.5000030398368835],[\"Obj_020\",\"Obj_002\",12,3,0.0,0.0],[\"Obj_020\",\"Obj_018\",12,14,0.0,0.0],[\"Obj_020\",\"Obj_001\",12,10,0.0,0.0],[\"Obj_003\",\"Obj_016\",2,15,0.00024999864399433136,0.24999864399433136],[\"Obj_003\",\"Obj_004\",2,13,0.0,0.0],[\"Obj_003\",\"Obj_002\",2,3,0.0,0.0],[\"Obj_003\",\"Obj_019\",2,16,0.0,0.0],[\"Obj_003\",\"Obj_015\",2,17,0.00024999864399433136,0.24999864399433136],[\"Obj_003\",\"Obj_009\",2,18,0.0,0.0],[\"Obj_003\",\"Obj_006\",2,6,0.0,0.0],[\"Obj_003\",\"Obj_005\",2,19,0.0,0.0],[\"Obj_003\",\"Obj_018\",2,14,0.0,0.0],[\"Obj_003\",\"Obj_001\",2,10,0.0,0.0],[\"Obj_016\",\"Obj_002\",15,3,0.00024999864399433136,0.24999864399433136],[\"Obj_016\",\"Obj_015\",15,17,0.000780363776934969,0.7803637769349691],[\"Obj_016\",\"Obj_009\",15,18,0.0,0.0],[\"Obj_016\",\"Obj_006\",15,6,0.0,0.0],[\"Obj_004\",\"Obj_017\",13,20,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_002\",13,3,0.0,0.0],[\"Obj_004\",\"Obj_019\",13,16,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_010\",13,7,0.0002500005066394806,0.2500005066394806],[\"Obj_004\",\"Obj_005\",13,19,0.000999998301267624,0.9999983012676239],[\"Obj_004\",\"Obj_018\",13,14,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_001\",13,10,0.0,0.0],[\"Obj_017\",\"Obj_002\",20,3,0.0,0.0],[\"Obj_017\",\"Obj_005\",20,19,0.0,0.0],[\"Obj_017\",\"Obj_001\",20,10,0.0,0.0],[\"Obj_002\",\"Obj_015\",3,17,0.00024999864399433136,0.24999864399433136],[\"Obj_002\",\"Obj_009\",3,18,0.0,0.0],[\"Obj_002\",\"Obj_006\",3,6,0.0,0.0],[\"Obj_002\",\"Obj_022\",3,21,0.0,0.0],[\"Obj_002\",\"Obj_005\",3,19,0.0,0.0],[\"Obj_002\",\"Obj_013\",3,8,0.00024999864399433136,0.24999864399433136],[\"Obj_002\",\"Obj_018\",3,14,0.0,0.0],[\"Obj_002\",\"Obj_001\",3,10,0.0,0.0],[\"Obj_019\",\"Obj_005\",16,19,0.0,0.0],[\"Obj_019\",\"Obj_001\",16,10,0.0,0.0],[\"Obj_021\",\"Obj_008\",4,5,0.0,0.0],[\"Obj_021\",\"Obj_010\",4,7,0.0,0.0],[\"Obj_021\",\"Obj_013\",4,8,0.000588469463209107,0.588469463209107],[\"Obj_015\",\"Obj_009\",17,18,0.00024999864399433136,0.24999864399433136],[\"Obj_015\",\"Obj_022\",17,21,0.0005884696848679267,0.5884696848679267],[\"Obj_009\",\"Obj_006\",18,6,0.0013503208756446838,1.3503208756446838],[\"Obj_009\",\"Obj_010\",18,7,0.0,0.0],[\"Obj_009\",\"Obj_022\",18,21,0.0,0.0],[\"Obj_008\",\"Obj_006\",5,6,0.0,0.0],[\"Obj_008\",\"Obj_010\",5,7,0.0,0.0],[\"Obj_008\",\"Obj_013\",5,8,0.000499999150633812,0.49999915063381195],[\"Obj_006\",\"Obj_010\",6,7,0.0,0.0],[\"Obj_006\",\"Obj_005\",6,19,0.0010000020265579224,1.0000020265579224],[\"Obj_006\",\"Obj_011\",6,9,0.00019999966025352478,0.19999966025352478],[\"Obj_006\",\"Obj_001\",6,10,0.0005000000237487257,0.5000000237487257],[\"Obj_010\",\"Obj_022\",7,21,0.0,0.0],[\"Obj_010\",\"Obj_005\",7,19,0.0,0.0],[\"Obj_005\",\"Obj_001\",19,10,0.0010000000474974513,1.0000000474974513],[\"Obj_018\",\"Obj_001\",14,10,0.0,0.0]],\"match_metadata\":{\"witness_status\":\"measured\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\"},\"match_exceptions\":[],\"match_metadata_semantics\":\"common_fields_apply_to_every_match; merge_exceptions_by_zero_based_match_index\",\"distance_mm_semantics\":\"derived_display_only; number_or_exact_decimal_string_on_binary64_overflow; threshold_membership_uses_original_distance_m\",\"detail\":\"response_detail=full requests a new current observation with witnesses; compare binding before combining\"}"
+            }
+          ],
+          "isError": false
+        }
+      }
+    ],
+    "error": null,
+    "model_or_API_calls": 0,
+    "backend_lifetime": "external owner; stdin EOF closes this client only",
+    "pid": 2964,
+    "exit_code": 0,
+    "confirmed": true,
+    "process_exit_ns": 21590225374900,
+    "process_reaped": true,
+    "bridge_cleanup": {
+      "confirmed": true,
+      "scope": "thin-client EXIT receipts only; backend lifetime is external",
+      "receipt_status": "confirmed",
+      "missing_exit_count": 0,
+      "instances": [
+        {
+          "directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\C\\BASE\\attachments\\bridge_1a814f5b80cc41099a37943080b45435",
+          "started": {
+            "pid": 19832,
+            "kind": "native",
+            "started_ns": 21588417778200,
+            "instance_nonce": "d9ae9c489dc145cda95091f9e5ed07c4"
+          },
+          "exit": {
+            "pid": 19832,
+            "kind": "native",
+            "started_ns": 21588417778200,
+            "instance_nonce": "d9ae9c489dc145cda95091f9e5ed07c4",
+            "normal_exit": true,
+            "ended_ns": 21590219843400,
+            "requests": 4,
+            "complete_tx_bytes": 568,
+            "complete_rx_bytes": 23271,
+            "backend_close_requested": false
+          },
+          "confirmed": true
+        }
+      ],
+      "backend_close_confirmed": null
+    },
+    "ended_ns": 21590233764200,
+    "wall_ns": 1883202100
+  },
+  "ended_ns": 21590263039400,
+  "response": {
+    "jsonrpc": "2.0",
+    "id": "C-BASE",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result_kind\":\"surface_scan\",\"status\":\"complete\",\"scope\":\"all_scene_mesh_triangle_surfaces\",\"threshold_m\":0.002,\"source_envelope\":{\"max_objects\":256,\"geometry\":\"independent_static_triangle_meshes\"},\"unit\":\"m\",\"coordinate_frame\":\"world\",\"coverage\":{\"objects\":24,\"total_pairs\":276,\"bound_excluded\":164,\"measured_match\":71,\"measured_nonmatch\":41,\"unknown\":0,\"deferred\":0,\"catalog_scope_confirmed\":true},\"scope_issues\":[],\"unsupported_objects\":[],\"unresolved\":[],\"measurement_semantics\":{\"distance\":\"unsigned_triangle_surface_distance\",\"predicate\":\"exact_surface_distance_lte_threshold\",\"pair_order\":\"lexical_object_id\",\"solid_relation\":\"not_evaluated\"},\"binding\":{\"scene_revision\":\"blender:91782f8500ae4176563949ba461d8abd516de742a1c467a8eadc8f645d38bfee\",\"scene_fingerprint\":\"e2fb6f764eb339f0d402f7aabbba94464227b7c1f56619ffbb17c997636950b4\",\"document_epoch\":\"993c25f4d0af0c3ecb4cff38840d8d957cb4f26817877c20ff13e0d4fe911c3a\",\"directory_sha256\":\"85f4275984761c85fb4645e3e91b613c4281717c6498179c08d6fd0466164df0\",\"host_source_sha256\":\"9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9\",\"runtime_source_sha256\":\"4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\",\"source_check_scope\":\"bound_generation_identity\"},\"execution_authority\":false,\"delivery\":{\"matches_total\":71,\"delivered_matches\":71,\"complete\":true,\"byte_budget\":524288,\"scope\":\"reducer_result_before_service_binding_and_trace\"},\"trace_id\":\"0053dac97edf492eaa2b4a761e79c9eb\",\"display_encoding\":\"surface-scan-task-table-v1\",\"objects\":[{\"id\":\"blender:186bade14ed5ee6943ed072ea475d88561fea374ef0bbe6e6dd81cccf6bf4a09\",\"name\":\"Obj_012\"},{\"id\":\"blender:1e89c1526e34e6525a0dcdeeafb22bc370435cd26137de4c5a2ee18c022edb03\",\"name\":\"Obj_007\"},{\"id\":\"blender:3c24f9e074e9840a1220b4ec4d1d55b13d239601500d61bd5bd0fd0ab3a4b152\",\"name\":\"Obj_003\"},{\"id\":\"blender:764bab8526781ac1167808a4a312369375966d70bb7b68911bd957f1377c2f52\",\"name\":\"Obj_002\"},{\"id\":\"blender:7f20347b6a4d83d2b576b8d1b04af5330e9b95b6a8f3683ba4316669bd0023ca\",\"name\":\"Obj_021\"},{\"id\":\"blender:93f53af546d45b5fe019941175ca97151d54f23f140f633ae09f482714079b0e\",\"name\":\"Obj_008\"},{\"id\":\"blender:a0cfdfdb94732cfcbebc3f7e097042616ab539bd26869efc4b22c98301efcc37\",\"name\":\"Obj_006\"},{\"id\":\"blender:a6ade34d7a3c8475b13b13e70669dece12335884bf281fdfb17bc71d0a7a9899\",\"name\":\"Obj_010\"},{\"id\":\"blender:cd740e814ca9f7f969c5b9107715eb8f14ba081554815808917b700824a4f056\",\"name\":\"Obj_013\"},{\"id\":\"blender:dfef55c25dec0c4445aa37e74f5a083d222f307bf8cba6d1d982218c75d9929a\",\"name\":\"Obj_011\"},{\"id\":\"blender:ff2f1f5b67df01d3c8bf3e8e945715ef74080ca954d3e29fcdd85beccee13299\",\"name\":\"Obj_001\"},{\"id\":\"blender:2675138d5c8cf9c6b97285309b61693606fa58eacc55334c1a356f93f9885bf1\",\"name\":\"Obj_014\"},{\"id\":\"blender:32da1affd44ac39e0a77541a70ec41a72e24d786397bed60628e518253850b4a\",\"name\":\"Obj_020\"},{\"id\":\"blender:615f777164bdb9c357c5e059cfae41e7cf95dfce3a1706cc33c96df23bfc3dd4\",\"name\":\"Obj_004\"},{\"id\":\"blender:f5b092a2e0cd67d3afacbc273de836d7477f87c87ac377f5ecc3363bb4fff3ed\",\"name\":\"Obj_018\"},{\"id\":\"blender:48658f6bbf94a66cf41e9339f71188e136437a30616b051687c896fd6a25c853\",\"name\":\"Obj_016\"},{\"id\":\"blender:77f8cb13b040afbde58753341261322df189c408b81f3b061a51121bc58f7d0a\",\"name\":\"Obj_019\"},{\"id\":\"blender:7f990ea54e2e932c3088e195733a91bc63567b42595a22fad034a39c0a4e5b22\",\"name\":\"Obj_015\"},{\"id\":\"blender:88c9fc7ae6740e8c2c3e05ac9783cb4325815cee86427e8004cfe4288a57f24e\",\"name\":\"Obj_009\"},{\"id\":\"blender:bfee678825c7b3685e384de4752fa776590a6470b4ac8cc11300153056e94b31\",\"name\":\"Obj_005\"},{\"id\":\"blender:64feea85516a901cf8dea75e9bb244a47d8e00cde26e57b72506257ee6f83ae6\",\"name\":\"Obj_017\"},{\"id\":\"blender:a8c5e46f5c48a881d3ee93430fff11a568ccd8e86296de7e7c8a6bbd5b24218c\",\"name\":\"Obj_022\"}],\"object_table_scope\":\"matched_endpoints_only\",\"object_reference\":\"zero_based_index_in_objects; scoped_to_this_result_binding\",\"match_columns\":[\"object_a\",\"object_b\",\"object_a_ref\",\"object_b_ref\",\"distance_m\",\"distance_mm\"],\"matches\":[[\"Obj_012\",\"Obj_007\",0,1,0.001499999314546585,1.499999314546585],[\"Obj_007\",\"Obj_003\",1,2,0.0,0.0],[\"Obj_007\",\"Obj_002\",1,3,0.0,0.0],[\"Obj_007\",\"Obj_021\",1,4,0.0006000027060508728,0.6000027060508728],[\"Obj_007\",\"Obj_008\",1,5,0.0,0.0],[\"Obj_007\",\"Obj_006\",1,6,0.000999998301267624,0.9999983012676239],[\"Obj_007\",\"Obj_010\",1,7,0.0,0.0],[\"Obj_007\",\"Obj_013\",1,8,0.0,0.0],[\"Obj_007\",\"Obj_011\",1,9,0.0,0.0],[\"Obj_007\",\"Obj_001\",1,10,0.001500000013038516,1.500000013038516],[\"Obj_014\",\"Obj_002\",11,3,0.00024999864399433136,0.24999864399433136],[\"Obj_014\",\"Obj_008\",11,5,0.000499999150633812,0.49999915063381195],[\"Obj_014\",\"Obj_013\",11,8,0.001761146087979575,1.7611460879795748],[\"Obj_020\",\"Obj_003\",12,2,0.0,0.0],[\"Obj_020\",\"Obj_004\",12,13,0.0015000030398368835,1.5000030398368835],[\"Obj_020\",\"Obj_002\",12,3,0.0,0.0],[\"Obj_020\",\"Obj_018\",12,14,0.0,0.0],[\"Obj_020\",\"Obj_001\",12,10,0.0,0.0],[\"Obj_003\",\"Obj_016\",2,15,0.00024999864399433136,0.24999864399433136],[\"Obj_003\",\"Obj_004\",2,13,0.0,0.0],[\"Obj_003\",\"Obj_002\",2,3,0.0,0.0],[\"Obj_003\",\"Obj_019\",2,16,0.0,0.0],[\"Obj_003\",\"Obj_015\",2,17,0.00024999864399433136,0.24999864399433136],[\"Obj_003\",\"Obj_009\",2,18,0.0,0.0],[\"Obj_003\",\"Obj_006\",2,6,0.0,0.0],[\"Obj_003\",\"Obj_005\",2,19,0.0,0.0],[\"Obj_003\",\"Obj_018\",2,14,0.0,0.0],[\"Obj_003\",\"Obj_001\",2,10,0.0,0.0],[\"Obj_016\",\"Obj_002\",15,3,0.00024999864399433136,0.24999864399433136],[\"Obj_016\",\"Obj_015\",15,17,0.000780363776934969,0.7803637769349691],[\"Obj_016\",\"Obj_009\",15,18,0.0,0.0],[\"Obj_016\",\"Obj_006\",15,6,0.0,0.0],[\"Obj_004\",\"Obj_017\",13,20,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_002\",13,3,0.0,0.0],[\"Obj_004\",\"Obj_019\",13,16,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_010\",13,7,0.0002500005066394806,0.2500005066394806],[\"Obj_004\",\"Obj_005\",13,19,0.000999998301267624,0.9999983012676239],[\"Obj_004\",\"Obj_018\",13,14,0.0015000030398368835,1.5000030398368835],[\"Obj_004\",\"Obj_001\",13,10,0.0,0.0],[\"Obj_017\",\"Obj_002\",20,3,0.0,0.0],[\"Obj_017\",\"Obj_005\",20,19,0.0,0.0],[\"Obj_017\",\"Obj_001\",20,10,0.0,0.0],[\"Obj_002\",\"Obj_015\",3,17,0.00024999864399433136,0.24999864399433136],[\"Obj_002\",\"Obj_009\",3,18,0.0,0.0],[\"Obj_002\",\"Obj_006\",3,6,0.0,0.0],[\"Obj_002\",\"Obj_022\",3,21,0.0,0.0],[\"Obj_002\",\"Obj_005\",3,19,0.0,0.0],[\"Obj_002\",\"Obj_013\",3,8,0.00024999864399433136,0.24999864399433136],[\"Obj_002\",\"Obj_018\",3,14,0.0,0.0],[\"Obj_002\",\"Obj_001\",3,10,0.0,0.0],[\"Obj_019\",\"Obj_005\",16,19,0.0,0.0],[\"Obj_019\",\"Obj_001\",16,10,0.0,0.0],[\"Obj_021\",\"Obj_008\",4,5,0.0,0.0],[\"Obj_021\",\"Obj_010\",4,7,0.0,0.0],[\"Obj_021\",\"Obj_013\",4,8,0.000588469463209107,0.588469463209107],[\"Obj_015\",\"Obj_009\",17,18,0.00024999864399433136,0.24999864399433136],[\"Obj_015\",\"Obj_022\",17,21,0.0005884696848679267,0.5884696848679267],[\"Obj_009\",\"Obj_006\",18,6,0.0013503208756446838,1.3503208756446838],[\"Obj_009\",\"Obj_010\",18,7,0.0,0.0],[\"Obj_009\",\"Obj_022\",18,21,0.0,0.0],[\"Obj_008\",\"Obj_006\",5,6,0.0,0.0],[\"Obj_008\",\"Obj_010\",5,7,0.0,0.0],[\"Obj_008\",\"Obj_013\",5,8,0.000499999150633812,0.49999915063381195],[\"Obj_006\",\"Obj_010\",6,7,0.0,0.0],[\"Obj_006\",\"Obj_005\",6,19,0.0010000020265579224,1.0000020265579224],[\"Obj_006\",\"Obj_011\",6,9,0.00019999966025352478,0.19999966025352478],[\"Obj_006\",\"Obj_001\",6,10,0.0005000000237487257,0.5000000237487257],[\"Obj_010\",\"Obj_022\",7,21,0.0,0.0],[\"Obj_010\",\"Obj_005\",7,19,0.0,0.0],[\"Obj_005\",\"Obj_001\",19,10,0.0010000000474974513,1.0000000474974513],[\"Obj_018\",\"Obj_001\",14,10,0.0,0.0]],\"match_metadata\":{\"witness_status\":\"measured\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\"},\"match_exceptions\":[],\"match_metadata_semantics\":\"common_fields_apply_to_every_match; merge_exceptions_by_zero_based_match_index\",\"distance_mm_semantics\":\"derived_display_only; number_or_exact_decimal_string_on_binary64_overflow; threshold_membership_uses_original_distance_m\",\"detail\":\"response_detail=full requests a new current observation with witnesses; compare binding before combining\"}"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "status_after": {
+    "episode_id": "continuity-engineering-C-001",
+    "owner_pid": 6628,
+    "native_pid": 20132,
+    "native_host": "127.0.0.1",
+    "native_port": 60296,
+    "native_workspace": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\episodes\\C\\owner\\native",
+    "product_launcher_pid": 20552,
+    "product_runtime_proof": {
+      "confirmed": true,
+      "status": "confirmed",
+      "method": "Windows Toolhelp + process creation times",
+      "launcher_pid": 20552,
+      "runtime_pid": 4756,
+      "max_parent_edges": 4,
+      "observed_ns": 21588270412800,
+      "parent_chain": [
+        {
+          "pid": 4756,
+          "parent_pid": 20552,
+          "exe": "python.exe",
+          "created_filetime": 134390035448385901
+        },
+        {
+          "pid": 20552,
+          "parent_pid": 6628,
+          "exe": "python.exe",
+          "created_filetime": 134390035448240406
+        }
+      ],
+      "snapshot_process_count": 300,
+      "before_stdin": false,
+      "error": null,
+      "launcher_created_filetime": 134390035448240406,
+      "runtime_created_filetime": 134390035448385901,
+      "parent_edges": 1,
+      "proved_ns": 21588278069900,
+      "before_consumer_business": true,
+      "initial_QA_completed_ns": 21587439752200,
+      "metadata_completed_ns": 21588270410700,
+      "scope": "after initial QA snapshot and four metadata calls, before consumer business"
+    },
+    "session_id": "continuity-engineering-C-001",
+    "observed_product_session_ids": [
+      "continuity-engineering-C-001"
+    ],
+    "session_binding_scope": "configured session and actual accepted observe arguments; product query/session evidence is recorded separately",
+    "worker_deadline_ns": 22176584843400,
+    "active_turn": null,
+    "completed_turns": [
+      {
+        "turn_id": "BASE",
+        "started_ns": 21588348842400,
+        "deadline_ns": 22176584843400,
+        "first_business_attempt": 1,
+        "ended_ns": 21590235805300,
+        "last_business_attempt": 1,
+        "business_attempts": 1
+      }
+    ],
+    "business_attempts": 1,
+    "edit_attempted": false,
+    "edit_verified": false,
+    "owner_close_called": false
+  },
+  "body": {
+    "result_kind": "surface_scan",
+    "status": "complete",
+    "scope": "all_scene_mesh_triangle_surfaces",
+    "threshold_m": 0.002,
+    "source_envelope": {
+      "max_objects": 256,
+      "geometry": "independent_static_triangle_meshes"
+    },
+    "unit": "m",
+    "coordinate_frame": "world",
+    "coverage": {
+      "objects": 24,
+      "total_pairs": 276,
+      "bound_excluded": 164,
+      "measured_match": 71,
+      "measured_nonmatch": 41,
+      "unknown": 0,
+      "deferred": 0,
+      "catalog_scope_confirmed": true
+    },
+    "scope_issues": [],
+    "unsupported_objects": [],
+    "unresolved": [],
+    "measurement_semantics": {
+      "distance": "unsigned_triangle_surface_distance",
+      "predicate": "exact_surface_distance_lte_threshold",
+      "pair_order": "lexical_object_id",
+      "solid_relation": "not_evaluated"
+    },
+    "binding": {
+      "scene_revision": "blender:91782f8500ae4176563949ba461d8abd516de742a1c467a8eadc8f645d38bfee",
+      "scene_fingerprint": "e2fb6f764eb339f0d402f7aabbba94464227b7c1f56619ffbb17c997636950b4",
+      "document_epoch": "993c25f4d0af0c3ecb4cff38840d8d957cb4f26817877c20ff13e0d4fe911c3a",
+      "directory_sha256": "85f4275984761c85fb4645e3e91b613c4281717c6498179c08d6fd0466164df0",
+      "host_source_sha256": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9",
+      "runtime_source_sha256": "4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6",
+      "source_status": "loaded_generation",
+      "disk_status": "disk_not_checked",
+      "source_check_scope": "bound_generation_identity"
+    },
+    "execution_authority": false,
+    "delivery": {
+      "matches_total": 71,
+      "delivered_matches": 71,
+      "complete": true,
+      "byte_budget": 524288,
+      "scope": "reducer_result_before_service_binding_and_trace"
+    },
+    "trace_id": "0053dac97edf492eaa2b4a761e79c9eb",
+    "display_encoding": "surface-scan-task-table-v1",
+    "objects": [
+      {
+        "id": "blender:186bade14ed5ee6943ed072ea475d88561fea374ef0bbe6e6dd81cccf6bf4a09",
+        "name": "Obj_012"
+      },
+      {
+        "id": "blender:1e89c1526e34e6525a0dcdeeafb22bc370435cd26137de4c5a2ee18c022edb03",
+        "name": "Obj_007"
+      },
+      {
+        "id": "blender:3c24f9e074e9840a1220b4ec4d1d55b13d239601500d61bd5bd0fd0ab3a4b152",
+        "name": "Obj_003"
+      },
+      {
+        "id": "blender:764bab8526781ac1167808a4a312369375966d70bb7b68911bd957f1377c2f52",
+        "name": "Obj_002"
+      },
+      {
+        "id": "blender:7f20347b6a4d83d2b576b8d1b04af5330e9b95b6a8f3683ba4316669bd0023ca",
+        "name": "Obj_021"
+      },
+      {
+        "id": "blender:93f53af546d45b5fe019941175ca97151d54f23f140f633ae09f482714079b0e",
+        "name": "Obj_008"
+      },
+      {
+        "id": "blender:a0cfdfdb94732cfcbebc3f7e097042616ab539bd26869efc4b22c98301efcc37",
+        "name": "Obj_006"
+      },
+      {
+        "id": "blender:a6ade34d7a3c8475b13b13e70669dece12335884bf281fdfb17bc71d0a7a9899",
+        "name": "Obj_010"
+      },
+      {
+        "id": "blender:cd740e814ca9f7f969c5b9107715eb8f14ba081554815808917b700824a4f056",
+        "name": "Obj_013"
+      },
+      {
+        "id": "blender:dfef55c25dec0c4445aa37e74f5a083d222f307bf8cba6d1d982218c75d9929a",
+        "name": "Obj_011"
+      },
+      {
+        "id": "blender:ff2f1f5b67df01d3c8bf3e8e945715ef74080ca954d3e29fcdd85beccee13299",
+        "name": "Obj_001"
+      },
+      {
+        "id": "blender:2675138d5c8cf9c6b97285309b61693606fa58eacc55334c1a356f93f9885bf1",
+        "name": "Obj_014"
+      },
+      {
+        "id": "blender:32da1affd44ac39e0a77541a70ec41a72e24d786397bed60628e518253850b4a",
+        "name": "Obj_020"
+      },
+      {
+        "id": "blender:615f777164bdb9c357c5e059cfae41e7cf95dfce3a1706cc33c96df23bfc3dd4",
+        "name": "Obj_004"
+      },
+      {
+        "id": "blender:f5b092a2e0cd67d3afacbc273de836d7477f87c87ac377f5ecc3363bb4fff3ed",
+        "name": "Obj_018"
+      },
+      {
+        "id": "blender:48658f6bbf94a66cf41e9339f71188e136437a30616b051687c896fd6a25c853",
+        "name": "Obj_016"
+      },
+      {
+        "id": "blender:77f8cb13b040afbde58753341261322df189c408b81f3b061a51121bc58f7d0a",
+        "name": "Obj_019"
+      },
+      {
+        "id": "blender:7f990ea54e2e932c3088e195733a91bc63567b42595a22fad034a39c0a4e5b22",
+        "name": "Obj_015"
+      },
+      {
+        "id": "blender:88c9fc7ae6740e8c2c3e05ac9783cb4325815cee86427e8004cfe4288a57f24e",
+        "name": "Obj_009"
+      },
+      {
+        "id": "blender:bfee678825c7b3685e384de4752fa776590a6470b4ac8cc11300153056e94b31",
+        "name": "Obj_005"
+      },
+      {
+        "id": "blender:64feea85516a901cf8dea75e9bb244a47d8e00cde26e57b72506257ee6f83ae6",
+        "name": "Obj_017"
+      },
+      {
+        "id": "blender:a8c5e46f5c48a881d3ee93430fff11a568ccd8e86296de7e7c8a6bbd5b24218c",
+        "name": "Obj_022"
+      }
+    ],
+    "object_table_scope": "matched_endpoints_only",
+    "object_reference": "zero_based_index_in_objects; scoped_to_this_result_binding",
+    "match_columns": [
+      "object_a",
+      "object_b",
+      "object_a_ref",
+      "object_b_ref",
+      "distance_m",
+      "distance_mm"
+    ],
+    "matches": [
+      [
+        "Obj_012",
+        "Obj_007",
+        0,
+        1,
+        0.001499999314546585,
+        1.499999314546585
+      ],
+      [
+        "Obj_007",
+        "Obj_003",
+        1,
+        2,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_002",
+        1,
+        3,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_021",
+        1,
+        4,
+        0.0006000027060508728,
+        0.6000027060508728
+      ],
+      [
+        "Obj_007",
+        "Obj_008",
+        1,
+        5,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_006",
+        1,
+        6,
+        0.000999998301267624,
+        0.9999983012676239
+      ],
+      [
+        "Obj_007",
+        "Obj_010",
+        1,
+        7,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_013",
+        1,
+        8,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_011",
+        1,
+        9,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_007",
+        "Obj_001",
+        1,
+        10,
+        0.001500000013038516,
+        1.500000013038516
+      ],
+      [
+        "Obj_014",
+        "Obj_002",
+        11,
+        3,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_014",
+        "Obj_008",
+        11,
+        5,
+        0.000499999150633812,
+        0.49999915063381195
+      ],
+      [
+        "Obj_014",
+        "Obj_013",
+        11,
+        8,
+        0.001761146087979575,
+        1.7611460879795748
+      ],
+      [
+        "Obj_020",
+        "Obj_003",
+        12,
+        2,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_020",
+        "Obj_004",
+        12,
+        13,
+        0.0015000030398368835,
+        1.5000030398368835
+      ],
+      [
+        "Obj_020",
+        "Obj_002",
+        12,
+        3,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_020",
+        "Obj_018",
+        12,
+        14,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_020",
+        "Obj_001",
+        12,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_016",
+        2,
+        15,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_003",
+        "Obj_004",
+        2,
+        13,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_002",
+        2,
+        3,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_019",
+        2,
+        16,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_015",
+        2,
+        17,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_003",
+        "Obj_009",
+        2,
+        18,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_006",
+        2,
+        6,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_005",
+        2,
+        19,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_018",
+        2,
+        14,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_003",
+        "Obj_001",
+        2,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_016",
+        "Obj_002",
+        15,
+        3,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_016",
+        "Obj_015",
+        15,
+        17,
+        0.000780363776934969,
+        0.7803637769349691
+      ],
+      [
+        "Obj_016",
+        "Obj_009",
+        15,
+        18,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_016",
+        "Obj_006",
+        15,
+        6,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_004",
+        "Obj_017",
+        13,
+        20,
+        0.0015000030398368835,
+        1.5000030398368835
+      ],
+      [
+        "Obj_004",
+        "Obj_002",
+        13,
+        3,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_004",
+        "Obj_019",
+        13,
+        16,
+        0.0015000030398368835,
+        1.5000030398368835
+      ],
+      [
+        "Obj_004",
+        "Obj_010",
+        13,
+        7,
+        0.0002500005066394806,
+        0.2500005066394806
+      ],
+      [
+        "Obj_004",
+        "Obj_005",
+        13,
+        19,
+        0.000999998301267624,
+        0.9999983012676239
+      ],
+      [
+        "Obj_004",
+        "Obj_018",
+        13,
+        14,
+        0.0015000030398368835,
+        1.5000030398368835
+      ],
+      [
+        "Obj_004",
+        "Obj_001",
+        13,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_017",
+        "Obj_002",
+        20,
+        3,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_017",
+        "Obj_005",
+        20,
+        19,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_017",
+        "Obj_001",
+        20,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_015",
+        3,
+        17,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_002",
+        "Obj_009",
+        3,
+        18,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_006",
+        3,
+        6,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_022",
+        3,
+        21,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_005",
+        3,
+        19,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_013",
+        3,
+        8,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_002",
+        "Obj_018",
+        3,
+        14,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_002",
+        "Obj_001",
+        3,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_019",
+        "Obj_005",
+        16,
+        19,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_019",
+        "Obj_001",
+        16,
+        10,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_021",
+        "Obj_008",
+        4,
+        5,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_021",
+        "Obj_010",
+        4,
+        7,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_021",
+        "Obj_013",
+        4,
+        8,
+        0.000588469463209107,
+        0.588469463209107
+      ],
+      [
+        "Obj_015",
+        "Obj_009",
+        17,
+        18,
+        0.00024999864399433136,
+        0.24999864399433136
+      ],
+      [
+        "Obj_015",
+        "Obj_022",
+        17,
+        21,
+        0.0005884696848679267,
+        0.5884696848679267
+      ],
+      [
+        "Obj_009",
+        "Obj_006",
+        18,
+        6,
+        0.0013503208756446838,
+        1.3503208756446838
+      ],
+      [
+        "Obj_009",
+        "Obj_010",
+        18,
+        7,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_009",
+        "Obj_022",
+        18,
+        21,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_008",
+        "Obj_006",
+        5,
+        6,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_008",
+        "Obj_010",
+        5,
+        7,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_008",
+        "Obj_013",
+        5,
+        8,
+        0.000499999150633812,
+        0.49999915063381195
+      ],
+      [
+        "Obj_006",
+        "Obj_010",
+        6,
+        7,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_006",
+        "Obj_005",
+        6,
+        19,
+        0.0010000020265579224,
+        1.0000020265579224
+      ],
+      [
+        "Obj_006",
+        "Obj_011",
+        6,
+        9,
+        0.00019999966025352478,
+        0.19999966025352478
+      ],
+      [
+        "Obj_006",
+        "Obj_001",
+        6,
+        10,
+        0.0005000000237487257,
+        0.5000000237487257
+      ],
+      [
+        "Obj_010",
+        "Obj_022",
+        7,
+        21,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_010",
+        "Obj_005",
+        7,
+        19,
+        0.0,
+        0.0
+      ],
+      [
+        "Obj_005",
+        "Obj_001",
+        19,
+        10,
+        0.0010000000474974513,
+        1.0000000474974513
+      ],
+      [
+        "Obj_018",
+        "Obj_001",
+        14,
+        10,
+        0.0,
+        0.0
+      ]
+    ],
+    "match_metadata": {
+      "witness_status": "measured",
+      "method": "exact_binary64_triangle_surface_hulls_v3"
+    },
+    "match_exceptions": [],
+    "match_metadata_semantics": "common_fields_apply_to_every_match; merge_exceptions_by_zero_based_match_index",
+    "distance_mm_semantics": "derived_display_only; number_or_exact_decimal_string_on_binary64_overflow; threshold_membership_uses_original_distance_m",
+    "detail": "response_detail=full requests a new current observation with witnesses; compare binding before combining"
+  }
+}

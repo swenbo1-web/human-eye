@@ -1,0 +1,134 @@
+{
+  "callback": "M4-SURFACE-SCAN-CONTINUITY-001_PREPARATION_READY",
+  "delivery_scope": "Attempt records and offline diagnosis ready for administrator review; engineering qualification did not pass.",
+  "preparation_commit": "1c96846cbbf948b80860a5366f5442407e1cbabd",
+  "admin_commit": "c3e323b7957f83eeda9906bb58c95bc96896c9fc",
+  "preparation_sha256": "9fe6981243552fd9ec3b34ac3d0dc7462fdc4155e0aeebcddc9172f761312bb6",
+  "fixed_preparation_files_unchanged": 65,
+  "fixed_external_inputs_unchanged": 332,
+  "product_commit": "452b44d2dcf231d6675bef54e568db0431a29261",
+  "product_source_sha256": "4067c864c3db1ba586cd7179e6430db5acc4d71675b5295416d471632851a9f6",
+  "scene_sha256": "7f6452d1d706a9f2db31126eb3aa7d08622e37a28abb9610992006bad5f5ad66",
+  "planned_episodes": 2,
+  "started_episodes": 2,
+  "planned_business_calls": 6,
+  "actual_business_tool_calls": 4,
+  "successful_tool_responses_and_thin_exits": 4,
+  "frozen_qualification_counts": {
+    "completed": 3,
+    "failed": 1,
+    "not_run": 2
+  },
+  "engineering_qualification_pass": false,
+  "new_model_or_inference_API_calls": 0,
+  "episode_costs": [
+    {
+      "group": "N",
+      "full_episode_wall_ns": 2257311800,
+      "accepted_success": true,
+      "execution_counts": {
+        "planned": 3,
+        "attempted": 3,
+        "completed": 3,
+        "failed": 0,
+        "not_run": 0
+      },
+      "stages_ns": {
+        "startup": 1170673500,
+        "registered_pose_and_readback": 135975800,
+        "cleanup": 251873100
+      },
+      "owned_cleanup_confirmed": true,
+      "thin_turns": [
+        {
+          "turn": "BASE",
+          "wall_ns": 135845400,
+          "pid": 9292,
+          "confirmed": true,
+          "waiting_and_barrier_before_turn_ns": 36635800
+        },
+        {
+          "turn": "REPEAT",
+          "wall_ns": 167679500,
+          "pid": 15084,
+          "confirmed": true,
+          "waiting_and_barrier_before_turn_ns": 30125700
+        },
+        {
+          "turn": "EDIT",
+          "wall_ns": 167025300,
+          "pid": 9672,
+          "confirmed": true,
+          "waiting_and_barrier_before_turn_ns": 173512000
+        }
+      ],
+      "errors": []
+    },
+    {
+      "group": "C",
+      "full_episode_wall_ns": 3975501100,
+      "accepted_success": false,
+      "execution_counts": {
+        "planned": 3,
+        "attempted": 1,
+        "completed": 0,
+        "failed": 1,
+        "not_run": 2
+      },
+      "stages_ns": {
+        "startup": 1702868800,
+        "cleanup": 291156500
+      },
+      "owned_cleanup_confirmed": true,
+      "thin_turns": [
+        {
+          "turn": "BASE",
+          "wall_ns": 1883202100,
+          "pid": 2964,
+          "confirmed": true,
+          "waiting_and_barrier_before_turn_ns": 33939300
+        }
+      ],
+      "errors": [
+        {
+          "type": "AssertionError",
+          "message": "actual geometry or source fields differ from qualified state",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\engineering\\run_episodes.py\", line 178, in run_episode\n    report = qualification.verify_c_turn(body, audit, host, sources[row['state']], turn, request)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_continuity_001\\qualification\\verify_continuity.py\", line 91, in verify_c_turn\n    previous.bind_snapshot(source_snapshot, reference)\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_surface_scan_001_opt1\\engineering\\common.py\", line 68, in bind_snapshot\n    assert actual == expected, 'actual geometry or source fields differ from qualified state'\n           ^^^^^^^^^^^^^^^^^^\nAssertionError: actual geometry or source fields differ from qualified state\n"
+        }
+      ]
+    }
+  ],
+  "cost_scope": "Engineering fixture cost only. N reads markers and poses while C scans, so these are not a same-task model-benefit comparison.",
+  "source_of_failure": "The new runner passed the owner geometry snapshot to a verifier expecting the prior rich qualification snapshot; the offline fixtures omitted this actual interface case.",
+  "raw_failure_unchanged": "episodes/C/RESULTS.json and TURN_BASE.json retain the original rejection; C REPEAT and EDIT were not run.",
+  "runtime_continuity_proven": {
+    "N": "three thin lifecycles, same owner/backend/namespace/object identities, registered EDIT visible",
+    "C": "first scan, actual thin boundary and cleanup only; repeat/edit continuity unmeasured"
+  },
+  "remaining_integration": "Connect the persisted/resume CLI argv and parser to the existing consume loop, parameterizing output folder/shared workspace/thread/deadline and binding real archives to the three-turn envelope.",
+  "unknowns": [
+    "Actual model resume and memory continuity",
+    "Per-turn versus cumulative usage after resume",
+    "Discarded-stream usage coverage and provider-resolved input/version/effort",
+    "Same-task model benefit and fees",
+    "Complete preparation, audit and coordination cost",
+    "Full rich source fields absent from the owner snapshot"
+  ],
+  "offline_checks": {
+    "runtime": 16,
+    "CLI": 30,
+    "qualification": 10,
+    "runner": 3,
+    "are_business_samples": false
+  },
+  "postrun_checks": {
+    "lifecycle": 654,
+    "lifecycle_input_files": 356,
+    "C1_facts_rechecked_offline": 71,
+    "snapshot_negative_cases": 5,
+    "original_qualification_pass": false,
+    "raw_status_preserved": true
+  },
+  "preparation_failures_retained": "PREPARATION_CHECK_HISTORY.json",
+  "next_action": "Send the authorized administrator callback and end this batch. A new live attempt requires a separately frozen authorization."
+}
