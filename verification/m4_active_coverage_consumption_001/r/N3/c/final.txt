@@ -1,0 +1,59 @@
+{
+  "summary": "Found six qualifying rectangular panel meshes among 28 objects. Five are covered; one is uncovered within the six-camera pool.",
+  "method": "Validated distinct vertices, nondegeneracy, coplanarity, rectangularity, and consistent triangle winding. Checked front-facing orientation and full viewport containment. Used exact rational triangle-shadow clipping to test positive-area occlusion; boundary-only tangency does not count. Pixel counts use actual current-session RGB/owner/depth buffers and unique target-owned boundary pixels with squared RGB contrast >=576.",
+  "panels": [
+    {
+      "object": "Obj_001",
+      "status": "covered",
+      "views": [
+        {"view": "LEFT", "ref": "image-03", "surface_pixels": 792, "boundary_pixels": 110}
+      ],
+      "reason": "Complete, front-facing, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_002",
+      "status": "covered",
+      "views": [
+        {"view": "TOP", "ref": "image-02", "surface_pixels": 676, "boundary_pixels": 100}
+      ],
+      "reason": "Complete, front-facing, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_003",
+      "status": "covered",
+      "views": [
+        {"view": "LEFT", "ref": "image-03", "surface_pixels": 759, "boundary_pixels": 108}
+      ],
+      "reason": "Complete, front-facing, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_004",
+      "status": "covered",
+      "views": [
+        {"view": "SCENE", "ref": "image-01", "surface_pixels": 340, "boundary_pixels": 72}
+      ],
+      "reason": "Complete, front-facing, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_005",
+      "status": "covered",
+      "views": [
+        {"view": "SCENE", "ref": "image-01", "surface_pixels": 340, "boundary_pixels": 72}
+      ],
+      "reason": "Complete, front-facing, unoccluded observation; exceeds both readability thresholds."
+    },
+    {
+      "object": "Obj_006",
+      "status": "uncovered",
+      "views": [
+        {"view": "SCENE", "ref": "image-01", "occluder": "Obj_023", "surface_pixels": 0, "boundary_pixels": 0},
+        {"view": "TOP", "ref": "image-02", "occluder": "Obj_024", "surface_pixels": 0, "boundary_pixels": 0},
+        {"view": "LEFT", "ref": "image-03", "occluder": "Obj_025", "surface_pixels": 0, "boundary_pixels": 0},
+        {"view": "RIGHT", "ref": "image-04", "occluder": "Obj_026", "surface_pixels": 0, "boundary_pixels": 0},
+        {"view": "FRONT", "ref": "image-05", "occluder": "Obj_027", "surface_pixels": 0, "boundary_pixels": 0},
+        {"view": "BACK", "ref": "image-06", "occluder": "Obj_028", "surface_pixels": 0, "boundary_pixels": 0}
+      ],
+      "reason": "Front-facing and fully inside every viewport, but positive-area occlusion prevents a complete observation in every registered camera. No readable owner pixels remain. This conclusion is limited to this camera pool; the hidden surface's defect state remains unknown."
+    }
+  ]
+}
