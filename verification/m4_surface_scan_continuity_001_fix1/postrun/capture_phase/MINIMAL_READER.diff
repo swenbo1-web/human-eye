@@ -1,0 +1,118 @@
+--- frozen_qualification/read_capture
++++ unapplied_reader_only_proposal
+@@ -0,0 +1,13 @@
++def logical_bytes(raw, *, expected_size=None, expected_sha=None):
++    """Select the unique recorded byte string under Windows text-file writing.
++
++    Accept the physical bytes or precisely CRLF-to-LF. The worker's original
++    byte count or code hash must choose one unique value. No trimming occurs.
++    """
++    possibilities = {raw, raw.replace(b"\r\n", b"\n")}
++    matches = [value for value in possibilities
++               if (expected_size is None or len(value) == expected_size)
++               and (expected_sha is None or digest(value) == expected_sha)]
++    require(len(matches) == 1, "unique_worker_text_reconstruction")
++    return matches[0]
++
+@@ -2,27 +15,31 @@
+-    """Read this capture and the earlier resource deliveries in the same worker.
+-
+-    Repeated captures may send zero resources. Their references must resolve to
+-    immutable resource bytes previously delivered in this worker's actual wire.
+-    """
+-    wire = Path(native_workspace) / "WIRE"
+-    sequence = host_event["sequence"]
+-    require(type(sequence) is int and 0 < sequence <= 128, "capture_sequence")
+-    index = json.loads((wire / "INDEX.json").read_bytes())
+-    sequences = [row["sequence"] for row in index]
+-    require(sequences == sorted(set(sequences)) and sequence in sequences, "capture_wire_index")
+-    resources, records, origins = {}, [], {}
+-    current = None
+-    origin = None
+-    current_script_sha = None
+-    for row in index:
+-        number = row["sequence"]
+-        if number > sequence:
+-            break
+-        folder = wire / str(number).zfill(3)
+-        request_raw = (folder / "REQUEST.bin").read_bytes()
+-        response_raw = (folder / "RESPONSE.bin").read_bytes()
+-        require(len(request_raw) == row["request_bytes"] and len(response_raw) == row["response_attempted_bytes"]
+-                and row["response_sendall_completed"] is True, "capture_wire_complete")
+-        request, response = json.loads(request_raw), json.loads(response_raw)
+-        stdout = response.get("result", {}).get("result", "")
+-        if type(stdout) is not str:
++    """Resolve current capture plus earlier completed outputs in the same worker."""
++    workspace = Path(native_workspace)
++    target = host_event["sequence"]
++    require(type(target) is int and 0 < target <= 128, "capture_sequence")
++    events_path = workspace / "WORKER_EVENTS.jsonl"
++    events_raw = events_path.read_bytes()
++    events = [json.loads(line) for line in events_raw.splitlines()]
++    completed = [event for event in events if type(event.get("sequence")) is int
++                 and event["sequence"] <= target and "script_sha256" in event]
++    sequences = [event["sequence"] for event in completed]
++    require(sequences == sorted(set(sequences)) and target in sequences, "completed_capture_event_order")
++    selected = next(event for event in completed if event["sequence"] == target)
++    require(canonical(selected) == canonical(host_event), "recorded_host_event_binding")
++    resources, origins, sources = {}, {}, []
++    current, origin = None, None
++    for event in completed:
++        number = event["sequence"]
++        require(event["status"] == "completed" and event["script_error"] is None, "completed_worker_output")
++        require(event["terminal_geometry_and_file_checks_passed"] is True, "worker_output_terminal_protection")
++        require(event["changed_or_new_PNG_files"] == [] and event["render_events_before"] == event["render_events_after"], "worker_output_zero_images")
++        folder = workspace / ("call_" + str(number))
++        physical = {name: (folder / name).read_bytes() for name in ("SCRIPT.py", "stdout.txt", "stderr.txt")}
++        code = logical_bytes(physical["SCRIPT.py"], expected_sha=event["script_sha256"])
++        stdout = logical_bytes(physical["stdout.txt"], expected_size=event["stdout_bytes"])
++        stderr = logical_bytes(physical["stderr.txt"], expected_size=event["stderr_bytes"])
++        require(stderr == b"", "capture_worker_stderr_empty")
++        code.decode("utf8")
++        lines = stdout.decode("utf8").splitlines()
++        prefix = "HUMAN_EYE_BLENDER_MCP:"
++        captures = [line[len(prefix):] for line in lines if line.startswith(prefix)]
++        if not captures:
+@@ -30,6 +47,3 @@
+-        lines = [line[len("HUMAN_EYE_BLENDER_MCP:"):] for line in stdout.splitlines() if line.startswith("HUMAN_EYE_BLENDER_MCP:")]
+-        if not lines:
+-            continue
+-        require(len(lines) == 1 and response["status"] == "success", "capture_single_success_envelope")
+-        envelope = json.loads(lines[0])
+-        require("error" not in envelope and type(envelope.get("result")) is dict, "capture_envelope_result")
++        require(len(captures) == len(lines) == 1, "single_worker_capture_envelope")
++        envelope = json.loads(captures[0])
++        require("error" not in envelope and type(envelope.get("result")) is dict, "worker_capture_result")
+@@ -38 +51,0 @@
+-        require(request.get("type") == "execute_code" and type(request.get("params", {}).get("code")) is str, "capture_executed_request")
+@@ -43 +56 @@
+-        sent = set()
++        supplied = set()
+@@ -46 +59 @@
+-            require(type(key[0]) is str and type(key[1]) is int and key[1] > 0 and key not in sent, "capture_resource_identity")
++            require(type(key[0]) is str and type(key[1]) is int and key[1] > 0 and key not in supplied, "capture_resource_identity")
+@@ -48 +61 @@
+-            sent.add(key)
++            supplied.add(key)
+@@ -51,2 +64,6 @@
+-        records.append({"sequence": number, "request_sha256": digest(request_raw), "response_sha256": digest(response_raw)})
+-        if number == sequence:
++        sources.append({"sequence": number, "script_sha256": digest(code),
++                        "logical_stdout_sha256": digest(stdout), "logical_stderr_sha256": digest(stderr),
++                        "event_sha256": digest(canonical(event)),
++                        "physical_files": [{"path": str(folder / name), "bytes": len(raw), "sha256": digest(raw)}
++                                           for name, raw in physical.items()]})
++        if number == target:
+@@ -54 +70,0 @@
+-            current_script_sha = digest(request["params"]["code"].encode("utf8"))
+@@ -56,2 +72 @@
+-    require(current_script_sha == host_event["script_sha256"], "capture_executed_script_binding")
+-    return {"sequence": sequence, "script_sha256": current_script_sha, "delta": current,
++    return {"sequence": target, "script_sha256": host_event["script_sha256"], "delta": current,
+@@ -60 +75,5 @@
+-            "wire_sources": records, "scope": "current capture plus prior immutable resource deliveries in this worker"}
++            "wire_sources": [], "capture_sources": sources,
++            "event_file_sha256": digest(events_raw),
++            "evidence_phase": "completed worker output and event before response send",
++            "transport_confirmation": "not established by this reader; actual response and post-close wire are separate evidence",
++            "scope": "current completed output plus prior immutable resource outputs in this worker"}
