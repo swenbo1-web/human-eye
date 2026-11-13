@@ -1,0 +1,358 @@
+{
+  "scope": "Format-only corrective audit of all33 retained original expectation failures; no experiment execution or author mutation.",
+  "corrections": [
+    {
+      "original_check": "local/N/raw_result_equals_batch",
+      "passed": true,
+      "reason": "driver appends final_timing and execution_state only after writing each route RESULT; shared fields are exact.",
+      "detail": {
+        "extra_fields": [
+          "execution_state",
+          "final_timing"
+        ]
+      }
+    },
+    {
+      "original_check": "local/N/single_turn",
+      "passed": true,
+      "reason": "Synthetic fixture emits thread.started and turn.completed, not a genuine model turn.started. Real user-turn counts remain separate.",
+      "detail": {
+        "synthetic_turn_started": 0,
+        "synthetic_turn_completed": 1
+      }
+    },
+    {
+      "original_check": "local/N/tool1_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 148,
+        "counter": 148
+      }
+    },
+    {
+      "original_check": "local/N/tool2_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 2715,
+        "counter": 2715
+      }
+    },
+    {
+      "original_check": "local/N/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 2908,
+        "counter": 2909
+      }
+    },
+    {
+      "original_check": "local/N/tool3_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 6555,
+        "counter": 6555
+      }
+    },
+    {
+      "original_check": "local/N/tool3_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 6748,
+        "counter": 6749
+      }
+    },
+    {
+      "original_check": "local/N/rpc1_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 157,
+        "counter": 157
+      }
+    },
+    {
+      "original_check": "local/N/rpc2_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 985,
+        "counter": 985
+      }
+    },
+    {
+      "original_check": "local/N/rpc3_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 148,
+        "counter": 148
+      }
+    },
+    {
+      "original_check": "local/N/rpc4_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 2715,
+        "counter": 2715
+      }
+    },
+    {
+      "original_check": "local/N/rpc5_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 6555,
+        "counter": 6555
+      }
+    },
+    {
+      "original_check": "local/P/raw_result_equals_batch",
+      "passed": true,
+      "reason": "driver appends final_timing and execution_state only after writing each route RESULT; shared fields are exact.",
+      "detail": {
+        "extra_fields": [
+          "execution_state",
+          "final_timing"
+        ]
+      }
+    },
+    {
+      "original_check": "local/P/single_turn",
+      "passed": true,
+      "reason": "Synthetic fixture emits thread.started and turn.completed, not a genuine model turn.started. Real user-turn counts remain separate.",
+      "detail": {
+        "synthetic_turn_started": 0,
+        "synthetic_turn_completed": 1
+      }
+    },
+    {
+      "original_check": "local/P/tool1_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 148,
+        "counter": 148
+      }
+    },
+    {
+      "original_check": "local/P/tool2_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 9206,
+        "counter": 9206
+      }
+    },
+    {
+      "original_check": "local/P/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 9435,
+        "counter": 9436
+      }
+    },
+    {
+      "original_check": "local/P/rpc1_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 157,
+        "counter": 157
+      }
+    },
+    {
+      "original_check": "local/P/rpc2_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 1495,
+        "counter": 1495
+      }
+    },
+    {
+      "original_check": "local/P/rpc3_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 148,
+        "counter": 148
+      }
+    },
+    {
+      "original_check": "local/P/rpc4_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 9206,
+        "counter": 9206
+      }
+    },
+    {
+      "original_check": "real/N/raw_result_equals_batch",
+      "passed": true,
+      "reason": "driver appends final_timing and execution_state only after writing each route RESULT; shared fields are exact.",
+      "detail": {
+        "extra_fields": [
+          "execution_state",
+          "final_timing"
+        ]
+      }
+    },
+    {
+      "original_check": "real/N/tool1_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 2715,
+        "counter": 2715
+      }
+    },
+    {
+      "original_check": "real/N/tool2_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 6555,
+        "counter": 6555
+      }
+    },
+    {
+      "original_check": "real/N/rpc1_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 157,
+        "counter": 157
+      }
+    },
+    {
+      "original_check": "real/N/rpc2_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 985,
+        "counter": 985
+      }
+    },
+    {
+      "original_check": "real/N/rpc3_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 2715,
+        "counter": 2715
+      }
+    },
+    {
+      "original_check": "real/N/rpc4_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 6555,
+        "counter": 6555
+      }
+    },
+    {
+      "original_check": "real/P/raw_result_equals_batch",
+      "passed": true,
+      "reason": "driver appends final_timing and execution_state only after writing each route RESULT; shared fields are exact.",
+      "detail": {
+        "extra_fields": [
+          "execution_state",
+          "final_timing"
+        ]
+      }
+    },
+    {
+      "original_check": "real/P/tool1_bytes",
+      "passed": true,
+      "reason": "MCP line byte counters include their terminating LF; original audit used JSON payload alone.",
+      "detail": {
+        "actual_wire_bytes": 9206,
+        "counter": 9206
+      }
+    },
+    {
+      "original_check": "real/P/rpc1_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 157,
+        "counter": 157
+      }
+    },
+    {
+      "original_check": "real/P/rpc2_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 1495,
+        "counter": 1495
+      }
+    },
+    {
+      "original_check": "real/P/rpc3_MCP_bytes",
+      "passed": true,
+      "reason": "The inner MCP response is newline-delimited; TCP wrapper and standalone image-block JSON are different scopes.",
+      "detail": {
+        "actual_wire_bytes": 9206,
+        "counter": 9206
+      }
+    }
+  ],
+  "passed": 30,
+  "failed": [
+    {
+      "original_check": "local/N/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 2908,
+        "counter": 2909
+      }
+    },
+    {
+      "original_check": "local/N/tool3_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 6748,
+        "counter": 6749
+      }
+    },
+    {
+      "original_check": "local/P/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 9435,
+        "counter": 9436
+      }
+    }
+  ],
+  "source_inputs": {
+    "actor.py": {
+      "bytes": 19770,
+      "sha256": "ca172a73dbb5c832855e16c3f09ed1cc3db49ed336ff554e72b1bf9172040614"
+    },
+    "driver.py": {
+      "bytes": 18683,
+      "sha256": "69acd54fedba5a297ab748df38f5445cefc27411d064a03605adae7c784973c5"
+    },
+    "fake_cli.py": {
+      "bytes": 3406,
+      "sha256": "5a13a9eeb0ea75b2b0475c8cfda1943115f8066bd7858c0c862586379fe22783"
+    },
+    "consumer.py": {
+      "bytes": 27700,
+      "sha256": "af222a6d31cca8273d79affefd22fe21d15fafd916c768a6a43721e608155cda"
+    }
+  }
+}

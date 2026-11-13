@@ -1,0 +1,271 @@
+{
+  "author_commit": "a54ad3a9bf738e8f9b5a75c71c29b0a6b105a6ff",
+  "verdict": "fail",
+  "original_valid_checks": 447,
+  "original_invalid_expectations": 33,
+  "corrected_checks": 30,
+  "unresolved_cost_discrepancies": [
+    {
+      "original_check": "local/N/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 2908,
+        "counter": 2909
+      }
+    },
+    {
+      "original_check": "local/N/tool3_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 6748,
+        "counter": 6749
+      }
+    },
+    {
+      "original_check": "local/P/tool2_raw_len_matches_canonical_event",
+      "passed": false,
+      "reason": "fake_cli uses default spaced json.dumps, while the actual CLI emits compact JSON; no performance population is changed.",
+      "detail": {
+        "default_json_plus_LF": 9435,
+        "counter": 9436
+      }
+    }
+  ],
+  "real_totals": {
+    "tools": 3,
+    "constructed": 4,
+    "server_sent": 4,
+    "full_elapsed_ns": 43872732300,
+    "stdio_TX": 3731,
+    "stdio_RX": 21270,
+    "TCP_TX": 4684,
+    "TCP_RX": 21753,
+    "unique_image_CLI_event_bytes": 18987,
+    "stored_wrapped_event_line_bytes": 19205,
+    "PNG_bytes": 13398,
+    "wall_span_ns": 43873299400,
+    "between_routes_ns": 567100,
+    "raw_usage_field_sums": {
+      "input_tokens": 27068,
+      "cached_input_tokens": 15104,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 240,
+      "reasoning_output_tokens": 0
+    }
+  },
+  "preparation": {
+    "helper_constructed": 2,
+    "helper_measured_construction_sum_ns": 10668300,
+    "synthetic_constructed": 4,
+    "synthetic_server_sent": 4,
+    "synthetic_full_route_sum_ns": 1778184500
+  },
+  "total_constructed": 10,
+  "total_server_sent": 8,
+  "routes": {
+    "local/N": {
+      "arm": "N",
+      "phase": "local",
+      "execution_kind": "synthetic_local_process",
+      "thread_id": "eca8d953-56d2-4a3f-8ea4-5b0fdde27a2b",
+      "user_turns": 0,
+      "tools": 3,
+      "image": {
+        "image_blocks": 2,
+        "PNG_bytes": 6699,
+        "base64_chars": 8936,
+        "image_block_JSON_bytes": 9034,
+        "text_UTF8_bytes": 101,
+        "PNG_sha256": [
+          "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+          "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372"
+        ]
+      },
+      "constructed": 2,
+      "server_sent": 2,
+      "full_elapsed_ns": 1038342500,
+      "full_start_ns": 56533727233500,
+      "full_end_ns": 56534765576000,
+      "consumer_full_ns": 819570900,
+      "prompt_to_final_ns": 199008800,
+      "read_validate_encode_ns": {
+        "read": 139300,
+        "validate_decode": 1686800,
+        "encode": 77700
+      },
+      "stdio_TX": 638,
+      "stdio_RX": 10560,
+      "TCP_TX": 1238,
+      "TCP_RX": 10905,
+      "unique_image_CLI_event_bytes": 9658,
+      "stored_wrapped_event_line_bytes": 10149,
+      "source_tool_response_bytes": 9415,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_input_tokens": 0
+      },
+      "warnings": [],
+      "actual_tool_MCP_line_bytes": 9418
+    },
+    "local/P": {
+      "arm": "P",
+      "phase": "local",
+      "execution_kind": "synthetic_local_process",
+      "thread_id": "caac9b4e-f993-4170-b56e-35d4faa2a0b7",
+      "user_turns": 0,
+      "tools": 2,
+      "image": {
+        "image_blocks": 2,
+        "PNG_bytes": 6699,
+        "base64_chars": 8936,
+        "image_block_JSON_bytes": 9034,
+        "text_UTF8_bytes": 101,
+        "PNG_sha256": [
+          "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+          "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372"
+        ]
+      },
+      "constructed": 2,
+      "server_sent": 2,
+      "full_elapsed_ns": 739842000,
+      "full_start_ns": 56534766089300,
+      "full_end_ns": 56535505931300,
+      "consumer_full_ns": 522062300,
+      "prompt_to_final_ns": 154626700,
+      "read_validate_encode_ns": {
+        "read": 159400,
+        "validate_decode": 2053000,
+        "encode": 91800
+      },
+      "stdio_TX": 546,
+      "stdio_RX": 11006,
+      "TCP_TX": 1026,
+      "TCP_RX": 11282,
+      "unique_image_CLI_event_bytes": 9436,
+      "stored_wrapped_event_line_bytes": 9890,
+      "source_tool_response_bytes": 9352,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_input_tokens": 0
+      },
+      "warnings": [],
+      "actual_tool_MCP_line_bytes": 9354
+    },
+    "real/N": {
+      "arm": "N",
+      "phase": "real",
+      "execution_kind": "provider",
+      "thread_id": "01a1d46e-929e-7370-b404-36c1089cf06c",
+      "user_turns": 1,
+      "tools": 2,
+      "image": {
+        "image_blocks": 2,
+        "PNG_bytes": 6699,
+        "base64_chars": 8936,
+        "image_block_JSON_bytes": 9034,
+        "text_UTF8_bytes": 54,
+        "PNG_sha256": [
+          "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+          "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372"
+        ]
+      },
+      "constructed": 2,
+      "server_sent": 2,
+      "full_elapsed_ns": 27914027400,
+      "full_start_ns": 57016360779500,
+      "full_end_ns": 57044274806900,
+      "consumer_full_ns": 27706089400,
+      "prompt_to_final_ns": 24662509500,
+      "read_validate_encode_ns": {
+        "read": 156100,
+        "validate_decode": 1852200,
+        "encode": 136600
+      },
+      "stdio_TX": 2351,
+      "stdio_RX": 10412,
+      "TCP_TX": 2914,
+      "TCP_RX": 10688,
+      "unique_image_CLI_event_bytes": 9594,
+      "stored_wrapped_event_line_bytes": 9732,
+      "source_tool_response_bytes": 9268,
+      "usage": {
+        "input_tokens": 16161,
+        "cached_input_tokens": 10112,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 120,
+        "reasoning_output_tokens": 0
+      },
+      "warnings": [
+        "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\Administrator\\.codex\\config.toml.",
+        "Model metadata for `gpt-6.1-sol` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."
+      ],
+      "actual_tool_MCP_line_bytes": 9270
+    },
+    "real/P": {
+      "arm": "P",
+      "phase": "real",
+      "execution_kind": "provider",
+      "thread_id": "01a1d46e-edb6-7bd2-9bad-e246722a0cfe",
+      "user_turns": 1,
+      "tools": 1,
+      "image": {
+        "image_blocks": 2,
+        "PNG_bytes": 6699,
+        "base64_chars": 8936,
+        "image_block_JSON_bytes": 9034,
+        "text_UTF8_bytes": 54,
+        "PNG_sha256": [
+          "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+          "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372"
+        ]
+      },
+      "constructed": 2,
+      "server_sent": 2,
+      "full_elapsed_ns": 15958704900,
+      "full_start_ns": 57044275374000,
+      "full_end_ns": 57060234078900,
+      "consumer_full_ns": 15762411400,
+      "prompt_to_final_ns": 12003674600,
+      "read_validate_encode_ns": {
+        "read": 141500,
+        "validate_decode": 1750500,
+        "encode": 75100
+      },
+      "stdio_TX": 1380,
+      "stdio_RX": 10858,
+      "TCP_TX": 1770,
+      "TCP_RX": 11065,
+      "unique_image_CLI_event_bytes": 9393,
+      "stored_wrapped_event_line_bytes": 9473,
+      "source_tool_response_bytes": 9205,
+      "usage": {
+        "input_tokens": 10907,
+        "cached_input_tokens": 4992,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 120,
+        "reasoning_output_tokens": 0
+      },
+      "warnings": [
+        "Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\Administrator\\.codex\\config.toml.",
+        "Model metadata for `gpt-6.1-sol` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."
+      ],
+      "actual_tool_MCP_line_bytes": 9206
+    }
+  },
+  "unmeasured": [
+    "provider internal request count/raw request/resolved model/effort",
+    "image tokens and cash charges",
+    "preparation coding/review/full setup wall time",
+    "normal stdio EOF/exit receipts in actual CLI sessions"
+  ],
+  "notes": [
+    "Original RESULTS and CHECKS retain all failures; clarification changes only incorrect audit expectations.",
+    "Route source_tool_response_bytes in original RESULTS excludes LF; actual MCP tool-response byte sums below are authoritative.",
+    "Stored timestamp-wrapped events.jsonl byte length is separate from measured CLI raw-line len counters; canonical JSON checks corroborate counters but raw stdout is not fully retained.",
+    "N and P are one-shot transport qualifications with differing tool granularity, not a controlled performance comparison."
+  ]
+}

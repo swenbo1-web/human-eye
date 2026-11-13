@@ -1,0 +1,58 @@
+{
+  "finding": "confirmed_post_encode_deadline_undercount",
+  "author_commit": "a54ad3a9bf738e8f9b5a75c71c29b0a6b105a6ff",
+  "sources": {
+    "image_content.py": {
+      "sha256": "3932fa40e41c8ec30f81f4a20881f68e9d8e7b8065a1056207a9bab14706f8f8",
+      "bytes": 6574,
+      "byte_identical": true
+    },
+    "actor.py": {
+      "sha256": "ca172a73dbb5c832855e16c3f09ed1cc3db49ed336ff554e72b1bf9172040614",
+      "bytes": 19770,
+      "byte_identical": true
+    }
+  },
+  "cases": {
+    "normal": {
+      "error": null,
+      "deadline_calls_after_init": 0,
+      "encoded_receipts": 1,
+      "encoded_PNG_bytes": 1909,
+      "receipt_constructed_flags": [
+        true
+      ],
+      "metrics_constructed_blocks": 1,
+      "metrics_constructed_PNG_bytes": 1909,
+      "metrics_failed_constructions": 0,
+      "image_blocks_returned": 1,
+      "server_sent_blocks": 0
+    },
+    "post_encode_deadline": {
+      "error": {
+        "type": "ImageContentError",
+        "message": "injected_original_route_deadline_after_encode"
+      },
+      "deadline_calls_after_init": 3,
+      "encoded_receipts": 1,
+      "encoded_PNG_bytes": 1909,
+      "receipt_constructed_flags": [
+        false
+      ],
+      "metrics_constructed_blocks": 0,
+      "metrics_constructed_PNG_bytes": 0,
+      "metrics_failed_constructions": 1,
+      "image_blocks_returned": 0,
+      "server_sent_blocks": 0
+    }
+  },
+  "reproduction_scope": "Two local helper+actor image_result calls on byte-identical copies; third deadline check injection only. No clocks, product code, original evidence or admission rules edited.",
+  "actual_cost": {
+    "image_blocks_encoded": 2,
+    "PNG_payload_encoded_bytes": 3818,
+    "network_images_sent": 0,
+    "new_PNG_renders": 0,
+    "new_model_Blender_provider_calls": 0
+  },
+  "limitation": "Deterministic boundary injection demonstrates the counting defect; real N/P001 never hit this branch and retain their passing image qualification."
+}
