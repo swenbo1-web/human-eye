@@ -1,0 +1,10 @@
+{
+  "scope": "Independent reviewer parser only; no author source, fixture or execution change.",
+  "initial_parser_run": {"checks": 550, "passed": 547, "failed": 3},
+  "initial_results": "INITIAL_RESULTS.json",
+  "reason": "events.jsonl intentionally redacts five reasoning items across N1/N2/N3, retaining the original stdout line SHA256 and byte count. Initial reviewer assertion incorrectly required unredacted JSON equality.",
+  "correction": "Accept only that exact declared redaction shape after verifying SHA256 and byte count of the original stdout line including newline; all tool, answer and usage events still require complete equality.",
+  "final_parser_run": {"checks": 651, "passed": 651, "failed": 0},
+  "additional_checks": "Raw per-event mapping, local zero-raster/image cost and author-ledger comparison after independent recomputation.",
+  "new_model_CLI_actor_raster_Blender_calls": 0
+}
