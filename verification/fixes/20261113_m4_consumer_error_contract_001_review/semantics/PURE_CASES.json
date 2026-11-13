@@ -1,0 +1,183 @@
+{
+  "scope": "one targeted pure-data group; synthetic annotations test JSON equality, not full MCP-content schema validation",
+  "source_sha256": "5da53bbbfee51f1c07fde32ecf0e1ab1e79a73ef68feff388f709931840cd638",
+  "case_count": 22,
+  "cases": [
+    {
+      "name": "success_original",
+      "expected": {
+        "matched": true,
+        "reason": "content_and_envelope_match",
+        "classification": "success"
+      }
+    },
+    {
+      "name": "success_original_opposite_status",
+      "expected": {
+        "matched": false,
+        "reason": "cli_status_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "success_projected",
+      "expected": {
+        "matched": true,
+        "reason": "content_and_envelope_match",
+        "classification": "success"
+      }
+    },
+    {
+      "name": "success_projected_opposite_status",
+      "expected": {
+        "matched": false,
+        "reason": "cli_status_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "error_original",
+      "expected": {
+        "matched": true,
+        "reason": "content_and_envelope_match",
+        "classification": "tool_error"
+      }
+    },
+    {
+      "name": "error_original_opposite_status",
+      "expected": {
+        "matched": false,
+        "reason": "cli_status_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "error_projected",
+      "expected": {
+        "matched": true,
+        "reason": "content_and_envelope_match",
+        "classification": "tool_error"
+      }
+    },
+    {
+      "name": "error_projected_opposite_status",
+      "expected": {
+        "matched": false,
+        "reason": "cli_status_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "nested_body_True_versus_1",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "nested_body_False_versus_0",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "nested_array_bool_int_preserved",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "object_member_order_not_business_change",
+      "expected": {
+        "matched": true,
+        "reason": "content_and_envelope_match",
+        "classification": "success"
+      }
+    },
+    {
+      "name": "array_order_is_business_change",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "image_payload_change",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "image_mime_change",
+      "expected": {
+        "matched": false,
+        "reason": "content_mismatch",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "nonfinite_JSON_rejected",
+      "expected": {
+        "matched": false,
+        "reason": "content_invalid_json",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "JSON_key_coercion_rejected",
+      "expected": {
+        "matched": false,
+        "reason": "content_invalid_json",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "Python_tuple_not_JSON_array",
+      "expected": {
+        "matched": false,
+        "reason": "content_invalid_json",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "false_is_not_null_CLI_error",
+      "expected": {
+        "matched": false,
+        "reason": "cli_error_non_null",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "missing_CLI_error_not_implicit_null",
+      "expected": {
+        "matched": false,
+        "reason": "cli_error_missing",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "owner_integer_not_boolean_flag",
+      "expected": {
+        "matched": false,
+        "reason": "owner_is_error_not_boolean",
+        "classification": "protocol_mismatch"
+      }
+    },
+    {
+      "name": "CLI_integer_not_boolean_flag",
+      "expected": {
+        "matched": false,
+        "reason": "cli_is_error_not_boolean",
+        "classification": "protocol_mismatch"
+      }
+    }
+  ]
+}
