@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -52,6 +53,35 @@ class Region:
     triangle_indices: tuple
     vertices: tuple
     normal: tuple
+
+
+def _lossless_scalar(value):
+    if value.denominator == 1:
+        return value.numerator
+    try:
+        number = float(value)
+    except OverflowError:
+        return str(value)
+    return number if math.isfinite(number) and Fraction(number) == value else str(value)
+
+
+def region_world_description(region):
+    """Describe canonical directed corners using four lossless world vectors.
+
+    The corners are C-U-V, C+U-V, C+U+V and C-U+V. Front is parallel to UxV
+    with maximum absolute component one, and is not a unit-length vector.
+    """
+    q0, q1, q2, q3 = region.vertices
+    half = Fraction(1, 2)
+    center = tuple((a + b) * half for a, b in zip(q0, q2))
+    u = tuple((b - a) * half for a, b in zip(q0, q1))
+    v = tuple((b - a) * half for a, b in zip(q0, q3))
+    front = cross(u, v)
+    maximum = max(abs(value) for value in front)
+    direction = tuple(value / maximum for value in front)
+    return {key: [_lossless_scalar(value) for value in values]
+            for key, values in (('center_world_m', center), ('half_edge_u_world_m', u),
+                                ('half_edge_v_world_m', v), ('front_direction_world', direction))}
 
 
 @dataclass(frozen=True)
@@ -532,6 +562,16 @@ class ActiveObservationSession:
     index: CoverageIndex
     state: CoverageState
     diagnostics: dict | None = None
+    _region_world_descriptions: tuple = field(init=False, repr=False)
+
+    def __post_init__(self):
+        if self.diagnostics is not None:
+            started = time.perf_counter_ns()
+        self._region_world_descriptions = tuple(region_world_description(region) for region in self.regions)
+        if self.diagnostics is not None:
+            closed = time.perf_counter_ns()
+            self.diagnostics['stages']['world_descriptions'] = {
+                'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
 
     @property
     def scene_identity(self):
@@ -571,12 +611,14 @@ class ActiveObservationSession:
                 reason = 'pixel_evidence_insufficient'
             regions.append({'roi_id': region.roi_id, 'object_index': region.object_index,
                             'object_name': region.object_name,
-                            'status': 'covered' if region.roi_id in covered else 'unknown', 'reason': reason})
+                            'status': 'covered' if region.roi_id in covered else 'unknown', 'reason': reason,
+                            **copy.deepcopy(self._region_world_descriptions[index])})
         pixel_fields = (
             'roi_id', 'object_index', 'view', 'front_facing',
             'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable',
             'minimum_surface_pixels', 'minimum_boundary_pixels',
             'minimum_rgb_boundary_contrast',
+            'visible_pixel_bounds', 'visible_pixel_anchor',
         )
         observations = [
             {'view_name': name, 'image_path': receipt['image_path'],
@@ -605,6 +647,7 @@ class ActiveObservationSession:
         self.cameras = prepared.cameras
         self.index = prepared.index
         self.diagnostics = prepared.diagnostics
+        self._region_world_descriptions = prepared._region_world_descriptions
         return changed
 
 

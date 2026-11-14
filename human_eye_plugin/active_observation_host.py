@@ -225,6 +225,21 @@ def _patch_scope_facts(session, binding):
     }
 
 
+def _location_conventions(cameras):
+    sizes = [pose['size_px'] for pose in cameras['views']]
+    if not sizes or any(size != sizes[0] for size in sizes):
+        raise ValueError('active_region_shared_image_size_required')
+    return {
+        'coordinate_frame': 'world', 'unit': 'm',
+        'corner_order': ['center-u-v', 'center+u-v', 'center+u+v', 'center-u+v'],
+        'front_direction_normalization': 'maximum absolute component is 1',
+        'pixel_origin': 'top-left', 'pixel_index_base': 0, 'pixel_axis_order': ['x', 'y'],
+        'image_size_px': list(sizes[0]),
+        'visible_pixel_bounds': 'inclusive bounds of actual ROI-owned pixels',
+        'visible_pixel_anchor': 'ROI-owned pixel nearest bounds center; row-major ties',
+    }
+
+
 def observe_capture(capture, output_directory, construction_callback=None,
                     check_budget=None, include_image=True):
     """Compute serializable facts and current-host-bound local image references.
@@ -274,6 +289,8 @@ def observe_capture(capture, output_directory, construction_callback=None,
         stages['prepare'] = _interval(started)
         stages['partition'] = copy.deepcopy(session.diagnostics['stages']['discovery'])
         stages['index'] = copy.deepcopy(session.diagnostics['stages']['coverage'])
+        if 'world_descriptions' in session.diagnostics['stages']:
+            stages['world_descriptions'] = copy.deepcopy(session.diagnostics['stages']['world_descriptions'])
         binding = source_binding(capture, session.cameras, geometry_identity=session.scene_identity)
         if binding['camera_identity'] != session.candidate_identity:
             raise ValueError('active_observation_camera_binding_mismatch')
@@ -332,6 +349,8 @@ def observe_capture(capture, output_directory, construction_callback=None,
                 host = binding['objects'][row['object_index']]
                 row.update(host_id=host['host_id'], object_name=host['object_name'])
         facts['scope'] = _patch_scope_facts(session, binding)
+        if session.cameras['views']:
+            facts['location_conventions'] = _location_conventions(session.cameras)
         stages['scope_and_facts'] = _interval(started)
         observation_status = ('no_supported_regions' if not session.regions
                               else 'locally_observed' if include_image else 'prediction_only')

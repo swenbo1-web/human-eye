@@ -10,6 +10,7 @@ import argparse
 import base64
 import copy
 import hashlib
+from fractions import Fraction
 from contextlib import contextmanager, nullcontext
 from functools import partial
 import json
@@ -176,7 +177,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
-            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns brief source-bound object, region and pixel tables with remaining unknowns and up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
+            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
         ),
         "inputSchema": {
             "type": "object",
@@ -886,6 +887,32 @@ def _project_active_patch_support(patch_support, objects, regions):
     return result, region_counts
 
 
+def _valid_region_location_vector(values):
+    if type(values) is not list or len(values) != 3:
+        return False
+    for value in values:
+        if type(value) not in (int, float, str) or type(value) is float and not math.isfinite(value):
+            return False
+        if type(value) is str:
+            try:
+                Fraction(value)
+            except (ValueError, ZeroDivisionError):
+                return False
+    return True
+
+
+def _valid_visible_pixel_location(pixel, size):
+    bounds, anchor = pixel['visible_pixel_bounds'], pixel['visible_pixel_anchor']
+    if pixel['visible_surface_pixels'] == 0:
+        return bounds is None and anchor is None
+    if (type(bounds) is not list or len(bounds) != 4 or type(anchor) is not list or len(anchor) != 2
+            or any(type(value) is not int for value in bounds + anchor)):
+        return False
+    xmin, ymin, xmax, ymax = bounds
+    return (0 <= xmin <= anchor[0] <= xmax < size[0]
+            and 0 <= ymin <= anchor[1] <= ymax < size[1])
+
+
 def project_active_observation_brief(value):
     """Deduplicate one complete active result using versioned, local table indices.
 
@@ -900,6 +927,8 @@ def project_active_observation_brief(value):
                      'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable']
     rule_fields = ('minimum_surface_pixels', 'minimum_boundary_pixels', 'minimum_rgb_boundary_contrast')
     identity_fields = ('host_id', 'instance_id', 'object_name')
+    world_fields = ('center_world_m', 'half_edge_u_world_m', 'half_edge_v_world_m', 'front_direction_world')
+    location_fields = ('visible_pixel_bounds', 'visible_pixel_anchor')
     try:
         if (value['result_kind'] != 'active_observation'
                 or value['status'] not in ('complete', 'partial', 'unknown', 'predicted')):
@@ -920,8 +949,10 @@ def project_active_observation_brief(value):
                 or not {'instance_id', 'epoch', 'revision'} <= set(capture_state)
                 or set(capture_state) - {'instance_id', 'epoch', 'revision', 'selection_key'}):
             return None
-        if (set(facts) != {'scene_identity', 'candidate_identity', 'regions', 'observations',
-                          'coverage', 'scope', 'image_delivery_scope'}
+        located = 'location_conventions' in facts
+        fact_fields = {'scene_identity', 'candidate_identity', 'regions', 'observations',
+                       'coverage', 'scope', 'image_delivery_scope'}
+        if (set(facts) != fact_fields | ({'location_conventions'} if located else set())
                 or facts['scene_identity'] != binding['geometry_identity']
                 or facts['candidate_identity'] != binding['camera_identity']):
             return None
@@ -933,14 +964,34 @@ def project_active_observation_brief(value):
                 or len({obj['instance_id'] for obj in objects}) != len(objects)):
             return None
         regions = facts['regions']
+        if located:
+            conventions = facts['location_conventions']
+            if (set(conventions) != {'coordinate_frame', 'unit', 'corner_order', 'front_direction_normalization',
+                    'pixel_origin', 'pixel_index_base', 'pixel_axis_order', 'image_size_px',
+                    'visible_pixel_bounds', 'visible_pixel_anchor'}
+                    or conventions['coordinate_frame'] != binding['coordinate_frame']
+                    or conventions['unit'] != binding['unit']
+                    or conventions['corner_order'] != ['center-u-v', 'center+u-v', 'center+u+v', 'center-u+v']
+                    or conventions['front_direction_normalization'] != 'maximum absolute component is 1'
+                    or conventions['pixel_origin'] != 'top-left' or type(conventions['pixel_index_base']) is not int
+                    or conventions['pixel_index_base'] != 0 or conventions['pixel_axis_order'] != ['x', 'y']
+                    or conventions['visible_pixel_bounds'] != 'inclusive bounds of actual ROI-owned pixels'
+                    or conventions['visible_pixel_anchor'] != 'ROI-owned pixel nearest bounds center; row-major ties'):
+                return None
+            image_size = conventions['image_size_px']
+            if (type(image_size) is not list or len(image_size) != 2
+                    or any(type(size) is not int or not 64 <= size <= 512 for size in image_size)):
+                return None
         region_indices = {region['roi_id']: index for index, region in enumerate(regions)}
         if len(region_indices) != len(regions):
             return None
         for region in regions:
-            if (set(region) != set(region_columns) | set(identity_fields)
+            if (set(region) != set(region_columns) | set(identity_fields) | (set(world_fields) if located else set())
                     or type(region['object_index']) is not int
                     or not 0 <= region['object_index'] < len(objects)
                     or any(region[key] != objects[region['object_index']][key] for key in identity_fields)):
+                return None
+            if located and not all(_valid_region_location_vector(region[key]) for key in world_fields):
                 return None
 
         def region_references(ids):
@@ -1028,9 +1079,12 @@ def project_active_observation_brief(value):
             observation_rows.append([image_index, region_references(observation['readable_roi_ids'])])
             seen_regions, readable_ids = set(), set()
             for pixel in observation['pixel_rows']:
-                if set(pixel) != set(rule_fields) | {
+                expected_pixel_fields = set(rule_fields) | {
                         'roi_id', 'object_index', 'host_id', 'object_name', 'view',
-                        'front_facing', 'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable'}:
+                        'front_facing', 'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable'}
+                if set(pixel) != expected_pixel_fields | (set(location_fields) if located else set()):
+                    return None
+                if located and not _valid_visible_pixel_location(pixel, image_size):
                     return None
                 region_index = region_indices[pixel['roi_id']]
                 region = regions[region_index]
@@ -1045,7 +1099,8 @@ def project_active_observation_brief(value):
                     return None
                 if pixel['readable']:
                     readable_ids.add(pixel['roi_id'])
-                pixels.append([image_index, region_index, *[pixel[key] for key in pixel_columns[2:]]])
+                pixels.append([image_index, region_index, *[pixel[key] for key in pixel_columns[2:]],
+                               *[pixel[key] for key in location_fields if located]])
             if (seen_regions != set(range(len(regions)))
                     or readable_ids != set(observation['readable_roi_ids'])):
                 return None
@@ -1071,6 +1126,10 @@ def project_active_observation_brief(value):
                 result['regions']['columns'].append('triangle_count')
                 for row, count in zip(result['regions']['rows'], region_counts):
                     row.append(count)
+            if located:
+                result['regions']['columns'].extend(world_fields)
+                for row, region in zip(result['regions']['rows'], regions):
+                    row.extend(region[key] for key in world_fields)
         if frames:
             result['images'] = {
                 'columns': ['view_name', 'image_ref', 'image_sha256', 'native_content_block_index'],
@@ -1084,8 +1143,11 @@ def project_active_observation_brief(value):
                 for row, frame in zip(result['images']['rows'], frames):
                     row.append(frame['patch_mapping_identity'])
         if pixels:
-            result['pixels'] = {'columns': pixel_columns, 'rows': pixels}
+            result['pixels'] = {'columns': pixel_columns + (list(location_fields) if located else []), 'rows': pixels}
             result['pixel_rules'] = pixel_rules
+        if located:
+            result['schema'] = 'active-observation-brief-v3'
+            result['location_conventions'] = conventions
         return copy.deepcopy(result)
     except (KeyError, TypeError, IndexError, AttributeError, ValueError):
         return None

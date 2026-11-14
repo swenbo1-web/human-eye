@@ -143,22 +143,71 @@ def _validated_patch_buffers(buffers, size, object_count, mapping):
     return validated
 
 
-def _aggregate_patch_pixels(color, patch_owners, region_count):
-    """Scan shared patch boundaries once and histogram all ROI counts together."""
+def _aggregate_patch_pixels(color, patch_owners, region_count, *, include_locations=False,
+                            _localization_stages=None):
+    """Share patch counts, with optional bounds and actual owned-pixel anchors."""
     patches = np.asarray(patch_owners)
-    if (type(region_count) is not int or region_count < 0 or patches.dtype != np.int32
+    if (type(include_locations) is not bool or type(region_count) is not int
+            or region_count < 0 or patches.dtype != np.int32
             or patches.ndim != 2 or np.any(patches < -1) or np.any(patches >= region_count)):
         raise ValueError('bounded_patch_owner_ids_required')
     boundary = _contrasting_boundaries(color, patches)
-    surface_ids = patches[patches >= 0]
-    boundary_ids = patches[boundary & (patches >= 0)]
-    return {'visible_surface_pixels': np.bincount(surface_ids, minlength=region_count),
-            'contrasting_boundary_pixels': np.bincount(boundary_ids, minlength=region_count)}
+    foreground = patches >= 0
+    surface_ids = patches[foreground]
+    boundary_ids = patches[boundary & foreground]
+    result = {'visible_surface_pixels': np.bincount(surface_ids, minlength=region_count),
+              'contrasting_boundary_pixels': np.bincount(boundary_ids, minlength=region_count)}
+    if not include_locations:
+        return result
+    started = time.perf_counter_ns() if _localization_stages is not None else None
+    height, width = patches.shape
+    flat = np.flatnonzero(foreground)
+    y, x = np.divmod(flat, width)
+    xmin = np.full(region_count, width, dtype=np.int64)
+    ymin = np.full(region_count, height, dtype=np.int64)
+    xmax = np.full(region_count, -1, dtype=np.int64)
+    ymax = np.full(region_count, -1, dtype=np.int64)
+    np.minimum.at(xmin, surface_ids, x)
+    np.minimum.at(ymin, surface_ids, y)
+    np.maximum.at(xmax, surface_ids, x)
+    np.maximum.at(ymax, surface_ids, y)
+    dx = 2 * x - xmin[surface_ids] - xmax[surface_ids]
+    dy = 2 * y - ymin[surface_ids] - ymax[surface_ids]
+    distance = dx * dx + dy * dy
+    best_distance = np.full(region_count, np.iinfo(np.int64).max, dtype=np.int64)
+    np.minimum.at(best_distance, surface_ids, distance)
+    nearest = distance == best_distance[surface_ids]
+    nearest_ids = surface_ids[nearest]
+    nearest_flat = flat[nearest]
+    anchor_flat = np.full(region_count, height * width, dtype=np.int64)
+    np.minimum.at(anchor_flat, nearest_ids, nearest_flat)
+    bounds, anchors = [], []
+    for index, count in enumerate(result['visible_surface_pixels']):
+        if count:
+            bounds.append([int(xmin[index]), int(ymin[index]), int(xmax[index]), int(ymax[index])])
+            anchors.append([int(anchor_flat[index] % width), int(anchor_flat[index] // width)])
+        else:
+            bounds.append(None)
+            anchors.append(None)
+    result['visible_pixel_bounds'] = bounds
+    result['visible_pixel_anchor'] = anchors
+    if _localization_stages is not None:
+        closed = time.perf_counter_ns()
+        _localization_stages['pixel_localization'] = {
+            'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started,
+            'named_temporary_array_bytes': sum(values.nbytes for values in (
+                flat, x, y, xmin, ymin, xmax, ymax, dx, dy, distance,
+                best_distance, nearest, nearest_ids, nearest_flat, anchor_flat)),
+            'temporary_array_scope': 'Named localization arrays only, excluding transient NumPy internals and shared count arrays. Process RSS is unmeasured.',
+            'new_cached_array_bytes': 0,
+        }
+    return result
 
 
-def _pixel_rows(meshes, pose, buffers, regions):
+def _pixel_rows(meshes, pose, buffers, regions, *, _localization_stages=None):
     direction = np.asarray(pose['target_to_eye_unit'], dtype=np.float64)
-    counts = _aggregate_patch_pixels(buffers['color'], buffers['patch_owners'], len(regions))
+    counts = _aggregate_patch_pixels(buffers['color'], buffers['patch_owners'], len(regions),
+                                     include_locations=True, _localization_stages=_localization_stages)
     rows = []
     for index, region in enumerate(regions):
         mesh = meshes[region.object_index]
@@ -172,6 +221,8 @@ def _pixel_rows(meshes, pose, buffers, regions):
             'front_facing': front,
             'visible_surface_pixels': surface,
             'contrasting_boundary_pixels': boundary,
+            'visible_pixel_bounds': counts['visible_pixel_bounds'][index],
+            'visible_pixel_anchor': counts['visible_pixel_anchor'][index],
             'readable': front and surface >= 16 and boundary >= 4,
             'triangle_indices': list(region.triangle_indices),
             'source_vertices': len(mesh.vertices),
@@ -382,7 +433,8 @@ class ActiveObservationImages:
             closed = time.perf_counter_ns()
             stages['load_validate'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
             started = closed
-        rows = _pixel_rows(self.meshes, pose, buffers, self.session.regions)
+        rows = _pixel_rows(self.meshes, pose, buffers, self.session.regions,
+                           _localization_stages=stages if self._measure_stages else None)
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['readability'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
