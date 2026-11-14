@@ -1,0 +1,60 @@
+{
+  "changes": [
+    {
+      "after": "for case in ('recovery_rename_baseline', 'renamed_source', 'nonplanar_source'):",
+      "before": "for case in ('ordinary', 'same_source_repeat', 'renamed_source', 'nonplanar_source'):"
+    },
+    {
+      "after": "save(output / ('PROGRESS_' + case + '.json'), result)",
+      "before": "save(output / 'PROGRESS.json', result)"
+    },
+    {
+      "after": "if case == 'recovery_rename_baseline':",
+      "before": "if case == 'ordinary':"
+    },
+    {
+      "after": "assert len(list((external / 'run/render_budget').glob('attempt_*/INTENT.json'))) == 6",
+      "before": "assert len(list((external / 'run/render_budget').glob('attempt_*/INTENT.json'))) == 4"
+    }
+  ],
+  "first_charged_rasters": 2,
+  "first_offline_completion_sha256": "ab807bbe74e34b77c86c2f61c7429516c46e8e8d9a14b064d46c510e4ab37140",
+  "first_owned_processes_closed": true,
+  "first_run_error": {
+    "message": "[Errno 17] File exists: 'D:\\\\he_host_001\\\\run\\\\acceptance_01\\\\PROGRESS.json'",
+    "traceback": "Traceback (most recent call last):\n  File \"D:\\he_host_001\\payload\\run_acceptance.py\", line 169, in main\n    save(output / 'PROGRESS.json', result)\n  File \"D:\\he_host_001\\payload\\run_acceptance.py\", line 26, in save\n    with Path(path).open('xb') as stream:\n         ^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\Lib\\pathlib.py\", line 1013, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileExistsError: [Errno 17] File exists: 'D:\\\\he_host_001\\\\run\\\\acceptance_01\\\\PROGRESS.json'\n",
+    "type": "FileExistsError"
+  },
+  "first_run_result_sha256": "9e632e8c1b62f6ceb0c0f472210c1e1ecee126da9b95c54713fcfe2ba9d116f1",
+  "fixture_scaled_375_over_256_changed": false,
+  "global_hard_cap_unchanged": 8,
+  "new_models_benchmarks": 0,
+  "original_controller_sha256": "87dcdda6cb1ceb65b25e9758cb37715f89c49e3ba2dec38d5ad3d7d8ee727ad2",
+  "original_expected_rasters": 4,
+  "preparation_error": {
+    "cause": "The existing supported ROI count assertion also contains == 6 newline. Deterministic four-substitution full-source equality and AST compile now pass.",
+    "new_QA_requests_rasters": 0,
+    "operation": "Expected one occurrence of == 6 newline in statically prepared source",
+    "type": "AssertionError"
+  },
+  "previous_successful_cases_preserved": [
+    "ordinary",
+    "same_source_repeat"
+  ],
+  "product_changed": false,
+  "reason_for_new_baseline": "First QA and stdio processes correctly closed. A new same-QA-instance baseline is needed to compare name-only change against unchanged geometry and process-local ReadContext.",
+  "recovery_cases": [
+    "recovery_rename_baseline",
+    "renamed_source",
+    "nonplanar_source",
+    "bad_active_query",
+    "ping_after_bad_request",
+    "old_readonly_regression"
+  ],
+  "recovery_controller_sha256": "a9ccd656bdd4f7a8f3c903e128effd75e7bf5f8208c291439ce2b99ad87af5d7",
+  "recovery_expected_new_rasters": 4,
+  "revised_total_expected_rasters": 6,
+  "root_marked_ns": 123060775663200,
+  "schema": "m4-host-bridge-harness-progress-repair-v1",
+  "unit_tests_rerun": false
+}
