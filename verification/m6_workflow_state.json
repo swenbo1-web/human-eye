@@ -23,19 +23,19 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-SHAPE-PAIRS-001",
-    "status": "dispatched",
-    "dispatch_base": "8a99c344caf4560ee87fbb9f7540bf67ff3f2469",
-    "contract_commit": "cf81e1e74a358f52c3ef3223f0807a22ae1661da",
-    "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md",
+    "id": "M6-SHAPE-DATA-001",
+    "status": "ready_to_dispatch",
+    "dispatch_base": "9b016c8720b709a6382438ddd505c7b154d4fac2",
+    "contract_commit": null,
+    "contract": "docs/M6_SHAPE_DATA_001_TASK.md",
     "delivery_commit": null,
-    "review_status": "awaiting_completion_callback"
+    "review_status": "not_started"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:8",
-  "last_observed_status": "active on user-triggered check; seven samples computed per author commentary, final evidence not yet delivered; no extra task sent",
-  "pending_followup": true,
+  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:9",
+  "last_observed_status": "idle; completed shape pairs; independent review done, next data contract ready",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -69,31 +69,39 @@
       "evidence": "verification/m6_coupled_probe_002_review/INDEPENDENT_RESULTS.json",
       "review_commit": "421e16c37ccb7b3ba1f83c817c69b3cfb035faf1",
       "latest_decision_commit": "cf81e1e74a358f52c3ef3223f0807a22ae1661da"
+    },
+    {
+      "cycle_id": "M6-SHAPE-PAIRS-001",
+      "commit": "9b016c8720b709a6382438ddd505c7b154d4fac2",
+      "decision": "data_accepted_broad_reconstruction_rejected",
+      "review_doc": "docs/M6_SHAPE_PAIRS_001_REVIEW.md",
+      "evidence": "verification/m6_shape_pairs_001_review/INDEPENDENT_RESULTS.json",
+      "review_plan_commit": "4495f7f",
+      "review_commit": null
     }
   ],
-  "model_selection": "No new learning model selected; prioritize local shape recovery using user-authorized synthetic pairs and one direct baseline; choose one learning candidate only from a demonstrated residual gap",
+  "model_selection": "One first-choice local mesh message-passing residual model; not trained. Prepare source-grouped normal/dent data and a concrete training contract. Do not train multiple architectures.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
-    "One class: synthetic local dents on immutable saved Yanyite reference",
-    "Six corrupted copies and one pristine control; all one asset group",
-    "One boundary-constrained direct surface reconstruction baseline plus no-op; no network training",
-    "Reference coordinates/true correction/generation parameters excluded from algorithm inputs",
-    "Only new isolated copies/visualizations; no original asset, product source, M5, shared GUI or competitor changes",
-    "No paid APIs or keys",
-    "No scheduled fallback; completion callback drives review"
+    "One family: local shape dents with preservation of normal features",
+    "Read only four existing character output sources; no original or shared GUI writes",
+    "At most 48 patches and 336 development observations; source grouping before generation/split",
+    "No candidate training in DATA001; one future candidate and one targeted optimization",
+    "Do not change runtime/M4/M5/competitor branch or paid APIs",
+    "No automated fallback; completion callback only"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
-    "id": "M6-COUPLED-PROBE-002",
+    "id": "M6-SHAPE-PAIRS-001",
     "status": "independently_reviewed_closed",
-    "dispatch_base": "696e8e2ad46ecf1524a7c8549a1d390c0de8f43d",
-    "contract_commit": "a6429e7683fe7fcb0faf6e6d52f9972908a1c1ab",
-    "contract": "docs/M6_COUPLED_PROBE_002_TASK.md",
-    "delivery_commit": "8a99c344caf4560ee87fbb9f7540bf67ff3f2469",
-    "review_status": "accepted_query_scope_fix_close_evaluator_probe",
-    "review_doc": "docs/M6_COUPLED_PROBE_002_REVIEW.md",
-    "review_commit": "421e16c37ccb7b3ba1f83c817c69b3cfb035faf1"
+    "dispatch_base": "8a99c344caf4560ee87fbb9f7540bf67ff3f2469",
+    "contract_commit": "cf81e1e74a358f52c3ef3223f0807a22ae1661da",
+    "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md",
+    "delivery_commit": "9b016c8720b709a6382438ddd505c7b154d4fac2",
+    "review_status": "data_accepted_broad_reconstruction_rejected",
+    "review_doc": "docs/M6_SHAPE_PAIRS_001_REVIEW.md",
+    "review_commit": null
   },
   "last_dispatch": {
     "cycle_id": "M6-SHAPE-PAIRS-001",
@@ -140,10 +148,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle_id": "M6-SHAPE-PAIRS-001",
-    "status": "preliminary_author_report_not_independently_reviewed",
-    "reported": "Seven samples computed. Biharmonic reconstruction increased recovery error on all six damaged samples and changed the pristine control. Author preparing final evidence/commit.",
-    "action": "Wait for fixed completion callback; independently review baseline suitability, implementation, information and metrics before choosing next task"
+    "status": "completed_and_independently_reviewed",
+    "cycle": "M6-SHAPE-PAIRS-001",
+    "fixed_commit": "9b016c8720b709a6382438ddd505c7b154d4fac2"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -168,10 +175,27 @@
     "default_learning_candidates": 1,
     "first_version_then_one_targeted_optimization": true,
     "current_frozen_trial_changed": false,
-    "implementation_notice": "Carry in next planning handoff after current completion; no interrupting or duplicate task",
+    "implementation_notice": "Included in M6-SHAPE-DATA-001 contract for next handoff",
     "documents": [
       "docs/M6_MODEL_ROADMAP.md",
       "docs/M6_REVIEW_WORKFLOW.md"
     ]
+  },
+  "shape_pairs_review": {
+    "fixed_commit": "9b016c8720b709a6382438ddd505c7b154d4fac2",
+    "independent_checks": 186,
+    "targeted_contact_checks": 19,
+    "targeted_endpoint_queries": 2,
+    "case_count": 7,
+    "assets": 1,
+    "broad_baseline_improvements": 0,
+    "oracle_label_assisted": true,
+    "oracle_improvements": 4,
+    "oracle_regressions": 2,
+    "originally_healthy_share_final_SSE_percent": [
+      73.282,
+      89.114
+    ],
+    "oracle_is_deployable": false
   }
 }
