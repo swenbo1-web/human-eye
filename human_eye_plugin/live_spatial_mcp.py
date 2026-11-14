@@ -9,10 +9,12 @@ from __future__ import annotations
 import argparse
 import base64
 import copy
+import hashlib
 from contextlib import contextmanager, nullcontext
 from functools import partial
 import json
 import math
+from pathlib import Path
 import sys
 import time
 import uuid
@@ -67,7 +69,7 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
-        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface"]},
+        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
@@ -98,7 +100,9 @@ _QUERY_SCHEMA = {
         "visual_diagnostic": {"type": "string", "enum": ["contact_section"],
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
-    "allOf": [{"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
+    "allOf": [{"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
+               "then": {"properties": {"mode": {}}, "additionalProperties": False}},
+              {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
@@ -172,6 +176,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
+            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns supported regions, actual pixel evidence, remaining unknowns and up to six 512px native PNGs."
         ),
         "inputSchema": {
             "type": "object",
@@ -186,6 +191,11 @@ LIVE_MCP_TOOLS_SCHEMA = [
                     "description": "False returns text evidence without rendering. surface_scan defaults to false and accepts only false. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
             },
             "allOf": [{"if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"const": "active_observation"}}}}},
+                "then": {"properties": {"task_instruction": {"const": ""}},
+                         "not": {"anyOf": [{"required": [field]} for field in
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}}},
+              {"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "directory"}}}}},
                 "then": {"required": ["include_image"],
                          "properties": {"include_image": {"const": False}, "task_instruction": {"const": ""}},
@@ -428,6 +438,10 @@ def _validate_arguments(name: str, arguments: Any) -> None:
             if (arguments.get('include_image', True) or arguments.get('task_instruction', '')
                     or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
                 raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
+        if selected_query['mode'] == 'active_observation':
+            if (arguments.get('task_instruction', '')
+                    or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
+                raise ValueError('active_observation accepts complete-scene observation without instruction, pair, goal or scene_delta')
         if selected_query['mode'] == 'surface_nearest':
             if 'objects' in selected_query and 'focal_id' in arguments:
                 raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
@@ -783,10 +797,80 @@ def project_surface_scan_brief(value):
     return result
 
 
+def _active_observation_content(value, *, is_error, audit):
+    started = time.perf_counter_ns()
+    audit.update(status='encoding', started_ns=started, frames=[],
+        native_blocks_constructed=0, mcp_content_ready=False,
+        consumer_read_status='unconfirmed')
+    metadata = {key: copy.deepcopy(value[key]) for key in (
+        'status', 'result_kind', 'observation_status', 'session_id', 'facts',
+        'work', 'generation_work', 'stages', 'generation_stages',
+        'read_only', 'execution_authority',
+    ) if key in value}
+    if 'binding' in value:
+        metadata['binding'] = {key: copy.deepcopy(item) for key, item in value['binding'].items()
+            if key != 'camera_specification'}
+    frames = value.get('frames')
+    content = []
+    try:
+        if type(frames) is not list or len(frames) > 6:
+            raise ValueError('Active observation requires at most six frame references')
+        metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
+            'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
+            'image_path', 'image_sha256', 'PNG_bytes', 'arrays_path', 'arrays_sha256',
+            'compressed_array_file_bytes', 'array_payload_bytes',
+            'host_binding_sha256', 'source_revision', 'stages', 'feedback_stages',
+        ) if key in frame} for frame in frames]
+        for frame in frames:
+            row = {'image_ref': frame.get('image_ref'), 'view_name': frame.get('view_name'),
+                   'PNG_bytes_read': 0, 'base64_chars': 0, 'status': 'reading'}
+            audit['frames'].append(row)
+            mark = time.perf_counter_ns()
+            raw = Path(frame['image_path']).read_bytes()
+            row.update(read_ns=time.perf_counter_ns()-mark, PNG_bytes_read=len(raw))
+            mark = time.perf_counter_ns()
+            if hashlib.sha256(raw).hexdigest() != frame['image_sha256']:
+                raise ValueError('Active observation PNG source binding changed')
+            public = _public_native_png(raw)
+            if public != raw or public[16:24] != b'\x00\x00\x02\x00\x00\x00\x02\x00':
+                raise ValueError('Active observation requires the registered 512px PNG bytes')
+            row.update(validate_ns=time.perf_counter_ns()-mark, status='encoding')
+            mark = time.perf_counter_ns()
+            data = base64.b64encode(public).decode('ascii')
+            row.update(base64_ns=time.perf_counter_ns()-mark, base64_chars=len(data), status='constructed')
+            content.append({'type': 'image', 'mimeType': 'image/png', 'data': data})
+            audit['native_blocks_constructed'] = len(content)
+        metadata['image_delivery'] = {
+            'local_verified_image_count': len(frames),
+            'mcp_content_constructed_image_count': len(content),
+            'consumer_read_status': 'unconfirmed',
+            'frame_reuses': value.get('work', {}).get('frame_reuses', 0),
+            'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
+        }
+        text = json.dumps(metadata, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+        audit.update(status='constructed', mcp_content_ready=True,
+            public_text_bytes=len(text.encode('utf8')),
+            PNG_bytes=sum(row['PNG_bytes_read'] for row in audit['frames']),
+            base64_chars=sum(row['base64_chars'] for row in audit['frames']))
+        record_image_artifact('mcp_content', native_block_count=len(content))
+        return {'content': [{'type': 'text', 'text': text}, *content], 'isError': bool(is_error)}
+    except Exception as error:
+        audit.update(status='failed', error={'type': type(error).__name__, 'message': str(error)[:1000]})
+        record_image_artifact('mcp_content', native_block_count=0)
+        raise
+    finally:
+        audit['closed_ns'] = time.perf_counter_ns()
+        audit['elapsed_ns'] = audit['closed_ns'] - started
+
+
 def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
-                 compact_support_planes: bool = False, segment_brief: bool = False) -> dict:
+                 compact_support_planes: bool = False, segment_brief: bool = False,
+                 active_delivery_audit=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
+    if value.get('result_kind') == 'active_observation':
+        return _active_observation_content(value, is_error=is_error,
+            audit={} if active_delivery_audit is None else active_delivery_audit)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -992,6 +1076,8 @@ class LiveSpatialMCPServer:
                 is_error = value.get('status') not in {'complete', 'partial'}
             if value.get('result_kind') == 'surface_scan':
                 is_error = value.get('status') not in {'complete', 'partial', 'unknown'}
+            if value.get('result_kind') == 'active_observation':
+                is_error = value.get('status') not in {'complete', 'partial', 'unknown', 'predicted'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == 'human_eye_arm_twist_observe':
             value = self.service.observe_arm_twist(session_id, args['selection'], **context_kwargs)
@@ -1009,12 +1095,20 @@ class LiveSpatialMCPServer:
         with span('mcp.content_encode', kind='encoding'):
             if spatial_relations:
                 value = _project_spatial_relations(value)
-            result = _tool_result(value, is_error=is_error,
-                response_detail=args.get('response_detail'),
-                segment_brief=(name == 'human_eye_clearance_segment'),
-                compact_support_planes=(name == 'human_eye_scene_observe'
-                    and 'support_plane_discovery' in args.get('query', {})))
-        if value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory'):
+            delivery_audit = {} if value.get('result_kind') == 'active_observation' else None
+            try:
+                result = _tool_result(value, is_error=is_error,
+                    response_detail=args.get('response_detail'),
+                    segment_brief=(name == 'human_eye_clearance_segment'),
+                    compact_support_planes=(name == 'human_eye_scene_observe'
+                        and 'support_plane_discovery' in args.get('query', {})),
+                    active_delivery_audit=delivery_audit)
+            finally:
+                recorder = getattr(self.service, 'record_event', None)
+                if delivery_audit is not None and callable(recorder):
+                    recorder('active_observation_mcp_content', session_id=session_id,
+                        image_delivery=delivery_audit)
+        if value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory', 'active_observation'):
             self.service._check_request_budget('before_task_publication')
         return result
 

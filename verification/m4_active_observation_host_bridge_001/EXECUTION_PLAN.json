@@ -1,0 +1,57 @@
+{
+  "QA_controls": [
+    "qa_rename",
+    "qa_nonplanar",
+    "close"
+  ],
+  "direct_same_capture_comparisons": "Offline parent prepare/index and receipt replay from captured object, camera/index sidecar. No extra live capture or raster. Counts separate.",
+  "expected_new_rasters": {
+    "nonplanar_source": 0,
+    "ordinary": 2,
+    "renamed_source": 2,
+    "same_source_repeat": 0
+  },
+  "expected_service_full_captures": 4,
+  "expected_source_geometry_prepares": {
+    "nonplanar_source": 1,
+    "ordinary": 1,
+    "renamed_source": 1,
+    "same_source_repeat": 0
+  },
+  "functional_stdio_requests": [
+    "initialize",
+    "tools/list",
+    "ordinary",
+    "same_source_repeat",
+    "renamed_source",
+    "nonplanar_source",
+    "bad_active_query",
+    "ping_after_bad_request",
+    "old_readonly_regression"
+  ],
+  "global_hard_cap": 8,
+  "new_model_inference_runs": 0,
+  "new_paired_performance_runs": 0,
+  "old_directory_capture": "Separate existing read-only directory entry, no active prepare or image",
+  "schema": "m4-host-bridge-finite-execution-v1",
+  "targeted_test_modules": [
+    {
+      "module": "verification.test_active_observation_host",
+      "test_methods": 5
+    },
+    {
+      "module": "verification.test_active_observation_service",
+      "test_methods": 5
+    },
+    {
+      "module": "verification.test_active_observation_images",
+      "test_methods": 4
+    },
+    {
+      "module": "verification.test_live_spatial_mcp",
+      "test_methods": 22
+    }
+  ],
+  "test_method_count": 36,
+  "unit_images": "Synthetic or mocked only. Real attention raster forbidden during this stage."
+}

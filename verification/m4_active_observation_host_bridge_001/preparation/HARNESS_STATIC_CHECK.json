@@ -1,0 +1,45 @@
+{
+  "schema": "m4-host-bridge-harness-static-check-v1",
+  "scope": "Source AST and compile only. No module execution, candidate function, Blender, stdio server, model, API or raster invocation.",
+  "attempts": [
+    {
+      "index": 1,
+      "interpreter": "python resolved by PowerShell PATH",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "result": "No check receipt produced. Interpreter-path failure is retained."
+    },
+    {
+      "index": 2,
+      "interpreter": "C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+      "flags": ["-I", "-B", "-X", "utf8", "-"],
+      "exit_code": 0,
+      "checks": [
+        {"file": "prepare_fixture.py", "bytes": 3163, "sha256": "609bb7821d9c322bf215b618a4180d32ff17b512fe55aa4652e29ea77a5191b9", "AST_and_compile_passed": true},
+        {"file": "qa_worker.py", "bytes": 9569, "sha256": "77363bbc34c6e7856ef08878e87a521758c995b83f71f9663aa56dbc8ca45945", "AST_and_compile_passed": true},
+        {"file": "stdio_entry.py", "bytes": 9286, "sha256": "6fdd149bbf1ff308aa758853645d6cb5c7f0faf6094f57f9968fe008e2def056", "AST_and_compile_passed": true},
+        {"file": "stdio_checks.py", "bytes": 12415, "sha256": "b4d74fd57ff909c29355e0edca789a305951c3efa385128edd97181ffdbb959b", "AST_and_compile_passed": true}
+      ],
+      "HARNESS_PROTOCOL_JSON_parsed": true
+    }
+  ],
+  "new_processes_running_candidate_or_QA": 0,
+  "new_rasters": 0,
+  "new_model_calls": 0,
+  "read_only_environment_preflight": {
+    "Blender_executable": "D:/Tools/blender5.2/blender.exe",
+    "Blender_executable_bytes": 113014232,
+    "Blender_executable_sha256": "284f4041f98e113f3dc10654a7193ffaaa9bfdfec8b87fa116620a48b5f6d4cb",
+    "existing_Background_Blender_pids_at_read": [3236, 8476, 22976, 24464, 25236],
+    "existing_worker_sources": [
+      "D:/hefe/.human-eye/releases/9.7.2+20261102.codex.owned.rc2/site-packages/human_eye_plugin/blender_worker.py",
+      "D:/hefe/.human-eye/releases/9.7.2+20261102.owned.reference.r2/site-packages/human_eye_plugin/surface_owned_worker.py"
+    ],
+    "existing_processes_modified": 0,
+    "existing_QA_ownership_pattern": "Fresh exclusive workspace, copied private asset, held Popen handle, ephemeral loopback endpoint, READY PID/source/deadline binding.",
+    "global_QA_mutex_discovered": false,
+    "global_QA_mutex_search_scope": "Existing repository source and QA ownership files. Absence is limited to this search, not an operating-system enumeration claim.",
+    "new_private_worker_scope": "Fresh in-memory QA geometry with no saved blend file. Root owns process lifecycle."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "m4-host-bridge-harness-cleanup-correction-v1",
+  "reason": "Cross-author static review found that one cleanup exception could skip later held-process cleanup steps.",
+  "authorization": "Root explicitly approved this correction before any actual QA or stdio execution.",
+  "file": "stdio_checks.py",
+  "previous_sha256": "b4d74fd57ff909c29355e0edca789a305951c3efa385128edd97181ffdbb959b",
+  "final_sha256": "2b19a8e9b20fc21e8bb3110fc455d2b3c93792f9819ff13907156bb74c3c67be",
+  "final_bytes": 13995,
+  "changes": [
+    "stdin close errors are retained while bounded wait still executes",
+    "kill failure retains its error while bounded post-kill wait still executes",
+    "reader join, each pipe close, actual process handle close and stderr file close have independent error retention",
+    "actual process handle closes after a confirmed wait result",
+    "normal EOF completion requires all pipe and handle closure checks"
+  ],
+  "AST_and_compile_passed": true,
+  "interpreter": "C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "additional_runtime_test_cases": 0,
+  "actual_QA_or_stdio_processes": 0,
+  "candidate_function_calls": 0,
+  "new_rasters": 0,
+  "new_model_calls": 0
+}

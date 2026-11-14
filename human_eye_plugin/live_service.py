@@ -212,12 +212,13 @@ def _request(operation):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
                     self._remember_execution_result(result)
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory','active_observation'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
                     record_image_artifact('service_result', image_present=(route.get('image') is not None
-                        or bool(route.get('images'))))
+                        or bool(route.get('images'))
+                        or result.get('result_kind') == 'active_observation' and bool(result.get('frames'))))
                     for key in ('observation_id', 'scene_revision', 'cache_hit',
                                 'measurement_cache_hit', 'engine_invoked', 'requires_reobserve'):
                         if key in route:
@@ -1045,6 +1046,11 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'active_observation':
+            if (task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('active_observation accepts complete-scene observation without instruction, pair, goal or scene_delta')
+            return self._observe_active_observation(session_id, include_image=include_image)
         if query['mode'] == 'directory':
             if (include_image or task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1379,6 +1385,75 @@ class LiveSpatialService:
             ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
         if packet['directory_sha256'] != digest:
             raise ValueError('directory_digest_mismatch')
+
+    def _observe_active_observation(self, session_id, *, include_image):
+        from .active_observation_host import source_binding, observe_capture
+        from .read_context import query_key
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        started = time.perf_counter_ns()
+        construction = {'attempts': 0}
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_active_observation_capture')
+            capture_started = time.perf_counter_ns()
+            with span('host.capture', kind='host'):
+                captured = self.host.capture_scene()
+            capture_closed = time.perf_counter_ns()
+            self._check_request_budget('after_active_observation_capture')
+            binding = source_binding(captured)
+            context.activate(captured, 'active_observation', binding)
+            binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
+                separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+
+            def before_construction(view_name):
+                self._check_request_budget('before_active_observation_raster')
+                construction['attempts'] += 1
+                self.record_event('active_observation_render_attempt', session_id=session_id,
+                    view_name=view_name, attempt=construction['attempts'], binding_digest=binding_digest)
+
+            def compute():
+                directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
+                return observe_capture(captured, directory, include_image=include_image,
+                    construction_callback=before_construction, check_budget=self._check_request_budget)
+
+            lookup_started = time.perf_counter_ns()
+            try:
+                result, hit = context.result(query_key({'mode': 'active_observation',
+                    'include_image': include_image}), compute)
+            except Exception as error:
+                self.record_event('active_observation_failed', session_id=session_id,
+                    task_work=getattr(error, 'active_observation_work',
+                        {'raster_attempts': construction['attempts']}),
+                    stages=getattr(error, 'active_observation_stages', {}),
+                    error_type=type(error).__name__)
+                raise
+            lookup_closed = time.perf_counter_ns()
+            generation_work = copy.deepcopy(result.get('work', {}))
+            result['generation_work'] = generation_work
+            result['generation_stages'] = copy.deepcopy(result.get('stages', {}))
+            if hit:
+                result['work'] = {key: 0 for key in generation_work}
+                result['stages'] = {}
+            result.setdefault('work', {}).update(capture_calls=1,
+                result_cache_hit=hit, frame_reuses=len(result.get('frames', [])) if hit else 0)
+            result['stages'].update(
+                host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
+                              'elapsed_ns': capture_closed - capture_started},
+                result_lookup={'started_ns': lookup_started, 'closed_ns': lookup_closed,
+                               'elapsed_ns': lookup_closed - lookup_started})
+            result['session_id'] = session_id
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            observation_mode='active_observation', task_work=result['work'])
+        self._check_request_budget('before_active_observation_result')
+        result['stages']['service_total'] = {'started_ns': started,
+            'closed_ns': time.perf_counter_ns()}
+        result['stages']['service_total']['elapsed_ns'] = result['stages']['service_total']['closed_ns'] - started
+        return result
 
     def _observe_surface_scan(self, session_id, query):
         """Scan one source-bound scene through the existing read-only lifecycle."""

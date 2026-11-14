@@ -12,6 +12,7 @@ import copy
 import hashlib
 from io import BytesIO
 from pathlib import Path
+import time
 
 import numpy as np
 from PIL import Image
@@ -127,7 +128,7 @@ class ActiveObservationImages:
     retain the saved array reference.
     """
 
-    def __init__(self, session, output_directory):
+    def __init__(self, session, output_directory, *, _prepared_meshes=None, _measure_stages=False):
         if not isinstance(session, ActiveObservationSession):
             raise TypeError('active_observation_session_required')
         self.session = session
@@ -137,6 +138,8 @@ class ActiveObservationImages:
         self._binding = None
         self._frames = {}
         self._sequence = 0
+        self._prepared_meshes = _prepared_meshes
+        self._measure_stages = _measure_stages
         self._synchronize()
 
     def _synchronize(self):
@@ -148,7 +151,17 @@ class ActiveObservationImages:
         reuse_frames = (binding == self._binding
                         and mesh_order_identity == getattr(self, '_mesh_order_identity', None)
                         and self.session.cameras == self._cameras)
-        self.meshes = _meshes_from_objects(self.session.objects)
+        if self._prepared_meshes is None:
+            self.meshes = _meshes_from_objects(self.session.objects)
+        else:
+            objects, meshes = self._prepared_meshes
+            if (objects is not self.session.objects or type(meshes) is not tuple
+                    or len(meshes) != len(objects) or any(
+                        len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
+                        for mesh, source in zip(meshes, objects))):
+                raise ValueError('prepared_mesh_geometry_binding_required')
+            self.meshes = meshes
+            self._prepared_meshes = None
         self._poses = {pose['name']: pose for pose in self.session.cameras['views']}
         self._mesh_order_identity = mesh_order_identity
         self._objects = self.session.objects
@@ -170,6 +183,9 @@ class ActiveObservationImages:
         pose = self._poses[view_name]
         size = _size(pose)
         self._sequence += 1
+        stages = {}
+        if self._measure_stages:
+            started = time.perf_counter_ns()
         color, depth, owners = rasterize_attention(
             self.meshes,
             np.asarray(pose['view_matrix'], dtype=np.float64),
@@ -177,6 +193,9 @@ class ActiveObservationImages:
             size,
             return_owner=True,
         )
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['actual_raster'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
         buffers = {'color': color, 'depth': depth, 'owners': owners}
         for values in buffers.values():
             values.setflags(write=False)
@@ -184,10 +203,16 @@ class ActiveObservationImages:
         stem = str(self._sequence).zfill(3) + '-' + fingerprint((self._binding, view_name))[:24]
         png = self.output_directory / (stem + '.png')
         arrays = self.output_directory / (stem + '.npz')
+        if self._measure_stages:
+            started = time.perf_counter_ns()
         with png.open('xb') as stream:
             Image.fromarray(color, mode='RGB').save(stream, format='PNG')
         with arrays.open('xb') as stream:
             np.savez_compressed(stream, **buffers)
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['PNG_NPZ_publication'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+            started = closed
         image_sha = hashlib.sha256(png.read_bytes()).hexdigest()
         frame = {
             'scene_identity': self._binding[0],
@@ -208,10 +233,17 @@ class ActiveObservationImages:
             'all_object_count': len(self.meshes),
             'all_triangle_count': sum(len(mesh.faces) for mesh in self.meshes),
         }
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['frame_metadata'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+            frame['stages'] = stages
         self._frames[view_name] = frame
         return frame
 
     def observe_frame(self, frame):
+        stages = {}
+        if self._measure_stages:
+            started = time.perf_counter_ns()
         self._synchronize()
         if (frame.get('scene_identity'), frame.get('candidate_identity')) != self._binding:
             raise ValueError('current_scene_camera_frame_required')
@@ -246,7 +278,15 @@ class ActiveObservationImages:
                     or image.size != (_size(pose), _size(pose))
                     or not np.array_equal(np.asarray(image), buffers['color'])):
                 raise ValueError('PNG_RGB_frame_array_binding_required')
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['load_validate'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+            started = closed
         rows = _pixel_rows(self.meshes, pose, buffers, self.session.regions)
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['readability'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+            started = closed
         receipt = {
             'scene_identity': self._binding[0],
             'candidate_identity': self._binding[1],
@@ -262,7 +302,12 @@ class ActiveObservationImages:
             'pixel_rows': rows,
         }
         update = self.session.observe(receipt)
-        return {'receipt': receipt, 'pixel_rows': rows, 'update': update, 'summary': self.session.summary()}
+        result = {'receipt': receipt, 'pixel_rows': rows, 'update': update, 'summary': self.session.summary()}
+        if self._measure_stages:
+            closed = time.perf_counter_ns()
+            stages['state_commit'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+            result['stages'] = stages
+        return result
 
 
 __all__ = ['ActiveObservationImages']

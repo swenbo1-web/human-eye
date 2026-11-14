@@ -546,15 +546,29 @@ def prepare_scene(scene, cameras, diagnostics=False):
     image dimensions supplied by the caller. Diagnostics contain phase clocks
     and aggregate sizes.
     """
+    if diagnostics:
+        started = time.perf_counter_ns()
+    objects, triangles, scene_identity = geometry(scene)
+    if diagnostics:
+        closed = time.perf_counter_ns()
+        geometry_stage = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+    session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=diagnostics)
+    if diagnostics:
+        session.diagnostics['stages'] = {'geometry': geometry_stage, **session.diagnostics['stages']}
+    return session
+
+
+def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=False):
+    """Prepare from the exact objects/triangles/identity returned by geometry.
+
+    Camera fitting and image conversion can share this normalized geometry
+    before entering discovery and coverage. The caller retains its full mesh
+    ordering in the returned session.
+    """
     stages = {} if diagnostics else None
     if diagnostics:
         started = time.perf_counter_ns()
     owned_cameras = copy.deepcopy(cameras)
-    objects, triangles, scene_identity = geometry(scene)
-    if diagnostics:
-        closed = time.perf_counter_ns()
-        stages['geometry'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
-        started = closed
     regions = regions_from_objects(objects)
     if diagnostics:
         closed = time.perf_counter_ns()

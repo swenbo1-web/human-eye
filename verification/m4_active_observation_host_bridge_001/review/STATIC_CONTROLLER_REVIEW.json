@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "basis": "One owned QA launch and one stdio client. Nine functional JSON-RPC requests match EXECUTION_PLAN, with only rename/nonplanar/close private controls. No retry loop, timing series or algorithm resampling.",
+      "id": "fixed_program_flow",
+      "passed": true
+    },
+    {
+      "basis": "StdioClient(command,cwd,output,absolute_deadline), call, inspect_images, compare_same_capture and finish signatures align. Positive responses use result/isError=false and bad active-query responses use result/isError=true. 600s outer deadline is integer ns; service request_budget_s=90 and socket timeout=30 are accepted finite scalar types.",
+      "id": "API_calls_and_types",
+      "passed": true
+    },
+    {
+      "basis": "Controller bootstrap uses installed manifest, then normal active_observation import. Service config project_root is binding.install_root. Child stdio receives the same binding/bootstrap and live expected identity.",
+      "id": "normal_installed_source",
+      "passed": true
+    },
+    {
+      "basis": "Original deadline and Popen poll are checked before marker read, original deadline checked again before successful return. Only missing/incomplete JSON waits. Complete wrong PID/deadline/source/fixture markers fail subsequent assertions.",
+      "id": "ready_complete_marker",
+      "passed": true
+    },
+    {
+      "basis": "Each log handle is immediately appended. Main try/finally retains client and QA Popen. Client finish, private close, initial QA wait, kill, post-kill wait, actual handle close and each log close independently preserve errors. Nonzero or unknown termination makes batch failed.",
+      "id": "retained_resources",
+      "passed": true
+    },
+    {
+      "basis": "Uses reviewed final StdioClient e9274fd6. Reader startup exceptions enter cleanup; independent cleanup stages continue after errors; active stdout reader defers buffer close and records unconfirmed status.",
+      "id": "stdio_reader_cleanup",
+      "passed": true
+    },
+    {
+      "basis": "Cold ordinary/rename/nonplanar outputs receive QA-only direct core comparisons from saved actual capture and index cameras. They perform no extra capture/raster and report separate extra QA parse/index counts.",
+      "id": "same_capture_comparison_scope",
+      "passed": true
+    },
+    {
+      "basis": "Expected ordinary2/repeat0/rename2/nonplanar0 new rasters. Same-source repeat requires zero parse/prepare/raster. Final intent count must be four under the reviewed hard eight-slot wrapper. Local images are readback, with no model inference.",
+      "id": "fixed_cost_and_budget",
+      "passed": true
+    }
+  ],
+  "concrete_remaining_blockers": [],
+  "controller_sha256": "87dcdda6cb1ceb65b25e9758cb37715f89c49e3ba2dec38d5ad3d7d8ee727ad2",
+  "passed": true,
+  "pre_execution_findings_resolved": [
+    {
+      "finding": "Second log open in a list comprehension could leak the first unassigned handle",
+      "resolution": "Loop appends each opened handle immediately"
+    },
+    {
+      "finding": "exists-only READY polling could decode a marker before its write/flush completed",
+      "resolution": "Wait for missing/incomplete marker within original deadline; keep strict complete-marker validation"
+    },
+    {
+      "finding": "Early successful READY return could bypass original deadline",
+      "resolution": "Check deadline before the read and again before successful return, with held-process poll at loop entry"
+    },
+    {
+      "finding": "New binding needs five runtime identity scalars absent from earlier minimal integration binding",
+      "resolution": "Root confirmed builder explicitly emits base_version, implementation_revision, build_id, source_sha256, protocol_version alongside source_manifest and install_root; actual emitted values remain frozen-run prerequisites"
+    }
+  ],
+  "review_process_note": "An initial reviewer AST expression check expected two literal append statements. The actual equivalent for-loop appends immediately and was accepted after reading it; no case was run.",
+  "review_scope": "Static source and AST only. No case, candidate, test, camera, raster, Blender or subprocess acceptance launched by reviewer. Runtime source/config/binding and actual exit still require the one root-owned frozen execution.",
+  "reviewer_runtime_calls": 0,
+  "schema": "m4-active-observation-host-bridge-001-static-controller-review-v1",
+  "source_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\EXECUTION_PLAN.json": "e300066adafd562e37d32187dd97d33fef1d96bb3371f8d17ce4ca00ff4ff9dc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\HARNESS_PROTOCOL.json": "85cffa2f859796dad56e1aaa25efd320f17bda56c56635b19c49d58730ae1d3d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\qa_worker.py": "77363bbc34c6e7856ef08878e87a521758c995b83f71f9663aa56dbc8ca45945",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\run_acceptance.py": "87dcdda6cb1ceb65b25e9758cb37715f89c49e3ba2dec38d5ad3d7d8ee727ad2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\stdio_checks.py": "e9274fd6ff27afcf0b4b014f853ad953ffe3ae275ed3debda991510c62f34e9d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\stdio_entry.py": "6fdd149bbf1ff308aa758853645d6cb5c7f0faf6094f57f9968fe008e2def056",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\verified_bootstrap.py": "786673c9fa81a74f8ae729874f540d2a475ae9d9a62aac277d5789be661457a6"
+  }
+}
