@@ -1,0 +1,303 @@
+{
+  "APIs": {
+    "canonicalize_full": "canonicalize_full(full_public_dict) -> validated semanticdict",
+    "canonicalize_full_diagnostics": "canonicalize_full_diagnostics(value,path_relocations=None) -> complete dict with only declared path reversal",
+    "compare_semantics": "compare_semantics(full_public_dict, brief_public_dict) -> {passed, expected, actual}; strict canonical JSON equality",
+    "decode_brief": "decode_brief(brief_public_dict) -> validated semanticdict",
+    "extract_public_value": "extract_public_value(actual_jsonrpc_response) -> dict; require result.isError=false and one initial text followed only by PNG image blocks",
+    "validate_native_images": "validate_native_images(response,semantics=None) -> {passed:true,native_image_blocks,images}; None derives semantics independently from response and checks refs/SHA/block positions; violations raise ContractError(ValueError)"
+  },
+  "administrative_acceptance_asserted": false,
+  "administrator_plan_sha256": "18b17c54014fb9b8b9751dd9835c6136cf031cc9782834587f94c351d62f1992",
+  "baseline_git": "32a1c6eb47cfa84133d92199387339d407a33cb5",
+  "canonical_field_sets": {
+    "BINDING_FIELDS": [
+      "scene_revision",
+      "document_epoch",
+      "capture_scope",
+      "unit",
+      "coordinate_frame",
+      "source",
+      "capture_state",
+      "source_binding_sha256",
+      "geometry_identity",
+      "camera_identity",
+      "binding_sha256",
+      "runtime_source_sha256",
+      "source_status",
+      "disk_status",
+      "source_check_scope"
+    ],
+    "COVERAGE_FIELDS": [
+      "observed_views",
+      "covered_roi_ids",
+      "unresolved_roi_ids",
+      "candidate_pool_uncovered_roi_ids",
+      "state_updates",
+      "scope"
+    ],
+    "DELIVERY_FIELDS": [
+      "local_verified_image_count",
+      "mcp_content_constructed_image_count",
+      "consumer_read_status",
+      "frame_reuses",
+      "new_raster_attempts"
+    ],
+    "IMAGE_COLUMNS": [
+      "view_name",
+      "image_ref",
+      "image_sha256",
+      "native_content_block_index"
+    ],
+    "OBJECT_COLUMNS": [
+      "object_index",
+      "host_id",
+      "instance_id",
+      "object_name"
+    ],
+    "OBSERVATION_COLUMNS": [
+      "image_index",
+      "readable_region_indices"
+    ],
+    "PIXEL_COLUMNS": [
+      "image_index",
+      "region_index",
+      "front_facing",
+      "visible_surface_pixels",
+      "contrasting_boundary_pixels",
+      "readable"
+    ],
+    "REGION_COLUMNS": [
+      "roi_id",
+      "object_index",
+      "status",
+      "reason"
+    ],
+    "RULE_FIELDS": [
+      "minimum_surface_pixels",
+      "minimum_boundary_pixels",
+      "minimum_rgb_boundary_contrast"
+    ],
+    "SCOPE_FIELDS": [
+      "capture_object_count",
+      "supported_roi_object_count",
+      "objects_without_supported_roi",
+      "domain",
+      "all_objects_participate_in_occlusion"
+    ],
+    "TOP_FIELDS": [
+      "status",
+      "result_kind",
+      "observation_status",
+      "session_id",
+      "read_only",
+      "execution_authority"
+    ],
+    "UNKNOWN_COLUMNS": [
+      "object_index",
+      "status"
+    ]
+  },
+  "excluded_full_diagnostics": [
+    "binding.camera_policy",
+    "binding.schema",
+    "binding.capture_state.selection_key",
+    "facts.observations[].image_path",
+    "frames[].image_path",
+    "frames[].PNG_bytes",
+    "frames[].arrays_path",
+    "frames[].arrays_sha256",
+    "frames[].compressed_array_file_bytes",
+    "frames[].array_payload_bytes",
+    "frames[].stages",
+    "frames[].feedback_stages",
+    "work",
+    "generation_work",
+    "stages",
+    "generation_stages"
+  ],
+  "fixed_input_count": 5,
+  "fixed_text_bytes": 101824,
+  "full_comparison": {
+    "allowed_fields": [
+      "frames[].image_path",
+      "facts.observations[].image_path"
+    ],
+    "camera_policy_reconstructed_for_brief": false,
+    "function": "canonicalize_full_diagnostics",
+    "path_relocations_direction": "new_actual_read_path -> original_historical_path",
+    "semantics": "Keep every original field and JSON type. Reverse only explicitly registered PNG image_path relocations. arrays_path and every other diagnostic field remain byte-value equivalent after JSON canonicalization."
+  },
+  "historical_archive_manifest": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\EXTERNAL_ARCHIVE.json",
+    "sha256": "eaa13f217e36469c79ae71205e1fc5b66f2f21c2de0dd017bc84f2842b6fb57b"
+  },
+  "historical_inputs": [
+    {
+      "RX_sha256": "5825f982fe7ec0445c55a4da90c83bf9f8639291ee7eae58ba795dca792ba0c8",
+      "archive_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\external_archive\\run\\acceptance_01\\stdio\\rpc_03\\RX.bin",
+      "case": "ordinary",
+      "images": 2,
+      "objects": 28,
+      "observations": 2,
+      "original_path": "D:\\he_host_001\\run\\acceptance_01\\stdio\\rpc_03\\RX.bin",
+      "pixels": 12,
+      "regions": 6,
+      "semantic_expected_source": "The complete frozen original RX text. The independent canonicalizer has not been executed during preparation.",
+      "text_UTF8_bytes": 24549
+    },
+    {
+      "RX_sha256": "0ee132c07fd06d1b05305b28c96855195d9083445cfdab552b55747edc317dcf",
+      "archive_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\external_archive\\run\\acceptance_01\\stdio\\rpc_04\\RX.bin",
+      "case": "same_source_repeat",
+      "images": 2,
+      "objects": 28,
+      "observations": 2,
+      "original_path": "D:\\he_host_001\\run\\acceptance_01\\stdio\\rpc_04\\RX.bin",
+      "pixels": 12,
+      "regions": 6,
+      "semantic_expected_source": "The complete frozen original RX text. The independent canonicalizer has not been executed during preparation.",
+      "text_UTF8_bytes": 23266
+    },
+    {
+      "RX_sha256": "3049883af07de8d66346ac7dba749562d29085fe8890e2557a279bdf32216374",
+      "archive_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\external_archive\\run\\acceptance_02\\stdio\\rpc_03\\RX.bin",
+      "case": "recovery_rename_baseline",
+      "images": 2,
+      "objects": 28,
+      "observations": 2,
+      "original_path": "D:\\he_host_001\\run\\acceptance_02\\stdio\\rpc_03\\RX.bin",
+      "pixels": 12,
+      "regions": 6,
+      "semantic_expected_source": "The complete frozen original RX text. The independent canonicalizer has not been executed during preparation.",
+      "text_UTF8_bytes": 24547
+    },
+    {
+      "RX_sha256": "dab15897e6a16030a8c530966867827e763909065a6c1d01344723ccf2890044",
+      "archive_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\external_archive\\run\\acceptance_02\\stdio\\rpc_04\\RX.bin",
+      "case": "renamed_source",
+      "images": 2,
+      "objects": 28,
+      "observations": 2,
+      "original_path": "D:\\he_host_001\\run\\acceptance_02\\stdio\\rpc_04\\RX.bin",
+      "pixels": 12,
+      "regions": 6,
+      "semantic_expected_source": "The complete frozen original RX text. The independent canonicalizer has not been executed during preparation.",
+      "text_UTF8_bytes": 24588
+    },
+    {
+      "RX_sha256": "2ea3c37015039665b41f56425269843d6ca331bba7b6121bc88c67c0b68ec5f0",
+      "archive_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_host_bridge_001\\external_archive\\run\\acceptance_02\\stdio\\rpc_05\\RX.bin",
+      "case": "nonplanar_source",
+      "images": 0,
+      "objects": 1,
+      "observations": 0,
+      "original_path": "D:\\he_host_001\\run\\acceptance_02\\stdio\\rpc_05\\RX.bin",
+      "pixels": 0,
+      "regions": 0,
+      "semantic_expected_source": "The complete frozen original RX text. The independent canonicalizer has not been executed during preparation.",
+      "text_UTF8_bytes": 4874
+    }
+  ],
+  "independent_rejection_rules": [
+    "Duplicate object/instance/ROI/view/image references",
+    "Duplicate table columns, duplicate pixel pairs or observation image references",
+    "Out-of-range, negative, boolean or dangling table indices",
+    "Missing objects, ROI/view negative pixel rows or unsupported-object partition entries",
+    "Conflicting host/name/instance/image/source aliases",
+    "Readability inconsistent with front and actual shared 16/4/24 counts",
+    "Coverage or image/delivery counts inconsistent with actual observations",
+    "Wrong native block position, PNG SHA, MIME or dimensions",
+    "Zero ROI reported as complete or covered prediction without observation",
+    "Unknown fields outside the frozen brief contract"
+  ],
+  "independent_source_sha256": "8638ed2ea41968fd68b4e39bd5eb632dd6c7df62c80192059bdab967e7b8266c",
+  "index_semantics": {
+    "image_index": "Zero-based row of images table.",
+    "index_base": 0,
+    "native_content_block_index": "Actual zero-based MCP content array position. First image has value 1 because content[0] is the text block.",
+    "object_index": "Zero-based row of the complete objects table, with object_index equal to that row.",
+    "region_index": "Zero-based row of the complete regions table."
+  },
+  "omission_semantics": {
+    "coverage": "Absent observed_views and the three *_region_indices lists mean empty collections. scope and state_updates remain required.",
+    "pixel_rules": "May be absent or {} only when there are no pixel rows. No implicit threshold values are added to an empty observation.",
+    "tables": "objects/regions/images/observations/pixels may be absent only to mean an empty table. Nonempty tables require the exact columns and rows representation.",
+    "unsupported_objects": "Absent scope.objects_without_supported_roi means empty. Nonempty values use the declared object_index/status table."
+  },
+  "preparation_execution": "Historical JSON and AST reads only. No product/projector/schema/decoder/test/camera/raster call. Root executes the frozen contract later.",
+  "public_schema": "active-observation-brief-v1",
+  "quality_before_bytes": true,
+  "schema": "active-observation-brief-v1-independent-semantic-contract",
+  "semantic_source_map": {
+    "binding": "All original identity/provenance fields except objects, camera_policy and schema. capture_state selection_key is excluded. The three source_status/disk_status/source_check_scope fields remain.",
+    "coverage": "facts.coverage including all covered, unresolved and finite-pool lists, observed view order, state_updates and scope.",
+    "image_delivery": "All original five delivery counters/status fields and facts.image_delivery_scope. Local validation, MCP construction and consumer/model confirmation remain distinct.",
+    "images": "frames view/ref/SHA plus actual native block position. Frame scene/camera/hostbinding/revision aliases must match the retained binding before they can be omitted.",
+    "objects": "binding.objects mapped exactly once, preserving all host IDs, names, instances and capture order.",
+    "observations": "facts.observations without local image_path. Every image, readable reference and full ROI/view pixel row is retained, including all negative rows.",
+    "pixel_rules": "Actual shared 16/4/24 fields from every original pixel row. Rules are not fabricated when no rows exist.",
+    "regions": "facts.regions. Host/name/instance aliases are restored from objects and must originally agree.",
+    "scope": "facts.scope including counts, exact domain, all-object occlusion meaning, and every unsupported object with its original status.",
+    "top": "Original six scalar status/result_kind/observation_status/session_id/read_only/execution_authority fields."
+  },
+  "static_product_review": {
+    "current_schema_and_columns_match_independent_contract": true,
+    "findings": [
+      {
+        "item": "Missing negative pixel row could pass projection",
+        "status": "Resolved before freeze. Current product requires each observation to cover the full region-index set and rejects boolean object indices."
+      },
+      {
+        "item": "Advertised active default full",
+        "status": "Superseded early read corrected. Current source has a dedicated surface_scan/active_observation default-brief conditional; other modes retain full."
+      },
+      {
+        "item": "Full inverse relocation included arrays_path",
+        "status": "Tightened before freeze to registered image_path fields only. arrays_path remains untouched in full diagnostics."
+      }
+    ],
+    "full_fallback": "Unsupported/ambiguous projection returns full diagnostics and records unsupported_full. The five fixed valid cases must decode brief-v1.",
+    "product_source_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+    "product_source_sha256": "5e2e2329729985bd8c7d14c887397fd88fe614933c1f16d2789378411a8cc0cb",
+    "remaining_static_blockers": [],
+    "scope": "Static source/AST only. No decoder, projector, product or test function executed.",
+    "test_source_sha256": "bd3b8eadd842e0652354695464ab50119fe110d4cccb869aa9772bd6812b6767"
+  },
+  "table_columns": {
+    "IMAGE_COLUMNS": [
+      "view_name",
+      "image_ref",
+      "image_sha256",
+      "native_content_block_index"
+    ],
+    "OBJECT_COLUMNS": [
+      "object_index",
+      "host_id",
+      "instance_id",
+      "object_name"
+    ],
+    "OBSERVATION_COLUMNS": [
+      "image_index",
+      "readable_region_indices"
+    ],
+    "PIXEL_COLUMNS": [
+      "image_index",
+      "region_index",
+      "front_facing",
+      "visible_surface_pixels",
+      "contrasting_boundary_pixels",
+      "readable"
+    ],
+    "REGION_COLUMNS": [
+      "roi_id",
+      "object_index",
+      "status",
+      "reason"
+    ],
+    "UNKNOWN_COLUMNS": [
+      "object_index",
+      "status"
+    ]
+  }
+}
