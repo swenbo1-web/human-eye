@@ -1,0 +1,2165 @@
+{
+  "schema": "m6-coupled-probe-case-plan-v1",
+  "cycle_id": "M6-COUPLED-PROBE-001",
+  "base_commit": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
+  "contract_commit": "55c91345e23a762135128a50c89b22bf45ca4844",
+  "registration": "Written before any fixture evaluator or oracle execution. Fixture inputs and expected answers are fixed independently of observed product results.",
+  "coordinate_semantics": "All finite fixture coordinates are integers or dyadic rationals represented exactly by binary64. Oracle uses Fraction over those values.",
+  "surface_requirement": "Report every extra triangle intersection in before/after incident scope. require_no_new_intersections forbids newly appearing extra pairs. forbid_all_intersections additionally rejects retained after pairs. Legal shared vertex/edge contact is retained as geometry detail and excluded from extra pairs.",
+  "oracle_method": "Independent feasible-barycentric basic solutions with exact rational Gaussian elimination. Actual constraint rank is used, covering coplanar rank-four systems. Production plane-slicing/clipping/intersection/legal_simplex functions are not imported or called.",
+  "oracle_scope_note": "For intentionally incomplete scope, oracle pair facts describe the complete required scope; compare the tested coverage rejection and unknown status rather than equating partial observations to this complete reference.",
+  "case_count": 18,
+  "cases": [
+    {
+      "name": "both_conditions_pass",
+      "state": {
+        "source_id": "analytic/both_conditions_pass",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ],
+        [
+          0.5,
+          1.25,
+          2
+        ],
+        [
+          0.5,
+          0.25,
+          3
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          2
+        ],
+        "4": [
+          0.5,
+          1.25,
+          2
+        ],
+        "5": [
+          0.5,
+          0.25,
+          3
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Triangle 0 lies at z=0. Triangle 1 has z>=1 before and z>=2 after. Both endpoints are strictly separated from triangle 0. Candidate exactly equals its target and all other source vertices stay fixed.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "pass"
+      }
+    },
+    {
+      "name": "shape_pass_new_surface_crossing",
+      "state": {
+        "source_id": "analytic/shape_pass_new_surface_crossing",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          -1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          -1
+        ],
+        "4": [
+          0.5,
+          1.25,
+          1
+        ],
+        "5": [
+          0.5,
+          0.25,
+          1
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "After the move, triangle 1 intersects z=0 in the segment from (1/2,1/4,0) to (1/2,3/4,0). Its midpoint is strictly inside both triangles. Before the move triangle 1 has positive z. The shape target is exactly attained while a new surface pair intersects.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "contact_pass_shape_fail",
+      "state": {
+        "source_id": "analytic/contact_pass_shape_fail",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          2
+        ],
+        "4": [
+          0.5,
+          1.25,
+          2
+        ],
+        "5": [
+          0.5,
+          0.25,
+          3
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "The current/candidate triangle stays strictly above z=0. The target requires each of the three write vertices to rise by 1m, so maximum target error is exactly 1m while allowed tolerance is zero.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": false,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "cross_patch_incident_face",
+      "state": {
+        "source_id": "analytic/cross_patch_incident_face",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          1
+        ],
+        [
+          1.5,
+          0.5,
+          1
+        ],
+        [
+          0.5,
+          1.5,
+          1
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          -1
+        ],
+        [
+          1.5,
+          0.5,
+          1
+        ],
+        [
+          0.5,
+          1.5,
+          1
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.5,
+          -1
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Only vertex 3 is in the write set. The affected source face is triangle 1 although vertices 4 and 5 are outside the write set. Its intersection with z=0 is the segment [(1,1/2,0),(1/2,1,0)] inside triangle 0. There is no fully write-contained triangle.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "insufficient_declared_face_scope",
+      "state": {
+        "source_id": "analytic/insufficient_declared_face_scope",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          1
+        ],
+        [
+          1.5,
+          0.5,
+          1
+        ],
+        [
+          0.5,
+          1.5,
+          1
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          -1
+        ],
+        [
+          1.5,
+          0.5,
+          1
+        ],
+        [
+          0.5,
+          1.5,
+          1
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.5,
+          -1
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "The full geometric reference is the same as cross_patch_incident_face. A declared empty face scope omits required incident face 1. The evaluator must retain incomplete coverage and cannot return pass. Complete-reference pair facts are supplied only by this independent oracle.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": null,
+        "scope_complete": false,
+        "joint_status": "unknown"
+      },
+      "scope_face_ids": []
+    },
+    {
+      "name": "same_component_nonadjacent_intersection",
+      "state": {
+        "source_id": "analytic/same_component_nonadjacent_intersection",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          1
+        ],
+        [
+          1.5,
+          0.5,
+          1
+        ],
+        [
+          0.5,
+          1.5,
+          1
+        ],
+        [
+          -4,
+          4,
+          3
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.5,
+          0
+        ],
+        [
+          1.5,
+          0.5,
+          0
+        ],
+        [
+          0.5,
+          1.5,
+          0
+        ],
+        [
+          -4,
+          4,
+          3
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ],
+        [
+          2,
+          6,
+          3
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.5,
+          0
+        ],
+        "4": [
+          1.5,
+          0.5,
+          0
+        ],
+        "5": [
+          0.5,
+          1.5,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Faces 0 and 1 share no source vertex but belong to one component through face 2=(2,6,3). Initially face 1 is at z=1. The bridge intersects z=1 from vertex 3 toward (-4/3,8/3,1), outside face 1 except the shared vertex; at z=0 it touches only vertex 2. After moving face 1 to z=0 it lies inside face 0. The bridge additionally intersects face 0 along [(0,2,0),(1/2,1/2,0)]. Face 1 and the bridge retain only their shared vertex.",
+      "expected": {
+        "affected_face_ids": [
+          1,
+          2
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "legal_shared_edge",
+      "state": {
+        "source_id": "analytic/legal_shared_edge",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ]
+      ],
+      "write_ids": [
+        3
+      ],
+      "target_vertices": {
+        "3": [
+          1,
+          1,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Two halves of a unit square meet exactly on their shared source edge (1,2). Their interiors are disjoint and the intersection segment is a legal public simplex.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "pass"
+      }
+    },
+    {
+      "name": "legal_shared_point",
+      "state": {
+        "source_id": "analytic/legal_shared_point",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ],
+        [
+          0,
+          -1,
+          0
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ],
+        [
+          0,
+          -1,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          3,
+          4
+        ]
+      ],
+      "write_ids": [
+        3,
+        4
+      ],
+      "target_vertices": {
+        "3": [
+          -1,
+          0,
+          0
+        ],
+        "4": [
+          0,
+          -1,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "The two coplanar triangles occupy opposite closed coordinate quadrants and intersect only at source vertex 0.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "pass"
+      }
+    },
+    {
+      "name": "shared_edge_with_new_extra_overlap",
+      "state": {
+        "source_id": "analytic/shared_edge_with_new_extra_overlap",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0.25,
+          -0.5,
+          0
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0.25,
+          0.25,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          3
+        ]
+      ],
+      "write_ids": [
+        3
+      ],
+      "target_vertices": {
+        "3": [
+          0.25,
+          0.25,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Initially the second triangle is on y<=0 and meets the first only on shared edge (0,1). After vertex 3 enters the first triangle, their intersection includes the positive-area triangle [(0,0),(1,0),(1/4,1/4)], exceeding that edge.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "shared_point_with_new_extra_overlap",
+      "state": {
+        "source_id": "analytic/shared_point_with_new_extra_overlap",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ],
+        [
+          0,
+          -1,
+          0
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          3,
+          4
+        ]
+      ],
+      "write_ids": [
+        3,
+        4
+      ],
+      "target_vertices": {
+        "3": [
+          1,
+          0,
+          0
+        ],
+        "4": [
+          0,
+          1,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Initially the common set is only source vertex 0. Afterwards triangle (0,3,4) is a positive-area subtriangle of face 0. Source IDs 3 and 4 remain distinct from IDs 1 and 2, so the shared source simplex is still only vertex 0.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    },
+    {
+      "name": "duplicate_face_reported_and_forbidden",
+      "state": {
+        "source_id": "analytic/duplicate_face_reported_and_forbidden",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "write_ids": [
+        0
+      ],
+      "target_vertices": {
+        "0": [
+          0,
+          0,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "The identical source faces have equal positive-area support. Sharing all three source IDs identifies a duplicate face and does not make that area legal. No new pair is introduced, but the explicit forbid_all_intersections requirement fails.",
+      "expected": {
+        "affected_face_ids": [
+          0,
+          1
+        ],
+        "before_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "after_pairs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": false,
+        "scope_complete": true,
+        "joint_status": "fail"
+      },
+      "forbid_all_intersections": true
+    },
+    {
+      "name": "missing_shape_target_unknown",
+      "state": {
+        "source_id": "analytic/missing_shape_target_unknown",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ],
+        [
+          0.5,
+          1.25,
+          2
+        ],
+        [
+          0.5,
+          0.25,
+          3
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": null,
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Surface separation and preservation are decidable. No accepted shape target is supplied, so the combined repair status stays unknown.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": null,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "unknown"
+      }
+    },
+    {
+      "name": "degenerate_face_unknown",
+      "state": {
+        "source_id": "analytic/degenerate_face_unknown",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0.5,
+          -1,
+          0
+        ],
+        [
+          0.5,
+          1,
+          0
+        ],
+        [
+          0.5,
+          0,
+          1
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0.5,
+          -1,
+          0
+        ],
+        [
+          0.5,
+          1,
+          0
+        ],
+        [
+          0.5,
+          0,
+          1
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        0
+      ],
+      "target_vertices": {
+        "0": [
+          0,
+          0,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Vertices 0,1,2 are collinear. The triangle-0 surface predicate is undefined in this declared finite domain. Triangle 1 overlaps its AABB. This is incomplete geometric knowledge even though the shape target is attained.",
+      "expected": {
+        "affected_face_ids": [
+          0
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": true,
+        "contact_ok": null,
+        "scope_complete": true,
+        "joint_status": "unknown"
+      }
+    },
+    {
+      "name": "candidate_state_mismatch_invalid",
+      "state": {
+        "source_id": "analytic/candidate_state_mismatch_invalid",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          1
+        ],
+        "4": [
+          0.5,
+          1.25,
+          1
+        ],
+        "5": [
+          0.5,
+          0.25,
+          2
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Candidate state refers to a different source and frame. Coordinate values cannot establish common-state identity.",
+      "expected": {
+        "joint_status": "invalid",
+        "input_error": "state_mismatch"
+      },
+      "candidate_state": {
+        "source_id": "different_saved_source",
+        "frame": 2,
+        "coordinate_frame": "saved_world_binary64_m"
+      }
+    },
+    {
+      "name": "candidate_vertex_ids_mismatch_invalid",
+      "state": {
+        "source_id": "analytic/candidate_vertex_ids_mismatch_invalid",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          1
+        ],
+        "4": [
+          0.5,
+          1.25,
+          1
+        ],
+        "5": [
+          0.5,
+          0.25,
+          2
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Candidate IDs swap source vertices 0 and 1 while array order is unchanged; the correspondence is invalid.",
+      "expected": {
+        "joint_status": "invalid",
+        "input_error": "source_id_mismatch"
+      },
+      "candidate_vertex_ids": [
+        1,
+        0,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "nonfinite_candidate_invalid",
+      "state": {
+        "source_id": "analytic/nonfinite_candidate_invalid",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          "NaN",
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        0
+      ],
+      "target_vertices": {
+        "0": [
+          0,
+          0,
+          0
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "The JSON sentinel NaN represents an intentionally nonfinite candidate coordinate. Decode only at the evaluator boundary and reject the global candidate input.",
+      "expected": {
+        "joint_status": "invalid",
+        "input_error": "nonfinite_or_invalid_coordinate"
+      }
+    },
+    {
+      "name": "shape_sub_evaluation_error",
+      "state": {
+        "source_id": "analytic/shape_sub_evaluation_error",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25
+        ]
+      },
+      "protected_ids": [],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Geometry remains valid and separated. The shape target for vertex 3 has two coordinates, so only the shape sub-evaluation fails and the independently available contact facts stay deliverable.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": null,
+        "preservation_ok": true,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "unknown",
+        "shape_error": "invalid_shape_target"
+      }
+    },
+    {
+      "name": "protected_point_violation",
+      "state": {
+        "source_id": "analytic/protected_point_violation",
+        "frame": 1,
+        "coordinate_frame": "saved_world_binary64_m"
+      },
+      "vertices_before": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          1
+        ],
+        [
+          0.5,
+          1.25,
+          1
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ]
+      ],
+      "vertices_candidate": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0.5,
+          0.25,
+          2
+        ],
+        [
+          0.5,
+          1.25,
+          2
+        ],
+        [
+          0.5,
+          0.25,
+          3
+        ]
+      ],
+      "triangles": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          3,
+          4,
+          5
+        ]
+      ],
+      "write_ids": [
+        3,
+        4,
+        5
+      ],
+      "target_vertices": {
+        "3": [
+          0.5,
+          0.25,
+          2
+        ],
+        "4": [
+          0.5,
+          1.25,
+          2
+        ],
+        "5": [
+          0.5,
+          0.25,
+          3
+        ]
+      },
+      "protected_ids": [
+        3
+      ],
+      "shape_tolerance_m": 0,
+      "preservation_tolerance_m": 0,
+      "require_no_new_intersections": true,
+      "answer_source": "Predeclared rational-coordinate construction and independent barycentric feasible-set oracle",
+      "analytic_derivation": "Shape and contact meet their requirements. Protected source vertex 3 moves by exactly 1m while the preservation tolerance is zero.",
+      "expected": {
+        "affected_face_ids": [
+          1
+        ],
+        "before_pairs": [],
+        "after_pairs": [],
+        "new_pairs": [],
+        "shape_ok": true,
+        "preservation_ok": false,
+        "contact_ok": true,
+        "scope_complete": true,
+        "joint_status": "fail"
+      }
+    }
+  ],
+  "real_input_plan": {
+    "source_sha256": "614684bb54bcbea6f2494fe704a0f77dd2a607fdba115a391686abdb362b8a7d",
+    "source_private_directory": "verification/m6_real_data_001/private/capture_02",
+    "selected_patch": "verification/m6_real_data_001/private/ARM_REGION.json",
+    "coupled_context": "verification/m6_real_data_001/private/COUPLED_REGION_CONTEXT.json",
+    "selected_source_vertices": 410,
+    "required_incident_source_triangles": 898,
+    "before": "Original saved-world binary64 vertices, unchanged.",
+    "candidate": "Copy the same array and add binary64 0.001 to world Y for exactly the 410 selected source IDs. All other vertices unchanged.",
+    "perturbation_is_accepted_repair_target": false,
+    "accepted_target": null,
+    "joint_success_claim": null,
+    "surface_scope": "All unordered distinct source-face pairs with at least one face in the 898 incident faces. Preserve same-component and adjacent faces; apply exact legal-simplex filtering only after actual intersection.",
+    "candidate_coverage_oracle": "Independent blocked all-face AABB comparison with bounded memory, separate from exact predicate controls.",
+    "comparison": "First full preparation, then one shared static preparation comparison on the same before and fixed candidate. Preserve equal results and complete cold/update/evaluation work.",
+    "amplitude_or_direction_search": false
+  },
+  "out_of_scope": [
+    "general minimum distance",
+    "solid containment",
+    "signed penetration depth",
+    "motion path",
+    "real artistic acceptance",
+    "training",
+    "Blender",
+    "M5 writes",
+    "formal performance claim"
+  ]
+}

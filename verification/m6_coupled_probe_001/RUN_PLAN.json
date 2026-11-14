@@ -1,0 +1,43 @@
+{
+  "cycle_id": "M6-COUPLED-PROBE-001",
+  "case_plan_sha256": "9860c2f9a42feaa53574b2da6957077018fd39ac436913ca9b09055d42c102f4",
+  "base_commit": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
+  "product_surface_geometry_sha256": "a7f4375b2e4552a93ddfd2253184cda92b51c1212f55b3768d3f745e23cfee95",
+  "real_input": "verification/m6_real_data_001/private/capture_02/raw_selected.json",
+  "write_set": "verification/m6_real_data_001/private/ARM_REGION.json/source_vertex_ids",
+  "real_candidate": {
+    "operation": "binary64 Y addition",
+    "delta_world_m": [
+      0,
+      0.001,
+      0
+    ],
+    "written_vertices": 410,
+    "affected_faces": 898,
+    "accepted_art_target": false,
+    "alternative_candidates_permitted": 0
+  },
+  "comparison": {
+    "full": "Common before preparation and scan, then complete candidate preparation and scan",
+    "shared": "Reuse the same before preparation and scan, update410 vertices/898 faces, reuse U tree, rebuild A tree and rescan"
+  },
+  "budgets": {
+    "max_phase_wall_s": 180,
+    "max_units_per_phase": 20000000,
+    "max_exact_pair_attempts_per_state": 250000,
+    "overall_runner_wall_s": 600,
+    "aabb_block_rows": 256,
+    "aabb_block_columns": 2048
+  },
+  "oracle_scope": "Independent barycentric rational controls and independent NumPy endpoint-only AABB enumeration serve different correctness claims.",
+  "not_evaluated": [
+    "general distance",
+    "closed-volume containment",
+    "signed depth",
+    "motion path",
+    "artistic acceptance",
+    "Blender or M5 execution",
+    "models/training/formal performance"
+  ],
+  "freeze": "Committed before any fixture oracle or tested geometry execution."
+}
