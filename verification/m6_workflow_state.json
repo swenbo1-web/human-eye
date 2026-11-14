@@ -23,6 +23,49 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
+    "id": "M6-COUPLED-PROBE-001",
+    "status": "dispatched",
+    "dispatch_base": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
+    "contract_commit": "55c91345e23a762135128a50c89b22bf45ca4844",
+    "contract": "docs/M6_COUPLED_PROBE_001_TASK.md",
+    "delivery_commit": null,
+    "review_status": "awaiting_completion_callback"
+  },
+  "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
+  "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
+  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:4",
+  "last_observed_status": "idle before dispatch; M6-COUPLED-PROBE-001 accepted by messaging tool; no post-dispatch polling",
+  "pending_followup": true,
+  "reviewed_deliveries": [
+    {
+      "cycle_id": "M6-SELECT-001",
+      "commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
+      "decision": "accepted_bounded_audit_no_model_selected",
+      "review_doc": "docs/M6_SELECT_001_REVIEW.md",
+      "evidence": "verification/m6_select_001_review/INDEPENDENT_RESULTS.json",
+      "review_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
+    },
+    {
+      "cycle_id": "M6-REAL-DATA-001",
+      "commit": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
+      "decision": "accepted_real_input_and_coupling_context_only",
+      "review_doc": "docs/M6_REAL_DATA_001_REVIEW.md",
+      "evidence": "verification/m6_real_data_001_review/INDEPENDENT_RESULTS.json",
+      "review_commit": "55c91345e23a762135128a50c89b22bf45ca4844"
+    }
+  ],
+  "model_selection": "undecided; output task and architecture must be analyzed separately",
+  "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
+  "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
+  "operation_boundaries": [
+    "No M4 or competitor edits",
+    "No paid API/key/503 resumption",
+    "One offline coupled shape/surface-intersection evaluator, known controls and one predeclared real-array perturbation",
+    "No Blender, model consumers, training, original asset edits, production source changes or M5 execution",
+    "No scheduled fallback; completion callback drives review"
+  ],
+  "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
+  "previous_cycle": {
     "id": "M6-REAL-DATA-001",
     "status": "independently_reviewed",
     "dispatch_base": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
@@ -42,59 +85,18 @@
         }
       }
     ],
-    "review_doc": "docs/M6_REAL_DATA_001_REVIEW.md"
-  },
-  "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
-  "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:4",
-  "last_observed_status": "idle after final coupled supplement; independent offline review completed",
-  "pending_followup": false,
-  "reviewed_deliveries": [
-    {
-      "cycle_id": "M6-SELECT-001",
-      "commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
-      "decision": "accepted_bounded_audit_no_model_selected",
-      "review_doc": "docs/M6_SELECT_001_REVIEW.md",
-      "evidence": "verification/m6_select_001_review/INDEPENDENT_RESULTS.json",
-      "review_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
-    },
-    {
-      "cycle_id": "M6-REAL-DATA-001",
-      "commit": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
-      "decision": "accepted_real_input_and_coupling_context_only",
-      "review_doc": "docs/M6_REAL_DATA_001_REVIEW.md",
-      "evidence": "verification/m6_real_data_001_review/INDEPENDENT_RESULTS.json"
-    }
-  ],
-  "model_selection": "undecided; output task and architecture must be analyzed separately",
-  "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
-  "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
-  "operation_boundaries": [
-    "No M4 or competitor edits",
-    "No paid API/key/503 resumption",
-    "Next batch: one real asset isolated read-only data acquisition; no full training or original asset edits",
-    "Blender read acquisition checks existing QA ownership; no formal performance or model consumers in this batch"
-  ],
-  "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
-  "previous_cycle": {
-    "id": "M6-SELECT-001",
-    "status": "independently_reviewed",
-    "dispatch_base": "c1ba88d233df052688b62e293a7ad61f5ba7dcef",
-    "contract": "docs/M6_SELECT_001_TASK.md",
-    "delivery_commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
-    "review_status": "passed_finite_synthetic_data_and_task_audit",
-    "review_doc": "docs/M6_SELECT_001_REVIEW.md",
-    "review_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
+    "review_doc": "docs/M6_REAL_DATA_001_REVIEW.md",
+    "review_commit": "55c91345e23a762135128a50c89b22bf45ca4844"
   },
   "last_dispatch": {
-    "cycle_id": "M6-REAL-DATA-001",
+    "cycle_id": "M6-COUPLED-PROBE-001",
     "tool": "send_message_to_thread",
     "accepted": true,
     "receipt": {
       "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
     },
-    "implementation_base": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
-    "contract_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
+    "implementation_base": "ddd541cf087dc2bbec19e551b8fe3820578077ef",
+    "contract_commit": "55c91345e23a762135128a50c89b22bf45ca4844"
   },
   "coupling_design": {
     "status": "specified_not_implemented",
@@ -103,11 +105,5 @@
     "document": "docs/M6_COUPLED_EXPERT_CONTRACT.md",
     "runtime_source_changed": false,
     "commit": "50c58fbae2036d4655521649522bc7a420a0c0f3"
-  },
-  "pending_next": {
-    "id": "M6-COUPLED-PROBE-001",
-    "status": "prepared_not_sent",
-    "contract": "docs/M6_COUPLED_PROBE_001_TASK.md",
-    "implementation_base": "ddd541cf087dc2bbec19e551b8fe3820578077ef"
   }
 }
