@@ -23,19 +23,19 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-SHAPE-DATA-001",
-    "status": "dispatched",
-    "dispatch_base": "9b016c8720b709a6382438ddd505c7b154d4fac2",
-    "contract_commit": "d88cf18d1a6cf564c907d980ccf0ef159a954e9f",
-    "contract": "docs/M6_SHAPE_DATA_001_TASK.md",
+    "id": "M6-SHAPE-TRAIN-001",
+    "status": "ready_to_dispatch",
+    "dispatch_base": "efce450c1da372642010871994588a69799e268c",
+    "contract_commit": null,
+    "contract": "docs/M6_SHAPE_TRAIN_001_TASK.md",
     "delivery_commit": null,
-    "review_status": "awaiting_completion_callback"
+    "review_status": "not_started"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:9",
-  "last_observed_status": "DATA001 dispatch accepted; no polling after dispatch",
-  "pending_followup": true,
+  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:10",
+  "last_observed_status": "idle; DATA001 fixed delivery deeply reviewed, first-training contract ready",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -78,30 +78,38 @@
       "evidence": "verification/m6_shape_pairs_001_review/INDEPENDENT_RESULTS.json",
       "review_plan_commit": "4495f7f",
       "review_commit": "d88cf18d1a6cf564c907d980ccf0ef159a954e9f"
+    },
+    {
+      "cycle_id": "M6-SHAPE-DATA-001",
+      "commit": "efce450c1da372642010871994588a69799e268c",
+      "decision": "accepted_data_and_single_model_design",
+      "review_doc": "docs/M6_SHAPE_DATA_001_REVIEW.md",
+      "evidence": "verification/m6_shape_data_001_review/INDEPENDENT_RESULTS.json",
+      "review_commit": null
     }
   ],
-  "model_selection": "One first-choice local mesh message-passing residual model; not trained. Prepare source-grouped normal/dent data and a concrete training contract. Do not train multiple architectures.",
+  "model_selection": "One 6290-parameter width24 K12 shared-cell SO3 local mesh residual candidate, untrained. TRAIN001 first CPU training versus gated robust quadratic MLS and no-op; optimization follows independent review; reserved test remains sealed.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
-    "One family: local shape dents with preservation of normal features",
-    "Read only four existing character output sources; no original or shared GUI writes",
-    "At most 48 patches and 336 development observations; source grouping before generation/split",
-    "No candidate training in DATA001; one future candidate and one targeted optimization",
-    "Do not change runtime/M4/M5/competitor branch or paid APIs",
-    "No automated fallback; completion callback only"
+    "One local-dent restoration family, preserve normal geometry",
+    "Four original sources remain one unknown-upstream training group; validation Armadillo/reserved test Bunny official preflight hashes fixed",
+    "One isolated CPU training environment and one first training; no second architecture or optimization training this batch",
+    "Validation centered/off-center strata; do not score reserved test until optimization selection frozen",
+    "Offline arrays and private views only; no original/shared GUI/M5/runtime/competitor/paid API writes",
+    "Completion callback only; no fallback automation"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
-    "id": "M6-SHAPE-PAIRS-001",
+    "id": "M6-SHAPE-DATA-001",
     "status": "independently_reviewed_closed",
-    "dispatch_base": "8a99c344caf4560ee87fbb9f7540bf67ff3f2469",
-    "contract_commit": "cf81e1e74a358f52c3ef3223f0807a22ae1661da",
-    "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md",
-    "delivery_commit": "9b016c8720b709a6382438ddd505c7b154d4fac2",
-    "review_status": "data_accepted_broad_reconstruction_rejected",
-    "review_doc": "docs/M6_SHAPE_PAIRS_001_REVIEW.md",
-    "review_commit": "d88cf18d1a6cf564c907d980ccf0ef159a954e9f"
+    "dispatch_base": "9b016c8720b709a6382438ddd505c7b154d4fac2",
+    "contract_commit": "d88cf18d1a6cf564c907d980ccf0ef159a954e9f",
+    "contract": "docs/M6_SHAPE_DATA_001_TASK.md",
+    "delivery_commit": "efce450c1da372642010871994588a69799e268c",
+    "review_status": "accepted_data_and_single_model_design",
+    "review_doc": "docs/M6_SHAPE_DATA_001_REVIEW.md",
+    "review_commit": null
   },
   "last_dispatch": {
     "cycle_id": "M6-SHAPE-DATA-001",
@@ -148,9 +156,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
+    "cycle": "M6-SHAPE-DATA-001",
     "status": "completed_and_independently_reviewed",
-    "cycle": "M6-SHAPE-PAIRS-001",
-    "fixed_commit": "9b016c8720b709a6382438ddd505c7b154d4fac2"
+    "fixed_commit": "efce450c1da372642010871994588a69799e268c"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -197,5 +205,20 @@
       89.114
     ],
     "oracle_is_deployable": false
+  },
+  "shape_data_review": {
+    "commit": "efce450c1da372642010871994588a69799e268c",
+    "independent_assertions": 1930,
+    "observations": 231,
+    "patches": 33,
+    "source_files": 4,
+    "upstream_unknown_groups": 1,
+    "overlap_pairs": 19,
+    "max_Jaccard": 0.9844961240310077,
+    "model_parameters": 6290,
+    "untrained_equation_checks": 4,
+    "public_source_preflight": "verification/m6_shape_data_001_review/PUBLIC_SOURCE_PREFLIGHT.json",
+    "formal_performance": false,
+    "training_calls": 0
   }
 }
