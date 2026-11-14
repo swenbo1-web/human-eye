@@ -1,0 +1,327 @@
+{
+  "schema": "m6-planning-baseline-v1",
+  "review_date": "2026-11-14",
+  "base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
+  "accepted_m6_commit": "d01d49bc0ec82583b24a8faf22e622e6f6ea8c5d",
+  "owner_thread": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
+  "branch": "codex/m6-candidate-value",
+  "product_sources": [
+    {
+      "path": "human_eye_plugin/arm_twist_expert.py",
+      "working_bytes": 13549,
+      "working_sha256": "25a9b0d4040104107f0d507126c111d34f0418547798f7ca81a25d3828d20d45",
+      "base_git_sha256": "25a9b0d4040104107f0d507126c111d34f0418547798f7ca81a25d3828d20d45",
+      "working_matches_base_except_line_endings": true,
+      "base_matches_accepted_m6_bytes": true
+    },
+    {
+      "path": "human_eye_plugin/arm_twist_weights.py",
+      "working_bytes": 4578,
+      "working_sha256": "f9f1aced3003728f797d37a5c9a48786bc65425d4ddc0c5f83a81751b6952f1a",
+      "base_git_sha256": "f9f1aced3003728f797d37a5c9a48786bc65425d4ddc0c5f83a81751b6952f1a",
+      "working_matches_base_except_line_endings": true,
+      "base_matches_accepted_m6_bytes": true
+    },
+    {
+      "path": "human_eye_plugin/arm_twist_source.py",
+      "working_bytes": 15120,
+      "working_sha256": "9579805b0894b1505a46cf977a1715ab80155d53a97f469f448276059d8535ee",
+      "base_git_sha256": "9579805b0894b1505a46cf977a1715ab80155d53a97f469f448276059d8535ee",
+      "working_matches_base_except_line_endings": true,
+      "base_matches_accepted_m6_bytes": true
+    },
+    {
+      "path": "human_eye_plugin/arm_twist_correction.py",
+      "working_bytes": 16042,
+      "working_sha256": "4d127c56b44747beed38462422abc4b6e9233ec7a32162b95e007d0893186eda",
+      "base_git_sha256": "4d127c56b44747beed38462422abc4b6e9233ec7a32162b95e007d0893186eda",
+      "working_matches_base_except_line_endings": true,
+      "base_matches_accepted_m6_bytes": true
+    }
+  ],
+  "actual_inspection_this_run": {
+    "method": "stdlib AST/JSON/gzip/hash inspection; no product imports",
+    "parameter_count": 145,
+    "model_id": "arm-twist-tiny-mlp-seed1729-v1",
+    "feature_names": [
+      "covariance_area_ratio",
+      "rms_radius_ratio",
+      "minor_radius_ratio",
+      "major_radius_ratio",
+      "perimeter_ratio",
+      "centerline_stretch",
+      "weight_blend",
+      "weight_spread",
+      "twist_fraction",
+      "swing_fraction"
+    ],
+    "dataset_raw_bytes": 7644870,
+    "dataset_raw_sha256": "6ccec485cc9fedb832324e3802e1ca4bc8529e55b2171afe4278803c62be1f4d",
+    "splits": {
+      "train": {
+        "assets": 8,
+        "cases": 56,
+        "sections": 1400,
+        "positive_cases_at_0_15": 16,
+        "positive_sections_at_0_15": 60,
+        "pose_families": {
+          "anomalous_twist": 16,
+          "legal_twist": 8,
+          "normal_bend": 16,
+          "same_angle_preserved": 16
+        }
+      },
+      "validation": {
+        "assets": 1,
+        "cases": 7,
+        "sections": 175,
+        "positive_cases_at_0_15": 2,
+        "positive_sections_at_0_15": 6,
+        "pose_families": {
+          "anomalous_twist": 2,
+          "legal_twist": 1,
+          "normal_bend": 2,
+          "same_angle_preserved": 2
+        }
+      },
+      "test": {
+        "assets": 2,
+        "cases": 14,
+        "sections": 350,
+        "positive_cases_at_0_15": 4,
+        "positive_sections_at_0_15": 14,
+        "pose_families": {
+          "anomalous_twist": 4,
+          "legal_twist": 2,
+          "normal_bend": 4,
+          "same_angle_preserved": 4
+        }
+      }
+    },
+    "asset_id_overlap_between_splits": {
+      "train:validation": [],
+      "train:test": [],
+      "validation:test": []
+    },
+    "scope_of_split_check": "asset IDs only; actual rest/weight signatures and feature duplicates were audited in the historical root review, not recomputed here"
+  },
+  "historical_author_results_not_rerun": {
+    "source": "C:\\Users\\Administrator\\.codex\\worktrees\\1212\\hefe\\verification\\m6_arm_expert_001\\run_01\\result.json",
+    "test_metrics": {
+      "model": {
+        "sections": 350,
+        "mae": 0.0010961580146965101,
+        "max_error": 0.017497262791828325,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "positive_case_localization_iou": 1.0,
+        "false_positive_sections": 0,
+        "false_negative_sections": 0,
+        "false_positive_normal_cases": 0
+      },
+      "geometry_baseline": {
+        "sections": 350,
+        "mae": 0.002525662852731608,
+        "max_error": 0.09360916995941948,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "positive_case_localization_iou": 1.0,
+        "false_positive_sections": 0,
+        "false_negative_sections": 0,
+        "false_positive_normal_cases": 0
+      },
+      "by_pose": {
+        "anomalous_twist": {
+          "model": {
+            "sections": 100,
+            "mae": 0.0008639881324057566,
+            "max_error": 0.00923451139807216,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "positive_case_localization_iou": 1.0,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          },
+          "geometry_baseline": {
+            "sections": 100,
+            "mae": 1.0971949802700276e-16,
+            "max_error": 7.771561172376096e-16,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "positive_case_localization_iou": 1.0,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          }
+        },
+        "legal_twist": {
+          "model": {
+            "sections": 50,
+            "mae": 0.003977639806525683,
+            "max_error": 0.017497262791828325,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          },
+          "geometry_baseline": {
+            "sections": 50,
+            "mae": 0.005758662498850358,
+            "max_error": 0.06693084022387374,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          }
+        },
+        "normal_bend": {
+          "model": {
+            "sections": 100,
+            "mae": 0.00043132438629862283,
+            "max_error": 0.009093162574934144,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          },
+          "geometry_baseline": {
+            "sections": 100,
+            "mae": 0.00596048873513524,
+            "max_error": 0.09360916995941948,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          }
+        },
+        "same_angle_preserved": {
+          "model": {
+            "sections": 100,
+            "mae": 0.0005524206294705645,
+            "max_error": 0.004180551452008213,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          },
+          "geometry_baseline": {
+            "sections": 100,
+            "mae": 9.992007221626409e-17,
+            "max_error": 8.881784197001252e-16,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "positive_case_localization_iou": null,
+            "false_positive_sections": 0,
+            "false_negative_sections": 0,
+            "false_positive_normal_cases": 0
+          }
+        }
+      }
+    },
+    "original_component_timing": {
+      "feature": {
+        "median_ms": 2.556,
+        "max_ms": 2.7865,
+        "samples": 77
+      },
+      "network_only": {
+        "median_ms": 0.0118,
+        "max_ms": 0.0278,
+        "samples": 77
+      },
+      "geometry_baseline": {
+        "median_ms": 1.1425,
+        "max_ms": 1.3227,
+        "samples": 77
+      }
+    },
+    "original_final_tests": {
+      "tests": 81,
+      "failures": 0,
+      "errors": 0
+    },
+    "timing_scope": "original pre-optimization implementation; not current-version timing or a matched prepared-geometry comparison"
+  },
+  "evidence_files": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\1212\\hefe\\verification\\m6_arm_expert_001\\run_01\\dataset.json.gz",
+      "bytes": 2624307,
+      "sha256": "3ece1920c484990cf5ff2f033cbd442ac14fd5968623600dac23650f82647cb3"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\1212\\hefe\\verification\\m6_arm_expert_001\\run_01\\result.json",
+      "bytes": 144612,
+      "sha256": "cfd36e5e5f9850bb19463e8c35964b2292f7f71b65d3a6673100411702014719"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\1212\\hefe\\verification\\m6_arm_expert_001\\final\\result.json",
+      "bytes": 841,
+      "sha256": "37cc45b2da676e1e9ab701d8aa86249fa3e02fb8de5b009716e726277ecf3d5c"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\M6_ARM_EXPERT_001_REVIEW.md",
+      "bytes": 2295,
+      "sha256": "c17b220a876815702e6981258fa556b28ac89ab1559d65d7b008f347bc879062"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\M6_ARM_EXPERT_OPT_001_REVIEW.md",
+      "bytes": 2248,
+      "sha256": "e59c6f09f0faf827344e7e709daea17287d37648eb438c3286f29b4a9e0ef3ab"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\M6_ARM_SOURCE_OPT_001_REVIEW.md",
+      "bytes": 2708,
+      "sha256": "aa9958a46f24ad93224febf05e29a9b750799e6c9feaac5b26cd1b40becdfc84"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\ARCH_EXPERT_ENTRY_OPT_001_REVIEW.md",
+      "bytes": 2568,
+      "sha256": "cceed748edc992d2346d3e4fc884e8ad8df27003d98a8af328353598e49dc7ab"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\ARM_CORRECTION_PREVIEW_OPT_001_REVIEW.md",
+      "bytes": 4604,
+      "sha256": "86fadb785027bacf0064dc3c9cfec7c6c2490764350cd6e739f32ea6ada069d7"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\ARM_CORRECTION_EXECUTION_OPT_001_REVIEW.md",
+      "bytes": 5485,
+      "sha256": "0bd754d46c79dbffc8aa4d9da4a5e0e44ac3d8e5ec574083b9676551e82a116f"
+    },
+    {
+      "path": "D:\\hefe\\verification\\fixes\\20261109_architecture_completion\\ARCHITECTURE_STAGE_CLOSEOUT.md",
+      "bytes": 3126,
+      "sha256": "e7d163025c510dbacb390335d05144b90cd3e50f0fc32c426273b448721f7835"
+    }
+  ],
+  "new_runs_this_phase": {
+    "training": 0,
+    "inference": 0,
+    "blender": 0,
+    "llm_consumer": 0,
+    "paid_api": 0,
+    "performance_benchmark": 0
+  },
+  "decision": "Plan task-conditioned candidate scoring; first measure candidate coverage and opportunity against an equally prepared direct geometry baseline. Current learned net benefit remains unproven."
+}
