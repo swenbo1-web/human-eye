@@ -469,16 +469,16 @@ class CoverageState:
 
     def observe(self, receipt):
         name = receipt['view_name']
-        if self.patch_mapping_required and (
-                self.patch_mapping_identity is None
-                or receipt.get('patch_mapping_identity') != self.patch_mapping_identity):
-            raise ValueError('current_patch_mapping_receipt_required')
         if (receipt.get('scene_identity') != self.index.scene_identity
                 or receipt.get('candidate_identity') != self.index.candidate_identity
                 or receipt.get('actual_image_delivered') is not True
                 or not receipt.get('image_path') or not receipt.get('image_sha256')
                 or receipt.get('pixel_evidence_scope') != 'actual_common_depth_owner'):
             raise ValueError('actual_bound_image_receipt_required')
+        if self.patch_mapping_required and (
+                self.patch_mapping_identity is None
+                or receipt.get('patch_mapping_identity') != self.patch_mapping_identity):
+            raise ValueError('current_patch_mapping_receipt_required')
         if name not in self.index.view_masks:
             raise ValueError('unknown_delivered_view')
         if not self.observed_views and name != 'SCENE':

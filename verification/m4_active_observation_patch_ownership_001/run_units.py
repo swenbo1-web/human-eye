@@ -57,7 +57,7 @@ def main():
         for target in ('human_eye_plugin.attention_raster.rasterize_attention',
                        'human_eye_plugin.attention_rendering.rasterize_attention',
                        'human_eye_plugin.active_observation_images.rasterize_attention'):
-            stack.enter_context(patch(target, side_effect=no_raster))
+            stack.enter_context(patch(target, side_effect=no_raster, autospec=True))
         suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
         stream = io.StringIO()
         result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
