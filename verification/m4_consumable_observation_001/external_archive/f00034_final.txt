@@ -1,0 +1,11 @@
+**Inspection complete for the finite camera pool.** The required `active_observation(include_images=true)` succeeded with new current-session images of the labelled capture replay.
+
+- **Coverage:** 138 supported rectangular surfaces; **115 completely observed and readable**, 23 remaining. Of those, 22 have no front-facing camera; region 41, centered at `[0.703125,0.3515625,0]`, has positive-area occlusion in every front-facing candidate. No inspectable candidates remain unfinished. Unsupported source triangle **48** remains separate and unknown.
+- **Evidence:** The tool facts retain the complete coverage sets, locations, image references and pixel counts; the source-face mapping was additionally verified. Native SCENE counts match the observation facts after merging triangle IDs and counting unique contrasting boundary endpoints.
+
+**Position checks**
+1. **SCENE `[109,247]`:** source triangle 35, surface 72; center `[0.15625,-0.15625,0.11865234375]` m, front **+Z**. Extent: **0.0703125 × 0.0703125 m**, with X `[0.12109375,0.19140625]` and Y `[-0.19140625,-0.12109375]`. Current image: `image-04`. Complete/readable: **354 surface pixels, 73 boundary pixels**.
+2. **Center `[0,0,0]`, front +Z:** **zero visible SCENE pixels despite being front-facing**—occlusion, not back-facing geometry. Completely read in **BACK**, pixel `[419,224]`, with **468 surface / 84 boundary pixels**; also read in LEFT. BACK reference: `active-host-image:954c2d6e2b36ec57372a85914384348fde2d7e1557be704bc97d12d91a425561`.
+3. **Center `[0.15625,-0.15625,0.11572265625]`, front −Z:** **no front-facing readable evidence is possible in this pool**. All six cameras look from positive-Z directions relative to the scene.
+
+**Scope:** only the registered orthographic views **SCENE, TOP, LEFT, RIGHT, FRONT, BACK**. The remaining surfaces are unobserved, not proven uninspectable from cameras outside this finite pool.
