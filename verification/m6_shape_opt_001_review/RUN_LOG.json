@@ -1,0 +1,31 @@
+{
+  "reviewer_replay_attempts": [
+    {
+      "attempt": 1,
+      "status": "failed_reviewer_numpy_equations",
+      "error": "Yanyite_patch_07/sample_01: u difference0.005676979184276693, score difference0.010579069016404818",
+      "cause": "Reviewer used h=h0 then h+=update, inadvertently mutating the NumPy initial-state alias. Author PyTorch uses out-of-place hidden+update.",
+      "correction": "Use out-of-place h=h+update, retaining the original error thresholds.",
+      "author_code_changed": false,
+      "model_training_or_threshold_changes": 0
+    }
+  ],
+  "final_replay_result": "REPLAY_RESULTS.json",
+  "cost_audit_attempts": [
+    {
+      "attempt": 1,
+      "status": "failed_reviewer_full_dictionary_equality",
+      "cause": "ONLINE_RESULTS intentionally projects WORKER fields, omitting task/cold_definition/warm_definition/includes_coupling. All common fields were equal.",
+      "correction": "Verify every included field and the exact four omitted metadata names; require raw includes_coupling=false.",
+      "author_code_changed": false
+    },
+    {
+      "attempt": 2,
+      "status": "failed_reviewer_MLS_projection_assumption",
+      "cause": "MLS round records replace full MLS_diagnostics with MLS_counts in the public view; first correction handled only top-level projection.",
+      "correction": "Inspected public_worker and explicitly reconcile this nested projection before asserting all remaining measurements identical.",
+      "author_code_changed": false
+    }
+  ],
+  "final_cost_result": "COST_AUDIT.json"
+}

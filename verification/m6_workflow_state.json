@@ -24,18 +24,19 @@
   },
   "current_cycle": {
     "id": "M6-SHAPE-OPT-001",
-    "status": "dispatched",
+    "status": "independently_reviewed_closed",
     "dispatch_base": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
     "contract": "docs/M6_SHAPE_OPT_001_TASK.md",
-    "delivery_commit": null,
-    "review_status": "awaiting_completion_callback",
-    "contract_commit": "a2d0c9b8dd67ba4da63a0d57a7cd1f4d6f86c818"
+    "delivery_commit": "36694d0e3730a60b0611376b017f978f809a79c0",
+    "review_status": "quality_failed_candidate_closed",
+    "contract_commit": "a2d0c9b8dd67ba4da63a0d57a7cd1f4d6f86c818",
+    "review_doc": "docs/M6_SHAPE_OPT_001_REVIEW.md"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:11",
-  "last_observed_status": "OPT001 accepted; no polling after dispatch",
-  "pending_followup": true,
+  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:12",
+  "last_observed_status": "Implementation idle after OPT001; independently reviewed closure, no next training",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -94,18 +95,24 @@
       "review_doc": "docs/M6_SHAPE_TRAIN_001_REVIEW.md",
       "evidence": "verification/m6_shape_train_001_review/INDEPENDENT_RESULTS.json",
       "review_commit": "a2d0c9b8dd67ba4da63a0d57a7cd1f4d6f86c818"
+    },
+    {
+      "cycle_id": "M6-SHAPE-OPT-001",
+      "commit": "36694d0e3730a60b0611376b017f978f809a79c0",
+      "decision": "engineering_records_accepted_quality_failed_close_candidate",
+      "review_doc": "docs/M6_SHAPE_OPT_001_REVIEW.md",
+      "evidence": "verification/m6_shape_opt_001_review/INDEPENDENT_RESULTS.json"
     }
   ],
-  "model_selection": "One shared width24 K12 local residual model. First 6290-parameter trial failed quality. One 49-parameter localization head plus conditional residual supervision, total6339, same training and seed, then keep/drop. No reserved-test scoring yet.",
+  "model_selection": "Local dent residual candidate closed after first6290-parameter trial and one6339-parameter localization/conditional optimization; quality failed. Six problem families remain a roadmap, not six trained models.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
-    "One local-dent family; one output-factorization optimization",
-    "Original231 training, Armadillo117 validation, Bunny156 reserved unscored; source grouping unchanged",
-    "6339 parameters, same initialization/seed1729/sampling/1200steps; one final training-control calibration",
-    "No third training, validation threshold tuning or new learning architecture",
-    "Offline arrays/private views; no original/shared GUI/M5/runtime/competitor/paid API writes",
-    "Completion callback only; no fallback automation"
+    "Current local-dent candidate closed after one optimization",
+    "No new training, thresholds, source swaps or reserved Bunny scoring dispatched",
+    "A separate input/label identifiability study is suggested, not launched",
+    "No original asset/shared GUI/M5/runtime/competitor/paid API writes",
+    "No fallback automation or polling"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
@@ -164,9 +171,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-SHAPE-TRAIN-001",
+    "cycle": "M6-SHAPE-OPT-001",
     "status": "completed_and_independently_reviewed",
-    "fixed_commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3"
+    "fixed_commit": "36694d0e3730a60b0611376b017f978f809a79c0"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -242,5 +249,24 @@
     "Bunny_scores": 0,
     "complete_repair": "not_accepted",
     "cold_paired_extra_p95_seconds_excluding_coupling": 2.1931237899989355
+  },
+  "shape_opt_review": {
+    "commit": "36694d0e3730a60b0611376b017f978f809a79c0",
+    "new_records_checked": 2302,
+    "old_records_checked": 4405,
+    "metric_assertions": 42065,
+    "candidate_observations": 348,
+    "calibration_forward_replays": 33,
+    "calibration_points": 10405,
+    "additional_representative_replays": 6,
+    "original_initial_tensors_equal": 20,
+    "full_source_online_arrays_checked": 24,
+    "validation_noops": 117,
+    "validation_missed_damaged_points": 4725,
+    "quality": "failed",
+    "candidate": "closed",
+    "new_training_updates": 0,
+    "Bunny_scores": 0,
+    "cold_paired_extra_p95_seconds_excluding_coupling": 2.215069789980771
   }
 }
