@@ -1,0 +1,32 @@
+# PATCH-OWNERSHIP-001 independent geometry review
+
+Candidate `efe7f77aabdab4f8de47fdb4f8714cb25f301503`, baseline `cdd2b11693a2586cfea07528c6bca27b93d02499`.
+
+The bounded geometry and mapping portion passes. No blocking product defect was found. This review imports neither product code nor the author's oracle, does not run their tests, and makes zero new product, Blender, raster, model or benchmark calls.
+
+## Independently executed evidence checks
+
+`review_geometry.py` records **16365/16365 assertions passed**. These are topology-edge, field and geometric-case assertions, not independent assets. The input still comprises one fixed scene in split/join forms and its five captured uses.
+
+- Derive rectangle faces independently from the exact original axis-aligned source geometry. Check edge incidence, opposite internal winding, connectedness, rectangular boundary, corner existence and summed oriented area. Recover 138 canonical rectangles with exactly 3336 supported source triangles; the only unknown triangle is split object 4 / local face 0, joined global face 48.
+- Check 29 split objects versus one joined mesh, 1913 vertices and 3337 triangles, with identical flattened vertex and oriented triangle sequence. Every actual mesh in all five captures exactly matches its corresponding frozen input, including exact binary floating-point coordinates represented as Fractions.
+- Compare all independent canonical IDs, corners, normals and source face membership to both actual INDEX receipts and the preregistered expected file. Every per-object supported/unsupported partition is disjoint and exhaustive, including the joined object's partial remainder.
+- Independently classify all six camera views for all 138 regions in both representations: **1656 classification rows** plus all 12 view masks agree. This oracle uses independently proven complete rectangle polygons and the one unsupported triangle, projects each blocker along the actual view direction onto the target's axis plane, and clips that projection to the target rectangle. It does not reuse the product's canonical triangle sorting, screen basis, triangle-shadow function, projected bounds, or clipping code. It compares classification/coverage, not the product's chosen first-witness ordering.
+- Independently prove the explicit same-object occlusion witness. The visible Obj_007 upper patch is at global maximum z. The rear panel lies at z=0; every SCENE ray shifted by `(79/512, -79/512)` at positive z=`237/2048` lies strictly inside the foreground box's XY bounds. The exact oracle reports front complete and rear positive-area occlusion. Split/join object association changes do not change this result.
+
+`frustum_check.py`/`FRUSTUM.json` supplies the oracle's frustum premise: all 1913 vertices remain inside all six stored orthographic matrices and have positive camera depth under exact rational evaluation of the recorded binary64 matrix coefficients. Since clipping halfspaces are convex, the full polygon surfaces are inside as well. The same record independently checks that all 28 original objects from the prior Host fixture are unchanged, their pinned source SHA matches, and exactly one unsupported component was added. No geometry was moved to obtain the result.
+
+The main independent script passed on its first run. An additional frustum/lineage script was run to justify the complete-scene premise; adding the lineage assertions did not change the independent geometry results. A navigation read looked for a nonexistent inputs/INPUTS.json before using the actual inputs/FIXTURE.json/prepare_fixtures.py source path; no product code was invoked.
+
+## Source review and limitations
+
+- `active_observation.py:89` uses a scale-normalized exact **unoriented** plane key and shared-edge adjacency. Opposite winding remains within the same planar component, so it cannot be split into convenient valid fragments. Nonmanifold/winding incidents mark each affected component; unrelated components survive.
+- `active_observation.py:158` rejects zero-area, bad shared-edge winding and nonmanifold components before rectangle checks. The retained boundary proof rejects holes, branched/open boundaries, nonrectangular corners and referenced vertices outside the rectangle. `partition_regions` at line 231 records complete supported and unsupported source-face membership rather than equating one supported face with a fully supported object.
+- At lines 410–411 the blocker exemption now requires both the current object and actual ROI triangle membership. Same-object other patches and the unsupported triangle still enter the existing shadow test. The independent all-view classifications substantiate this on the fixed asset.
+- `active_observation_images.py:89` hashes full ordered vertices/faces, face→patch mapping and sorted ROI IDs. `_synchronize` at line 211 includes this mapping identity in frame reuse and binds it into the coverage state. `ActiveObservationSession.rebind` at line 596 clears accepted state when ordered geometry changes even where the unordered geometry identity is stable. Receipt mapping validation at core line 478 occurs before deduplication or coverage commit; `render_next` synchronizes before selecting a view. The author regression explicitly covers face reorder and old receipt rejection; this review inspected that regression but did not execute it.
+
+Pixel winner correctness, native-image transport, source-package generation and actual time/byte accounting are owned by the parallel reviews. This geometry review does not claim that curves, arbitrary nonrectangular surfaces, uncertain coplanarity or model task consumption are supported.
+
+## Optimization implication for the parent
+
+No further correctness repair is required by this review. The current index still tests source triangles even though accepted components have already been proved to form complete convex rectangles. The recorded index is the dominant cold-request stage. A future bounded candidate could use these proven patch polygons as occluders, retain every unsupported triangle, and derive an original triangle witness only when needed. That proposal requires an explicit equivalence/witness contract and fixed-source comparison; this independent axis-fixture oracle's execution time is **not** a production speed claim. The parent should choose between that measured bottleneck and actual model-consumption validation, rather than continue the already-small pixel aggregation tuning.
