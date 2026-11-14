@@ -1,0 +1,35 @@
+{
+  "NPZ_arrays": [
+    "color",
+    "depth",
+    "owners",
+    "patch_owners",
+    "patch_mapping_version",
+    "patch_mapping_identity",
+    "patch_roi_ids",
+    "face_patch_ids",
+    "face_patch_offsets"
+  ],
+  "brief_schema": "active-observation-brief-v2; legacy results without patch support retain v1",
+  "camera_policy": "Existing SCENE/TOP/LEFT/RIGHT/FRONT/BACK 512px orthographic 5%per-side fit.",
+  "legacy_frame_compatibility": "Three-buffer input may derive ownership only where every ROI object is one supported patch covering all its source faces. Multi-patch/partial objects require real patch ownership.",
+  "mapping_identity": "Bound to complete actual ordered source vertices/faces, face-to-patch mapping and ROI order. Source-order changes invalidate accepted image state and stale receipts before view selection.",
+  "new_formal_model_CLI_inference_Google_API_calls": 0,
+  "optimized_kernel_comparison": "Fixed five alternating pairs on first split SCENE saved buffer, independent shared boundary+perROI masks vs shared histogram. No extra raster or warmup.",
+  "partial_scope": "Every source triangle assigned once to a supported region or an unknown component. Full retains indices, brief carries per-object totals/status and component ranges/reasons. Geometric support is distinct from observed coverage.",
+  "patch_mapping_version": "active-patch-owner-v1",
+  "patch_owner": "int32 stable ordinal in sorted ROI IDs. -1 means background or unsupported winning triangle; original object owner separates those.",
+  "pre_registered_answers": "138 patches and3336 supported/1unsupported triangles from independent axis constructor, SCENE visible upper face and front-facing fully hidden rear with positive237/2048m gap; bottom faces back-facing for all six directions.",
+  "product_scope": "Maximal edge-connected exactly coplanar rectangle patches with exact winding/area/boundary proof. Unsupported components retain source triangle membership and participate in occlusion.",
+  "quality_before_performance": true,
+  "readability": {
+    "RGB_distance_min": 24,
+    "boundary": "Unique4-neighbor pixel endpoints with changed patch ID and Euclidean RGB squared distance>=576.",
+    "contrasted_boundary_pixels_min": 4,
+    "surface_pixels_min": 16
+  },
+  "registered_fixture": "Same ordered world vertices/triangles as old scaled full scene, plus one preregistered unsupported triangle, split29 and joined1 source representations.",
+  "same_depth_update": "Object and patch owner updated by the original strict nearer mask alongside RGB/depth. Equal-depth retains original drawing order.",
+  "schema": "patch-ownership-entry-contract-v1",
+  "source_support_schema": "active-patch-support-v1"
+}
