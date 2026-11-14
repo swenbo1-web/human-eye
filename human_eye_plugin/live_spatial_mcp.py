@@ -176,7 +176,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
-            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns supported regions, actual pixel evidence, remaining unknowns and up to six 512px native PNGs."
+            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns brief source-bound object, region and pixel tables with remaining unknowns and up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
         ),
         "inputSchema": {
             "type": "object",
@@ -214,7 +214,10 @@ LIVE_MCP_TOOLS_SCHEMA = [
                 "then": {"properties": {"include_image": {"const": False},
                                          "response_detail": {"default": "brief"}},
                          "not": {"anyOf": [{"required": [field]} for field in
-                             ("focal_id", "reference_id", "goal", "scene_delta")]}},
+                             ("focal_id", "reference_id", "goal", "scene_delta")]}}},
+            {"if": {"required": ["query"], "properties": {"query": {
+                    "required": ["mode"], "properties": {"mode": {"enum": ["surface_scan", "active_observation"]}}}}},
+                "then": {"properties": {"response_detail": {"default": "brief"}}},
                 "else": {"properties": {"response_detail": {"default": "full"}}}},
             {"if": {"required": ["query"], "properties": {"query": {
                     "required": ["mode"], "properties": {"mode": {"const": "task"}}}}},
@@ -305,7 +308,9 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
                 'all delivered matches, raw metre distances, derived millimetres, identities, scopes and unknowns. '
                 'distance_mm uses a number, or an exact decimal string when binary64 millimetres overflow. '
                 'Its object table covers matched endpoints. Full requests a new current observation with detailed '
-                'witnesses; combine observations by scene/source binding. Other modes default to full; their brief '
+                'witnesses; combine observations by scene/source binding. active_observation also defaults to brief, '
+                'with all objects, region unknowns, actual pixel facts and native image references; full retains diagnostics. '
+                'Other modes default to full; their brief '
                 'omits named camera/raster diagnostics while preserving measurements and native images. '
                 'Errors and unsupported projections retain the detailed response.'),
         }
@@ -797,7 +802,191 @@ def project_surface_scan_brief(value):
     return result
 
 
-def _active_observation_content(value, *, is_error, audit):
+def project_active_observation_brief(value):
+    """Deduplicate one complete active result using versioned, local table indices.
+
+    Empty tables and coverage collections are omitted. Indices are zero-based;
+    native_content_block_index addresses the actual MCP content list, whose
+    first image follows its text at index one. Unsupported or conflicting
+    references retain the full response through the caller's existing path.
+    """
+    object_columns = ['object_index', 'host_id', 'instance_id', 'object_name']
+    region_columns = ['roi_id', 'object_index', 'status', 'reason']
+    pixel_columns = ['image_index', 'region_index', 'front_facing',
+                     'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable']
+    rule_fields = ('minimum_surface_pixels', 'minimum_boundary_pixels', 'minimum_rgb_boundary_contrast')
+    identity_fields = ('host_id', 'instance_id', 'object_name')
+    try:
+        if (value['result_kind'] != 'active_observation'
+                or value['status'] not in ('complete', 'partial', 'unknown', 'predicted')):
+            return None
+        binding, facts = value['binding'], value['facts']
+        required_binding = {
+            'scene_revision', 'document_epoch', 'capture_scope', 'unit', 'coordinate_frame',
+            'source', 'capture_state', 'source_binding_sha256', 'geometry_identity',
+            'camera_identity', 'binding_sha256', 'runtime_source_sha256',
+            'source_status', 'disk_status', 'source_check_scope', 'objects',
+        }
+        if (type(binding) is not dict or not required_binding <= set(binding)
+                or set(binding) - required_binding - {'schema', 'camera_policy'}):
+            return None
+        capture_state = binding['capture_state']
+        if capture_state is not None and (
+                type(capture_state) is not dict
+                or not {'instance_id', 'epoch', 'revision'} <= set(capture_state)
+                or set(capture_state) - {'instance_id', 'epoch', 'revision', 'selection_key'}):
+            return None
+        if (set(facts) != {'scene_identity', 'candidate_identity', 'regions', 'observations',
+                          'coverage', 'scope', 'image_delivery_scope'}
+                or facts['scene_identity'] != binding['geometry_identity']
+                or facts['candidate_identity'] != binding['camera_identity']):
+            return None
+        objects = binding['objects']
+        if (not objects or any(set(obj) != set(object_columns) or type(obj['object_index']) is not int
+                              or obj['object_index'] != index
+                              for index, obj in enumerate(objects))
+                or len({obj['host_id'] for obj in objects}) != len(objects)
+                or len({obj['instance_id'] for obj in objects}) != len(objects)):
+            return None
+        regions = facts['regions']
+        region_indices = {region['roi_id']: index for index, region in enumerate(regions)}
+        if len(region_indices) != len(regions):
+            return None
+        for region in regions:
+            if (set(region) != set(region_columns) | set(identity_fields)
+                    or type(region['object_index']) is not int
+                    or not 0 <= region['object_index'] < len(objects)
+                    or any(region[key] != objects[region['object_index']][key] for key in identity_fields)):
+                return None
+
+        def region_references(ids):
+            if type(ids) is not list or len(set(ids)) != len(ids):
+                raise ValueError('nonunique_region_reference')
+            return [region_indices[roi_id] for roi_id in ids]
+
+        coverage = facts['coverage']
+        coverage_lists = {
+            'covered_roi_ids': 'covered_region_indices',
+            'unresolved_roi_ids': 'unresolved_region_indices',
+            'candidate_pool_uncovered_roi_ids': 'candidate_pool_uncovered_region_indices',
+        }
+        if set(coverage) != set(coverage_lists) | {'scope', 'state_updates', 'observed_views'}:
+            return None
+        compact_coverage = {key: coverage[key] for key in ('scope', 'state_updates')}
+        for key, projected_key in coverage_lists.items():
+            references = region_references(coverage[key])
+            if references:
+                compact_coverage[projected_key] = references
+        if coverage['observed_views']:
+            compact_coverage['observed_views'] = coverage['observed_views']
+        if set(coverage['covered_roi_ids']) & set(coverage['unresolved_roi_ids']):
+            return None
+
+        scope = facts['scope']
+        if (set(scope) != {'capture_object_count', 'supported_roi_object_count', 'domain',
+                          'all_objects_participate_in_occlusion', 'objects_without_supported_roi'}
+                or scope['capture_object_count'] != len(objects)):
+            return None
+        unsupported = scope['objects_without_supported_roi']
+        unsupported_indices = []
+        for obj in unsupported:
+            index = obj['object_index']
+            if (set(obj) != set(object_columns) | {'status'} or type(index) is not int
+                    or not 0 <= index < len(objects)
+                    or any(obj[key] != objects[index][key] for key in identity_fields)):
+                return None
+            unsupported_indices.append(index)
+        supported_indices = {region['object_index'] for region in regions}
+        if (len(set(unsupported_indices)) != len(unsupported_indices)
+                or set(unsupported_indices) != set(range(len(objects))) - supported_indices
+                or scope['supported_roi_object_count'] != len(supported_indices)):
+            return None
+        compact_scope = {key: item for key, item in scope.items() if key != 'objects_without_supported_roi'}
+        if unsupported:
+            compact_scope['objects_without_supported_roi'] = {
+                'columns': ['object_index', 'status'],
+                'rows': [[obj['object_index'], obj['status']] for obj in unsupported],
+            }
+
+        frames = value['frames']
+        image_indices = {frame['image_ref']: index for index, frame in enumerate(frames)}
+        if (len(image_indices) != len(frames)
+                or len({frame['view_name'] for frame in frames}) != len(frames)):
+            return None
+        for frame in frames:
+            if (frame['scene_identity'] != binding['geometry_identity']
+                    or frame['candidate_identity'] != binding['camera_identity']
+                    or frame['host_binding_sha256'] != binding['binding_sha256']
+                    or frame['source_revision'] != binding['scene_revision']):
+                return None
+        observation_rows, pixels, pixel_rules, observed_indices = [], [], None, []
+        for observation in facts['observations']:
+            if set(observation) != {'view_name', 'image_path', 'image_ref', 'image_sha256',
+                                    'readable_roi_ids', 'pixel_rows'}:
+                return None
+            image_index = image_indices[observation['image_ref']]
+            frame = frames[image_index]
+            if any(observation[key] != frame[key] for key in ('view_name', 'image_path', 'image_sha256')):
+                return None
+            observed_indices.append(image_index)
+            observation_rows.append([image_index, region_references(observation['readable_roi_ids'])])
+            seen_regions, readable_ids = set(), set()
+            for pixel in observation['pixel_rows']:
+                if set(pixel) != set(rule_fields) | {
+                        'roi_id', 'object_index', 'host_id', 'object_name', 'view',
+                        'front_facing', 'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable'}:
+                    return None
+                region_index = region_indices[pixel['roi_id']]
+                region = regions[region_index]
+                if (region_index in seen_regions or pixel['view'] != observation['view_name']
+                        or any(pixel[key] != region[key] for key in ('object_index', 'host_id', 'object_name'))):
+                    return None
+                seen_regions.add(region_index)
+                rules = {key: pixel[key] for key in rule_fields}
+                if pixel_rules is None:
+                    pixel_rules = rules
+                elif rules != pixel_rules:
+                    return None
+                if pixel['readable']:
+                    readable_ids.add(pixel['roi_id'])
+                pixels.append([image_index, region_index, *[pixel[key] for key in pixel_columns[2:]]])
+            if (seen_regions != set(range(len(regions)))
+                    or readable_ids != set(observation['readable_roi_ids'])):
+                return None
+        if (len(set(observed_indices)) != len(frames) or sorted(observed_indices) != list(range(len(frames)))
+                or coverage['observed_views'] != [row['view_name'] for row in facts['observations']]):
+            return None
+        compact_binding = {key: item for key, item in binding.items()
+                           if key not in ('schema', 'objects', 'camera_policy')}
+        if type(compact_binding.get('capture_state')) is dict:
+            compact_binding['capture_state'] = {key: item for key, item in binding['capture_state'].items()
+                                                if key != 'selection_key'}
+        result = {key: value[key] for key in ('status', 'result_kind', 'observation_status',
+                                             'session_id', 'read_only', 'execution_authority')}
+        result.update(schema='active-observation-brief-v1', index_base=0,
+            binding=compact_binding,
+            objects={'columns': object_columns, 'rows': [[obj[key] for key in object_columns] for obj in objects]},
+            coverage=compact_coverage, scope=compact_scope,
+            image_delivery_scope=facts['image_delivery_scope'], image_delivery=value['image_delivery'])
+        if regions:
+            result['regions'] = {'columns': region_columns,
+                                 'rows': [[region[key] for key in region_columns] for region in regions]}
+        if frames:
+            result['images'] = {
+                'columns': ['view_name', 'image_ref', 'image_sha256', 'native_content_block_index'],
+                'rows': [[frame['view_name'], frame['image_ref'], frame['image_sha256'], index + 1]
+                         for index, frame in enumerate(frames)],
+            }
+            result['observations'] = {'columns': ['image_index', 'readable_region_indices'], 'rows': observation_rows}
+        if pixels:
+            result['pixels'] = {'columns': pixel_columns, 'rows': pixels}
+            result['pixel_rules'] = pixel_rules
+        return copy.deepcopy(result)
+    except (KeyError, TypeError, IndexError, AttributeError, ValueError):
+        return None
+
+
+def _active_observation_content(value, *, is_error, audit, response_detail=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -847,6 +1036,12 @@ def _active_observation_content(value, *, is_error, audit):
             'frame_reuses': value.get('work', {}).get('frame_reuses', 0),
             'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
         }
+        audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
+        if response_detail != 'full' and not is_error:
+            brief = project_active_observation_brief(metadata)
+            if brief is not None:
+                metadata = brief
+                audit['projection_status'] = 'brief'
         text = json.dumps(metadata, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
         audit.update(status='constructed', mcp_content_ready=True,
             public_text_bytes=len(text.encode('utf8')),
@@ -870,7 +1065,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') == 'active_observation':
         return _active_observation_content(value, is_error=is_error,
-            audit={} if active_delivery_audit is None else active_delivery_audit)
+            audit={} if active_delivery_audit is None else active_delivery_audit,
+            response_detail=response_detail)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
