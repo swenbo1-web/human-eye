@@ -1,0 +1,19 @@
+# 固定候选的路由任务夹具
+
+bridge.py和bootstrap.py逐字节复用可直接消费观察001夹具。native_tools.py仍固定产品source 6d4f7d363aaa48081eff7db467fff20665419172560f19b3a4ccb0fbb46c900f，产品目录为D:/he_consume_001/product，产品、格式与算法保持原版本。
+
+N公开execute_python、scene_data、render_views、read_images四个入口。P保留同四个入口，并追加原ACTIVE/v4观察及last_observation_json。共同工具定义、列表顺序、批准配置的名称集合与原来源一致。render_views每次实际构造，新原生缓冲triangle_ids始终是输入顺序的全局源三角形ID，没有转成缓存命中或产品patch ID。
+
+P沿真实安装LiveSpatialService和_tool_result生成公开结果。成功socket sendall后，桥接把已有公开text原字符串赋给last_observation_json。观察开始、参数或预算拒绝、产品/协议错误、发送失败时清空。未读取SERVICE_RESULT作为namespace答案，也没有新序列化器或文件发布器。
+
+新runtime为D:/he_routed_001。原SOURCES schema、bootstrap target/--config参数及runtime_binding协议不变。ledger容器保持44，formal phase为36，准备phase为0，每槽实际raster上限6。六槽串行，各自独立进程、变量、缓存、图片与账本引用。
+
+## 必要路径兼容
+
+新native仅增加D:/he_routed_001研究根，并使当前product_root内原三个common_product_sources文件的只读open沿原白名单通过。旧Dconsume根仍被研究数据隔离覆盖，其他产品源、所有产品写入、旧formal/run和PRIVATE_REPLAY读取继续拒绝。原exec审查和N禁止产品发现/选眼/锚点计算的边界保持。
+
+该修复同时作用于两组，防止本批复用Dconsume产品路径时，研究根再次否定原来已允许的公共primitive loader读取。它没有扩大可见事实或提供管理员答案。
+
+## 静态验收范围
+
+准备核源码字节、工具定义、来源硬pin、参数、未运行标记及两组共同的每槽父时界接线。针对上述真实路径碰撞，根单独授权的一次独立N Owner检查已首轮通过，只执行geometry_safety导入、只读1字节和print(42)，原请求/回执、Owner.close及父进程wait/handle close证据保存在preparation/N_READONLY。模型、产品观察和raster均为0，旧mock/fake矩阵没有重跑。夹具的namespace功能仍属于隔离试验能力。

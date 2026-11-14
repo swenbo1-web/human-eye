@@ -1,0 +1,119 @@
+{
+  "schema": "routed-native-readonly-preparation-v1",
+  "attempt": 1,
+  "passed": true,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "execute_python",
+      "arguments": {
+        "code": "import human_eye_plugin.geometry_safety as gs; open(gs.__file__,'rb').read(1); print(42)"
+      }
+    }
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"stdout\": \"42\\n\", \"stderr\": \"\", \"error\": null}"
+        }
+      ],
+      "isError": false
+    }
+  },
+  "owner_close": {
+    "started_ns": 156651664730300,
+    "ended_ns": 156652180374100,
+    "actor_pid": 20104,
+    "server_thread_stopped": true,
+    "errors": [],
+    "confirmed": true,
+    "metrics": {
+      "tool_attempts": 1,
+      "constructed_image_blocks": 0,
+      "failed_image_constructions": 0,
+      "constructed_PNG_bytes": 0,
+      "constructed_base64_chars": 0,
+      "constructed_image_block_JSON_bytes": 0,
+      "constructed_image_JSON_bytes_unknown_count": 0,
+      "helper_ready_image_blocks": 0,
+      "delivery_ready_image_blocks": 0,
+      "post_construction_failures": 0,
+      "server_socket_sent_image_blocks": 0,
+      "server_socket_sent_PNG_bytes": 0,
+      "server_socket_sent_base64_chars": 0,
+      "server_socket_sent_image_block_JSON_bytes": 0,
+      "server_socket_sent_text_UTF8_bytes": 0,
+      "server_socket_sent_MCP_JSON_bytes": 0,
+      "server_socket_sent_outer_TCP_JSON_bytes": 0,
+      "server_socket_request_bytes": 0,
+      "failed_or_unknown_socket_sends": 0,
+      "model_CLI_receipt_scope": "Server sendall confirmation only. Actual CLI receipt is verified independently.",
+      "provider_internal_wire": "unobserved",
+      "new_renders": 0,
+      "Blender_processes": 0,
+      "common": {
+        "render_attempts": 0,
+        "raster_completed": 0,
+        "frames_completed": 0,
+        "PNG_bytes": 0,
+        "NPZ_bytes": 0,
+        "array_payload_bytes": 0,
+        "max_render_attempts": 6,
+        "capture_replay_calls": 0,
+        "actual_Blender_capture_calls": 0,
+        "product_observation_calls": 0,
+        "Blender_processes": 0,
+        "array_payload_scope": "Generated ndarray payload; RSS unmeasured",
+        "runtime_faults": [],
+        "audit": {
+          "forbidden_old_evidence_reads": 0,
+          "old_evidence_read_attempts": [],
+          "forbidden_old_writes": 0,
+          "old_write_attempts": [],
+          "forbidden_product_calls": []
+        }
+      },
+      "tools": [
+        {
+          "attempt": 1,
+          "name": "execute_python",
+          "started_ns": 156652149929000,
+          "closed_ns": 156652151456600,
+          "elapsed_ns": 1527600,
+          "response_bytes": 148,
+          "is_error": false,
+          "error": null,
+          "response_serialization_error": null,
+          "content_metrics": {
+            "image_blocks": 0,
+            "PNG_bytes": 0,
+            "base64_chars": 0,
+            "image_block_JSON_bytes": 0,
+            "text_UTF8_bytes": 47,
+            "PNG_sha256": []
+          }
+        }
+      ]
+    },
+    "scope": "Actor listener closed and serving thread stopped. Parent owns process wait and handle cleanup."
+  },
+  "errors": [],
+  "actual_execute_python_requests": 1,
+  "model_calls": 0,
+  "product_observation_calls": 0,
+  "raster_attempts": 0,
+  "fake_CLI": false,
+  "server_thread_started": false,
+  "scope": "Actual isolated N Owner and source-guard bootstrap. Exactly one ordinary Python read; no model, observation, renderer or transport server.",
+  "source_sha256": {
+    "bridge.py": "7909f89213db88bfee88ffe749e92c84b085a38624fc7a465f28f3156b7d2348",
+    "native_tools.py": "55dd73c42cc04204238e9e92001c814e73bd1b8d55cf9da7a205a3b3fed069b3",
+    "bootstrap.py": "9ba13579fd067826a80ef17a441c4b220af9f9acbc5b842810dcfa6d3b286090"
+  }
+}
