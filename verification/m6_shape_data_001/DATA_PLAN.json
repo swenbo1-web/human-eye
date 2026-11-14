@@ -1,0 +1,78 @@
+{
+  "cycle_id": "M6-SHAPE-DATA-001",
+  "source_grouping_file": "SOURCE_GROUPS.json",
+  "source_groups_before_patch_selection": true,
+  "allowed_vertices": 384,
+  "context_halo_rings": 2,
+  "source_component_min_vertices": 512,
+  "candidate_limit_per_stratum": 24,
+  "patch_quota_per_stratum": 3,
+  "strata": [
+    "natural_concave",
+    "natural_convex",
+    "curvature_change",
+    "source_boundary_near"
+  ],
+  "candidate_priority": "first maximum stratum score, then farthest Euclidean coverage in saved world; ties by ascending source vertex ID",
+  "stratum_rules": {
+    "natural_concave": "signed normal neighbor displacement / mean incident edge > .01, upper20percent positive tail",
+    "natural_convex": "same proxy < -.01, lower20percent negative tail",
+    "curvature_change": "upper20percent observed neighbor-normal variation",
+    "source_boundary_near": "3 to6 edge hops from original open boundary, first greatest hop"
+  },
+  "eligibility": "component>=512, center normal coherence>=.5, no incident degenerate face or nonmanifold edge; historic Yanyite center24205 excluded",
+  "pre_generation_rejection": [
+    "induced region dangling/nonmanifold",
+    "center on patch boundary or fewer128free points",
+    "degenerate reference incident face",
+    "r35 support<3 or r55 support<7",
+    "support normals have nonpositive alignment to center normal",
+    "induced patch not connected"
+  ],
+  "post_generation_rejection": [
+    "new zero-area incident triangle",
+    "incident face normal reversal against reference",
+    "nonfinite geometry",
+    "boundary/external/topology changed"
+  ],
+  "backfill_after_generation": false,
+  "generation": {
+    "normal_controls": 1,
+    "r_over_D": [
+      0.35,
+      0.55
+    ],
+    "a_over_r": [
+      0.05,
+      0.15,
+      0.3
+    ],
+    "distance": "pristine induced allowed-edge shortest paths",
+    "weight": "(1-(d/r)^2)^2 for d<r; zero elsewhere",
+    "direction": "negative center full-incident area-weighted saved-snapshot normal",
+    "all_allowed_displacement_labels": true,
+    "normal_points_target_zero": true
+  },
+  "network_feature_contract": {
+    "node_scalar_features": 7,
+    "edge_scalar_features": 4,
+    "observation_only": true,
+    "origin": "mean observed fixed boundary/halo positions",
+    "scale": "median observed context edge length",
+    "positions_and_normals": "vector channels for proper SO(3)-covariant residual head",
+    "forbidden": [
+      "normal reference interior",
+      "support labels",
+      "generation center/radii/amplitudes",
+      "source/role names",
+      "absolute source IDs",
+      "filenames"
+    ],
+    "source_ids_separate_mapping": true
+  },
+  "maximum_patches": 48,
+  "maximum_observations": 336,
+  "coupled_contact_evaluation": "not run for dataset generation; full corresponding domains required after trained candidate proposal",
+  "training": 0,
+  "paid_API": 0
+}
