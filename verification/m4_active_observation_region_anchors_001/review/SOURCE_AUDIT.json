@@ -1,0 +1,457 @@
+{
+  "audit_schema_correction": {
+    "actual": {
+      "installed_sources_verified": 141,
+      "source_files_verified": 1245,
+      "source_freeze_sha256": "adcc9c4103d43fcb56ce136bca069e44bdf07c1d5796570e8c9674e9776100cc"
+    },
+    "cause": "Auditor expected source_files_verified to mean 141 runtime files. The payload receipt uses it for all 1245 frozen files, while installed_sources_verified is 141.",
+    "correct_expected": {
+      "installed_sources_verified": 141,
+      "source_files_verified": 1245
+    },
+    "correction": "Retained all original hash checks and corrected only this receipt-field interpretation. No candidate, input or execution result was changed or rerun.",
+    "incorrect_expected": {
+      "installed_sources_verified": 141,
+      "source_files_verified": 141
+    },
+    "initial_checks": 5042,
+    "initial_derived_json_sha256": "e2c8310c579940b2f08cd7194d4dc10fc758e300b74ad37da710c8247cc42b44",
+    "initial_derived_md_sha256": "0f59be87a5c8c0cee613566c5e543c0d2f6ff85a0b81e5117c026e1b18ec6576",
+    "initial_issue": "payload_identity",
+    "original_assertion": "payload['source_freeze_sha256'] == frozen_sha256 and payload['installed_sources_verified'] == payload['source_files_verified'] == 141",
+    "preserved_initial_json_path": "review/SOURCE_AUDIT_R1.json",
+    "preserved_initial_md_path": "review/SOURCE_AUDIT_R1.md"
+  },
+  "checks": 5048,
+  "dependencies": {
+    "bytes": 57693783,
+    "copied_files": 1046,
+    "new_and_previous_copy_bytes_equal": true,
+    "owned_product_pth": "D:\\he_anchor_001\\product",
+    "previous_manifest_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_patch_ownership_001\\preparation\\ENVIRONMENT.json",
+    "previous_manifest_sha256": "3d5ed98799cbfcad026854af9db44ce5d0923e02aa9f0cfa489b2b35cc0a9ba3",
+    "scope": "Frozen copied NumPy/PIL dependency files and pinned executables. No installed dependency code was imported by this audit."
+  },
+  "evidence": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_patch_ownership_001\\preparation\\ENVIRONMENT.json": {
+      "bytes": 226161,
+      "sha256": "3d5ed98799cbfcad026854af9db44ce5d0923e02aa9f0cfa489b2b35cc0a9ba3"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\FROZEN.json": {
+      "bytes": 226670,
+      "sha256": "adcc9c4103d43fcb56ce136bca069e44bdf07c1d5796570e8c9674e9776100cc"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\UNIT_PROCESS.json": {
+      "bytes": 699,
+      "sha256": "7ecd0e645a12d0e306738ddbe83a3e4ab14c3aa7c90a78e7c46cf050111eac02"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\WORK_ORDER.json": {
+      "bytes": 1419,
+      "sha256": "383f29475f6e976b8e0a657569fe6fc15199023e43454fa795dfc06da767acfe"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\build\\BUILD_INSTALL.json": {
+      "bytes": 24439,
+      "sha256": "4cbbe93d42570e36ec8235981fe276ab72b0e3fc6905f96f14313cf168ec295c"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\build\\RUN_BINDING.json": {
+      "bytes": 22037,
+      "sha256": "9f9484eff33719884174564ab1d61ad0fc7c060fa8ebb5b9e79ae1be1b973e34"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\build\\human_eye_spatial_plugin-9.7.2+m4.active.region.anchors.r1-py3-none-any.whl": {
+      "bytes": 1165931,
+      "sha256": "d986d01fb874e6f4cd613934008d3ca9bdcc9a352fdc1097b2dd927b95ff8b4c"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\preparation\\ENVIRONMENT.json": {
+      "bytes": 343944,
+      "sha256": "89dc8ac6a272f1a1c61192334260d4dbdf734df4935637f7a366de22079c0e31"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\preparation\\PAYLOAD.json": {
+      "bytes": 10446,
+      "sha256": "241aaa7a4d19fb8a94dee797536bd556c0777676e5a71a70605fdd79b6fc88aa"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\units_01\\UNIT_RESULT.json": {
+      "bytes": 29948,
+      "sha256": "7563ca226515c02791dadafeee113160fabefccdfaa36a25064d79d67d0423b0"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\units_01\\UNIT_TESTS.txt": {
+      "bytes": 17347,
+      "sha256": "3b1662312f3d886dbc910effbc3cc8f7fc6f1ebca8e149cad56afdc4748ab9ad"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_brief.py": {
+      "bytes": 13687,
+      "sha256": "dc61563bc55d07bf5ce3cc6e2842847a68de6d556ffe2e724f9aa27a3a693912"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_host.py": {
+      "bytes": 7670,
+      "sha256": "4b62ab0c845a84b444cb6ee84f593ecd68ffaf575913aeebb105d7aeae48d9ad"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_images.py": {
+      "bytes": 8004,
+      "sha256": "83e16f3e8dca90ba3541bd78718ab6551e77876944fdcffffc0b2a790754c5e5"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_patch_delivery.py": {
+      "bytes": 14023,
+      "sha256": "380fe61c019158cbbaa3ae2e1ada7cab430f7ef2716dd3507fc16063fb498329"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_patch_images.py": {
+      "bytes": 11638,
+      "sha256": "9ca92f7114bbcf38479a9338a6ea1adf941b9d4db92bcbce5b6e24c9c4fc51eb"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_patches.py": {
+      "bytes": 8995,
+      "sha256": "262630e3d19877e805c43e4ad61db6136e60dfa8ba2ef876509f415ee5390625"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_region_anchors.py": {
+      "bytes": 7757,
+      "sha256": "727d6c0275b4d601649ea595c73b7e1a0745d6793a12e78561101ec3aa9c87cf"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_region_delivery.py": {
+      "bytes": 10567,
+      "sha256": "909d71a62a3492cd0c96b2905a84d88b84e78352137848c7f30361d9842b377d"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_region_world.py": {
+      "bytes": 8355,
+      "sha256": "d6602a21f17d58f64e3bce6e46eaa730efd1c615a7e228bcafda58108cf9f497"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_active_observation_service.py": {
+      "bytes": 10699,
+      "sha256": "481f0e7df469c3d205dfa47c5c982c7a2c613e33ca8f21e016d3e370271a3f8d"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\test_live_spatial_mcp.py": {
+      "bytes": 13780,
+      "sha256": "85ca860a4a96077f935de38700c374f4ca12bfd1032b42588eef47dd612837f4"
+    },
+    "D:\\he_anchor_001\\product\\human_eye_spatial_plugin-9.7.2+m4.active.region.anchors.r1.dist-info\\RECORD": {
+      "bytes": 15076,
+      "sha256": "fbe66800a51430e17442b5fafc4a3bfbf0891c299b246fb04dc0e708f9e81139"
+    },
+    "D:\\he_anchor_001\\run\\acceptance_01\\server\\FINISH.json": {
+      "bytes": 336,
+      "sha256": "e1fef46fa84c522f46fee9b96e3dfac2fbcfdde493432ec6da8663eb5c3a0080"
+    },
+    "D:\\he_anchor_001\\run\\acceptance_01\\server\\INDEXES.jsonl": {
+      "bytes": 913,
+      "sha256": "d92e96365572b82c967ebf4f34332734d3f0df9875ccd676e25b60da2853a68c"
+    },
+    "D:\\he_anchor_001\\run\\acceptance_01\\server\\INDEX_01.json": {
+      "bytes": 154211,
+      "sha256": "361f9767001379f95a0c15a8c611c349292c5fecde4a3316aa2d24b376560bd1"
+    },
+    "D:\\he_anchor_001\\run\\acceptance_01\\server\\START.json": {
+      "bytes": 525,
+      "sha256": "1c2f380287c1bf97efbdb3efd33beea486b95b18347a48eb672abf80f49521fb"
+    },
+    "D:\\he_anchor_001\\run\\acceptance_01\\stdio\\rpc_01\\RESPONSE.json": {
+      "bytes": 2401,
+      "sha256": "f4ab99dba2d490f3afaf6521a7a959805fe7bf7312ad18ea5f2f381fc9099923"
+    },
+    "D:\\he_anchor_001\\venv\\Lib\\site-packages\\human_eye_owned_product.pth": {
+      "bytes": 26,
+      "sha256": "fd6d4661ef2085b5d843420bd542461974e1a0cdc6dfc5a69b13800e7580c18e"
+    },
+    "D:\\he_patch_001\\product_r2\\human_eye_spatial_plugin-9.7.2+m4.active.patch.ownership.r2.dist-info\\RECORD": {
+      "bytes": 15083,
+      "sha256": "95bdbc0218a9c4e37bd154af6ddde8b6eeb5dca54a39ef691b4ac683b9b5feec"
+    },
+    "D:\\hefe\\verification\\fixes\\20261114_f_history_duplicate\\REVIEW.md": {
+      "bytes": 2850,
+      "sha256": "5bfdc4791fe2a9b4ecde7d9bb2a8b40d1a4a62aee2c43deea14bb4e3741ebac8"
+    }
+  },
+  "fixed_identity": {
+    "baseline": "efe7f77aabdab4f8de47fdb4f8714cb25f301503",
+    "branch": "codex/architecture-arm-correction",
+    "distribution_version": "9.7.2+m4.active.region.anchors.r1",
+    "freeze_sha256": "adcc9c4103d43fcb56ce136bca069e44bdf07c1d5796570e8c9674e9776100cc",
+    "install_root": "D:\\he_anchor_001\\product",
+    "observed_HEAD": "2a1ac1423c218ea31eafe3db16b4d5f174e9ba22",
+    "preparation_commit": "2a1ac1423c218ea31eafe3db16b4d5f174e9ba22",
+    "runtime_source_sha256": "96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76",
+    "wheel_sha256": "d986d01fb874e6f4cd613934008d3ca9bdcc9a352fdc1097b2dd927b95ff8b4c"
+  },
+  "frozen_files": {
+    "all_sha256_unchanged": true,
+    "count": 1245,
+    "scope": "Every exact path and SHA in the pre-execution freeze, including runtime, harness, tests, inputs, base/venv executables and frozen dependency bytes.",
+    "total_bytes_read": 179818850
+  },
+  "history_isolation": {
+    "baseline_ancestor_query_exit_codes": {
+      "accepted_E": 0,
+      "historical_E_restore": 1,
+      "old_F": 1
+    },
+    "closed_review_path": "D:\\hefe\\verification\\fixes\\20261114_f_history_duplicate\\REVIEW.md",
+    "closed_review_sha256": "5bfdc4791fe2a9b4ecde7d9bb2a8b40d1a4a62aee2c43deea14bb4e3741ebac8",
+    "current_runtime_restore_performed": false,
+    "scope": "Historical F remained unadmitted and its E restoration remained historical. The current baseline descends from accepted E; this audit made no checkout, restore, reset, install or configuration changes."
+  },
+  "installed_RECORD": {
+    "accepted_PATCH_comparison": {
+      "RECORD_path": "D:\\he_patch_001\\product_r2\\human_eye_spatial_plugin-9.7.2+m4.active.patch.ownership.r2.dist-info\\RECORD",
+      "RECORD_rows": 155,
+      "RECORD_sha256": "95bdbc0218a9c4e37bd154af6ddde8b6eeb5dca54a39ef691b4ac683b9b5feec",
+      "installed_root": "D:\\he_patch_001\\product_r2",
+      "normal_console_execution_tested": false,
+      "physical_console_files_hash_verified": [
+        {
+          "RECORD_path": "../../bin/human-eye-auto-router.exe",
+          "bytes": 108428,
+          "physical_target_path": "D:\\he_patch_001\\product_r2\\bin\\human-eye-auto-router.exe",
+          "sha256": "b208f2e2d05caca10246c84b310c31c1e11ef6c8c1bc46e015c58b5ab18bdcec"
+        },
+        {
+          "RECORD_path": "../../bin/human-eye-hook.exe",
+          "bytes": 108388,
+          "physical_target_path": "D:\\he_patch_001\\product_r2\\bin\\human-eye-hook.exe",
+          "sha256": "051399f64104686804e7e7d05d0e9c82fb70fdcc6e25b718b2e379ca26de36db"
+        },
+        {
+          "RECORD_path": "../../bin/human-eye-live.exe",
+          "bytes": 108408,
+          "physical_target_path": "D:\\he_patch_001\\product_r2\\bin\\human-eye-live.exe",
+          "sha256": "f0298ca387153076637a1ab063554a5c5e13e2b0c4dea23f7be14718d603aed4"
+        },
+        {
+          "RECORD_path": "../../bin/human-eye-mcp-server.exe",
+          "bytes": 108408,
+          "physical_target_path": "D:\\he_patch_001\\product_r2\\bin\\human-eye-mcp-server.exe",
+          "sha256": "f0298ca387153076637a1ab063554a5c5e13e2b0c4dea23f7be14718d603aed4"
+        }
+      ],
+      "same_four_relative_entry_names": true,
+      "scope": "The prior accepted isolated PATCH R2 installation has the same pip --target RECORD relocation. Neither its console executables nor current console executables were launched by this audit."
+    },
+    "console_script_target_relocations": [
+      {
+        "RECORD_path": "../../bin/human-eye-auto-router.exe",
+        "physical_target_path": "D:\\he_anchor_001\\product\\bin\\human-eye-auto-router.exe"
+      },
+      {
+        "RECORD_path": "../../bin/human-eye-hook.exe",
+        "physical_target_path": "D:\\he_anchor_001\\product\\bin\\human-eye-hook.exe"
+      },
+      {
+        "RECORD_path": "../../bin/human-eye-live.exe",
+        "physical_target_path": "D:\\he_anchor_001\\product\\bin\\human-eye-live.exe"
+      },
+      {
+        "RECORD_path": "../../bin/human-eye-mcp-server.exe",
+        "physical_target_path": "D:\\he_anchor_001\\product\\bin\\human-eye-mcp-server.exe"
+      }
+    ],
+    "limitation": "pip --target retained ../../bin entries for four console executables while the actual files are under product/bin. This audit explicitly checked those four physical files and hashes through that relocation. Literal RECORD paths were not represented as directly resolving. The tested server uses explicit Python and the verified-source entry, independently of console scripts.",
+    "nonself_payloads_verified": 154,
+    "rows": 155
+  },
+  "issues": [],
+  "limits": [
+    "This audit executed only stdlib artifact/hash/AST reads and metadata-only Git commands. No candidate function, reference, test, pixel kernel, benchmark, renderer, Blender or model was executed.",
+    "Image anchoring correctness, end-to-end cost and model task benefit require their separate acceptance evidence.",
+    "A matching saved runtime identity describes the observed process and artifacts at its recorded time; this audit does not create a new live connection.",
+    "The four pip --target console RECORD relocations are disclosed explicitly."
+  ],
+  "passed": true,
+  "payload": {
+    "all_copies_byte_equal": true,
+    "all_sources_preexecution_frozen": true,
+    "bytes": 2759939,
+    "files": 27,
+    "manifest_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_region_anchors_001\\preparation\\PAYLOAD.json",
+    "manifest_sha256": "241aaa7a4d19fb8a94dee797536bd556c0777676e5a71a70605fdd79b6fc88aa",
+    "source_files_verified_semantics": {
+      "all_frozen_files": 1245,
+      "installed_runtime_files": 141
+    }
+  },
+  "reviewer_role": "Author of core world producer and independent reference construction; saved-artifact source/binding audit, separate from administrator final review.",
+  "runtime": {
+    "actual_initialize": {
+      "base_version": "9.7.2",
+      "build_id": "sha256:96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76",
+      "build_id_basis": "runtime_source_bytes_and_version_metadata",
+      "capabilities": {
+        "bounded_clearance_segment": true,
+        "clearance_segment_support": "exact_world_axis_boxes_or_explicit_original_support_triangle",
+        "declared_only": true,
+        "execution_scope": "independent_static_rigid_mesh_endpoint_geometry",
+        "guarded_rigid_transform": true,
+        "host_connection": "not_checked",
+        "layered_capability_diagnostics": true,
+        "live_host_required": true,
+        "model_task_benefit_certified": false,
+        "observation_reuse_scope": "paired_fresh_capture_128_vertices_or_8_meshes",
+        "observation_scene_transport": true,
+        "operation_local_observation_reuse": true,
+        "optional_observation_task_brief": true,
+        "scene_observation": true,
+        "segment_inflight_cancel_supported": false,
+        "surface_scan": true,
+        "surface_scan_scope": "up_to_256_independent_static_triangle_meshes",
+        "swept_path_certified": false,
+        "task_correlated_request_evidence": true
+      },
+      "distribution_version": "9.7.2+m4.active.region.anchors.r1",
+      "identity_check": {
+        "actual": {
+          "base_version": "9.7.2",
+          "build_id": "sha256:96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76",
+          "implementation_revision": "v26-surface-scan-pair-cache-20261112",
+          "mode": "live",
+          "protocol_version": "2025-03-26",
+          "source_kind": "installed_distribution",
+          "source_sha256": "96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76"
+        },
+        "authorization": "identity_comparison_only",
+        "compatible": true,
+        "expected": {
+          "base_version": "9.7.2",
+          "build_id": "sha256:96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76",
+          "implementation_revision": "v26-surface-scan-pair-cache-20261112",
+          "mode": "live",
+          "protocol_version": "2025-03-26",
+          "source_kind": "installed_distribution",
+          "source_sha256": "96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76"
+        },
+        "pins_requested": true,
+        "reasons": []
+      },
+      "implementation_revision": "v26-surface-scan-pair-cache-20261112",
+      "mode": "live",
+      "production_mode": true,
+      "protocol_version": "2025-03-26",
+      "schema_version": "1.0",
+      "source_file_count": 141,
+      "source_hash_exclusions": [],
+      "source_kind": "installed_distribution",
+      "source_sha256": "96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76"
+    },
+    "actual_prepare_callable": {
+      "code_sha256": "df1b9970d86b5f26412a09fe76b3977ca05b1331773ff18dda21e7ecc9bc3c96",
+      "module": "human_eye_plugin.active_observation",
+      "qualname": "prepare_scene_from_parsed",
+      "source_path": "D:\\he_anchor_001\\product\\human_eye_plugin\\active_observation.py",
+      "source_sha256": "5dfb7d3bdcc9a35bafbe567a8849ece4b961776b14241d3cb2c06305c95f87ff"
+    },
+    "actual_server_pid": 22452,
+    "changed_from_baseline": [
+      "human_eye_plugin/active_observation.py",
+      "human_eye_plugin/active_observation_host.py",
+      "human_eye_plugin/active_observation_images.py",
+      "human_eye_plugin/live_spatial_mcp.py"
+    ],
+    "files": 141,
+    "final_server_source_check_error": null,
+    "identity_recomputed_from_version_and_sorted_manifest": true,
+    "installed_runtime_bytes": 4258413,
+    "repository_preparation_Git_wheel_install_byte_equal": true,
+    "runtime_changes_after_preparation_commit": ""
+  },
+  "schema": "region-anchors-saved-source-audit-v1",
+  "units": {
+    "Blender_processes": 0,
+    "Python_test_children": [
+      {
+        "command": [
+          "D:\\he_anchor_001\\venv\\Scripts\\python.exe",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\examples\\agents\\live_entry.py",
+          "serve",
+          "--help"
+        ],
+        "exit_code": 0,
+        "pid": 27516
+      }
+    ],
+    "actual_verbose_ok_rows": 86,
+    "errors": [],
+    "failures": [],
+    "forbidden_calls": [],
+    "modules": [
+      {
+        "methods": 7,
+        "module": "verification.test_active_observation_region_world",
+        "new": true,
+        "source_sha256": "d6602a21f17d58f64e3bce6e46eaa730efd1c615a7e228bcafda58108cf9f497"
+      },
+      {
+        "methods": 9,
+        "module": "verification.test_active_observation_region_anchors",
+        "new": true,
+        "source_sha256": "727d6c0275b4d601649ea595c73b7e1a0745d6793a12e78561101ec3aa9c87cf"
+      },
+      {
+        "methods": 6,
+        "module": "verification.test_active_observation_region_delivery",
+        "new": true,
+        "source_sha256": "909d71a62a3492cd0c96b2905a84d88b84e78352137848c7f30361d9842b377d"
+      },
+      {
+        "methods": 9,
+        "module": "verification.test_active_observation_patches",
+        "new": false,
+        "source_sha256": "262630e3d19877e805c43e4ad61db6136e60dfa8ba2ef876509f415ee5390625"
+      },
+      {
+        "methods": 7,
+        "module": "verification.test_active_observation_patch_images",
+        "new": false,
+        "source_sha256": "9ca92f7114bbcf38479a9338a6ea1adf941b9d4db92bcbce5b6e24c9c4fc51eb"
+      },
+      {
+        "methods": 6,
+        "module": "verification.test_active_observation_patch_delivery",
+        "new": false,
+        "source_sha256": "380fe61c019158cbbaa3ae2e1ada7cab430f7ef2716dd3507fc16063fb498329"
+      },
+      {
+        "methods": 4,
+        "module": "verification.test_active_observation_images",
+        "new": false,
+        "source_sha256": "83e16f3e8dca90ba3541bd78718ab6551e77876944fdcffffc0b2a790754c5e5"
+      },
+      {
+        "methods": 5,
+        "module": "verification.test_active_observation_host",
+        "new": false,
+        "source_sha256": "4b62ab0c845a84b444cb6ee84f593ecd68ffaf575913aeebb105d7aeae48d9ad"
+      },
+      {
+        "methods": 5,
+        "module": "verification.test_active_observation_service",
+        "new": false,
+        "source_sha256": "481f0e7df469c3d205dfa47c5c982c7a2c613e33ca8f21e016d3e370271a3f8d"
+      },
+      {
+        "methods": 6,
+        "module": "verification.test_active_observation_brief",
+        "new": false,
+        "source_sha256": "dc61563bc55d07bf5ce3cc6e2842847a68de6d556ffe2e724f9aa27a3a693912"
+      },
+      {
+        "methods": 22,
+        "module": "verification.test_live_spatial_mcp",
+        "new": false,
+        "source_sha256": "85ca860a4a96077f935de38700c374f4ca12bfd1032b42588eef47dd612837f4"
+      }
+    ],
+    "new_methods": 22,
+    "old_methods": 64,
+    "process_exit_code": 0,
+    "real_rasters": 0,
+    "run": 86,
+    "selected_unique_method_ids": 86,
+    "source_scope": "Unit runner places the checkout first on sys.path and tests that source. All 141 checkout product files equal wheel/install/preparation Git bytes. The actual stdio initialize separately proves the installed distribution identity."
+  },
+  "wheel": {
+    "RECORD_rows": 148,
+    "all_wheel_non_RECORD_members_match_install": true,
+    "bytes": 1165931,
+    "determinism_scope": "Read-only ZIP metadata and existing builder receipt verified. Builder or wheel generation was not rerun.",
+    "deterministic_serialization_metadata_verified": true,
+    "members": 148,
+    "metadata_version": "9.7.2+m4.active.region.anchors.r1",
+    "nonself_RECORD_hashes_and_sizes_verified": 147,
+    "runtime_sources_json_equal": true
+  }
+}
