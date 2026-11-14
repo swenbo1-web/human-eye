@@ -47,6 +47,11 @@ def main():
         sources[path] = wanted
     if args.phase == 'formal':
         qualification = launcher.require_preparation(plan)
+        external = Path(plan['external_root'])
+        for folder in ('preparation', 'raster_budget'):
+            for path in (external / folder).rglob('*'):
+                if path.is_file():
+                    sources[str(path.resolve())] = sha(path)
     else:
         qualification = None
     result = {'schema': 'region-localization-consumption-source-freeze-v1',
