@@ -1,0 +1,112 @@
+{
+  "cycle_id": "M6-SHAPE-PAIRS-001",
+  "base_commit": "8a99c344caf4560ee87fbb9f7540bf67ff3f2469",
+  "contract_commit": "cf81e1e74a358f52c3ef3223f0807a22ae1661da",
+  "registered_before_generation_and_solve": true,
+  "asset_group": "614684bb54bcbea6f2494fe704a0f77dd2a607fdba115a391686abdb362b8a7d",
+  "raw_export_sha256": "e1700a3869ff48d9159be8f5d97212329629920eed6581370465ced9d986f18b",
+  "patch_sha256": "a203e27a45387170d6682cbf93de73f98d7c2042024c513f888c55f336c2cef1",
+  "cases": {
+    "undamaged_controls": 1,
+    "dent_variants": 6,
+    "center_vertex_id": 24205,
+    "D_m": 0.046924326994334485,
+    "radius_over_D": [
+      0.35,
+      0.55
+    ],
+    "amplitude_over_radius": [
+      0.05,
+      0.15,
+      0.3
+    ],
+    "distance": "shortest weighted path along pristine induced-region edges",
+    "support": "d<r and interior vertex",
+    "weight": "(1-(d/r)^2)^2",
+    "direction": "negative center area-weighted incident-face normal, fixed sign",
+    "topology_boundary_external": "preserved"
+  },
+  "method": {
+    "kind": "fixed-boundary discrete biharmonic surface positions",
+    "algorithm_input_fields": [
+      "abnormal_vertices",
+      "triangles",
+      "allowed_region_ids"
+    ],
+    "forbidden_inputs": [
+      "normal interior positions",
+      "reference Laplacian/factorization",
+      "true inverse displacements",
+      "true support IDs",
+      "center/radius/amplitude",
+      "case ID"
+    ],
+    "allowed_region_vertices": 410,
+    "fixed_boundary_vertices": 72,
+    "free_F": 338,
+    "energy_R": "F union all original-edge neighbors of F",
+    "R_rows_expected": 403,
+    "columns_C": "R union all original-edge neighbors of R",
+    "C_expected": 480,
+    "fixed_columns_expected": 142,
+    "incident_assembly_triangles_expected": 883,
+    "stiffness": "Kii += half cotangent, Kij -= half cotangent, assembled completely over all abnormal triangles incident to R",
+    "mass": "diagonal lumped incident area/3 at R",
+    "energy": "||diag(M_R)^(-1/2) K_R,C X_C||_F^2",
+    "constraints": "all C outside F fixed at observed abnormal coordinates; entire output outside F bitwise preserved",
+    "solver": "np.linalg.lstsq(B_F,-B_fixed X_fixed,rcond=None), all3coordinates simultaneously",
+    "negative_weights": "retain, no clamping",
+    "regularizer": "none",
+    "failure": "zero incident area/mass, nonfinite values or rank below338 recorded as method failure",
+    "normal_control": "same function and interface without case-specific branch",
+    "operator_source": "all weights/masses recomputed from each abnormal input"
+  },
+  "evaluation": {
+    "coordinate_error": [
+      "region410",
+      "true synthetic support",
+      "normal-control change"
+    ],
+    "statistics": [
+      "RMSE",
+      "p95",
+      "max",
+      "normalized by pristine mean induced-edge length"
+    ],
+    "quality": [
+      "incident triangle normal angle",
+      "edge length change",
+      "degenerate count",
+      "dot-normal flips"
+    ],
+    "contact": "reuse002 endpoint surface evaluator, uniform410 region and898incident faces; separately reference-to-damage and damage-to-repair changes",
+    "no_op_baseline": "retain abnormal geometry",
+    "split": "one asset group, development-only, no train/test claim"
+  },
+  "visualization": {
+    "inputs": "actual normal/damaged/repaired local mesh",
+    "camera": "one fixed45deg oblique orthographic normal-based frame",
+    "framing": "one common union extent for comparison, fixed center detail extent",
+    "panels": "each radius normal+normal-repair+3damage/repair pairs",
+    "outputs_private_only": [
+      "COMPARISON.png",
+      "DETAIL.png",
+      "VIEWER.html",
+      "full OBJ/NPY copies"
+    ]
+  },
+  "scope": {
+    "method_count": 1,
+    "radius_amplitude_search": false,
+    "new_damage_families": 0,
+    "training": 0,
+    "Blender": 0,
+    "M5": 0,
+    "paid_API": 0
+  },
+  "method_source": "https://libigl.github.io/tutorial/#quadratic-energy-minimization",
+  "script_sha256": {
+    "generate.py": "3a0b551a32ab6148c96c0f76194d4d1274b61b695229f1d91a705e91afe1113e",
+    "method.py": "424c760c20be7a9d50e65762eb11ee6bac84666cd7c65ca8f4fb163ed0cb4b33"
+  }
+}
