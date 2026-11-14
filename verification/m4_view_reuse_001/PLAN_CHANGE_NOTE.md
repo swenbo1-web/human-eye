@@ -1,0 +1,5 @@
+# Preparation registry refinement
+
+PLAN_R1.json and TEST_AND_COST_PLAN_R1.md preserve the initial nine-raster integration design. After the concrete adapter API was reviewed, the root required one actual camera miss, one actual projection miss and one actual owner-generation miss. The native integration owner therefore changes from three to six constructions and integration totals twelve. Each owner remains within six. Source/order/non512 gates explicitly reject without rendering. No candidate call or cost sample preceded this preparation-only refinement. The fixed five paired blocks are unchanged.
+
+The root subsequently required the fresh-publication failure control to begin with a valid existing frame. PLAN_R2.json and TEST_AND_COST_PLAN_R2.md retain the twelve-raster registry. Good-first, failed-fresh, old-good hit, successful fresh, new-good hit uses three attempts in that owner and brings integration to thirteen. This validates existing reference safety. No candidate execution or benchmark sample preceded the refinement.

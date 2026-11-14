@@ -1,0 +1,131 @@
+{
+  "schema": "m4-view-reuse-static-product-review-r2-v1",
+  "task": "M4-VIEW-REUSE-001",
+  "conclusion": "no_static_blocker_in_narrow_fallback_fix",
+  "reviewer_role": "Consumer-fixture author independently reviewing another author’s product-only fallback patch through source and saved-evidence reads.",
+  "first_review_files_preserved": {
+    "STATIC_PRODUCT_REVIEW.json": "74fbd19a0c1e19890de40aa2f806d736f9d85f04ebe032d1ca626c000ab2cd75",
+    "STATIC_PRODUCT_REVIEW.md": "eb41020306b7eb208c6647d1856dc02e05cd5c13ccb73ffa470fa21116c55d26"
+  },
+  "source_transition": {
+    "first_focused_images_sha256": "22414d9e74e39c012988a638d50f72e43551a447d4ee747cef8a99ee3947b113",
+    "final_images_sha256": "c66ac2ae5ac0c147990763973fc6bc13cbf4162f7ba4770cceb0fe858cebe697",
+    "only_extra_product_hunk": "observe_frame missing-image_ref fallback. Add raw owner schema, owner mapping identity and optional producer frame_identity to the existing fallback hash input; retain the legacy formula.",
+    "exact_byte_reconstruction_verified": true,
+    "unchanged_other_product_sources": {
+      "human_eye_plugin/active_observation_host.py": "d92eeca956074e2dfd6e8e9d86609c77677948a5297ec112c30dc8f3a8ced305",
+      "human_eye_plugin/live_spatial_mcp.py": "54874f092b57ffc496ff16eb58ba50fb355e1b643aab67311bffd42910d5e08d"
+    }
+  },
+  "static_findings": [
+    {
+      "area": "explicit_reference",
+      "passed": true,
+      "finding": "An existing nonempty image_ref is retained unchanged."
+    },
+    {
+      "area": "raw_missing_reference",
+      "passed": true,
+      "finding": "The raw-capable fallback appends OWNER_SCHEMA, the current validated owner mapping identity and any retained producer frame_identity. A raw and patch-only frame with equal RGB/source/view no longer receive the same fallback ref."
+    },
+    {
+      "area": "legacy_fallback",
+      "passed": true,
+      "finding": "The has_raw=False branch hashes the exact former tuple of scene/camera binding, patch mapping identity, view name and PNG hash. Legacy IDs remain byte-identical."
+    },
+    {
+      "area": "scope",
+      "passed": true,
+      "finding": "Undoing exactly this fallback block and receipt assignment reconstructs the first-reviewed images source digest. Raw raster, patch derivation, NPZ/readback, cache publication and default brief projection have no further product-byte changes."
+    }
+  ],
+  "first_focused_run": {
+    "result_path": "product_checks_01/RESULT.json",
+    "result_sha256": "62c7c0a1ff2041cf809074acde1d10df4bde9926e88d16a78efe313fb0f59165",
+    "images_source_sha256": "22414d9e74e39c012988a638d50f72e43551a447d4ee747cef8a99ee3947b113",
+    "passed": true,
+    "actual_raster_calls": 19,
+    "actual_raster_roles": {
+      "independent_direct_raw_ID_oracle": 5,
+      "legacy_patch_ID_oracle": 5,
+      "product": 7,
+      "public_2_tuple": 1,
+      "public_3_tuple": 1
+    },
+    "affected_mock_units": 31,
+    "scope": "These 19 raster calls belong to the original images source, and were not rerun for the final fallback-only source."
+  },
+  "saved_replay_evidence": {
+    "before": {
+      "path": "no_ref_before_01/RESULT.json",
+      "defect_reproduced": true,
+      "dual_ref": "active-image:eccbbcb9ae5a37a2f5e0ebbf70eb6f66a2b9da19f01e0b8ce84340d777571a30",
+      "legacy_ref": "active-image:eccbbcb9ae5a37a2f5e0ebbf70eb6f66a2b9da19f01e0b8ce84340d777571a30"
+    },
+    "after_first": {
+      "path": "no_ref_after_01/RESULT.json",
+      "passed": false,
+      "raw_and_legacy_refs_correct": true,
+      "retained_failure": "One existing signature-check unit errored because the raster-forbidden Mock guard omitted the original signature. The author corrected the harness guard without another product patch.",
+      "units_original": {
+        "tests_run": 31,
+        "passed": false,
+        "failures": [],
+        "errors": [
+          {
+            "test": "test_existing_raster_return_contract_and_same_winner_assignment (verification.test_active_observation_patch_images.ActiveObservationPatchImageTests.test_existing_raster_return_contract_and_same_winner_assignment)",
+            "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\test_active_observation_patch_images.py\", line 191, in test_existing_raster_return_contract_and_same_winner_assignment\n    self.assertFalse(signature.parameters['return_owner'].default)\n                     ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\nKeyError: 'return_owner'\n"
+          }
+        ]
+      }
+    },
+    "after_corrected_guard": {
+      "path": "no_ref_after_02/RESULT.json",
+      "passed": true,
+      "dual_ref": "active-image:122934fa17316ff31794ed10d200ed78b3cf40b7d4c6b4d835e1db22d4d54c56",
+      "legacy_ref": "active-image:eccbbcb9ae5a37a2f5e0ebbf70eb6f66a2b9da19f01e0b8ce84340d777571a30",
+      "units_original": {
+        "tests_run": 31,
+        "passed": true,
+        "failures": [],
+        "errors": []
+      }
+    },
+    "new_product_raster_calls_each_replay": 0,
+    "new_direct_raster_calls_each_replay": 0,
+    "protected_saved_bytes_equal_before_after": true,
+    "protected_saved_bytes": {
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\frames\\subdivided_patch\\001-e5b453e740059f479656e58d.npz": "c518988158ca193f69f02e5d6359e6eedada7f3b080853339b9174d4b25bdb1d",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\frames\\subdivided_patch\\001-e5b453e740059f479656e58d.png": "1966718dbee85a8bb77c2c4065ed0ccf551017cc1cd248430632177d0f1f4dec",
+      "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\legacy\\patch_only.npz": "85044073b7aaf4f35ebc7d8e1dba95d0a9505af5139d37d0ac8c2614bb5a49e3"
+    }
+  },
+  "this_review_execution_counts": {
+    "candidate_imports": 0,
+    "product_API_calls": 0,
+    "renderer_calls": 0,
+    "Blender_calls": 0,
+    "model_calls": 0,
+    "test_runs": 0,
+    "AST_checks": 1
+  },
+  "limits": [
+    "The current-source fallback replay and 31 mock units are distinct from the earlier 19-raster matrix.",
+    "Only the fallback patch is newly reviewed here. The original three-file review remains preserved and source-bound to its earlier images hash.",
+    "This static review adds no model, raster, product call or test execution. It does not replace the separately frozen installed integration and paired measurement."
+  ],
+  "inputs_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\human_eye_plugin\\active_observation_host.py": "d92eeca956074e2dfd6e8e9d86609c77677948a5297ec112c30dc8f3a8ced305",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\human_eye_plugin\\active_observation_images.py": "c66ac2ae5ac0c147990763973fc6bc13cbf4162f7ba4770cceb0fe858cebe697",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\human_eye_plugin\\live_spatial_mcp.py": "54874f092b57ffc496ff16eb58ba50fb355e1b643aab67311bffd42910d5e08d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\STATIC_PRODUCT_REVIEW.json": "74fbd19a0c1e19890de40aa2f806d736f9d85f04ebe032d1ca626c000ab2cd75",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\STATIC_PRODUCT_REVIEW.md": "eb41020306b7eb208c6647d1856dc02e05cd5c13ccb73ffa470fa21116c55d26",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\no_ref_after_01\\RESULT.json": "1970a1c04efedf47432565fab2c4464940d264fb5763bf9e9a6cce0cde6c7999",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\no_ref_after_02\\RESULT.json": "4ad84ed0a44c64f47d166ca037515f1c67843f07c8dd1ae9d1206ca33927ad93",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\no_ref_before_01\\RESULT.json": "207a822805f4a604b7a9df3a81ac76519e26bc56d8a311b0cbd7c3c778f62753",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\RESULT.json": "62c7c0a1ff2041cf809074acde1d10df4bde9926e88d16a78efe313fb0f59165",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\frames\\subdivided_patch\\001-e5b453e740059f479656e58d.npz": "c518988158ca193f69f02e5d6359e6eedada7f3b080853339b9174d4b25bdb1d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\frames\\subdivided_patch\\001-e5b453e740059f479656e58d.png": "1966718dbee85a8bb77c2c4065ed0ccf551017cc1cd248430632177d0f1f4dec",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_view_reuse_001\\product_checks_01\\legacy\\patch_only.npz": "85044073b7aaf4f35ebc7d8e1dba95d0a9505af5139d37d0ac8c2614bb5a49e3"
+  }
+}
