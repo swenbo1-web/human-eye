@@ -913,6 +913,110 @@ def _valid_visible_pixel_location(pixel, size):
             and 0 <= ymin <= anchor[1] <= ymax < size[1])
 
 
+def _project_active_inspection(facts, regions, pixel_references):
+    inspection = facts['inspection']
+    if (set(inspection) != {'schema', 'scope', 'state', 'stop_reason', 'view_names', 'counts'}
+            or inspection['schema'] != 'active-inspection-v1'
+            or inspection['scope'] != facts['coverage']['scope']):
+        raise ValueError('active_inspection_contract')
+    views = inspection['view_names']
+    if (type(views) is not list or not views or len(set(views)) != len(views)
+            or any(type(view) is not str for view in views)):
+        raise ValueError('active_inspection_view_pool')
+    view_indices = {name: index for index, name in enumerate(views)}
+    if not set(facts['coverage']['observed_views']) <= set(views):
+        raise ValueError('active_inspection_observed_pool')
+    rows = facts['region_evidence']
+    if type(rows) is not list or len(rows) != len(regions):
+        raise ValueError('active_region_evidence_count')
+    counts = {'supported': len(regions), 'covered': 0, 'unobserved': 0,
+              'pending_geometric_candidate': 0, 'no_geometric_complete_candidate': 0,
+              'pixel_insufficient': 0, 'covered_without_witness': 0}
+    no_candidate_reasons = {'no_front_facing_candidate', 'positive_area_occlusion_all_front_views',
+                            'no_complete_geometric_candidate'}
+    covered_ids = set(facts['coverage']['covered_roi_ids'])
+    unavailable_ids = set(facts['coverage']['candidate_pool_uncovered_roi_ids'])
+    view_reason_names = {'back_facing', 'edge_on', 'outside_frustum', 'positive_area_occlusion',
+                         'unobserved_geometric_candidate', 'pixel_evidence_insufficient'}
+    compact, groups, group_indices = [], [], {}
+    for index, (row, region) in enumerate(zip(rows, regions)):
+        if (set(row) != {'roi_id', 'complete_witness', 'unobserved_reason', 'view_reasons'}
+                or row['roi_id'] != region['roi_id'] or type(row['view_reasons']) is not dict):
+            raise ValueError('active_region_evidence_identity')
+        witness = row['complete_witness']
+        if (region['status'] == 'covered') != (region['roi_id'] in covered_ids):
+            raise ValueError('active_region_evidence_coverage')
+        if region['status'] == 'covered':
+            counts['covered'] += 1
+            if (type(witness) is not dict or set(witness) != {'view_name', 'pixel_row_index'}
+                    or type(witness['pixel_row_index']) is not int or row['unobserved_reason'] is not None
+                    or row['view_reasons']):
+                raise ValueError('active_complete_witness_required')
+            pixel_index, owner_index, pixel = pixel_references[(witness['view_name'], witness['pixel_row_index'])]
+            if (owner_index != index or pixel['readable'] is not True or pixel['front_facing'] is not True
+                    or pixel['visible_surface_pixels'] < pixel['minimum_surface_pixels']
+                    or pixel['contrasting_boundary_pixels'] < pixel['minimum_boundary_pixels']):
+                raise ValueError('active_complete_witness_pixel_binding')
+            compact.append([pixel_index, None, []])
+            continue
+        if region['status'] != 'unknown' or witness is not None:
+            raise ValueError('active_unobserved_evidence_status')
+        counts['unobserved'] += 1
+        reason = row['unobserved_reason']
+        classifications = set(row['view_reasons'])
+        if ((reason in no_candidate_reasons) != (region['roi_id'] in unavailable_ids)
+                or (reason == 'unobserved_geometric_candidates') != ('unobserved_geometric_candidate' in classifications)
+                or (reason == 'pixel_evidence_insufficient' and 'pixel_evidence_insufficient' not in classifications)
+                or (reason in no_candidate_reasons and classifications & {
+                    'unobserved_geometric_candidate', 'pixel_evidence_insufficient'})
+                or (reason == 'no_front_facing_candidate' and not classifications <= {'back_facing', 'edge_on'})
+                or (reason == 'positive_area_occlusion_all_front_views'
+                    and ('positive_area_occlusion' not in classifications
+                         or not classifications <= {'back_facing', 'edge_on', 'positive_area_occlusion'}))):
+            raise ValueError('active_unobserved_reason_classification')
+        if reason in no_candidate_reasons:
+            counts['no_geometric_complete_candidate'] += 1
+        elif reason == 'unobserved_geometric_candidates':
+            counts['pending_geometric_candidate'] += 1
+        elif reason == 'pixel_evidence_insufficient':
+            counts['pixel_insufficient'] += 1
+        else:
+            raise ValueError('active_unobserved_reason')
+        references, seen = [], []
+        for classification, names in row['view_reasons'].items():
+            if (classification not in view_reason_names or type(names) is not list or not names
+                    or len(set(names)) != len(names)):
+                raise ValueError('active_unobserved_view_reason')
+            indices = tuple(view_indices[name] for name in names)
+            seen.extend(names)
+            key = classification, indices
+            if key not in group_indices:
+                group_indices[key] = len(groups)
+                groups.append([classification, list(indices)])
+            references.append(group_indices[key])
+        if len(seen) != len(views) or set(seen) != set(views):
+            raise ValueError('active_unobserved_view_partition')
+        compact.append([None, reason, references])
+    if (inspection['counts'] != counts
+            or any(type(value) is not int for value in inspection['counts'].values())
+            or counts['covered'] != len(facts['coverage']['covered_roi_ids'])
+            or counts['unobserved'] != len(facts['coverage']['unresolved_roi_ids'])):
+        raise ValueError('active_inspection_counts')
+    if not regions:
+        expected = 'no_supported_regions', 'no_supported_regions'
+    elif not facts['coverage']['observed_views']:
+        expected = 'prediction_only', 'actual_observation_required'
+    elif counts['pending_geometric_candidate']:
+        expected = 'observation_required', 'unobserved_geometric_candidates_remain'
+    elif not counts['unobserved']:
+        expected = 'all_supported_regions_observed', 'all_supported_regions_observed'
+    else:
+        expected = 'finite_pool_exhausted', 'no_unobserved_geometric_candidates'
+    if (inspection['state'], inspection['stop_reason']) != expected:
+        raise ValueError('active_inspection_stop_reason')
+    return compact, {'columns': ['reason', 'view_indices'], 'rows': groups}
+
+
 def project_active_observation_brief(value):
     """Deduplicate one complete active result using versioned, local table indices.
 
@@ -950,9 +1054,11 @@ def project_active_observation_brief(value):
                 or set(capture_state) - {'instance_id', 'epoch', 'revision', 'selection_key'}):
             return None
         located = 'location_conventions' in facts
+        consumable = 'inspection' in facts or 'region_evidence' in facts
         fact_fields = {'scene_identity', 'candidate_identity', 'regions', 'observations',
                        'coverage', 'scope', 'image_delivery_scope'}
         if (set(facts) != fact_fields | ({'location_conventions'} if located else set())
+                | ({'inspection', 'region_evidence'} if consumable else set())
                 or facts['scene_identity'] != binding['geometry_identity']
                 or facts['candidate_identity'] != binding['camera_identity']):
             return None
@@ -1067,6 +1173,7 @@ def project_active_observation_brief(value):
                         or frame['patch_mapping_identity'] != frames[0]['patch_mapping_identity']):
                     return None
         observation_rows, pixels, pixel_rules, observed_indices = [], [], None, []
+        pixel_references = {}
         for observation in facts['observations']:
             if set(observation) != {'view_name', 'image_path', 'image_ref', 'image_sha256',
                                     'readable_roi_ids', 'pixel_rows'}:
@@ -1078,7 +1185,7 @@ def project_active_observation_brief(value):
             observed_indices.append(image_index)
             observation_rows.append([image_index, region_references(observation['readable_roi_ids'])])
             seen_regions, readable_ids = set(), set()
-            for pixel in observation['pixel_rows']:
+            for pixel_index, pixel in enumerate(observation['pixel_rows']):
                 expected_pixel_fields = set(rule_fields) | {
                         'roi_id', 'object_index', 'host_id', 'object_name', 'view',
                         'front_facing', 'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable'}
@@ -1099,6 +1206,8 @@ def project_active_observation_brief(value):
                     return None
                 if pixel['readable']:
                     readable_ids.add(pixel['roi_id'])
+                if consumable:
+                    pixel_references[(observation['view_name'], pixel_index)] = (len(pixels), region_index, pixel)
                 pixels.append([image_index, region_index, *[pixel[key] for key in pixel_columns[2:]],
                                *[pixel[key] for key in location_fields if located]])
             if (seen_regions != set(range(len(regions)))
@@ -1148,6 +1257,17 @@ def project_active_observation_brief(value):
         if located:
             result['schema'] = 'active-observation-brief-v3'
             result['location_conventions'] = conventions
+        if consumable:
+            evidence, view_groups = _project_active_inspection(facts, regions, pixel_references)
+            result['schema'] = 'active-observation-brief-v4'
+            result['inspection'] = facts['inspection']
+            if regions:
+                result['regions']['columns'].extend(['complete_witness_pixel_index', 'unobserved_reason',
+                                                     'unobserved_view_group_indices'])
+                for row, extra in zip(result['regions']['rows'], evidence):
+                    row.extend(extra)
+            if view_groups['rows']:
+                result['unobserved_view_groups'] = view_groups
         return copy.deepcopy(result)
     except (KeyError, TypeError, IndexError, AttributeError, ValueError):
         return None

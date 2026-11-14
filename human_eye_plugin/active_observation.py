@@ -602,17 +602,6 @@ class ActiveObservationSession:
         for name, mask in self.index.view_masks.items():
             if name not in self.state.observed_views:
                 remaining |= mask
-        regions = []
-        for index, region in enumerate(self.regions):
-            reason = 'observed_readable' if region.roi_id in covered else 'pending_observation'
-            if region.roi_id in unavailable:
-                reason = 'finite_camera_pool_uncovered'
-            elif region.roi_id not in covered and not (remaining & (1 << index)):
-                reason = 'pixel_evidence_insufficient'
-            regions.append({'roi_id': region.roi_id, 'object_index': region.object_index,
-                            'object_name': region.object_name,
-                            'status': 'covered' if region.roi_id in covered else 'unknown', 'reason': reason,
-                            **copy.deepcopy(self._region_world_descriptions[index])})
         pixel_fields = (
             'roi_id', 'object_index', 'view', 'front_facing',
             'visible_surface_pixels', 'contrasting_boundary_pixels', 'readable',
@@ -620,19 +609,82 @@ class ActiveObservationSession:
             'minimum_rgb_boundary_contrast',
             'visible_pixel_bounds', 'visible_pixel_anchor',
         )
-        observations = [
-            {'view_name': name, 'image_path': receipt['image_path'],
-             'image_ref': receipt.get('image_ref'),
-             'image_sha256': receipt['image_sha256'],
-             'readable_roi_ids': list(receipt['readable_roi_ids']),
-             'pixel_rows': [
-                 {key: row[key] for key in pixel_fields if key in row}
-                 for row in receipt.get('pixel_rows', [])
-             ]}
-            for name, receipt in self.state.observed_views.items()
-        ]
+        region_indices = {region.roi_id: index for index, region in enumerate(self.regions)}
+        observations, witnesses = [], {}
+        for name, receipt in self.state.observed_views.items():
+            rows = []
+            readable = set(receipt['readable_roi_ids'])
+            for pixel_index, row in enumerate(receipt.get('pixel_rows', [])):
+                rows.append({key: row[key] for key in pixel_fields if key in row})
+                roi_id = row['roi_id']
+                complete = self.index.view_masks[name] & (1 << region_indices[roi_id])
+                if (roi_id in covered and roi_id not in witnesses and complete and roi_id in readable
+                        and row.get('front_facing') is True and row.get('readable') is True
+                        and row.get('visible_surface_pixels', -1) >= row.get('minimum_surface_pixels', 16)
+                        and row.get('contrasting_boundary_pixels', -1) >= row.get('minimum_boundary_pixels', 4)):
+                    witnesses[roi_id] = {'view_name': name, 'pixel_row_index': pixel_index}
+            observations.append({'view_name': name, 'image_path': receipt['image_path'],
+                'image_ref': receipt.get('image_ref'), 'image_sha256': receipt['image_sha256'],
+                'readable_roi_ids': list(receipt['readable_roi_ids']), 'pixel_rows': rows})
+
+        regions, evidence = [], []
+        pending_count, insufficient_count = 0, 0
+        for index, region in enumerate(self.regions):
+            roi_id = region.roi_id
+            reason = 'observed_readable' if roi_id in covered else 'pending_observation'
+            unobserved_reason, view_reasons = None, {}
+            if roi_id not in covered:
+                for name in self.index.view_order:
+                    classification = self.index.classifications[name][roi_id]['status']
+                    if self.index.view_masks[name] & (1 << index):
+                        classification = ('pixel_evidence_insufficient' if name in self.state.observed_views
+                                          else 'unobserved_geometric_candidate')
+                    view_reasons.setdefault(classification, []).append(name)
+                if roi_id in unavailable:
+                    reason = 'finite_camera_pool_uncovered'
+                    statuses = set(view_reasons)
+                    if statuses <= {'back_facing', 'edge_on'}:
+                        unobserved_reason = 'no_front_facing_candidate'
+                    elif statuses <= {'back_facing', 'edge_on', 'positive_area_occlusion'}:
+                        unobserved_reason = 'positive_area_occlusion_all_front_views'
+                    else:
+                        unobserved_reason = 'no_complete_geometric_candidate'
+                elif remaining & (1 << index):
+                    unobserved_reason = 'unobserved_geometric_candidates'
+                    pending_count += 1
+                else:
+                    reason = unobserved_reason = 'pixel_evidence_insufficient'
+                    insufficient_count += 1
+            regions.append({'roi_id': roi_id, 'object_index': region.object_index,
+                            'object_name': region.object_name,
+                            'status': 'covered' if roi_id in covered else 'unknown', 'reason': reason,
+                            **copy.deepcopy(self._region_world_descriptions[index])})
+            evidence.append({'roi_id': roi_id, 'complete_witness': witnesses.get(roi_id),
+                             'unobserved_reason': unobserved_reason, 'view_reasons': view_reasons})
+        missing_witnesses = len(covered - witnesses.keys())
+        if not self.regions:
+            state, stop_reason = 'no_supported_regions', 'no_supported_regions'
+        elif missing_witnesses:
+            state, stop_reason = 'evidence_incomplete', 'complete_readable_witness_missing'
+        elif not observations:
+            state, stop_reason = 'prediction_only', 'actual_observation_required'
+        elif pending_count:
+            state, stop_reason = 'observation_required', 'unobserved_geometric_candidates_remain'
+        elif len(covered) == len(self.regions):
+            state, stop_reason = 'all_supported_regions_observed', 'all_supported_regions_observed'
+        else:
+            state, stop_reason = 'finite_pool_exhausted', 'no_unobserved_geometric_candidates'
+        inspection = {'schema': 'active-inspection-v1', 'scope': summary['scope'],
+            'state': state, 'stop_reason': stop_reason, 'view_names': list(self.index.view_order),
+            'counts': {'supported': len(self.regions), 'covered': len(covered),
+                       'unobserved': len(self.regions) - len(covered),
+                       'pending_geometric_candidate': pending_count,
+                       'no_geometric_complete_candidate': len(unavailable),
+                       'pixel_insufficient': insufficient_count,
+                       'covered_without_witness': missing_witnesses}}
         return {'scene_identity': self.scene_identity, 'candidate_identity': self.candidate_identity,
                 'regions': regions, 'observations': observations, 'coverage': summary,
+                'inspection': inspection, 'region_evidence': evidence,
                 'image_delivery_scope': 'local_core_validation'}
 
     def rebind(self, scene, cameras):
