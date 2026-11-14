@@ -1,0 +1,639 @@
+{
+  "method": "Independent AST comparison and actual saved per-case outputs; seven targeted pure terminal-reader executions. No full scorer replay or product/model/Blender/raster/network calls.",
+  "checks": 132,
+  "passed": 132,
+  "failures": [],
+  "new_product_model_Blender_raster_network_calls": 0,
+  "new_full_scorer_runs": 0,
+  "targeted_reader_runs": [
+    {
+      "name": "saved_positive",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": true,
+        "failed_fields": []
+      },
+      "expected_failed_fields": []
+    },
+    {
+      "name": "nested_state_not_substitute",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "RUN_RESULT.execution_state"
+        ]
+      },
+      "expected_failed_fields": [
+        "RUN_RESULT.execution_state"
+      ]
+    },
+    {
+      "name": "completed_with_postcheck_error",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "RUN_RESULT.terminal_errors"
+        ]
+      },
+      "expected_failed_fields": [
+        "RUN_RESULT.terminal_errors"
+      ]
+    },
+    {
+      "name": "bool_not_integer_count",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "RUN_RESULT.actual_CLI_processes"
+        ]
+      },
+      "expected_failed_fields": [
+        "RUN_RESULT.actual_CLI_processes"
+      ]
+    },
+    {
+      "name": "multiple_records",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "RUN_RESULT.records"
+        ]
+      },
+      "expected_failed_fields": [
+        "RUN_RESULT.records"
+      ]
+    },
+    {
+      "name": "exit_unconfirmed",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "CONSUMER.runtime_exit.confirmed"
+        ]
+      },
+      "expected_failed_fields": [
+        "CONSUMER.runtime_exit.confirmed"
+      ]
+    },
+    {
+      "name": "missing_binding_proof",
+      "observed": {
+        "schema": "complete-witness-terminal-binding-v1",
+        "passed": false,
+        "failed_fields": [
+          "CONSUMER.runtime_binding.confirmed"
+        ]
+      },
+      "expected_failed_fields": [
+        "CONSUMER.runtime_binding.confirmed"
+      ]
+    }
+  ],
+  "score_AST_explicitly_reversed_nodes": [
+    "require_new_output(arguments.output)",
+    "terminal = load('_derived_complete_witness_terminal', NEW_HERE / 'terminal_reader.py')",
+    "run_result = oracle.read(arguments.runtime_root / 'formal/RUN_RESULT.json')",
+    "terminal_result = terminal.terminal_binding(run_result, consumer)",
+    "if not terminal_result['passed']:\n    return reject_terminal(arguments, terminal_result)",
+    "outer = run_result['records'][0]",
+    "check('valid_final_and_terminal_process', terminal_result['passed'])",
+    "result['scorer_identity'] = scorer_identity()",
+    "result['terminal_binding'] = terminal_result"
+  ],
+  "checks_detail": [
+    {
+      "check": "score_remaining_AST_equal_after_explicit_read_output_metadata_reversal",
+      "passed": true
+    },
+    {
+      "check": "unchanged_loader_AST",
+      "passed": true
+    },
+    {
+      "check": "main_remaining_AST_equal_after_explicit_output_metadata_reversal",
+      "passed": true
+    },
+    {
+      "check": "original_scorer_expected_SHA",
+      "passed": true
+    },
+    {
+      "check": "registry_denominator_21",
+      "passed": true
+    },
+    {
+      "check": "saved_matrix_denominator_21",
+      "passed": true
+    },
+    {
+      "check": "saved_zero_extra_live_calls",
+      "passed": true
+    },
+    {
+      "check": "actual_23_score_invocations",
+      "passed": true
+    },
+    {
+      "check": "P00_real_producer_positive:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "P00_real_producer_positive:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "P00_real_producer_positive:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "P00_real_producer_positive:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "P00_real_producer_positive:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T01_missing_top_state:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T01_missing_top_state:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T01_missing_top_state:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T01_missing_top_state:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T01_missing_top_state:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T02_failed_top_state:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T02_failed_top_state:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T02_failed_top_state:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T02_failed_top_state:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T02_failed_top_state:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T03_launcher_false:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T03_launcher_false:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T03_launcher_false:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T03_launcher_false:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T03_launcher_false:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T04_postcheck_error:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T04_postcheck_error:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T04_postcheck_error:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T04_postcheck_error:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T04_postcheck_error:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T05_missing_records:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T05_missing_records:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T05_missing_records:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T05_missing_records:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T05_missing_records:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T06_empty_records:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T06_empty_records:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T06_empty_records:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T06_empty_records:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T06_empty_records:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T07_multiple_records:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T07_multiple_records:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T07_multiple_records:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T07_multiple_records:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T07_multiple_records:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T08_wrong_slot:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T08_wrong_slot:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T08_wrong_slot:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T08_wrong_slot:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T08_wrong_slot:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T09_wrong_group:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T09_wrong_group:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T09_wrong_group:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T09_wrong_group:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T09_wrong_group:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T10_wrong_schema:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T10_wrong_schema:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T10_wrong_schema:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T10_wrong_schema:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T10_wrong_schema:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T11_planned_routes_zero:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T11_planned_routes_zero:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T11_planned_routes_zero:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T11_planned_routes_zero:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T11_planned_routes_zero:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T12_actual_routes_zero:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T12_actual_routes_zero:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T12_actual_routes_zero:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T12_actual_routes_zero:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T12_actual_routes_zero:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T13_CLI_count_zero:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T13_CLI_count_zero:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T13_CLI_count_zero:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T13_CLI_count_zero:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T13_CLI_count_zero:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T14_outer_retries_one:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T14_outer_retries_one:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T14_outer_retries_one:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T14_outer_retries_one:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T14_outer_retries_one:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T15_row_outer_invalid:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T15_row_outer_invalid:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T15_row_outer_invalid:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T15_row_outer_invalid:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T15_row_outer_invalid:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T16_consumer_invalid:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T16_consumer_invalid:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T16_consumer_invalid:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T16_consumer_invalid:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T16_consumer_invalid:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T17_binding_unconfirmed:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T17_binding_unconfirmed:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T17_binding_unconfirmed:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T17_binding_unconfirmed:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T17_binding_unconfirmed:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "T18_exit_unconfirmed:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "T18_exit_unconfirmed:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "T18_exit_unconfirmed:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "T18_exit_unconfirmed:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "T18_exit_unconfirmed:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "W01_actual_partial_readable:current_product_kept_correct",
+      "passed": true
+    },
+    {
+      "check": "partial_control_is_real_readable_not_complete",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:actual_control_matches_registered",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:actual_terminal_fields",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:exact_error_set",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:quality_and_exit",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:three_json_read_overlays_only",
+      "passed": true
+    },
+    {
+      "check": "W02_nonexistent_current_ref:current_product_kept_correct",
+      "passed": true
+    },
+    {
+      "check": "fixtures_match_real_RUN_RESULT",
+      "passed": true
+    },
+    {
+      "check": "fixtures_match_real_CONSUMER",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:saved_positive",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:nested_state_not_substitute",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:completed_with_postcheck_error",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:bool_not_integer_count",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:multiple_records",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:exit_unconfirmed",
+      "passed": true
+    },
+    {
+      "check": "executed_reader:missing_binding_proof",
+      "passed": true
+    },
+    {
+      "check": "real_positive_no_read_overlay",
+      "passed": true
+    },
+    {
+      "check": "real_positive_output_bound",
+      "passed": true
+    },
+    {
+      "check": "positive_33_checks_all_pass",
+      "passed": true
+    },
+    {
+      "check": "positive_native_remains_nondirect",
+      "passed": true
+    },
+    {
+      "check": "positive_extra_categories_unchanged",
+      "passed": true
+    },
+    {
+      "check": "positive_no_additional_frame",
+      "passed": true
+    },
+    {
+      "check": "original_quality_remains_failed",
+      "passed": true
+    }
+  ],
+  "interpretation": "Native supplement occurred; its necessity or causal time saving was not established. Original automated failure and supplementary quality are the same model sample."
+}
