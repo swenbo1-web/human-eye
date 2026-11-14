@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_7369750ed43c42248d5bf071ee9039b3",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+        "thread_id": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+        "turn_started_at_unix_ms": 1794666425269,
+        "turn_id": "01a1da74-6bae-74a1-8024-5d4400b09a0b",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+      "itemId": "fc_087b7e486df4819c016af86ff83a7c87d08510ff3496611bcb",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "tri_to_surface=np.full(len(faces),-2,dtype=np.int32)\nfor s in surfaces: tri_to_surface[s['triangles']]=s['id']\nrefs={v['name']:f'image-{i+1:02d}' for i,v in enumerate(cameras['views'])}\nmetrics={}\nfor view in cameras['views']:\n name=view['name']; buf=buffers[name]; tids=buf['triangle_ids']; sid=np.full(tids.shape,-1,dtype=np.int32); valid=tids>=0; sid[valid]=tri_to_surface[tids[valid]]\n rgb=buf['color'].astype(np.int32); marked=np.zeros(tids.shape,bool)\n for axis in (0,1):\n  first=(slice(None,-1),slice(None)) if axis==0 else (slice(None),slice(None,-1))\n  second=(slice(1,None),slice(None)) if axis==0 else (slice(None),slice(1,None))\n  contrasting=(sid[first]!=sid[second]) & (np.sum((rgb[first]-rgb[second])**2,axis=2)>=576)\n  marked[first]|=contrasting; marked[second]|=contrasting\n metrics[name]={}\n for s in surfaces:\n  mask=sid==s['id']; coords=np.argwhere(mask)\n  metrics[name][s['id']]={'pixels':int(mask.sum()),'boundary_pixels':int((mask&marked).sum()),'example_pixel': [int(coords[0,1]),int(coords[0,0])] if len(coords) else None}\n buf['surface_ids']=sid\nprint('SCENE pixel',int(buffers['SCENE']['triangle_ids'][247,109]),int(buffers['SCENE']['surface_ids'][247,109]))\nprint('target rows',[(s['id'],s['center'],s['normal'],s['corners']) for s in surfaces if s['id']==int(buffers['SCENE']['surface_ids'][247,109]) or s['center'] in [(Fraction(0),)*3,(Fraction(5,32),Fraction(-5,32),Fraction(237,2048))]])\nprint('remainder',remainder,[[verts[i] for i in faces[j]] for ids in remainder for j in ids])\n"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+**Inspection complete for the six-camera capture replay.** All six observations were generated this session: SCENE, TOP, LEFT, RIGHT, FRONT, BACK (`image-01`–`image-06`).
+
+- Discovered **138 supported rectangles**: 132 with two triangles and six with 512 triangles. **115 have complete, readable evidence**, measured from merged surface IDs and actual RGB buffers.
+- **23 remain unobserved:** 22 face away from every registered camera; surface 93, centered at `[0.703125,0.3515625,0]`, faces +Z but is occluded in all six views, with zero visible pixels. Unsupported triangle 48 remains separate.
+- The complete per-surface source indices, statuses, view references, and pixel counts are retained in this session’s `COVERAGE_ROWS_*` tool facts; `REMAINING_SET` lists all remaining IDs.
+
+**Position checks**
+1. SCENE pixel **[109,247]** belongs to surface **17**, winning triangle **35**, in **`image-01`**. Center: `[0.15625,-0.15625,0.11865234375]`; front: **+Z**; extent: **0.0703125 × 0.0703125**, spanning X `[0.12109375,0.19140625]`, Y `[-0.19140625,-0.12109375]`. Its complete SCENE observation has **354 surface pixels and 73 contrasting boundary pixels**.
+2. The **origin-centered +Z surface (137)** has **zero SCENE pixels despite being front-facing**: it is occluded, not back-facing. **LEFT / `image-03`** reads it completely: **792 surface pixels, 110 contrasting boundary pixels**; pixel **[327,415]** belongs to it.
+3. The surface centered at **`[0.15625,-0.15625,0.11572265625]`, facing −Z (16)** cannot receive front-facing readable evidence from this pool: every registered camera looks from a direction with positive Z.
+
+No potentially inspectable surface remains unfinished **within this finite pool**. Other camera positions are untested; these limitations do not establish impossibility from arbitrary viewpoints.

@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_df63b90ac5f04945b53889e9c721dfd1",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1da6a-fb94-7352-a84f-a1875bff6447",
+        "thread_id": "01a1da6a-fb94-7352-a84f-a1875bff6447",
+        "turn_started_at_unix_ms": 1794665807049,
+        "turn_id": "01a1da6a-fcc1-71e0-8eec-23e3f7d73947",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1da6a-fb94-7352-a84f-a1875bff6447",
+      "itemId": "fc_0f53348826c8b155016af86dab7dd487d09c51ad5e5e6f4de9",
+      "progressToken": 6
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "def clip_polygon(polygon, evaluate):\n    if not polygon: return []\n    output=[]; previous=polygon[-1]; previous_value=evaluate(previous)\n    for current in polygon:\n        current_value=evaluate(current)\n        if (current_value>=0)!=(previous_value>=0):\n            fraction=previous_value/(previous_value-current_value)\n            output.append(tuple(a+fraction*(b-a) for a,b in zip(previous,current)))\n        if current_value>=0: output.append(current)\n        previous=current; previous_value=current_value\n    return output\n\ndef twice_area(polygon): return abs(sum(polygon[k][0]*polygon[(k+1)%len(polygon)][1]-polygon[k][1]*polygon[(k+1)%len(polygon)][0] for k in range(len(polygon)))) if len(polygon)>=3 else 0\n\nvf=np.array(verts,dtype=float); face_array=np.array(faces)\nchecks={}\nfor view in cameras['views']:\n    name=view['name']; direction=tuple(Fraction(x) for x in view['direction_rational'])\n    seed=(0,1,0) if name=='TOP' else (0,0,1)\n    right=cross(tuple(-x for x in direction),seed); up=cross(right,tuple(-x for x in direction))\n    projected=[(dot(p,right),dot(p,up)) for p in verts]\n    projected_float=np.array(projected,dtype=float); projected_tri=projected_float[face_array]\n    tri_min=projected_tri.min(axis=1); tri_max=projected_tri.max(axis=1)\n    checks[name]={}\n    for surface in surfaces:\n        sid=surface['id']; normal=surface['normal']; facing=dot(normal,direction)\n        record={'front_facing':facing>0, 'inside_viewport':True,'occluding_triangles':[]}\n        checks[name][sid]=record\n        corners=surface['corners']\n        homo=np.column_stack([np.array(corners,dtype=float),np.ones(4)])\n        ndc=(np.array(view['projection_matrix'])@np.array(view['view_matrix'])@homo.T).T\n        record['inside_viewport']=bool(np.all(np.abs(ndc[:,:3])<=ndc[:,3:4]+1e-12))\n        if facing<=0:\n            record['complete']=False; record['reason']='back-facing' if facing<0 else 'edge-on'; continue\n        boundary=[(dot(p,right),dot(p,up)) for p in corners]\n        orientation=sum(boundary[k][0]*boundary[(k+1)%4][1]-boundary[k][1]*boundary[(k+1)%4][0] for k in range(4))\n        sign=1 if orientation>0 else -1\n        limits=np.array(boundary,dtype=float); lower=limits.min(axis=0); upper=limits.max(axis=0)\n        heights=[dot(normal,sub(p,corners[0])) for p in verts]\n        maxheight=np.array(heights,dtype=float)[face_array].max(axis=1)\n        candidates=np.flatnonzero(np.all(tri_max>lower,axis=1)&np.all(tri_min<upper,axis=1)&(maxheight>0))\n        own=set(surface['triangles'])\n        for tid in candidates:\n            if int(tid) in own: continue\n            polygon=[(*projected[index],heights[index]) for index in faces[tid]]\n            polygon=clip_polygon(polygon,lambda point:point[2])\n            for edge in range(4):\n                start=boundary[edge]; end=boundary[(edge+1)%4]\n                polygon=clip_polygon(polygon,lambda point: sign*((end[0]-start[0])*(point[1]-start[1])-(end[1]-start[1])*(point[0]-start[0])))\n                if not polygon: break\n            if twice_area(polygon)>0 and any(point[2]>0 for point in polygon): record['occluding_triangles'].append(int(tid))\n        record['complete']=record['inside_viewport'] and not record['occluding_triangles']\n        record['reason']='complete' if record['complete'] else 'positive-area occlusion' if record['occluding_triangles'] else 'clipped'\n        record.update(metrics[name][sid])\n        record['readable']=record['complete'] and record['pixels']>=16 and record['boundary_pixels']>=4\nprint('per-view', {name:{'complete':sum(row['complete'] for row in data.values()),'readable':sum(row.get('readable',False) for row in data.values())} for name,data in checks.items()})\nobserved=[s['id'] for s in surfaces if any(checks[name][s['id']].get('readable',False) for name in checks)]\nremaining=[s['id'] for s in surfaces if s['id'] not in observed]\nprint('observed',len(observed),observed);print('remaining',len(remaining),remaining)\nprint('position2', {name:checks[name][137] for name in checks})"
+    }
+  }
+}

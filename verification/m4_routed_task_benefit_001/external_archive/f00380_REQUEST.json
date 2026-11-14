@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 9,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_348ee577996d495fab517afad0b4edb6",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+        "thread_id": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+        "turn_started_at_unix_ms": 1794666425269,
+        "turn_id": "01a1da74-6bae-74a1-8024-5d4400b09a0b",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1da74-6b12-7bd1-856d-355efe295ee5",
+      "itemId": "fc_087b7e486df4819c016af8704d180887d085ec9f0e9405393c",
+      "progressToken": 8
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "coverage_rows=[]\nfor s in surfaces:\n evidence=[]\n for name in checks:\n  row=checks[name][s['id']]\n  if row['readable']: evidence.append({'view':name,'ref':refs[name],'pixels':row['pixels'],'boundary_pixels':row['boundary_pixels'],'pixel':row['example_pixel']})\n ids=s['triangles']; runs=[]\n for idx in ids:\n  if runs and idx==runs[-1][1]+1: runs[-1][1]=idx\n  else: runs.append([idx,idx])\n status='observed' if evidence else ('remaining_back_facing_all_views' if not any(checks[name][s['id']]['front_facing'] for name in checks) else 'remaining_occluded_all_views')\n coverage_rows.append({'id':s['id'],'tri_ranges':runs,'status':status,'evidence':evidence[:1]})\nprint('COVERAGE_SCHEMA: IDs are independently discovered surface components; tri_ranges are inclusive zero-based global source triangle indices. Evidence is one actual complete readable observation with merged surface ownership. Positive-area shadow tested by exact rational convex clipping; boundary tangency excluded. All source vertices verified inside all six camera frusta. No finite-pool unknowns; other camera directions remain untested.')\nprint('COVERAGE_ROWS_0_45='+json.dumps(coverage_rows[:46],separators=(',',':')))\n"
+    }
+  }
+}
