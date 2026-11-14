@@ -1,0 +1,17 @@
+{
+  "cycle_id": "M6-SELECT-001",
+  "setup": [
+    {"operation": "create_worktree", "attempt": 1, "result": "No tool response or operationId. Isolate terminated. Git and list_artifacts showed no created worktree."},
+    {"operation": "create_worktree", "attempt": 2, "result": "No tool response or operationId. Isolate terminated. No Git checkout had been created."},
+    {"operation": "git worktree add --detach", "result": "Recovered isolated checkout at the exact dispatch commit under the requested destination."},
+    {"operation": "attach_worktree", "result": "Rejected", "message": "The checkout exists but is not a managed worktree."}
+  ],
+  "audit_attempts": [
+    {"attempt": 1, "exit_code": 1, "error": "KeyError: expected_status", "cause": "Frozen INPUT_PACKETS rows contain only case_id, patch and task. Expected answers belong to the separate pre-existing CASE_DEFINITIONS and oracle.", "work_before_error": {"feature_cases": 77, "geometry_diagnostic_cases": 77, "correction_previews": 1}, "recovery": "Read the frozen row schema, reuse the separate fixed definitions and independent oracle. No input or expected answer was changed."},
+    {"attempt": 2, "exit_code": 0, "checks_passed": 64, "result": "Complete successful audit recorded in RESULTS.json."},
+    {"attempt": 3, "exit_code": 0, "checks_passed": 64, "result": "Deterministic repeat. DATA_INVENTORY.json and RESULTS.json match attempt 2 byte-for-byte."}
+  ],
+  "additional_read_only_inspection_before_checkout": {"feature_cases": 77, "purpose": "Check frozen feature duplicates and packet schema", "writes": 0},
+  "scope": "RESULTS.json records one complete successful audit invocation. This log preserves earlier work and the deterministic repeat separately. Replay appends no history automatically.",
+  "workflow_update": {"verified_source_thread": "local/01a1d986-24a4-73f1-9689-6845d1f01ef3", "verified_user_message_id": "01a1d9da-75f9-7182-8745-f860f683b71e", "actual_user_text": "不用兜底检查", "effect": "Scheduled fallback removed by planner. Completion report remains the active handoff trigger."}
+}
