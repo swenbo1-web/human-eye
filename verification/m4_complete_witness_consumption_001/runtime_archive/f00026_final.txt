@@ -1,0 +1,21 @@
+**Inspection conclusion**
+Within the registered finite pool—`SCENE`, `TOP`, `LEFT`, `RIGHT`, `FRONT`, `BACK`—both supported surfaces have complete readable witnesses in the actual current-session `TOP` frame. No supported surfaces remain unknown; no unsupported geometry exists. This conclusion does not extend beyond that pool.
+
+**Complete surface record**
+Source binding: `199312683c1dbb81e96dd68885f5c9e89ba690fd828f8fbbc2ddb8c2c1e9cb8b` (current observation).
+| Surface identity | Source triangles¹ | World location (metres) | TOP surface / boundary pixels |
+|---|---|---|---|
+| Panel_A — `roi_1a73704daf140d9db5037e69` | Object 0: `[0,1]` | Center `(0,0,0)`; rectangle `x,y ∈ [-2,2]`, `z=0` | 70,756 / 1,060 |
+| Panel_B — `roi_88d7c6dfbefef40b931f7da5` | Object 1: `[0,1]` | Center `(4,-4,3)`; `x∈[3,5]`, `y∈[-5,-3]`, `z=3` | 17,689 / 528 |
+
+¹ Zero-based within each object. Each pair shares an edge, is non-degenerate and coplanar with consistent `+Z` winding, and has one rectangular outer boundary. Together they account for all four source triangles.
+
+**Panel_A witness**
+- **View:** `TOP`, 512×512. Current image reference: `active-host-image:823c9ba62ce65a39b49823c87db8685b0e772edc4238d5dd1d70a1c9b804fe70`.
+- **Public `complete_witness_pixel_index`:** `2` (reported verbatim).
+- **Completeness:** All four corners lie inside the viewport; actual owned-pixel bounds are `(23,23)`–`(288,288)`. The surface faces the `+Z` camera. The panels’ disjoint XY footprints establish no positive-area occlusion in this view.
+- **Readability:** Independently verified **70,756 target-owned pixels ≥16** and **1,060 unique target-owned contrasting boundary pixels ≥4**, merging both source triangles before horizontal/vertical adjacency comparisons and marking both qualifying endpoints.
+- **Actual target-owned pixel:** zero-based `(x,y)=(155,155)`, object owner `0`, global source triangle `1`, RGB `(164,173,187)`.
+- **Actual contrast evidence:** target pixel `(23,155)` has RGB `(164,173,187)`; adjacent background `(22,155)` has RGB `(18,22,30)`. Euclidean RGB distance is **262.23 ≥24**.
+
+The counts and completeness refer to this single reused current-session frame, not a combination of partial observations.

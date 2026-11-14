@@ -1,0 +1,137 @@
+{
+  "already_sealed_separate_semantic_reviews": {
+    "manual_check_count": 19,
+    "manual_correctness_supported": true,
+    "manual_direct_product_only_adoption": false,
+    "manual_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\MANUAL_EVIDENCE_REVIEW.json",
+    "manual_sha256": "ceabbb1a4dfd69e96cc7f22c83995353b353f0a6b891ac253373ddec1fbac517",
+    "peer_actual_fact_use": true,
+    "peer_check_count": 25,
+    "peer_direct_product_only_adoption": false,
+    "peer_extra_native_verification": true,
+    "peer_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\QUALITY_SEMANTIC_REVIEW.json",
+    "peer_quality_supported": true,
+    "peer_sha256": "468ea3885f57fb1a5d6172a68b4b7fdd1f2cd0fae1fee3ecd3bcb1ba9b5563f8",
+    "summary": "Existing sealed reviews support the actual TOP/index2 final and distinguish native geometry/camera and pixel/normal verification from direct-only use. This analysis does not rerun or replace those reviews."
+  },
+  "analysis_role": "Scorer implementation author. I reused a Routed wrapped-row field assumption without matching the new single-route producer. This saved-data analysis declares that association.",
+  "current_formal_terminal_evidence": {
+    "CLI_cleanup_confirmed": true,
+    "CLI_exit_code": 0,
+    "CLI_handle_closed": true,
+    "CLI_kill_requested": false,
+    "CLI_pid": 6356,
+    "actor_cleanup_confirmed": true,
+    "actor_exit_code": 0,
+    "actor_handle_closed": true,
+    "actor_kill_requested": false,
+    "actual_CLI_processes": 1,
+    "actual_routes": 1,
+    "answer_present": true,
+    "consumer_errors": [],
+    "consumer_safe_to_continue": true,
+    "consumer_status": "completed",
+    "consumer_valid_completion": true,
+    "launcher_succeeded": true,
+    "launcher_terminal_errors": [],
+    "outer_valid_completion": true,
+    "owner_pid": 29536,
+    "scope": "These saved lifecycle facts establish completed execution and known process termination. Missing thin EXIT remains unknown, distinct from the confirmed held-process exit. They do not substitute for semantic grading.",
+    "thin_EXIT_confirmed": null,
+    "thin_EXIT_receipt_status": "unknown",
+    "thin_binding_confirmed": true,
+    "thin_held_exit_code": 1,
+    "thin_held_exit_confirmed": true,
+    "thin_pid": 29156,
+    "top_execution_state": "completed",
+    "turn_terminal_event_seen": true
+  },
+  "evidence_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY.json": "272f925f1f46b4140b7483fbeceb1ff0a2b58285d3b5c9cab6c417cbb6cb3a87",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY_SEAL.json": "93b0dde406a185bdb60c7921eb1f7d3f697e45e493763130d304828fdfdd30d9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\launcher.py": "ccb74ddb164a833d49f8ffae02090c53c766d8ca5890e1042638296160f72e72",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\score_saved.py": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_routed_task_benefit_001\\launcher.py": "72abbd1c98b9d9d4c3bc30db084fd878d9fd5ef4b4547672d05a944c1c9930dc",
+    "D:\\he_complete_witness_001\\formal\\P1\\RESULT.json": "7ab20e7bdbbfedf7164b6edcc347fc9ed437381a9675a27b6edb23fcf994759c",
+    "D:\\he_complete_witness_001\\formal\\P1\\c\\CONSUMER.json": "6d920559013d6174a201b51ad01a75f89cf90826cb9dfd60a9ca564da55bcab8",
+    "D:\\he_complete_witness_001\\formal\\RUN_RESULT.json": "b55da6f3f2dd40a2917db3690be66f63992c6999f5ca6a131d5d44f7e6fabe9a"
+  },
+  "failure": {
+    "automatic_direct_product_adoption": null,
+    "automatic_final_quality_passed": false,
+    "cause": "score_saved loads records[0] into outer, then reads outer.execution_state. The original route record has no such field. The new single-slot launcher writes execution_state at RUN_RESULT top level.",
+    "classification": "Scorer-to-producer schema binding defect. The frozen automatic score remains failed. It does not establish a model-answer error.",
+    "data_selection_location": {
+      "expression": "outer = oracle.read(... / 'formal/RUN_RESULT.json')['records'][0]",
+      "line": 26
+    },
+    "exception": [
+      {
+        "message": "'execution_state'",
+        "type": "KeyError"
+      }
+    ],
+    "failing_location": {
+      "expression": "outer['execution_state'] == 'completed'",
+      "line": 79,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\score_saved.py"
+    },
+    "original_result_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY.json",
+    "original_result_sha256": "272f925f1f46b4140b7483fbeceb1ff0a2b58285d3b5c9cab6c417cbb6cb3a87",
+    "stage": "The field lookup fails in the terminal predicate before saved.evaluate and the subsequent content/witness checks can produce an automated semantic result.",
+    "status": "claim_or_saved_evidence_missing_or_invalid"
+  },
+  "field_ownership": {
+    "current_producer": {
+      "aggregate_lines": [
+        312,
+        315
+      ],
+      "nested_record_has_execution_state": false,
+      "nested_record_outer_valid_completion": true,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\launcher.py",
+      "record_call_line": 298,
+      "schema": "complete-witness-single-formal-v1",
+      "sha256": "ccb74ddb164a833d49f8ffae02090c53c766d8ca5890e1042638296160f72e72",
+      "top_level_execution_state": "completed",
+      "top_level_launcher_succeeded": true
+    },
+    "mistaken_preparation_reference": {
+      "explanation": "The older Routed common slot wrapper augments each row. The current launcher reuses original run_route and stores its row unchanged, deriving only the top-level execution_state. A static check mistakenly carried the older wrapper field ownership into this scorer.",
+      "line": 274,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_routed_task_benefit_001\\launcher.py",
+      "statement": "record['execution_state'] = 'completed' if record.get('outer_valid_completion') is True else 'failed'"
+    }
+  },
+  "minimum_follow_up_proposal_not_applied": {
+    "future_output_policy": "Retain the original QUALITY272f and seal93b0. A separately authorized regrade writes a new filename/version and records unchanged input/source/criteria hashes. No new qualification, consumer, observation, raster or prompt change is required for this reader correction.",
+    "minimal_change": [
+      "run_result = oracle.read(arguments.runtime_root / 'formal/RUN_RESULT.json')",
+      "outer = run_result['records'][0]",
+      "Replace only outer['execution_state'] with run_result['execution_state'] in the existing terminal predicate."
+    ],
+    "permission_scope": "Any later read-only regrade is for administrator decision in a new derived grader version; this batch stays sealed.",
+    "preserve_checks": [
+      "outer.outer_valid_completion is True",
+      "consumer.valid_completion is True",
+      "consumer.runtime_binding.confirmed is True",
+      "consumer.runtime_exit.confirmed is True"
+    ],
+    "reexecution_performed": false,
+    "schema_policy": "Bind this grader to complete-witness-single-formal-v1 explicitly. Missing or contradictory state fails. Do not default a missing row state to completed, mutate the source record, or import a different batch wrapper."
+  },
+  "preservation": {
+    "FROZEN_sha256": "907bc76d011f32e3695f546d685bc4c682d54459e829f02d09f3acab18f6bb4d",
+    "formal_actual_tools": 3,
+    "formal_rasters": 2,
+    "frozen_scorer_sha256": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074",
+    "new_model_product_raster_calls": 0,
+    "qualification_rasters": 2,
+    "quality_seal_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY_SEAL.json",
+    "quality_seal_sha256": "93b0dde406a185bdb60c7921eb1f7d3f697e45e493763130d304828fdfdd30d9",
+    "scorer_matches_original_freeze": true,
+    "scorer_rerun": false,
+    "sources_rules_originals_or_sealed_outputs_modified": false
+  },
+  "schema": "complete-witness-scorer-failure-analysis-v1"
+}
