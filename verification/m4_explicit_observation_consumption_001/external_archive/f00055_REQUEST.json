@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_201a217e1b9f46e0a69dd5bbf54f3a09",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+        "thread_id": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+        "turn_started_at_unix_ms": 1794656222130,
+        "turn_id": "01a1d9d8-bbaa-73d0-80f2-b75fb3c2fed8",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+      "itemId": "fc_0d8e2468da29e320016af84806715087d08fc3bc00f592b23a",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "from collections import defaultdict\nV=[tuple(Fraction(x) for x in v) for v in geometry['objects'][0]['vertices']]\nT=geometry['objects'][0]['triangles']\ndef sub(a,b): return tuple(x-y for x,y in zip(a,b))\ndef dot(a,b): return sum(x*y for x,y in zip(a,b))\ndef cross(a,b): return (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])\nplanes=[]; edges=defaultdict(list)\nfor ti,t in enumerate(T):\n p=[V[i] for i in t]; n=cross(sub(p[1],p[0]),sub(p[2],p[0])); scale=max(map(abs,n)); n=tuple(x/scale for x in n) if scale else n\n planes.append((n,dot(n,p[0])))\n for a,b in zip(p,p[1:]+p[:1]): edges[tuple(sorted((a,b)))].append(ti)\nadj=defaultdict(set)\nfor ids in edges.values():\n for a in ids:\n  for b in ids:\n   if planes[a]==planes[b] and a!=b: adj[a].add(b)\ncomponents=[]; seen=set()\nfor start in range(len(T)):\n if start in seen: continue\n stack=[start]; seen.add(start); comp=[]\n while stack:\n  curr=stack.pop(); comp.append(curr)\n  for nxt in adj[curr]-seen: seen.add(nxt); stack.append(nxt)\n components.append(sorted(comp))\nsurfaces=[]; unsupported=[]\nfor comp in components:\n counts=defaultdict(int)\n for ti in comp:\n  p=[V[i] for i in T[ti]]\n  for a,b in zip(p,p[1:]+p[:1]): counts[tuple(sorted((a,b)))]+=1\n boundary=[e for e,c in counts.items() if c==1]; graph=defaultdict(list)\n for a,b in boundary: graph[a].append(b); graph[b].append(a)\n valid=bool(graph) and all(len(x)==2 for x in graph.values()) and all(c<=2 for c in counts.values())\n corners=[]\n if valid:\n  start=next(iter(graph)); curr=start; prev=None; loop=[]\n  while curr not in loop:\n   loop.append(curr); nxt=next(x for x in graph[curr] if x!=prev); prev,curr=curr,nxt\n  valid=curr==start and len(loop)==len(graph)\n  corners=[p for i,p in enumerate(loop) if any(cross(sub(p,loop[i-1]),sub(loop[(i+1)%len(loop)],p)))]\n  valid=valid and len(corners)==4\n if valid:\n  es=[sub(corners[(i+1)%4],corners[i]) for i in range(4)]\n  valid=all(dot(es[i],es[(i+1)%4])==0 and any(es[i]) for i in range(4)) and all(es[0][i]==-es[2][i] and es[1][i]==-es[3][i] for i in range(3))\n if valid:\n  surfaces.append({'triangles':comp,'corners':corners,'normal':planes[comp[0]][0],'center':tuple(sum(p[i] for p in corners)/4 for i in range(3))})\n else: unsupported.append(comp)\nprint('supported',len(surfaces),'triangles',sum(len(s['triangles']) for s in surfaces),'unsupported',unsupported)\nresult=render_views(['SCENE','TOP','LEFT','RIGHT','FRONT','BACK'],include_images=False)\nprint(result)"
+    }
+  }
+}

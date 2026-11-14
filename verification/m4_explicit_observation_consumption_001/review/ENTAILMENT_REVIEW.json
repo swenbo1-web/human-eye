@@ -1,0 +1,767 @@
+{
+  "schema": "explicit-observation-entailment-review-v1",
+  "task": "M4-EXPLICIT-OBSERVATION-CONSUMPTION-001",
+  "slot": "P1",
+  "review_status": "correct_consumption_not_qualified_missing_final",
+  "reviewer_disclosure": "This reviewer authored the reused old bridge/native tools and independently checked the visible answer/tool evidence. The frozen product, raw formal evidence and scoring source were not edited. This is an unblinded single explicit P diagnostic.",
+  "final_status": {
+    "PUBLIC_FINAL_path": "D:\\he_explicit_001\\formal\\P1\\c\\PUBLIC_FINAL.txt",
+    "PUBLIC_FINAL_exists": false,
+    "consumer_valid_completion": false,
+    "terminal_event_types": [],
+    "last_agent_message": "All 115 inspectable rectangles now have evidence; 23 remain pool-inaccessible.\n",
+    "last_agent_message_role": "Progress evidence only. No turn.completed or final artifact establishes a completed answer.",
+    "consumer_errors": [
+      {
+        "type": "ValueError",
+        "message": "route_twelve_tool_call_limit"
+      }
+    ],
+    "frozen_quality_complete": false,
+    "frozen_quality_error": [
+      {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: 'D:\\\\he_explicit_001\\\\formal\\\\P1\\\\c\\\\PUBLIC_FINAL.txt'"
+      }
+    ],
+    "normalization_correctly_preserves_missing_final": true
+  },
+  "layers": {
+    "real_entry_call": {
+      "status": "pass_observed",
+      "first_tool": "active_observation",
+      "arguments": {
+        "include_images": true
+      },
+      "CLI_completed_item": "completed",
+      "server_result_is_error": false
+    },
+    "local_to_CLI_delivery": {
+      "status": "pass_observed_content",
+      "schema": "active-observation-brief-v3",
+      "producer_status": "complete",
+      "observation_status": "locally_observed",
+      "native_image_blocks": 3,
+      "CLI_content_exactly_equals_owner_content": true,
+      "views": [
+        "SCENE",
+        "BACK",
+        "LEFT"
+      ],
+      "scope": "Equality verifies the observable completed CLI tool payload. It does not observe provider-internal input or internal truncation."
+    },
+    "correct_consumption": {
+      "status": "fail_not_qualified",
+      "reason": "No completed final answer or explicitly cited final artifact. Later native full-scene recomputation emits an incorrect 114/24 table and an attempted correction is rejected.",
+      "partial_product_use": "Proven reuse of the current product PNGs, including BACK-derived evidence. Direct adoption of the returned v3 region/pixel table in a completed answer is not demonstrated."
+    }
+  },
+  "first_product_facts": {
+    "regions": 138,
+    "status_counts": {
+      "unknown": 23,
+      "covered": 115
+    },
+    "identity_status_and_qualifying_row_check_against_frozen_truth": {
+      "issues": [],
+      "all_138_identities_present": true
+    },
+    "evidence_scope": "Saved current v3 row semantics, geometry eligibility and thresholds were crosschecked without rerunning product or raster. Independent delivery audit owns full runtime/source/PNG binding.",
+    "coverage_scope": "registered finite camera pool",
+    "covered_count": 115,
+    "finite_pool_uncovered_count": 23,
+    "unsupported": {
+      "columns": [
+        "object_index",
+        "component_index",
+        "triangle_count",
+        "reason",
+        "status",
+        "triangle_index_ranges"
+      ],
+      "rows": [
+        [
+          0,
+          0,
+          1,
+          "insufficient_faces",
+          "unknown",
+          [
+            [
+              48,
+              48
+            ]
+          ]
+        ]
+      ]
+    },
+    "all_supported_observed": false
+  },
+  "visible_messages": [
+    {
+      "event_type": "item.completed",
+      "id": "item_2",
+      "type": "agent_message",
+      "text": "I’ll start with the required image-enabled observation, then verify coverage.\n"
+    },
+    {
+      "event_type": "item.completed",
+      "id": "item_7",
+      "type": "agent_message",
+      "text": "The first pass leaves gaps. I’ll check mesh components and all six cameras.\n"
+    },
+    {
+      "event_type": "item.completed",
+      "id": "item_14",
+      "type": "agent_message",
+      "text": "The raster limit blocked the batch. I’ll reuse available evidence and flag gaps.\n"
+    },
+    {
+      "event_type": "item.completed",
+      "id": "item_23",
+      "type": "agent_message",
+      "text": "All 115 inspectable rectangles now have evidence; 23 remain pool-inaccessible.\n"
+    }
+  ],
+  "tool_trajectory": [
+    {
+      "attempt": 1,
+      "tool": "active_observation",
+      "is_error": false,
+      "error": null,
+      "role": "Required actual installed observation entry, successful default brief-v3 and three native PNG blocks."
+    },
+    {
+      "attempt": 2,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Reads full raw camera descriptions and geometry summary."
+    },
+    {
+      "attempt": 3,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Inspects native buffers and product image paths; native buffers are empty after the product call."
+    },
+    {
+      "attempt": 4,
+      "tool": "execute_python",
+      "is_error": true,
+      "error": {
+        "type": "RenderLimitError",
+        "message": "six_actual_raster_attempt_limit"
+      },
+      "role": "Independently rebuilds all supported rectangle components, then requests six native views. Three native rasters finish; the cap stops the batch before RIGHT."
+    },
+    {
+      "attempt": 5,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Inspects the partially completed native buffers and image registry."
+    },
+    {
+      "attempt": 6,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Inspects native array keys and scratch location."
+    },
+    {
+      "attempt": 7,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Recomputes global triangle-to-surface mapping, per-native-frame pixel/boundary counts and exact geometric occlusion for every surface/camera; prints intermediate localization facts."
+    },
+    {
+      "attempt": 8,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Summarizes native coverage and intermediate click world geometry."
+    },
+    {
+      "attempt": 9,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Reads current product PNGs, checks SCENE/LEFT RGB equality and projects BACK-facing side geometry."
+    },
+    {
+      "attempt": 10,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Derives BACK labels/counts from the product BACK PNG for the 22 thin +Y sides; reports a total of 115 over all resident native buffers, including TOP."
+    },
+    {
+      "attempt": 11,
+      "tool": "execute_python",
+      "is_error": true,
+      "error": {
+        "type": "KeyError",
+        "message": "(5, 'BACK')"
+      },
+      "role": "Attempts the full machine-readable table but fails with KeyError for a missing BACK pixel entry."
+    },
+    {
+      "attempt": 12,
+      "tool": "execute_python",
+      "is_error": false,
+      "error": null,
+      "role": "Publishes a full table with 114 observed and 24 remaining, omitting the native TOP witness from its allowed view-reference set."
+    },
+    {
+      "attempt": 13,
+      "tool": "execute_python",
+      "is_error": true,
+      "error": "Tool failed. ValueError",
+      "role": "Requests a correction for surface 56 using native TOP evidence; the tool cap rejects this call before consumer Python executes."
+    }
+  ],
+  "native_recomputation_regression": {
+    "scope": "Global surface discovery, per-frame ownership/boundary reconstruction, and all-six-camera geometric occlusion were recomputed after the product observation.",
+    "actual_raster_split": {
+      "product": 3,
+      "native": 3,
+      "total": 6
+    },
+    "native_batch_requested": [
+      "SCENE",
+      "TOP",
+      "LEFT",
+      "RIGHT",
+      "FRONT",
+      "BACK"
+    ],
+    "native_batch_completed": [
+      "SCENE",
+      "TOP",
+      "LEFT"
+    ],
+    "batch_stopped_before_actual_RIGHT_raster": true,
+    "tool12_counts": {
+      "observed": 114,
+      "remaining": 24
+    },
+    "tool12_row56": [
+      56,
+      [
+        [
+          1133,
+          1644
+        ]
+      ],
+      "remaining",
+      "positive_area_occlusion_all_six"
+    ],
+    "row56_source_triangles_inclusive": [
+      1133,
+      1644
+    ],
+    "row56_wrong_reason": "positive_area_occlusion_all_six",
+    "first_product_region7": {
+      "roi_id": "roi_0c0d8629ca21e80a24de993a",
+      "object_index": 0,
+      "status": "covered",
+      "reason": "observed_readable",
+      "triangle_count": 512,
+      "center_world_m": [
+        0.3515625,
+        0,
+        0
+      ],
+      "half_edge_u_world_m": [
+        0.029296875,
+        0,
+        0
+      ],
+      "half_edge_v_world_m": [
+        0,
+        0.029296875,
+        0
+      ],
+      "front_direction_world": [
+        0,
+        0,
+        1
+      ]
+    },
+    "first_product_region7_pixels": [
+      {
+        "image_index": 0,
+        "region_index": 7,
+        "front_facing": true,
+        "visible_surface_pixels": 0,
+        "contrasting_boundary_pixels": 0,
+        "readable": false,
+        "visible_pixel_bounds": null,
+        "visible_pixel_anchor": null
+      },
+      {
+        "image_index": 1,
+        "region_index": 7,
+        "front_facing": true,
+        "visible_surface_pixels": 468,
+        "contrasting_boundary_pixels": 84,
+        "readable": true,
+        "visible_pixel_bounds": [
+          251,
+          216,
+          276,
+          233
+        ],
+        "visible_pixel_anchor": [
+          263,
+          224
+        ]
+      },
+      {
+        "image_index": 2,
+        "region_index": 7,
+        "front_facing": true,
+        "visible_surface_pixels": 0,
+        "contrasting_boundary_pixels": 0,
+        "readable": false,
+        "visible_pixel_bounds": null,
+        "visible_pixel_anchor": null
+      }
+    ],
+    "first_product_correct_BACK_witness": {
+      "view": "BACK",
+      "surface_pixels": 468,
+      "boundary_pixels": 84,
+      "readable": true,
+      "frozen_geometry_complete": true
+    },
+    "visible_cause_in_code": "tool_10 adds BACK facts only for the 22 remaining +Y side faces. tool_12 then chooses witnesses only from view_refs SCENE/BACK/LEFT and excludes the already computed native TOP witness for surface 56. It does not adopt the existing product BACK fact for that +Z region.",
+    "tool13_request_excerpt": "print('additional observed evidence',json.dumps({'surface_index':56,'source_triangle_indices_inclusive':[1133,1644],'center':[float(x) for x in surfaces[56]['center']],'normal':[float(x) for x in surfaces[56]['normal']],'status':'observed','view':'TOP','actual_buffer_reference':'buffers[\"TOP\"]','geometry':geom_facts[(56,'TOP')],'pixel_evidence':pixel_facts[(56,'TOP')],'image_delivery':'batch hit raster limit after constructing this buffer, so no standalone TOP PNG reference was returned'}))\nprint('CORRECTION to preceding session-surface-evidence-v1 table: replace surface 56 remaining row with this observed TOP row; observed_count=115; remaining_count=23. No other row changes. Remaining: 22 back_facing_all_six and surface 93 positive_area_occlusion_all_six.')\nprint('surface56 other view geometry', {c['name']:geom_facts[(56,c['name'])] for c in cameras['views']})",
+    "tool13_actual_response": "Tool failed. ValueError",
+    "tool13_consumer_python_executed": false,
+    "correction_succeeded": false,
+    "last_progress_count_claim": "115/23 agrees with facts available across the product result and resident native buffers, but is not a final answer and does not repair the published tool_12 114/24 table."
+  },
+  "per_claim_provenance": [
+    {
+      "claim": "complete supported set and coverage",
+      "final_claim": "missing",
+      "product_basis": "138 region rows with 115 covered and 23 finite-pool uncovered are present in tool_01.",
+      "native_basis": "tool_04 independently discovers all 138 supported surfaces; tool_12 outputs their full set but marks only 114 observed.",
+      "adoption": "No final adoption proven; native recomputation replaces the usable product coverage table with a wrong remaining status for one reachable region."
+    },
+    {
+      "claim": "finite-pool remaining reasons",
+      "final_claim": "missing",
+      "product_basis": "23 unknown finite_camera_pool_uncovered rows, registered finite camera pool scope.",
+      "native_basis": "tool_07/08 recomputes six-view front/occlusion facts and identifies 22 -Z faces plus one all-view occluded +Z face; tool_12 additionally misclassifies surface 56.",
+      "adoption": "No final reason/scope answer. No completed arbitrary-view invisibility claim is present."
+    },
+    {
+      "claim": "unsupported remainder",
+      "final_claim": "missing",
+      "product_basis": "One unsupported source component, triangle range [48,48], reason insufficient_faces and unknown status.",
+      "native_basis": "tool_04 independently returns unsupported [[48]]; tool_12 retains unsupported_nonrectangular_triangle.",
+      "adoption": "Correct intermediate preservation from both routes; no final citation."
+    },
+    {
+      "claim": "SCENE click center/front/extent/ref",
+      "final_claim": "missing",
+      "product_basis": {
+        "region_index": 72,
+        "region": {
+          "roi_id": "roi_8f5a046cead6817feffe5d02",
+          "object_index": 0,
+          "status": "covered",
+          "reason": "observed_readable",
+          "triangle_count": 2,
+          "center_world_m": [
+            0.15625,
+            -0.15625,
+            0.11865234375
+          ],
+          "half_edge_u_world_m": [
+            0.03515625,
+            0,
+            0
+          ],
+          "half_edge_v_world_m": [
+            0,
+            0.03515625,
+            0
+          ],
+          "front_direction_world": [
+            0,
+            0,
+            1
+          ]
+        },
+        "current_product_pixel_rows": [
+          {
+            "image_index": 0,
+            "region_index": 72,
+            "front_facing": true,
+            "visible_surface_pixels": 354,
+            "contrasting_boundary_pixels": 73,
+            "readable": true,
+            "visible_pixel_bounds": [
+              91,
+              239,
+              128,
+              256
+            ],
+            "visible_pixel_anchor": [
+              109,
+              247
+            ]
+          },
+          {
+            "image_index": 1,
+            "region_index": 72,
+            "front_facing": true,
+            "visible_surface_pixels": 682,
+            "contrasting_boundary_pixels": 102,
+            "readable": true,
+            "visible_pixel_bounds": [
+              335,
+              128,
+              365,
+              149
+            ],
+            "visible_pixel_anchor": [
+              350,
+              138
+            ]
+          },
+          {
+            "image_index": 2,
+            "region_index": 72,
+            "front_facing": true,
+            "visible_surface_pixels": 1092,
+            "contrasting_boundary_pixels": 130,
+            "readable": true,
+            "visible_pixel_bounds": [
+              412,
+              303,
+              450,
+              330
+            ],
+            "visible_pixel_anchor": [
+              431,
+              316
+            ]
+          }
+        ]
+      },
+      "native_basis": {
+        "source_tools": [
+          7,
+          8
+        ],
+        "excerpt": "SCENE query triangle 35 surface 17",
+        "world_geometry_excerpt": "query surface {'triangles': [34, 35], 'corners': [[0.12109375, -0.19140625, 0.11865234375], [0.19140625, -0.19140625, 0.11865234375], [0.19140625, -0.12109375, 0.11865234375], [0.12109375, -0.12109375, 0.11865234375]], 'normal': [0.0, 0.0, 1.0], 'center': [0.15625, -0.15625, 0.11865234375]}"
+      },
+      "adoption": "The returned product visible_pixel_anchor equals the requested [109,247] and already carries world vectors. The visible model instead prints independently recomputed native location facts; no final answer consumes either."
+    },
+    {
+      "claim": "origin SCENE occlusion and an actual readable witness",
+      "final_claim": "missing",
+      "product_basis": {
+        "region_index": 131,
+        "region": {
+          "roi_id": "roi_f6c3316d343e6258e4720886",
+          "object_index": 0,
+          "status": "covered",
+          "reason": "observed_readable",
+          "triangle_count": 512,
+          "center_world_m": [
+            0,
+            0,
+            0
+          ],
+          "half_edge_u_world_m": [
+            0.029296875,
+            0,
+            0
+          ],
+          "half_edge_v_world_m": [
+            0,
+            0.029296875,
+            0
+          ],
+          "front_direction_world": [
+            0,
+            0,
+            1
+          ]
+        },
+        "current_product_pixel_rows": [
+          {
+            "image_index": 0,
+            "region_index": 131,
+            "front_facing": true,
+            "visible_surface_pixels": 0,
+            "contrasting_boundary_pixels": 0,
+            "readable": false,
+            "visible_pixel_bounds": null,
+            "visible_pixel_anchor": null
+          },
+          {
+            "image_index": 1,
+            "region_index": 131,
+            "front_facing": true,
+            "visible_surface_pixels": 468,
+            "contrasting_boundary_pixels": 84,
+            "readable": true,
+            "visible_pixel_bounds": [
+              407,
+              216,
+              432,
+              233
+            ],
+            "visible_pixel_anchor": [
+              419,
+              224
+            ]
+          },
+          {
+            "image_index": 2,
+            "region_index": 131,
+            "front_facing": true,
+            "visible_surface_pixels": 792,
+            "contrasting_boundary_pixels": 110,
+            "readable": true,
+            "visible_pixel_bounds": [
+              327,
+              415,
+              359,
+              438
+            ],
+            "visible_pixel_anchor": [
+              343,
+              426
+            ]
+          }
+        ]
+      },
+      "native_basis": {
+        "source_tool": 7,
+        "facts": "SCENE front=True, zero pixels, incomplete with occluder source 32; LEFT complete, 792 pixels, 110 boundary, owned sample [327,427]."
+      },
+      "adoption": "Matching intermediate facts exist. No final source attribution or witness citation is provided."
+    },
+    {
+      "claim": "specified -Z bottom finite-pool scope",
+      "final_claim": "missing",
+      "product_basis": {
+        "region_index": 107,
+        "region": {
+          "roi_id": "roi_ce8430f9242f49ab62882494",
+          "object_index": 0,
+          "status": "unknown",
+          "reason": "finite_camera_pool_uncovered",
+          "triangle_count": 2,
+          "center_world_m": [
+            0.15625,
+            -0.15625,
+            0.11572265625
+          ],
+          "half_edge_u_world_m": [
+            0,
+            0.03515625,
+            0
+          ],
+          "half_edge_v_world_m": [
+            0.03515625,
+            0,
+            0
+          ],
+          "front_direction_world": [
+            0,
+            0,
+            -1
+          ]
+        },
+        "current_product_pixel_rows": [
+          {
+            "image_index": 0,
+            "region_index": 107,
+            "front_facing": false,
+            "visible_surface_pixels": 0,
+            "contrasting_boundary_pixels": 0,
+            "readable": false,
+            "visible_pixel_bounds": null,
+            "visible_pixel_anchor": null
+          },
+          {
+            "image_index": 1,
+            "region_index": 107,
+            "front_facing": false,
+            "visible_surface_pixels": 0,
+            "contrasting_boundary_pixels": 0,
+            "readable": false,
+            "visible_pixel_bounds": null,
+            "visible_pixel_anchor": null
+          },
+          {
+            "image_index": 2,
+            "region_index": 107,
+            "front_facing": false,
+            "visible_surface_pixels": 0,
+            "contrasting_boundary_pixels": 0,
+            "readable": false,
+            "visible_pixel_bounds": null,
+            "visible_pixel_anchor": null
+          }
+        ]
+      },
+      "native_basis": {
+        "source_tools": [
+          7,
+          8
+        ],
+        "facts": "Surface 16 center [5/32,-5/32,237/2048], normal -Z; all six registered geometric front flags false."
+      },
+      "adoption": "No final bounded-scope answer. Facts are retained without filling the missing answer."
+    }
+  ],
+  "independent_execution_issue": {
+    "issue": "Post-route launcher entry_pointer_chain_changed_during_single_slot reported separately.",
+    "scope": "The launcher check occurs after run_route returns and RUN_RESULT publication. It does not turn the preceding consumer tool-cap failure or missing final into success. Diagnosis belongs to the separate launcher audit."
+  },
+  "source_files": [
+    {
+      "path": "D:\\he_explicit_001\\formal\\P1\\c\\CONSUMER.json",
+      "sha256": "d9bdf509a022fc7746ac0432f7e79fcf68051c13f18bdc96c0f6d1b0a30e105e"
+    },
+    {
+      "path": "D:\\he_explicit_001\\formal\\P1\\c\\events.jsonl",
+      "sha256": "9e57ceb2a5ae2c406ca881f19746be1f2fd559eeeb9386a9a1108a881124955b"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_explicit_observation_consumption_001\\admin\\MODEL_MESSAGES.json",
+      "sha256": "859c2e733a89ddcb34b482caf4e7f91a792bd34aadc2e2558a43fa2c5e7a4d9f"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_explicit_observation_consumption_001\\admin\\NORMALIZED.json",
+      "sha256": "5fea23c39a24525e9064f1ae98b22c119df23e1449b7f565c5cab162ccd4201e"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_explicit_observation_consumption_001\\admin\\QUALITY_FIRST_RUN.json",
+      "sha256": "e4113e2852984e588e4c739bca2b26d82319fa50843e6352e0d61940c7453930"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\admin\\TRUTH.json",
+      "sha256": "ad1ba5127945a290f24bb519df8088ba280d9bf5cb3f6d73b9caa82f2d2712db"
+    },
+    {
+      "path": "D:\\he_explicit_001\\formal\\P1\\o\\product_call_01\\SERVICE_RESULT.json",
+      "sha256": "694e3a19967c1b341e7f8c86c3ea291bfee0506c119ae2cb4859a96fe8709ceb"
+    }
+  ],
+  "tool_source_bindings": [
+    {
+      "attempt": 1,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_01\\REQUEST.json",
+      "request_sha256": "ed42e5afc828ca5130df47961241bd7b46ff8ce7437ab97063c3cc6db4f93daf",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_01\\RESPONSE.json",
+      "response_sha256": "d5e584988eb8fc587b772110f8f5558c1565ed84a865ad8d10b0edd02eba9f51"
+    },
+    {
+      "attempt": 2,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_02\\REQUEST.json",
+      "request_sha256": "206e2bb80f1dc93419f58a09470894ba79127335ea0c49c83e806fddbac5e0bc",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_02\\RESPONSE.json",
+      "response_sha256": "715c16589168b18c59084dc44a10f57d2a1408b654d35e47478f4fdac96ef1ad"
+    },
+    {
+      "attempt": 3,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_03\\REQUEST.json",
+      "request_sha256": "3c66171687391445a07f2023b45563fe390c795cd7ccabd18ef92fd155cafa98",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_03\\RESPONSE.json",
+      "response_sha256": "d054a450b90646ab1e3156f29815504c48b212d711abc26ce0a396c598d99c63"
+    },
+    {
+      "attempt": 4,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_04\\REQUEST.json",
+      "request_sha256": "7678483c10383975945975c26c027404c9e8f80bddec2033ef6636bb9a1f83f9",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_04\\RESPONSE.json",
+      "response_sha256": "39f4d4fec8bdf93d266fecc35fffdbb08969c0eb9a814ba5fe566d32c7d578b4"
+    },
+    {
+      "attempt": 5,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_05\\REQUEST.json",
+      "request_sha256": "def1f01abcb2f2915057dc876506383d8c452beb857cbeaa5f6c11765808f874",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_05\\RESPONSE.json",
+      "response_sha256": "2e16eaf2a0b2a94a5276ee4a2440eb1a5549c858c17c2eabf0b440888bb071ae"
+    },
+    {
+      "attempt": 6,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_06\\REQUEST.json",
+      "request_sha256": "47fb2f4f60014e005e4bb39985605b9a2b0e9969525e2192cc60b88b4f370fb3",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_06\\RESPONSE.json",
+      "response_sha256": "1ab642fe14690764c9ce3638296b123449718997958dd9f11afaae6a324e8e84"
+    },
+    {
+      "attempt": 7,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_07\\REQUEST.json",
+      "request_sha256": "dd61a3e99f6ac4241b969d11b847ee5824c3c8e82e63ba2355f188687c723c75",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_07\\RESPONSE.json",
+      "response_sha256": "ab77f7d0251f5237cdc167ddaa1f58aef8aea5f50af700a33dfcae7acf0224f9"
+    },
+    {
+      "attempt": 8,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_08\\REQUEST.json",
+      "request_sha256": "5f0025f53e2de0eb9b61b68f766e6196ffc83d879624c08fb5dcadb26ce209c4",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_08\\RESPONSE.json",
+      "response_sha256": "30ea3814c17ee205483755c090f712db492571ccc609a3ca244d26c8a635e70b"
+    },
+    {
+      "attempt": 9,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_09\\REQUEST.json",
+      "request_sha256": "2f5c68f020d686cbf187c0648ffdfa5f19568f5d2dafa42905abe433636fc82e",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_09\\RESPONSE.json",
+      "response_sha256": "b8d9bc4fa3c68bd2b7656647508d5b7d739210b0379df987a02e4d8ed7c21a6b"
+    },
+    {
+      "attempt": 10,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_10\\REQUEST.json",
+      "request_sha256": "4a702137f02517c072cfada6e29b895a1c46473b23dbb67a3ce1fb592cddec3c",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_10\\RESPONSE.json",
+      "response_sha256": "25fb05d4ca92f4649ac02079159e33553e1f076439b961ff4bc6da2fb2c5a6e0"
+    },
+    {
+      "attempt": 11,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_11\\REQUEST.json",
+      "request_sha256": "1e8899e5393fe725b883434bebea4b27db39e378419e1391c64ac2071d713b24",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_11\\RESPONSE.json",
+      "response_sha256": "c8308bb54275bba30970a1f7cc493f4347a42c0963c48b3dbc3585218cb34ce4"
+    },
+    {
+      "attempt": 12,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_12\\REQUEST.json",
+      "request_sha256": "60804b137f25dd86799ffd02851a05115e8fc393c8db60ea4a8915e12288b929",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_12\\RESPONSE.json",
+      "response_sha256": "d002f653ec7ecc22cf47077f7566f905a307b6b5f018b5b776663aef081f318c"
+    },
+    {
+      "attempt": 13,
+      "request_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_13\\REQUEST.json",
+      "request_sha256": "b6aac93995c0af4cde36361d892265cc1def914f2db7903a03fb4713ad976dca",
+      "response_path": "D:\\he_explicit_001\\formal\\P1\\o\\tool_13\\RESPONSE.json",
+      "response_sha256": "7391c660fd8c13b74e099ebdac16095defa1d0fda40be1c3502cb0077ea11064"
+    }
+  ],
+  "operations": {
+    "new_model_calls": 0,
+    "new_product_calls": 0,
+    "new_rasters": 0,
+    "new_test_runs": 0,
+    "frozen_sources_modified": 0,
+    "cost_comparison": "No cost, usage or timing ranking was inspected or computed. CONSUMER was used only for completion, tool content and message fields.",
+    "initial_missing_file_read": "An initial direct read of PUBLIC_FINAL.txt returned missing-path. The missing file is the actual diagnostic outcome, retained here."
+  },
+  "conclusion": "The actual installed entry and observable default-v3/three-image delivery worked. The first result already contained the correct key facts. Subsequent global native recomputation produced an incorrect coverage row and exhausted the tool window; the required final answer and successful product-fact consumption are absent."
+}

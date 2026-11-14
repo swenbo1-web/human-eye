@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 12,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_a9907fd597484f919cd1b9844e509e1e",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+        "thread_id": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+        "turn_started_at_unix_ms": 1794656222130,
+        "turn_id": "01a1d9d8-bbaa-73d0-80f2-b75fb3c2fed8",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d9d8-bad1-73a3-b746-46c96161f879",
+      "itemId": "fc_0d8e2468da29e320016af84895d0b487d08e72e11aebc923ed",
+      "progressToken": 11
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "import json\nview_refs={'SCENE':refs[0],'BACK':refs[1],'LEFT':refs[2]}\nrows=[]\nfor si,s in enumerate(surfaces):\n ids=s['triangles']; ranges=[]\n for ti in ids:\n  if ranges and ti==ranges[-1][1]+1:ranges[-1][1]=ti\n  else:ranges.append([ti,ti])\n wins=[name for name in view_refs if geom_facts[(si,name)]['complete'] and pixel_facts[(si,name)]['pixels']>=16 and pixel_facts[(si,name)]['boundary']>=4]\n if wins:\n  name=wins[0]; p=pixel_facts[(si,name)]; row=[si,ranges,'observed',name,p['pixels'],p['boundary'],p['pixel']]\n else:\n  reason='back_facing_all_six' if all(not geom_facts[(si,c['name'])]['front'] for c in cameras['views']) else 'positive_area_occlusion_all_six'\n  row=[si,ranges,'remaining',reason]\n rows.append(row)\nprint(json.dumps({'schema':'session-surface-evidence-v1','source':'explicitly_labelled_capture_replay','object_index':0,'columns':['surface_index','inclusive_source_triangle_ranges','status','view_or_reason','actual_surface_pixels','unique_contrasting_boundary_pixels','owned_pixel_xy'],'view_references':view_refs,'rows':rows,'unsupported':[{'triangles':[48],'status':'unsupported_nonrectangular_triangle','corners':[[str(x) for x in V[i]] for i in T[48]]}],'pool':{c['name']:c['direction_rational'] for c in cameras['views']},'observed_count':115,'remaining_count':23,'remaining_occlusion_witnesses':{c['name']:geom_facts[(93,c['name'])]['occluder_triangle'] for c in cameras['views']},'readability_rule':{'pixels':16,'boundary_pixels':4,'contrast_squared':576,'boundary':'unique target endpoints of horizontal/vertical different-surface pairs; both endpoints marked'},'raster_limit':'six_actual_raster_attempt_limit; attempted batch stopped before RIGHT; existing active BACK image and SCENE/LEFT buffers suffice for complete eligible-surface coverage'},separators=(',',':')))"
+    }
+  }
+}

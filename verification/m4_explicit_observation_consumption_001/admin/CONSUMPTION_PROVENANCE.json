@@ -1,0 +1,586 @@
+{
+  "schema": "explicit-observation-consumption-provenance-v1",
+  "slot_id": "P1",
+  "denominator": 1,
+  "layers": {
+    "real_call": {
+      "status": "pass",
+      "first_tool": "active_observation",
+      "include_images": true,
+      "first_step_instruction_followed": true,
+      "model_CLI_event": true,
+      "server_request_received": true,
+      "actual_installed_producer": true,
+      "producer_status": "complete",
+      "runtime_source_sha256": "96d7da8c50680a73f251496406c9f0bbbf6b38bd4dfe848c931e45f094343b76"
+    },
+    "real_delivery": {
+      "status": "pass",
+      "schema": "active-observation-brief-v3",
+      "actual_first_result_binding": {
+        "matched": true,
+        "classification": "success",
+        "reason": "content_and_envelope_match"
+      },
+      "actual_region_rows": 138,
+      "actual_pixel_rows": 414,
+      "common_region_scalar_checks": 1104,
+      "common_pixel_scalar_checks": 2484,
+      "images": [
+        {
+          "view": "SCENE",
+          "ref": "active-host-image:2ba29708e3666161e25ab37c43512d9016f8570813373173e0325d259a44e08a",
+          "sha256": "4a1ad9575a26f72e615245d4172cd4a9f52d33fa5c2c24d28a8a08195c40c148",
+          "delivered_to_CLI": true,
+          "matches_producer_file": true
+        },
+        {
+          "view": "BACK",
+          "ref": "active-host-image:954c2d6e2b36ec57372a85914384348fde2d7e1557be704bc97d12d91a425561",
+          "sha256": "f5bba5ac569549b7701f3549d51e26942c3bb02916459cb6cf51476a71ebd038",
+          "delivered_to_CLI": true,
+          "matches_producer_file": true
+        },
+        {
+          "view": "LEFT",
+          "ref": "active-host-image:7c77517c14e2be4d38ae2019a7b4c777e8720bbb1f88fec660a6e5409a9945a2",
+          "sha256": "b5718185eba62f06a4eb060d639e4f23d127acb2cdef331236b71dc29f57defe",
+          "delivered_to_CLI": true,
+          "matches_producer_file": true
+        }
+      ],
+      "coverage_projection_equal": true,
+      "provider_internal_inputs": "unmeasured",
+      "provider_internal_definition_delivery": "unmeasured"
+    },
+    "correct_consumption": {
+      "status": "fail",
+      "original_task_quality_passed": false,
+      "complete_final_artifact": false,
+      "terminal_turn_event": false,
+      "actual_partial_product_use": true,
+      "complete_product_fact_consumer_qualification": false
+    }
+  },
+  "actual_use_sequence": [
+    {
+      "attempt": 1,
+      "basis": "product",
+      "action": "Explicit observation returned actual v3 and three PNGs."
+    },
+    {
+      "attempts": [
+        2,
+        3
+      ],
+      "basis": "native",
+      "action": "Read raw geometry/cameras and ordinary namespace; common native buffers initially empty despite product image files being available."
+    },
+    {
+      "attempt": 4,
+      "basis": "native",
+      "action": "Rediscovered all components from raw mesh and requested all six cameras. Constructed native SCENE/TOP/LEFT before the existing six-raster limit blocked further construction."
+    },
+    {
+      "attempts": [
+        7,
+        8
+      ],
+      "basis": "native",
+      "action": "Recomputed whole-scene six-view geometric completeness and native buffer pixel facts."
+    },
+    {
+      "attempts": [
+        9,
+        10
+      ],
+      "basis": "mixed",
+      "action": "Read actual product PNGs. Compared SCENE/LEFT RGB to native buffers, then derived BACK pixels for 22 thin +Y faces using native projected geometry."
+    },
+    {
+      "attempts": [
+        11,
+        12
+      ],
+      "basis": "mixed",
+      "action": "Assembled a table using product image references with native/mixed calculations. Attempt 11 failed KeyError. Attempt 12 produced 114 observed and 24 remaining."
+    },
+    {
+      "attempt": 13,
+      "basis": "native",
+      "action": "Requested a TOP-buffer correction, rejected before execution by the tool-attempt guard."
+    }
+  ],
+  "per_claim_provenance": [
+    {
+      "claim": "complete_supported_set_and_coverage",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "product_supported_count": 138,
+      "product_covered_count": 115,
+      "intermediate_basis": "mixed",
+      "actual_native_table_count": 114,
+      "native_source": "tool_04 raw mesh component discovery; tool_07 whole-pool rational geometry; tool_10 product BACK image-derived pixels; tool_12 assembled table",
+      "failure": "No final. Native table omits a readable region already covered in the product facts."
+    },
+    {
+      "claim": "finite_pool_remainder_and_reasons",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "product_unresolved_count": 23,
+      "intermediate_basis": "native",
+      "actual_native_table_count": 24,
+      "failure": "Native table falsely labels source triangles 1133..1644 as all-view occluded."
+    },
+    {
+      "claim": "unsupported_remainder",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "intermediate_basis": "native",
+      "source": "Product scope.patch_support; native tool_04 unsupported [[48]] and tool_12 unsupported record."
+    },
+    {
+      "claim": "SCENE_click_location",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "intermediate_basis": "native",
+      "source": "Native tool_07 winning source triangle 35; tool_08 center, corners, normal and pixel counts."
+    },
+    {
+      "claim": "origin_occlusion_and_actual_alternative_pixel",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "intermediate_basis": "native",
+      "source": "Native tool_07 full geometry and SCENE/LEFT actual buffers. Product v3 also supplies corresponding world and pixel facts."
+    },
+    {
+      "claim": "bottom_finite_pool_scope",
+      "final_basis": "missing",
+      "received_product_basis": "product",
+      "intermediate_basis": "native",
+      "source": "Native tool_07/08 compute registered six-camera front/occlusion facts. Product v3 preserves finite-pool unresolved region."
+    }
+  ],
+  "received_product_facts": {
+    "coverage": {
+      "supported_count": 138,
+      "covered_count": 115,
+      "unresolved_count": 23
+    },
+    "unsupported": {
+      "schema": "active-patch-support-v1",
+      "triangle_index_scope": "zero-based source triangles within each object",
+      "all_triangles_participate_in_occlusion": true,
+      "object_support": {
+        "columns": [
+          "object_index",
+          "source_triangle_count",
+          "supported_triangle_count",
+          "unsupported_triangle_count",
+          "support_status"
+        ],
+        "rows": [
+          [
+            0,
+            3337,
+            3336,
+            1,
+            "partially_supported"
+          ]
+        ]
+      },
+      "unsupported_components": {
+        "columns": [
+          "object_index",
+          "component_index",
+          "triangle_count",
+          "reason",
+          "status",
+          "triangle_index_ranges"
+        ],
+        "rows": [
+          [
+            0,
+            0,
+            1,
+            "insufficient_faces",
+            "unknown",
+            [
+              [
+                48,
+                48
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    "click": {
+      "region_index": 72,
+      "region": {
+        "roi_id": "roi_8f5a046cead6817feffe5d02",
+        "object_index": 0,
+        "status": "covered",
+        "reason": "observed_readable",
+        "triangle_count": 2,
+        "center_world_m": [
+          0.15625,
+          -0.15625,
+          0.11865234375
+        ],
+        "half_edge_u_world_m": [
+          0.03515625,
+          0,
+          0
+        ],
+        "half_edge_v_world_m": [
+          0,
+          0.03515625,
+          0
+        ],
+        "front_direction_world": [
+          0,
+          0,
+          1
+        ]
+      },
+      "pixels": [
+        {
+          "view": "SCENE",
+          "image_index": 0,
+          "region_index": 72,
+          "front_facing": true,
+          "visible_surface_pixels": 354,
+          "contrasting_boundary_pixels": 73,
+          "readable": true,
+          "visible_pixel_bounds": [
+            91,
+            239,
+            128,
+            256
+          ],
+          "visible_pixel_anchor": [
+            109,
+            247
+          ]
+        },
+        {
+          "view": "BACK",
+          "image_index": 1,
+          "region_index": 72,
+          "front_facing": true,
+          "visible_surface_pixels": 682,
+          "contrasting_boundary_pixels": 102,
+          "readable": true,
+          "visible_pixel_bounds": [
+            335,
+            128,
+            365,
+            149
+          ],
+          "visible_pixel_anchor": [
+            350,
+            138
+          ]
+        },
+        {
+          "view": "LEFT",
+          "image_index": 2,
+          "region_index": 72,
+          "front_facing": true,
+          "visible_surface_pixels": 1092,
+          "contrasting_boundary_pixels": 130,
+          "readable": true,
+          "visible_pixel_bounds": [
+            412,
+            303,
+            450,
+            330
+          ],
+          "visible_pixel_anchor": [
+            431,
+            316
+          ]
+        }
+      ]
+    },
+    "origin": {
+      "region_index": 131,
+      "region": {
+        "roi_id": "roi_f6c3316d343e6258e4720886",
+        "object_index": 0,
+        "status": "covered",
+        "reason": "observed_readable",
+        "triangle_count": 512,
+        "center_world_m": [
+          0,
+          0,
+          0
+        ],
+        "half_edge_u_world_m": [
+          0.029296875,
+          0,
+          0
+        ],
+        "half_edge_v_world_m": [
+          0,
+          0.029296875,
+          0
+        ],
+        "front_direction_world": [
+          0,
+          0,
+          1
+        ]
+      },
+      "pixels": [
+        {
+          "view": "SCENE",
+          "image_index": 0,
+          "region_index": 131,
+          "front_facing": true,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        },
+        {
+          "view": "BACK",
+          "image_index": 1,
+          "region_index": 131,
+          "front_facing": true,
+          "visible_surface_pixels": 468,
+          "contrasting_boundary_pixels": 84,
+          "readable": true,
+          "visible_pixel_bounds": [
+            407,
+            216,
+            432,
+            233
+          ],
+          "visible_pixel_anchor": [
+            419,
+            224
+          ]
+        },
+        {
+          "view": "LEFT",
+          "image_index": 2,
+          "region_index": 131,
+          "front_facing": true,
+          "visible_surface_pixels": 792,
+          "contrasting_boundary_pixels": 110,
+          "readable": true,
+          "visible_pixel_bounds": [
+            327,
+            415,
+            359,
+            438
+          ],
+          "visible_pixel_anchor": [
+            343,
+            426
+          ]
+        }
+      ]
+    },
+    "bottom": {
+      "region_index": 107,
+      "region": {
+        "roi_id": "roi_ce8430f9242f49ab62882494",
+        "object_index": 0,
+        "status": "unknown",
+        "reason": "finite_camera_pool_uncovered",
+        "triangle_count": 2,
+        "center_world_m": [
+          0.15625,
+          -0.15625,
+          0.11572265625
+        ],
+        "half_edge_u_world_m": [
+          0,
+          0.03515625,
+          0
+        ],
+        "half_edge_v_world_m": [
+          0.03515625,
+          0,
+          0
+        ],
+        "front_direction_world": [
+          0,
+          0,
+          -1
+        ]
+      },
+      "pixels": [
+        {
+          "view": "SCENE",
+          "image_index": 0,
+          "region_index": 107,
+          "front_facing": false,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        },
+        {
+          "view": "BACK",
+          "image_index": 1,
+          "region_index": 107,
+          "front_facing": false,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        },
+        {
+          "view": "LEFT",
+          "image_index": 2,
+          "region_index": 107,
+          "front_facing": false,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        }
+      ]
+    }
+  },
+  "concrete_native_error": {
+    "source_triangle_range": [
+      1133,
+      1644
+    ],
+    "native_surface_index": 56,
+    "actual_table_row": [
+      56,
+      [
+        [
+          1133,
+          1644
+        ]
+      ],
+      "remaining",
+      "positive_area_occlusion_all_six"
+    ],
+    "original_product_region": {
+      "region_index": 7,
+      "region": {
+        "roi_id": "roi_0c0d8629ca21e80a24de993a",
+        "object_index": 0,
+        "status": "covered",
+        "reason": "observed_readable",
+        "triangle_count": 512,
+        "center_world_m": [
+          0.3515625,
+          0,
+          0
+        ],
+        "half_edge_u_world_m": [
+          0.029296875,
+          0,
+          0
+        ],
+        "half_edge_v_world_m": [
+          0,
+          0.029296875,
+          0
+        ],
+        "front_direction_world": [
+          0,
+          0,
+          1
+        ]
+      },
+      "pixels": [
+        {
+          "view": "SCENE",
+          "image_index": 0,
+          "region_index": 7,
+          "front_facing": true,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        },
+        {
+          "view": "BACK",
+          "image_index": 1,
+          "region_index": 7,
+          "front_facing": true,
+          "visible_surface_pixels": 468,
+          "contrasting_boundary_pixels": 84,
+          "readable": true,
+          "visible_pixel_bounds": [
+            251,
+            216,
+            276,
+            233
+          ],
+          "visible_pixel_anchor": [
+            263,
+            224
+          ]
+        },
+        {
+          "view": "LEFT",
+          "image_index": 2,
+          "region_index": 7,
+          "front_facing": true,
+          "visible_surface_pixels": 0,
+          "contrasting_boundary_pixels": 0,
+          "readable": false,
+          "visible_pixel_bounds": null,
+          "visible_pixel_anchor": null
+        }
+      ]
+    },
+    "correction_request": {
+      "code": "print('additional observed evidence',json.dumps({'surface_index':56,'source_triangle_indices_inclusive':[1133,1644],'center':[float(x) for x in surfaces[56]['center']],'normal':[float(x) for x in surfaces[56]['normal']],'status':'observed','view':'TOP','actual_buffer_reference':'buffers[\"TOP\"]','geometry':geom_facts[(56,'TOP')],'pixel_evidence':pixel_facts[(56,'TOP')],'image_delivery':'batch hit raster limit after constructing this buffer, so no standalone TOP PNG reference was returned'}))\nprint('CORRECTION to preceding session-surface-evidence-v1 table: replace surface 56 remaining row with this observed TOP row; observed_count=115; remaining_count=23. No other row changes. Remaining: 22 back_facing_all_six and surface 93 positive_area_occlusion_all_six.')\nprint('surface56 other view geometry', {c['name']:geom_facts[(56,c['name'])] for c in cameras['views']})"
+    },
+    "correction_response": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Tool failed. ValueError"
+        }
+      ],
+      "isError": true
+    },
+    "correction_executed": false
+  },
+  "final_state": {
+    "public_final_exists": false,
+    "turn_terminal_event_types": [],
+    "last_saved_progress": "All 115 inspectable rectangles now have evidence; 23 remain pool-inaccessible.\n",
+    "consumer_errors": [
+      {
+        "type": "ValueError",
+        "message": "route_twelve_tool_call_limit"
+      }
+    ]
+  },
+  "cost_analysis_performed": false,
+  "inputs_sha256": {
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_01\\REQUEST.json": "ed42e5afc828ca5130df47961241bd7b46ff8ce7437ab97063c3cc6db4f93daf",
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_01\\RESPONSE.json": "d5e584988eb8fc587b772110f8f5558c1565ed84a865ad8d10b0edd02eba9f51",
+    "D:\\he_explicit_001\\formal\\P1\\o\\product_call_01\\SERVICE_RESULT.json": "694e3a19967c1b341e7f8c86c3ea291bfee0506c119ae2cb4859a96fe8709ceb",
+    "D:\\he_explicit_001\\formal\\P1\\c\\CONSUMER.json": "d9bdf509a022fc7746ac0432f7e79fcf68051c13f18bdc96c0f6d1b0a30e105e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_explicit_observation_consumption_001\\admin\\TOOL_TEXT.json": "6ef3bb06f162035fef61e3083dc023374ba4e01714ac1b58bfb62672dfcd9448",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_explicit_observation_consumption_001\\admin\\MODEL_MESSAGES.json": "859c2e733a89ddcb34b482caf4e7f91a792bd34aadc2e2558a43fa2c5e7a4d9f",
+    "D:\\he_explicit_001\\formal\\P1\\o\\product_state.json.active_observation\\c2865a8f01864d25be0a9c0a145bf7c9\\a2124a6da48d2f29096fc4e43b5d323d3a28b39d78c9d45a33e360de1dcc7988\\001-432e41440c17b7ae43139ef4.png": "4a1ad9575a26f72e615245d4172cd4a9f52d33fa5c2c24d28a8a08195c40c148",
+    "D:\\he_explicit_001\\formal\\P1\\o\\product_state.json.active_observation\\c2865a8f01864d25be0a9c0a145bf7c9\\a2124a6da48d2f29096fc4e43b5d323d3a28b39d78c9d45a33e360de1dcc7988\\002-59e47f3ed155e12517628663.png": "f5bba5ac569549b7701f3549d51e26942c3bb02916459cb6cf51476a71ebd038",
+    "D:\\he_explicit_001\\formal\\P1\\o\\product_state.json.active_observation\\c2865a8f01864d25be0a9c0a145bf7c9\\a2124a6da48d2f29096fc4e43b5d323d3a28b39d78c9d45a33e360de1dcc7988\\003-095faefff43de355759568eb.png": "b5718185eba62f06a4eb060d639e4f23d127acb2cdef331236b71dc29f57defe",
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_12\\REQUEST.json": "60804b137f25dd86799ffd02851a05115e8fc393c8db60ea4a8915e12288b929",
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_12\\RESPONSE.json": "d002f653ec7ecc22cf47077f7566f905a307b6b5f018b5b776663aef081f318c",
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_13\\REQUEST.json": "b6aac93995c0af4cde36361d892265cc1def914f2db7903a03fb4713ad976dca",
+    "D:\\he_explicit_001\\formal\\P1\\o\\tool_13\\RESPONSE.json": "7391c660fd8c13b74e099ebdac16095defa1d0fda40be1c3502cb0077ea11064"
+  },
+  "limitation": "Initial cleanup-status inspection exposed embedded single-slot timestamps. No FINAL_TIMING/usage or cost ranking was inspected. All later quality review material removes timing fields."
+}
