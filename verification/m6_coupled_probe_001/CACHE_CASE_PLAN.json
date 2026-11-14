@@ -1,0 +1,24 @@
+{
+  "cycle_id": "M6-COUPLED-PROBE-001",
+  "registered_before_regression_execution": true,
+  "reason": "Static review found two source/cache binding gaps after the fixed geometry controls passed. These regression cases retain the already frozen geometry and its independent oracle.",
+  "base_geometry_case": "shape_pass_new_surface_crossing",
+  "original_case_plan_sha256": "9860c2f9a42feaa53574b2da6957077018fd39ac436913ca9b09055d42c102f4",
+  "cases": [
+    {
+      "name": "after_scan_reused_as_before_scan",
+      "operation": "Supply the after-scan of the frozen crossing candidate as scan_before with the original before preparation",
+      "expected_joint_status": "invalid",
+      "expected_reason": "cached_scan_source_frame_or_scope_mismatch",
+      "answer_source": "Before and candidate coordinates differ and have distinct geometry fingerprints. Their scan results cannot be reused across source states."
+    },
+    {
+      "name": "updated_preparation_reused_as_original_before",
+      "operation": "Update the before preparation to the frozen candidate, then supply it as prepared_before for the original packet",
+      "expected_joint_status": "invalid",
+      "expected_reason": "prepared_source_or_frame_mismatch",
+      "answer_source": "The updated geometry fingerprint must describe candidate coordinates and differ from the original before fingerprint."
+    }
+  ],
+  "real_input_guard": "Before any fixed candidate derivation, compare old public metadata bytes against ddd541cf and validate private patch/context/raw hashes and snapshot identity."
+}
