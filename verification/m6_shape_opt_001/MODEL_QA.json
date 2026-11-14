@@ -1,0 +1,421 @@
+{
+  "cycle_id": "M6-SHAPE-OPT-001",
+  "passed": true,
+  "qa_scope": "synthetic structural, old-initialization, loss and one-update gradient QA",
+  "public_validation_observations_loaded": 0,
+  "reserved_test_observations_loaded": 0,
+  "formal_training_runs": 0,
+  "synthetic_optimizer_updates": 1,
+  "synthetic_gradient_backward_passes": 2,
+  "torch_version": "2.15.0+cpu",
+  "torch_threads": 1,
+  "parameter_count": 6339,
+  "parameters_by_module": {
+    "node_encoder": 792,
+    "edge_mlp": 1872,
+    "node_update": 2352,
+    "layer_norm": 48,
+    "alpha_head": 1201,
+    "beta_head": 25,
+    "localization_head": 49
+  },
+  "message_steps": 12,
+  "initialization": {
+    "checkpoint": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\weights\\step_0000.pt",
+    "checkpoint_sha256": "5bed071896118185c76f52ede6df833204864c3b7500fff46b02a613b30acbec",
+    "old_state_tensors_equal": 20,
+    "old_parameters_equal": 6290,
+    "added_state_names": [
+      "localization_head.bias",
+      "localization_head.weight"
+    ],
+    "forward_arguments": [
+      "node_features",
+      "edge_features",
+      "positions",
+      "normals",
+      "edge_index",
+      "free_mask"
+    ],
+    "component_arguments": [
+      "node_features",
+      "edge_features",
+      "positions",
+      "normals",
+      "edge_index",
+      "free_mask"
+    ],
+    "labels_or_metadata_forward_arguments": 0
+  },
+  "initial_noop_nonzero_values": 0,
+  "initial_scores_all_half": true,
+  "nonzero_head_prediction_norm": 0.04205489903688431,
+  "fixed_nonzero_values": 0,
+  "node_and_edge_permutation_max_error": 1.862645149230957e-09,
+  "component_permutation_max_errors": {
+    "u": 3.725290298461914e-09,
+    "z": 2.9802322387695312e-08,
+    "p": 5.960464477539063e-08
+  },
+  "SO3_translation_scale_checks": [
+    {
+      "axis": [
+        1.2,
+        -2.3,
+        0.7
+      ],
+      "angle_radians": 0.812,
+      "scale_factor": 3.7,
+      "rotation_determinant": 1.0000000000000004,
+      "node_scalar_max_error": 0.0,
+      "edge_scalar_max_error": 0.0,
+      "conditional_vector_rotation_max_error": 3.725290298461914e-09,
+      "logit_scalar_max_error": 0.0,
+      "score_scalar_max_error": 0.0,
+      "normalized_prediction_max_error": 1.862645149230957e-09,
+      "native_correction_max_error": 3.725290298461914e-09
+    },
+    {
+      "axis": [
+        0.4,
+        0.8,
+        -1.7
+      ],
+      "angle_radians": -1.63,
+      "scale_factor": 0.037,
+      "rotation_determinant": 0.9999999999999999,
+      "node_scalar_max_error": 0.0,
+      "edge_scalar_max_error": 0.0,
+      "conditional_vector_rotation_max_error": 3.725290298461914e-09,
+      "logit_scalar_max_error": 0.0,
+      "score_scalar_max_error": 0.0,
+      "normalized_prediction_max_error": 1.862645149230957e-09,
+      "native_correction_max_error": 2.9103830456733704e-11
+    },
+    {
+      "axis": [
+        0.2,
+        -0.9,
+        0.3
+      ],
+      "angle_radians": 2.3,
+      "scale_factor": 100.0,
+      "rotation_determinant": 0.9999999999999997,
+      "node_scalar_max_error": 0.0,
+      "edge_scalar_max_error": 0.0,
+      "conditional_vector_rotation_max_error": 3.725290298461914e-09,
+      "logit_scalar_max_error": 0.0,
+      "score_scalar_max_error": 0.0,
+      "normalized_prediction_max_error": 1.862645149230957e-09,
+      "native_correction_max_error": 5.960464477539063e-08
+    }
+  ],
+  "batch_graph_nodes": [
+    36,
+    49
+  ],
+  "batch_directed_edges": [
+    170,
+    240
+  ],
+  "batch_vs_single_max_error": 0.0,
+  "other_graph_feature_perturbation_max_error": 0.0,
+  "first_backward_parameter_gradient_norms": {
+    "node_encoder.0.weight": 0.0,
+    "node_encoder.0.bias": 0.0,
+    "node_encoder.2.weight": 0.0,
+    "node_encoder.2.bias": 0.0,
+    "edge_mlp.0.weight": 0.0,
+    "edge_mlp.0.bias": 0.0,
+    "edge_mlp.2.weight": 0.0,
+    "edge_mlp.2.bias": 0.0,
+    "node_update.0.weight": 0.0,
+    "node_update.0.bias": 0.0,
+    "node_update.2.weight": 0.0,
+    "node_update.2.bias": 0.0,
+    "layer_norm.weight": 0.0,
+    "layer_norm.bias": 0.0,
+    "alpha_head.0.weight": 0.0,
+    "alpha_head.0.bias": 0.0,
+    "alpha_head.2.weight": 0.16488955914974213,
+    "alpha_head.2.bias": 0.1475120186805725,
+    "beta_head.weight": 0.003744529327377677,
+    "beta_head.bias": 0.000581246567890048,
+    "localization_head.weight": 0.013525755144655704,
+    "localization_head.bias": 0.0
+  },
+  "after_one_update_parameter_gradient_norms": {
+    "node_encoder.0.weight": 0.0001311840896960348,
+    "node_encoder.0.bias": 5.122418951941654e-05,
+    "node_encoder.2.weight": 0.0002617579302750528,
+    "node_encoder.2.bias": 0.00016073536244221032,
+    "edge_mlp.0.weight": 7.0144474193512e-06,
+    "edge_mlp.0.bias": 1.2735911241179565e-06,
+    "edge_mlp.2.weight": 3.858475338347489e-06,
+    "edge_mlp.2.bias": 5.003756541555049e-06,
+    "node_update.0.weight": 7.347592327278107e-05,
+    "node_update.0.bias": 1.6967325791483745e-05,
+    "node_update.2.weight": 5.9804526244988665e-05,
+    "node_update.2.bias": 6.516237772302702e-05,
+    "layer_norm.weight": 0.0004697337280958891,
+    "layer_norm.bias": 0.0005475666839629412,
+    "alpha_head.0.weight": 0.0008432584581896663,
+    "alpha_head.0.bias": 0.0001670257915975526,
+    "alpha_head.2.weight": 0.16035345196723938,
+    "alpha_head.2.bias": 0.14344213902950287,
+    "beta_head.weight": 0.003741600550711155,
+    "beta_head.bias": 0.0005667887744493783,
+    "localization_head.weight": 0.013571064919233322,
+    "localization_head.bias": 8.328817784786224e-05
+  },
+  "first_synthetic_loss": 0.046975087374448776,
+  "after_one_update_synthetic_loss": 0.046490371227264404,
+  "first_synthetic_graph_records": [
+    {
+      "graph_id": 0,
+      "normal_control": false,
+      "denominators": {
+        "A": 16,
+        "S": 2,
+        "normal_allowed": 14,
+        "normal_free": 2,
+        "fixed": 32,
+        "directed_edges": 170
+      },
+      "mse": {
+        "A": 0.0018530292436480522,
+        "S": 0.014824233949184418,
+        "normal_allowed": 0.0,
+        "normal_free": 0.0,
+        "fixed": 0.0
+      },
+      "directed_edge_gradient_mse": 0.001754716970026493,
+      "point_loss": 0.0063002994284033775,
+      "gradient_loss": 8.773584704613313e-05,
+      "total_loss": 0.046975087840110064,
+      "base_total_loss": 0.006388035137206316,
+      "conditional_support_denominator": 2,
+      "conditional_support_mse": 0.014824233949184418,
+      "conditional_loss": 0.005929693579673767,
+      "localization_denominators": {
+        "S": 2,
+        "N_F": 2,
+        "F": 4
+      },
+      "localization_means": {
+        "S_positive": 0.6931471824645996,
+        "N_F_negative": 0.6931471824645996,
+        "F_control_negative": null
+      },
+      "localization_group_weights": {
+        "S": 0.5,
+        "N_F": 0.5
+      },
+      "localization_loss_unweighted": 0.6931471824645996,
+      "localization_loss": 0.03465735912322998
+    }
+  ],
+  "after_one_update_synthetic_graph_records": [
+    {
+      "graph_id": 0,
+      "normal_control": false,
+      "denominators": {
+        "A": 16,
+        "S": 2,
+        "normal_allowed": 14,
+        "normal_free": 2,
+        "fixed": 32,
+        "directed_edges": 170
+      },
+      "mse": {
+        "A": 0.0018039154820144176,
+        "S": 0.014428624883294106,
+        "normal_allowed": 3.8557541870432033e-07,
+        "normal_free": 2.699027845665114e-06,
+        "fixed": 0.0
+      },
+      "directed_edge_gradient_mse": 0.0017221833113580942,
+      "point_loss": 0.006133312825113535,
+      "gradient_loss": 8.610916847828776e-05,
+      "total_loss": 0.046490371227264404,
+      "base_total_loss": 0.0062194219790399075,
+      "conditional_support_denominator": 2,
+      "conditional_support_mse": 0.01403854787349701,
+      "conditional_loss": 0.005615419242531061,
+      "localization_denominators": {
+        "S": 2,
+        "N_F": 2,
+        "F": 4
+      },
+      "localization_means": {
+        "S_positive": 0.6931167244911194,
+        "N_F_negative": 0.6931044459342957,
+        "F_control_negative": null
+      },
+      "localization_group_weights": {
+        "S": 0.5,
+        "N_F": 0.5
+      },
+      "localization_loss_unweighted": 0.6931105852127075,
+      "localization_loss": 0.034655530005693436
+    }
+  ],
+  "loss_checks": {
+    "unequal_graph_sizes_equal_graph_mean": 0.9768400192260742,
+    "independent_formula": 0.9768400192260742,
+    "independent_formula_max_error": 0.0,
+    "per_graph": [
+      {
+        "graph_id": 0,
+        "normal_control": false,
+        "denominators": {
+          "A": 2,
+          "S": 1,
+          "normal_allowed": 1,
+          "normal_free": 1,
+          "fixed": 1,
+          "directed_edges": 4
+        },
+        "mse": {
+          "A": 0.9587441086769104,
+          "S": 0.25,
+          "normal_allowed": 1.6674882173538208,
+          "normal_free": 1.6674882173538208,
+          "fixed": 0.0
+        },
+        "directed_edge_gradient_mse": 1.1468318700790405,
+        "point_loss": 0.9587441086769104,
+        "gradient_loss": 0.057341594249010086,
+        "total_loss": 1.4593516290187836,
+        "base_total_loss": 1.0160857439041138,
+        "conditional_support_denominator": 1,
+        "conditional_support_mse": 1.0,
+        "conditional_loss": 0.4000000059604645,
+        "localization_denominators": {
+          "S": 1,
+          "N_F": 1,
+          "F": 2
+        },
+        "localization_means": {
+          "S_positive": 0.6931471824645996,
+          "N_F_negative": 1.0374879837036133,
+          "F_control_negative": null
+        },
+        "localization_group_weights": {
+          "S": 0.5,
+          "N_F": 0.5
+        },
+        "localization_loss_unweighted": 0.8653175830841064,
+        "localization_loss": 0.04326587915420532
+      },
+      {
+        "graph_id": 1,
+        "normal_control": true,
+        "denominators": {
+          "A": 2,
+          "S": 0,
+          "normal_allowed": 2,
+          "normal_free": 1,
+          "fixed": 1,
+          "directed_edges": 2
+        },
+        "mse": {
+          "A": 0.43252119421958923,
+          "S": null,
+          "normal_allowed": 0.43252119421958923,
+          "normal_free": 0.8650423884391785,
+          "fixed": 0.0
+        },
+        "directed_edge_gradient_mse": 0.8650423884391785,
+        "point_loss": 0.43252119421958923,
+        "gradient_loss": 0.0432521216571331,
+        "total_loss": 0.4943283386528492,
+        "base_total_loss": 0.47577330470085144,
+        "conditional_support_denominator": 0,
+        "conditional_support_mse": null,
+        "conditional_loss": 0.0,
+        "localization_denominators": {
+          "S": 0,
+          "N_F": 1,
+          "F": 1
+        },
+        "localization_means": {
+          "S_positive": null,
+          "N_F_negative": 0.37110066413879395,
+          "F_control_negative": 0.37110066413879395
+        },
+        "localization_group_weights": {
+          "F": 1.0
+        },
+        "localization_loss_unweighted": 0.37110066413879395,
+        "localization_loss": 0.018555033951997757
+      }
+    ],
+    "empty_normal_free_renormalized_loss": 0.6846573352813721,
+    "empty_groups_loss": 0.0,
+    "original_loss_qa": {
+      "unequal_graph_sizes_equal_graph_mean": 3.7874999046325684,
+      "expected_equal_graph_mean": 3.7875,
+      "per_graph": [
+        {
+          "graph_id": 0,
+          "normal_control": false,
+          "denominators": {
+            "A": 2,
+            "S": 1,
+            "normal_allowed": 1,
+            "normal_free": 1,
+            "fixed": 1,
+            "directed_edges": 4
+          },
+          "mse": {
+            "A": 2.5,
+            "S": 1.0,
+            "normal_allowed": 4.0,
+            "normal_free": 4.0,
+            "fixed": 0.0
+          },
+          "directed_edge_gradient_mse": 2.5,
+          "point_loss": 2.5,
+          "gradient_loss": 0.125,
+          "total_loss": 2.625
+        },
+        {
+          "graph_id": 1,
+          "normal_control": true,
+          "denominators": {
+            "A": 2,
+            "S": 0,
+            "normal_allowed": 2,
+            "normal_free": 1,
+            "fixed": 1,
+            "directed_edges": 2
+          },
+          "mse": {
+            "A": 4.5,
+            "S": null,
+            "normal_allowed": 4.5,
+            "normal_free": 9.0,
+            "fixed": 0.0
+          },
+          "directed_edge_gradient_mse": 9.0,
+          "point_loss": 4.5,
+          "gradient_loss": 0.45000001788139343,
+          "total_loss": 4.949999809265137
+        }
+      ],
+      "empty_term_renormalized_loss": 1.0,
+      "empty_allowed_loss": 0.0,
+      "cross_graph_edge_rejected": true
+    }
+  },
+  "gating_checks": {
+    "strict_threshold_equal_is_unselected": true,
+    "fixed_above_threshold_is_zero": true,
+    "float64_frozen_threshold": 0.5001000016927719,
+    "float32_score_above_threshold": 0.5001000165939331,
+    "threshold_scalar_rounding_avoided": true
+  },
+  "wall_seconds": 1.8431148999952711,
+  "cpu_seconds": 1.09375
+}
