@@ -1,0 +1,105 @@
+{
+  "cycle_id": "M6-REAL-DATA-001",
+  "status": "passed_input_and_supervision_audit",
+  "native_acquisition": {
+    "status": "collected",
+    "source_identity_verified": true,
+    "object_exported": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+  },
+  "product_adapter": {
+    "status": "ineligible_from_native_evidence",
+    "actual_runtime_adapter_calls": 0,
+    "failed_structural_requirement": "single_armature_required",
+    "actual_armature_modifiers": 0,
+    "other_missing": [
+      "selected bone chain",
+      "normalized skin weights",
+      "closed section selection",
+      "paired bone rest/pose"
+    ],
+    "scope": "Code-domain precheck, not an adapter execution receipt"
+  },
+  "correction_task": {
+    "status": "missing_task_and_supervision",
+    "geometric_control": "not_run_missing_rig_and_task",
+    "independent_shape_deformation_check": "not_run_missing_pose_or_corrective_pair",
+    "observable": [
+      "static positions and triangles",
+      "connected components",
+      "spatial region",
+      "raw/evaluated equality"
+    ],
+    "native_topology_components_are_fault_labels": false
+  },
+  "checks": [
+    {
+      "name": "source remains dispatch identity",
+      "passed": true
+    },
+    {
+      "name": "full native indices finite and valid",
+      "passed": true
+    },
+    {
+      "name": "raw/evaluated arrays exactly equal and modifier-free",
+      "passed": true
+    },
+    {
+      "name": "patch coordinates preserve original source indices",
+      "passed": true
+    },
+    {
+      "name": "patch triangles preserve original source connectivity",
+      "passed": true
+    },
+    {
+      "name": "automatic scripts disabled",
+      "passed": true
+    },
+    {
+      "name": "no source or copy saved by collector",
+      "passed": true
+    }
+  ],
+  "model_candidates": [],
+  "costs": {
+    "native_processes": 2,
+    "copies_created": 1,
+    "native_process_wall_s": [
+      0.9806706000235863,
+      1.1247299000096973
+    ],
+    "native_process_total_wall_s": 2.1054005000332836,
+    "collector_wall_s": [
+      0.11007920000702143,
+      0.38602229999378324
+    ],
+    "export_file_bytes": 8317585,
+    "private_cache_bytes": 11859852,
+    "full_mesh_coordinate_numpy_bytes": 1310592,
+    "full_mesh_triangle_numpy_bytes": 1278336,
+    "selected_patch_json_bytes": 61424,
+    "native_peak_working_set_bytes": [
+      214843392,
+      282324992
+    ],
+    "analysis_wall_s_before_final_json_publication": 0.19796690001385286,
+    "whole_agent_task_wall_s": null,
+    "controller_manifest_publication_cost": "not_separately_measured",
+    "formal_performance_comparisons": 0,
+    "model_calls": 0,
+    "model_tokens": null,
+    "model_fees": null
+  },
+  "not_run": [
+    "adapter runtime request",
+    "geometric correction",
+    "FK/LBS deformation control",
+    "training/search",
+    "model consumer",
+    "formal benchmark",
+    "asset editing or save",
+    "paid API"
+  ],
+  "next_step": "Obtain one accepted same-index target for the source-bound forearm-side region plus the task, allowed actions and protection constraints. Resolve the intended output before model selection."
+}
