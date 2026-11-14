@@ -1,0 +1,13 @@
+# 隔离消费夹具
+
+本批bridge、native_tools和bootstrap从消费001封存原件复制为明确的新候选。原件保持只读，旧图像编码helper继续从其原路径复用。
+
+Python持久namespace新增last_observation_json，初始为None。每次active_observation进入tool_call最先清空，发生参数错误或第13次工具守卫拒绝时也适用。普通Python调用与其它工具继续可用。
+
+公开JSON仍由实际安装产品的_tool_result生成一次。桥接只在该响应的socket sendall成功之后，把content[0].text同一个字符串对象赋给last_observation_json。没有再次序列化、读取SERVICE_RESULT、文件发布器或额外答案。下一次观察开始、产品错误、外层协议错误和发送失败都保留None。非观察协议消息不清除最近成功结果。
+
+ACTIVE仅将brief版本更正为v4，并增加json.loads(last_observation_json)用法一句。工具定义顺序及其余公共能力沿原件。完整回执、图片构造、发送、CLI、来源与预算账本继续按原链分别记录。
+
+新夹具仍使用原SOURCES schema和bootstrap参数。root提供新PRODUCT_BINDING，产品来源硬pin在冻结前绑定新安装。旧ledger容器为44，formal phase和单actor均为6，准备为0。读取隔离额外涵盖旧D:/he_explicit_001结果与新D:/he_consume_001实验根。
+
+check_public_string.py仅以合成公共响应和本地socket核验同字符串/同字节、下一观察清空、失败发送、产品错误、参数错误、预算拒绝及普通协议保持。实际观察构造器、产品、光栅和模型均不调用。它不能证明正式桌面已经部署该namespace功能。
