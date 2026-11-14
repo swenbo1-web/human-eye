@@ -16,8 +16,10 @@
   },
   "automation": {
     "id": "human-eye-m6",
-    "interval_minutes": 30,
-    "status": "ACTIVE"
+    "interval_minutes": null,
+    "status": "DELETED",
+    "reason": "User explicitly requested no fallback checks",
+    "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
     "id": "M6-SELECT-001",
@@ -42,5 +44,5 @@
     "First batch audit/probes only, no full training or production asset edits",
     "Formal performance/Blender/model consumer trials require separate scheduled window"
   ],
-  "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work; then delete this M6 automation. Do not create tasks merely to keep looping."
+  "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping."
 }
