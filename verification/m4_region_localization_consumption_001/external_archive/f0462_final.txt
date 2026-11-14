@@ -1,0 +1,11 @@
+Inspected all six registered 512×512 orthographic views, newly rendered this session: SCENE, TOP, LEFT, RIGHT, FRONT and BACK (`image-01`–`image-06`).
+
+- **Coverage:** Discovered 138 supported rectangles, including six with 512 triangles each. **115 have complete, readable evidence.** The remaining 23 comprise 22 back-facing in every registered view and one occluded in every view. Nothing still inspectable in this pool remains unfinished.
+- **Verification:** The tool output labelled **COMPLETE COVERAGE TABLE** records every surface’s source triangle indices, status, and actual image/pixel evidence. Completeness uses geometric occlusion checks; readability uses merged surface identities and actual RGB boundary-endpoint counts. Unsupported triangle **48** remains separate.
+
+**Position checks**
+1. **SCENE `[109,247]`:** Surface 17, winning triangle 35; center **`[0.15625,-0.15625,0.11865234375]`**, front **+Z**, extent **`[0.0703125,0.0703125,0]`**. Current image: **`image-01`**.
+2. **Origin, +Z:** Surface 137 has **zero visible SCENE pixels because of occlusion**, not back-facing geometry. **LEFT, `image-03`**, reads it completely: **792 surface pixels, 110 contrasting boundary pixels**; owned pixel **`[327,415]`**.
+3. **`[0.15625,-0.15625,0.11572265625]`, −Z:** Surface 16 is back-facing in **all six cameras**, so none provides front-facing readable evidence.
+
+These conclusions apply only to the registered finite camera pool and this explicitly labelled capture replay—not arbitrary viewpoints or a live scene.

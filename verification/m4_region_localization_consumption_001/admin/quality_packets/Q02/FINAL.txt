@@ -1,0 +1,11 @@
+Inspected all six registered cameras with **six new current-session renders** of the labelled capture replay: SCENE, TOP, LEFT, RIGHT, FRONT and BACK.
+
+- **Coverage:** 138 supported rectangular surfaces discovered; **115 completely observed and readable**. Remaining: 22 −Z surfaces with no front-facing camera, plus surface 93, centered at `[0.703125,0.3515625,0]`, occluded in every view. **No inspectable surface remains unfinished.** Unsupported triangle 48 is preserved separately.
+- **Full evidence:** `<current_session>\o\scratch\scene_inspection.json` contains every surface’s source triangle indices, corners, status, per-view image references, actual pixel counts and occlusion evidence.
+
+**Position Checks**
+1. **SCENE `[109,247]`:** surface 17, winning triangle 35; center `[0.15625,-0.15625,0.11865234375]`, front **+Z**. Extent: X `[0.12109375,0.19140625]`, Y `[-0.19140625,-0.12109375]`, constant Z `0.11865234375`—a `0.0703125 × 0.0703125` rectangle. Reference **`image-01`**; complete/readable with **354 surface pixels, 73 contrasting boundary pixels**.
+2. **Origin, +Z:** **zero visible pixels in SCENE**, despite being front-facing; geometry of surfaces 16/17 occludes it. **LEFT, `image-03`**, reads it completely: pixel **`[327,427]`** belongs to it; **792 surface pixels, 110 contrasting boundary pixels**.
+3. **`[0.15625,-0.15625,0.11572265625]`, −Z:** no registered camera can provide front-facing readable evidence. All six target-to-eye directions have positive Z.
+
+These impossibility conclusions apply **only to this finite, full-scene orthographic camera pool**, not to other camera positions.

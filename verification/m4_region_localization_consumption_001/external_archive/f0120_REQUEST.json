@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_e5333c086c71425b9e03464971241012",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+        "thread_id": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+        "turn_started_at_unix_ms": 1794650914042,
+        "turn_id": "01a1d987-bcd5-7ca0-8693-abfa31dd8766",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+      "itemId": "fc_0f573bd2006c8789016af83370892087d0858de03426f32c66",
+      "progressToken": 5
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "def clip_poly(poly, value):\n if not poly: return []\n result=[]; previous=poly[-1]; prev_value=value(previous)\n for current in poly:\n  current_value=value(current)\n  if (current_value>=0)!=(prev_value>=0):\n   ratio=prev_value/(prev_value-current_value); result.append(tuple(a+ratio*(b-a) for a,b in zip(previous,current)))\n  if current_value>=0: result.append(current)\n  previous=current; prev_value=current_value\n return result\nblockers=[(s['id'],s['corners']) for s in surfaces]+[(-2,[verts[i] for i in tris[t]]) for comp in unsupported for t in comp]\nchecks={}; total_blocked=0\nfor view in cameras['views']:\n name=view['name']; d=tuple(Fraction(v) for v in view['direction_rational']); checks[name]={}\n for s in surfaces:\n  sid=s['id']; n=s['normal']; nd=dot(n,d); record=dict(metrics[name][sid]); record.update(view=name,reference=refs[name],front_facing=nd>0,whole_in_viewport=True,occluders=[])\n  if nd>0:\n   origin=s['corners'][0]; axis_u=sub(s['corners'][1],origin); axis_v=sub(s['corners'][3],origin); u2=dot(axis_u,axis_u); v2=dot(axis_v,axis_v)\n   for bid,polygon in blockers:\n    if bid==sid: continue\n    heights=[dot(n,sub(p,origin))/nd for p in polygon]\n    if max(heights)<=0: continue\n    projected=[]\n    for p,height in zip(polygon,heights):\n     q=tuple(p[k]-d[k]*height-origin[k] for k in range(3)); projected.append((dot(q,axis_u)/u2,dot(q,axis_v)/v2,height))\n    if max(p[0] for p in projected)<=0 or min(p[0] for p in projected)>=1 or max(p[1] for p in projected)<=0 or min(p[1] for p in projected)>=1: continue\n    clipped=projected\n    for func in (lambda p:p[2],lambda p:p[0],lambda p:1-p[0],lambda p:p[1],lambda p:1-p[1]): clipped=clip_poly(clipped,func)\n    if len(clipped)>=3:\n     area=abs(sum(clipped[i][0]*clipped[(i+1)%len(clipped)][1]-clipped[(i+1)%len(clipped)][0]*clipped[i][1] for i in range(len(clipped))))/2\n     if area>0 and max(p[2] for p in clipped)>0: record['occluders'].append({'surface_id':bid,'shadow_area_fraction':str(area)})\n   record['complete']=not record['occluders']\n  else: record['complete']=False\n  record['readable']=record['complete'] and record['pixels']>=16 and record['boundary_pixels']>=4\n  checks[name][sid]=record\nprint('per view', {name:{'complete':sum(r['complete'] for r in rows.values()),'readable':sum(r['readable'] for r in rows.values())} for name,rows in checks.items()})\nobserved=[s['id'] for s in surfaces if any(checks[name][s['id']]['readable'] for name in refs)]\nremaining=[s['id'] for s in surfaces if s['id'] not in observed]\nprint('observed',len(observed),observed); print('remaining',len(remaining),remaining)\nprint('remaining detail',[(sid,list(map(float,surfaces[sid]['center'])),list(map(float,surfaces[sid]['normal'])),[(name,r['pixels'],r['boundary_pixels'],r['complete'],[o['surface_id'] for o in r['occluders']]) for name in refs if (r:=checks[name][sid])['front_facing']]) for sid in remaining]); print('origin checks',{name:checks[name][137] for name in refs})"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_65f613eb37244d85ab255461cf5f4876",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+        "thread_id": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+        "turn_started_at_unix_ms": 1794651576675,
+        "turn_id": "01a1d991-d95c-77c3-8222-6bf1b87ab13d",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+      "itemId": "fc_068b87236fb66c24016af835dfa2fc87d0976c7dc506deda94",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "from functools import reduce\nVq=[tuple(Fraction(c) for c in v) for v in obj['vertices']]; T=np.array(obj['triangles'],int); V=np.array(Vq,float)\ndef sub(a,b): return tuple(x-y for x,y in zip(a,b))\ndef dot(a,b): return sum(x*y for x,y in zip(a,b))\ndef cross(a,b): return (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])\nplanes=[]; edges=collections.defaultdict(list)\nfor ti,tri in enumerate(T):\n    a,b,c=[Vq[i] for i in tri]; n=cross(sub(b,a),sub(c,a))\n    if any(n):\n        scale=abs(next(x for x in n if x)); nn=tuple(x/scale for x in n); planes.append((nn,dot(nn,a)))\n    else: planes.append(None)\n    for i,j in zip(tri,np.roll(tri,-1)):\n        edges[tuple(sorted((Vq[i],Vq[j])))].append((ti,Vq[i],Vq[j]))\nadj=[[] for _ in T]\nfor incident in edges.values():\n    for ti,a,b in incident:\n        for tj,c,d in incident:\n            if ti!=tj and planes[ti] is not None and planes[ti]==planes[tj] and a==d and b==c: adj[ti].append(tj)\ncomponents=[]; seen=set()\nfor ti in range(len(T)):\n    if ti in seen: continue\n    stack=[ti]; seen.add(ti); comp=[]\n    while stack:\n        curr=stack.pop(); comp.append(curr)\n        for other in adj[curr]:\n            if other not in seen: seen.add(other); stack.append(other)\n    components.append(sorted(comp))\nsurfaces=[]; remainder=[]\nfor comp in components:\n    counts=collections.Counter(); directed=[]\n    for ti in comp:\n        for i,j in zip(T[ti],np.roll(T[ti],-1)):\n            a,b=Vq[i],Vq[j]; counts[tuple(sorted((a,b)))]+=1; directed.append((a,b))\n    boundary=[(a,b) for a,b in directed if counts[tuple(sorted((a,b)))]==1]\n    nxt={a:b for a,b in boundary}; loop=[]\n    if boundary:\n        curr=boundary[0][0]\n        while curr not in loop and curr in nxt:\n            loop.append(curr); curr=nxt[curr]\n    valid=planes[comp[0]] is not None and boundary and len(nxt)==len(boundary) and len(loop)==len(boundary) and curr==loop[0] and max(counts.values())<=2\n    if valid:\n        corners=[p for k,p in enumerate(loop) if any(cross(sub(p,loop[k-1]),sub(loop[(k+1)%len(loop)],p)))]\n        valid=len(corners)==4 and all(dot(sub(corners[k],corners[k-1]),sub(corners[(k+1)%4],corners[k]))==0 for k in range(4))\n        if valid:\n            normal=planes[comp[0]][0]\n            area2=sum(dot(cross(sub(Vq[T[ti][1]],Vq[T[ti][0]]),sub(Vq[T[ti][2]],Vq[T[ti][0]])),normal) for ti in comp)\n            rectangle2=2*dot(cross(sub(corners[1],corners[0]),sub(corners[2],corners[1])),normal)\n            valid=area2==rectangle2 and area2>0\n    if valid: surfaces.append({'id':len(surfaces),'triangles':comp,'corners_q':corners,'normal_q':normal,'center':np.mean(np.array(corners,float),axis=0).tolist()})\n    else: remainder.append(comp)\nprint('components',len(components),'supported',len(surfaces),'unsupported',len(remainder),'unsupported sizes',collections.Counter(map(len,remainder)),'supported sizes',collections.Counter(len(s['triangles']) for s in surfaces))\nprint(type(buffers['SCENE']),buffers['SCENE'].keys())"
+    }
+  }
+}

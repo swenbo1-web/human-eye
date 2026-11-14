@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_f3a551ce7e434b44a7f63cd0d2ae5d45",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d98c-b0fa-7c42-b965-784bcf65398e",
+        "thread_id": "01a1d98c-b0fa-7c42-b965-784bcf65398e",
+        "turn_started_at_unix_ms": 1794651238804,
+        "turn_id": "01a1d98c-b18d-73a1-bd85-c2a89888c78b",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d98c-b0fa-7c42-b965-784bcf65398e",
+      "itemId": "fc_0bfcfbf754d217fa016af834bac9e087d097d1dae3873ca37d",
+      "progressToken": 6
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "triangle_surface=np.full(len(faces),-2,dtype=np.int32)\nfor s in surfaces: triangle_surface[s['triangles']]=s['id']\nrefs=dict(zip(['SCENE','TOP','LEFT','RIGHT','FRONT','BACK'],['image-01','image-02','image-03','image-04','image-05','image-06']))\nfor view in cameras['views']:\n name=view['name']; buf=buffers[name]; tids=buf['triangle_ids']; identities=np.full(tids.shape,-1,dtype=np.int32); mask=tids>=0; identities[mask]=triangle_surface[tids[mask]]\n rgb=buf['color'].astype(np.int32); marked=np.zeros(tids.shape,bool)\n for axis in [0,1]:\n  aa=(slice(None,-1),slice(None)) if axis==0 else (slice(None),slice(None,-1))\n  bb=(slice(1,None),slice(None)) if axis==0 else (slice(None),slice(1,None))\n  contrast=(identities[aa]!=identities[bb]) & (np.sum((rgb[aa]-rgb[bb])**2,axis=2)>=576)\n  marked[aa]|=contrast;marked[bb]|=contrast\n for s in surfaces:\n  owned=identities==s['id']; yy,xx=np.where(owned)\n  s.setdefault('views',{})[name]={'reference':refs[name],'pixels':int(owned.sum()),'contrasting_boundary_pixels':int(np.sum(marked & owned)), 'example_pixel_xy': [int(xx[0]),int(yy[0])] if len(xx) else None}\nprint('pixel target',[(s['id'],s['center'],s['extent'],s['normal_exact']) for s in surfaces if 35 in s['triangles']])\ndef clip(poly, fn):\n if not poly:return []\n result=[]; prev=poly[-1]; fp=fn(prev)\n for curr in poly:\n  fc=fn(curr)\n  if (fp>0)!=(fc>0) and fp!=fc:\n   weight=fp/(fp-fc);result.append(tuple(a+weight*(b-a) for a,b in zip(prev,curr)))\n  if fc>=0:result.append(curr)\n  prev,fp=curr,fc\n return result\ndef positive_area(poly):\n return len(poly)>=3 and abs(sum(poly[i][0]*poly[(i+1)%len(poly)][1]-poly[(i+1)%len(poly)][0]*poly[i][1] for i in range(len(poly))))>0\noccluder_polys=[(s['id'],s['corners_exact']) for s in surfaces]+[(-2,[verts[i] for i in faces[t]]) for r in remainder for t in r['triangles']]\nfor s in surfaces:\n normal=s['normal_exact']; fixed=next(k for k in range(3) if normal[k]); axes=[k for k in range(3) if k!=fixed]; height=s['corners_exact'][0][fixed]\n bounds=[(min(p[k] for p in s['corners_exact']),max(p[k] for p in s['corners_exact'])) for k in axes]\n for view in cameras['views']:\n  name=view['name'];ev=s['views'][name]; direction=tuple(Fraction(x) for x in view['direction_rational']); ev['front_facing']=dot(normal,direction)>0\n  world=np.array([[float(x) for x in p]+[1.] for p in s['corners_exact']]); projected=world@np.array(view['view_matrix']).T@np.array(view['projection_matrix']).T; ndc=projected[:,:3]/projected[:,3:4]\n  ev['whole_inside_viewport']=bool(np.all(np.abs(ndc)<=1))\n  ev['positive_area_occluders']=[]\n  if ev['front_facing']:\n   for oid,poly in occluder_polys:\n    if oid==s['id']:continue\n    # Keep only strictly nearer geometry; plane contact is zero shadow depth.\n    distances=[(p[fixed]-height)/direction[fixed] for p in poly]\n    if max(distances)<=0:continue\n    clipped=clip(poly,lambda p:(p[fixed]-height)/direction[fixed])\n    shadow=[tuple(p[k]-((p[fixed]-height)/direction[fixed])*direction[k] for k in axes) for p in clipped]\n    if not shadow:continue\n    if any(max(p[j] for p in shadow)<=lo or min(p[j] for p in shadow)>=hi for j,(lo,hi) in enumerate(bounds)):continue\n    for j,(lo,hi) in enumerate(bounds):\n     shadow=clip(shadow,lambda p,j=j,lo=lo:p[j]-lo);shadow=clip(shadow,lambda p,j=j,hi=hi:hi-p[j])\n    if positive_area(shadow):ev['positive_area_occluders'].append(oid)\n  ev['complete']=ev['front_facing'] and ev['whole_inside_viewport'] and not ev['positive_area_occluders']\n  ev['readable']=ev['complete'] and ev['pixels']>=16 and ev['contrasting_boundary_pixels']>=4\n s['status']='observed' if any(e['readable'] for e in s['views'].values()) else 'remaining'\nprint('status',collections.Counter(s['status'] for s in surfaces))\nprint('remaining',[(s['id'],s['center'],[float(x) for x in s['normal_exact']],[(v,e['pixels'],e['positive_area_occluders']) for v,e in s['views'].items() if e['front_facing']]) for s in surfaces if s['status']=='remaining'])\nprint('origin',surfaces[137])"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_c369f2e1419f4ff28a2404e0cccb2c00",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+        "thread_id": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+        "turn_started_at_unix_ms": 1794650914042,
+        "turn_id": "01a1d987-bcd5-7ca0-8693-abfa31dd8766",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d987-bc33-7fd1-a0f8-c68b94a57294",
+      "itemId": "fc_0f573bd2006c8789016af83360bb0087d0a7b669b3d2fe6c36",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "tri_to_surface=np.full(len(tris),-2,dtype=np.int32)\nfor s in surfaces: tri_to_surface[s['triangles']]=s['id']\nrefs=dict(zip([v['name'] for v in cameras['views']],['image-01','image-02','image-03','image-04','image-05','image-06']))\nmetrics={}; surface_maps={}\nfor name,buf in buffers.items():\n raw=buf['triangle_ids']; mapped=np.full(raw.shape,-1,dtype=np.int32); valid=raw>=0; mapped[valid]=tri_to_surface[raw[valid]]; surface_maps[name]=mapped\n rgb=buf['color'].astype(np.int32); marked=np.zeros(raw.shape,bool)\n for a,b in [((slice(None),slice(None,-1)),(slice(None),slice(1,None))),((slice(None,-1),slice(None)),(slice(1,None),slice(None)))]:\n  contrast=(mapped[a]!=mapped[b]) & (np.sum((rgb[a]-rgb[b])**2,axis=2)>=576)\n  marked[a]|=contrast; marked[b]|=contrast\n metrics[name]={s['id']:{'pixels':int(np.sum(mapped==s['id'])),'boundary_pixels':int(np.sum(marked & (mapped==s['id'])))} for s in surfaces}\ntid=int(buffers['SCENE']['triangle_ids'][247,109]); print('check1 raw',tid,'surface',int(tri_to_surface[tid])); print(surfaces[int(tri_to_surface[tid])])\nfor center in [(0,0,0),(0.15625,-0.15625,0.11572265625)]:\n print('target',[(s['id'],s['normal'],{name:metrics[name][s['id']] for name in refs}) for s in surfaces if s['center']==center])\nprint('unsupported',unsupported, [[verts[i] for i in tris[t]] for comp in unsupported for t in comp])"
+    }
+  }
+}

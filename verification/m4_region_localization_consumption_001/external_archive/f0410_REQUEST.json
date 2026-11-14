@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_794ba0bb14ac4903ac99ae6e0af17061",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+        "thread_id": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+        "turn_started_at_unix_ms": 1794651576675,
+        "turn_id": "01a1d991-d95c-77c3-8222-6bf1b87ab13d",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1d991-d8b4-7cf2-9b7b-511a3ef89fce",
+      "itemId": "fc_068b87236fb66c24016af835fb5b8487d08431d6dba26fca63",
+      "progressToken": 5
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "tri_surface=np.full(len(T),-2,int)\nfor s in surfaces: tri_surface[s['triangles']]=s['id']\nview_refs=dict(zip(cameras['directions'],['image-01','image-02','image-03','image-04','image-05','image-06']))\nmetrics={}; projected={}\nfor cam in cameras['views']:\n    name=cam['name']; buf=buffers[name]; tids=buf['triangle_ids']; identities=np.full(tids.shape,-1,int); mask=tids>=0; identities[mask]=tri_surface[tids[mask]]\n    color=buf['color'].astype(np.int32); boundary=np.zeros(tids.shape,bool)\n    for axis in [0,1]:\n        first=(slice(None,-1),slice(None)) if axis==0 else (slice(None),slice(None,-1))\n        second=(slice(1,None),slice(None)) if axis==0 else (slice(None),slice(1,None))\n        contrast=(identities[first]!=identities[second]) & (np.sum((color[first]-color[second])**2,axis=2)>=576)\n        boundary[first]|=contrast; boundary[second]|=contrast\n    metrics[name]={s['id']:{'pixels':int(np.sum(identities==s['id'])),'boundary_pixels':int(np.sum((identities==s['id'])&boundary))} for s in surfaces}\n    d=tuple(Fraction(x) for x in cam['direction_rational']); up=tuple(Fraction(x) for x in cam['up_seed']); r=cross(tuple(-x for x in d),up); u=cross(r,tuple(-x for x in d))\n    points=[(dot(p,r),dot(p,u)) for p in Vq]; coords=np.array(points,float); tp=coords[T]\n    projected[name]=(d,r,u,points,tp.min(axis=1),tp.max(axis=1))\ndef clip_poly(poly,value):\n    result=[]\n    if not poly:return result\n    prev=poly[-1]; pv=value(prev)\n    for curr in poly:\n        cv=value(curr)\n        if (cv>=0)!=(pv>=0):\n            ratio=pv/(pv-cv); result.append(tuple(a+ratio*(b-a) for a,b in zip(prev,curr)))\n        if cv>=0: result.append(curr)\n        prev,pv=curr,cv\n    return result\nfor s in surfaces:\n    s['views']={}\n    n=s['normal_q']; h=dot(n,s['corners_q'][0])\n    for cam in cameras['views']:\n        name=cam['name']; d,r,u,points,mins,maxs=projected[name]; nd=dot(n,d)\n        row=dict(metrics[name][s['id']]); row['front_facing']=nd>0; row['inside_viewport']=True; row['occluder_triangle']=None\n        if nd>0:\n            corners=[(dot(p,r),dot(p,u)) for p in s['corners_q']]; cf=np.array(corners,float); lo=cf.min(axis=0); hi=cf.max(axis=0)\n            candidates=np.flatnonzero(np.all(maxs>=lo-1e-14,axis=1)&np.all(mins<=hi+1e-14,axis=1))\n            for ti in candidates:\n                if tri_surface[ti]==s['id']:continue\n                poly=[(*points[vi],(dot(n,Vq[vi])-h)/nd) for vi in T[ti]]\n                if max(p[2] for p in poly)<=0:continue\n                poly=clip_poly(poly,lambda p:p[2])\n                for k in range(4):\n                    a=corners[k]; b=corners[(k+1)%4]\n                    poly=clip_poly(poly,lambda p:(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]))\n                    if not poly:break\n                if len(poly)>=3 and max(p[2] for p in poly)>0:\n                    area=sum(poly[k-1][0]*p[1]-poly[k-1][1]*p[0] for k,p in enumerate(poly))\n                    if area>0:\n                        row['occluder_triangle']=int(ti);break\n        row['complete']=bool(nd>0 and row['occluder_triangle'] is None)\n        row['readable']=row['complete'] and row['pixels']>=16 and row['boundary_pixels']>=4\n        row['reference']=view_refs[name]\n        s['views'][name]=row\n    s['status']='observed' if any(row['readable'] for row in s['views'].values()) else 'remaining'\nprint(collections.Counter(s['status'] for s in surfaces))\nfor s in surfaces:\n    if s['status']=='remaining': print(s['id'],s['center'],list(map(float,s['normal_q'])),[(name,row['front_facing'],row['occluder_triangle'],row['pixels'],row['boundary_pixels']) for name,row in s['views'].items()])\nprint('SCENE query triangle',buffers['SCENE']['triangle_ids'][247,109], 'surface',tri_surface[buffers['SCENE']['triangle_ids'][247,109]])"
+    }
+  }
+}

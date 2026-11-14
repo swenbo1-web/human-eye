@@ -1,0 +1,11 @@
+**Inspection complete within the registered pool.** Six new 512×512 observations cover SCENE, TOP, LEFT, RIGHT, FRONT and BACK (`image-01` through `image-06`).
+
+- Discovered **138 supported rectangular surfaces**, including six containing 512 triangles each. **115 have complete, readable evidence**; **23 remain unobserved**: 22 face away from every camera, and one—center `[0.703125,0.3515625,0]`, facing +Z—is occluded in all six views. Unsupported source triangle **48** remains separate.
+- The complete surface-by-surface evidence set appears in tool facts **`VERIFIABLE_COVERAGE_ROWS_PART_1` and `PART_2`**, retaining source triangles or world corners, status, actual view/reference and pixel counts.
+
+**Position checks**
+1. **SCENE `[109,247]`** hits surface **17**, source triangle **35**: center `[0.15625,-0.15625,0.11865234375]`, front **+Z**, extent **0.0703125 × 0.0703125**, with X `[0.12109375,0.19140625]` and Y `[-0.19140625,-0.12109375]`. Reference **`image-01`**; complete/readable with **354 surface pixels, 73 contrasting boundary pixels**.
+2. **Origin, facing +Z:** **zero visible pixels in SCENE because of occlusion**, not back-facing geometry. Fully read in **LEFT**, **`image-03`**, with **792 surface pixels, 110 contrasting boundary pixels**; `[327,427]` belongs to it.
+3. **`[0.15625,-0.15625,0.11572265625]`, facing −Z:** no registered camera can provide front-facing readable evidence. All six viewing directions have positive Z, making this surface back-facing throughout.
+
+**Limit:** No inspectable supported surface remains unfinished in this finite pool. These conclusions do not establish visibility from unregistered cameras; no supported-surface finite-pool unknowns remain.

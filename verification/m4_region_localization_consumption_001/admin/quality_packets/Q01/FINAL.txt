@@ -1,0 +1,12 @@
+**Inspection complete within the registered pool:** all six 512×512 views were newly rendered: SCENE `image-01`, TOP `image-02`, LEFT `image-03`, RIGHT `image-04`, FRONT `image-05`, BACK `image-06`.
+
+- **Discovered:** 138 supported rectangular surfaces, including six containing 512 triangles each. Source triangle 48 remains separately preserved as an unsupported triangle.
+- **Observed:** 115 surfaces have a single complete, front-facing, readable observation. The tool facts labelled `complete-coverage-rows` contain every surface’s source triangle range, status, and qualifying view/reference with actual pixel counts.
+- **Remaining:** 22 −Z-facing surfaces are back-facing throughout this pool. Surface 93, centered at `[0.703125,0.3515625,0]`, faces +Z but is occluded in every view, with zero actual pixels throughout. No potentially inspectable surface remains unfinished, and no finite-pool classification is unknown.
+
+**Position checks**
+1. SCENE pixel `[109,247]` belongs to surface 17, source triangles 34–35: center `[0.15625,-0.15625,0.11865234375]`, front **+Z**, extent **0.0703125 × 0.0703125** along X/Y. Current reference: `image-01`. That observation is complete and readable: **354 surface pixels, 73 contrasting boundary pixels**.
+2. The origin-centered +Z surface has **zero visible SCENE pixels because of occlusion, not back-facing geometry**. LEFT `image-03` reads it completely: **792 surface pixels, 110 contrasting boundary pixels**; pixel `[327,427]` belongs to it.
+3. The surface at `[0.15625,-0.15625,0.11572265625]`, facing **−Z**, cannot receive front-facing readable evidence from these cameras: every registered viewing direction has a positive Z component. This conclusion applies **only to the six registered cameras**, not to arbitrary viewpoints.
+
+Completeness used geometric positive-area shadow tests; readability used actual merged-surface buffers and the specified both-endpoint RGB-contrast boundary rule.

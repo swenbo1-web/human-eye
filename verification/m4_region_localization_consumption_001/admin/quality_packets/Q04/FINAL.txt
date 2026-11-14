@@ -1,0 +1,12 @@
+**Inspection complete for the finite camera pool.** All six 512×512 observations were generated this session: SCENE, TOP, LEFT, RIGHT, FRONT and BACK (`image-01`–`image-06`).
+
+- Discovered **138 supported rectangles**: 132 with two triangles and six with 512 triangles. **115 have complete, readable evidence** in individual observations.
+- **23 remain:** 22 downward-facing rectangles are back-facing in every registered camera; surface 93, centered at `[0.703125,0.3515625,0]`, is occluded in all six and has zero visible pixels.
+- Preserved unsupported source triangle **48** separately. All **3,337 source faces** are accounted for. The tool output labelled **COMPLETE COVERAGE TABLE** provides every surface’s source triangle range, status, actual image/view evidence and pixel counts.
+
+**Position checks**
+1. SCENE pixel **[109,247]** belongs to surface 17, centered at **[0.15625,-0.15625,0.11865234375]**, facing **+Z**, with full XYZ extent **[0.0703125,0.0703125,0]**. Reference: **`image-01`**. It is complete and readable: **354 surface pixels, 73 contrasting boundary pixels**.
+2. The **[0,0,0], +Z** surface has **zero SCENE pixels because of occlusion—not back-facing geometry**. LEFT reads it completely in **`image-03`**: pixel **[327,415]** belongs to it; **792 surface pixels, 110 contrasting boundary pixels**.
+3. The **[0.15625,-0.15625,0.11572265625], −Z** surface cannot receive front-facing readable evidence from this pool: all six cameras view from directions with positive Z.
+
+No registered camera remains untested. These limitations apply only to this finite pool, not to possible cameras outside it.

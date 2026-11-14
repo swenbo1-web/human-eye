@@ -1,0 +1,12 @@
+**Inspection complete:** all six registered 512×512 orthographic views were newly rendered: SCENE, TOP, LEFT, RIGHT, FRONT, BACK (`image-01` through `image-06`, respectively).
+
+- Discovered **138 supported rectangular surfaces**, including six containing 512 triangles each. **115 have complete, readable observations**; no surface still inspectable within this pool remains unfinished.
+- **23 remain unobserved:** 22 face −Z and are back-facing in every registered view; surface 93, centered at `[0.703125,0.3515625,0]`, faces +Z but is occluded in all six views, with zero actual pixels.
+- Source triangle **48** remains separately classified as an unsupported nonrectangular component. The tool output labelled `VERIFIABLE_COVERAGE_ROWS` records every surface’s source triangle ranges, status, and actual image/pixel evidence.
+
+**Position checks**
+1. **SCENE `[109,247]`:** surface 17, winning source triangle 35. Center **`[0.15625,-0.15625,0.11865234375]`**, front **+Z**, extent **`0.0703125 × 0.0703125`** along X/Y. Current reference: **`image-01`**. This observation is complete and readable: **354 surface pixels, 73 contrasting boundary pixels**.
+2. **Center `[0,0,0]`, +Z:** **zero visible pixels in SCENE**, caused by occlusion—not back-facing geometry. It is completely read in **LEFT, `image-03`**, with **792 surface pixels and 110 contrasting boundary pixels**; pixel **`[327,427]`** belongs to it.
+3. **Center `[0.15625,-0.15625,0.11572265625]`, −Z:** **no registered camera provides front-facing readable evidence**. All six viewing directions have positive Z components, making this surface back-facing throughout the pool.
+
+Completeness used exact positive-area shadow tests, excluding boundary-only tangency; readability used actual RGB buffers after merging source triangles into discovered surfaces. Conclusions are limited to this finite camera pool—unregistered viewpoints remain undetermined.
