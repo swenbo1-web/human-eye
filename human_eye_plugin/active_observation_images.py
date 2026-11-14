@@ -21,10 +21,13 @@ from human_eye_module1_operators import MeshEntity3D
 
 from .active_observation import ActiveObservationSession, fingerprint
 from .attention_raster import rasterize_attention
-from .attention_rendering import _readability_evidence
+from .attention_rendering import _contrasting_boundaries
 
 
 SURFACE_COLOR_RGB = (180, 190, 205)
+PATCH_MAPPING_VERSION = 'active-patch-owner-v1'
+_PATCH_METADATA_KEYS = ('patch_mapping_version', 'patch_mapping_identity', 'patch_roi_ids',
+                        'face_patch_ids', 'face_patch_offsets')
 
 
 def _meshes_from_objects(objects):
@@ -83,30 +86,93 @@ def _validate_buffers(buffers, size, object_count):
     return {'color': color, 'depth': depth, 'owners': owners}
 
 
+def _patch_mapping(objects, regions):
+    roi_ids = tuple(region.roi_id for region in regions)
+    if roi_ids != tuple(sorted(set(roi_ids))):
+        raise ValueError('stable_unique_patch_order_required')
+    face_ids = [np.full(len(source[1]), -1, dtype=np.int32) for source in objects]
+    for patch_index, region in enumerate(regions):
+        values = face_ids[region.object_index]
+        for face_index in region.triangle_indices:
+            if not 0 <= face_index < len(values) or values[face_index] != -1:
+                raise ValueError('patch_triangle_mapping_must_be_unique')
+            values[face_index] = patch_index
+    identity = fingerprint({'version': PATCH_MAPPING_VERSION, 'roi_ids': roi_ids,
+                            'ordered_geometry': [(source[0], source[1]) for source in objects],
+                            'face_patch_ids': [values.tolist() for values in face_ids]})
+    offsets = np.zeros(len(objects) + 1, dtype=np.int64)
+    np.cumsum([len(source[1]) for source in objects], out=offsets[1:])
+    arrays = {'patch_mapping_version': np.asarray(PATCH_MAPPING_VERSION),
+              'patch_mapping_identity': np.asarray(identity),
+              'patch_roi_ids': np.asarray(roi_ids, dtype=str),
+              'face_patch_ids': np.concatenate(face_ids) if face_ids else np.empty(0, dtype=np.int32),
+              'face_patch_offsets': offsets}
+    for values in (*face_ids, *arrays.values()):
+        values.setflags(write=False)
+    return {'identity': identity, 'roi_ids': roi_ids, 'face_ids': tuple(face_ids),
+            'roi_object_indices': np.asarray([region.object_index for region in regions], dtype=np.int32),
+            'arrays': arrays}
+
+
+def _validated_patch_buffers(buffers, size, object_count, mapping):
+    validated = _validate_buffers(buffers, size, object_count)
+    owners = validated['owners']
+    if 'patch_owners' in buffers:
+        patches = np.asarray(buffers['patch_owners'])
+    else:
+        # Historical three-buffer evidence is sufficient only where an object
+        # has one whole-object patch. Multiple/partial patches need true winners.
+        object_patch = np.full(object_count, -1, dtype=np.int32)
+        for object_index, face_ids in enumerate(mapping['face_ids']):
+            ids = np.unique(face_ids)
+            if len(ids) > 1:
+                raise ValueError('patch_owner_frame_required_for_multiple_or_partial_patches')
+            if len(ids):
+                object_patch[object_index] = ids[0]
+        patches = np.full(owners.shape, -1, dtype=np.int32)
+        foreground = owners >= 0
+        patches[foreground] = object_patch[owners[foreground]]
+    if patches.shape != (size, size) or patches.dtype != np.int32:
+        raise ValueError('int32_patch_owner_frame_required')
+    assigned = patches >= 0
+    if (np.any(patches < -1) or np.any(patches >= len(mapping['roi_ids']))
+            or np.any(patches[owners == -1] != -1)
+            or np.any(mapping['roi_object_indices'][patches[assigned]] != owners[assigned])):
+        raise ValueError('common_depth_patch_owner_consistency_required')
+    validated['patch_owners'] = patches
+    return validated
+
+
+def _aggregate_patch_pixels(color, patch_owners, region_count):
+    """Scan shared patch boundaries once and histogram all ROI counts together."""
+    patches = np.asarray(patch_owners)
+    if (type(region_count) is not int or region_count < 0 or patches.dtype != np.int32
+            or patches.ndim != 2 or np.any(patches < -1) or np.any(patches >= region_count)):
+        raise ValueError('bounded_patch_owner_ids_required')
+    boundary = _contrasting_boundaries(color, patches)
+    surface_ids = patches[patches >= 0]
+    boundary_ids = patches[boundary & (patches >= 0)]
+    return {'visible_surface_pixels': np.bincount(surface_ids, minlength=region_count),
+            'contrasting_boundary_pixels': np.bincount(boundary_ids, minlength=region_count)}
+
+
 def _pixel_rows(meshes, pose, buffers, regions):
-    view = np.asarray(pose['view_matrix'], dtype=np.float64)
-    projection = np.asarray(pose['projection_matrix'], dtype=np.float64)
     direction = np.asarray(pose['target_to_eye_unit'], dtype=np.float64)
-    size = _size(pose)
+    counts = _aggregate_patch_pixels(buffers['color'], buffers['patch_owners'], len(regions))
     rows = []
-    for region in regions:
+    for index, region in enumerate(regions):
         mesh = meshes[region.object_index]
-        corners = np.asarray(region.vertices, dtype=np.float64)
-        camera = corners @ view[:3, :3].T + view[:3, 3]
-        ndc = camera @ projection[:3, :3].T + projection[:3, 3]
-        pixels = (ndc[:, :2] + 1) * (size - 1) / 2
         front = bool(np.asarray(region.normal, dtype=np.float64) @ direction > 0)
-        evidence = _readability_evidence(
-            buffers['color'], buffers['owners'], meshes, (mesh.object_id,), pixels,
-        )
+        surface = int(counts['visible_surface_pixels'][index])
+        boundary = int(counts['contrasting_boundary_pixels'][index])
         rows.append({
             'roi_id': region.roi_id,
             'object_index': region.object_index,
             'view': pose['name'],
             'front_facing': front,
-            'visible_surface_pixels': evidence['visible_surface_pixels'][0],
-            'contrasting_boundary_pixels': evidence['contrasting_boundary_pixels'][0],
-            'readable': front and evidence['passed'],
+            'visible_surface_pixels': surface,
+            'contrasting_boundary_pixels': boundary,
+            'readable': front and surface >= 16 and boundary >= 4,
             'triangle_indices': list(region.triangle_indices),
             'source_vertices': len(mesh.vertices),
             'source_triangles': len(mesh.faces),
@@ -148,8 +214,10 @@ class ActiveObservationImages:
                 and self.session.cameras is self._cameras):
             return
         mesh_order_identity = fingerprint(tuple(item[2] for item in self.session.objects))
+        mapping = _patch_mapping(self.session.objects, self.session.regions)
         reuse_frames = (binding == self._binding
                         and mesh_order_identity == getattr(self, '_mesh_order_identity', None)
+                        and mapping['identity'] == getattr(self, '_patch_mapping_identity', None)
                         and self.session.cameras == self._cameras)
         if self._prepared_meshes is None:
             self.meshes = _meshes_from_objects(self.session.objects)
@@ -164,13 +232,17 @@ class ActiveObservationImages:
             self._prepared_meshes = None
         self._poses = {pose['name']: pose for pose in self.session.cameras['views']}
         self._mesh_order_identity = mesh_order_identity
+        self._patch_mapping = mapping
+        self._patch_mapping_identity = mapping['identity']
         self._objects = self.session.objects
         self._cameras = self.session.cameras
         self._binding = binding
+        self.session.state.bind_patch_mapping(self._patch_mapping_identity)
         if not reuse_frames:
             self._frames.clear()
 
     def render_next(self):
+        self._synchronize()
         name = self.session.next_view()
         return None if name is None else self.render_view(name)
 
@@ -186,21 +258,27 @@ class ActiveObservationImages:
         stages = {}
         if self._measure_stages:
             started = time.perf_counter_ns()
-        color, depth, owners = rasterize_attention(
+        raster = rasterize_attention(
             self.meshes,
             np.asarray(pose['view_matrix'], dtype=np.float64),
             np.asarray(pose['projection_matrix'], dtype=np.float64),
             size,
             return_owner=True,
+            return_patch_owner=True,
+            face_patch_ids=self._patch_mapping['face_ids'],
         )
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['actual_raster'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
-        buffers = {'color': color, 'depth': depth, 'owners': owners}
+        if len(raster) not in (3, 4):
+            raise ValueError('common_depth_owner_raster_result_required')
+        buffers = dict(zip(('color', 'depth', 'owners', 'patch_owners'), raster))
+        buffers = _validated_patch_buffers(buffers, size, len(self.meshes), self._patch_mapping)
+        color = buffers['color']
         for values in buffers.values():
             values.setflags(write=False)
         self.output_directory.mkdir(parents=True, exist_ok=True)
-        stem = str(self._sequence).zfill(3) + '-' + fingerprint((self._binding, view_name))[:24]
+        stem = str(self._sequence).zfill(3) + '-' + fingerprint((self._binding, self._patch_mapping_identity, view_name))[:24]
         png = self.output_directory / (stem + '.png')
         arrays = self.output_directory / (stem + '.npz')
         if self._measure_stages:
@@ -208,7 +286,7 @@ class ActiveObservationImages:
         with png.open('xb') as stream:
             Image.fromarray(color, mode='RGB').save(stream, format='PNG')
         with arrays.open('xb') as stream:
-            np.savez_compressed(stream, **buffers)
+            np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'])
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['PNG_NPZ_publication'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
@@ -218,17 +296,24 @@ class ActiveObservationImages:
             'scene_identity': self._binding[0],
             'candidate_identity': self._binding[1],
             'mesh_order_identity': self._mesh_order_identity,
+            'patch_mapping_version': PATCH_MAPPING_VERSION,
+            'patch_mapping_identity': self._patch_mapping_identity,
+            'patch_roi_ids': list(self._patch_mapping['roi_ids']),
             'view_name': view_name,
             'pose': copy.deepcopy(pose),
             'image_path': str(png),
             'image_sha256': image_sha,
-            'image_ref': 'active-image:' + fingerprint((self._binding, view_name, image_sha)),
+            'image_ref': 'active-image:' + fingerprint((self._binding, self._patch_mapping_identity, view_name, image_sha)),
             'PNG_bytes': png.stat().st_size,
             'arrays_path': str(arrays),
             'arrays_sha256': hashlib.sha256(arrays.read_bytes()).hexdigest(),
             'compressed_array_file_bytes': arrays.stat().st_size,
-            'arrays': {name: _array_metadata(values) for name, values in buffers.items()},
-            'array_payload_bytes': sum(values.nbytes for values in buffers.values()),
+            'arrays': {name: _array_metadata(values) for name, values in
+                       {**buffers, **self._patch_mapping['arrays']}.items()},
+            'array_payload_bytes': sum(values.nbytes for values in buffers.values())
+                                   + sum(values.nbytes for values in self._patch_mapping['arrays'].values()),
+            'patch_owner_array_bytes': buffers['patch_owners'].nbytes,
+            'patch_mapping_array_bytes': sum(values.nbytes for values in self._patch_mapping['arrays'].values()),
             'buffers': buffers,
             'all_object_count': len(self.meshes),
             'all_triangle_count': sum(len(mesh.faces) for mesh in self.meshes),
@@ -261,6 +346,14 @@ class ActiveObservationImages:
                 raise ValueError('actual_frame_array_bytes_required')
             with np.load(BytesIO(arrays_raw), allow_pickle=False) as arrays:
                 stored = {key: arrays[key] for key in ('color', 'depth', 'owners')}
+                if 'patch_owners' in arrays:
+                    stored['patch_owners'] = arrays['patch_owners']
+                    for key in _PATCH_METADATA_KEYS:
+                        expected = self._patch_mapping['arrays'][key]
+                        if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
+                            raise ValueError('saved_patch_mapping_mismatch')
+                elif any(key in arrays for key in _PATCH_METADATA_KEYS):
+                    raise ValueError('saved_patch_owner_missing')
             if buffers is not None:
                 for key, values in stored.items():
                     supplied = np.asarray(buffers[key])
@@ -269,7 +362,14 @@ class ActiveObservationImages:
             buffers = stored
         if buffers is None:
             raise ValueError('actual_frame_buffers_required')
-        buffers = _validate_buffers(buffers, _size(pose), len(self.meshes))
+        if 'patch_owners' in buffers:
+            if (frame.get('patch_mapping_version') != PATCH_MAPPING_VERSION
+                    or frame.get('patch_mapping_identity') != self._patch_mapping_identity
+                    or frame.get('patch_roi_ids') != list(self._patch_mapping['roi_ids'])):
+                raise ValueError('current_patch_mapping_frame_required')
+        elif any(key in frame for key in ('patch_mapping_version', 'patch_mapping_identity', 'patch_roi_ids')):
+            raise ValueError('declared_patch_owner_frame_required')
+        buffers = _validated_patch_buffers(buffers, _size(pose), len(self.meshes), self._patch_mapping)
         raw = Path(frame['image_path']).read_bytes()
         if hashlib.sha256(raw).hexdigest() != frame['image_sha256']:
             raise ValueError('actual_PNG_bytes_required')
@@ -295,8 +395,11 @@ class ActiveObservationImages:
             'image_path': str(Path(frame['image_path']).resolve()),
             'image_sha256': frame['image_sha256'],
             'image_ref': frame.get('image_ref') or 'active-image:' + fingerprint(
-                (self._binding, name, frame['image_sha256']),
+                (self._binding, self._patch_mapping_identity, name, frame['image_sha256']),
             ),
+            'patch_mapping_version': PATCH_MAPPING_VERSION,
+            'patch_mapping_identity': self._patch_mapping_identity,
+            'patch_roi_ids': list(self._patch_mapping['roi_ids']),
             'pixel_evidence_scope': 'actual_common_depth_owner',
             'readable_roi_ids': sorted(row['roi_id'] for row in rows if row['readable']),
             'pixel_rows': rows,

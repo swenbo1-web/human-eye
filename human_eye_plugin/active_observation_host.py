@@ -168,6 +168,63 @@ def _interval(started):
     return {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
 
 
+def _patch_scope_facts(session, binding):
+    """Bind the exact partition to complete host objects and source-face counts."""
+    partitions = session.index.patch_scope
+    if len(partitions) != len(session.objects) or len(binding['objects']) != len(session.objects):
+        raise ValueError('active_observation_patch_partition_object_mismatch')
+    region_faces = [set() for _ in session.objects]
+    region_mapping = []
+    for region in session.regions:
+        indices = set(region.triangle_indices)
+        owned = region_faces[region.object_index]
+        if len(indices) != len(region.triangle_indices) or owned & indices:
+            raise ValueError('active_observation_patch_triangle_overlap')
+        owned.update(indices)
+        region_mapping.append({'roi_id': region.roi_id, 'object_index': region.object_index,
+                               'triangle_indices': list(region.triangle_indices)})
+    support = []
+    for index, partition in enumerate(partitions):
+        source_count = len(session.objects[index][1])
+        supported = set(partition['supported_triangle_indices'])
+        rejected = set()
+        for component in partition['unsupported_components']:
+            indices = set(component['triangle_indices'])
+            if (not indices or len(indices) != len(component['triangle_indices'])
+                    or rejected & indices or not component['reason']):
+                raise ValueError('active_observation_patch_component_mismatch')
+            rejected.update(indices)
+        if (partition['object_index'] != index or partition['source_triangle_count'] != source_count
+                or len(supported) != len(partition['supported_triangle_indices'])
+                or supported != region_faces[index]
+                or partition['supported_triangle_count'] != len(supported)
+                or partition['unsupported_triangle_count'] != len(rejected)
+                or supported & rejected or supported | rejected != set(range(source_count))):
+            raise ValueError('active_observation_patch_partition_triangle_mismatch')
+        status = ('unsupported' if not supported else
+                  'partially_supported' if rejected else 'fully_supported')
+        row = dict(binding['objects'][index], **copy.deepcopy(partition), support_status=status)
+        row['unsupported_components'] = [dict(copy.deepcopy(component), status='unknown')
+                                         for component in partition['unsupported_components']]
+        support.append(row)
+    supported_objects = {region.object_index for region in session.regions}
+    return {
+        'capture_object_count': len(session.objects),
+        'supported_roi_object_count': len(supported_objects),
+        'objects_without_supported_roi': [dict(row, status='unknown') for row in binding['objects']
+                                          if row['object_index'] not in supported_objects],
+        'domain': 'maximal edge-connected exact planar rectangular patches',
+        'all_objects_participate_in_occlusion': True,
+        'patch_support': {
+            'schema': 'active-patch-support-v1',
+            'triangle_index_scope': 'zero-based source triangles within each object',
+            'all_triangles_participate_in_occlusion': True,
+            'objects': support,
+            'regions': region_mapping,
+        },
+    }
+
+
 def observe_capture(capture, output_directory, construction_callback=None,
                     check_budget=None, include_image=True):
     """Compute serializable facts and current-host-bound local image references.
@@ -180,7 +237,7 @@ def observe_capture(capture, output_directory, construction_callback=None,
     if type(include_image) is not bool:
         raise ValueError('active_observation_include_image_boolean_required')
     stages, frames, steps = {}, [], []
-    work = {'mapping_calls': 0, 'geometry_parse_calls': 0, 'mesh_conversions': 0,
+    work = {'mapping_calls': 0, 'geometry_parse_calls': 0, 'mesh_conversions': 0, 'patch_mapping_calls': 0,
             'camera_calls': 0, 'prepare_calls': 0, 'raster_attempts': 0,
             'raster_completed': 0, 'local_verified_images': 0,
             'PNG_bytes': 0, 'NPZ_bytes': 0, 'array_payload_bytes': 0}
@@ -213,17 +270,24 @@ def observe_capture(capture, output_directory, construction_callback=None,
         stages['cameras'] = _interval(started)
         started = time.perf_counter_ns()
         work['prepare_calls'] += 1
-        session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras)
+        session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=True)
         stages['prepare'] = _interval(started)
+        stages['partition'] = copy.deepcopy(session.diagnostics['stages']['discovery'])
+        stages['index'] = copy.deepcopy(session.diagnostics['stages']['coverage'])
         binding = source_binding(capture, session.cameras, geometry_identity=session.scene_identity)
         if binding['camera_identity'] != session.candidate_identity:
             raise ValueError('active_observation_camera_binding_mismatch')
         output = Path(output_directory).resolve() / binding['binding_sha256']
         images = None
         if include_image and session.regions:
-            images = ActiveObservationImages(
-                session, output, _prepared_meshes=(objects, meshes), _measure_stages=True,
-            )
+            started = time.perf_counter_ns()
+            work['patch_mapping_calls'] += 1
+            try:
+                images = ActiveObservationImages(
+                    session, output, _prepared_meshes=(objects, meshes), _measure_stages=True,
+                )
+            finally:
+                stages['patch_mapping_setup'] = _interval(started)
         while images is not None:
             started = time.perf_counter_ns()
             name = session.next_view()
@@ -246,7 +310,7 @@ def observe_capture(capture, output_directory, construction_callback=None,
             frame['host_binding_sha256'] = binding['binding_sha256']
             frame['source_revision'] = binding['scene_revision']
             frame['image_ref'] = 'active-host-image:' + fingerprint(
-                (binding['binding_sha256'], name, frame['image_sha256']))
+                (binding['binding_sha256'], name, frame['image_sha256'], frame['patch_mapping_identity']))
             stages['render_and_publish_' + name] = _interval(started)
             started = time.perf_counter_ns()
             feedback = images.observe_frame(frame)
@@ -258,6 +322,7 @@ def observe_capture(capture, output_directory, construction_callback=None,
             steps.append({'view_name': name, 'update': feedback['update'], 'summary': feedback['summary']})
         if check_budget is not None:
             check_budget('active_observation_before_result')
+        started = time.perf_counter_ns()
         facts = session.short_facts()
         for region in facts['regions']:
             host = binding['objects'][region['object_index']]
@@ -266,15 +331,8 @@ def observe_capture(capture, output_directory, construction_callback=None,
             for row in observation['pixel_rows']:
                 host = binding['objects'][row['object_index']]
                 row.update(host_id=host['host_id'], object_name=host['object_name'])
-        supported = {region.object_index for region in session.regions}
-        unsupported = [dict(row, status='unknown') for row in binding['objects']
-                       if row['object_index'] not in supported]
-        facts['scope'] = {
-            'capture_object_count': len(objects), 'supported_roi_object_count': len(supported),
-            'objects_without_supported_roi': unsupported,
-            'domain': 'whole-object connected hole-free exact planar rectangles',
-            'all_objects_participate_in_occlusion': True,
-        }
+        facts['scope'] = _patch_scope_facts(session, binding)
+        stages['scope_and_facts'] = _interval(started)
         observation_status = ('no_supported_regions' if not session.regions
                               else 'locally_observed' if include_image else 'prediction_only')
         return {

@@ -802,6 +802,90 @@ def project_surface_scan_brief(value):
     return result
 
 
+def _project_active_patch_support(patch_support, objects, regions):
+    """Keep complete source-face denominators while displaying component ranges."""
+    if set(patch_support) != {'schema', 'triangle_index_scope', 'all_triangles_participate_in_occlusion',
+                              'objects', 'regions'} or patch_support['schema'] != 'active-patch-support-v1':
+        raise ValueError('unsupported_active_patch_support')
+    mapping = patch_support['regions']
+    if len(mapping) != len(regions):
+        raise ValueError('active_patch_region_mapping_mismatch')
+    region_counts, region_faces = [], [set() for _ in objects]
+    for source, region in zip(mapping, regions):
+        if (set(source) != {'roi_id', 'object_index', 'triangle_indices'}
+                or source['roi_id'] != region['roi_id'] or type(source['object_index']) is not int
+                or source['object_index'] != region['object_index']):
+            raise ValueError('active_patch_region_mapping_mismatch')
+        faces = source['triangle_indices']
+        indices = set(faces)
+        owned = region_faces[region['object_index']]
+        if (not indices or len(indices) != len(faces) or owned & indices
+                or any(type(index) is not int for index in faces)):
+            raise ValueError('active_patch_region_triangle_overlap')
+        owned.update(indices)
+        region_counts.append(len(indices))
+    support_rows, component_rows = [], []
+    sources = patch_support['objects']
+    object_fields = {'object_index', 'host_id', 'instance_id', 'object_name'}
+    partition_fields = {'source_triangle_count', 'supported_triangle_count', 'supported_triangle_indices',
+                        'unsupported_triangle_count', 'unsupported_components', 'support_status'}
+    if len(sources) != len(objects):
+        raise ValueError('active_patch_object_mapping_mismatch')
+    for index, source in enumerate(sources):
+        if (set(source) != object_fields | partition_fields or type(source['object_index']) is not int
+                or any(source[key] != objects[index][key] for key in object_fields)
+                or any(type(source[key]) is not int or source[key] < 0 for key in
+                       ('source_triangle_count', 'supported_triangle_count', 'unsupported_triangle_count'))):
+            raise ValueError('active_patch_object_mapping_mismatch')
+        total = source['source_triangle_count']
+        supported = set(source['supported_triangle_indices'])
+        rejected = set()
+        for component_index, component in enumerate(source['unsupported_components']):
+            if (set(component) != {'triangle_indices', 'reason', 'status'}
+                    or component['status'] != 'unknown' or type(component['reason']) is not str
+                    or not component['reason']):
+                raise ValueError('active_patch_component_mismatch')
+            faces = component['triangle_indices']
+            indices = set(faces)
+            if (not indices or len(indices) != len(faces) or rejected & indices
+                    or any(type(face) is not int for face in faces)):
+                raise ValueError('active_patch_component_mismatch')
+            rejected.update(indices)
+            ranges = []
+            for triangle_index in sorted(indices):
+                if ranges and triangle_index == ranges[-1][1] + 1:
+                    ranges[-1][1] = triangle_index
+                else:
+                    ranges.append([triangle_index, triangle_index])
+            component_rows.append([index, component_index, len(indices), component['reason'],
+                                   component['status'], ranges])
+        expected_status = ('unsupported' if not supported else
+                           'partially_supported' if rejected else 'fully_supported')
+        if (len(supported) != len(source['supported_triangle_indices'])
+                or any(type(face) is not int for face in source['supported_triangle_indices'])
+                or supported != region_faces[index] or supported & rejected
+                or supported | rejected != set(range(total))
+                or source['supported_triangle_count'] != len(supported)
+                or source['unsupported_triangle_count'] != len(rejected)
+                or source['support_status'] != expected_status):
+            raise ValueError('active_patch_triangle_denominator_mismatch')
+        support_rows.append([index, total, len(supported), len(rejected), expected_status])
+    result = {key: patch_support[key] for key in
+              ('schema', 'triangle_index_scope', 'all_triangles_participate_in_occlusion')}
+    result['object_support'] = {
+        'columns': ['object_index', 'source_triangle_count', 'supported_triangle_count',
+                    'unsupported_triangle_count', 'support_status'],
+        'rows': support_rows,
+    }
+    if component_rows:
+        result['unsupported_components'] = {
+            'columns': ['object_index', 'component_index', 'triangle_count', 'reason', 'status',
+                        'triangle_index_ranges'],
+            'rows': component_rows,
+        }
+    return result, region_counts
+
+
 def project_active_observation_brief(value):
     """Deduplicate one complete active result using versioned, local table indices.
 
@@ -883,8 +967,10 @@ def project_active_observation_brief(value):
             return None
 
         scope = facts['scope']
-        if (set(scope) != {'capture_object_count', 'supported_roi_object_count', 'domain',
-                          'all_objects_participate_in_occlusion', 'objects_without_supported_roi'}
+        patch_support = scope.get('patch_support')
+        scope_fields = {'capture_object_count', 'supported_roi_object_count', 'domain',
+                        'all_objects_participate_in_occlusion', 'objects_without_supported_roi'}
+        if (set(scope) != scope_fields | ({'patch_support'} if patch_support is not None else set())
                 or scope['capture_object_count'] != len(objects)):
             return None
         unsupported = scope['objects_without_supported_roi']
@@ -907,6 +993,9 @@ def project_active_observation_brief(value):
                 'columns': ['object_index', 'status'],
                 'rows': [[obj['object_index'], obj['status']] for obj in unsupported],
             }
+        region_counts = None
+        if patch_support is not None:
+            compact_scope['patch_support'], region_counts = _project_active_patch_support(patch_support, objects, regions)
 
         frames = value['frames']
         image_indices = {frame['image_ref']: index for index, frame in enumerate(frames)}
@@ -919,6 +1008,13 @@ def project_active_observation_brief(value):
                     or frame['host_binding_sha256'] != binding['binding_sha256']
                     or frame['source_revision'] != binding['scene_revision']):
                 return None
+        if patch_support is not None:
+            for frame in frames:
+                if (frame['patch_mapping_version'] != 'active-patch-owner-v1'
+                        or frame['patch_roi_ids'] != [region['roi_id'] for region in regions]
+                        or type(frame['patch_mapping_identity']) is not str or not frame['patch_mapping_identity']
+                        or frame['patch_mapping_identity'] != frames[0]['patch_mapping_identity']):
+                    return None
         observation_rows, pixels, pixel_rules, observed_indices = [], [], None, []
         for observation in facts['observations']:
             if set(observation) != {'view_name', 'image_path', 'image_ref', 'image_sha256',
@@ -963,7 +1059,7 @@ def project_active_observation_brief(value):
                                                 if key != 'selection_key'}
         result = {key: value[key] for key in ('status', 'result_kind', 'observation_status',
                                              'session_id', 'read_only', 'execution_authority')}
-        result.update(schema='active-observation-brief-v1', index_base=0,
+        result.update(schema='active-observation-brief-v2' if patch_support is not None else 'active-observation-brief-v1', index_base=0,
             binding=compact_binding,
             objects={'columns': object_columns, 'rows': [[obj[key] for key in object_columns] for obj in objects]},
             coverage=compact_coverage, scope=compact_scope,
@@ -971,6 +1067,10 @@ def project_active_observation_brief(value):
         if regions:
             result['regions'] = {'columns': region_columns,
                                  'rows': [[region[key] for key in region_columns] for region in regions]}
+            if region_counts is not None:
+                result['regions']['columns'].append('triangle_count')
+                for row, count in zip(result['regions']['rows'], region_counts):
+                    row.append(count)
         if frames:
             result['images'] = {
                 'columns': ['view_name', 'image_ref', 'image_sha256', 'native_content_block_index'],
@@ -978,6 +1078,11 @@ def project_active_observation_brief(value):
                          for index, frame in enumerate(frames)],
             }
             result['observations'] = {'columns': ['image_index', 'readable_region_indices'], 'rows': observation_rows}
+            if patch_support is not None:
+                result['patch_mapping_version'] = frames[0]['patch_mapping_version']
+                result['images']['columns'].append('patch_mapping_identity')
+                for row, frame in zip(result['images']['rows'], frames):
+                    row.append(frame['patch_mapping_identity'])
         if pixels:
             result['pixels'] = {'columns': pixel_columns, 'rows': pixels}
             result['pixel_rules'] = pixel_rules
@@ -1009,6 +1114,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             'image_path', 'image_sha256', 'PNG_bytes', 'arrays_path', 'arrays_sha256',
             'compressed_array_file_bytes', 'array_payload_bytes',
             'host_binding_sha256', 'source_revision', 'stages', 'feedback_stages',
+            'patch_mapping_version', 'patch_roi_ids', 'patch_mapping_identity',
+            'patch_owner_array_bytes', 'patch_mapping_array_bytes',
         ) if key in frame} for frame in frames]
         for frame in frames:
             row = {'image_ref': frame.get('image_ref'), 'view_name': frame.get('view_name'),

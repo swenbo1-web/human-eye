@@ -1,4 +1,4 @@
-"""Exact rectangular-region discovery and finite active-observation state.
+"""Exact rectangular-patch discovery and finite active-observation state.
 
 Inputs contain complete world-space mesh geometry and an explicit orthographic
 camera pool. Image feedback is supplied by the companion image adapter.
@@ -83,80 +83,103 @@ def geometry(scene):
 
 
 class _NotRectangle(Exception):
-    """The whole mesh falls outside the supported rectangular-surface domain."""
+    """A maximal planar component falls outside the rectangular-patch domain."""
 
 
-def _topology(vertices, faces):
-    if len(faces) < 2:
-        raise _NotRectangle('insufficient_faces')
-    first = faces[0]
-    origin = vertices[first[0]]
-    plane_normal = cross(subtract(vertices[first[1]], origin),
-                         subtract(vertices[first[2]], origin))
-    if plane_normal == (0, 0, 0):
-        raise _NotRectangle('degenerate_seed_triangle')
+def _planar_components(vertices, faces):
+    """Partition shared-edge components using exact unoriented plane keys.
 
-    referenced = set()
+    Inconsistent winding remains inside its maximal plane component. Invalid
+    shared edges mark every incident component, preserving their rejection.
+    """
+    normals, planes = [], []
     incidence = {}
     for face_index, face in enumerate(faces):
-        referenced.update(face)
+        a, b, c = (vertices[index] for index in face)
+        normal = cross(subtract(b, a), subtract(c, a))
+        normals.append(normal)
+        plane = None
+        if normal != (0, 0, 0):
+            scale = next(value for value in normal if value)
+            plane = tuple(value / scale for value in normal) + (dot(normal, a) / scale,)
+        planes.append(plane)
         for index in range(3):
             a, b = face[index], face[(index + 1) % 3]
             edge = (min(a, b), max(a, b))
-            occurrences = incidence.setdefault(edge, [])
-            occurrences.append((a, b, face_index))
-            if len(occurrences) > 2:
-                raise _NotRectangle('nonmanifold_edge')
-    for vertex_index in referenced:
-        if dot(plane_normal, subtract(vertices[vertex_index], origin)):
-            raise _NotRectangle('noncoplanar_referenced_vertex')
-
+            incidence.setdefault(edge, []).append((a, b, face_index))
     neighbors = [[] for _ in faces]
-    boundary = []
+    nonmanifold_faces, winding_faces = set(), set()
+    for occurrences in incidence.values():
+        if len(occurrences) > 2:
+            nonmanifold_faces.update(face for _, _, face in occurrences)
+        elif len(occurrences) == 2:
+            a, b, first = occurrences[0]
+            c, d, second = occurrences[1]
+            if a != d or b != c or first == second:
+                winding_faces.update((first, second))
+        anchors = {}
+        for _, _, face in occurrences:
+            anchor = anchors.setdefault(planes[face], face)
+            if face != anchor:
+                neighbors[anchor].append(face)
+                neighbors[face].append(anchor)
+
+    labels = [-1] * len(faces)
+    component_count = 0
+    for first in range(len(faces)):
+        if labels[first] != -1:
+            continue
+        labels[first] = component_count
+        pending = [first]
+        while pending:
+            current = pending.pop()
+            for neighbor in neighbors[current]:
+                if labels[neighbor] == -1:
+                    labels[neighbor] = component_count
+                    pending.append(neighbor)
+        component_count += 1
+    components = [[] for _ in range(component_count)]
+    for face_index, label in enumerate(labels):
+        components[label].append(face_index)
+    boundaries = [[] for _ in range(component_count)]
     for occurrences in incidence.values():
         if len(occurrences) == 1:
-            a, b, _ = occurrences[0]
-            boundary.append((a, b))
-            continue
-        a, b, first_face = occurrences[0]
-        c, d, second_face = occurrences[1]
-        if a != d or b != c or first_face == second_face:
-            raise _NotRectangle('internal_edge_orientation')
-        neighbors[first_face].append(second_face)
-        neighbors[second_face].append(first_face)
-
-    visited = {0}
-    pending = [0]
-    while pending:
-        face_index = pending.pop()
-        for neighbor in neighbors[face_index]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                pending.append(neighbor)
-    if len(visited) != len(faces):
-        raise _NotRectangle('disconnected_faces')
-    return plane_normal, referenced, boundary
+            a, b, face = occurrences[0]
+            boundaries[labels[face]].append((a, b))
+        elif len(occurrences) == 2:
+            a, b, first = occurrences[0]
+            c, d, second = occurrences[1]
+            if labels[first] != labels[second]:
+                boundaries[labels[first]].append((a, b))
+                boundaries[labels[second]].append((c, d))
+    return normals, components, boundaries, nonmanifold_faces, winding_faces
 
 
-def _oriented_triangle_area(vertices, faces, plane_normal):
-    """Use one nonzero normal component after exact coplanarity is proven."""
-    axis = next(index for index, value in enumerate(plane_normal) if value)
-    first_axis, second_axis = ((1, 2), (2, 0), (0, 1))[axis]
-    positive_front = plane_normal[axis] > 0
+def _component_rectangle(vertices, faces, indices, normals, boundary,
+                         nonmanifold_faces, winding_faces):
+    if any(normals[index] == (0, 0, 0) for index in indices):
+        raise _NotRectangle('degenerate_triangle')
+    if any(index in nonmanifold_faces for index in indices):
+        raise _NotRectangle('nonmanifold_edge')
+    if any(index in winding_faces for index in indices):
+        raise _NotRectangle('inconsistent_shared_edge_winding')
+    if len(indices) < 2:
+        raise _NotRectangle('insufficient_faces')
+    normal = normals[indices[0]]
+    axis = next(index for index, value in enumerate(normal) if value)
+    positive_front = normal[axis] > 0
     total = 0
-    for a, b, c in faces:
-        origin, point_b, point_c = vertices[a], vertices[b], vertices[c]
-        signed_area = (
-            (point_b[first_axis] - origin[first_axis]) *
-            (point_c[second_axis] - origin[second_axis]) -
-            (point_b[second_axis] - origin[second_axis]) *
-            (point_c[first_axis] - origin[first_axis]))
-        if not signed_area:
-            raise _NotRectangle('degenerate_triangle')
-        if (signed_area > 0) != positive_front:
+    referenced = set()
+    for face_index in indices:
+        area = normals[face_index][axis]
+        if (area > 0) != positive_front:
             raise _NotRectangle('inconsistent_triangle_winding')
-        total += signed_area
-    return axis, total
+        total += area
+        referenced.update(faces[face_index])
+    quad, normal = _rectangle_boundary(vertices, boundary, referenced)
+    if total != 2 * normal[axis]:
+        raise _NotRectangle('triangle_area_boundary_mismatch')
+    return quad, normal
 
 
 def _rectangle_boundary(vertices, boundary, referenced):
@@ -205,23 +228,37 @@ def _rectangle_boundary(vertices, boundary, referenced):
     return quad, normal
 
 
-def regions_from_objects(objects):
-    regions = []
+def partition_regions(objects):
+    """Return canonical rectangles and a complete source-triangle partition."""
+    regions, scope = [], []
     for object_index, (vertices, faces, _, name) in enumerate(objects):
-        try:
-            plane_normal, referenced, boundary = _topology(vertices, faces)
-            axis, area = _oriented_triangle_area(vertices, faces, plane_normal)
-            quad, normal = _rectangle_boundary(vertices, boundary, referenced)
-            if area != 2 * normal[axis]:
-                raise _NotRectangle('triangle_area_boundary_mismatch')
-        except _NotRectangle:
-            continue
-        region_id = 'roi_' + fingerprint(quad)[:24]
-        regions.append(Region(region_id, object_index, name, tuple(range(len(faces))), quad, normal))
+        normals, components, boundaries, nonmanifold, winding = _planar_components(vertices, faces)
+        supported, unsupported = set(), []
+        for indices, boundary in zip(components, boundaries):
+            try:
+                quad, normal = _component_rectangle(vertices, faces, indices, normals, boundary,
+                                                     nonmanifold, winding)
+            except _NotRectangle as error:
+                unsupported.append({'triangle_indices': tuple(indices), 'reason': str(error)})
+                continue
+            region_id = 'roi_' + fingerprint(quad)[:24]
+            regions.append(Region(region_id, object_index, name, tuple(indices), quad, normal))
+            supported.update(indices)
+        scope.append({
+            'object_index': object_index, 'source_triangle_count': len(faces),
+            'supported_triangle_count': len(supported),
+            'supported_triangle_indices': tuple(index for index in range(len(faces)) if index in supported),
+            'unsupported_triangle_count': len(faces) - len(supported),
+            'unsupported_components': tuple(unsupported),
+        })
     regions.sort(key=lambda region: region.roi_id)
     if len({region.roi_id for region in regions}) != len(regions):
         raise ValueError('coincident_independent_region_identity')
-    return tuple(regions)
+    return tuple(regions), tuple(scope)
+
+
+def regions_from_objects(objects):
+    return partition_regions(objects)[0]
 
 
 def signed_area(polygon):
@@ -318,6 +355,7 @@ class CoverageIndex:
     view_masks: dict
     classifications: dict
     stats: dict = field(default_factory=dict)
+    patch_scope: tuple = ()
 
     @property
     def region_ids(self):
@@ -327,7 +365,7 @@ class CoverageIndex:
         return [identity for i, identity in enumerate(self.region_ids) if mask & (1 << i)]
 
 
-def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras):
+def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras, *, patch_scope=()):
     """Build exact finite-view coverage from the existing normalized geometry."""
     poses = tuple(cameras['views'])
     view_names = {pose['name'] for pose in poses}
@@ -339,6 +377,7 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
         {key: pose[key] for key in ('name', 'direction_rational', 'view_matrix', 'projection_matrix', 'size_px')}
         for pose in poses])
     masks, classifications = {}, {}
+    region_triangles = {region.roi_id: frozenset(region.triangle_indices) for region in regions}
     for pose in poses:
         direction = vector(pose['direction_rational'])
         if not dot(direction, direction):
@@ -368,7 +407,8 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
             region_bounds = bounds(region_screen)
             blocker = None
             for triangle in triangles:
-                if triangle.object_index == region.object_index:
+                if (triangle.object_index == region.object_index
+                        and triangle.triangle_index in region_triangles[region.roi_id]):
                     continue
                 if not bounds_overlap(region_bounds, boxes[triangle.key]):
                     continue
@@ -389,7 +429,8 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                 mask |= 1 << index
         masks[pose['name']], classifications[pose['name']] = mask, rows
     return CoverageIndex(scene_identity, candidate_identity, regions,
-                         tuple(pose['name'] for pose in poses), masks, classifications)
+                         tuple(pose['name'] for pose in poses), masks, classifications,
+                         patch_scope=patch_scope)
 
 
 @dataclass
@@ -398,6 +439,25 @@ class CoverageState:
     observed_views: dict = field(default_factory=dict)
     covered_mask: int = 0
     updates: int = 0
+    patch_mapping_identity: str | None = None
+    patch_mapping_required: bool = False
+
+    def bind_patch_mapping(self, identity):
+        if not isinstance(identity, str) or not identity:
+            raise ValueError('patch_mapping_identity_required')
+        if identity != self.patch_mapping_identity:
+            self.observed_views.clear()
+            self.covered_mask = 0
+            self.updates = 0
+        self.patch_mapping_required = True
+        self.patch_mapping_identity = identity
+
+    def invalidate_patch_mapping(self):
+        self.patch_mapping_required = True
+        self.patch_mapping_identity = None
+        self.observed_views.clear()
+        self.covered_mask = 0
+        self.updates = 0
 
     def next_view(self):
         if not self.observed_views:
@@ -409,6 +469,10 @@ class CoverageState:
 
     def observe(self, receipt):
         name = receipt['view_name']
+        if self.patch_mapping_required and (
+                self.patch_mapping_identity is None
+                or receipt.get('patch_mapping_identity') != self.patch_mapping_identity):
+            raise ValueError('current_patch_mapping_receipt_required')
         if (receipt.get('scene_identity') != self.index.scene_identity
                 or receipt.get('candidate_identity') != self.index.candidate_identity
                 or receipt.get('actual_image_delivered') is not True
@@ -455,6 +519,8 @@ class CoverageState:
             self.observed_views.clear()
             self.covered_mask = 0
             self.updates = 0
+            if self.patch_mapping_required:
+                self.patch_mapping_identity = None
         return changed
 
 
@@ -529,7 +595,11 @@ class ActiveObservationSession:
 
     def rebind(self, scene, cameras):
         prepared = prepare_scene(scene, cameras, diagnostics=self.diagnostics is not None)
+        ordered_geometry_changed = tuple((source[0], source[1]) for source in self.objects) != tuple(
+            (source[0], source[1]) for source in prepared.objects)
         changed = self.state.rebind(prepared.index)
+        if ordered_geometry_changed and self.state.patch_mapping_required:
+            self.state.invalidate_patch_mapping()
         self.objects = prepared.objects
         self.triangles = prepared.triangles
         self.cameras = prepared.cameras
@@ -569,12 +639,13 @@ def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagn
     if diagnostics:
         started = time.perf_counter_ns()
     owned_cameras = copy.deepcopy(cameras)
-    regions = regions_from_objects(objects)
+    regions, patch_scope = partition_regions(objects)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['discovery'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
         started = closed
-    index = build_index_from_parsed(objects, triangles, scene_identity, regions, owned_cameras)
+    index = build_index_from_parsed(objects, triangles, scene_identity, regions, owned_cameras,
+                                    patch_scope=patch_scope)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['coverage'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}

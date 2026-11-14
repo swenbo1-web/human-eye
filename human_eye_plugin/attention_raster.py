@@ -42,7 +42,8 @@ def _clip_polygon(polygon):
     return polygon
 
 
-def _raster_triangle(triangle, rgb, color, depth, sample_count, owners=None, object_index=None):
+def _raster_triangle(triangle, rgb, color, depth, sample_count, owners=None, object_index=None,
+                     patch_owners=None, patch_index=None):
     size = depth.shape[0]
     xy = np.c_[(triangle[:, 0] + 1) * (size - 1) / 2,
                (1 - triangle[:, 1]) * (size - 1) / 2]
@@ -77,25 +78,42 @@ def _raster_triangle(triangle, rgb, color, depth, sample_count, owners=None, obj
         color[start:end, xmin:xmax + 1][nearer] = rgb
         if owners is not None:
             owners[start:end, xmin:xmax + 1][nearer] = object_index
+        if patch_owners is not None:
+            patch_owners[start:end, xmin:xmax + 1][nearer] = patch_index
     return sample_count
 
 
-def rasterize_attention(meshes, view, projection, size, *, return_owner=False):
+def rasterize_attention(meshes, view, projection, size, *, return_owner=False,
+                        return_patch_owner=False, face_patch_ids=None):
     """Return RGB uint8 color and float64 positive camera depth in metres.
 
     Only finite rigid-view/orthographic matrices are accepted. Geometry outside
     any of the six clip planes is excluded. Both triangle orientations are
     rendered, letting ordinary depth occlusion handle closed and open meshes.
     Resource overflow fails explicitly; partial images are never returned.
+    ``return_patch_owner=True`` adds a fourth int32 buffer, updated by the same
+    depth winner. ``face_patch_ids`` supplies one ID per source triangle, with
+    -1 marking faces outside the caller's supported patch set.
     """
     if type(return_owner) is not bool:
         raise ValueError('return_owner must be boolean')
+    if type(return_patch_owner) is not bool or return_patch_owner and not return_owner:
+        raise ValueError('Patch ownership requires return_owner=True')
     if type(size) is not int or not 64 <= size <= 512:
         raise ValueError('Attention raster size must be an integer in 64..512')
     if not isinstance(meshes, (list, tuple)) or not 1 <= len(meshes) <= 256:
         raise ValueError('Attention raster requires 1..256 meshes')
     if any(not isinstance(mesh, MeshEntity3D) for mesh in meshes):
         raise TypeError('Attention raster requires MeshEntity3D instances')
+    if return_patch_owner:
+        if not isinstance(face_patch_ids, (list, tuple)) or len(face_patch_ids) != len(meshes):
+            raise ValueError('Patch ownership requires one face mapping per mesh')
+        face_patch_ids = tuple(np.asarray(values) for values in face_patch_ids)
+        if any(values.dtype != np.int32 or values.shape != (len(mesh.faces),)
+               or np.any(values < -1) for mesh, values in zip(meshes, face_patch_ids)):
+            raise ValueError('Patch face mappings require int32 IDs or -1 for unsupported faces')
+    elif face_patch_ids is not None:
+        raise ValueError('Face patch mappings require return_patch_owner=True')
     view, projection = np.asarray(view, dtype=np.float64), np.asarray(projection, dtype=np.float64)
     if (view.shape != (4, 4) or projection.shape != (4, 4)
             or not np.isfinite(view).all() or not np.isfinite(projection).all()
@@ -110,6 +128,7 @@ def rasterize_attention(meshes, view, projection, size, *, return_owner=False):
     color[:] = _BACKGROUND
     depth = np.full((size, size), np.inf, dtype=np.float64)
     owners = np.full((size, size), -1, dtype=np.int32) if return_owner else None
+    patch_owners = np.full((size, size), -1, dtype=np.int32) if return_patch_owner else None
     sample_count = 0
     light = np.array([.4, -.5, 1.])
     light /= np.linalg.norm(light)
@@ -151,11 +170,14 @@ def rasterize_attention(meshes, view, projection, size, *, return_owner=False):
                     length = float(np.linalg.norm(normal))
                     shade = .45 + .55 * abs(float(normal @ light) / length) if length else .45
                     rgb = np.clip(np.asarray(mesh.color_rgb, dtype=np.float64) * shade, 0, 255).astype(np.uint8)
+                    patch_index = face_patch_ids[object_index][face_index] if return_patch_owner else None
                     for index in range(1, len(polygon) - 1):
                         sample_count = _raster_triangle(polygon[[0, index, index + 1]], rgb, color, depth, sample_count,
-                                                        owners, object_index)
+                                                        owners, object_index, patch_owners, patch_index)
     except FloatingPointError as exc:
         raise ValueError('Attention raster geometry exceeds numeric range') from exc
+    if return_patch_owner:
+        return color, depth, owners, patch_owners
     return (color, depth, owners) if return_owner else (color, depth)
 
 
