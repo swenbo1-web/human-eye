@@ -1,0 +1,24 @@
+{
+  "id": "T04_postcheck_error",
+  "kind": "terminal",
+  "mutations": [
+    {
+      "target": "run",
+      "path": [
+        "terminal_errors"
+      ],
+      "operation": "set",
+      "value": [
+        {
+          "phase": "post_route_checks",
+          "type": "ArtificialControlError",
+          "message": "derived control; original completed state and launcher flag retained"
+        }
+      ]
+    }
+  ],
+  "expected_terminal_failed_fields": [
+    "RUN_RESULT.terminal_errors"
+  ],
+  "expected_content_errors": []
+}

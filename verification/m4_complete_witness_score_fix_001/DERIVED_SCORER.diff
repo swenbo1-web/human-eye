@@ -1,0 +1,120 @@
+--- original/score_saved.py
++++ derived/score_saved.py
+@@ -1,12 +1,16 @@
+ """Score one source-quoted final against current independent saved evidence."""
+ 
+ import argparse
++import hashlib
+ import importlib.util
+ import json
+ from pathlib import Path
+ 
+ 
+-HERE = Path(__file__).resolve().parent
++NEW_HERE = Path(__file__).resolve().parent
++HERE = NEW_HERE.with_name('m4_complete_witness_consumption_001')
++VARIANT = 'm4-complete-witness-score-fix-001-v1'
++ORIGINAL_SCORER_SHA256 = 'fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074'
+ 
+ 
+ def load(name, path):
+@@ -16,14 +20,62 @@
+     return module
+ 
+ 
++def scorer_identity():
++    original = HERE / 'score_saved.py'
++    reader = NEW_HERE / 'terminal_reader.py'
++    return {
++        'variant': VARIANT,
++        'source_path': str(Path(__file__).resolve()),
++        'source_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
++        'original_source_path': str(original),
++        'original_source_sha256': hashlib.sha256(original.read_bytes()).hexdigest(),
++        'original_expected_sha256': ORIGINAL_SCORER_SHA256,
++        'terminal_reader_sha256': hashlib.sha256(reader.read_bytes()).hexdigest(),
++        'semantic_dependencies': str(HERE),
++    }
++
++
++def require_new_output(path):
++    if not Path(path).resolve().is_relative_to(NEW_HERE):
++        raise ValueError('derived_output_must_stay_in_new_namespace')
++
++
++def reject_terminal(arguments, binding):
++    require_new_output(arguments.output)
++    result = {
++        'schema': 'complete-witness-formal-quality-adoption-v1',
++        'denominator': 1,
++        'final_quality_passed': False,
++        'direct_product_adoption': None,
++        'status': 'terminal_binding_rejected',
++        'terminal_binding': binding,
++        'errors': list(binding['failed_fields']),
++        'scorer_identity': scorer_identity(),
++        'cost_analysis_performed': False,
++        'new_product_raster_model_calls': 0,
++    }
++    arguments.output.parent.mkdir(parents=True, exist_ok=True)
++    with arguments.output.open('x', encoding='utf-8', newline='\n') as stream:
++        json.dump(result, stream, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2)
++        stream.write('\n')
++    print(json.dumps({'quality': False, 'status': result['status'], 'path': str(arguments.output)}))
++    return 1
++
++
+ def score(arguments):
++    require_new_output(arguments.output)
++    terminal = load('_derived_complete_witness_terminal', NEW_HERE / 'terminal_reader.py')
+     saved = load('_formal_witness_saved_evidence', HERE / 'saved_evidence.py')
+     oracle = saved.oracle
+     truth = oracle.read(HERE / 'admin/TRUTH.json')
+     normalized = oracle.read(arguments.normalized)
+     owner = arguments.runtime_root / 'formal/P1/o'
+     consumer = oracle.read(arguments.runtime_root / 'formal/P1/c/CONSUMER.json')
+-    outer = oracle.read(arguments.runtime_root / 'formal/RUN_RESULT.json')['records'][0]
++    run_result = oracle.read(arguments.runtime_root / 'formal/RUN_RESULT.json')
++    terminal_result = terminal.terminal_binding(run_result, consumer)
++    if not terminal_result['passed']:
++        return reject_terminal(arguments, terminal_result)
++    outer = run_result['records'][0]
+     errors = []
+     checks = []
+     adoption_errors = []
+@@ -75,9 +127,7 @@
+     check('current_final_path', answer_path.is_relative_to(arguments.runtime_root / 'formal/P1/c'))
+     check('actual_final_bytes', oracle.sha(answer_path) == normalized['raw_answer_sha256']
+           and answer_path.read_bytes().decode('utf-8') == consumer['final'])
+-    check('valid_final_and_terminal_process', outer['outer_valid_completion'] is True
+-          and outer['execution_state'] == 'completed' and consumer['valid_completion'] is True
+-          and consumer['runtime_binding']['confirmed'] is True and consumer['runtime_exit']['confirmed'] is True)
++    check('valid_final_and_terminal_process', terminal_result['passed'])
+     measured = saved.evaluate(owner, truth)
+     check('product_facts_independently_correct', measured['product_errors'] == [])
+     bound_truth = measured['bound_truth']
+@@ -202,6 +252,8 @@
+         'new_product_raster_model_calls': 0,
+         'reviewer_role': 'Independent geometry/pixel oracle and scoring implementation author; root normalization uses actual final/artifacts, without truth fill.'
+     }
++    result['scorer_identity'] = scorer_identity()
++    result['terminal_binding'] = terminal_result
+     arguments.output.parent.mkdir(parents=True, exist_ok=True)
+     with arguments.output.open('x', encoding='utf-8', newline='\n') as stream:
+         json.dump(result, stream, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2)
+@@ -217,6 +269,7 @@
+     parser.add_argument('--runtime-root', type=Path, required=True)
+     parser.add_argument('--output', type=Path, required=True)
+     arguments = parser.parse_args()
++    require_new_output(arguments.output)
+     try:
+         return score(arguments)
+     except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+@@ -230,6 +283,7 @@
+             'cost_analysis_performed': False,
+             'new_product_raster_model_calls': 0
+         }
++        result['scorer_identity'] = scorer_identity()
+         arguments.output.parent.mkdir(parents=True, exist_ok=True)
+         with arguments.output.open('x', encoding='utf-8', newline='\n') as stream:
+             json.dump(result, stream, ensure_ascii=False, allow_nan=False, sort_keys=True, indent=2)
