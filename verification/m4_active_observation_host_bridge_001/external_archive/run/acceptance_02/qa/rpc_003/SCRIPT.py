@@ -1,0 +1,14 @@
+import json as _json, contextlib as _cl, io as _io
+_request = _json.loads('{"id":"a2d117be835f4640b36004efa0b6576f","command":"capture","params":{}}')
+try:
+    import sys as _sys
+    _module = _sys.modules.get('_human_eye_mcp_resident_6fe59a6dbd1c5c494acc')
+    if _module is None or getattr(_module, '_resident_tag', None) != '677bc32ffe2b3cfc86abc7c9d6bedfbb789d51c582e1810cf3bc888882c4fd92': raise RuntimeError('Resident Blender host unavailable; reconnect with a new connector')
+    _host = _module._mcp_resident_host
+    with _cl.redirect_stdout(_io.StringIO()):
+        _result = getattr(_host, 'capture_scene')(**_request['params'])
+    _result = _host.capture_delta(_result, _json.loads('{"instance_id":"15493779e75e4e44b5b2f2f4208e30d2","epoch":1,"resources":{"mesh:(\'uid\', 190)":1,"mesh:(\'uid\', 158)":2,"mesh:(\'uid\', 148)":3,"mesh:(\'uid\', 162)":4,"mesh:(\'uid\', 180)":5,"mesh:(\'uid\', 174)":6,"mesh:(\'uid\', 140)":7,"mesh:(\'uid\', 166)":8,"mesh:(\'uid\', 188)":9,"mesh:(\'uid\', 142)":10,"mesh:(\'uid\', 168)":11,"mesh:(\'uid\', 138)":12,"mesh:(\'uid\', 172)":13,"mesh:(\'uid\', 176)":14,"mesh:(\'uid\', 164)":15,"mesh:(\'uid\', 182)":16,"mesh:(\'uid\', 152)":17,"mesh:(\'uid\', 150)":18,"mesh:(\'uid\', 146)":19,"mesh:(\'uid\', 154)":20,"mesh:(\'uid\', 178)":21,"mesh:(\'uid\', 186)":22,"mesh:(\'uid\', 144)":23,"mesh:(\'uid\', 160)":24,"mesh:(\'uid\', 156)":25,"mesh:(\'uid\', 184)":26,"mesh:(\'uid\', 170)":27,"mesh:(\'uid\', 136)":28}}'))
+    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'result': _result}
+except Exception as _exc:
+    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'error': {'type': type(_exc).__name__, 'message': str(_exc)[:2000], 'mutation_uncertain': _request['command'] == 'apply'}}
+print('HUMAN_EYE_BLENDER_MCP:' + _json.dumps(_envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')))
