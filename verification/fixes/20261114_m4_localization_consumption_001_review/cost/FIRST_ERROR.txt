@@ -1,0 +1,6 @@
+First independent audit attempt exited 1 before publishing RESULTS.
+Traceback location: audit.py line 57, zip(images, construct['constructed']).
+TypeError: 'ZipFile' object is not callable.
+Cause: the auditor's first slot assigned a ZipFile object to the module-level name zip, shadowing the builtin used on the next slot.
+Correction: rename that local context variable archive_zip. audit_first.py preserves original bytes.
+No product, CLI, Blender, raster or model was executed. All original evidence remained read-only.

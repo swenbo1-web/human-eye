@@ -1,0 +1,53 @@
+{
+  "scope": "static evidence only; no new CLI, model, product, Blender or raster calls",
+  "frozen_shared_files": 1552,
+  "frozen_shared_changed": [
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\freeze_sources.py"
+  ],
+  "frozen_preparation_count": 1552,
+  "frozen_formal_count": 1726,
+  "freeze_note_consistent": true,
+  "execution_prompt_source_byte_identical_preparation_formal_current": {
+    "bridge.py": true,
+    "launcher.py": true,
+    "native_tools.py": true,
+    "fake_cli.py": true,
+    "bootstrap.py": true,
+    "inputs/PROMPT.txt": true
+  },
+  "tool_descriptions": {
+    "GENERIC": {
+      "name": "execute_python",
+      "characters": 1775,
+      "description": "Execute ordinary persistent Python with stdout/stderr over CAPTURE_REPLAY inputs. geometry={'objects':[{'name':str,'vertices':[[rational_x,rational_y,rational_z],...],'triangles':[[i,j,k],...]}]} and cameras={'views':[{'name':str,'view_matrix':4x4,'projection_matrix':4x4,'direction_rational':[x,y,z],'size_px':[512,512],...}],...} reside in Python. np and Fraction are available. Raw inputs are returned only when requested or printed. render_views(names,include_images=False) batch-renders current frozen inputs and returns refs/buffer handles. Every requested view is a fresh actual construction, including repeats. buffers[view] contains color uint8[H,W,3], depth float64[H,W], owners int32[H,W] and triangle_ids int32[H,W]. Pixel origin is top-left, indices zero-based. owners identifies geometry.objects; triangle_ids is the global source-face index in object/face input order. Both owners use -1 for background; background depth is infinity. Base material RGB is (180,190,205). rendered RGB retains the common geometry-based shading. Merge source triangle IDs into your own target surface before boundary/readability calculations. Count unique target-owned pixels incident to horizontal/vertical different-surface pairs with RGB distance at least 24, marking both endpoints. read_images(refs) or attach_images(refs) appends actual generated images to this result; render_views(...,include_images=True) combines generation and image delivery. Existing buffers and image refs can be reused directly. scratch is a writable Path, image_files maps refs to generated PNG paths. Use ordinary Python/NumPy/Fraction and your own algorithms. Product discovery, visibility-index, selection and location aggregation APIs are outside this common tool. Keep source inputs unchanged."
+    },
+    "SCENE_DATA": {
+      "name": "scene_data",
+      "characters": 159,
+      "description": "Read complete raw CAPTURE_REPLAY world geometry and candidate camera parameters. The same objects are already in execute_python variables geometry and cameras."
+    },
+    "READ_IMAGES": {
+      "name": "read_images",
+      "characters": 165,
+      "description": "Return actual 512x512 PNG image content for one or multiple generated current-session image refs. Input order is retained. The source views reuse their render cache."
+    },
+    "ACTIVE": {
+      "name": "active_observation",
+      "characters": 394,
+      "description": "Use the current installed engine on CAPTURE_REPLAY through its normal read-only observation service. Returns its default source-bound brief-v3 region locations, actual pixel facts, image references and remaining unknowns. include_images=true performs observation with native images. False uses the product's prediction-only text mode. Repeated requests use the same slot's normal product cache."
+    }
+  },
+  "prompt": "Inspect the complete current scene in the registered finite camera pool. Finish the inspection within this single turn using the tools available to you. The source is an explicitly labelled capture replay. New observations must be generated in this session.\n\nA supported surface is one nondegenerate, coplanar, consistently wound, shared-edge-connected component whose external boundary is a rectangle. A surface can contain more than two triangles. Discover all such surfaces in the mesh and preserve other components separately. Obtain current-session complete and readable evidence for every supported surface that can meet the criteria in this camera pool. A surface that could still be inspected is an unfinished part of the task. Report the observed set and remaining set, their evidence and reasons, and the scope of the finite camera pool.\n\nA complete observation is front-facing, contains the whole surface inside the viewport, and has no positive-area occluder shadow on its interior. Boundary tangency alone has zero area. Readability additionally requires at least 16 actual surface pixels and 4 unique contrasting boundary pixels in one actual observation, with RGB Euclidean distance at least 24. Mark both endpoints of each horizontal or vertical neighboring pair whose surface identities differ and whose squared RGB distance is at least 24*24, then count unique endpoints owned by the target surface. Merge the winning raw triangle IDs according to the surfaces you discover when working from native buffers. Background and unsupported remainder do not become supported rectangular surfaces. Several partial views do not establish one complete view. Geometry alone does not establish the pixel thresholds.\n\nComplete these three position checks as part of the same inspection.\n\n1. At pixel [109,247] in SCENE, identify the actual surface center, front direction and extent, and give the current image reference. Pixel coordinates are zero-based [x,y] with the origin at the top-left.\n2. For the surface centered at [0,0,0] and facing +Z, determine whether it has visible pixels in SCENE and distinguish occlusion from back-facing geometry. If another actual observation has read it completely, give that view and a pixel belonging to it. Otherwise explain which evidence is missing.\n3. For the surface centered at [0.15625,-0.15625,0.11572265625] and facing -Z, determine whether these registered cameras can provide front-facing readable evidence. State the camera-pool scope of the conclusion.\n\nThe shared tools provide persistent ordinary Python, NumPy, Fraction, raw world geometry and camera matrices on demand, batch render_views, actual RGB/depth/object-owner/winning-triangle-ID buffers, image attachment in the same tool call, and scratch files. Source inputs are read-only. You may calculate, inspect images, or combine both, choose any view combination, and reuse the evidence and variables you have already created. Each actual raster construction, including repeated or failed construction, consumes the session limit. Reading an existing buffer or image reference does not construct a new observation. Use only documented tools, supplied raw inputs and your own session outputs and algorithms.\n\nKeep the final human-facing answer concise. Include the three position answers and remaining limitations. The complete coverage set may be carried by actual tool facts or a machine-readable JSON artifact generated in this session and explicitly referenced in your final answer. For independently generated surface rows, retain source triangle indices or world corners, status, and actual view/reference evidence so the set can be verified. Product-specific region names are optional. Preserve unsupported remainder and finite-pool unknowns.\n",
+  "distinction": "same downstream preparation transport and product route; fake CLI does not exercise provider tool exposure, actual model selection or model evidence consumption",
+  "inputs": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\PREP_FROZEN.json": "e6dbdc5281d042018255cb8b4f96bea943412f104c4d807f99141e784b2fad76",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\FROZEN.json": "7d55ddadcb4683c9b262d4412ab2604670ebb340290c00e5f9b56e6fc87acd50",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\FREEZE_GENERATION_NOTE.json": "bb057d3dbf61618021dd5ed48fee03396524cdec3b61a2c4cc4aeb3a52a35d0e",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\bridge.py": "cb7f45b3b3eadb66b31a63d3bc65c9a73641ee51ad2824e5961fd59e75839a22",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\launcher.py": "74349f4cfd1b149beae35b6c0f66d7f9fafd64dd0c82fa6816eb7fe1df18d799",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\native_tools.py": "a64883237485a8695e00ec38d9ad46ded5c58f70a7d12d139efdd663c6db9e79",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\fake_cli.py": "45169b25701d425f8b71d9010e80f2d9d5ffb91199035071a98c66ba9ac79c61",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\bootstrap.py": "9ba13579fd067826a80ef17a441c4b220af9f9acbc5b842810dcfa6d3b286090",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_region_localization_consumption_001\\inputs\\PROMPT.txt": "3f848a42070580ad479e3de6507b9ffe09c59b9651c784c17608f0d752c1205a"
+  }
+}
