@@ -2,6 +2,7 @@
 
 import argparse
 from contextlib import ExitStack
+from functools import wraps
 import io
 import json
 import os
@@ -48,6 +49,9 @@ def main():
         children.append((process, command))
         return process
 
+    from human_eye_plugin.attention_raster import rasterize_attention as original_raster
+
+    @wraps(original_raster)
     def no_raster(*args, **kwargs):
         forbidden_calls.append({'kind': 'real_raster'})
         raise AssertionError('No real raster is allowed in this unit batch')
@@ -57,7 +61,7 @@ def main():
         for target in ('human_eye_plugin.attention_raster.rasterize_attention',
                        'human_eye_plugin.attention_rendering.rasterize_attention',
                        'human_eye_plugin.active_observation_images.rasterize_attention'):
-            stack.enter_context(patch(target, side_effect=no_raster, autospec=True))
+            stack.enter_context(patch(target, new=no_raster))
         suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
         stream = io.StringIO()
         result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
