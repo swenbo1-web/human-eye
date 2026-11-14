@@ -1,0 +1,552 @@
+{
+  "schema": "complete-witness-score-fix-regression-registry-v1",
+  "task": "M4-COMPLETE-WITNESS-SCORE-FIX-001",
+  "case_denominator": 21,
+  "classification_counts": {
+    "real_positive": 1,
+    "terminal_negative": 18,
+    "content_negative": 2
+  },
+  "cases": [
+    {
+      "id": "P00_real_producer_positive",
+      "kind": "positive",
+      "mutations": [],
+      "expected_terminal_failed_fields": [],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T01_missing_top_state",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "execution_state"
+          ],
+          "operation": "delete"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.execution_state"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T02_failed_top_state",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "execution_state"
+          ],
+          "operation": "set",
+          "value": "failed"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.execution_state"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T03_launcher_false",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "launcher_succeeded"
+          ],
+          "operation": "set",
+          "value": false
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.launcher_succeeded"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T04_postcheck_error",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "terminal_errors"
+          ],
+          "operation": "set",
+          "value": [
+            {
+              "phase": "post_route_checks",
+              "type": "ArtificialControlError",
+              "message": "derived control; original completed state and launcher flag retained"
+            }
+          ]
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.terminal_errors"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T05_missing_records",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records"
+          ],
+          "operation": "delete"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T06_empty_records",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records"
+          ],
+          "operation": "set",
+          "value": []
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T07_multiple_records",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records"
+          ],
+          "operation": "duplicate_first"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T08_wrong_slot",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records",
+            0,
+            "slot"
+          ],
+          "operation": "set",
+          "value": "P2"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records[0].slot"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T09_wrong_group",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records",
+            0,
+            "group"
+          ],
+          "operation": "set",
+          "value": "N"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records[0].group"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T10_wrong_schema",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "schema"
+          ],
+          "operation": "set",
+          "value": "artificial_other_producer_v1"
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.schema"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T11_planned_routes_zero",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "planned_routes"
+          ],
+          "operation": "set",
+          "value": 0
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.planned_routes"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T12_actual_routes_zero",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "actual_routes"
+          ],
+          "operation": "set",
+          "value": 0
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.actual_routes"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T13_CLI_count_zero",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "actual_CLI_processes"
+          ],
+          "operation": "set",
+          "value": 0
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.actual_CLI_processes"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T14_outer_retries_one",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "outer_retries"
+          ],
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.outer_retries"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T15_row_outer_invalid",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "run",
+          "path": [
+            "records",
+            0,
+            "outer_valid_completion"
+          ],
+          "operation": "set",
+          "value": false
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "RUN_RESULT.records[0].outer_valid_completion"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T16_consumer_invalid",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "consumer",
+          "path": [
+            "valid_completion"
+          ],
+          "operation": "set",
+          "value": false
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "CONSUMER.valid_completion"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T17_binding_unconfirmed",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "consumer",
+          "path": [
+            "runtime_binding",
+            "confirmed"
+          ],
+          "operation": "set",
+          "value": false
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "CONSUMER.runtime_binding.confirmed"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "T18_exit_unconfirmed",
+      "kind": "terminal",
+      "mutations": [
+        {
+          "target": "consumer",
+          "path": [
+            "runtime_exit",
+            "confirmed"
+          ],
+          "operation": "set",
+          "value": false
+        }
+      ],
+      "expected_terminal_failed_fields": [
+        "CONSUMER.runtime_exit.confirmed"
+      ],
+      "expected_content_errors": []
+    },
+    {
+      "id": "W01_actual_partial_readable",
+      "kind": "content",
+      "mutations": [
+        {
+          "target": "normalized",
+          "path": [
+            "target",
+            "witness"
+          ],
+          "operation": "set",
+          "value": {
+            "view": "SCENE",
+            "ref": "active-host-image:812625fe2e0840fed14e437cf5e827a362ac856aea351b33571668ef5460d42a",
+            "surface_pixels": 37917,
+            "boundary_pixels": 924,
+            "pixel_xy": [
+              232,
+              326
+            ]
+          }
+        }
+      ],
+      "expected_terminal_failed_fields": [],
+      "expected_content_errors": [
+        "target_actual_complete_view",
+        "target_index_frame_consistency"
+      ],
+      "actual_saved_row_control": {
+        "source_path": "D:\\he_complete_witness_001\\formal\\P1\\o\\tool_01\\RESPONSE.json",
+        "source_sha256": "29ae06d830da2f9f24743170e7d3136789b976b355f3b59faf336238410c4e25",
+        "pixel_index": 0,
+        "row": {
+          "image_index": 0,
+          "region_index": 0,
+          "front_facing": true,
+          "visible_surface_pixels": 37917,
+          "contrasting_boundary_pixels": 924,
+          "readable": true,
+          "visible_pixel_bounds": [
+            24,
+            174,
+            486,
+            391
+          ],
+          "visible_pixel_anchor": [
+            232,
+            326
+          ]
+        },
+        "image": {
+          "view_name": "SCENE",
+          "image_ref": "active-host-image:812625fe2e0840fed14e437cf5e827a362ac856aea351b33571668ef5460d42a",
+          "image_sha256": "1ee1498feb17e50a14f34b456855ca6103d81809e9b6519b68a47bec3cdbc4cc",
+          "native_content_block_index": 1,
+          "patch_mapping_identity": "0b5d2f5bd7f2b02dca8ebf4069c7952d184ce62d97af201ebac87077e1bdfe3a"
+        }
+      },
+      "causal_requirement": "Independent saved evidence must confirm complete=false, readable=true and identical actual counts/ref. The original product index remains2, so frame consistency is a second expected related failure."
+    },
+    {
+      "id": "W02_nonexistent_current_ref",
+      "kind": "content",
+      "mutations": [
+        {
+          "target": "normalized",
+          "path": [
+            "target",
+            "witness",
+            "ref"
+          ],
+          "operation": "set",
+          "value": "derived-control:nonexistent-current-frame"
+        }
+      ],
+      "expected_terminal_failed_fields": [],
+      "expected_content_errors": [
+        "target_actual_complete_view",
+        "target_index_frame_consistency"
+      ],
+      "causal_requirement": "Only target ref changes. Current TOP view, counts, owned pixel, identity and all source quotes remain original. The control ref must be absent from actual current frames."
+    }
+  ],
+  "source_pins": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\regression.py",
+      "sha256": "f710d919e9fecf9422935450382eccd3c37328c3a1bfc6f65be123bea11209ec",
+      "bytes": 12605
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\terminal_reader.py",
+      "sha256": "b6e095a866c7fa498f700bf856d04d75aed5701c8cf44d31d4eef9c5b1f2afde",
+      "bytes": 2123
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\score_saved.py",
+      "sha256": "b444ffa6f3528ca1e775ccd6fb617b808b47ae2cf326f8ebcdb9863655f99600",
+      "bytes": 15636
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\fixtures\\PROVENANCE.json",
+      "sha256": "616e84143cdcfaaeb2f33c7548032fa376a58015bdb8adf894e18f496bddc521",
+      "bytes": 1044
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\fixtures\\RUN_RESULT.json",
+      "sha256": "b55da6f3f2dd40a2917db3690be66f63992c6999f5ca6a131d5d44f7e6fabe9a",
+      "bytes": 26763
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\fixtures\\CONSUMER.json",
+      "sha256": "6d920559013d6174a201b51ad01a75f89cf90826cb9dfd60a9ca564da55bcab8",
+      "bytes": 98609
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\score_saved.py",
+      "sha256": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074",
+      "bytes": 13418
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\saved_evidence.py",
+      "sha256": "abe7ddd67d4e03e1e341fd20209dfbdd9ae64df0bf1b45e3f991589383645bd8",
+      "bytes": 14449
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\native_evidence.py",
+      "sha256": "ce654c1db16d1c99d4025173424077bf3c51c1c3ae44471ab907a80e64ad426b",
+      "bytes": 3892
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\oracle.py",
+      "sha256": "6d20770c3eca76d75a4a7e27b9029de8adc2c00e5f85acd95236af28f1fbc7bc",
+      "bytes": 13737
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\PLAN.json",
+      "sha256": "1dc9b8327a2963d3b5d5bfc25bb8d7b3c94e9f91b58e2e8201a1e0d4ef8b536c",
+      "bytes": 3680
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\TRUTH.json",
+      "sha256": "3606cf8c9140cb6c72a9d4c2230a6f50bf0c0b18785c288e742397b18a907f79",
+      "bytes": 8228
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\NORMALIZED.json",
+      "sha256": "7bb03e3df6a52fa158b689b00c0ce32d5cabe7edf8fb2ad8df2fee26f5f1ef33",
+      "bytes": 7550
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\SCORING_CONTRACT.json",
+      "sha256": "585c8126b72f89b73e8eb809855ee51ede50014aa6afb71e81e8503a9eea25a1",
+      "bytes": 7911
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\NORMALIZATION_SCHEMA.json",
+      "sha256": "56df43694e4c315d464071cf1c21495fa8054d0beb2327ea81ff0d64da3db342",
+      "bytes": 4707
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY.json",
+      "sha256": "272f925f1f46b4140b7483fbeceb1ff0a2b58285d3b5c9cab6c417cbb6cb3a87",
+      "bytes": 377
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY_SEAL.json",
+      "sha256": "93b0dde406a185bdb60c7921eb1f7d3f697e45e493763130d304828fdfdd30d9",
+      "bytes": 33881
+    },
+    {
+      "path": "D:\\he_complete_witness_001\\formal\\RUN_RESULT.json",
+      "sha256": "b55da6f3f2dd40a2917db3690be66f63992c6999f5ca6a131d5d44f7e6fabe9a",
+      "bytes": 26763
+    },
+    {
+      "path": "D:\\he_complete_witness_001\\formal\\P1\\c\\CONSUMER.json",
+      "sha256": "6d920559013d6174a201b51ad01a75f89cf90826cb9dfd60a9ca564da55bcab8",
+      "bytes": 98609
+    },
+    {
+      "path": "D:\\he_complete_witness_001\\formal\\P1\\o\\tool_01\\RESPONSE.json",
+      "sha256": "29ae06d830da2f9f24743170e7d3136789b976b355f3b59faf336238410c4e25",
+      "bytes": 12596
+    }
+  ],
+  "first_execution_rule": "Root independently runs the saved real positive through full derived score to SUPPLEMENTARY_QUALITY.json after freeze. Then this21-case harness runs, including one additional same-data positive regression.",
+  "read_overlay_ABI": "A temporary scorer.load wrapper returns original saved_evidence with only oracle.read of three exact JSON paths overridden by in-memory deep copies. No source code, SHA function, product data or saved geometry is replaced.",
+  "expected_positive_semantics": {
+    "quality": true,
+    "direct_product_adoption": false,
+    "native_supplement": true
+  },
+  "positive_terminal_scope": "Use original full producer JSON bytes, including actual runtime_exit.exit_code1 and confirmed held-handle proof. No exit0 requirement is introduced.",
+  "protected_roots": [
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001",
+    "D:\\he_complete_witness_001"
+  ],
+  "new_model_samples": 0,
+  "new_product_Blender_raster_network_calls": 0
+}

@@ -1,0 +1,163 @@
+{
+  "actual_terminal_schema": {
+    "actual_CLI_processes": 1,
+    "actual_routes": 1,
+    "consumer_valid_completion": true,
+    "group": "P",
+    "launcher_succeeded": true,
+    "outer_retries": 0,
+    "planned_routes": 1,
+    "row_has_execution_state": false,
+    "row_outer_valid_completion": true,
+    "runtime_binding_confirmed": true,
+    "runtime_exit_code": 1,
+    "runtime_exit_confirmed": true,
+    "schema": "complete-witness-single-formal-v1",
+    "slot": "P1",
+    "terminal_errors": [],
+    "thin_EXIT_receipt_confirmation": null,
+    "thin_EXIT_receipt_status": "unknown",
+    "top_execution_state": "completed"
+  },
+  "adoption_categories_preserved": [
+    "raw_source_read",
+    "native_computation"
+  ],
+  "blockers": [],
+  "checks": [
+    {
+      "check": "current_producer_schema_and_top_level_state",
+      "passed": true
+    },
+    {
+      "basis": "terminal_reader requires launcher_succeeded is True and terminal_errors is exactly an empty list in addition to completed",
+      "check": "top_success_and_postcheck_error_gate",
+      "passed": true
+    },
+    {
+      "basis": "Explicit reader cardinality/type/slot/group gates match actual producer",
+      "check": "one_P1_P_route_one_CLI_zero_outer_retry",
+      "passed": true
+    },
+    {
+      "basis": "outer_valid_completion, consumer.valid_completion, runtime_binding.confirmed, runtime_exit.confirmed all required without exit0 or thin EXIT receipt condition",
+      "check": "original_row_and_consumer_held_exit_checks_preserved",
+      "passed": true
+    },
+    {
+      "check": "full_score_AST_equal_after_registered_terminal_and_metadata_inverse",
+      "passed": true
+    },
+    {
+      "check": "main_AST_equal_after_output_guard_and_identity_inverse",
+      "passed": true
+    },
+    {
+      "check": "load_AST_exactly_equal",
+      "passed": true
+    },
+    {
+      "basis": "The inverse score AST is fully identical, including source support, witness_valid, native categories, exact thresholds and direct-only predicate",
+      "check": "complete_readability_provenance_coverage_unknown_and_adoption_unchanged",
+      "passed": true
+    },
+    {
+      "check": "real_fixture_bytes_exact",
+      "files": 2,
+      "passed": true
+    },
+    {
+      "check": "registered_21_case_denominator",
+      "counts": {
+        "content": 2,
+        "positive": 1,
+        "terminal": 18
+      },
+      "passed": true
+    },
+    {
+      "boundary_pixels": 924,
+      "check": "partial_control_uses_actual_saved_readable_row",
+      "intended_failure": "Target completeness and index/frame consistency while real row remains pixel-readable",
+      "passed": true,
+      "surface_pixels": 37917,
+      "view": "SCENE"
+    },
+    {
+      "basis": "Only target.witness.ref is mutated and absence in current measured frame set is checked",
+      "check": "missing_reference_control_preserves_other_claims",
+      "passed": true
+    },
+    {
+      "basis": "21 cases call actual scorer.score with only three oracle.read JSON paths overlaid by deep copies; terminal errors exact ordered list and content error set are verified",
+      "check": "same_full_scorer_and_precise_rejection_reasons",
+      "passed": true
+    },
+    {
+      "basis": "One auxiliary real same-data score targets an existing new-namespace sentinel, requires FileExistsError exact filename and unchanged SHA",
+      "check": "exclusive_output_auxiliary_separate_denominator",
+      "passed": true
+    },
+    {
+      "basis": "Harness forbids process/network, installed product execution and writes outside its new result directory; old namespace/runtime SHA snapshots surround controls",
+      "check": "offline_write_process_network_product_execution_guards",
+      "passed": true
+    },
+    {
+      "check": "old_source_and_evidence_hashes_unchanged",
+      "hash_review_counts": {
+        "old_delivery_content": 201,
+        "old_frozen": 2216,
+        "old_quality_seal_entries": 191,
+        "runtime_archive_copies": 136,
+        "runtime_originals": 136
+      },
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Finite single-producer schema and one retained model sample. Static checks do not replace the root-authorized normal offline score and registered controls.",
+    "Held thin exit is accepted as confirmed even with exit1 and missing normal EXIT receipt. The receipt remains unknown.",
+    "Source hash enforcement is supplied by the frozen source and registry pins. Scorer identity metadata records both actual original hash and expected original hash."
+  ],
+  "method": "Read source and saved JSON, parse AST and perform a declared AST inverse comparison, hash preserved files. No candidate module was imported and no scorer, product, model, renderer, Blender, network or regression function was executed.",
+  "new_live_calls": 0,
+  "original_evidence_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\NORMALIZED.json": "7bb03e3df6a52fa158b689b00c0ce32d5cabe7edf8fb2ad8df2fee26f5f1ef33",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY.json": "272f925f1f46b4140b7483fbeceb1ff0a2b58285d3b5c9cab6c417cbb6cb3a87",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\QUALITY_SEAL.json": "93b0dde406a185bdb60c7921eb1f7d3f697e45e493763130d304828fdfdd30d9",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\TRUTH.json": "3606cf8c9140cb6c72a9d4c2230a6f50bf0c0b18785c288e742397b18a907f79",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\native_evidence.py": "ce654c1db16d1c99d4025173424077bf3c51c1c3ae44471ab907a80e64ad426b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\oracle.py": "6d20770c3eca76d75a4a7e27b9029de8adc2c00e5f85acd95236af28f1fbc7bc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\saved_evidence.py": "abe7ddd67d4e03e1e341fd20209dfbdd9ae64df0bf1b45e3f991589383645bd8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\score_saved.py": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074",
+    "D:\\he_complete_witness_001\\formal\\P1\\c\\CONSUMER.json": "6d920559013d6174a201b51ad01a75f89cf90826cb9dfd60a9ca564da55bcab8",
+    "D:\\he_complete_witness_001\\formal\\RUN_RESULT.json": "b55da6f3f2dd40a2917db3690be66f63992c6999f5ca6a131d5d44f7e6fabe9a"
+  },
+  "passed": true,
+  "planned_offline_denominators": {
+    "content_negative": 2,
+    "exclusive_output_auxiliary": 1,
+    "main_cases": 21,
+    "new_model_samples": 0,
+    "same_data_positive_in_main_cases": 1,
+    "separate_root_positive": 1,
+    "terminal_negative": 18
+  },
+  "preparation_read_errors": [
+    "Early reads occurred before the new namespace existed. An earlier archive-name probe used EXTERNAL_ARCHIVE.json, then corrected to the actual RUNTIME_ARCHIVE.json. These were metadata read errors and no test execution occurred."
+  ],
+  "preservation": "Original automatic QUALITY remains failed0/1 and the original seal remains unchanged. The supplementary score is separate. This review does not assert new score or regression execution success.",
+  "reviewer": "/root/ab_install",
+  "reviewer_association": "Author of the original frozen scorer and its failure analysis. Did not author the derived scorer, terminal reader or regression harness. This is a static source/schema review.",
+  "schema": "complete-witness-score-fix-static-review-v1",
+  "source_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\REGISTRY.json": "e49cbd61216727cb552568283fa045ad147eafaf6bca89bef1627e1a8d661e2d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\REGRESSION_PLAN.md": "187ea7b25d204f89b29464fe2bf3c846e6103f3d5f8f5bc6783f1e0b5c8d7841",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\fixtures\\PROVENANCE.json": "616e84143cdcfaaeb2f33c7548032fa376a58015bdb8adf894e18f496bddc521",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\regression.py": "84f4eaa48254bb68c5958fedc85910629fe115435abd51d42f23c8e3e820101d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\score_saved.py": "b444ffa6f3528ca1e775ccd6fb617b808b47ae2cf326f8ebcdb9863655f99600",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_score_fix_001\\terminal_reader.py": "b6e095a866c7fa498f700bf856d04d75aed5701c8cf44d31d4eef9c5b1f2afde"
+  },
+  "task": "M4-COMPLETE-WITNESS-SCORE-FIX-001"
+}
