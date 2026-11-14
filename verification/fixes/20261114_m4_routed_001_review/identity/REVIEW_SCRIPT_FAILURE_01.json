@@ -1,0 +1,9 @@
+{
+  "kind": "independent audit helper assertion",
+  "script": "check_corrections.py",
+  "line_at_failure": 36,
+  "message": "assert len(changed)==2 and all('PNG' in x for x in changed)",
+  "cause": "Byte-decoded splitlines(keepends=True) treated CRLF/LF presentation differences as changed content. The intended check compares semantic text changes; original source bytes remain hash checked separately.",
+  "fix": "Normalize only local comparison string newlines before unified_diff. Do not change original documents.",
+  "new_product_model_blender_raster_scorer_calls": 0
+}
