@@ -23,26 +23,27 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-SELECT-001",
-    "status": "independently_reviewed",
-    "dispatch_base": "c1ba88d233df052688b62e293a7ad61f5ba7dcef",
-    "contract": "docs/M6_SELECT_001_TASK.md",
-    "delivery_commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
-    "review_status": "passed_finite_synthetic_data_and_task_audit",
-    "review_doc": "docs/M6_SELECT_001_REVIEW.md"
+    "id": "M6-REAL-DATA-001",
+    "status": "dispatched",
+    "dispatch_base": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
+    "contract_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0",
+    "contract": "docs/M6_REAL_DATA_001_TASK.md",
+    "delivery_commit": null,
+    "review_status": "awaiting_completion_callback"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
   "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:3",
-  "last_observed_status": "idle; M6-SELECT-001 completed, callback received and independently reviewed",
-  "pending_followup": false,
+  "last_observed_status": "idle before dispatch; next task accepted by messaging tool; no post-dispatch polling",
+  "pending_followup": true,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
       "commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
       "decision": "accepted_bounded_audit_no_model_selected",
       "review_doc": "docs/M6_SELECT_001_REVIEW.md",
-      "evidence": "verification/m6_select_001_review/INDEPENDENT_RESULTS.json"
+      "evidence": "verification/m6_select_001_review/INDEPENDENT_RESULTS.json",
+      "review_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
     }
   ],
   "model_selection": "undecided; output task and architecture must be analyzed separately",
@@ -55,11 +56,24 @@
     "Blender read acquisition checks existing QA ownership; no formal performance or model consumers in this batch"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
-  "pending_next": {
-    "id": "M6-REAL-DATA-001",
-    "status": "prepared_not_sent",
-    "contract": "docs/M6_REAL_DATA_001_TASK.md",
+  "previous_cycle": {
+    "id": "M6-SELECT-001",
+    "status": "independently_reviewed",
+    "dispatch_base": "c1ba88d233df052688b62e293a7ad61f5ba7dcef",
+    "contract": "docs/M6_SELECT_001_TASK.md",
+    "delivery_commit": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
+    "review_status": "passed_finite_synthetic_data_and_task_audit",
+    "review_doc": "docs/M6_SELECT_001_REVIEW.md",
+    "review_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
+  },
+  "last_dispatch": {
+    "cycle_id": "M6-REAL-DATA-001",
+    "tool": "send_message_to_thread",
+    "accepted": true,
+    "receipt": {
+      "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
+    },
     "implementation_base": "12d46730b94e758c3c426f5c0d3122a40eecad9e",
-    "source_sha256": "614684bb54bcbea6f2494fe704a0f77dd2a607fdba115a391686abdb362b8a7d"
+    "contract_commit": "4ca90b20c23f979aa47c8fd9711a1ead7ed709c0"
   }
 }
