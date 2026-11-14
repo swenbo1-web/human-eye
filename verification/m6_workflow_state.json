@@ -23,19 +23,18 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-SHAPE-TRAIN-001",
-    "status": "dispatched",
-    "dispatch_base": "efce450c1da372642010871994588a69799e268c",
-    "contract_commit": "5fd3c3eb1668812515fd6504895a39590376e9c8",
-    "contract": "docs/M6_SHAPE_TRAIN_001_TASK.md",
+    "id": "M6-SHAPE-OPT-001",
+    "status": "prepared_not_sent",
+    "dispatch_base": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
+    "contract": "docs/M6_SHAPE_OPT_001_TASK.md",
     "delivery_commit": null,
-    "review_status": "awaiting_completion_callback"
+    "review_status": "one_optimization_then_keep_drop"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:10",
-  "last_observed_status": "TRAIN001 accepted; no polling after dispatch",
-  "pending_followup": true,
+  "last_wait_cursor": "865dfdae-e9e6-4042-8e1c-98bf0b7eff9c:11",
+  "last_observed_status": "Implementation idle, TRAIN001 reviewed, OPT001 ready to send",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -86,30 +85,36 @@
       "review_doc": "docs/M6_SHAPE_DATA_001_REVIEW.md",
       "evidence": "verification/m6_shape_data_001_review/INDEPENDENT_RESULTS.json",
       "review_commit": "5fd3c3eb1668812515fd6504895a39590376e9c8"
+    },
+    {
+      "cycle_id": "M6-SHAPE-TRAIN-001",
+      "commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
+      "decision": "engineering_accepted_quality_rejected_one_optimization",
+      "review_doc": "docs/M6_SHAPE_TRAIN_001_REVIEW.md",
+      "evidence": "verification/m6_shape_train_001_review/INDEPENDENT_RESULTS.json"
     }
   ],
-  "model_selection": "One 6290-parameter width24 K12 shared-cell SO3 local mesh residual candidate, untrained. TRAIN001 first CPU training versus gated robust quadratic MLS and no-op; optimization follows independent review; reserved test remains sealed.",
+  "model_selection": "One shared width24 K12 local residual model. First 6290-parameter trial failed quality. One 49-parameter localization head plus conditional residual supervision, total6339, same training and seed, then keep/drop. No reserved-test scoring yet.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
-    "One local-dent restoration family, preserve normal geometry",
-    "Four original sources remain one unknown-upstream training group; validation Armadillo/reserved test Bunny official preflight hashes fixed",
-    "One isolated CPU training environment and one first training; no second architecture or optimization training this batch",
-    "Validation centered/off-center strata; do not score reserved test until optimization selection frozen",
-    "Offline arrays and private views only; no original/shared GUI/M5/runtime/competitor/paid API writes",
+    "One local-dent family; one output-factorization optimization",
+    "Original231 training, Armadillo117 validation, Bunny156 reserved unscored; source grouping unchanged",
+    "6339 parameters, same initialization/seed1729/sampling/1200steps; one final training-control calibration",
+    "No third training, validation threshold tuning or new learning architecture",
+    "Offline arrays/private views; no original/shared GUI/M5/runtime/competitor/paid API writes",
     "Completion callback only; no fallback automation"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
-    "id": "M6-SHAPE-DATA-001",
+    "id": "M6-SHAPE-TRAIN-001",
     "status": "independently_reviewed_closed",
-    "dispatch_base": "9b016c8720b709a6382438ddd505c7b154d4fac2",
-    "contract_commit": "d88cf18d1a6cf564c907d980ccf0ef159a954e9f",
-    "contract": "docs/M6_SHAPE_DATA_001_TASK.md",
-    "delivery_commit": "efce450c1da372642010871994588a69799e268c",
-    "review_status": "accepted_data_and_single_model_design",
-    "review_doc": "docs/M6_SHAPE_DATA_001_REVIEW.md",
-    "review_commit": "5fd3c3eb1668812515fd6504895a39590376e9c8"
+    "dispatch_base": "efce450c1da372642010871994588a69799e268c",
+    "contract_commit": "5fd3c3eb1668812515fd6504895a39590376e9c8",
+    "contract": "docs/M6_SHAPE_TRAIN_001_TASK.md",
+    "delivery_commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
+    "review_status": "engineering_accepted_quality_rejected",
+    "review_doc": "docs/M6_SHAPE_TRAIN_001_REVIEW.md"
   },
   "last_dispatch": {
     "cycle_id": "M6-SHAPE-TRAIN-001",
@@ -156,9 +161,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-SHAPE-DATA-001",
+    "cycle": "M6-SHAPE-TRAIN-001",
     "status": "completed_and_independently_reviewed",
-    "fixed_commit": "efce450c1da372642010871994588a69799e268c"
+    "fixed_commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -220,5 +225,19 @@
     "public_source_preflight": "verification/m6_shape_data_001_review/PUBLIC_SOURCE_PREFLIGHT.json",
     "formal_performance": false,
     "training_calls": 0
+  },
+  "shape_train_review": {
+    "commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
+    "checked_manifest_records": 4405,
+    "saved_candidate_outputs": 1044,
+    "independent_metric_assertions": 51361,
+    "frozen_forward_replays": 6,
+    "independent_numpy_equation_max_vector_error": 1.1497308214061935e-07,
+    "normal_point_failures": 348,
+    "normal_controls_failed": 42,
+    "new_training_runs": 0,
+    "Bunny_scores": 0,
+    "complete_repair": "not_accepted",
+    "cold_paired_extra_p95_seconds_excluding_coupling": 2.1931237899989355
   }
 }

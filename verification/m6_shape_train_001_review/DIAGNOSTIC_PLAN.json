@@ -1,0 +1,12 @@
+{
+  "author_commit": "9c29a9f0990421c607ee821e838394e73dcaa9f3",
+  "scope": "Independent frozen-output diagnosis; no training and no reserved-test scoring",
+  "metrics": "Recompute all 348 cases x model/MLS/no-op from saved binary64 arrays, A/S/N/N_F errors, fixed bits and incident-face quality",
+  "diagnostics": [
+    "Use true support to mask the saved model correction, solely to measure whether perfect localization could meet the existing targets",
+    "On true support, analytically minimize squared error over one nonnegative residual amplitude per case; report direction alignment and fitted amplitude, not a deployable score"
+  ],
+  "loss": "Recompute recorded group loss arithmetic and sampling coverage for all 1200 steps; no optimizer updates",
+  "replay": "Representative frozen forward passes and independent NumPy equations, no optimizer updates",
+  "excluded": ["Bunny model/MLS evaluation", "threshold search", "candidate training", "original asset writes"]
+}
