@@ -2,7 +2,7 @@
 
 ## Existing collection point
 
-The current `BlenderMCPHost.capture_scene()` requests the existing `capture` operation. `BlenderReadonlyHost` captures evaluated meshes, uses Blender `calc_loop_triangles`, maps evaluated local vertices through `matrix_world` and physical unit scale, and returns `unit='m'`, `coordinate_frame='world'`, a capture revision and a complete `meshes` collection. Each mesh carries `object_id`, `name`, world `vertices` and triangle `faces`.
+The current `BlenderMCPHost.capture_scene()` requests the existing `capture` operation. `BlenderSceneHost` captures evaluated meshes, uses Blender `calc_loop_triangles`, maps evaluated local vertices through `matrix_world` and physical unit scale, and returns `unit='m'`, `coordinate_frame='world'`, a capture revision and a complete `meshes` collection. Each mesh carries `object_id`, `name`, world `vertices` and triangle `faces`.
 
 The next connector can translate one accepted capture to `scene['objects']` with those same world vertices and triangles. The existing acquisition and geometry budgets, source identity, deadline, complete-scene scope and evaluated-mesh limitations remain attached to that capture. Selected-object captures require a separate explicit scope decision because the current coverage calculation consumes the full occluder set.
 

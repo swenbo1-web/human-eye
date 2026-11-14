@@ -1,0 +1,440 @@
+{
+  "schema": "active-observation-core-integration-001-final-cost-audit-v1",
+  "passed": true,
+  "scope": "Read stored clocks, archived buffers and counters only. No algorithms, benchmarks or rasters rerun.",
+  "windows": {
+    "marked_preparation": {
+      "started_ns": 76170649605800,
+      "closed_ns": 77765038737300,
+      "elapsed_ns": 1594389131500,
+      "scope": "Marked preparation window, including authoring, waits and environment setup; ends before PREPARATION publication"
+    },
+    "environment_total": {
+      "started_ns": 76297503501900,
+      "closed_ns": 76308104266700,
+      "elapsed_ns": 10600764800,
+      "scope": "External venv/dependency preparation; nested in marked preparation"
+    },
+    "venv_setup": {
+      "started_ns": 76297503688300,
+      "closed_ns": 76301572780800,
+      "elapsed_ns": 4069092500,
+      "scope": "Nested subprocess venv setup"
+    },
+    "dependency_copy": {
+      "started_ns": 76301573950800,
+      "closed_ns": 76308104266700,
+      "elapsed_ns": 6530315900,
+      "scope": "Nested dependency byte-copy and setup record window"
+    },
+    "source_qualification_and_units": {
+      "started_ns": 77806558752700,
+      "closed_ns": 77811445634700,
+      "elapsed_ns": 4886882000,
+      "scope": "Source qualification, 8 old-frame replay and four mocked-raster tests; ends before result publication"
+    },
+    "wheel_build_install": {
+      "started_ns": 77879109702500,
+      "closed_ns": 77881542707200,
+      "elapsed_ns": 2433004700,
+      "scope": "Build, verification, install and identity binding; ends before record publication"
+    },
+    "wheel_generation": {
+      "started_ns": 77879237326800,
+      "closed_ns": 77879626003200,
+      "elapsed_ns": 388676400,
+      "scope": "Nested wheel generation and deterministic rebuild verification"
+    },
+    "initial_install": {
+      "started_ns": 77879626004100,
+      "closed_ns": 77880582871400,
+      "elapsed_ns": 956867300,
+      "scope": "Nested initial pip installation"
+    },
+    "layout_repair": {
+      "started_ns": 78260820187600,
+      "closed_ns": 78263086226000,
+      "elapsed_ns": 2266038400,
+      "scope": "Product-only reinstall/pth and harness dependency-root repair; product source bytes unchanged"
+    }
+  },
+  "worker_processes": [
+    {
+      "name": "source_check",
+      "passed": false,
+      "exit_code": 1,
+      "started_ns": 78008122218300,
+      "closed_ns": 78008892203900,
+      "elapsed_ns": 769985600,
+      "scope": "Parent receipt from before process launch to after exit",
+      "worker_prepublication_ns": 676581800,
+      "parent_before_worker_entry_ns": 74964700,
+      "worker_after_prepublication_to_parent_exit_ns": 18439100,
+      "worker_setup_ns": null,
+      "error": {
+        "message": "verified_source_preloaded_module:numpy.version",
+        "traceback": "Traceback (most recent call last):\n  File \"D:\\he_core_001\\payload\\isolated_worker.py\", line 306, in main\n    guard.verify_loaded()\n  File \"D:\\he_core_001\\venv\\Lib\\site-packages\\human_eye_plugin\\verified_source_loader.py\", line 146, in verify_loaded\n    raise SourceBindingError('verified_source_preloaded_module:'+name)\n_human_eye_core_verified_source_bootstrap.SourceBindingError: verified_source_preloaded_module:numpy.version\n",
+        "type": "SourceBindingError"
+      },
+      "binding_sha256": "65a44f4f369153a49d7196330e54487776421f3f97f1058972c135476aa6b60c"
+    },
+    {
+      "name": "source_check_r2",
+      "passed": true,
+      "exit_code": 0,
+      "started_ns": 78379649042000,
+      "closed_ns": 78380474544600,
+      "elapsed_ns": 825502600,
+      "scope": "Parent receipt from before process launch to after exit",
+      "worker_prepublication_ns": 734862700,
+      "parent_before_worker_entry_ns": 70911700,
+      "worker_after_prepublication_to_parent_exit_ns": 19728200,
+      "worker_setup_ns": 606822000,
+      "error": null,
+      "binding_sha256": "130c1367002281a9a2cd57687eb03e3eca9cf85b06f72d145435c5bf46deffd4"
+    },
+    {
+      "name": "qualify_r2",
+      "passed": true,
+      "exit_code": 0,
+      "started_ns": 78380481769400,
+      "closed_ns": 78385200610000,
+      "elapsed_ns": 4718840600,
+      "scope": "Parent receipt from before process launch to after exit",
+      "worker_prepublication_ns": 4620682100,
+      "parent_before_worker_entry_ns": 70359200,
+      "worker_after_prepublication_to_parent_exit_ns": 27799300,
+      "worker_setup_ns": 613359900,
+      "error": null,
+      "binding_sha256": "130c1367002281a9a2cd57687eb03e3eca9cf85b06f72d145435c5bf46deffd4"
+    },
+    {
+      "name": "observe_r2",
+      "passed": true,
+      "exit_code": 0,
+      "started_ns": 78385213654100,
+      "closed_ns": 78388968891000,
+      "elapsed_ns": 3755236900,
+      "scope": "Parent receipt from before process launch to after exit",
+      "worker_prepublication_ns": 3661376500,
+      "parent_before_worker_entry_ns": 70904700,
+      "worker_after_prepublication_to_parent_exit_ns": 22955700,
+      "worker_setup_ns": 661797800,
+      "error": null,
+      "binding_sha256": "130c1367002281a9a2cd57687eb03e3eca9cf85b06f72d145435c5bf46deffd4"
+    },
+    {
+      "name": "benchmark_r2",
+      "passed": true,
+      "exit_code": 0,
+      "started_ns": 78554203208300,
+      "closed_ns": 78559772759400,
+      "elapsed_ns": 5569551100,
+      "scope": "Parent receipt from before process launch to after exit",
+      "worker_prepublication_ns": 5479164100,
+      "parent_before_worker_entry_ns": 69034600,
+      "worker_after_prepublication_to_parent_exit_ns": 21352400,
+      "worker_setup_ns": 603372500,
+      "error": null,
+      "binding_sha256": "130c1367002281a9a2cd57687eb03e3eca9cf85b06f72d145435c5bf46deffd4"
+    }
+  ],
+  "worker_process_count": 5,
+  "unexpected_worker_failures": 1,
+  "successful_R2_phases": 4,
+  "failure_and_repair": {
+    "failure_stage": "initial source_check",
+    "original_failure_retained": true,
+    "message": "verified_source_preloaded_module:numpy.version",
+    "product_source_changes_during_repair": 0,
+    "new_rasters_or_timing_trials_before_repair": 0,
+    "repair_scope": "Product-only controlled-source root with ordinary venv .pth installation. Two harness dependency-location assertions now bind separate own-venv dependency_root. Existing source loader and candidate source unchanged.",
+    "worker_R2_sha256": "d85061f9b68f3555996f1c8612767e6928b4faa502fdb10fc279322cb93a2eeb"
+  },
+  "qualification_counts": {
+    "source_default_and_diagnostics_representations": 10,
+    "source_control_modes": 4,
+    "installed_default_and_diagnostics_representations": 10,
+    "installed_control_modes": 4,
+    "fixed_repeat_scene_camera_case_per_qualification": 1,
+    "unique_historical_frames": 8,
+    "historical_frame_replay_steps_across_source_and_installed": 16,
+    "historical_replays_count_as_new_renders": false,
+    "unit_tests_passed": 4,
+    "unit_failures": 0,
+    "unit_real_rasters": 0,
+    "unit_runner_text_reported_partial_seconds": "0.080",
+    "unit_partial_scope": "Rounded unittest runner interval nested in source qualification; not separately added",
+    "unit_mocked_image_file_bytes": null,
+    "oracle_scope": "Migration equality against fixed old selected results, not a newly independent ground-truth oracle"
+  },
+  "new_observations": {
+    "intents": 6,
+    "completed": 6,
+    "failed_render_intents": 0,
+    "hard_cap": 8,
+    "PNG_files": 6,
+    "NPZ_files": 6,
+    "trace_attempts": 6,
+    "trace_completions": 6,
+    "compact_JSONL_physical_lines": 12,
+    "PNG_bytes": 17983,
+    "NPZ_bytes": 126081,
+    "array_payload_bytes": 23592960,
+    "RSS_bytes": null,
+    "frames": [
+      {
+        "attempt": 1,
+        "camera": "normal",
+        "view": "SCENE",
+        "PNG_bytes": 4790,
+        "NPZ_bytes": 29709,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+        "NPZ_sha256": "ad34d9bd0d03bc4c367811e404d238e460423b03cc52c1213e4a859cbe3adfd3"
+      },
+      {
+        "attempt": 2,
+        "camera": "normal",
+        "view": "BACK",
+        "PNG_bytes": 2160,
+        "NPZ_bytes": 18527,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+        "NPZ_sha256": "29b91f89eeb0df066e5b21a41a772d3448f8a0913a4d4a190d4724ce6bd40fba"
+      },
+      {
+        "attempt": 3,
+        "camera": "back64",
+        "view": "SCENE",
+        "PNG_bytes": 4790,
+        "NPZ_bytes": 29709,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+        "NPZ_sha256": "ad34d9bd0d03bc4c367811e404d238e460423b03cc52c1213e4a859cbe3adfd3"
+      },
+      {
+        "attempt": 4,
+        "camera": "back64",
+        "view": "BACK64",
+        "PNG_bytes": 1909,
+        "NPZ_bytes": 5593,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+        "NPZ_sha256": "8b4c9e5f6ad9a02eeb21f36925135506b25f9dc057d3dcd575c105321b39ece4"
+      },
+      {
+        "attempt": 5,
+        "camera": "back64",
+        "view": "LEFT",
+        "PNG_bytes": 2267,
+        "NPZ_bytes": 26614,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+        "NPZ_sha256": "ed56afc9ddd72ca203dbd0ed3e278b886e0337f3f5824f4a88c2a2d53819b980"
+      },
+      {
+        "attempt": 6,
+        "camera": "back64",
+        "view": "TOP",
+        "PNG_bytes": 2067,
+        "NPZ_bytes": 15929,
+        "array_payload_bytes": 3932160,
+        "PNG_sha256": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+        "NPZ_sha256": "7f9d77e6d0c9d0a848c283038aae8167747c6a2a769b6dc277d9f88da30bc96c"
+      }
+    ],
+    "chains": [
+      {
+        "camera": "normal",
+        "views": [
+          "SCENE",
+          "BACK"
+        ],
+        "incremental_counts": [
+          2,
+          3
+        ],
+        "covered": 5,
+        "unresolved": 1
+      },
+      {
+        "camera": "back64",
+        "views": [
+          "SCENE",
+          "BACK64",
+          "LEFT",
+          "TOP"
+        ],
+        "incremental_counts": [
+          2,
+          0,
+          2,
+          1
+        ],
+        "covered": 5,
+        "unresolved": 1
+      }
+    ]
+  },
+  "benchmark": {
+    "pair_count": 5,
+    "trial_count": 10,
+    "pairs": [
+      {
+        "pair": 1,
+        "old_started_ns": 78554894897100,
+        "old_closed_ns": 78555377659500,
+        "old_ns": 482762400,
+        "new_started_ns": 78555378518500,
+        "new_closed_ns": 78555864569600,
+        "new_ns": 486051100,
+        "new_over_old": 1.0068122538126416,
+        "new_slower": true
+      },
+      {
+        "pair": 2,
+        "old_started_ns": 78556339026700,
+        "old_closed_ns": 78556824393500,
+        "old_ns": 485366800,
+        "new_started_ns": 78555865458700,
+        "new_closed_ns": 78556338002900,
+        "new_ns": 472544200,
+        "new_over_old": 0.9735816293986321,
+        "new_slower": false
+      },
+      {
+        "pair": 3,
+        "old_started_ns": 78556825579200,
+        "old_closed_ns": 78557312924000,
+        "old_ns": 487344800,
+        "new_started_ns": 78557314205100,
+        "new_closed_ns": 78557790613400,
+        "new_ns": 476408300,
+        "new_over_old": 0.9775590095554523,
+        "new_slower": false
+      },
+      {
+        "pair": 4,
+        "old_started_ns": 78558272400800,
+        "old_closed_ns": 78558762663200,
+        "old_ns": 490262400,
+        "new_started_ns": 78557792203800,
+        "new_closed_ns": 78558270803200,
+        "new_ns": 478599400,
+        "new_over_old": 0.9762106985973226,
+        "new_slower": false
+      },
+      {
+        "pair": 5,
+        "old_started_ns": 78558764362500,
+        "old_closed_ns": 78559250307800,
+        "old_ns": 485945300,
+        "new_started_ns": 78559252220900,
+        "new_closed_ns": 78559727976100,
+        "new_ns": 475755200,
+        "new_over_old": 0.9790303558857345,
+        "new_slower": false
+      }
+    ],
+    "old_total_ns": 2431681700,
+    "new_total_ns": 2389358200,
+    "paired_ratio_median": 0.9775590095554523,
+    "cumulative_new_over_old": 0.9825949670962281,
+    "paired_median_reduction_percent": 2.2440990444547726,
+    "cumulative_reduction_percent": 1.7405032903771933,
+    "slower_new_pairs": [
+      1
+    ],
+    "extra_samples_or_renders": 0,
+    "nested_scope": "Index trial intervals are inside benchmark worker and parent receipt; never add them again to outer totals"
+  },
+  "totals": {
+    "worker_parent_elapsed_sum_ns": 15639116800,
+    "R2_worker_parent_elapsed_sum_ns": 14869131200,
+    "source_build_repair_and_all_worker_nonoverlapping_sum_ns": 25225041900,
+    "postpreparation_observed_span_ns": 753214006700,
+    "postpreparation_unclassified_gap_ns": 727988964800,
+    "marked_start_to_last_measured_process_exit_ns": 2389123153600,
+    "scope": "Measured process receipts include launch through exit. Marked preparation, nested setup/build/index windows and inter-stage gaps are distinct. Final publication/archival after last receipt is not fully timed.",
+    "recorded_archive_closed_ns": 78608495827200,
+    "last_worker_exit_to_recorded_archive_close_ns": 48723067800,
+    "marked_start_to_recorded_archive_close_ns": 2437846221400,
+    "archive_clock_scope": "Recorded archive closed point. The interval after last worker exit includes intervening checks/waits and archive copying. Archive-record publication and later final sealing remain unbounded."
+  },
+  "storage_and_setup": {
+    "wheel_bytes": 1143492,
+    "wheel_sha256": "27f649e96728f84b72638ccce49575f21d71c15cbc3824a6c3f1b6e30d6c93d8",
+    "wheel_entries": 147,
+    "runtime_product_sources": 140,
+    "dependency_copy_files": 1046,
+    "dependency_copy_bytes": 57693783,
+    "archived_external_files_verified": 39,
+    "payload_is_not_RSS": true
+  },
+  "unknowns": {
+    "RSS_bytes": null,
+    "overall_CPU_time": null,
+    "all_final_publication_and_archival_ns": null,
+    "unit_mock_fixture_file_bytes": null,
+    "model_usage": "No model calls requested or executed"
+  },
+  "review_execution": {
+    "new_algorithm_benchmark_raster_model_CLI_consumer_Blender_provider_calls": 0
+  },
+  "inputs_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\PREPARATION.json": "901764e877d6b275ef394569115a2bfba97667a918b45c8cacace7b7548c82cc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\preparation\\ENVIRONMENT.json": "082ca43cf2043411f650ea582430052f4f85702dfdfbb343a8c68277aa31830b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\preparation\\VENV_SETUP.json": "820ad5a60730ed91bdc29b78750af6cebeee24a221542d637b78646a88f1fe16",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\build\\BUILD_INSTALL.json": "e98c9054af24aff76bac1e6e44cb733be21c947f661fad9e5a53f2d0bf6999d5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\preparation\\INSTALL_LAYOUT_REPAIR.json": "2673971f7c7e08f25186d500cb22b4f0fd5b3d186c214a4e08cd89befeb78bae",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\SOURCE_QUALIFICATION_RESULT.json": "f3531b89dcbb4f0a5683a6054b45248ce8049f36204ea1a38396fb7f0df1d613",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\source_check_PROCESS.json": "12a403f08508e5d1891a21f7e4952c83e479ec065a0a8303f7a3751ecfc8934d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\source_check\\RESULTS.json": "cbfd7bff774ba1ee2ce66f110736097600899f3e1b5fe1f060067a80255bc43c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\source_check_r2_PROCESS.json": "d35978d490ac16a1f235be71deb1977668cafdca7f7aadd82cc1639c0872db1d",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\source_check_r2\\RESULTS.json": "a4d5ec365e92076a11827d301953860b66671fe32f11652e564c6159979e7d7a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\qualify_r2_PROCESS.json": "a0ecf898f0179cae0c5454a00690049b221315d472185b8c6f518a4f5b496ea5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\qualify_r2\\RESULTS.json": "43537e07b5d4ce3cdb961cc01f559e100ca95de1eef7eda694b80ad3512101e1",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\observe_r2_PROCESS.json": "8f8d6d0d7110558ab99bf2ab1476091d15d47b1703ca3f0b41d0a1616af111e8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\RESULTS.json": "dfad49700a074ebeb05ba4f65e18466fec070d2244518f1c73f836eeb9f666c5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\benchmark_r2_PROCESS.json": "a0ba4c086f7c22a551be82606f2470503f6f2737fd6f17430a524b1533c6dc32",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\benchmark_r2\\RESULTS.json": "76ce62e3f90e94293e9b5b9a004b3f46d932b1c1dce167bf4d38473fed3c7627",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\TRACE.jsonl": "742c911f4d1db212f1a8c8ed7db57b562f09b6c23b22e2ba0954c684be585b17",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\01.json": "4b8600c1291dea038b10914266a1477fe3028e2d6a2eb7ce320a2ab83c97f752",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\normal\\001-38c4651d57ed042a678c2722.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\normal\\001-38c4651d57ed042a678c2722.npz": "ad34d9bd0d03bc4c367811e404d238e460423b03cc52c1213e4a859cbe3adfd3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\02.json": "fa83f17a4dd2d3ccbbb3c1c5e02276986264ff4e1b0333b29d789237d3bbeb01",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\normal\\002-43819dd32ab64664f42dc64f.png": "d1c8ef23c12376d8968e39f8c25a60e695e5b5bc1352075b87a3a35b8d366aeb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\normal\\002-43819dd32ab64664f42dc64f.npz": "29b91f89eeb0df066e5b21a41a772d3448f8a0913a4d4a190d4724ce6bd40fba",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\03.json": "db67b6999f58631abac3eb32020e7cd3c48a9ea4237828ec8bc2752ab396b463",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\001-a7f0b5bbb4fe6523007fefb2.png": "c1f56b07da11042603613ea973b1e8fea5ee1b5b2ae8b519d3cef683daab0372",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\001-a7f0b5bbb4fe6523007fefb2.npz": "ad34d9bd0d03bc4c367811e404d238e460423b03cc52c1213e4a859cbe3adfd3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\04.json": "a50958d9c8c506447d1b0c14891da6bdd8149f22415ab620daf599a91b8ef86b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\002-13b2d948a494fa870ac6f60a.png": "7604f2449bd8a344603bfb70fdfc14e991e4f0d77963835e0d647aff5f94e6f8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\002-13b2d948a494fa870ac6f60a.npz": "8b4c9e5f6ad9a02eeb21f36925135506b25f9dc057d3dcd575c105321b39ece4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\05.json": "ac33665812c6004b46bca16ab6913cae34b664bf222ed31aa40e78644ca408f0",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\003-f29a2a76129b032ff5131cb5.png": "dcd4e345f8855412868a30d98d1774974e0b7634ee7867897a2b1e88ac4508f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\003-f29a2a76129b032ff5131cb5.npz": "ed56afc9ddd72ca203dbd0ed3e278b886e0337f3f5824f4a88c2a2d53819b980",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\render_budget\\06.json": "49fa43c8ec140ce750ecb3861bb106afc6637e67e19ce1aff1ac09ba8db98afa",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\004-abc64f01daa20c92251f58d9.png": "41fb1696063eb73a9dd48bec8532ffdef5d8c6f33a979e31bf7ed951651f3c82",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\back64\\004-abc64f01daa20c92251f58d9.npz": "7f9d77e6d0c9d0a848c283038aae8167747c6a2a769b6dc277d9f88da30bc96c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\runs\\TARGETED_TESTS.txt": "ae2ef17e96cc4dd7682e0ee2a80ae1cbe3d95cd6cb0b62ab6754e1710c3fff7f",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\EXTERNAL_ARCHIVE.json": "93ca5e257c380aeb9c445fdf82afb05cb2fc225d39faa6316ae2df0e35e0d5cd",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\payload_r2\\PAYLOAD_MANIFEST.json": "a1685daf67619e57ed100d93070cb590df121b8bc246b37ef8009aca1ea501bb",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\payload_r2\\RUN_BINDING.json": "130c1367002281a9a2cd57687eb03e3eca9cf85b06f72d145435c5bf46deffd4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\BENCHMARK_STARTED.json": "e035186d1260341b6cff8dea17c22e9911ca71f46c61f04212474974a805b437",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\NORMAL_IMPORT_DISCOVERY.json": "71c330e31be50bc2ebbfd0d10e4db69bec00402c2b56bf7ebec2f7ada72c5c96",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\QUALITY_GATE_R2.json": "672c27855bb116928713b02181902d3c435cc59ef97f5432d675406c45ed028c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\benchmark_r2\\ACCESS.jsonl": "f39beaacbcf409018f8490eca9411a07b72935445d22be0f04de7138f647bfe7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\benchmark_r2\\BENCHMARK.json": "3f82ec14a85effc688861ea3fe814c15257ab16b1d2f9352d32d6ace06c2b2e8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\benchmark_r2\\PROGRESS.json": "88ec81cc515c1ad1076baec338540f3e6425425a72b6954b878a1e46e27c5756",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\ACCESS.jsonl": "6a4c9f34e0bf9a44bbb1752eba8f02d0025b097981f969530da84be4de715dc7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\OBSERVATIONS.json": "0d0713b04a787f73da8a288fe97184fe4313d3803bffb830bf0686edf5beeda2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\observe_r2\\PROGRESS.json": "2902125e7f47a2a20dabff914969bb47c664de005a290142c68909d0b41e2d4c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\qualify_r2\\ACCESS.jsonl": "18dc22b0b9a55154c9da100febce1ab53ccbe32d19e8bf78af71087f6fe5f0e2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\qualify_r2\\QUALIFICATION.json": "606237e98893efb929eedf397daa2cd0fb1a4d20ea8a33161556d53d9eab28d7",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\source_check\\ACCESS.jsonl": "530bb5a333d92013ecbc567b353672d60e92636c144ad51035de565d529e06f5",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-single-pass-acquisition\\hefe\\verification\\m4_active_observation_core_integration_001\\external\\run\\source_check_r2\\ACCESS.jsonl": "8a12f45a7377d7307fae5266227f0f22c4e1486a9838723974258edf6657ba9c"
+  },
+  "worker_count_scope": "Five parent-recorded worker invocations. Build/pip and underlying redirector/helper OS process counts are uninstrumented."
+}
