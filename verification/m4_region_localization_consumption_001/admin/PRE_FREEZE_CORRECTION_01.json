@@ -1,0 +1,12 @@
+{
+  "schema": "region-localization-administrator-static-correction-v1",
+  "stage": "before_fake_preparation_or_formal_consumers",
+  "invalid_prior_guard": "Required every occupied RGB pixel to equal the base material [180,190,205].",
+  "cause": "The frozen renderer applies directional shading before converting RGB to uint8.",
+  "correction": "Validate shaded RGB independently from source triangles and the fixed light/shade formula. Native pixels use their raw source triangle ID. Product patch pixels use the corresponding independently validated constant-shade source component, and unsupported remainder uses source triangle 48.",
+  "unchanged": ["Product source", "Renderer source", "Material base RGB", "Scene", "Camera pool", "Readability thresholds", "Formal task", "Formal budget"],
+  "superseded_scoring_script_sha256": "1313c270c971e0298835d240ecfc9392d09c161b089fce93485f733d18042a35",
+  "new_product_calls": 0,
+  "new_rasters": 0,
+  "new_model_calls": 0
+}

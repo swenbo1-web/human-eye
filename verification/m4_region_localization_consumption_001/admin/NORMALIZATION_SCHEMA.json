@@ -1,0 +1,104 @@
+{
+  "schema": "region-localization-normalized-v1",
+  "slots": [
+    {
+      "slot_id": "<one of N1 P1 P2 N2 N3 P3>",
+      "raw_answer_path": "<absolute runtime/slot/c/PUBLIC_FINAL.txt>",
+      "raw_answer_sha256": "<sha256>",
+      "coverage_use_excerpt": "<exact final text correctly using coverage facts>",
+      "finite_pool_scope_correct": true,
+      "global_invisibility_overclaim": false,
+      "sources": [
+        {
+          "id": "<unique>",
+          "kind": "tool_result or cited_artifact",
+          "path": "<current original>",
+          "sha256": "<sha256>",
+          "final_citation_excerpt": "<required for cited_artifact>"
+        }
+      ],
+      "panels": [
+        {
+          "identity": {
+            "source_triangle_indices": [
+              "<all component integer face IDs>"
+            ]
+          },
+          "status": "covered or unknown or uncovered",
+          "views": [
+            {
+              "view": "<registered>",
+              "ref": "<current>"
+            }
+          ],
+          "reason_code": "finite_pool_no_complete_readable_view or exact bounded reason",
+          "support": [
+            {
+              "source_id": "final or source id",
+              "excerpt": "<exact source text>"
+            }
+          ]
+        }
+      ],
+      "unsupported": [
+        {
+          "component_count": 1,
+          "status": "unsupported or unknown",
+          "shape": "nonrectangular",
+          "domain": "outside_supported_rectangle_domain",
+          "support": {
+            "source_id": "<id>",
+            "excerpt": "<exact>"
+          }
+        }
+      ],
+      "questions": {
+        "click": {
+          "identity": "<same supported forms>",
+          "center_world_m": [
+            "<exact>"
+          ],
+          "front_direction_world": [
+            "<exact>"
+          ],
+          "quad_world_m": [
+            "<corners, or half-edge vectors, or bounds_world_m>"
+          ],
+          "view": "SCENE",
+          "ref": "<current>",
+          "support": "<source/excerpt>"
+        },
+        "origin": {
+          "identity": "<same>",
+          "SCENE_visible_pixels": 0,
+          "SCENE_front_facing": true,
+          "SCENE_occluded": true,
+          "witness": {
+            "view": "<actual readable>",
+            "ref": "<current>",
+            "pixel_xy": [
+              "<int x>",
+              "<int y>"
+            ]
+          },
+          "support": "<source/excerpt>"
+        },
+        "bottom": {
+          "identity": "<same>",
+          "finite_pool_no_front_readable": true,
+          "finite_pool_only": true,
+          "global_invisibility_claim": false,
+          "support": "<source/excerpt>"
+        }
+      }
+    }
+  ],
+  "review_requirements": [
+    "Exactly six distinct slots, including failures/not-run with missing claims.",
+    "Administrator-only face keys are never accepted as a consumer invented identity.",
+    "Normalize only facts actually entailed by quoted original text, including bounded scope and numeric claims.",
+    "Equivalent native answers and algorithms qualify without ROI hashes or a fixed view count.",
+    "Source tool facts need a final use excerpt. Scratch artifact facts need an explicit final citation.",
+    "Tool errors remain errors and can recover under the original budget. No favorable resampling."
+  ]
+}
