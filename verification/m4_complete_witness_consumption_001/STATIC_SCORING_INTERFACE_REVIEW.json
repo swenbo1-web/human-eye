@@ -1,0 +1,183 @@
+{
+  "schema": "complete-witness-static-scoring-interface-review-v1",
+  "task": "M4-COMPLETE-WITNESS-CONSUMPTION-001",
+  "conclusion": "no_remaining_static_interface_blocker",
+  "reviewer_role": "VIEW fixture author and cross-author interface reviewer. Root subsequently assigned this reviewer implementation ownership of qualify_saved.py; that wrapper portion is therefore implementation self-review. The semantic saved-evidence author and root independently read the final wrapper.",
+  "source_pins": {
+    "qual_driver.py": "516c9c4509e77678d616fec7a5efb20ac3dcb6ac8ece9eb07881e71ab91e5f29",
+    "qualify_saved.py": "fb2796a5b052d3fadcc6961a19bff2d8f048c2fe5d4984fc6b035b0ca5dcc536",
+    "saved_evidence.py": "abe7ddd67d4e03e1e341fd20209dfbdd9ae64df0bf1b45e3f991589383645bd8",
+    "score_saved.py": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074"
+  },
+  "scoring_contract_sha256": "585c8126b72f89b73e8eb809855ee51ede50014aa6afb71e81e8503a9eea25a1",
+  "normalization_contract_sha256": "56df43694e4c315d464071cf1c21495fa8054d0beb2327ea81ff0d64da3db342",
+  "contract_file_pins_verified": 14,
+  "machine_ABI": {
+    "producer_top_level_fields": [
+      "active_tool_response_path",
+      "actor_pid",
+      "actual_MCP_requests",
+      "actual_business_tools",
+      "actual_model_calls",
+      "actual_owner_pid",
+      "actual_product_calls",
+      "actual_rasters",
+      "cleanup",
+      "closed_ns",
+      "command",
+      "elapsed_ns",
+      "endpoint",
+      "errors",
+      "frames",
+      "observation_source_inputs",
+      "observations_path",
+      "original_deadline_ns",
+      "outer_retries",
+      "owner_close",
+      "owner_output",
+      "passed",
+      "process_cleanup",
+      "prompt_sha256",
+      "public_MCP_response_path",
+      "schema",
+      "semantic_status",
+      "service_result_path",
+      "source_freeze_sha256",
+      "source_inputs_sha256",
+      "source_session_cache_scope",
+      "started_ns",
+      "successful_MCP_responses",
+      "transport_passed"
+    ],
+    "verifier_direct_run_keys": [
+      "actor_pid",
+      "actual_owner_pid",
+      "actual_product_calls",
+      "actual_rasters",
+      "cleanup",
+      "endpoint",
+      "original_deadline_ns",
+      "owner_close",
+      "owner_output",
+      "passed",
+      "process_cleanup",
+      "prompt_sha256",
+      "source_freeze_sha256",
+      "source_inputs_sha256",
+      "transport_passed"
+    ],
+    "missing_direct_keys": [],
+    "AST_files_parsed": 6
+  },
+  "checks": [
+    {
+      "area": "actual_run_ABI",
+      "passed": true,
+      "finding": "Every direct top-level run key accessed by the final verifier is emitted by the final qual_driver result dict. Canonical process_cleanup/owner_close/actor_pid are used. Optional cleanup/actual_owner_pid aliases must agree."
+    },
+    {
+      "area": "entry_counts_and_cleanup",
+      "passed": true,
+      "finding": "The wrapper binds transport status, three initialize/list/active MCP requests, one business/product observation, zero models and at most six rasters. Actual PID, endpoint deadline, phase/config/output, held process/pipes/exit, saved Owner CLOSE and actual socket bytes are checked."
+    },
+    {
+      "area": "source_binding",
+      "passed": true,
+      "finding": "The full execution path-to-SHA map is checked against FROZEN. It is distinct from the four scene/camera/capture/product_binding aliases. Actual input paths/hashes, prompt, fixed product, current Owner inputs and preparation ledger entries are matched."
+    },
+    {
+      "area": "versioned_v4_tables",
+      "passed": true,
+      "finding": "Omitted empty region/image/pixel tables and coverage collections decode as the registered empty values. Independent cardinality and identity checks follow. Partial readable pixel rows remain separate from complete-witness rows."
+    },
+    {
+      "area": "public_region_and_camera_identity",
+      "passed": true,
+      "finding": "Public ROI labels bind through object/host/name/source triangles and reconstructed quad/front. Equivalent u/v bases are accepted. Public source binding matches the compacted raw binding, and full actual camera specifications and frame poses match frozen cameras."
+    },
+    {
+      "area": "same_ref_and_session_scope",
+      "passed": true,
+      "finding": "There is no requirement that opaque ref strings or the fixed session_id differ between qualification and formal. Current evidence is established by actual Owner/PID/output/cache/phase ledger and current PNG/NPZ/MCP receipt bindings."
+    },
+    {
+      "area": "precise_failure_status",
+      "passed": true,
+      "finding": "Explicit ProductFactError is handled inside the semantic call as product_incorrect. Other missing/corrupt/unbound evidence errors produce evidence_failed. Ordinary product_errors also produce product_incorrect, and an otherwise correct but absent discriminating pattern produces not_realized. Only qualified sets passed=true."
+    },
+    {
+      "area": "target_and_full_inspection",
+      "passed": true,
+      "finding": "Final normalization/scoring requires target world center, a complete readable current witness, its public pixel index, surface/boundary counts and a target-owned pixel. Full supported/remaining/unsupported sets, finite scope and actual source quotations are separately checked."
+    },
+    {
+      "area": "default_and_repeated_observation",
+      "passed": true,
+      "finding": "The saved reader accepts default include_images=true for empty active arguments and rejects false/unknown arguments. Formal reading permits repeated observations, while the qualification wrapper continues requiring exactly one active call. Supplemental native work is classified from actual code/data rather than tool name."
+    }
+  ],
+  "preparation_corrections": [
+    {
+      "issue": "Empty brief-v4 collections were initially indexed as mandatory keys.",
+      "resolution": "The semantic reader now honors registered omitted-empty table and coverage semantics before independent checks."
+    },
+    {
+      "issue": "ProductFactError inherits ValueError.",
+      "resolution": "A dedicated inner catch preserves product_incorrect and the outer evidence-failure handler covers corrupt archives and decoding errors."
+    },
+    {
+      "issue": "An earlier root read suggested cleanup/PID aliases were missing.",
+      "resolution": "The final producer already emits canonical and alias fields. The final verifier uses canonical fields and validates aliases when present. No qualification execution failed because of this earlier static interpretation."
+    },
+    {
+      "issue": "The initial scoring draft left target point/location and explicit remaining declarations incomplete.",
+      "resolution": "The final contract and scorer require target-owned pixel, world center and supported remaining-set declarations, with source-backed claims."
+    }
+  ],
+  "review_preparation_errors": [
+    {
+      "kind": "early_file_read",
+      "detail": "Two private JSON files were read before their author created them. Both later finalized files were read and hash-bound."
+    },
+    {
+      "kind": "edit_tool_syntax",
+      "detail": "Two attempted verifier patch operations were rejected before mutation. The authorized verifier was then written successfully. No candidate execution occurred."
+    }
+  ],
+  "execution_counts": {
+    "candidate_imports": 0,
+    "product_API_calls": 0,
+    "renderer_calls": 0,
+    "model_calls": 0,
+    "Blender_calls": 0,
+    "test_runs": 0,
+    "qualification_runs_by_this_review": 0
+  },
+  "limits": [
+    "This is static preparation. No new case qualification or formal consumer result exists in this review.",
+    "The private truth remains its original3606 hash. Prior decoder checks are saved preparation evidence and were not rerun here.",
+    "The final fixed case supports only the planned complete/readable discrimination and does not establish general-scene or speed/token benefit."
+  ],
+  "inputs_sha256": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\PLAN.json": "1dc9b8327a2963d3b5d5bfc25bb8d7b3c94e9f91b58e2e8201a1e0d4ef8b536c",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\SCORING_PLAN.md": "d7bbc5192e274c04b4f56481925759e6f6eac62590bf1272db0184491a7fd14a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\DECODER_CROSSCHECK.json": "6d6feb90ae0df412a47b59383a8c5b66ae9ee56e32eb3620c398ef95b328fcf3",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\FORMAT_PROOF_PRE_SOURCE_REFINEMENT.json": "7c031fea1f37dff400717af9a76671b64f1025781284d978b3f9b42137334031",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\NORMALIZATION_SCHEMA.json": "56df43694e4c315d464071cf1c21495fa8054d0beb2327ea81ff0d64da3db342",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\ORACLE_FORMAT_PROOF.json": "8ce55784cb0b1f2047a62dfc0dce7694f0d9f1b85ddeed0877a49457ce8f11e4",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\ORACLE_GENERATION_SOURCE.py": "318018f8bede4eed5e7885227ea7f51479bf9790e56f418528bdb9ca70e2db4b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\PREPARE_TRUTH_GENERATION_SOURCE.py": "de718d0be2968be0707f64acefe88804e9e40d86a18f66115183ecca62515d3a",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\SCORING_CONTRACT.json": "585c8126b72f89b73e8eb809855ee51ede50014aa6afb71e81e8503a9eea25a1",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\admin\\TRUTH.json": "3606cf8c9140cb6c72a9d4c2230a6f50bf0c0b18785c288e742397b18a907f79",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\decoder_crosscheck.py": "2a1b34c8fc4ce6908bfd9aa7b4eb45604f4fd3d054288fa892b7e94830a57d93",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\inputs\\PROMPT.txt": "bf2fd92f203dbd63cdba724cdbc2df47242feca9fcc1461a7ea7dbf642dfda90",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\inputs\\SOURCES.json": "4a32b569abf034b0b2228acf683ebea68873e7f3c0fb3c1c195275316bfb66b2",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\native_evidence.py": "ce654c1db16d1c99d4025173424077bf3c51c1c3ae44471ab907a80e64ad426b",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\oracle.py": "6d20770c3eca76d75a4a7e27b9029de8adc2c00e5f85acd95236af28f1fbc7bc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\prepare_truth.py": "80a7b6965b7f21ed471eec00a67d0aebdbd35945bd0169f3024de819304aaecc",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\qual_driver.py": "516c9c4509e77678d616fec7a5efb20ac3dcb6ac8ece9eb07881e71ab91e5f29",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\qualify_saved.py": "fb2796a5b052d3fadcc6961a19bff2d8f048c2fe5d4984fc6b035b0ca5dcc536",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\saved_evidence.py": "abe7ddd67d4e03e1e341fd20209dfbdd9ae64df0bf1b45e3f991589383645bd8",
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-view-reuse-001\\hefe\\verification\\m4_complete_witness_consumption_001\\score_saved.py": "fd6a1c455d40407e8e3b1ad8f2711689f4419c6ce187a9e3083467edcd0d4074"
+  }
+}
