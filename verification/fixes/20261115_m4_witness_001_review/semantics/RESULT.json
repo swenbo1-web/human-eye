@@ -1,0 +1,269 @@
+{
+  "method": "Independent Fraction shadow/frustum calculation and saved NPZ/PNG/public/final review. No product/scorer imports or new raster/model calls.",
+  "new_product_model_Blender_raster": 0,
+  "checks": 132,
+  "passed": 132,
+  "failures": [],
+  "details": {
+    "independent_geometry": {
+      "SCENE": {
+        "A_shadow_area": "4",
+        "A_shadow_x": [
+          "-1",
+          "1"
+        ],
+        "A_shadow_y": [
+          "-1",
+          "1"
+        ],
+        "complete": [
+          false,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      },
+      "TOP": {
+        "A_shadow_area": "0",
+        "A_shadow_x": [
+          "3",
+          "5"
+        ],
+        "A_shadow_y": [
+          "-5",
+          "-3"
+        ],
+        "complete": [
+          true,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      },
+      "LEFT": {
+        "A_shadow_area": "0",
+        "A_shadow_x": [
+          "6",
+          "8"
+        ],
+        "A_shadow_y": [
+          "-5",
+          "-3"
+        ],
+        "complete": [
+          true,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      },
+      "RIGHT": {
+        "A_shadow_area": "0",
+        "A_shadow_x": [
+          "0",
+          "2"
+        ],
+        "A_shadow_y": [
+          "-5",
+          "-3"
+        ],
+        "complete": [
+          true,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      },
+      "FRONT": {
+        "A_shadow_area": "0",
+        "A_shadow_x": [
+          "3",
+          "5"
+        ],
+        "A_shadow_y": [
+          "-2",
+          "0"
+        ],
+        "complete": [
+          true,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      },
+      "BACK": {
+        "A_shadow_area": "0",
+        "A_shadow_x": [
+          "3",
+          "5"
+        ],
+        "A_shadow_y": [
+          "-8",
+          "-6"
+        ],
+        "complete": [
+          true,
+          true
+        ],
+        "front": [
+          true,
+          true
+        ]
+      }
+    },
+    "phases": {
+      "Q": {
+        "pid": 15324,
+        "actual_rasters": 2,
+        "observed": {
+          "SCENE": [
+            {
+              "surface": 37917,
+              "boundary": 924,
+              "bounds": [
+                24,
+                174,
+                486,
+                391
+              ],
+              "readable": true
+            },
+            {
+              "surface": 12639,
+              "boundary": 0,
+              "bounds": [
+                140,
+                228,
+                370,
+                336
+              ],
+              "readable": false
+            }
+          ],
+          "TOP": [
+            {
+              "surface": 70756,
+              "boundary": 1060,
+              "bounds": [
+                23,
+                23,
+                288,
+                288
+              ],
+              "readable": true
+            },
+            {
+              "surface": 17689,
+              "boundary": 528,
+              "bounds": [
+                355,
+                355,
+                487,
+                487
+              ],
+              "readable": true
+            }
+          ]
+        },
+        "first_readable": 0,
+        "complete_witness": 2
+      },
+      "P": {
+        "pid": 29536,
+        "actual_rasters": 2,
+        "observed": {
+          "SCENE": [
+            {
+              "surface": 37917,
+              "boundary": 924,
+              "bounds": [
+                24,
+                174,
+                486,
+                391
+              ],
+              "readable": true
+            },
+            {
+              "surface": 12639,
+              "boundary": 0,
+              "bounds": [
+                140,
+                228,
+                370,
+                336
+              ],
+              "readable": false
+            }
+          ],
+          "TOP": [
+            {
+              "surface": 70756,
+              "boundary": 1060,
+              "bounds": [
+                23,
+                23,
+                288,
+                288
+              ],
+              "readable": true
+            },
+            {
+              "surface": 17689,
+              "boundary": 528,
+              "bounds": [
+                355,
+                355,
+                487,
+                487
+              ],
+              "readable": true
+            }
+          ]
+        },
+        "first_readable": 0,
+        "complete_witness": 2
+      }
+    },
+    "original_auto_quality": {
+      "cost_analysis_performed": false,
+      "denominator": 1,
+      "direct_product_adoption": null,
+      "errors": [
+        {
+          "message": "'execution_state'",
+          "type": "KeyError"
+        }
+      ],
+      "final_quality_passed": false,
+      "new_product_raster_model_calls": 0,
+      "schema": "complete-witness-formal-quality-adoption-v1",
+      "status": "claim_or_saved_evidence_missing_or_invalid"
+    },
+    "final_contrast": 262.2327210704263,
+    "actual_tool_codes": [
+      "",
+      "import json\nobs = json.loads(last_observation_json)\nprint('GEOMETRY', geometry)\nprint('CAMERAS', cameras)\nframes = render_views(['TOP'], include_images=False)\nprint('FRAMES', frames)\nprint('BUFFER_KEYS', list(buffers.keys()))\n",
+      "frame = buffers[frames[0]['ref']]\nprint('BUFFER_FIELDS', list(frame.keys()))\ntriangles = frame['triangle_ids']\nsurface_ids = np.full(triangles.shape, -1, dtype=np.int32)\nsurface_ids[np.isin(triangles,[0,1])] = 0\nsurface_ids[np.isin(triangles,[2,3])] = 1\nrgb = frame['color'].astype(np.float64)\nmarked = np.zeros(triangles.shape,dtype=bool)\nfor first, second in [((slice(None),slice(None,-1)),(slice(None),slice(1,None))),((slice(None,-1),slice(None)),(slice(1,None),slice(None)))]:\n    qualifying = (surface_ids[first] != surface_ids[second]) & (np.linalg.norm(rgb[first]-rgb[second],axis=2)>=24)\n    marked[first] |= qualifying\n    marked[second] |= qualifying\nfor index in [0,1]:\n    mask=surface_ids==index\n    print('TOP_METRICS',index,'surface',int(mask.sum()),'boundary',int((mask&marked).sum()))\nprint('ANCHOR',{'xy':[155,155],'object_owner':int(frame['owners'][155,155]),'global_source_triangle':int(triangles[155,155]),'RGB':frame['color'][155,155].tolist()})\nprint('BOUNDARY_PAIR',{'target_xy':[23,155],'target_RGB':frame['color'][155,23].tolist(),'neighbor_xy':[22,155],'neighbor_RGB':frame['color'][155,22].tolist(),'contrast':float(np.linalg.norm(rgb[155,23]-rgb[155,22]))})\nfor obj in geometry['objects']:\n    vertices=np.array(obj['vertices'],dtype=float)\n    normals=[np.cross(vertices[face[1]]-vertices[face[0]],vertices[face[2]]-vertices[face[0]]).tolist() for face in obj['triangles']]\n    print('SUPPORT',obj['name'],'normals',normals,'corners',vertices.tolist())\nprint('TOP_GEOMETRIC_COMPLETENESS','Both rectangles have normal +Z, disjoint XY footprints, all corners inside the TOP frustum. Thus no positive-area occlusion and no viewport clipping for either surface.')\n"
+    ]
+  },
+  "semantic_conclusion": {
+    "case_realized": true,
+    "product_facts_correct": true,
+    "final_answer_correct": true,
+    "current_product_facts_used": true,
+    "pure_direct_product_consumption": false,
+    "native_recomputation": "extra verification; no observed product error correction",
+    "automatic_original_status": "failed before content judgement; retained separately"
+  }
+}
