@@ -1,0 +1,219 @@
+{
+  "cycle_id": "M6-SHAPE-DATA-001",
+  "status": "concrete_proposal_for_independent_review_no_training",
+  "prerequisites": [
+    "establish at least three independently evidenced source groups for train/validation/reserved test",
+    "freeze PyTorch CPU wheel/version/hash and setup cost",
+    "verify future model parameter tensors total6290"
+  ],
+  "data_index": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\DATASET_INDEX.json",
+  "accepted_observations_only": true,
+  "current_split": {
+    "development_train_pool": [
+      "Yanyite",
+      "Richie",
+      "Chipow",
+      "Yunhex"
+    ],
+    "validation": [],
+    "reserved_test": []
+  },
+  "input_file_whitelist": [
+    "node_features",
+    "edge_features",
+    "positions",
+    "normals"
+  ],
+  "shared_graph_whitelist": [
+    "edge_index",
+    "allowed_mask",
+    "boundary_mask",
+    "free_mask"
+  ],
+  "transform_sidecar": [
+    "origin_world_m",
+    "scale_m"
+  ],
+  "metadata_and_labels_are_not_features": true,
+  "source_ID_use": "trace/grouping/gather only, never numeric model features or embeddings",
+  "dynamic_preparation_scope": "full current observed mesh normals and original-edge statistics, then gather two-ring context",
+  "normalization": {
+    "origin": "observed fixed/halo position mean",
+    "scale": "observed context edge median",
+    "continuous_feature_standardization": "train observations only,5 node+4 edge means/std,18 persisted scalars",
+    "std_min": 1e-06
+  },
+  "model": {
+    "name": "shared-cell local mesh residual expert",
+    "width": 24,
+    "message_steps": 12,
+    "message_cell_weights_shared": true,
+    "node_features": 7,
+    "edge_features": 4,
+    "activations": "SiLU",
+    "dropout": 0,
+    "normalization": "shared LayerNorm24",
+    "module_dimensions": {
+      "node_encoder": [
+        7,
+        24,
+        24
+      ],
+      "shared_edge_MLP": [
+        52,
+        24,
+        24
+      ],
+      "shared_node_update": [
+        72,
+        24,
+        24
+      ],
+      "alpha_head": [
+        48,
+        24,
+        1
+      ],
+      "beta_head_single_linear": [
+        24,
+        1
+      ]
+    },
+    "update": "h=LN(h+0.1*MLP72to24to24(concat(h,mean_edge_message,h0)))",
+    "head": "alpha_i*n_i + mean_j(beta_ij*(q_j-q_i))",
+    "head_last_layers_zero_initialized": true,
+    "fixed_boundary_halo_and_external_output": "hard zero, add correction only to original binary64 writable observation copy",
+    "parameters_by_module": {
+      "node_encoder": 792,
+      "shared_edge_MLP": 1872,
+      "shared_node_update": 2352,
+      "shared_layer_norm": 48,
+      "alpha_head": 1201,
+      "beta_head": 25
+    },
+    "estimated_parameters": 6290,
+    "parameter_count_verified_by_formula_only": true,
+    "SO3_covariance": "analytic design; observation preprocessing verified on4source examples under rotation+scale; actual network implementation not yet tested"
+  },
+  "receptive_field": {
+    "normal_observation_max_hops": 5,
+    "fixed_halo_max_hops": 9,
+    "support_diameter_max_hops": 16,
+    "input_diameter_max_hops": 31,
+    "all_damaged_points_reach_observed_clean_and_fixed_context_in_K": true,
+    "full_graph_information_in_K": false
+  },
+  "supervision": {
+    "target": "full context (reference-observed)/observed_scale, all allowed normal points explicitly zero",
+    "loss_units": "dimensionless squared displacement",
+    "damaged_case_loss": "0.2*mean_A +0.4*mean_S +0.4*mean_normal_free, empty terms omitted with remaining weights normalized",
+    "normal_control_loss": "mean_A",
+    "gradient_loss": "0.05*mean_directed_input_edges squared error of predicted-vs-target correction differences",
+    "batch_reduction": "equal mean per graph",
+    "required_denominators": [
+      "A",
+      "S",
+      "normal_allowed",
+      "normal_free",
+      "fixed",
+      "directed_edges"
+    ]
+  },
+  "training": {
+    "framework": "PyTorch CPU, setup pending",
+    "dtype": "float32",
+    "CPU_threads": 1,
+    "seed": 1729,
+    "batch_graphs": 4,
+    "normal_graphs_per_batch": 1,
+    "dented_graphs_per_batch": 3,
+    "sampling": "source groups equal, patches uniform within training group, six radius/amplitude states in deterministic balanced cycle; overlaps retained in same group and reported",
+    "optimizer": "AdamW",
+    "lr_initial": 0.001,
+    "lr_final": 0.0001,
+    "schedule": "cosine over1200steps",
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-08,
+    "weight_decay": 1e-05,
+    "foreach": false,
+    "fused": false,
+    "gradient_norm_clip": 1.0,
+    "steps": 1200,
+    "validation_steps": [
+      0,
+      400,
+      800,
+      1200
+    ],
+    "reported_checkpoint": 1200,
+    "maximum_wall_s": 1800,
+    "maximum_RSS_bytes": 2147483648,
+    "budget_exhaustion": "incomplete, no success claim"
+  },
+  "one_optimization": "one evidence-based change after first round, same architecture/grouping/seed, if retraining at most1200more steps/1800s/2GiB",
+  "baselines": {
+    "no_op": true,
+    "one_direct": "residual-gated robust quadratic MLS, observation-only simultaneous projection",
+    "graph_radius_scale_units": 8,
+    "normal_dot_min": 0.5,
+    "minimum_points": 12,
+    "require_full_rank": true,
+    "neighborhood_scope": "same frozen two-ring context graph, observed edge-length geodesics",
+    "distance_weight": "exp(-(d_G/(4*scale))^2)",
+    "IRLS_passes": 3,
+    "Tukey_cutoff": 4.685,
+    "residual_scale": "max(1.4826*MAD,1e-4*observation_scale)",
+    "gate": "train normal-control abs residual/scale percentile99.5, calibrated once",
+    "correction": "-sign(r)*max(abs(r)-tau*scale,0)*observed_normal",
+    "numeric_failure": "zero correction and include failure in denominator"
+  },
+  "acceptance": {
+    "aggregation": "compute each damaged-case ratio/improvement first, then median/p95/worst; report group and member-file denominators",
+    "support_RMSE_ratio_to_noop": {
+      "overall_median_max": 0.7,
+      "each_source_group_median_max": 0.85,
+      "each_member_file_median_max": 0.85,
+      "p95_max": 1.05,
+      "worst_max": 1.25
+    },
+    "allowed_RMSE_median_improvement_to_noop_min": 0.2,
+    "support_median_improvement_to_MLS_min": 0.1,
+    "MLS_nearzero_denominator": "if MLS support RMSE<=1e-6*scale, case improvement=0 if model also<=threshold, else -model_RMSE/(1e-6*scale); report count and absolute errors",
+    "normal_point_gate_aggregation": "each case, for both normal_allowed and normal_free",
+    "normal_point_change_over_scale": {
+      "p95_max": 0.02,
+      "worst_max": 0.1
+    },
+    "normal_control_change_over_scale": {
+      "RMSE_max": 0.01,
+      "p95_max": 0.02,
+      "worst_max": 0.05
+    },
+    "normal_denominators": "report both all normal allowed and normal free; inspect per group/member/radius/amplitude and worst cases",
+    "boundary_external_bitwise_preservation": true,
+    "new_degenerate_or_reversed_faces": 0,
+    "coupling": "complete candidate impact-domain endpoint checks after full readback, zero new forbidden contacts and zero unresolved",
+    "extra_full_task_p95_wall_s_max_vs_preselected_MLS": 2.0,
+    "online_peak_RSS_bytes_max": 2147483648,
+    "cost_comparison_scope": "identical full prepare/readback/coupling chain, report MLS quality qualification separately",
+    "reserved_test": "open once after validation choice; no tuning from test labels"
+  },
+  "cost_contract": [
+    "dependency setup",
+    "offline acquisition/generation/exports",
+    "shared topology prepare",
+    "per-observation dynamic normals/features",
+    "training forward/backward",
+    "validation",
+    "save/load and peak memory",
+    "cold/warm inference",
+    "full readback and coupling",
+    "publication"
+  ],
+  "speed_benefit_claimed": false,
+  "actual_training_runs": 0,
+  "actual_model_quality_results": null
+}
