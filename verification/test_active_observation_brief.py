@@ -119,6 +119,16 @@ class ActiveObservationBriefTests(unittest.TestCase):
         self.assertEqual(self.value, original)
 
     def test_default_and_explicit_brief_match_full_keeps_diagnostics_and_images(self):
+        self.value['frames'][0].update({
+            'mesh_order_identity': 'unit-ordered-meshes',
+            'owner_schema': 'active-dual-owner-v1',
+            'owner_mapping_identity': 'unit-owner-mapping',
+            'triangle_id_scope': 'zero-based-global-source-triangles-in-mesh-order',
+            'owner_capabilities': {'triangle_ids': True, 'patch_owners': True},
+            'frame_identity': 'unit-immutable-frame',
+            'triangle_owner_array_bytes': 512 * 512 * 4,
+            'owner_metadata_array_bytes': 512,
+        })
         default = _tool_result(self.value, is_error=False)
         explicit = _tool_result(self.value, is_error=False, response_detail='brief')
         full = _tool_result(self.value, is_error=False, response_detail='full')

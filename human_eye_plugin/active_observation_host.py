@@ -326,8 +326,10 @@ def observe_capture(capture, output_directory, construction_callback=None,
             work['array_payload_bytes'] += frame['array_payload_bytes']
             frame['host_binding_sha256'] = binding['binding_sha256']
             frame['source_revision'] = binding['scene_revision']
-            frame['image_ref'] = 'active-host-image:' + fingerprint(
-                (binding['binding_sha256'], name, frame['image_sha256'], frame['patch_mapping_identity']))
+            reference_binding = (binding['binding_sha256'], name, frame['image_sha256'], frame['patch_mapping_identity'])
+            if 'owner_schema' in frame:
+                reference_binding += (frame['owner_schema'], frame['owner_mapping_identity'], frame['frame_identity'])
+            frame['image_ref'] = 'active-host-image:' + fingerprint(reference_binding)
             stages['render_and_publish_' + name] = _interval(started)
             started = time.perf_counter_ns()
             feedback = images.observe_frame(frame)

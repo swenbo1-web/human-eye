@@ -1,0 +1,64 @@
+{
+  "schema": "m4-view-reuse-static-product-review-v1",
+  "task": "M4-VIEW-REUSE-001",
+  "reviewer_role": "Consumption-fixture author reviewing another author’s three product changes through source reads only. Product implementation was not edited by this reviewer.",
+  "conclusion": "no_static_blocker_found",
+  "reviewed_sources": [
+    {
+      "path": "human_eye_plugin/active_observation_images.py",
+      "reviewed_sha256": "22414d9e74e39c012988a638d50f72e43551a447d4ee747cef8a99ee3947b113",
+      "current_sha256_at_record": "22414d9e74e39c012988a638d50f72e43551a447d4ee747cef8a99ee3947b113"
+    },
+    {
+      "path": "human_eye_plugin/active_observation_host.py",
+      "reviewed_sha256": "d92eeca956074e2dfd6e8e9d86609c77677948a5297ec112c30dc8f3a8ced305",
+      "current_sha256_at_record": "d92eeca956074e2dfd6e8e9d86609c77677948a5297ec112c30dc8f3a8ced305"
+    },
+    {
+      "path": "human_eye_plugin/live_spatial_mcp.py",
+      "reviewed_sha256": "54874f092b57ffc496ff16eb58ba50fb355e1b643aab67311bffd42910d5e08d",
+      "current_sha256_at_record": "54874f092b57ffc496ff16eb58ba50fb355e1b643aab67311bffd42910d5e08d"
+    }
+  ],
+  "reviewed_sources_still_match": true,
+  "checks": [
+    {
+      "area": "raw_patch_object_consistency",
+      "conclusion": "Global int32 source triangle IDs follow ordered face offsets. The unchanged raster writes the raw face ID with the same depth-winner mask. Patch IDs are derived with an explicit foreground mask. Validation checks raw range, background equivalence, object-offset membership and exact raw-to-patch consistency, preserving unsupported winners as raw>=0 and patch=-1."
+    },
+    {
+      "area": "actual_NPZ_readback",
+      "conclusion": "The saved dual-owner NPZ has the original nine arrays, triangle_ids and three owner metadata scalars. observe_frame reads and validates the actual stored raw array and owner metadata, verifies supplied buffers against stored values, and returns the validated five buffers only when include_buffers=True."
+    },
+    {
+      "area": "legacy_capability",
+      "conclusion": "Historical saved frames without raw IDs retain their existing supported patch contract. Feedback declares triangle_ids=False and does not infer raw IDs from patch owners. Safe historical three-buffer whole-object derivation remains limited to the original domain."
+    },
+    {
+      "area": "reference_identity",
+      "conclusion": "New core frame references bind source/camera identity, owner schema, owner mapping, view, sequence and PNG hash. Host references additionally bind host source identity and the immutable core frame identity. Same RGB alone cannot equate distinct owner versions or new frame identities."
+    },
+    {
+      "area": "cache_and_failure",
+      "conclusion": "The product frame cache is populated after raster validation, file publication, hashes and frame metadata are complete. A failed publication leaves no cached half-frame. The monotonic sequence advances, allowing a subsequent construction to avoid partial-file name reuse. Existing source/mapping rebind clears incompatible frames. Actual charged-attempt behavior remains for integration verification."
+    },
+    {
+      "area": "default_JSON_compatibility",
+      "conclusion": "The normal brief-v4 facts and table contract are unchanged. Added owner/frame metadata is permitted in full frame diagnostics, and the brief projection continues selecting its existing fields. observe_frame defaults to a JSON-serializable result, with actual NumPy buffers exposed only through the explicit include_buffers=True option."
+    }
+  ],
+  "execution_counts": {
+    "candidate_imports": 0,
+    "product_API_calls": 0,
+    "renderer_calls": 0,
+    "Blender_calls": 0,
+    "model_calls": 0,
+    "test_runs": 0,
+    "AST_checks": 3
+  },
+  "limits": [
+    "This is a source-bound static review. Runtime behavior, compatibility and performance remain subject to the separately owned frozen focused/integration/paired runs.",
+    "The versioned consumer remains registered for six 512-by-512 views. Product dynamic-size support is a separate existing contract.",
+    "The root will replace only the consumer candidate-source pin after freezing the product source digest. This review does not authorize default deployment."
+  ]
+}

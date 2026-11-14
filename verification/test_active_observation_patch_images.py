@@ -36,6 +36,8 @@ def winner_buffers(session):
     values['depth'][values['owners'] >= 0] = 1
     values['patch_owners'] = np.full((64, 64), -1, dtype=np.int32)
     values['patch_owners'][values['owners'] >= 0] = front
+    values['triangle_ids'] = np.full((64, 64), -1, dtype=np.int32)
+    values['triangle_ids'][values['owners'] >= 0] = session.regions[front].triangle_indices[0]
     return values
 
 
@@ -47,14 +49,14 @@ class ActiveObservationPatchImageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             images = ActiveObservationImages(session, folder)
             with patch('human_eye_plugin.active_observation_images.rasterize_attention',
-                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'patch_owners'))) as raster:
+                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'triangle_ids'))) as raster:
                 frame = images.render_view('SCENE')
                 feedback = images.observe_frame(frame)
                 self.assertIs(images.render_view('SCENE'), frame)
                 self.assertEqual(raster.call_count, 1)
                 self.assertTrue(raster.call_args.kwargs['return_owner'])
                 self.assertTrue(raster.call_args.kwargs['return_patch_owner'])
-                self.assertEqual(raster.call_args.kwargs['face_patch_ids'][0][-1], -1)
+                self.assertEqual(raster.call_args.kwargs['face_patch_ids'][0].tolist(), list(range(5)))
             by_id = {row['roi_id']: row for row in feedback['pixel_rows']}
             for region in session.regions:
                 expected = 16 if all(point[2] == 1 for point in region.vertices) else 0
@@ -98,7 +100,7 @@ class ActiveObservationPatchImageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             images = ActiveObservationImages(session, folder)
             with patch('human_eye_plugin.active_observation_images.rasterize_attention',
-                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'patch_owners'))):
+                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'triangle_ids'))):
                 frame = images.render_view('SCENE')
             with patch('human_eye_plugin.active_observation_images._aggregate_patch_pixels',
                        wraps=_aggregate_patch_pixels) as aggregate:
@@ -110,11 +112,15 @@ class ActiveObservationPatchImageTests(unittest.TestCase):
     def test_face_order_change_invalidates_saved_mapping_and_cache(self):
         scene = joined_scene()
         session = prepare_scene(scene, camera_pool())
-        buffers = winner_buffers(session)
+
+        def current_winners(*args, **kwargs):
+            buffers = winner_buffers(session)
+            return tuple(buffers[key] for key in ('color', 'depth', 'owners', 'triangle_ids'))
+
         with tempfile.TemporaryDirectory() as folder:
             images = ActiveObservationImages(session, folder)
             with patch('human_eye_plugin.active_observation_images.rasterize_attention',
-                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'patch_owners'))):
+                       side_effect=current_winners):
                 first = images.render_view('SCENE')
                 first_observation = images.observe_frame(first)
                 self.assertFalse(first_observation['update']['reused'])
@@ -157,7 +163,7 @@ class ActiveObservationPatchImageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             images = ActiveObservationImages(session, folder)
             with patch('human_eye_plugin.active_observation_images.rasterize_attention',
-                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'patch_owners'))):
+                       return_value=tuple(buffers[key] for key in ('color', 'depth', 'owners', 'triangle_ids'))):
                 frame = images.render_view('SCENE')
             changed = dict(frame, patch_mapping_identity='0' * 64)
             with self.assertRaisesRegex(ValueError, 'current_patch_mapping_frame_required'):

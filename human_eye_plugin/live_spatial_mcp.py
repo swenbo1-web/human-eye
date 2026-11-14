@@ -1298,6 +1298,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             'host_binding_sha256', 'source_revision', 'stages', 'feedback_stages',
             'patch_mapping_version', 'patch_roi_ids', 'patch_mapping_identity',
             'patch_owner_array_bytes', 'patch_mapping_array_bytes',
+            'mesh_order_identity', 'owner_schema', 'owner_mapping_identity', 'triangle_id_scope',
+            'owner_capabilities', 'frame_identity', 'triangle_owner_array_bytes', 'owner_metadata_array_bytes',
         ) if key in frame} for frame in frames]
         for frame in frames:
             row = {'image_ref': frame.get('image_ref'), 'view_name': frame.get('view_name'),
