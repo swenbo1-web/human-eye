@@ -21,9 +21,12 @@ def main():
     commands = {"train": ("train.py", [], 1900), "calibrate": ("calibrate.py", [], 120),
                 "evaluate": ("evaluate.py", ["--final"], 180),
                 "summarize": ("summarize_results.py", [], 120),
-                "render": ("render_results.py", [], 120), "online": ("run_online.py", [], 180)}
+                "render": ("render_results.py", [str(HERE / "RESULTS.json")], 120),
+                "online": ("run_online.py", [], 180)}
     script, arguments, timeout = commands[phase]
     python = HERE.parent / "m6_shape_train_001/private/venv/Scripts/python.exe"
+    if phase == "render":
+        python = Path(sys.base_prefix) / "python.exe"
     command = [str(python), "-I", "-B", "-X", "utf8", str(HERE / script), *arguments]
     record = run(command, phase, timeout_s=timeout, rss_limit_bytes=2147483648)
     ctypes.windll.kernel32.GetCurrentProcess.restype = ctypes.c_void_p

@@ -1,0 +1,4085 @@
+{
+  "task": "M6-SHAPE-OPT-001",
+  "status": "complete_frozen_online_probe",
+  "plan_sha256": "8d68926a5204db98c699b3054bfce617e2f31f5975859915f2f86b4f9f19b73f",
+  "weights_sha256": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+  "calibration_sha256": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+  "location_calibration_sha256": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+  "model_location_tau": 0.7364127039909363,
+  "driver_measurement_scope": "script bootstrap through final statistics before final report write; CPU excludes child processes",
+  "historical_first_round_paired_cold_extra_p95_s": 2.1931237899989355,
+  "historical_cost_comparison_scope": "first-round record only; same-window current model versus frozen MLS is measured here",
+  "methods": [
+    "model",
+    "mls"
+  ],
+  "samples": [
+    "sample_00",
+    "sample_06",
+    "sample_12"
+  ],
+  "requested_worker_processes": 6,
+  "requested_calls": 24,
+  "warm_calls_per_process": 3,
+  "execution": "sequential workers, alternating first method by case ordinal",
+  "cold_definition": "new Python process; operating-system file caches uncontrolled",
+  "warm_definition": "same source snapshot, topology, and method state; repeated full observed geometry preparation and full candidate save/readback",
+  "native_units": "Stanford native coordinates; physical unit unspecified",
+  "includes_coupling": false,
+  "complete_task_extra_p95_gate": {
+    "status": "unknown",
+    "maximum_model_extra_wall_s": 2.0,
+    "coupling_cost": null,
+    "scope": "complete task requires the pending coupling phase"
+  },
+  "product_complete_task_benefit": "unmeasured",
+  "memory_budget_bytes": 2147483648,
+  "timeout_per_worker_s": 120,
+  "workers": [
+    {
+      "method": "model",
+      "sample": "sample_00",
+      "label": "online_model_sample_00",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_00.json",
+      "process": {
+        "label": "online_model_sample_00",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "model",
+          "--sample",
+          "sample_00",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_00.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_00.stderr.log",
+        "pid": 30800,
+        "returncode": 0,
+        "full_process_cpu_s": 0.015625,
+        "full_process_wall_s": 4.4132988000055775,
+        "peak_working_set_bytes": 4956160,
+        "memory_samples": 77,
+        "final_memory_query": {
+          "cpu_s": 0.015625,
+          "peak_working_set_bytes": 4956160,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 30800,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 4956160,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 4718592
+          },
+          {
+            "pid": 28444,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 8806400,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8372224
+          },
+          {
+            "pid": 27840,
+            "cpu_s": 4.09375,
+            "peak_working_set_bytes": 491679744,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 491679744
+          }
+        ],
+        "tree_cpu_s": 4.109375,
+        "tree_sampled_peak_working_set_bytes": 501551104,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "model",
+        "id": "Stanford_Armadillo_patch_00/sample_00",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5",
+          "torch": "2.15.0+cpu"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.024229699978604913,
+            "cpu_s": 0.015625
+          },
+          "numpy_import": {
+            "wall_s": 0.06152250000741333,
+            "cpu_s": 0.046875
+          },
+          "observation_modules_import": {
+            "wall_s": 0.009283099992899224,
+            "cpu_s": 0.0
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.031348499993328005,
+            "cpu_s": 0.03125
+          },
+          "model_import_and_thread_setup": {
+            "wall_s": 1.9535919000045396,
+            "cpu_s": 1.703125
+          },
+          "weights_load_and_model_construct": {
+            "wall_s": 0.0055376999953296036,
+            "cpu_s": 0.0
+          },
+          "normalization_load": {
+            "wall_s": 0.0010550000006332994,
+            "cpu_s": 0.0
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": true,
+        "tau": 0.7364127039909363,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 3.4469206999929156,
+          "cpu_s": 3.15625
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 4.058838299999479,
+          "cpu_s": 3.765625
+        },
+        "at_end_resources": {
+          "cpu_s": 3.765625,
+          "peak_working_set_bytes": 491679744,
+          "working_set_bytes": 439349248
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012285000120755285,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.00028160001966170967,
+                "cpu_s": 0.0
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.030992600019089878,
+                "cpu_s": 0.03125
+              },
+              "prepare_static_topology": {
+                "wall_s": 1.1177318999834824,
+                "cpu_s": 1.109375
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0007532000017818063,
+                "cpu_s": 0.015625
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.17915999999968335,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00037620001239702106,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00011850000009872019,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.006347499991534278,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0003942999755963683,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0012904000177513808,
+                "cpu_s": 0.015625
+              },
+              "load_full_readback": {
+                "wall_s": 0.005036199989262968,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.0065042999922297895,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00023370000417344272,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.3506997000076808,
+              "cpu_s": 1.34375
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.15625,
+              "peak_working_set_bytes": 491679744,
+              "working_set_bytes": 437956608
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0016305999888572842,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006645999965257943,
+                "cpu_s": 0.015625
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.17760970001108944,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00012209999840706587,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.0001370999962091446,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.005916499998420477,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0004758999857585877,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0024899999843910336,
+                "cpu_s": 0.015625
+              },
+              "load_full_readback": {
+                "wall_s": 0.00525519999791868,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006225999997695908,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00016719999257475138,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.20076910001807846,
+              "cpu_s": 0.203125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.359375,
+              "peak_working_set_bytes": 491679744,
+              "working_set_bytes": 439304192
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012725999986287206,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.000614099990343675,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.18177590001141652,
+                "cpu_s": 0.1875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00010270002530887723,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 9.320001117885113e-05,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.006397899996954948,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005576999974437058,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0013286999892443419,
+                "cpu_s": 0.015625
+              },
+              "load_full_readback": {
+                "wall_s": 0.005069500009994954,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006596199993509799,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00023820000933483243,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.20414650000748225,
+              "cpu_s": 0.203125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.5625,
+              "peak_working_set_bytes": 491679744,
+              "working_set_bytes": 439316480
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.001879399991594255,
+                "cpu_s": 0.015625
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006525999924633652,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.18071880002389662,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.2999980552122e-05,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00010060000931844115,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.005260199977783486,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0006084000051487237,
+                "cpu_s": 0.015625
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0013608000008389354,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004674799973145127,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.00617380000767298,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0001564999984111637,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.20177340001100674,
+              "cpu_s": 0.203125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_00\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.765625,
+              "peak_working_set_bytes": 491679744,
+              "working_set_bytes": 439336960
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "mls",
+      "sample": "sample_00",
+      "label": "online_mls_sample_00",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_00.json",
+      "process": {
+        "label": "online_mls_sample_00",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "mls",
+          "--sample",
+          "sample_00",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_00.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_00.stderr.log",
+        "pid": 13660,
+        "returncode": 0,
+        "full_process_cpu_s": 0.015625,
+        "full_process_wall_s": 2.4025544000032824,
+        "peak_working_set_bytes": 4956160,
+        "memory_samples": 42,
+        "final_memory_query": {
+          "cpu_s": 0.015625,
+          "peak_working_set_bytes": 4956160,
+          "working_set_bytes": 28672
+        },
+        "process_tree": [
+          {
+            "pid": 13660,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 4956160,
+            "working_set_bytes": 28672,
+            "observed_lifetime_peak_bytes": 4956160
+          },
+          {
+            "pid": 14904,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 8814592,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8814592
+          },
+          {
+            "pid": 25804,
+            "cpu_s": 2.234375,
+            "peak_working_set_bytes": 236208128,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 236208128
+          }
+        ],
+        "tree_cpu_s": 2.25,
+        "tree_sampled_peak_working_set_bytes": 246980608,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "mls",
+        "id": "Stanford_Armadillo_patch_00/sample_00",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.024497999984305352,
+            "cpu_s": 0.015625
+          },
+          "numpy_import": {
+            "wall_s": 0.06061069999122992,
+            "cpu_s": 0.03125
+          },
+          "observation_modules_import": {
+            "wall_s": 0.009158000000752509,
+            "cpu_s": 0.0
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.032283400010783225,
+            "cpu_s": 0.03125
+          },
+          "MLS_module_import": {
+            "wall_s": 0.0023683999897912145,
+            "cpu_s": 0.015625
+          },
+          "frozen_tau_load": {
+            "wall_s": 0.0003310999891255051,
+            "cpu_s": 0.0
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": false,
+        "tau": 0.9266132396947365,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 1.406514000002062,
+          "cpu_s": 1.34375
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 2.289195599994855,
+          "cpu_s": 2.1875
+        },
+        "at_end_resources": {
+          "cpu_s": 2.203125,
+          "peak_working_set_bytes": 236208128,
+          "working_set_bytes": 114954240
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.004173499997705221,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.000284800014924258,
+                "cpu_s": 0.0
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.029656599974259734,
+                "cpu_s": 0.03125
+              },
+              "prepare_static_topology": {
+                "wall_s": 0.9281539999938104,
+                "cpu_s": 0.90625
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0005533999938052148,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.16786799998953938,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.159999899566174e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.12250450000283308,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 9.139999747276306e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0004338999860920012,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0014916999789420515,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005258700024569407,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006420699995942414,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00024269998539239168,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.2673861999937799,
+              "cpu_s": 1.234375
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.359375,
+              "peak_working_set_bytes": 236208128,
+              "working_set_bytes": 125837312
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012764000275637954,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004873000143561512,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.16938710000249557,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.819999104365706e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10719189999508671,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 0.00011979998089373112,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005077999958302826,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.00143420000676997,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.0058330000028945506,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006166000006487593,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00023830001009628177,
+                "cpu_s": 0.015625
+              }
+            },
+            "full_call": {
+              "wall_s": 0.29279849998420104,
+              "cpu_s": 0.296875
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.65625,
+              "peak_working_set_bytes": 236208128,
+              "working_set_bytes": 115748864
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012371999910101295,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004811999970115721,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.17291600001044571,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 8.279999019578099e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10524969999096356,
+                "cpu_s": 0.09375
+              },
+              "MLS_gate": {
+                "wall_s": 7.2900002123788e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005304999940562993,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.003288699983386323,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004636199999367818,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006161900004372001,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.000222100003156811,
+                "cpu_s": 0.015625
+              }
+            },
+            "full_call": {
+              "wall_s": 0.29495380001026206,
+              "cpu_s": 0.28125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.9375,
+              "peak_working_set_bytes": 236208128,
+              "working_set_bytes": 116051968
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48222817981560673,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012973000120837241,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004828999808523804,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.16299419998540543,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.040001896210015e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10569850000320002,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 8.530000923201442e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.000524500006577,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0026384999800939113,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.00565669999923557,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.0061858000117354095,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0001762000028975308,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2859191999887116,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_00\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "fb254070eac74f7859592e7f49a0ba66ac99e421bef9adcb982020424d5dc2b9"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 2.203125,
+              "peak_working_set_bytes": 236208128,
+              "working_set_bytes": 114515968
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "mls",
+      "sample": "sample_06",
+      "label": "online_mls_sample_06",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_06.json",
+      "process": {
+        "label": "online_mls_sample_06",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "mls",
+          "--sample",
+          "sample_06",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_06.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_06.stderr.log",
+        "pid": 29128,
+        "returncode": 0,
+        "full_process_cpu_s": 0.0,
+        "full_process_wall_s": 2.3493250000174157,
+        "peak_working_set_bytes": 4960256,
+        "memory_samples": 41,
+        "final_memory_query": {
+          "cpu_s": 0.0,
+          "peak_working_set_bytes": 4960256,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 29128,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 4960256,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 4722688
+          },
+          {
+            "pid": 27120,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8814592,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8380416
+          },
+          {
+            "pid": 31472,
+            "cpu_s": 2.21875,
+            "peak_working_set_bytes": 236474368,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 236474368
+          }
+        ],
+        "tree_cpu_s": 2.234375,
+        "tree_sampled_peak_working_set_bytes": 244744192,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "mls",
+        "id": "Stanford_Armadillo_patch_00/sample_06",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.025722700025653467,
+            "cpu_s": 0.03125
+          },
+          "numpy_import": {
+            "wall_s": 0.060296199982985854,
+            "cpu_s": 0.046875
+          },
+          "observation_modules_import": {
+            "wall_s": 0.0097578999993857,
+            "cpu_s": 0.015625
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.031666900002164766,
+            "cpu_s": 0.03125
+          },
+          "MLS_module_import": {
+            "wall_s": 0.0023649999930057675,
+            "cpu_s": 0.0
+          },
+          "frozen_tau_load": {
+            "wall_s": 0.0003169999981764704,
+            "cpu_s": 0.0
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": false,
+        "tau": 0.9266132396947365,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 1.4059896000253502,
+          "cpu_s": 1.375
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 2.2545355000183918,
+          "cpu_s": 2.171875
+        },
+        "at_end_resources": {
+          "cpu_s": 2.1875,
+          "peak_working_set_bytes": 236474368,
+          "working_set_bytes": 115036160
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.005406200012657791,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.00033859998802654445,
+                "cpu_s": 0.0
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.031588499987265095,
+                "cpu_s": 0.03125
+              },
+              "prepare_static_topology": {
+                "wall_s": 0.9437727000040468,
+                "cpu_s": 0.953125
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0005996999971102923,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.16295300002093427,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.320001117885113e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10680410001077689,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 9.310001041740179e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0004383999912533909,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0024853999784681946,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004894499987130985,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006364900007611141,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00017479999223724008,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.2662398999964353,
+              "cpu_s": 1.25
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.390625,
+              "peak_working_set_bytes": 236474368,
+              "working_set_bytes": 126185472
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012946999922860414,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006226999976206571,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.1597980000078678,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.0001320999872405082,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10412269999505952,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 0.00012519999290816486,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.000533499987795949,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.003013099980307743,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005214400007389486,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006276800006162375,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0002389000146649778,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2814418999769259,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.65625,
+              "peak_working_set_bytes": 236474368,
+              "working_set_bytes": 116043776
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012607999960891902,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004757000133395195,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.15910799999255687,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.139999747276306e-05,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10415520000969991,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 8.430000161752105e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005525000160560012,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0013980999938212335,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005396099993959069,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006558299995958805,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00017099999240599573,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2793285000079777,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.921875,
+              "peak_working_set_bytes": 236474368,
+              "working_set_bytes": 116428800
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012798999960068613,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.00058970000827685,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.1594141999958083,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00017939999816007912,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10410070000216365,
+                "cpu_s": 0.09375
+              },
+              "MLS_gate": {
+                "wall_s": 8.19999841041863e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005093000072520226,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.001424099988071248,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005050299980212003,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006347799993818626,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.000149200001033023,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.27921380000771023,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_06\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 2.1875,
+              "peak_working_set_bytes": 236474368,
+              "working_set_bytes": 114954240
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "model",
+      "sample": "sample_06",
+      "label": "online_model_sample_06",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_06.json",
+      "process": {
+        "label": "online_model_sample_06",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "model",
+          "--sample",
+          "sample_06",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_06.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_06.stderr.log",
+        "pid": 28048,
+        "returncode": 0,
+        "full_process_cpu_s": 0.0,
+        "full_process_wall_s": 4.709850600018399,
+        "peak_working_set_bytes": 4960256,
+        "memory_samples": 81,
+        "final_memory_query": {
+          "cpu_s": 0.0,
+          "peak_working_set_bytes": 4960256,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 28048,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 4960256,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 4722688
+          },
+          {
+            "pid": 23116,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8810496,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8376320
+          },
+          {
+            "pid": 9940,
+            "cpu_s": 4.171875,
+            "peak_working_set_bytes": 491184128,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 491184128
+          }
+        ],
+        "tree_cpu_s": 4.1875,
+        "tree_sampled_peak_working_set_bytes": 498978816,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "model",
+        "id": "Stanford_Armadillo_patch_00/sample_06",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5",
+          "torch": "2.15.0+cpu"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.02443490002769977,
+            "cpu_s": 0.015625
+          },
+          "numpy_import": {
+            "wall_s": 0.06213529998785816,
+            "cpu_s": 0.015625
+          },
+          "observation_modules_import": {
+            "wall_s": 0.008843399991746992,
+            "cpu_s": 0.015625
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.03558249998604879,
+            "cpu_s": 0.03125
+          },
+          "model_import_and_thread_setup": {
+            "wall_s": 1.9860085000109393,
+            "cpu_s": 1.5625
+          },
+          "weights_load_and_model_construct": {
+            "wall_s": 0.005855399998836219,
+            "cpu_s": 0.0
+          },
+          "normalization_load": {
+            "wall_s": 0.001105600007576868,
+            "cpu_s": 0.0
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": true,
+        "tau": 0.7364127039909363,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 3.6383859000052325,
+          "cpu_s": 3.15625
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 4.31287710001925,
+          "cpu_s": 3.796875
+        },
+        "at_end_resources": {
+          "cpu_s": 3.8125,
+          "peak_working_set_bytes": 491184128,
+          "working_set_bytes": 438820864
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012003000010736287,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.00047240001731552184,
+                "cpu_s": 0.015625
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.024014700000407174,
+                "cpu_s": 0.015625
+              },
+              "prepare_static_topology": {
+                "wall_s": 1.195574499986833,
+                "cpu_s": 1.1875
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0005290999833960086,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.25598570000147447,
+                "cpu_s": 0.25
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.0001638999965507537,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00017579999985173345,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.009172299993224442,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0004972999740857631,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0015759000089019537,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005842699989443645,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.009283199993660673,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00030449999030679464,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.5049886000051629,
+              "cpu_s": 1.5
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.171875,
+              "peak_working_set_bytes": 491184128,
+              "working_set_bytes": 437444608
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0017405999824404716,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0008008999866433442,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.20708039999590255,
+                "cpu_s": 0.1875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.600000339560211e-05,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00011930000619031489,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.005599900003289804,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005857999785803258,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.002045800007181242,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005989800003590062,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.007851600006688386,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00019770002108998597,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2322037999983877,
+              "cpu_s": 0.21875
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.390625,
+              "peak_working_set_bytes": 491184128,
+              "working_set_bytes": 438784000
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0014678000006824732,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006751000182703137,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.1944530000037048,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.76000155787915e-05,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00011290001566521823,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.005813200026750565,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005715999868698418,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.004608400020515546,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.006239300011657178,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.00808209998649545,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0002992000081576407,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.22251809999579564,
+              "cpu_s": 0.203125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.59375,
+              "peak_working_set_bytes": 491184128,
+              "working_set_bytes": 438800384
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.48435392764650165,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.00189049998880364,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0007224000000860542,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.1865387000143528,
+                "cpu_s": 0.1875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00012959999730810523,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00013080000644549727,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.008015300001716241,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0006222000229172409,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.003569499996956438,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.0054416999919340014,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006919799983734265,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0002598999999463558,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.21438630000920966,
+              "cpu_s": 0.21875
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_06\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "1fc8f994f1923cb2e6c9c33ccfef50a1cfca3c913b0ba47a7fd77c107b939048"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.8125,
+              "peak_working_set_bytes": 491184128,
+              "working_set_bytes": 438820864
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "model",
+      "sample": "sample_12",
+      "label": "online_model_sample_12",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_12.json",
+      "process": {
+        "label": "online_model_sample_12",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "model",
+          "--sample",
+          "sample_12",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_12.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_model_sample_12.stderr.log",
+        "pid": 15288,
+        "returncode": 0,
+        "full_process_cpu_s": 0.0,
+        "full_process_wall_s": 4.667612099990947,
+        "peak_working_set_bytes": 5046272,
+        "memory_samples": 80,
+        "final_memory_query": {
+          "cpu_s": 0.0,
+          "peak_working_set_bytes": 5046272,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 15288,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 5046272,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 4808704
+          },
+          {
+            "pid": 24984,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8810496,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8376320
+          },
+          {
+            "pid": 24508,
+            "cpu_s": 4.21875,
+            "peak_working_set_bytes": 491474944,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 491474944
+          }
+        ],
+        "tree_cpu_s": 4.234375,
+        "tree_sampled_peak_working_set_bytes": 504655872,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "model",
+        "id": "Stanford_Armadillo_patch_00/sample_12",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5",
+          "torch": "2.15.0+cpu"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.022253100003581494,
+            "cpu_s": 0.015625
+          },
+          "numpy_import": {
+            "wall_s": 0.05580940001527779,
+            "cpu_s": 0.03125
+          },
+          "observation_modules_import": {
+            "wall_s": 0.009247699985280633,
+            "cpu_s": 0.0
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.03153599999495782,
+            "cpu_s": 0.03125
+          },
+          "model_import_and_thread_setup": {
+            "wall_s": 1.9026419000001624,
+            "cpu_s": 1.53125
+          },
+          "weights_load_and_model_construct": {
+            "wall_s": 0.005585500010056421,
+            "cpu_s": 0.0
+          },
+          "normalization_load": {
+            "wall_s": 0.0010249000042676926,
+            "cpu_s": 0.015625
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": true,
+        "tau": 0.7364127039909363,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 3.450313000008464,
+          "cpu_s": 3.046875
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 4.156694300007075,
+          "cpu_s": 3.734375
+        },
+        "at_end_resources": {
+          "cpu_s": 3.75,
+          "peak_working_set_bytes": 491474944,
+          "working_set_bytes": 439148544
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012061999877914786,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.0002954999799840152,
+                "cpu_s": 0.0
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.025164299993775785,
+                "cpu_s": 0.015625
+              },
+              "prepare_static_topology": {
+                "wall_s": 1.1860204999975394,
+                "cpu_s": 1.1875
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004852999991271645,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.17724289998295717,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 9.40999889280647e-05,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.0001063000236172229,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.006061500025680289,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.00040550000267103314,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.001277300005313009,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005068300000857562,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.009133300016401336,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.000287600007141009,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.4131241999857593,
+              "cpu_s": 1.40625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.0625,
+              "peak_working_set_bytes": 491474944,
+              "working_set_bytes": 437764096
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0015013999945949763,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006050000083632767,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.21284630001173355,
+                "cpu_s": 0.21875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.0001446999958716333,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00013690002379007638,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.00822129999869503,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0006781999836675823,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0015888000198174268,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.00484189999406226,
+                "cpu_s": 0.015625
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.009059400006663054,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00025290000485256314,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.24000670001260005,
+              "cpu_s": 0.234375
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.296875,
+              "peak_working_set_bytes": 491474944,
+              "working_set_bytes": 439111680
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.00204459999804385,
+                "cpu_s": 0.015625
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0007013999857008457,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.2120332999911625,
+                "cpu_s": 0.203125
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00011900000390596688,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00010539998766034842,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.0053183999843895435,
+                "cpu_s": 0.015625
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0004902999789919704,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0012157000019215047,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004752300010295585,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.0067878999980166554,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00023159998818300664,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.23388219997286797,
+              "cpu_s": 0.234375
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.53125,
+              "peak_working_set_bytes": 491474944,
+              "working_set_bytes": 439123968
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0021280000219121575,
+                "cpu_s": 0.015625
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0006770000036340207,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.20414980000350624,
+                "cpu_s": 0.203125
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00010080001084133983,
+                "cpu_s": 0.0
+              },
+              "standardize_and_tensorize": {
+                "wall_s": 0.00010549998842179775,
+                "cpu_s": 0.0
+              },
+              "forward_and_output_conversion": {
+                "wall_s": 0.00571009999839589,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005960999988019466,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.0014476999931503087,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.005063400021754205,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.0065740999998524785,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0001689000055193901,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.22681409999495372,
+              "cpu_s": 0.21875
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_model_sample_12\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 3.75,
+              "peak_working_set_bytes": 491474944,
+              "working_set_bytes": 439144448
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "mls",
+      "sample": "sample_12",
+      "label": "online_mls_sample_12",
+      "weights_sha256_before_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "weights_sha256_after_worker": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+      "resumed_existing_process_record": false,
+      "private_worker_report": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\WORKER.json",
+      "private_process_ledger": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_12.json",
+      "process": {
+        "label": "online_mls_sample_12",
+        "command": [
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+          "-I",
+          "-B",
+          "-X",
+          "utf8",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\online_worker.py",
+          "--method",
+          "mls",
+          "--sample",
+          "sample_12",
+          "--weights-sha256",
+          "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+          "--output",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\WORKER.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_12.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\online_mls_sample_12.stderr.log",
+        "pid": 29024,
+        "returncode": 0,
+        "full_process_cpu_s": 0.0,
+        "full_process_wall_s": 2.3630411000049207,
+        "peak_working_set_bytes": 4956160,
+        "memory_samples": 40,
+        "final_memory_query": {
+          "cpu_s": 0.0,
+          "peak_working_set_bytes": 4956160,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 29024,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 4956160,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 4956160
+          },
+          {
+            "pid": 10124,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 8806400,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8806400
+          },
+          {
+            "pid": 28088,
+            "cpu_s": 2.15625,
+            "peak_working_set_bytes": 235941888,
+            "working_set_bytes": 28672,
+            "observed_lifetime_peak_bytes": 235941888
+          }
+        ],
+        "tree_cpu_s": 2.15625,
+        "tree_sampled_peak_working_set_bytes": 244088832,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      },
+      "worker": {
+        "status": "complete",
+        "method": "mls",
+        "id": "Stanford_Armadillo_patch_00/sample_12",
+        "units": "native Stanford coordinates, physical unit unspecified",
+        "versions": {
+          "numpy": "2.3.5"
+        },
+        "startup": {
+          "standard_library_bootstrap": {
+            "wall_s": 0.025331900018500164,
+            "cpu_s": 0.0
+          },
+          "numpy_import": {
+            "wall_s": 0.06636889997753315,
+            "cpu_s": 0.03125
+          },
+          "observation_modules_import": {
+            "wall_s": 0.00936820000060834,
+            "cpu_s": 0.015625
+          },
+          "frozen_artifact_verification": {
+            "wall_s": 0.035036199988098815,
+            "cpu_s": 0.03125
+          },
+          "MLS_module_import": {
+            "wall_s": 0.002682099991943687,
+            "cpu_s": 0.0
+          },
+          "frozen_tau_load": {
+            "wall_s": 0.00035280000884085894,
+            "cpu_s": 0.0
+          }
+        },
+        "denominators": {
+          "full_source_vertices": 172974,
+          "full_source_triangles": 345944,
+          "context_vertices": 563,
+          "allowed_vertices": 384,
+          "free_vertices": 305,
+          "boundary_vertices": 79
+        },
+        "weights_sha256_before": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_sha256_after": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+        "weights_unchanged": true,
+        "torch_loaded": false,
+        "tau": 0.9266132396947365,
+        "model_location_tau": 0.7364127039909363,
+        "gate_semantics": "p > tau for hard output; fixed and halo correction zero",
+        "cold_start_to_first_complete": {
+          "wall_s": 1.3911818000196945,
+          "cpu_s": 1.3125
+        },
+        "location_calibration_sha256_before": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "location_calibration_sha256_after": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+        "MLS_calibration_sha256_before": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "MLS_calibration_sha256_after": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+        "normalization_sha256_before": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "normalization_sha256_after": "222bf6dbf0e98a5c28905ac1921e47681debf87dd75310750562723f5f38577b",
+        "calibrations_and_normalization_unchanged": true,
+        "worker_code_sha256": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+        "worker_before_final_report": {
+          "wall_s": 2.2456617999996524,
+          "cpu_s": 2.125
+        },
+        "at_end_resources": {
+          "cpu_s": 2.125,
+          "peak_working_set_bytes": 235941888,
+          "working_set_bytes": 115183616
+        },
+        "rounds": [
+          {
+            "ordinal": 0,
+            "mode": "cold",
+            "static_source_and_graph_reused": false,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.004857399995671585,
+                "cpu_s": 0.0
+              },
+              "mapping_load": {
+                "wall_s": 0.0004020000051241368,
+                "cpu_s": 0.015625
+              },
+              "source_snapshot_load": {
+                "wall_s": 0.031345399998826906,
+                "cpu_s": 0.03125
+              },
+              "prepare_static_topology": {
+                "wall_s": 0.9197801999980584,
+                "cpu_s": 0.890625
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0004822000046260655,
+                "cpu_s": 0.015625
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.16098640000564046,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00014830002328380942,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10811649999232031,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 9.059999138116837e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.00043310000910423696,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.002722500008530915,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.0057564000017009676,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006322600005660206,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0002550999925006181,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 1.2418448999815155,
+              "cpu_s": 1.234375
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\round_00_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.3125,
+              "peak_working_set_bytes": 235941888,
+              "working_set_bytes": 125784064
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 1,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.001292100001592189,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.000478199974168092,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.15975380002055317,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00017510002362541854,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.10629709999193437,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 8.599998545832932e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005256999866105616,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.002892399992560968,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004888299998128787,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.0063322999922093,
+                "cpu_s": 0.015625
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00021169998217374086,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2829992000188213,
+              "cpu_s": 0.28125
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\round_01_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.59375,
+              "peak_working_set_bytes": 235941888,
+              "working_set_bytes": 116133888
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 2,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0017735000001266599,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0005780999781563878,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.15979050000896677,
+                "cpu_s": 0.15625
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.00027990000671707094,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.1049959999800194,
+                "cpu_s": 0.109375
+              },
+              "MLS_gate": {
+                "wall_s": 7.639999967068434e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.0005078999965917319,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.002595500001916662,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.0053990000160411,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006264399999054149,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.00015010000788606703,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.2824962999729905,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\round_02_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 1.859375,
+              "peak_working_set_bytes": 235941888,
+              "working_set_bytes": 116154368
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          },
+          {
+            "ordinal": 3,
+            "mode": "warm",
+            "static_source_and_graph_reused": true,
+            "input_alignment": {
+              "whitelist": {
+                "node_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "edge_features": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "positions": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                },
+                "normals": {
+                  "maximum_absolute_difference": 0.0,
+                  "exactly_equal": true
+                }
+              },
+              "origin_maximum_absolute_difference": 0.0,
+              "scale_absolute_difference": 0.0,
+              "all_whitelist_values_exact": true
+            },
+            "scale_native": 0.4828249679190194,
+            "timings": {
+              "load_observation_and_saved_whitelist": {
+                "wall_s": 0.0012675999896600842,
+                "cpu_s": 0.0
+              },
+              "full_observation_assembly": {
+                "wall_s": 0.0005538999976124614,
+                "cpu_s": 0.0
+              },
+              "full_dynamic_normals_and_features": {
+                "wall_s": 0.15954329998930916,
+                "cpu_s": 0.171875
+              },
+              "input_alignment_and_gather": {
+                "wall_s": 0.0001517999917268753,
+                "cpu_s": 0.0
+              },
+              "MLS_fit": {
+                "wall_s": 0.105125300004147,
+                "cpu_s": 0.09375
+              },
+              "MLS_gate": {
+                "wall_s": 7.919999188743532e-05,
+                "cpu_s": 0.0
+              },
+              "candidate_restore_full_binary64": {
+                "wall_s": 0.00050970001029782,
+                "cpu_s": 0.0
+              },
+              "save_full_candidate": {
+                "wall_s": 0.001439499988919124,
+                "cpu_s": 0.0
+              },
+              "load_full_readback": {
+                "wall_s": 0.004860199987888336,
+                "cpu_s": 0.0
+              },
+              "readback_verify_and_hash": {
+                "wall_s": 0.006084199994802475,
+                "cpu_s": 0.0
+              },
+              "observed_change_summary": {
+                "wall_s": 0.0002179000002797693,
+                "cpu_s": 0.0
+              }
+            },
+            "full_call": {
+              "wall_s": 0.27991660000407137,
+              "cpu_s": 0.265625
+            },
+            "artifact": {
+              "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\online\\online_mls_sample_12\\round_03_full.npy",
+              "file_bytes": 4151504,
+              "array_bytes": 4151376,
+              "sha256": "f1469994476645aab1c295707b67f5683e975f027af85de928dd6ceba0eb3dc0"
+            },
+            "preservation": {
+              "full_readback_bitwise_equal": true,
+              "boundary_bitwise_preserved": true,
+              "all_outside_free_bitwise_preserved": true,
+              "outside_free_vertices": 172669
+            },
+            "observed_changes": {
+              "changed_free_vertices": 0,
+              "free_change_max_native": 0.0,
+              "free_change_p95_native": 0.0,
+              "free_change_max_over_scale": 0.0
+            },
+            "at_end_resources": {
+              "cpu_s": 2.125,
+              "peak_working_set_bytes": 235941888,
+              "working_set_bytes": 115175424
+            },
+            "MLS_counts": {
+              "total": 563,
+              "free": 305,
+              "fixed": 258,
+              "applicable": 305,
+              "invalid_normal": 0,
+              "too_few_points": 0,
+              "rank_deficient": 0,
+              "irls_rank_deficient": 0,
+              "invalid_numeric": 0
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "method_statistics": {
+    "model": {
+      "fresh_process_cold_start_to_first_complete_wall_s": {
+        "count": 3,
+        "minimum": 3.4469206999929156,
+        "median": 3.450313000008464,
+        "p95": 3.6195786100055556,
+        "maximum": 3.6383859000052325
+      },
+      "warm_complete_call_wall_s": {
+        "count": 9,
+        "minimum": 0.20076910001807846,
+        "median": 0.22251809999579564,
+        "p95": 0.2375568999967072,
+        "maximum": 0.24000670001260005
+      },
+      "outer_process_wall_s": {
+        "count": 3,
+        "minimum": 4.4132988000055775,
+        "median": 4.667612099990947,
+        "p95": 4.705626750015654,
+        "maximum": 4.709850600018399
+      },
+      "outer_tree_cpu_s": {
+        "count": 3,
+        "minimum": 4.109375,
+        "median": 4.1875,
+        "p95": 4.2296875,
+        "maximum": 4.234375
+      },
+      "outer_tree_sampled_peak_working_set_bytes": {
+        "count": 3,
+        "minimum": 498978816.0,
+        "median": 501551104.0,
+        "p95": 504345395.2,
+        "maximum": 504655872.0
+      },
+      "worker_lifetime_peak_working_set_bytes": {
+        "count": 3,
+        "minimum": 491184128.0,
+        "median": 491474944.0,
+        "p95": 491659264.0,
+        "maximum": 491679744.0
+      },
+      "warm_complete_call_cpu_s": {
+        "count": 9,
+        "minimum": 0.203125,
+        "median": 0.21875,
+        "p95": 0.234375,
+        "maximum": 0.234375
+      },
+      "warm_stages": {
+        "candidate_restore_full_binary64": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0004758999857585877,
+            "median": 0.0005857999785803258,
+            "p95": 0.0006557999993674457,
+            "maximum": 0.0006781999836675823
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.009374999999999994,
+            "maximum": 0.015625
+          }
+        },
+        "forward_and_output_conversion": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.005260199977783486,
+            "median": 0.005813200026750565,
+            "p95": 0.008138899999903516,
+            "maximum": 0.00822129999869503
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.015625,
+            "maximum": 0.015625
+          }
+        },
+        "full_dynamic_normals_and_features": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.17760970001108944,
+            "median": 0.1944530000037048,
+            "p95": 0.21252110000350513,
+            "maximum": 0.21284630001173355
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.171875,
+            "median": 0.1875,
+            "p95": 0.2125,
+            "maximum": 0.21875
+          }
+        },
+        "full_observation_assembly": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0006050000083632767,
+            "median": 0.0006751000182703137,
+            "p95": 0.0007694999920204281,
+            "maximum": 0.0008008999866433442
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.009374999999999994,
+            "maximum": 0.015625
+          }
+        },
+        "input_alignment_and_gather": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 9.2999980552122e-05,
+            "median": 0.00010270002530887723,
+            "p95": 0.00013865999644622207,
+            "maximum": 0.0001446999958716333
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "load_full_readback": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.004674799973145127,
+            "median": 0.005069500009994954,
+            "p95": 0.006139500008430332,
+            "maximum": 0.006239300011657178
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.009374999999999994,
+            "maximum": 0.015625
+          }
+        },
+        "load_observation_and_saved_whitelist": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0012725999986287206,
+            "median": 0.0017405999824404716,
+            "p95": 0.0020946400123648345,
+            "maximum": 0.0021280000219121575
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.015625,
+            "maximum": 0.015625
+          }
+        },
+        "observed_change_summary": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0001564999984111637,
+            "median": 0.00023159998818300664,
+            "p95": 0.0002834800048731267,
+            "maximum": 0.0002992000081576407
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "readback_verify_and_hash": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.00617380000767298,
+            "median": 0.0067878999980166554,
+            "p95": 0.008668479998596013,
+            "maximum": 0.009059400006663054
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.015625,
+            "maximum": 0.015625
+          }
+        },
+        "save_full_candidate": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0012157000019215047,
+            "median": 0.0015888000198174268,
+            "p95": 0.004192840011091902,
+            "maximum": 0.004608400020515546
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.015625,
+            "maximum": 0.015625
+          }
+        },
+        "standardize_and_tensorize": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 9.320001117885113e-05,
+            "median": 0.00011290001566521823,
+            "p95": 0.0001370200072415173,
+            "maximum": 0.0001370999962091446
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        }
+      }
+    },
+    "mls": {
+      "fresh_process_cold_start_to_first_complete_wall_s": {
+        "count": 3,
+        "minimum": 1.3911818000196945,
+        "median": 1.4059896000253502,
+        "p95": 1.4064615600043908,
+        "maximum": 1.406514000002062
+      },
+      "warm_complete_call_wall_s": {
+        "count": 9,
+        "minimum": 0.27921380000771023,
+        "median": 0.2824962999729905,
+        "p95": 0.29409167999983765,
+        "maximum": 0.29495380001026206
+      },
+      "outer_process_wall_s": {
+        "count": 3,
+        "minimum": 2.3493250000174157,
+        "median": 2.3630411000049207,
+        "p95": 2.398603070003446,
+        "maximum": 2.4025544000032824
+      },
+      "outer_tree_cpu_s": {
+        "count": 3,
+        "minimum": 2.15625,
+        "median": 2.234375,
+        "p95": 2.2484375,
+        "maximum": 2.25
+      },
+      "outer_tree_sampled_peak_working_set_bytes": {
+        "count": 3,
+        "minimum": 244088832.0,
+        "median": 244744192.0,
+        "p95": 246756966.4,
+        "maximum": 246980608.0
+      },
+      "worker_lifetime_peak_working_set_bytes": {
+        "count": 3,
+        "minimum": 235941888.0,
+        "median": 236208128.0,
+        "p95": 236447744.0,
+        "maximum": 236474368.0
+      },
+      "warm_complete_call_cpu_s": {
+        "count": 9,
+        "minimum": 0.265625,
+        "median": 0.265625,
+        "p95": 0.290625,
+        "maximum": 0.296875
+      },
+      "warm_stages": {
+        "MLS_fit": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.10410070000216365,
+            "median": 0.105125300004147,
+            "p95": 0.10683397999382578,
+            "maximum": 0.10719189999508671
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.09375,
+            "median": 0.109375,
+            "p95": 0.109375,
+            "maximum": 0.109375
+          }
+        },
+        "MLS_gate": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 7.2900002123788e-05,
+            "median": 8.430000161752105e-05,
+            "p95": 0.00012303998810239136,
+            "maximum": 0.00012519999290816486
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "candidate_restore_full_binary64": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0005077999958302826,
+            "median": 0.000524500006577,
+            "p95": 0.0005449000047519803,
+            "maximum": 0.0005525000160560012
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "full_dynamic_normals_and_features": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.15910799999255687,
+            "median": 0.15979050000896677,
+            "p95": 0.17150444000726567,
+            "maximum": 0.17291600001044571
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.15625,
+            "median": 0.15625,
+            "p95": 0.171875,
+            "maximum": 0.171875
+          }
+        },
+        "full_observation_assembly": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0004757000133395195,
+            "median": 0.0004873000143561512,
+            "p95": 0.0006095000018831342,
+            "maximum": 0.0006226999976206571
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "input_alignment_and_gather": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 8.279999019578099e-05,
+            "median": 0.0001320999872405082,
+            "p95": 0.00023970000329427417,
+            "maximum": 0.00027990000671707094
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "load_full_readback": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.004636199999367818,
+            "median": 0.005214400007389486,
+            "p95": 0.005762480001430958,
+            "maximum": 0.0058330000028945506
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "load_observation_and_saved_whitelist": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0012371999910101295,
+            "median": 0.0012798999960068613,
+            "p95": 0.0015830200049094854,
+            "maximum": 0.0017735000001266599
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        },
+        "observed_change_summary": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.000149200001033023,
+            "median": 0.00021169998217374086,
+            "p95": 0.00023866001283749937,
+            "maximum": 0.0002389000146649778
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.015625,
+            "maximum": 0.015625
+          }
+        },
+        "readback_verify_and_hash": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.006084199994802475,
+            "median": 0.006264399999054149,
+            "p95": 0.006474099995102733,
+            "maximum": 0.006558299995958805
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.009374999999999994,
+            "maximum": 0.015625
+          }
+        },
+        "save_full_candidate": {
+          "wall_s": {
+            "count": 9,
+            "minimum": 0.0013980999938212335,
+            "median": 0.002595500001916662,
+            "p95": 0.0031784599821548906,
+            "maximum": 0.003288699983386323
+          },
+          "cpu_s": {
+            "count": 9,
+            "minimum": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "maximum": 0.0
+          }
+        }
+      }
+    }
+  },
+  "paired_differences": [
+    {
+      "sample": "sample_00",
+      "cold_model_minus_MLS_wall_s": 2.0404066999908537,
+      "warm_model_minus_MLS_wall_s": [
+        -0.09202939996612258,
+        -0.09080730000277981,
+        -0.08414579997770488
+      ]
+    },
+    {
+      "sample": "sample_06",
+      "cold_model_minus_MLS_wall_s": 2.2323962999798823,
+      "warm_model_minus_MLS_wall_s": [
+        -0.04923809997853823,
+        -0.05681040001218207,
+        -0.06482749999850057
+      ]
+    },
+    {
+      "sample": "sample_12",
+      "cold_model_minus_MLS_wall_s": 2.0591311999887694,
+      "warm_model_minus_MLS_wall_s": [
+        -0.042992500006221235,
+        -0.04861410000012256,
+        -0.05310250000911765
+      ]
+    }
+  ],
+  "paired_cold_model_minus_MLS_wall_s": {
+    "count": 3,
+    "minimum": 2.0404066999908537,
+    "median": 2.0591311999887694,
+    "p95": 2.215069789980771,
+    "maximum": 2.2323962999798823
+  },
+  "paired_warm_model_minus_MLS_wall_s": {
+    "count": 9,
+    "minimum": -0.09202939996612258,
+    "median": -0.05681040001218207,
+    "p95": -0.045241140003781766,
+    "maximum": -0.042992500006221235
+  },
+  "all_input_whitelists_exact": true,
+  "all_readback_preservation_checks_passed": true,
+  "all_worker_lifetime_peaks_within_RSS_budget": true,
+  "worker_processes": 6,
+  "completed_calls": 24,
+  "cold_calls": 6,
+  "warm_calls": 18,
+  "full_candidates_saved_bytes": 99636096,
+  "driver_wall_s_before_report_write": 21.11371439998038,
+  "driver_cpu_s_before_report_write": 2.890625,
+  "weights_sha256_at_end": "a82f2d5d4f27e1e7f4be6cf74999f4a488edf5fdcbf38f92fed9264046a153ff",
+  "calibration_sha256_at_end": "beb49d58f6d2191444bf1bef7338845ea123fa562569a4a3e9d609c158797268",
+  "location_calibration_sha256_at_end": "b0ab33387ad178d8c26533dd0ff55126f102f88538325642a76d608edfe5c0e0",
+  "code_sha256": {
+    "online_worker.py": "65ad90cd0ca0ff90604bb1b8dd9cdd305e44bd21c47377dc7d232a0db9b8faf3",
+    "run_online.py": "7e0d13091244a75d24127b4a3d37f42c976b6cbebcea326b25bd12d06231ffa8"
+  }
+}

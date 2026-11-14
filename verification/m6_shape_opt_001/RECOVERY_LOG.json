@@ -1,0 +1,57 @@
+{
+  "cycle_id": "M6-SHAPE-OPT-001",
+  "training_runs": 1,
+  "training_retries": 0,
+  "training_failures": [],
+  "post_training_recoverable_failures": [
+    {
+      "label": "render",
+      "error": "ModuleNotFoundError PIL in isolated training venv",
+      "resolution": "use existing primary Python runtime already providing Pillow"
+    },
+    {
+      "label": "render_recovery_01",
+      "error": "IndexError missing render RESULTS.json argument",
+      "resolution": "pass explicit RESULTS.json to existing renderer"
+    }
+  ],
+  "attempt_costs": [
+    {
+      "label": "render",
+      "status": "failed",
+      "returncode": 1,
+      "wall_s": 0.17586009998922236,
+      "tree_CPU_s": 0.0625,
+      "tree_sampled_peak_bytes": 41975808,
+      "stderr_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\render.stderr.log"
+    },
+    {
+      "label": "render_recovery_01",
+      "status": "failed",
+      "returncode": 1,
+      "wall_s": 0.5647355999972206,
+      "tree_CPU_s": 0.078125,
+      "tree_sampled_peak_bytes": 39079936,
+      "stderr_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\render_recovery_01.stderr.log"
+    },
+    {
+      "label": "render_recovery_02",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 1.6544224999961443,
+      "tree_CPU_s": 1.4375,
+      "tree_sampled_peak_bytes": 94863360,
+      "stderr_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_opt_001\\private\\processes\\render_recovery_02.stderr.log"
+    }
+  ],
+  "source_repair": {
+    "file": "run_phase.py",
+    "before_SHA256": "09be48cf468f8e3e666dfd15a3b3e6e0b24675a646438a41bcbfd0779283c167",
+    "after_SHA256": "9244ebb2cc576fecf39b033423d6fe571e5835e9cca9968df77e9dfde369ae35",
+    "change": "render-only runtime and required argument corrected after measurements; no training/calibration/evaluation/model source changed",
+    "original_source_in_pretraining_commit": "2a8b9811e5080f3d0f26d14c56edd0a657a3935b"
+  },
+  "render_successful_label": "render_recovery_02",
+  "new_installs": 0,
+  "scientific_results_rerun": 0
+}
