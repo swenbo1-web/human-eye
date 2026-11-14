@@ -1,0 +1,261 @@
+{
+  "task": "M6-SHAPE-TRAIN-001",
+  "evidence_scope": "synthetic graphs for finite implementation verification",
+  "thresholds": "fixed synthetic test constants, calibration delegated to root",
+  "continuous_dent_recovery_quality": "unmeasured",
+  "dataset_scoring": "delegated to root",
+  "runtime": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.3.5",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "sources_sha256": {
+    "mls.py": "9e3a3e6e824576f995389b1dd424234cd5218bc6a062d86fde8e9e888a396038",
+    "mls_qa.py": "64c33c22af9d5080f453e6446464d6e97530d5d042d2ea6268cdd40ec4b540ca"
+  },
+  "passed": true,
+  "checks": [
+    {
+      "name": "check_plane_and_frozen_inputs",
+      "passed": true,
+      "details": {
+        "maximum_absolute_residual": 9.778257426959938e-17,
+        "counts": {
+          "total": 81,
+          "free": 49,
+          "fixed": 32,
+          "applicable": 49,
+          "invalid_normal": 0,
+          "too_few_points": 0,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 0
+        },
+        "inputs_preserved": true
+      },
+      "wall_s": 0.021333999990019947
+    },
+    {
+      "name": "check_quadratic_reproduction",
+      "passed": true,
+      "details": {
+        "maximum_absolute_residual": 4.6802913053184713e-17,
+        "counts": {
+          "total": 81,
+          "free": 5,
+          "fixed": 76,
+          "applicable": 5,
+          "invalid_normal": 0,
+          "too_few_points": 0,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 0
+        },
+        "normal_field": "constant prescribed tangent direction for exact polynomial reproduction"
+      },
+      "wall_s": 0.002659799996763468
+    },
+    {
+      "name": "check_signed_isolated_outliers",
+      "passed": true,
+      "details": {
+        "synthetic_threshold": 0.05,
+        "probes": [
+          {
+            "observed_center_height": 0.4,
+            "raw_signed_residual": 0.40000000000000024,
+            "gated_center_step": -0.35000000000000026,
+            "IRLS_passes": 3
+          },
+          {
+            "observed_center_height": -0.4,
+            "raw_signed_residual": -0.40000000000000024,
+            "gated_center_step": 0.35000000000000026,
+            "IRLS_passes": 3
+          }
+        ],
+        "evidence_scope": "isolated outlier implementation behavior"
+      },
+      "wall_s": 0.003463400003965944
+    },
+    {
+      "name": "check_fixed_pass_weighting_reference",
+      "passed": true,
+      "details": {
+        "reference_basis": "world x/y full quadratic on a synthetic star graph",
+        "raw_residual_initial_and_after_each_IRLS": [
+          -0.08053723615871414,
+          -0.09832514701050181,
+          -0.10245761755061697,
+          -0.10348140150099555
+        ],
+        "unweighted_signed_residual_medians": [
+          0.001197379942544402,
+          0.0002462274291447908,
+          0.0009267591863371533
+        ],
+        "MAD_scales": [
+          0.02349653527563852,
+          0.023731160219063883,
+          0.022652355996206436
+        ],
+        "implementation_reference_error": 9.71445146547012e-17
+      },
+      "wall_s": 0.0010808999941218644
+    },
+    {
+      "name": "check_smooth_quadratic_depression",
+      "passed": true,
+      "details": {
+        "observed_center_height": -0.6,
+        "raw_signed_residual": -3.3350563891149445e-17,
+        "center_correction_norm": 0.0,
+        "evidence_scope": "smooth quadratic reproduction in a synthetic prescribed normal field",
+        "continuous_dent_recovery_quality": "unmeasured"
+      },
+      "wall_s": 0.0017627000052016228
+    },
+    {
+      "name": "check_missing_neighbors",
+      "passed": true,
+      "details": {
+        "counts": {
+          "total": 4,
+          "free": 1,
+          "fixed": 3,
+          "applicable": 0,
+          "invalid_normal": 0,
+          "too_few_points": 1,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 0
+        },
+        "center_samples_including_self": 1
+      },
+      "wall_s": 6.910000229254365e-05
+    },
+    {
+      "name": "check_initial_rank_failure",
+      "passed": true,
+      "details": {
+        "counts": {
+          "total": 15,
+          "free": 1,
+          "fixed": 14,
+          "applicable": 0,
+          "invalid_normal": 0,
+          "too_few_points": 0,
+          "rank_deficient": 1,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 0
+        },
+        "geometry": "collinear samples"
+      },
+      "wall_s": 0.00025779998395591974
+    },
+    {
+      "name": "check_irls_rank_failure",
+      "passed": true,
+      "details": {
+        "counts": {
+          "total": 33,
+          "free": 1,
+          "fixed": 32,
+          "applicable": 0,
+          "invalid_normal": 0,
+          "too_few_points": 0,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 1,
+          "invalid_numeric": 0
+        },
+        "geometry": "full-rank symmetric outliers rejected onto a rank-deficient line",
+        "completed_IRLS_passes": 0
+      },
+      "wall_s": 0.0004428999964147806
+    },
+    {
+      "name": "check_invalid_points_and_fixed_counts",
+      "passed": true,
+      "details": {
+        "counts": {
+          "total": 6,
+          "free": 4,
+          "fixed": 2,
+          "applicable": 0,
+          "invalid_normal": 2,
+          "too_few_points": 1,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 1
+        },
+        "per_point_reason": [
+          "invalid_normal",
+          "invalid_normal",
+          "invalid_numeric",
+          "too_few_points",
+          "fixed",
+          "fixed"
+        ]
+      },
+      "wall_s": 0.00010200001997873187
+    },
+    {
+      "name": "check_graph_radius_and_normal_filter",
+      "passed": true,
+      "details": {
+        "geodesic_samples": 30,
+        "filtered_samples": 28,
+        "probes": [
+          "distance exactly 8",
+          "distance greater than 8",
+          "normal dot exactly 0.5",
+          "normal dot below 0.5",
+          "invalid neighbor normal",
+          "disconnected Euclidean-near point",
+          "Euclidean-near point beyond graph radius"
+        ]
+      },
+      "wall_s": 0.000538699998287484
+    },
+    {
+      "name": "check_rotation_translation_and_permutation",
+      "passed": true,
+      "details": {
+        "proper_rotations": 3,
+        "maximum_residual_error": 1.6344352167213628e-15,
+        "maximum_correction_covariance_error": 3.885780586188048e-16,
+        "maximum_permutation_error": 2.7755575615628914e-16
+      },
+      "wall_s": 0.021974000002956018
+    },
+    {
+      "name": "check_gate_and_invalid_interface_inputs",
+      "passed": true,
+      "details": {
+        "synthetic_threshold": 0.1,
+        "rejected_inputs": [
+          "negative threshold",
+          "nonfinite threshold",
+          "vector threshold",
+          "malformed positions",
+          "noninteger edges",
+          "invalid local index"
+        ],
+        "empty_graph_counts": {
+          "total": 0,
+          "free": 0,
+          "fixed": 0,
+          "applicable": 0,
+          "invalid_normal": 0,
+          "too_few_points": 0,
+          "rank_deficient": 0,
+          "irls_rank_deficient": 0,
+          "invalid_numeric": 0
+        }
+      },
+      "wall_s": 0.00017820001812651753
+    }
+  ],
+  "wall_s": 0.10214130001259036,
+  "cpu_s": 0.109375
+}

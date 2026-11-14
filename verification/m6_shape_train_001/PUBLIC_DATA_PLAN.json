@@ -1,0 +1,111 @@
+{
+  "cycle_id": "M6-SHAPE-TRAIN-001",
+  "source_grouping_file": "PUBLIC_SOURCES.json",
+  "source_groups_before_patch_selection": true,
+  "allowed_vertices": 384,
+  "context_halo_rings": 2,
+  "source_component_min_vertices": 512,
+  "candidate_limit_per_stratum": 24,
+  "patch_quota_per_stratum": 3,
+  "strata": [
+    "natural_concave",
+    "natural_convex",
+    "curvature_change",
+    "source_boundary_near"
+  ],
+  "candidate_priority": "first maximum stratum score, then farthest Euclidean coverage in saved world; ties by ascending source vertex ID",
+  "stratum_rules": {
+    "natural_concave": "signed normal neighbor displacement / mean incident edge > .01, upper20percent positive tail",
+    "natural_convex": "same proxy < -.01, lower20percent negative tail",
+    "curvature_change": "upper20percent observed neighbor-normal variation",
+    "source_boundary_near": "3 to6 edge hops from original open boundary, first greatest hop"
+  },
+  "eligibility": "component>=512, center normal coherence>=.5, no incident degenerate face or nonmanifold edge; historic Yanyite center24205 excluded",
+  "pre_generation_rejection": [
+    "induced region dangling/nonmanifold",
+    "center on patch boundary or fewer128free points",
+    "degenerate reference incident face",
+    "r35 support<3 or r55 support<7",
+    "support normals have nonpositive alignment to center normal",
+    "induced patch not connected"
+  ],
+  "post_generation_rejection": [
+    "new zero-area incident triangle",
+    "incident face normal reversal against reference",
+    "nonfinite geometry",
+    "boundary/external/topology changed"
+  ],
+  "backfill_after_generation": false,
+  "generation": {
+    "normal_controls": 1,
+    "r_over_D": [
+      0.35,
+      0.55
+    ],
+    "a_over_r": [
+      0.05,
+      0.15,
+      0.3
+    ],
+    "distance": "pristine induced allowed-edge shortest paths",
+    "weight": "(1-(d/r)^2)^2 for d<r; zero elsewhere",
+    "direction": "negative center full-incident area-weighted saved-snapshot normal",
+    "all_allowed_displacement_labels": true,
+    "normal_points_target_zero": true
+  },
+  "network_feature_contract": {
+    "node_scalar_features": 7,
+    "edge_scalar_features": 4,
+    "observation_only": true,
+    "origin": "mean observed fixed boundary/halo positions",
+    "scale": "median observed context edge length",
+    "positions_and_normals": "vector channels for proper SO(3)-covariant residual head",
+    "forbidden": [
+      "normal reference interior",
+      "support labels",
+      "generation center/radii/amplitudes",
+      "source/role names",
+      "absolute source IDs",
+      "filenames"
+    ],
+    "source_ids_separate_mapping": true
+  },
+  "maximum_patches": 24,
+  "maximum_observations": 312,
+  "coupled_contact_evaluation": "not run for dataset generation; full corresponding domains required after trained candidate proposal",
+  "training": 0,
+  "paid_API": 0,
+  "source_purposes": {
+    "Stanford_Armadillo": "validation",
+    "Stanford_Bunny": "reserved_test"
+  },
+  "source_purposes_frozen_before_geometry": true,
+  "source_unit": "native",
+  "old_training_pool_reused_without_regeneration": true,
+  "offcenter_rule": "same allowed region; original-center distance [.25D,.5D], boundary distance >=.6D; descending center distance then ascending source ID; first candidate passing original support counts and orientation; recompute D; no extra control",
+  "reused_code": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\geometry.py",
+      "bytes": 5040,
+      "sha256": "79408254ac84688cb2734ee07fcbf8f4d60b20f31799ce8bedcc4c481cc682cb"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\features.py",
+      "bytes": 4473,
+      "sha256": "9a78cb98d60317431bf4705b03cc6b987068a476c087c8f6de0fbdac39941f56"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\prepare_patches.py",
+      "bytes": 12166,
+      "sha256": "abaad1d180d20b47b1ddac8620343e248c319052275a71c9bc3e4a5dfc48a474"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\generate.py",
+      "bytes": 13056,
+      "sha256": "acd7b361aa628d8dc21b061fc4966fa2724daa71ca3c2434144a0db1ba534b4a"
+    }
+  ],
+  "inputs_legacy_unit_names": "origin_world_m and scale_m retained as whitelist names; values are native source units",
+  "reserved_test_allowed_checks": "PLY, topology, generator formula, serialization; no model or MLS scoring",
+  "maximum_patches_per_source": 12
+}
