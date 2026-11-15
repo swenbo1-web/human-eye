@@ -1,0 +1,352 @@
+{
+  "Blender_starts": 0,
+  "analytic_product_semantics_status": "awaits saved actual qualification evidence",
+  "analytic_references": [
+    {
+      "case": "near_panel",
+      "independent_answer": "TOP has positive-area occlusion; the eye must be in front of both surfaces",
+      "occluder_z": 1,
+      "projected_panel_square": [
+        -1,
+        1
+      ],
+      "projected_target_square": [
+        "-1/2",
+        "1/2"
+      ],
+      "target_z": 0
+    },
+    {
+      "case": "side_or_rear",
+      "independent_answer": "retain whenever any viewport overlaps, regardless of relative depth"
+    },
+    {
+      "case": "cross_viewport_triangle",
+      "independent_answer": "all three vertices are outside the unit viewport, yet its center and the target square are covered",
+      "triangle_xy": [
+        [
+          "-3",
+          "-3"
+        ],
+        [
+          "3",
+          "-3"
+        ],
+        [
+          "0",
+          "3"
+        ]
+      ]
+    },
+    {
+      "case": "unsupported_target",
+      "geometry": "one isolated nondegenerate triangle",
+      "independent_answer": "no rectangular target region, target status remains unknown"
+    },
+    {
+      "case": "unsupported_occluder",
+      "geometry": "a nonrectangular triangle in front of the target",
+      "independent_answer": "the triangle continues to occlude, even though it creates no supported region"
+    },
+    {
+      "case": "self_occlusion",
+      "geometry": "one target object with equal XY squares at z=0 and z=1",
+      "independent_answer": "the upper component occludes the lower component in TOP; only each current region own triangles are exempt"
+    },
+    {
+      "case": "equal_depth",
+      "geometry": "two identical ordered triangles at the same depth",
+      "independent_answer": "earlier object and earlier local face retain the depth winner"
+    }
+  ],
+  "host_source": "D:\\he_m4_target_001\\A\\product\\human_eye_plugin\\blender_host.py",
+  "host_source_sha256": "21c0a0a32ab7add92027a16bc817a553f397f0d1552aa67df46bd072b88866dc",
+  "model_calls": 0,
+  "oracle_limitations": [
+    "Fraction validates the affine real-arithmetic enclosure.",
+    "Scalar sum-order/fused simulations are directed numerical controls, not an exhaustive proof of every BLAS implementation.",
+    "No raster, rendering, host construction, or scene observation is executed."
+  ],
+  "passed": true,
+  "phase": "camera",
+  "raster_calls": 0,
+  "records": [
+    {
+      "case": "affine_identity_regular",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_identity_touching",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_one_ulp_outside",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_one_ulp_inside",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_rotated_nonbox_enclosure",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_large_cancellation",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_tiny_coordinates",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_subnormal_coordinates",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "affine_very_large_finite",
+      "details": {
+        "oracle": "exact rational corner extrema plus separately rounded/fused scalar sums",
+        "scalar_float_sequences_checked": 288
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "projection_identity_regular",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_identity_touching",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_one_ulp_outside",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_one_ulp_inside",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_rotated_nonbox_enclosure",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_large_cancellation",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_tiny_coordinates",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_subnormal_coordinates",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "projection_very_large_finite",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_crossing_big_triangle_box",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_touching_right_edge",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_one_ulp_outside_uncertain",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_behind_with_xy_overlap",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_unknown_bounds",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "exclude_only_six_strict_separations",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "retain_one_of_six_viewports",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "acquisition_absent_box",
+      "details": {
+        "coarse_bound_status": "unknown"
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "unknown_absent_box",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "acquisition_incomplete_box",
+      "details": {
+        "coarse_bound_status": "unknown"
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "unknown_incomplete_box",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "acquisition_unavailable_sentinel",
+      "details": {
+        "coarse_bound_status": "unknown"
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "unknown_unavailable_sentinel",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "acquisition_nonfinite_box",
+      "details": {
+        "coarse_bound_status": "unknown"
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "unknown_nonfinite_box",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "overflow_is_unknown_and_retained",
+      "executed": false,
+      "passed": null,
+      "reason": "selective B helper is outside the frozen A implementation"
+    },
+    {
+      "case": "rotated_nonbox_coarse_bounds_cover_real_vertices",
+      "details": {
+        "shape": "nonbox triangle",
+        "tight_bounds_not_assumed": true,
+        "true_vertices_enclosed": 3
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "target_fit_scene_depth_and_bound_order",
+      "details": {
+        "all_scene_depth_corners": 16,
+        "bound_order_invariant": true,
+        "scene_bounds_do_not_change_target_XY_fit": true,
+        "target_fit_uses_target_vertices": true,
+        "view_count": 6
+      },
+      "executed": true,
+      "passed": true
+    },
+    {
+      "case": "rotated_target_uses_actual_vertices_not_world_AABB",
+      "details": {
+        "AABB_substitution_changes_views": [
+          "SCENE",
+          "LEFT",
+          "BACK"
+        ],
+        "actual_vertices_used": 4,
+        "target": "rotated rational rectangular patch"
+      },
+      "executed": true,
+      "passed": true
+    }
+  ],
+  "schema": "m4-target-independent-numeric-checks-v1",
+  "test_source_sha256": "5528422000258fb70dadcda32f98876888c7b4f8b03ff3fe3d8de0116514643e"
+}

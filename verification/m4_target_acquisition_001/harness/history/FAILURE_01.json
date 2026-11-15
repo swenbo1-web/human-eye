@@ -1,0 +1,38 @@
+{
+  "schema": "m4-target-harness-failure-event-v1",
+  "attempt": "A_peripheral_01",
+  "result": "D:\\he_m4_target_001\\qualification\\A_peripheral_01\\RESULT.json",
+  "result_sha256": "db67d17d434f688c225393bcfa325c3d4143b9fd3731923cb5ba6f8689fef5d9",
+  "errors": [
+    {
+      "message": "actual_MCP_runtime_pid_count",
+      "stage": "case",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-001\\hefe\\verification\\m4_target_acquisition_001\\harness\\run_case.py\", line 120, in run\n    raise ValueError(\"actual_MCP_runtime_pid_count\")\nValueError: actual_MCP_runtime_pid_count\n",
+      "type": "ValueError"
+    },
+    {
+      "message": "MCP_close_or_runtime_exit_unconfirmed",
+      "stage": "MCP_cleanup",
+      "type": "RuntimeError"
+    }
+  ],
+  "source_snapshots": [
+    {
+      "path": "verification\\m4_target_acquisition_001\\harness\\history\\run_case_attempt_01.py",
+      "sha256": "9b6f7ae55c368a470625267763e50beb7e870799eb0115ee1091aebff989ef0f"
+    },
+    {
+      "path": "verification\\m4_target_acquisition_001\\harness\\history\\mcp_entry_attempt_01.py",
+      "sha256": "21ae00007859e4f1c4a389955af1aa76f130311dcd0f00b9ea06c6418a93efe8"
+    },
+    {
+      "path": "verification\\m4_target_acquisition_001\\harness\\history\\extract_saved_attempt_01.py",
+      "sha256": "9eccc9d67d1579df555af83af92c04cddf9a380f769b85c0acb3ab919419cc44"
+    }
+  ],
+  "actual_start_budget": "builder + failed A case = 2 charged Blender start attempts",
+  "observed_host_business_RPCS": 0,
+  "observed_rasters": 0,
+  "diagnosis": "Metadata and ordinary server initialization do not require audit.jsonl startup/request_trace records. Prior controller assumed one PID from that optional evidence. Root preserved direct held processes and normal closes.",
+  "planned_correction": "Bind controlled entry explicit PID to actual held child process and validate original Windows creation times. Missing retained handle stays unavailable, without invoking the handle-exit helper."
+}
