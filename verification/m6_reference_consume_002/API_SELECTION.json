@@ -1,0 +1,37 @@
+{
+  "default": "v1",
+  "default_API": {
+    "path": "session_api.py",
+    "bytes": 12056,
+    "sha256": "74bd32bdc352cbd47909bc420fb0477da19a137c9afe17ab63b9b23872636785"
+  },
+  "executed_v1_source": {
+    "path": "private/tool_versions/v1/06_session_api.py",
+    "bytes": 12056,
+    "sha256": "74bd32bdc352cbd47909bc420fb0477da19a137c9afe17ab63b9b23872636785"
+  },
+  "executed_v2_source": {
+    "path": "private/tool_versions/v2/06_session_api.py",
+    "bytes": 12874,
+    "sha256": "762247f152be94c713e0316bf53b72174b8b19abe5895fc94e8ae35ff89c910c"
+  },
+  "candidate_patch": {
+    "path": "OPTIMIZATION_DIFF.patch",
+    "bytes": 1509,
+    "sha256": "d9b72b38ab4d3743bfeb37d2d03ae732c2a3ba41fb254c7366783017ec600aaa"
+  },
+  "evidence": {
+    "v1_session_wall_s": 178.703435,
+    "v2_session_wall_s": 199.64238,
+    "actual_readback_text_v1_bytes": 46547,
+    "actual_readback_text_v2_bytes": 29877,
+    "reference_geometry_improvement_established": false,
+    "formal_consumers_edited": 0
+  },
+  "decision": "Keep the first-version default and preserve the compact candidate experiment. The repeated readback text was reduced, while the complete second-stage sessions were slower and used extra preceding tools.",
+  "attribution": "Each second-stage extra Python tool occurred before its last readback response, so those added calls cannot be caused by that response deduplication. No general causal timing conclusion from this single task.",
+  "historical_freeze_policy": "Validate each executed stage using its exact archived source bytes. Current default intentionally matches V1; V2 source and patch retain the actual experiment.",
+  "restored_after_actual_consumers_and_final_Blender_validation": true,
+  "additional_Pro": 0,
+  "additional_Blender": 0
+}

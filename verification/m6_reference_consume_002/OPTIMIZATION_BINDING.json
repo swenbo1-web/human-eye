@@ -1,0 +1,80 @@
+{
+  "bound_at_UTC": "2026-11-15T19:07:32.093441+00:00",
+  "initial_results": [
+    {
+      "route": "native",
+      "consumer": {
+        "path": "private/consumers/v1/forearm/native/CONSUMER.json",
+        "bytes": 1138318,
+        "sha256": "3f1459c184f68ab16050bd42656cbf16f2304e053319e5dfc4c801c35612594c"
+      },
+      "session": {
+        "path": "private/sessions/v1_forearm_native/session.json",
+        "bytes": 1481,
+        "sha256": "016929568bd4f7f34e21207a8268cba09ce7e7906b9cbb0e7c4f65538f38e805"
+      },
+      "wall_s": 98.6787483,
+      "usage": {
+        "input_tokens": 109971,
+        "cached_input_tokens": 80768,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2901,
+        "reasoning_output_tokens": 91
+      },
+      "public_images": 9,
+      "PNG_bytes": 3841447
+    },
+    {
+      "route": "facts",
+      "consumer": {
+        "path": "private/consumers/v1/forearm/facts/CONSUMER.json",
+        "bytes": 1147276,
+        "sha256": "b260390bf33af705e7151a9ba78d73598b8d499470b1c94b83a8c9c61d4df400"
+      },
+      "session": {
+        "path": "private/sessions/v1_forearm_facts/session.json",
+        "bytes": 1478,
+        "sha256": "84362752d0a35e1e3980d790b9c2d963bc4805c62c3b2afdcd3250529dbba452"
+      },
+      "wall_s": 80.0246867,
+      "usage": {
+        "input_tokens": 122607,
+        "cached_input_tokens": 87808,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 2419,
+        "reasoning_output_tokens": 118
+      },
+      "public_images": 9,
+      "PNG_bytes": 3841447
+    }
+  ],
+  "initial_analysis": {
+    "path": "CONSUMER_STATS_v1.json",
+    "bytes": 46061,
+    "sha256": "01d414deb4aaab4739765a9f4e08eececfdb5d52966e9a295d3cae864c62b21e"
+  },
+  "initial_tools": {
+    "path": "TOOL_FREEZE.json",
+    "bytes": 9706,
+    "sha256": "4b82f34a559d779c6e6ca7b4749517a8cdca4769bd7be4d841d2301fdc58e260"
+  },
+  "issue": "Both actual no-edit readbacks transmit identical before and after dual-definition station tables twice",
+  "evidence": {
+    "save_readback_text_bytes": 46547,
+    "total_tool_text_bytes": 92881,
+    "readback_share_percent": 50.114,
+    "actual_total_initial_wall_s": 178.703435,
+    "actual_readback_tool_wall_s": 2.887665899994317
+  },
+  "selected_change": "Deduplicate exactly equal before/after contour tables only in the shared public short_quality response. Deliver one complete current table for each definition and an explicit equality marker. Preserve full raw QUALITY and all technical checks and identities.",
+  "invariants": "Same assets, nine images, task, anchors, writable set, step budgets, model/effort, tools, saved-file reader and numerical evaluator. Changed geometry or unequal tables retain the complete original response.",
+  "expected_component_effect": "Reduce repeated public text and associated context delivery. Whole-session timing remains an observation, without a promised speedup.",
+  "consumer_changes": {},
+  "second_order": [
+    "facts",
+    "native"
+  ],
+  "additional_actual_Pro_sessions": 2,
+  "training": 0,
+  "image_observability": "Raw bridge responses contain nine complete PNG ImageContent blocks per actual images call. CLI event serialization has a1MiB middle-truncation marker. Count delivery from complete bridge bytes and actual call events, and retain provider-internal encoding as unmeasured."
+}

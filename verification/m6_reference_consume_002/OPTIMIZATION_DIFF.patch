@@ -1,0 +1,25 @@
+--- a/verification/m6_reference_consume_002/session_api.py
++++ b/verification/m6_reference_consume_002/session_api.py
+@@ -45,7 +45,21 @@
+ def short_quality(result):
+     # This task's evaluator owns the contour targets and geometric acceptance.
+     # Large exact-pair and face-angle evidence stays in the complete QUALITY file.
+-    return {key: result[key] for key in ("status", "checks", "contours", "contour", "geometry", "displacement", "identity") if key in result}
++    summary = {key: result[key] for key in ("status", "checks", "contours", "contour", "geometry", "displacement", "identity") if key in result}
++    contours = summary.get("contours")
++    if result.get("displacement", {}).get("changed_vertices") != 0 or not isinstance(contours, dict) or contours.get("status") != "measured":
++        return summary
++    definitions = contours.get("definitions")
++    if not isinstance(definitions, dict) or set(definitions) != {"primary", "alternative"}:
++        return summary
++    if any(not isinstance(row, dict) or "before" not in row or "after" not in row or row["before"] != row["after"] for row in definitions.values()):
++        return summary
++    compact = {}
++    for name, row in definitions.items():
++        compact[name] = {key: value for key, value in row.items() if key != "before"}
++        compact[name]["before_equals_after"] = True
++    summary["contours"] = dict(contours, definitions=compact)
++    return summary
+ 
+ 
+ def read_actual(directory, state, blend, label, output):
