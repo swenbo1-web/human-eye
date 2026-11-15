@@ -23,23 +23,25 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-PERCEPTION-001",
-    "status": "dispatched",
-    "dispatch_base": "7ae143a6b062ac3c9fedcbf50939b79082884963",
-    "contract": "docs/M6_PERCEPTION_001_TASK.md",
-    "training_runs_authorized": 1,
-    "model": "frozen Pointfilter encoder plus1024-64-1GELU localization head",
+    "id": "M6-PERCEPTION-DATA-001",
+    "status": "prepared_not_dispatched",
+    "dispatch_base": "38fa3e2d01300498aabd43a051876a6f779dab68",
+    "contract": "docs/M6_PERCEPTION_DATA_001_TASK.md",
+    "purpose": "Actual multi-location normal/dent paired dataset and balanced sampler with deformation-family transfer split",
+    "training_runs_authorized": 0,
+    "model_forwards_authorized": 0,
     "repair_outputs_authorized": 0,
     "reserved_Bunny_scores_authorized": 0,
-    "cases": 348,
-    "purpose": "Plugin-internal perception and stable region facts before LLM consumption, limited to existing task ROI",
-    "contract_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077"
+    "maximum_unique_observations": 600,
+    "public_source": "MIT Deformation Transfer six poses packages",
+    "independent_final_test": "not_available_this_pilot",
+    "automatic_next_training": false
   },
   "reviewed_plan_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:12",
-  "last_observed_status": "Author idle before dispatch; one PERCEPTION001 message accepted; no post-dispatch polling",
-  "pending_followup": true,
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:14",
+  "last_observed_status": "PERCEPTION001 complete, author idle and tracked clean at38fa3e2d; next data contract prepared, not yet dispatched",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -146,9 +148,16 @@
       "review_doc": "docs/M6_SHAPE_RING_001_REVIEW.md",
       "evidence": "verification/m6_shape_ring_001_review/INDEPENDENT_RESULTS.json",
       "review_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077"
+    },
+    {
+      "cycle_id": "M6-PERCEPTION-001",
+      "commit": "38fa3e2d01300498aabd43a051876a6f779dab68",
+      "decision": "engineering_and_regions_accepted_localization_failed_paired_normal_shortcut_evidence",
+      "review_doc": "docs/M6_PERCEPTION_001_REVIEW.md",
+      "evidence": "verification/m6_perception_001_review/MODEL_RESULTS.json"
     }
   ],
-  "model_selection": "Current first perception candidate is frozen pretrained local geometry encoder with small localization head; old repair networks and fixed annular construction closed; no product model accepted.",
+  "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
@@ -159,20 +168,17 @@
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
-    "id": "M6-SHAPE-RING-001",
-    "status": "independently_reviewed_closed",
-    "dispatch_base": "96d5249f2a08ead5ecde7e644e9a6b4f1f997c0e",
-    "contract": "docs/M6_SHAPE_RING_001_TASK.md",
-    "training_runs_authorized": 0,
-    "model_forwards_authorized": 0,
+    "id": "M6-PERCEPTION-001",
+    "status": "independently_reviewed_engineering_pass_quality_fail",
+    "dispatch_base": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+    "contract": "docs/M6_PERCEPTION_001_TASK.md",
+    "training_runs_authorized": 1,
+    "model": "frozen Pointfilter encoder plus1024-64-1GELU localization head",
+    "repair_outputs_authorized": 0,
     "reserved_Bunny_scores_authorized": 0,
     "cases": 348,
-    "normal_controls": 42,
-    "purpose": "One hollow-versus-filled geometry and point-versus-cluster diagnostic before domain-training decision",
-    "contract_commit": "8c47b6dd225b174edba6a3345c7bafe0bc6410d8",
-    "delivery_commit": "7ae143a6b062ac3c9fedcbf50939b79082884963",
-    "review_doc": "docs/M6_SHAPE_RING_001_REVIEW.md",
-    "review_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077"
+    "purpose": "Plugin-internal perception and stable region facts before LLM consumption, limited to existing task ROI",
+    "contract_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077"
   },
   "last_dispatch": {
     "cycle_id": "M6-PERCEPTION-001",
@@ -406,11 +412,11 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "dispatched_awaiting_completion_callback",
-    "cycle_id": "M6-PERCEPTION-001",
+    "status": "prepared_not_dispatched",
+    "cycle_id": "M6-PERCEPTION-DATA-001",
     "M6_overall_complete": false,
     "new_experts_accepted": 0,
-    "reason": "Latest user explicitly wants small-model perception processing before LLM; test one learned localization readout, defer direct repair fine-tune",
+    "reason": "Paired normal scores reproduce developmental localization; change data position/state exposure and source grouping before capacity",
     "Pointfilter_repair_finetuning": "deferred",
     "timer_or_polling": false
   },
@@ -537,5 +543,32 @@
     "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
     "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
     "polling": false
+  },
+  "perception_review": {
+    "author_commit": "38fa3e2d01300498aabd43a051876a6f779dab68",
+    "cases": 348,
+    "F_point_observations": 109443,
+    "encoder_replay_queries": 1044,
+    "head_predictions": 109443,
+    "full_existing_training_replays": 1,
+    "replayed_steps": 1200,
+    "new_candidate_training": 0,
+    "region_references": 2324,
+    "independent_assertions": {
+      "model": 226146,
+      "metrics_regions": 127289,
+      "evidence": 2980
+    },
+    "paired_normal_development_AUC": 0.9722696488215359,
+    "paired_normal_development_area_recall": 0.9258434081724558,
+    "validation_new_area_recall": [
+      0.26879701074882406,
+      0.2862775151305719
+    ],
+    "validation_old_p_area_recall": [
+      0.4729046864283387,
+      0.45866785991127085
+    ],
+    "decision": "prepare_paired_multilocation_data_for_one_evidence_based_perception_optimization"
   }
 }
