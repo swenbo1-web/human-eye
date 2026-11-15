@@ -24,19 +24,20 @@
   },
   "current_cycle": {
     "id": "M6-REFINE-RECOVERY-002",
-    "status": "prepared",
+    "status": "dispatched",
     "dispatch_base": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
     "contract": "docs/M6_REFINE_RECOVERY_002_TASK.md",
     "purpose": "Independent save_readback durable attempt allocation and legacy failed-label recovery",
     "consumer_calls": 0,
     "training_runs": 0,
-    "original_edits": false
+    "original_edits": false,
+    "contract_commit": "ae03bf592f9b28e5a5309d79f3cb18c3d2cae65d"
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:22",
-  "last_observed_status": "M6 implementation idle before one accepted REFINE001 dispatch; source current hash verified",
-  "pending_followup": false,
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:23",
+  "last_observed_status": "Author idle before one accepted RECOVERY002 dispatch; review complete and continuous loop retained",
+  "pending_followup": true,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -173,7 +174,8 @@
       "commit": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
       "decision": "six_geometry_results_accepted_component_IPC_gain_only_save_readback_retry_defect_confirmed",
       "review_doc": "docs/M6_REFINE_001_REVIEW.md",
-      "evidence": "verification/m6_refine_001_review/RESULTS.json"
+      "evidence": "verification/m6_refine_001_review/RESULTS.json",
+      "review_commit": "ae03bf592f9b28e5a5309d79f3cb18c3d2cae65d"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -434,12 +436,12 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "minimal_recovery_fix_prepared",
+    "status": "minimal_recovery_fix_dispatched",
     "cycle_id": "M6-REFINE-RECOVERY-002",
     "M6_overall_complete": false,
     "reason": "Confirmed public reader retry reuses reserved job label after pre-output failure",
     "following_direction": "Reference image plus whole-model context to bind one visible refinement region; continue after fix review",
-    "new_task_dispatched": false,
+    "new_task_dispatched": true,
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -737,6 +739,16 @@
     "recovery_counterexample": "actual fixed function with substituted failed reader; same label selected twice",
     "new_defect_source": "save_readback attempts inferred from completed output directories",
     "IPC_full_task_gain": false,
-    "reference_artistic_acceptance": "not_established"
+    "reference_artistic_acceptance": "not_established",
+    "review_commit": "ae03bf592f9b28e5a5309d79f3cb18c3d2cae65d"
+  },
+  "refine_recovery_dispatch": {
+    "cycle_id": "M6-REFINE-RECOVERY-002",
+    "contract_commit": "ae03bf592f9b28e5a5309d79f3cb18c3d2cae65d",
+    "accepted": true,
+    "attempts": 1,
+    "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
+    "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "polling": false
   }
 }
