@@ -194,7 +194,7 @@ def _surface_proximity_fact(measured):
 
 def bind_objects(scene, selectors):
     """Never interpret a name as an ID, choose an active object or break ties."""
-    if scene.get('capture_scope') == 'selected_objects':
+    if scene.get('capture_scope') in ('selected_objects', 'observation_task_objects'):
         selection = scene['task_selection']
         if selection['selectors'] != selectors:
             raise ValueError('Task selectors differ from the captured selection')
@@ -750,8 +750,8 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
         for value in facts.values())
     binding = {'scene_revision': scene['revision'], 'scene_fingerprint': fingerprint,
                'source': scene['source'], 'objects': bindings}
-    if scene.get('capture_scope') == 'selected_objects':
-        binding.update(capture_scope='selected_objects',
+    if scene.get('capture_scope') in ('selected_objects', 'observation_task_objects'):
+        binding.update(capture_scope=scene['capture_scope'],
             candidate_count=scene['task_selection']['candidate_count'], selected_count=len(meshes))
     return {'result_kind': 'task_query', 'schema_version': 'task-query-v3',
         'status': 'observed' if complete else 'partial',

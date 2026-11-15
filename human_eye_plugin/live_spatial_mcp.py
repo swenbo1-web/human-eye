@@ -73,6 +73,13 @@ _QUERY_SCHEMA = {
         "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "active_observation: one visual target. Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
+        "task_query": {"type": "object", "required": ["mode", "objects", "requested_facts"],
+            "description": "Optional active-observation quantitative query over entire selected objects, using the same source geometry. Pair selectors are ordered A to B.",
+            "properties": {"mode": {"const": "task"},
+                "objects": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 4},
+                "requested_facts": {"type": "array", "minItems": 1, "uniqueItems": True,
+                    "items": {"type": "string", "enum": list(TASK_FACTS)}}},
+            "additionalProperties": False},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
             "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},
@@ -102,7 +109,7 @@ _QUERY_SCHEMA = {
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
-               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
@@ -177,7 +184,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
-            " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
+            " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one legacy task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
         ),
         "inputSchema": {
             "type": "object",
@@ -1319,6 +1326,25 @@ def project_active_observation_brief(value):
             result['schema'] = 'active-observation-brief-v5'
             result['source_triangle_index_ranges_semantics'] = (
                 'zero_based_object_local_inclusive; object_index_in_objects; scoped_to_this_binding')
+        if 'task_result' in value:
+            task = value['task_result']
+            source = task.get('binding', {}).get('observation_source') if type(task) is dict else None
+            if (type(source) is not dict or task.get('result_kind') != 'task_query'
+                    or task.get('schema_version') != 'task-query-v3'
+                    or source.get('schema') != 'active-observation-task-source-v1'
+                    or source.get('measurement_scope') != 'whole_objects'
+                    or source.get('capture_scope') != 'observation_task_objects'
+                    or source.get('parent_binding_sha256') != binding['binding_sha256']
+                    or source.get('parent_source_binding_sha256') != binding['source_binding_sha256']
+                    or source.get('parent_capture_scope') != binding['capture_scope']):
+                return None
+            derived_state = source.get('capture_state')
+            if ((derived_state is None) != (capture_state is None)
+                    or derived_state is not None and (type(derived_state) is not dict
+                        or any(derived_state.get(key) != capture_state.get(key)
+                               for key in ('instance_id', 'epoch', 'revision')))):
+                return None
+            result['task_result'] = copy.deepcopy(task)
         return copy.deepcopy(result)
     except (KeyError, TypeError, IndexError, AttributeError, ValueError):
         return None
@@ -1332,7 +1358,7 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
     metadata = {key: copy.deepcopy(value[key]) for key in (
         'status', 'result_kind', 'observation_status', 'session_id', 'facts',
         'work', 'generation_work', 'stages', 'generation_stages',
-        'read_only', 'execution_authority', 'target_view_classifications',
+        'read_only', 'execution_authority', 'target_view_classifications', 'task_result',
     ) if key in value}
     if 'binding' in value:
         metadata['binding'] = {key: copy.deepcopy(item) for key, item in value['binding'].items()

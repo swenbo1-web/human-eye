@@ -1051,7 +1051,8 @@ class LiveSpatialService:
                     or goal is not None or scene_delta is not None):
                 raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
             selector = query['objects'][0] if 'objects' in query else None
-            return self._observe_active_observation(session_id, include_image=include_image, selector=selector)
+            return self._observe_active_observation(session_id, include_image=include_image,
+                selector=selector, task_query=query.get('task_query'))
         if query['mode'] == 'directory':
             if (include_image or task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1387,7 +1388,97 @@ class LiveSpatialService:
         if packet['directory_sha256'] != digest:
             raise ValueError('directory_digest_mismatch')
 
-    def _observe_active_observation(self, session_id, *, include_image, selector=None):
+    def _observation_task_view(self, captured, parent_binding, query):
+        """Derive a whole-object measurement view from validated observation data."""
+        from .active_observation import fingerprint, geometry
+        from .read_context import capture_key
+        from .task_query import bind_objects
+
+        target = captured.get('observation_target')
+        directory = target['scene_directory'] if target is not None else captured['meshes']
+        identity = target['full_scene_identity'] if target is not None else captured['host_identity']
+        bound, bindings, pair_reason = bind_objects({'meshes': directory}, query['objects'])
+        required = {item['object_id'] for item in bound if item is not None}
+        meshes = {item['object_id']: item for item in captured['meshes']}
+        parent_indices = {item['object_id']: index for index, item in enumerate(captured['meshes'])}
+        missing = [item['object_id'] for item in directory if item['object_id'] in required - set(meshes)]
+        work = {'supplemental_capture_calls': 0, 'supplemental_objects': 0,
+                'supplement_validation_calls': 0, 'ordered_geometry_hash_calls': 0,
+                'geometry_alias_parse_calls': 0, 'additional_raster_attempts': 0}
+        if missing:
+            self._check_request_budget('before_observation_task_supplement')
+            capture_task = getattr(self.host, 'capture_task_scene', None)
+            if not callable(capture_task):
+                raise ValueError('active_observation_task_supplement_not_supported')
+            selectors = [{'id': oid} for oid in missing]
+            with span('host.capture_task_supplement', kind='host'):
+                work['supplemental_capture_calls'] += 1
+                supplement = capture_task(selectors)
+            self._check_request_budget('after_observation_task_supplement')
+            parent_state, extra_state = capture_key(captured), capture_key(supplement)
+            if parent_state is None or extra_state is None:
+                raise ValueError('active_observation_task_generation_unavailable')
+            if parent_state[:3] != extra_state[:3]:
+                raise ValueError('active_observation_task_generation_changed')
+            extra_identity = supplement.get('host_identity')
+            if type(extra_identity) is not dict or extra_identity.get('document_epoch') != identity['document_epoch']:
+                raise ValueError('active_observation_task_document_epoch_changed')
+            if (type(extra_identity.get('object_instances')) is not dict
+                    or any(extra_identity['object_instances'].get(oid) != identity['object_instances'][oid]
+                           for oid in missing)):
+                raise ValueError('active_observation_task_instance_changed')
+            if supplement.get('task_selection', {}).get('selectors') != selectors:
+                raise ValueError('active_observation_task_supplement_selection_mismatch')
+            _validated_scene(supplement, _task_capture=True, _annotate_scene=False)
+            work['supplement_validation_calls'] += 1
+            extra_meshes = {item['object_id']: item for item in supplement['meshes']}
+            if set(extra_meshes) != set(missing):
+                raise ValueError('active_observation_task_supplement_object_unavailable')
+            names = {item['object_id']: item['name'] for item in directory}
+            if any(item['name'] != names[oid] for oid, item in extra_meshes.items()):
+                raise ValueError('active_observation_task_object_changed')
+            meshes.update(extra_meshes)
+            work['supplemental_objects'] = len(extra_meshes)
+        selected, sources = [], []
+        for item in directory:
+            oid = item['object_id']
+            if oid not in required:
+                continue
+            mesh = meshes[oid]
+            selected.append(dict(mesh, mark_label='#M5%04d' % len(selected)))
+            ordered = {'vertices': mesh['vertices'], 'faces': mesh['faces']}
+            ordered_sha = hashlib.sha256(json.dumps(ordered, sort_keys=True, separators=(',', ':'),
+                ensure_ascii=True, allow_nan=False).encode('utf8')).hexdigest()
+            work['ordered_geometry_hash_calls'] += 1
+            object_index = parent_indices.get(oid)
+            geometry_id = None
+            if object_index is not None:
+                parsed, _, _ = geometry({'objects': [{'name': mesh['name'],
+                    'vertices': mesh['vertices'], 'triangles': mesh['faces']}]})
+                geometry_id = 'geometry:' + fingerprint(parsed[0][2])
+                work['geometry_alias_parse_calls'] += 1
+            count = len(mesh['faces'])
+            sources.append({'object_id': oid, 'instance_id': identity['object_instances'][oid],
+                'observation_object_index': object_index, 'geometry_id': geometry_id,
+                'source_triangle_count': count, 'source_triangle_index_ranges': [[0, count - 1]] if count else [],
+                'ordered_geometry_sha256': ordered_sha})
+        selection_key = fingerprint(['observation_task', parent_binding['source_binding_sha256'], query, sources])
+        state = copy.deepcopy(captured.get('capture_state'))
+        if state is not None:
+            state['selection_key'] = selection_key
+        view = {'unit': 'm', 'coordinate_frame': 'world', 'source': captured['source'],
+            'revision': 'observation-task:' + selection_key,
+            'capture_scope': 'observation_task_objects', 'capture_state': state,
+            'meshes': selected, 'execution_authority': False,
+            'host_identity': {'schema_version': '1.0', 'document_epoch': identity['document_epoch'],
+                'capture_scope': 'observation_task_objects',
+                'object_instances': {item['object_id']: identity['object_instances'][item['object_id']] for item in selected}},
+            'task_selection': {'selectors': query['objects'], 'bindings': bindings,
+                'pair_reason': pair_reason, 'candidate_count': len(directory)}}
+        work['reused_observation_objects'] = len(selected) - work['supplemental_objects']
+        return view, sources, work
+
+    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None):
         from .active_observation_host import source_binding, observe_capture
         from .read_context import query_key
         if not self.config.get('enabled', True):
@@ -1419,6 +1510,11 @@ class LiveSpatialService:
                 raise ValueError('active_observation_complete_scene_required')
             if selector is not None and binding.get('observation_target', {}).get('selector') != selector:
                 raise ValueError('active_observation_target_request_binding_mismatch')
+            task_view = None
+            if task_query is not None:
+                task_prepare_started = time.perf_counter_ns()
+                task_view, task_sources, task_work = self._observation_task_view(captured, binding, task_query)
+                task_prepare_closed = time.perf_counter_ns()
             context.activate(captured, 'active_observation', binding)
             binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
                 separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
@@ -1465,6 +1561,41 @@ class LiveSpatialService:
                                'elapsed_ns': lookup_closed - lookup_started})
             result['session_id'] = session_id
             self._bind_read_result(result, source_check)
+            if task_view is not None:
+                from .task_query import task_result
+                task_started = time.perf_counter_ns()
+                context.activate(task_view, 'observation_task', {
+                    'parent_binding_sha256': result['binding']['binding_sha256'], 'task_query': task_query})
+                task_work.update(normalization_calls=0, exact_pair_count=0,
+                    surface_pair_count=0, closed_solid_pair_count=0)
+                def normalize_task():
+                    task_work['normalization_calls'] += 1
+                    return _validated_scene(task_view, _observation_task_capture=True, _annotate_scene=False)
+                scene, meshes, task_fingerprint = context.normalized(normalize_task)
+                task_work.update(normalized_objects=len(meshes),
+                    normalized_vertices=sum(len(mesh.vertices) for mesh in meshes),
+                    normalized_triangles=sum(len(mesh.faces) for mesh in meshes),
+                    normalized_array_payload_bytes=sum(mesh.vertices.nbytes + mesh.faces.nbytes + mesh.edges.nbytes for mesh in meshes))
+                task, task_hit = context.result(query_key(task_query), lambda: task_result(
+                    scene, meshes, task_fingerprint, task_query, context.scene_cache,
+                    self._check_request_budget, diagnostics=task_work))
+                task_work['result_cache_hit'] = task_hit
+                task['binding']['observation_source'] = {
+                    'schema': 'active-observation-task-source-v1', 'measurement_scope': 'whole_objects',
+                    'capture_scope': 'observation_task_objects',
+                    'parent_binding_sha256': result['binding']['binding_sha256'],
+                    'parent_source_binding_sha256': result['binding']['source_binding_sha256'],
+                    'parent_capture_scope': result['binding']['capture_scope'],
+                    'capture_state': copy.deepcopy(task_view['capture_state']), 'objects': task_sources}
+                self._bind_read_result(task, source_check)
+                result['task_result'] = task
+                result['work']['task_query'] = task_work
+                task_closed = time.perf_counter_ns()
+                result['stages'].update(
+                    task_source_prepare={'started_ns': task_prepare_started, 'closed_ns': task_prepare_closed,
+                        'elapsed_ns': task_prepare_closed - task_prepare_started},
+                    task_measurement={'started_ns': task_started, 'closed_ns': task_closed,
+                        'elapsed_ns': task_closed - task_started})
         event_fields = {}
         if selector is not None:
             event_fields['target_view_classifications'] = result['target_view_classifications']

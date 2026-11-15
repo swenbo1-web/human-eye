@@ -265,7 +265,7 @@ def _validate_raw_indices(raw, width, vertex_count, field):
 @_trace_stage("scene.validate")
 def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True,
                      _task_capture=False, _surface_nearest_capture=False,
-                     _surface_scan_capture=False) -> tuple:
+                     _surface_scan_capture=False, _observation_task_capture=False) -> tuple:
     if not isinstance(scene, dict):
         raise ValueError("scene must be an object")
     if scene.get("unit") != "m" or scene.get("coordinate_frame") != "world":
@@ -273,15 +273,17 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
     revision = scene.get("revision")
     if not isinstance(revision, str) or not revision.strip():
         raise ValueError("scene requires a nonempty revision string")
-    if sum(bool(flag) for flag in (_task_capture, _surface_nearest_capture, _surface_scan_capture)) > 1:
+    if sum(bool(flag) for flag in (_task_capture, _surface_nearest_capture, _surface_scan_capture,
+                                   _observation_task_capture)) > 1:
         raise ValueError('Observation entries must have one capture scope')
-    scope = ('surface_scan_candidates' if _surface_scan_capture else
+    scope = ('observation_task_objects' if _observation_task_capture else
+             'surface_scan_candidates' if _surface_scan_capture else
              'surface_nearest_candidates' if _surface_nearest_capture else
              'selected_objects' if _task_capture else 'complete_scene_meshes')
     if scene.get('capture_scope', 'complete_scene_meshes') != scope:
         raise ValueError('Scene capture_scope does not match this observation entry')
     items = scene.get("meshes")
-    minimum, maximum = (0, 4) if _task_capture else (0, 256) if _surface_scan_capture else (1, 256)
+    minimum, maximum = (0, 4) if _task_capture or _observation_task_capture else (0, 256) if _surface_scan_capture else (1, 256)
     if not isinstance(items, list) or not minimum <= len(items) <= maximum:
         raise ValueError('scene requires ' + str(minimum) + '..' + str(maximum) + ' meshes')
     meshes, ids, marks = [], set(), set()
@@ -372,7 +374,7 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
                 or len(set(identity['object_instances'].values())) != len(ids)):
             raise ValueError('Invalid host_identity declaration')
         normalized['host_identity'] = copy.deepcopy(identity)
-    if _task_capture:
+    if _task_capture or _observation_task_capture:
         if 'host_identity' not in normalized:
             raise ValueError('Selected capture requires host_identity')
         selection = scene.get('task_selection')

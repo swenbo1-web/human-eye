@@ -48,10 +48,20 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     if type(query) is dict and query.get('mode') == 'active_observation':
         if set(query) == {'mode'}:
             return {'mode': 'active_observation'}
-        if set(query) != {'mode', 'objects'} or type(query['objects']) is not list or len(query['objects']) != 1:
-            raise ValueError('active_observation accepts mode and optionally one object selector')
-        from .task_query import validate_object_selector
-        return {'mode': 'active_observation', 'objects': [validate_object_selector(query['objects'][0])]}
+        if set(query) - {'task_query'} not in ({'mode'}, {'mode', 'objects'}):
+            raise ValueError('active_observation accepts mode, one optional object selector and one optional task_query')
+        from .task_query import validate_object_selector, validate_task_query
+        result = {'mode': 'active_observation'}
+        if 'objects' in query:
+            if type(query['objects']) is not list or len(query['objects']) != 1:
+                raise ValueError('active_observation accepts one visual object selector')
+            result['objects'] = [validate_object_selector(query['objects'][0])]
+        if 'task_query' in query:
+            task = query['task_query']
+            if type(task) is not dict or set(task) != {'mode', 'objects', 'requested_facts'} or task.get('mode') != 'task':
+                raise ValueError('active_observation task_query requires legacy task mode, objects and requested_facts')
+            result['task_query'] = validate_task_query(task)
+        return result
     if type(query) is dict and query.get('mode') == 'directory':
         if set(query) != {'mode'}:
             raise ValueError('directory query accepts only mode')
