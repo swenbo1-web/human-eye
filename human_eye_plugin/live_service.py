@@ -1388,9 +1388,8 @@ class LiveSpatialService:
         if packet['directory_sha256'] != digest:
             raise ValueError('directory_digest_mismatch')
 
-    def _observation_task_view(self, captured, parent_binding, query):
-        """Derive a whole-object measurement view from validated observation data."""
-        from .active_observation import fingerprint, geometry
+    def _prepare_observation_task_view(self, captured, query):
+        """Prepare complete task sources and any missing data before observation."""
         from .read_context import capture_key
         from .task_query import bind_objects
 
@@ -1404,7 +1403,8 @@ class LiveSpatialService:
         missing = [item['object_id'] for item in directory if item['object_id'] in required - set(meshes)]
         work = {'supplemental_capture_calls': 0, 'supplemental_objects': 0,
                 'supplement_validation_calls': 0, 'ordered_geometry_hash_calls': 0,
-                'geometry_alias_parse_calls': 0, 'additional_raster_attempts': 0}
+                'geometry_alias_parse_calls': 0, 'geometry_alias_reuses': 0,
+                'additional_raster_attempts': 0}
         if missing:
             self._check_request_budget('before_observation_task_supplement')
             capture_task = getattr(self.host, 'capture_task_scene', None)
@@ -1451,24 +1451,13 @@ class LiveSpatialService:
                 ensure_ascii=True, allow_nan=False).encode('utf8')).hexdigest()
             work['ordered_geometry_hash_calls'] += 1
             object_index = parent_indices.get(oid)
-            geometry_id = None
-            if object_index is not None:
-                parsed, _, _ = geometry({'objects': [{'name': mesh['name'],
-                    'vertices': mesh['vertices'], 'triangles': mesh['faces']}]})
-                geometry_id = 'geometry:' + fingerprint(parsed[0][2])
-                work['geometry_alias_parse_calls'] += 1
             count = len(mesh['faces'])
             sources.append({'object_id': oid, 'instance_id': identity['object_instances'][oid],
-                'observation_object_index': object_index, 'geometry_id': geometry_id,
+                'observation_object_index': object_index, 'geometry_id': None,
                 'source_triangle_count': count, 'source_triangle_index_ranges': [[0, count - 1]] if count else [],
                 'ordered_geometry_sha256': ordered_sha})
-        selection_key = fingerprint(['observation_task', parent_binding['source_binding_sha256'], query, sources])
-        state = copy.deepcopy(captured.get('capture_state'))
-        if state is not None:
-            state['selection_key'] = selection_key
         view = {'unit': 'm', 'coordinate_frame': 'world', 'source': captured['source'],
-            'revision': 'observation-task:' + selection_key,
-            'capture_scope': 'observation_task_objects', 'capture_state': state,
+            'capture_scope': 'observation_task_objects', 'capture_state': copy.deepcopy(captured.get('capture_state')),
             'meshes': selected, 'execution_authority': False,
             'host_identity': {'schema_version': '1.0', 'document_epoch': identity['document_epoch'],
                 'capture_scope': 'observation_task_objects',
@@ -1477,6 +1466,28 @@ class LiveSpatialService:
                 'pair_reason': pair_reason, 'candidate_count': len(directory)}}
         work['reused_observation_objects'] = len(selected) - work['supplemental_objects']
         return view, sources, work
+
+    def _observation_task_view(self, view, sources, work, query, parent_binding, geometry_ids):
+        """Finalize one derived selection with IDs from the same cached observation."""
+        from .active_observation import fingerprint
+
+        objects = parent_binding['objects']
+        if len(geometry_ids) != len(objects):
+            raise ValueError('active_observation_task_geometry_mapping_mismatch')
+        for source in sources:
+            index = source['observation_object_index']
+            if index is None:
+                continue
+            host = objects[index]
+            if host['host_id'] != source['object_id'] or host['instance_id'] != source['instance_id']:
+                raise ValueError('active_observation_task_geometry_mapping_mismatch')
+            source['geometry_id'] = geometry_ids[index]
+            work['geometry_alias_reuses'] += 1
+        selection_key = fingerprint(['observation_task', parent_binding['source_binding_sha256'], query, sources])
+        if view['capture_state'] is not None:
+            view['capture_state']['selection_key'] = selection_key
+        view['revision'] = 'observation-task:' + selection_key
+        return view
 
     def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None):
         from .active_observation_host import source_binding, observe_capture
@@ -1513,7 +1524,7 @@ class LiveSpatialService:
             task_view = None
             if task_query is not None:
                 task_prepare_started = time.perf_counter_ns()
-                task_view, task_sources, task_work = self._observation_task_view(captured, binding, task_query)
+                task_view, task_sources, task_work = self._prepare_observation_task_view(captured, task_query)
                 task_prepare_closed = time.perf_counter_ns()
             context.activate(captured, 'active_observation', binding)
             binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
@@ -1527,15 +1538,18 @@ class LiveSpatialService:
 
             def compute():
                 directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
-                return observe_capture(captured, directory, include_image=include_image,
-                    construction_callback=before_construction, check_budget=self._check_request_budget)
+                geometry_ids = []
+                observed = observe_capture(captured, directory, include_image=include_image,
+                    construction_callback=before_construction, check_budget=self._check_request_budget,
+                    _geometry_ids_callback=geometry_ids.append)
+                return observed, geometry_ids[0]
 
             lookup_started = time.perf_counter_ns()
             try:
                 request_key = {'mode': 'active_observation', 'include_image': include_image}
                 if selector is not None:
                     request_key['objects'] = [selector]
-                result, hit = context.result(query_key(request_key), compute)
+                (result, geometry_ids), hit = context.result(query_key(request_key), compute)
             except Exception as error:
                 self.record_event('active_observation_failed', session_id=session_id,
                     task_work=getattr(error, 'active_observation_work',
@@ -1563,6 +1577,12 @@ class LiveSpatialService:
             self._bind_read_result(result, source_check)
             if task_view is not None:
                 from .task_query import task_result
+                task_finalize_started = time.perf_counter_ns()
+                if result['binding']['source_binding_sha256'] != binding['source_binding_sha256']:
+                    raise ValueError('active_observation_task_source_binding_mismatch')
+                task_view = self._observation_task_view(task_view, task_sources, task_work,
+                    task_query, result['binding'], geometry_ids)
+                task_finalize_closed = time.perf_counter_ns()
                 task_started = time.perf_counter_ns()
                 context.activate(task_view, 'observation_task', {
                     'parent_binding_sha256': result['binding']['binding_sha256'], 'task_query': task_query})
@@ -1594,6 +1614,8 @@ class LiveSpatialService:
                 result['stages'].update(
                     task_source_prepare={'started_ns': task_prepare_started, 'closed_ns': task_prepare_closed,
                         'elapsed_ns': task_prepare_closed - task_prepare_started},
+                    task_source_finalize={'started_ns': task_finalize_started, 'closed_ns': task_finalize_closed,
+                        'elapsed_ns': task_finalize_closed - task_finalize_started},
                     task_measurement={'started_ns': task_started, 'closed_ns': task_closed,
                         'elapsed_ns': task_closed - task_started})
         event_fields = {}

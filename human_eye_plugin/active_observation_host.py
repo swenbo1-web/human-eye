@@ -359,7 +359,7 @@ def _location_conventions(cameras):
 
 
 def observe_capture(capture, output_directory, construction_callback=None,
-                    check_budget=None, include_image=True):
+                    check_budget=None, include_image=True, _geometry_ids_callback=None):
     """Compute serializable facts and current-host-bound local image references.
 
     The caller supplies one complete capture and retains this result in its
@@ -391,6 +391,8 @@ def observe_capture(capture, output_directory, construction_callback=None,
         started = time.perf_counter_ns()
         work['mesh_conversions'] += 1
         meshes = _meshes_from_objects(objects)
+        if _geometry_ids_callback is not None:
+            _geometry_ids_callback(tuple(mesh.object_id for mesh in meshes))
         stages['mesh_arrays'] = _interval(started)
         work.update(capture_object_count=len(objects),
                     captured_vertex_count=sum(len(item[0]) for item in objects),
