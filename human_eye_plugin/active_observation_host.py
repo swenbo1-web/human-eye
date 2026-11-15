@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
+import math
 from pathlib import Path
 import time
 
@@ -34,6 +37,97 @@ def _camera_policy():
             'projection': 'orthographic', 'scope': 'complete_captured_world_geometry'}
 
 
+def _target_observation_binding(capture, objects, identity):
+    metadata = capture.get('observation_target')
+    if (type(metadata) is not dict or set(metadata) != {
+            'schema', 'selector', 'target_object_id', 'target_instance_id', 'target_object_index',
+            'camera_plan', 'scene_directory', 'full_scene_identity', 'retained_object_ids',
+            'excluded_object_ids', 'directory_sha256', 'source_frame', 'work'}
+            or metadata['schema'] != 'active-observation-target-v1'):
+        raise ValueError('active_observation_target_metadata_required')
+    selector = metadata['selector']
+    if (type(selector) is not dict or len(selector) != 1 or not set(selector) <= {'id', 'name'}
+            or any(type(value) is not str or not value for value in selector.values())):
+        raise ValueError('active_observation_target_selector_required')
+    target_index = metadata['target_object_index']
+    if (type(target_index) is not int or not 0 <= target_index < len(objects)
+            or metadata['target_object_id'] != objects[target_index]['host_id']
+            or metadata['target_instance_id'] != objects[target_index]['instance_id']):
+        raise ValueError('active_observation_target_instance_mismatch')
+    retained, excluded = metadata['retained_object_ids'], metadata['excluded_object_ids']
+    full_identity = metadata['full_scene_identity']
+    if (type(retained) is not list or retained != [row['host_id'] for row in objects]
+            or type(excluded) is not list or any(type(value) is not str or not value for value in excluded)
+            or len(set(excluded)) != len(excluded) or set(retained) & set(excluded)
+            or type(full_identity) is not dict or full_identity.get('schema_version') != '1.0'
+            or full_identity.get('document_epoch') != identity['document_epoch']
+            or type(full_identity.get('object_instances')) is not dict
+            or set(full_identity['object_instances']) != set(retained) | set(excluded)
+            or any(type(value) is not str or not value for value in full_identity['object_instances'].values())
+            or len(set(full_identity['object_instances'].values())) != len(full_identity['object_instances'])
+            or any(full_identity['object_instances'].get(row['host_id']) != row['instance_id'] for row in objects)):
+        raise ValueError('active_observation_target_scene_identity_mismatch')
+    directory = metadata['scene_directory']
+    directory_sha = metadata['directory_sha256']
+    if (type(directory) is not list or not directory
+            or any(type(row) is not dict or type(row.get('object_id')) is not str for row in directory)
+            or len({row['object_id'] for row in directory}) != len(directory)
+            or {row['object_id'] for row in directory} != set(retained) | set(excluded)
+            or type(directory_sha) is not str or len(directory_sha) != 64
+            or any(value not in '0123456789abcdef' for value in directory_sha)
+            or full_identity.get('capture_scope') != 'complete_scene_meshes'):
+        raise ValueError('active_observation_target_directory_required')
+    computed_directory_sha = hashlib.sha256(json.dumps(directory, sort_keys=True, separators=(',', ':'),
+                                                       ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
+    if directory_sha != computed_directory_sha:
+        raise ValueError('active_observation_target_directory_digest_mismatch')
+    retained_ids = set(retained)
+    excluded_ids = set(excluded)
+    if ([row['object_id'] for row in directory if row['object_id'] in retained_ids] != retained
+            or [row['object_id'] for row in directory if row['object_id'] in excluded_ids] != excluded):
+        raise ValueError('active_observation_target_retained_order_mismatch')
+    for row in directory:
+        if (row.get('instance_id') != full_identity['object_instances'][row['object_id']]
+                or type(row.get('name')) is not str):
+            raise ValueError('active_observation_target_directory_identity_mismatch')
+    target_row = next(row for row in directory if row['object_id'] == metadata['target_object_id'])
+    selector_key, selector_value = next(iter(selector.items()))
+    if (target_row['name'] != objects[target_index]['object_name']
+            or selector_value != target_row['object_id' if selector_key == 'id' else 'name']):
+        raise ValueError('active_observation_target_selector_mismatch')
+    frame = metadata['source_frame']
+    if (type(frame) is not dict or set(frame) != {'frame', 'subframe', 'scale_length'}
+            or type(frame['frame']) is not int
+            or any(type(frame[key]) not in (int, float) or not math.isfinite(frame[key])
+                   for key in ('subframe', 'scale_length')) or frame['scale_length'] <= 0
+            or type(metadata['work']) is not dict):
+        raise ValueError('active_observation_target_frame_required')
+    cameras = metadata['camera_plan']
+    if (type(cameras) is not dict or type(cameras.get('views')) is not list
+            or cameras.get('schema') != 'active-coverage-target-cameras-v1'
+            or cameras.get('directions') != list(CAMERA_ORDER)
+            or len(cameras['views']) != len(CAMERA_ORDER)):
+        raise ValueError('active_observation_target_camera_plan_required')
+    for expected_name, pose in zip(CAMERA_ORDER, cameras['views']):
+        if (type(pose) is not dict or pose.get('name') != expected_name
+                or pose.get('direction_rational') != list(CAMERA_DIRECTIONS[expected_name])
+                or pose.get('projection') != 'orthographic'
+                or pose.get('size_px') != [IMAGE_SIZE, IMAGE_SIZE]):
+            raise ValueError('active_observation_target_camera_plan_required')
+        for name in ('view_matrix', 'projection_matrix'):
+            matrix = pose.get(name)
+            if (type(matrix) is not list or len(matrix) != 4
+                    or any(type(row) is not list or len(row) != 4 for row in matrix)
+                    or any(type(value) not in (int, float) or not math.isfinite(value)
+                           for row in matrix for value in row)):
+                raise ValueError('active_observation_target_camera_plan_required')
+    result = {key: copy.deepcopy(metadata[key]) for key in (
+        'schema', 'selector', 'target_object_id', 'target_instance_id', 'target_object_index',
+        'full_scene_identity', 'retained_object_ids', 'excluded_object_ids', 'directory_sha256', 'source_frame')}
+    result['camera_plan_sha256'] = fingerprint(cameras)
+    return result
+
+
 def source_binding(capture, cameras=None, *, geometry_identity=None):
     """Bind capture identity and ordered host instances before result reuse.
 
@@ -47,9 +141,11 @@ def source_binding(capture, cameras=None, *, geometry_identity=None):
             or type(capture.get('meshes')) is not list or not capture['meshes']):
         raise ValueError('active_observation_complete_world_capture_required')
     identity = capture.get('host_identity')
+    targeted = 'observation_target' in capture
+    expected_scope = 'target_observation_meshes' if targeted else 'complete_scene_meshes'
     if (type(identity) is not dict or identity.get('schema_version') != '1.0'
-            or identity.get('capture_scope') != 'complete_scene_meshes'
-            or capture.get('capture_scope', 'complete_scene_meshes') != 'complete_scene_meshes'
+            or identity.get('capture_scope') != expected_scope
+            or capture.get('capture_scope', 'complete_scene_meshes') != expected_scope
             or type(identity.get('document_epoch')) is not str
             or len(identity['document_epoch']) != 64
             or any(value not in '0123456789abcdef' for value in identity['document_epoch'])
@@ -88,8 +184,13 @@ def source_binding(capture, cameras=None, *, geometry_identity=None):
         'source': capture['source'], 'capture_state': copy.deepcopy(state),
         'objects': objects, 'camera_policy': _camera_policy(),
     }
+    if targeted:
+        result['observation_target'] = _target_observation_binding(capture, objects, identity)
+        result['camera_policy']['scope'] = 'target_fitted_viewport_full_scene_depth'
     result['source_binding_sha256'] = fingerprint(result)
     if cameras is not None:
+        if targeted and fingerprint(cameras) != result['observation_target']['camera_plan_sha256']:
+            raise ValueError('active_observation_target_camera_binding_mismatch')
         result['camera_specification'] = copy.deepcopy(cameras)
         result['geometry_identity'] = geometry_identity
         result['camera_identity'] = fingerprint([
@@ -183,6 +284,8 @@ def _patch_scope_facts(session, binding):
         owned.update(indices)
         region_mapping.append({'roi_id': region.roi_id, 'object_index': region.object_index,
                                'triangle_indices': list(region.triangle_indices)})
+    target = binding.get('observation_target')
+    target_index = target['target_object_index'] if target is not None else None
     support = []
     for index, partition in enumerate(partitions):
         source_count = len(session.objects[index][1])
@@ -194,35 +297,50 @@ def _patch_scope_facts(session, binding):
                     or rejected & indices or not component['reason']):
                 raise ValueError('active_observation_patch_component_mismatch')
             rejected.update(indices)
+        occluder = target_index is not None and index != target_index
         if (partition['object_index'] != index or partition['source_triangle_count'] != source_count
                 or len(supported) != len(partition['supported_triangle_indices'])
                 or supported != region_faces[index]
                 or partition['supported_triangle_count'] != len(supported)
                 or partition['unsupported_triangle_count'] != len(rejected)
-                or supported & rejected or supported | rejected != set(range(source_count))):
+                or supported & rejected):
             raise ValueError('active_observation_patch_partition_triangle_mismatch')
-        status = ('unsupported' if not supported else
+        if occluder:
+            if supported or rejected or partition.get('coverage_role') != 'occluder_only':
+                raise ValueError('active_observation_occluder_partition_mismatch')
+        elif 'coverage_role' in partition or supported | rejected != set(range(source_count)):
+            raise ValueError('active_observation_patch_partition_triangle_mismatch')
+        status = ('occluder_only' if occluder else 'unsupported' if not supported else
                   'partially_supported' if rejected else 'fully_supported')
         row = dict(binding['objects'][index], **copy.deepcopy(partition), support_status=status)
         row['unsupported_components'] = [dict(copy.deepcopy(component), status='unknown')
                                          for component in partition['unsupported_components']]
         support.append(row)
     supported_objects = {region.object_index for region in session.regions}
-    return {
+    result = {
         'capture_object_count': len(session.objects),
         'supported_roi_object_count': len(supported_objects),
         'objects_without_supported_roi': [dict(row, status='unknown') for row in binding['objects']
-                                          if row['object_index'] not in supported_objects],
+                                          if row['object_index'] not in supported_objects
+                                          and (target_index is None or row['object_index'] == target_index)],
         'domain': 'maximal edge-connected exact planar rectangular patches',
         'all_objects_participate_in_occlusion': True,
         'patch_support': {
-            'schema': 'active-patch-support-v1',
+            'schema': 'active-patch-support-v2' if target is not None else 'active-patch-support-v1',
             'triangle_index_scope': 'zero-based source triangles within each object',
             'all_triangles_participate_in_occlusion': True,
             'objects': support,
             'regions': region_mapping,
         },
     }
+    if target is not None:
+        result['observation_scope'] = {
+            'kind': 'target', 'target_object_index': target_index, 'target_object_count': 1,
+            'occluder_only_object_count': len(session.objects) - 1,
+            'full_scene_object_count': len(target['full_scene_identity']['object_instances']),
+            'excluded_object_count': len(target['excluded_object_ids']),
+        }
+    return result
 
 
 def _location_conventions(cameras):
@@ -281,11 +399,15 @@ def observe_capture(capture, output_directory, construction_callback=None,
                         mesh.vertices.nbytes + mesh.faces.nbytes + mesh.edges.nbytes for mesh in meshes))
         started = time.perf_counter_ns()
         work['camera_calls'] += 1
-        cameras = freeze_cameras(meshes)
+        target = binding.get('observation_target')
+        cameras = (copy.deepcopy(capture['observation_target']['camera_plan']) if target is not None
+                   else freeze_cameras(meshes))
         stages['cameras'] = _interval(started)
         started = time.perf_counter_ns()
         work['prepare_calls'] += 1
-        session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=True)
+        prepare_options = {'target_object_index': target['target_object_index']} if target is not None else {}
+        session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras,
+                                          diagnostics=True, **prepare_options)
         stages['prepare'] = _interval(started)
         stages['partition'] = copy.deepcopy(session.diagnostics['stages']['discovery'])
         stages['index'] = copy.deepcopy(session.diagnostics['stages']['coverage'])
@@ -353,10 +475,12 @@ def observe_capture(capture, output_directory, construction_callback=None,
         facts['scope'] = _patch_scope_facts(session, binding)
         if session.cameras['views']:
             facts['location_conventions'] = _location_conventions(session.cameras)
+        if target is not None:
+            target_classifications = copy.deepcopy(session.index.classifications)
         stages['scope_and_facts'] = _interval(started)
         observation_status = ('no_supported_regions' if not session.regions
                               else 'locally_observed' if include_image else 'prediction_only')
-        return {
+        result = {
             'status': 'unknown' if not session.regions else 'complete' if include_image else 'predicted',
             'result_kind': 'active_observation', 'observation_status': observation_status,
             'binding': binding, 'facts': facts, 'frames': frames, 'steps': steps,
@@ -364,6 +488,9 @@ def observe_capture(capture, output_directory, construction_callback=None,
             'image_delivery': {'local_verified': len(frames), 'mcp_content_constructed': 0,
                                'external_consumer_verified': False},
         }
+        if target is not None:
+            result['target_view_classifications'] = target_classifications
+        return result
     except Exception as error:
         error.active_observation_work = copy.deepcopy(work)
         error.active_observation_byte_scope = 'completed frame metadata lower bound on failure'

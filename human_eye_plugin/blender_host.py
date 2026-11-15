@@ -502,6 +502,104 @@ def _euler_xyz(degrees):
             [-sy, cy * sx, cy * cx]]
 
 
+def _observation_affine_interval(bounds, coefficients, translation):
+    """Enclose real affine values and any binary64 three-term dot ordering."""
+    try:
+        if (len(bounds) != 2 or any(len(row) != 3 for row in bounds)
+                or any(not math.isfinite(x) for row in bounds for x in row)
+                or any(bounds[0][k] > bounds[1][k] for k in range(3))):
+            return None
+        lower = upper = 0.
+        magnitudes = [abs(translation)]
+        for axis, coefficient in enumerate(coefficients):
+            products = [coefficient * bounds[end][axis] for end in (0, 1)]
+            lower = math.nextafter(lower + math.nextafter(min(products), -math.inf), -math.inf)
+            upper = math.nextafter(upper + math.nextafter(max(products), math.inf), math.inf)
+            magnitudes.append(max(abs(x) for x in products))
+        lower = math.nextafter(lower + translation, -math.inf)
+        upper = math.nextafter(upper + translation, math.inf)
+        # gamma32 exceeds the error of three products, any dot reduction/FMA,
+        # and translation. The absolute term covers gradual underflow.
+        unit = 2. ** -53
+        error = (32 * unit / (1 - 32 * unit)) * math.fsum(magnitudes) + 8 * math.ulp(0.)
+        lower = math.nextafter(lower - error, -math.inf)
+        upper = math.nextafter(upper + error, math.inf)
+        return [lower, upper] if math.isfinite(lower) and math.isfinite(upper) else None
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def _observation_target_cameras(target_vertices, world_bounds):
+    """Fit target XY and enclose whole-scene depth using dependency-free math."""
+    vertices = [_vector(point, 'target vertex') for point in target_vertices]
+    if len(vertices) < 3 or not world_bounds:
+        raise BlenderHostError('active_observation_target_camera_geometry')
+    low = [min(point[k] for point in vertices) for k in range(3)]
+    high = [max(point[k] for point in vertices) for k in range(3)]
+    center = [a * .5 + b * .5 for a, b in zip(low, high)]
+    directions = [('SCENE', (4, -4, 3)), ('TOP', (0, 0, 1)),
+                  ('LEFT', (-1, 0, 1)), ('RIGHT', (1, 0, 1)),
+                  ('FRONT', (0, -1, 1)), ('BACK', (0, 1, 1))]
+    poses = []
+    for name, rational in directions:
+        length = _norm(rational)
+        direction = [x / length for x in rational]
+        up_seed = [0., 1., 0.] if abs(direction[2]) > .999999 else [0., 0., 1.]
+        right = _cross([-x for x in direction], up_seed)
+        right = [x / _norm(right) for x in right]
+        up = _cross(right, [-x for x in direction])
+        projected = [[_dot([point[k] - center[k] for k in range(3)], axis)
+                      for axis in (right, up)] for point in vertices]
+        half_unpadded = max(abs(x) for point in projected for x in point)
+        half_span = half_unpadded * 1.1
+        if not math.isfinite(half_span) or half_span <= 0:
+            raise BlenderHostError('active_observation_target_camera_span')
+        offset = -_dot(direction, center)
+        ranges = [_observation_affine_interval(box, direction, offset) for box in world_bounds]
+        if any(interval is None for interval in ranges):
+            raise BlenderHostError('active_observation_target_camera_depth_unknown')
+        front = max(interval[1] for interval in ranges)
+        distance = math.nextafter(max(.1, front + .1, 2 * half_span), math.inf)
+        eye = [center[k] + direction[k] * distance for k in range(3)]
+        view = [axis + [-_dot(axis, eye)] for axis in (right, up, direction)]
+        view.append([0., 0., 0., 1.])
+        camera_depth = [_observation_affine_interval(box, direction, view[2][3]) for box in world_bounds]
+        if any(interval is None for interval in camera_depth):
+            raise BlenderHostError('active_observation_target_camera_depth_unknown')
+        nearest = min(-interval[1] for interval in camera_depth)
+        farthest = max(-interval[0] for interval in camera_depth)
+        near = .08
+        far = math.nextafter(max(.081, farthest + max(2 * half_span, .01)), math.inf)
+        if nearest <= near or not math.isfinite(far):
+            raise BlenderHostError('active_observation_target_camera_depth_unrepresentable')
+        projection = [[1 / half_span, 0., 0., 0.], [0., 1 / half_span, 0., 0.],
+                      [0., 0., -2 / (far - near), -(far + near) / (far - near)],
+                      [0., 0., 0., 1.]]
+        poses.append(dict(name=name, projection='orthographic', size_px=[512, 512],
+            direction_rational=list(rational), target_to_eye_direction_rational=list(rational),
+            target_to_eye_unit=direction, eye_to_scene_unit=[-x for x in direction],
+            eye=eye, target=center, near=near, far=far, span=2 * half_span,
+            up_seed=up_seed, right_unit=right, up_unit=up, target_world_m=center,
+            camera_eye_world_m=eye, view_span_m=2 * half_span, half_span_m=half_span,
+            near_m=near, far_m=far, view_matrix=view, projection_matrix=projection,
+            m_per_pixel=2 * half_span / 511,
+            unpadded_projected_bounds_xy_m=[[min(p[k] for p in projected) for k in range(2)],
+                                            [max(p[k] for p in projected) for k in range(2)]],
+            unpadded_symmetric_half_span_m=half_unpadded,
+            target_vertices_checked=len(vertices), min_camera_depth_m=nearest,
+            max_camera_depth_m=farthest, depth_scope='all_scene_conservative_bounds'))
+    return dict(schema='active-coverage-target-cameras-v1', directions=[name for name, _ in directions],
+        common_center_world_m=center, views=poses,
+        margin={'per_side_fraction_of_unpadded_symmetric_span': .05,
+                'square_fit': 'target actual world vertices about one common center'},
+        scope='target_fitted_XY_whole_scene_conservative_depth',
+        frustum_boundary='Inclusive NDC [-1,1]; positive camera depth.',
+        basis='view rows right,true_up,target_to_eye',
+        geometry_conversion='captured binary64 world vertices', uniform_object_color_rgb=[180, 190, 205],
+        raster_depth_ties='Strict nearer update; equal-depth retains earlier supplied surface.',
+        pixel_center_convention='NDC maps to (size-1)/2; raster samples integer index +0.5.')
+
+
 class BlenderSceneHost:
     """Capture world-space metres and apply a revision-checked delta SE(3).
 
@@ -1247,6 +1345,173 @@ class BlenderSceneHost:
         self._main_thread()
         with self._lock:
             return self._capture_state(self._capture(_resident=True),_digest(['scene']))
+
+    def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
+        """Acquire a single observation target and its whole-scene occluders."""
+        self._main_thread()
+        if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                       for value in selector.values())):
+            raise BlenderHostError('active_observation_target_selector')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('active_observation_target_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('active_observation_target_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('active_observation_target_deadline_exceeded')
+
+        def interval(started):
+            closed = time.perf_counter_ns()
+            return dict(started_ns=started, closed_ns=closed, elapsed_ns=closed - started)
+
+        checkpoint()
+        with self._lock:
+            stages = {}
+            before = dict(self._residency_stats)
+            started = time.perf_counter_ns()
+            graph, scale = self._depsgraph(), self._scale()
+            objects = self._objects(graph)
+            ids = [self.object_id(obj) for obj in objects]
+            key, value = next(iter(selector.items()))
+            matches = [obj for obj, oid in zip(objects, ids)
+                       if (oid if key == 'id' else obj.name) == value]
+            if len(matches) != 1:
+                raise BlenderHostError('active_observation_target_not_found' if not matches
+                                       else 'active_observation_target_ambiguous')
+            target = matches[0]
+            target_id = self.object_id(target)
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('active_observation_target_source_identity')
+            frame = dict(frame=int(getattr(self.scene, 'frame_current', 0)),
+                         subframe=float(getattr(self.scene, 'frame_subframe', 0.)), scale_length=scale)
+            evaluated_by_id, frozen, rows = {}, {}, []
+            source_vertices = triangle_budget = 0
+            uncertain_counts = False
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                evaluated = obj.evaluated_get(graph)
+                evaluated_by_id[oid] = evaluated
+                matrix = _matrix(evaluated.matrix_world)
+                data = getattr(evaluated, 'data', None)
+                try:
+                    counts = (len(data.vertices), len(data.loops), len(data.polygons))
+                except (AttributeError, TypeError, ReferenceError):
+                    counts = None
+                if counts is None:
+                    uncertain_counts = True
+                    vertices = upper = None
+                else:
+                    vertices, loops, polygons = counts
+                    upper = max(0, loops - 2 * polygons)
+                    source_vertices += vertices
+                    triangle_budget += upper
+                try:
+                    corners = evaluated.bound_box
+                except (AttributeError, RuntimeError, ReferenceError):
+                    corners = ()
+                bounds = _acquisition_bounds(corners, matrix, scale)
+                rows.append(dict(object_id=oid, name=str(obj.name),
+                    instance_id=identity['object_instances'][oid], matrix_world=matrix,
+                    bounds_world_m=bounds, vertex_count=vertices, triangle_budget_upper=upper))
+                frozen[oid] = (matrix, self._guard_description(obj), counts)
+            if source_vertices > 500000:
+                raise BlenderHostError('Scene geometry budget exceeded')
+            # An upper bound above the actual-face budget cannot prove either
+            # acceptance or rejection. Read all geometry through the original
+            # bounded capture in that case, also covering unavailable counts.
+            require_complete = uncertain_counts or triangle_budget > 1000000
+            stages['directory_and_target_binding'] = interval(started)
+            started = time.perf_counter_ns()
+            initial_ids = {row['object_id'] for row in rows
+                           if row['bounds_world_m'] is None or require_complete}
+            initial_ids.add(target_id)
+            initial = [obj for obj, oid in zip(objects, ids) if oid in initial_ids]
+            initial_capture = self._capture(
+                _acquisition_context=(graph, scale, initial, evaluated_by_id, checkpoint),
+                _resident=True, _acquisition_scope='target_observation_meshes')
+            meshes = {mesh['object_id']: mesh for mesh in initial_capture['meshes']}
+            stages['target_and_unknown_geometry'] = interval(started)
+            started = time.perf_counter_ns()
+            depth_bounds = []
+            tight_vertices = 0
+            for row in rows:
+                bounds = row['bounds_world_m']
+                if bounds is None:
+                    vertices = meshes[row['object_id']]['vertices']
+                    tight_vertices += len(vertices)
+                    bounds = [[min(point[k] for point in vertices) for k in range(3)],
+                              [max(point[k] for point in vertices) for k in range(3)]]
+                depth_bounds.append(bounds)
+            cameras = _observation_target_cameras(meshes[target_id]['vertices'], depth_bounds)
+            stages['target_cameras'] = interval(started)
+            started = time.perf_counter_ns()
+            retained = objects
+            retained_ids = ids
+            excluded_ids = []
+            stages['viewport_selection'] = interval(started)
+            started = time.perf_counter_ns()
+            remaining = [obj for obj in retained if self.object_id(obj) not in meshes]
+            if remaining:
+                remainder = self._capture(
+                    _acquisition_context=(graph, scale, remaining, evaluated_by_id, checkpoint),
+                    _resident=True, _acquisition_scope='target_observation_meshes')
+                meshes.update((mesh['object_id'], mesh) for mesh in remainder['meshes'])
+            # Merge the disjoint acquisitions in original scene order. The
+            # target is never extracted or world-transformed a second time,
+            # including hosts whose residency handlers are unavailable.
+            ordered = [dict(meshes[oid], mark_label='#B%04d' % (index + 1))
+                       for index, oid in enumerate(retained_ids)]
+            if (sum(len(mesh['vertices']) for mesh in ordered) > 500000
+                    or sum(len(mesh['faces']) for mesh in ordered) > 1000000):
+                raise BlenderHostError('Scene geometry budget exceeded')
+            stages['remaining_geometry'] = interval(started)
+            started = time.perf_counter_ns()
+            if (self._objects(graph) != objects or self._scale() != scale
+                    or int(getattr(self.scene, 'frame_current', 0)) != frame['frame']
+                    or float(getattr(self.scene, 'frame_subframe', 0.)) != frame['subframe']
+                    or self._identity_metadata(objects) != identity):
+                raise BlenderHostError('active_observation_target_source_changed')
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                matrix, guards, counts = frozen[oid]
+                evaluated = evaluated_by_id[oid]
+                if _matrix(evaluated.matrix_world) != matrix or self._guard_description(obj) != guards:
+                    raise BlenderHostError('active_observation_target_source_changed')
+                if counts is not None and counts != (len(evaluated.data.vertices), len(evaluated.data.loops),
+                                                      len(evaluated.data.polygons)):
+                    raise BlenderHostError('active_observation_target_source_changed')
+            metadata = dict(schema='active-observation-target-v1', selector=dict(selector),
+                target_object_id=target_id, target_instance_id=identity['object_instances'][target_id],
+                target_object_index=retained_ids.index(target_id), camera_plan=cameras,
+                scene_directory=rows, full_scene_identity=identity, retained_object_ids=retained_ids,
+                excluded_object_ids=excluded_ids, directory_sha256=_digest(rows), source_frame=frame)
+            scene = dict(unit='m', coordinate_frame='world', source='blender',
+                capture_scope='target_observation_meshes', execution_authority=False, meshes=ordered,
+                host_identity=self._identity_metadata(retained, capture_scope='target_observation_meshes'),
+                observation_target=metadata)
+            scene['revision'] = 'blender:' + _digest(scene)
+            selection_key = _digest(['active_observation', target_id, metadata['directory_sha256'], _digest(cameras)])
+            scene = self._capture_state(scene, selection_key)
+            stages['source_validation_and_binding'] = interval(started)
+            metadata = scene['observation_target']
+            metadata['work'] = dict(strategy='complete', scene_objects=len(objects), retained_objects=len(retained),
+                excluded_objects=len(excluded_ids), source_vertices_metadata=source_vertices,
+                triangle_budget_upper=triangle_budget, source_counts_require_complete=require_complete,
+                expanded_vertices=sum(len(mesh['vertices']) for mesh in ordered),
+                expanded_triangles=sum(len(mesh['faces']) for mesh in ordered),
+                bound_tests=0, tight_bounds_vertices_scanned=tight_vertices,
+                target_camera_vertex_projections=6 * len(meshes[target_id]['vertices']),
+                residency_delta={key: self._residency_stats[key] - value for key, value in before.items()},
+                stages=stages)
+            checkpoint()
+            if len(json.dumps(scene, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
+                raise BlenderHostError('active_observation_target_document_budget_exceeded')
+            checkpoint()
+            return scene
 
     def capture_directory(self, deadline_ns, max_response_bytes):
         """Aggregate evaluated vertex bounds without creating a mesh capture."""

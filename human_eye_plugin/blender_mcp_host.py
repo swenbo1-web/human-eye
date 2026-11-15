@@ -43,7 +43,7 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
-_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -247,6 +247,19 @@ class BlenderMCPHost:
 
     def capture_task_scene(self, selectors) -> dict[str, Any]:
         return self._request('capture_task', {'selectors': selectors})
+
+    def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
+        now = time.perf_counter_ns()
+        if type(deadline_ns) is not int or now >= deadline_ns:
+            raise ValueError('active_observation_target_deadline_exceeded')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+            raise ValueError('active_observation_target_document_budget')
+        deadline_ns = min(deadline_ns, now + int(self.timeout_s * 1e9))
+        result = self._request('capture_active_observation', dict(selector=selector,
+            deadline_ns=deadline_ns, max_response_bytes=max_response_bytes))
+        if time.perf_counter_ns() >= deadline_ns:
+            raise ValueError('active_observation_target_deadline_exceeded')
+        return result
 
     def capture_directory(self, deadline_ns, max_response_bytes):
         now = time.perf_counter_ns()
@@ -523,7 +536,7 @@ class BlenderMCPHost:
         else:
             lines += ['    with _cl.redirect_stdout(_io.StringIO()):',
                       '        _result = getattr(_host, ' + repr(method) + ")(**_request['params'])"]
-        if command in {'capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan'}:
+        if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
             baseline = json.dumps(self._scene_decoder.baseline(), allow_nan=False, separators=(',', ':'))
             lines.append('    _result = _host.capture_delta(_result, _json.loads(' + repr(baseline) + '))')
         lines += [
@@ -544,6 +557,7 @@ class BlenderMCPHost:
     def _observation_code(self, command, params, request_id):
         required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
             'capture_directory': {'deadline_ns', 'max_response_bytes'},
+            'capture_active_observation': {'selector', 'deadline_ns', 'max_response_bytes'},
             'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
             'capture_surface_scan': {'threshold_m', 'deadline_ns', 'max_response_bytes'},
             'native_observation_capabilities': set(),
@@ -622,11 +636,11 @@ class BlenderMCPHost:
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
                 self._resident_ready = True
-                if command in {'capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan'}:
+                if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
                     result = self._scene_decoder.apply(result)
                 if command == 'capture_directory':
                     self._record_observation_document(result.get('binding', {}))
-                if self._observation_depth and command in {'capture', 'capture_evidence', 'capture_task'}:
+                if self._observation_depth and command in {'capture', 'capture_evidence', 'capture_task', 'capture_active_observation'}:
                     capture = result.get('capture') if command == 'capture_evidence' else result
                     self._record_observation_document(capture)
                 if command == "apply" and (result.get("status") == "rejected_before_mutation" or "rejection" in result):

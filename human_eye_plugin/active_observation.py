@@ -258,10 +258,21 @@ def _rectangle_boundary(vertices, boundary, referenced):
     return quad, normal
 
 
-def partition_regions(objects):
+def partition_regions(objects, *, target_object_index=None):
     """Return canonical rectangles and a complete source-triangle partition."""
+    if target_object_index is not None and (
+            type(target_object_index) is not int or not 0 <= target_object_index < len(objects)):
+        raise ValueError('active_observation_target_object_index_required')
     regions, scope = [], []
     for object_index, (vertices, faces, _, name) in enumerate(objects):
+        if target_object_index is not None and object_index != target_object_index:
+            scope.append({
+                'object_index': object_index, 'source_triangle_count': len(faces),
+                'supported_triangle_count': 0, 'supported_triangle_indices': (),
+                'unsupported_triangle_count': 0, 'unsupported_components': (),
+                'coverage_role': 'occluder_only',
+            })
+            continue
         normals, components, boundaries, nonmanifold, winding = _planar_components(vertices, faces)
         supported, unsupported = set(), []
         for indices, boundary in zip(components, boundaries):
@@ -723,7 +734,8 @@ def prepare_scene(scene, cameras, diagnostics=False):
     return session
 
 
-def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=False):
+def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=False,
+                              *, target_object_index=None):
     """Prepare from the exact objects/triangles/identity returned by geometry.
 
     Camera fitting and image conversion can share this normalized geometry
@@ -734,7 +746,7 @@ def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagn
     if diagnostics:
         started = time.perf_counter_ns()
     owned_cameras = copy.deepcopy(cameras)
-    regions, patch_scope = partition_regions(objects)
+    regions, patch_scope = partition_regions(objects, target_object_index=target_object_index)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['discovery'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}

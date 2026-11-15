@@ -1049,8 +1049,9 @@ class LiveSpatialService:
         if query['mode'] == 'active_observation':
             if (task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
-                raise ValueError('active_observation accepts complete-scene observation without instruction, pair, goal or scene_delta')
-            return self._observe_active_observation(session_id, include_image=include_image)
+                raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
+            selector = query['objects'][0] if 'objects' in query else None
+            return self._observe_active_observation(session_id, include_image=include_image, selector=selector)
         if query['mode'] == 'directory':
             if (include_image or task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1386,7 +1387,7 @@ class LiveSpatialService:
         if packet['directory_sha256'] != digest:
             raise ValueError('directory_digest_mismatch')
 
-    def _observe_active_observation(self, session_id, *, include_image):
+    def _observe_active_observation(self, session_id, *, include_image, selector=None):
         from .active_observation_host import source_binding, observe_capture
         from .read_context import query_key
         if not self.config.get('enabled', True):
@@ -1401,10 +1402,23 @@ class LiveSpatialService:
             self._check_request_budget('before_active_observation_capture')
             capture_started = time.perf_counter_ns()
             with span('host.capture', kind='host'):
-                captured = self.host.capture_scene()
+                if selector is None:
+                    captured = self.host.capture_scene()
+                else:
+                    capture_target = getattr(self.host, 'capture_active_observation', None)
+                    if not callable(capture_target):
+                        raise ValueError('active_observation_target_host_not_supported')
+                    remaining = self._check_request_budget('before_active_observation_target_capture')
+                    timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+                    deadline = time.perf_counter_ns() + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+                    captured = capture_target(selector, deadline, 64 * 1024 * 1024)
             capture_closed = time.perf_counter_ns()
             self._check_request_budget('after_active_observation_capture')
             binding = source_binding(captured)
+            if selector is None and 'observation_target' in binding:
+                raise ValueError('active_observation_complete_scene_required')
+            if selector is not None and binding.get('observation_target', {}).get('selector') != selector:
+                raise ValueError('active_observation_target_request_binding_mismatch')
             context.activate(captured, 'active_observation', binding)
             binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
                 separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
@@ -1422,8 +1436,10 @@ class LiveSpatialService:
 
             lookup_started = time.perf_counter_ns()
             try:
-                result, hit = context.result(query_key({'mode': 'active_observation',
-                    'include_image': include_image}), compute)
+                request_key = {'mode': 'active_observation', 'include_image': include_image}
+                if selector is not None:
+                    request_key['objects'] = [selector]
+                result, hit = context.result(query_key(request_key), compute)
             except Exception as error:
                 self.record_event('active_observation_failed', session_id=session_id,
                     task_work=getattr(error, 'active_observation_work',
@@ -1440,6 +1456,8 @@ class LiveSpatialService:
                 result['stages'] = {}
             result.setdefault('work', {}).update(capture_calls=1,
                 result_cache_hit=hit, frame_reuses=len(result.get('frames', [])) if hit else 0)
+            if selector is not None:
+                result['work']['target_acquisition'] = copy.deepcopy(captured['observation_target']['work'])
             result['stages'].update(
                 host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
                               'elapsed_ns': capture_closed - capture_started},
@@ -1447,8 +1465,11 @@ class LiveSpatialService:
                                'elapsed_ns': lookup_closed - lookup_started})
             result['session_id'] = session_id
             self._bind_read_result(result, source_check)
+        event_fields = {}
+        if selector is not None:
+            event_fields['target_view_classifications'] = result['target_view_classifications']
         self.record_event('observe', session_id=session_id, status=result['status'],
-            observation_mode='active_observation', task_work=result['work'])
+            observation_mode='active_observation', task_work=result['work'], **event_fields)
         self._check_request_budget('before_active_observation_result')
         result['stages']['service_total'] = {'started_ns': started,
             'closed_ns': time.perf_counter_ns()}

@@ -72,7 +72,7 @@ _QUERY_SCHEMA = {
     "properties": {
         "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation"]},
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
-            "description": "Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
+            "description": "active_observation: one visual target. Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
             "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},
@@ -102,7 +102,7 @@ _QUERY_SCHEMA = {
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
-               "then": {"properties": {"mode": {}}, "additionalProperties": False}},
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
@@ -177,7 +177,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
-            " For finite active observation of the complete scene use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
+            " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Explicit response_detail=full includes diagnostics."
         ),
         "inputSchema": {
             "type": "object",
@@ -447,7 +447,7 @@ def _validate_arguments(name: str, arguments: Any) -> None:
         if selected_query['mode'] == 'active_observation':
             if (arguments.get('task_instruction', '')
                     or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
-                raise ValueError('active_observation accepts complete-scene observation without instruction, pair, goal or scene_delta')
+                raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
         if selected_query['mode'] == 'surface_nearest':
             if 'objects' in selected_query and 'focal_id' in arguments:
                 raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
@@ -806,7 +806,8 @@ def project_surface_scan_brief(value):
 def _project_active_patch_support(patch_support, objects, regions):
     """Keep complete source-face denominators while displaying component ranges."""
     if set(patch_support) != {'schema', 'triangle_index_scope', 'all_triangles_participate_in_occlusion',
-                              'objects', 'regions'} or patch_support['schema'] != 'active-patch-support-v1':
+                              'objects', 'regions'} or patch_support['schema'] not in (
+                                  'active-patch-support-v1', 'active-patch-support-v2'):
         raise ValueError('unsupported_active_patch_support')
     mapping = patch_support['regions']
     if len(mapping) != len(regions):
@@ -840,7 +841,10 @@ def _project_active_patch_support(patch_support, objects, regions):
     if len(sources) != len(objects):
         raise ValueError('active_patch_object_mapping_mismatch')
     for index, source in enumerate(sources):
-        if (set(source) != object_fields | partition_fields or type(source['object_index']) is not int
+        occluder = source.get('coverage_role') == 'occluder_only'
+        if (set(source) != object_fields | partition_fields | ({'coverage_role'} if occluder else set())
+                or occluder and patch_support['schema'] != 'active-patch-support-v2'
+                or type(source['object_index']) is not int
                 or any(source[key] != objects[index][key] for key in object_fields)
                 or any(type(source[key]) is not int or source[key] < 0 for key in
                        ('source_triangle_count', 'supported_triangle_count', 'unsupported_triangle_count'))):
@@ -867,12 +871,13 @@ def _project_active_patch_support(patch_support, objects, regions):
                     ranges.append([triangle_index, triangle_index])
             component_rows.append([index, component_index, len(indices), component['reason'],
                                    component['status'], ranges])
-        expected_status = ('unsupported' if not supported else
+        expected_status = ('occluder_only' if occluder else 'unsupported' if not supported else
                            'partially_supported' if rejected else 'fully_supported')
+        expected_faces = set() if occluder else set(range(total))
         if (len(supported) != len(source['supported_triangle_indices'])
                 or any(type(face) is not int for face in source['supported_triangle_indices'])
                 or supported != region_faces[index] or supported & rejected
-                or supported | rejected != set(range(total))
+                or supported | rejected != expected_faces
                 or source['supported_triangle_count'] != len(supported)
                 or source['unsupported_triangle_count'] != len(rejected)
                 or source['support_status'] != expected_status):
@@ -1052,7 +1057,7 @@ def project_active_observation_brief(value):
             'source_status', 'disk_status', 'source_check_scope', 'objects',
         }
         if (type(binding) is not dict or not required_binding <= set(binding)
-                or set(binding) - required_binding - {'schema', 'camera_policy'}):
+                or set(binding) - required_binding - {'schema', 'camera_policy', 'observation_target'}):
             return None
         capture_state = binding['capture_state']
         if capture_state is not None and (
@@ -1132,10 +1137,31 @@ def project_active_observation_brief(value):
 
         scope = facts['scope']
         patch_support = scope.get('patch_support')
+        target = binding.get('observation_target')
+        observation_scope = scope.get('observation_scope')
         scope_fields = {'capture_object_count', 'supported_roi_object_count', 'domain',
                         'all_objects_participate_in_occlusion', 'objects_without_supported_roi'}
         if (set(scope) != scope_fields | ({'patch_support'} if patch_support is not None else set())
+                | ({'observation_scope'} if observation_scope is not None else set())
                 or scope['capture_object_count'] != len(objects)):
+            return None
+        coverage_indices = set(range(len(objects)))
+        if target is not None:
+            index = target['target_object_index']
+            if (type(index) is not int or not 0 <= index < len(objects)
+                    or target['target_object_id'] != objects[index]['host_id']
+                    or target['target_instance_id'] != objects[index]['instance_id']
+                    or binding['capture_scope'] != 'target_observation_meshes'
+                    or patch_support is None or patch_support['schema'] != 'active-patch-support-v2'
+                    or observation_scope != {
+                        'kind': 'target', 'target_object_index': index, 'target_object_count': 1,
+                        'occluder_only_object_count': len(objects) - 1,
+                        'full_scene_object_count': len(target['full_scene_identity']['object_instances']),
+                        'excluded_object_count': len(target['excluded_object_ids'])}):
+                return None
+            coverage_indices = {index}
+        elif (observation_scope is not None or binding['capture_scope'] != 'complete_scene_meshes'
+              or patch_support is not None and patch_support['schema'] != 'active-patch-support-v1'):
             return None
         unsupported = scope['objects_without_supported_roi']
         unsupported_indices = []
@@ -1148,7 +1174,8 @@ def project_active_observation_brief(value):
             unsupported_indices.append(index)
         supported_indices = {region['object_index'] for region in regions}
         if (len(set(unsupported_indices)) != len(unsupported_indices)
-                or set(unsupported_indices) != set(range(len(objects))) - supported_indices
+                or not supported_indices <= coverage_indices
+                or set(unsupported_indices) != coverage_indices - supported_indices
                 or scope['supported_roi_object_count'] != len(supported_indices)):
             return None
         compact_scope = {key: item for key, item in scope.items() if key != 'objects_without_supported_roi'}
@@ -1161,6 +1188,10 @@ def project_active_observation_brief(value):
         if patch_support is not None:
             compact_scope['patch_support'], region_counts, region_source_ranges = _project_active_patch_support(
                 patch_support, objects, regions)
+            occluder_indices = {row['object_index'] for row in patch_support['objects']
+                                if row.get('coverage_role') == 'occluder_only'}
+            if occluder_indices != set(range(len(objects))) - coverage_indices:
+                return None
 
         frames = value['frames']
         image_indices = {frame['image_ref']: index for index, frame in enumerate(frames)}
@@ -1226,6 +1257,13 @@ def project_active_observation_brief(value):
             return None
         compact_binding = {key: item for key, item in binding.items()
                            if key not in ('schema', 'objects', 'camera_policy')}
+        if target is not None:
+            compact_target = {key: target[key] for key in (
+                'schema', 'selector', 'target_object_id', 'target_instance_id', 'target_object_index',
+                'camera_plan_sha256', 'directory_sha256', 'source_frame')}
+            compact_target['full_scene_identity_sha256'] = hashlib.sha256(json.dumps(
+                target['full_scene_identity'], sort_keys=True, separators=(',', ':')).encode('utf8')).hexdigest()
+            compact_binding['observation_target'] = compact_target
         if type(compact_binding.get('capture_state')) is dict:
             compact_binding['capture_state'] = {key: item for key, item in binding['capture_state'].items()
                                                 if key != 'selection_key'}
@@ -1294,7 +1332,7 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
     metadata = {key: copy.deepcopy(value[key]) for key in (
         'status', 'result_kind', 'observation_status', 'session_id', 'facts',
         'work', 'generation_work', 'stages', 'generation_stages',
-        'read_only', 'execution_authority',
+        'read_only', 'execution_authority', 'target_view_classifications',
     ) if key in value}
     if 'binding' in value:
         metadata['binding'] = {key: copy.deepcopy(item) for key, item in value['binding'].items()

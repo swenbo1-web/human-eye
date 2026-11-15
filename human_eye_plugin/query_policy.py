@@ -46,9 +46,12 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     normalized by full ID; they do not consume exact-pair work slots.
     """
     if type(query) is dict and query.get('mode') == 'active_observation':
-        if set(query) != {'mode'}:
-            raise ValueError('active_observation query accepts only mode')
-        return {'mode': 'active_observation'}
+        if set(query) == {'mode'}:
+            return {'mode': 'active_observation'}
+        if set(query) != {'mode', 'objects'} or type(query['objects']) is not list or len(query['objects']) != 1:
+            raise ValueError('active_observation accepts mode and optionally one object selector')
+        from .task_query import validate_object_selector
+        return {'mode': 'active_observation', 'objects': [validate_object_selector(query['objects'][0])]}
     if type(query) is dict and query.get('mode') == 'directory':
         if set(query) != {'mode'}:
             raise ValueError('directory query accepts only mode')
