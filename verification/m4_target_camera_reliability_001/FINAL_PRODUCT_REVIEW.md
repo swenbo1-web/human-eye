@@ -1,0 +1,13 @@
+# 冻结候选产品复核
+
+本复核 passed_checked_scope=True，绑定候选691f7b78、SOURCE_FREEZE和隔离安装。生产差异只有目标相机函数和MCP错误映射，AST核对其他代码保持相同。
+
+相机保留原1.1倍拟合span，复用目标相对坐标计算，并对最终发布view/projection系数给出向外舍入的XY误差包络。guard覆盖局部拟合、中心/平移残差和全局binary64求值的差异。包络不足时明确numeric_insufficient，覆盖阈值和viewport没有扩张。
+
+远端映射要求精确错误dict键、宿主类型、message及布尔false。本地只接受精确BlenderHostError类及相同token。MCP保留isError=true、原error和禁止自动重试，结果没有伪造来源binding或几何facts。
+
+隔离检查最终采用INSTALLED_PURE_R1.json。mapping16、target公共合同29、缓存/来源/预测16和旧pure17分别通过，141份当前/安装源码一致，实际被测函数来源均在安装目录。首轮INSTALLED_PURE.json保留为来源检查失败。其pure断言虽通过，但live_service加载较晚，测试fixture插入源码路径后使绝对human_eye_hook导入同字节源码副本。R1只调整runner预加载顺序，生产源码保持冻结。
+
+六个已关闭实机槽经原件核读。OLD_extreme保留outside_frustum，NEW_extreme明确数值不足unknown，零主capture、零图片。两者后续ping与单对象source readback均成功，读回真实世界几何相同。旧新origin都取得完整见证，旧新peripheral都保留Near正面积遮挡unknown，ordinary两对相机plan完全相同。保存PNG/NPZ与生产者摘要、实际图片块一致。
+
+本复核新增Blender、观察、raster、模型和microbenchmark均为0。极值没有恢复完整图片能力。纯合同断言、六相机输入与六实际槽分别记录。复核人是错误映射及此前target接线作者，独立数值审核另有作者。原A01退出unknown与删除拒绝不因本轮新进程而改变。

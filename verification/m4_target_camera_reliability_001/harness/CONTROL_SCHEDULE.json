@@ -1,0 +1,102 @@
+{
+  "schema": "m4-camera-frozen-six-controls-v1",
+  "inputs": [
+    {
+      "asset": "extreme",
+      "variant": "OLD"
+    },
+    {
+      "asset": "extreme",
+      "variant": "NEW"
+    },
+    {
+      "asset": "origin",
+      "variant": "OLD"
+    },
+    {
+      "asset": "origin",
+      "variant": "NEW"
+    },
+    {
+      "asset": "peripheral",
+      "variant": "OLD"
+    },
+    {
+      "asset": "peripheral",
+      "variant": "NEW"
+    }
+  ],
+  "requests_per_slot": [
+    {
+      "id": "target_observation",
+      "method": "tools/call",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "session_id": "m4-target-camera-reliability-001",
+        "include_image": true,
+        "response_detail": "full",
+        "query": {
+          "mode": "active_observation",
+          "objects": [
+            {
+              "name": "<fixed target>"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "after_active_ping",
+      "method": "ping"
+    },
+    {
+      "id": "source_readback",
+      "method": "tools/call",
+      "tool": "human_eye_scene_observe",
+      "arguments": {
+        "session_id": "m4-target-camera-reliability-001",
+        "include_image": false,
+        "query": {
+          "mode": "task",
+          "objects": [
+            {
+              "name": "<fixed target>"
+            }
+          ],
+          "requested_facts": [
+            "aabb"
+          ]
+        }
+      }
+    },
+    {
+      "id": "after_readback_ping",
+      "method": "ping"
+    }
+  ],
+  "public_request_budget_s": 30,
+  "blender_timeout_s": 30,
+  "variants": [
+    "OLD",
+    "NEW"
+  ],
+  "expected_domains": {
+    "extreme": {
+      "OLD": "actual outside_frustum reproduction, subject to real Blender readback",
+      "NEW": "independently valid actual fit or explicit trusted numeric_insufficient; classify separately"
+    },
+    "origin": {
+      "OLD": "complete actual readable witness",
+      "NEW": "complete actual readable witness"
+    },
+    "peripheral": {
+      "OLD": "original positive occlusion, covered=0/null witness",
+      "NEW": "same original negative semantics"
+    }
+  },
+  "producer_receipt": "same first full MCP result frames; no extra observe",
+  "main_and_posttask_capture_roles_separate": true,
+  "owned_starts_limit": 10,
+  "raster_limit": 36,
+  "execution_owner": "root only"
+}

@@ -1,0 +1,14 @@
+import json as _json, contextlib as _cl, io as _io
+_request = _json.loads('{"id":"e53cb5940b6e4b96bf6e60fadd6f0654","command":"capture_task","params":{"selectors":[{"name":"Negative-X rectangle"}]}}')
+try:
+    import sys as _sys
+    _module = _sys.modules.get('_human_eye_mcp_resident_6b28068ddacbfad9020a')
+    if _module is None or getattr(_module, '_resident_tag', None) != '6dd3c62ca1469b23f1e4b72531dc4d6e2b4af318234f589fe3dabccff1d3d268': raise RuntimeError('Resident Blender host unavailable; reconnect with a new connector')
+    _host = _module._mcp_resident_host
+    with _cl.redirect_stdout(_io.StringIO()):
+        _result = getattr(_host, 'capture_task_scene')(**_request['params'])
+    _result = _host.capture_delta(_result, _json.loads('{"instance_id":"14232409d8cc437dbcf0d639e96d47ce","epoch":1,"resources":{"mesh:(\'uid\', 160)":1}}'))
+    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'result': _result}
+except Exception as _exc:
+    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'error': {'type': type(_exc).__name__, 'message': str(_exc)[:2000], 'mutation_uncertain': _request['command'] == 'apply'}}
+print('HUMAN_EYE_BLENDER_MCP:' + _json.dumps(_envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')))

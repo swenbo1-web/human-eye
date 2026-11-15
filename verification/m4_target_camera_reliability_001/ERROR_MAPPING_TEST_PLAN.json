@@ -1,0 +1,40 @@
+{
+  "schema": "m4-target-camera-error-mapping-test-plan-v1",
+  "production_scope": "human_eye_plugin/live_spatial_mcp.py::LiveSpatialMCPServer._error_result",
+  "reason": "active_observation_target_camera_numeric_insufficient",
+  "phase": "planned_before_numeric_input_freeze_and_production_edit",
+  "expected_matching_metadata": {
+    "status": "unknown",
+    "reason": "active_observation_target_camera_numeric_insufficient",
+    "observation_status": "numeric_insufficient",
+    "observation_mode": "active_observation",
+    "tool_outcome": "unknown",
+    "automatic_retry": false
+  },
+  "expected_MCP_isError": true,
+  "expected_content_types": ["text"],
+  "forbidden_fabricated_fields": ["binding", "facts", "frames", "result_kind"],
+  "cases": [
+    {"id": "exact_remote", "kind": "remote", "variation": "exact", "mapped": true},
+    {"id": "exact_local", "kind": "local", "variation": "exact", "mapped": true},
+    {"id": "wrong_host_type", "kind": "remote", "variation": "wrong_type", "mapped": false},
+    {"id": "other_camera_reason", "kind": "remote", "variation": "other_message", "mapped": false},
+    {"id": "message_prefix", "kind": "remote", "variation": "prefix", "mapped": false},
+    {"id": "message_suffix", "kind": "remote", "variation": "suffix", "mapped": false},
+    {"id": "mutation_true", "kind": "remote", "variation": "mutation_true", "mapped": false},
+    {"id": "mutation_integer_zero", "kind": "remote", "variation": "mutation_zero", "mapped": false},
+    {"id": "missing_mutation_field", "kind": "remote", "variation": "missing_field", "mapped": false},
+    {"id": "extra_remote_field", "kind": "remote", "variation": "extra_field", "mapped": false},
+    {"id": "nonstring_remote_message", "kind": "remote", "variation": "message_integer", "mapped": false},
+    {"id": "plain_value_error_same_token", "kind": "value_error", "variation": "exact", "mapped": false},
+    {"id": "plain_runtime_error_same_token", "kind": "runtime_error", "variation": "exact", "mapped": false},
+    {"id": "local_other_camera_reason", "kind": "local", "variation": "other_message", "mapped": false},
+    {"id": "local_subclass_same_token", "kind": "local_subclass", "variation": "exact", "mapped": false},
+    {"id": "remote_dict_subclass", "kind": "remote", "variation": "dict_subclass", "mapped": false}
+  ],
+  "new_Blender_starts": 0,
+  "new_rasters": 0,
+  "new_product_observations": 0,
+  "new_model_calls": 0,
+  "case_count_semantics": "sixteen pure error-contract cases, not sixteen camera scenes"
+}
