@@ -1,0 +1,112 @@
+{
+  "tasks": [
+    {
+      "task_id": "t01",
+      "entrypoint": "inspect",
+      "geometry_alias": "o0271",
+      "request_text": "检查指定F范围内值得继续查看的局部表面形状，最多分配25%当前F面积作为注意候选。说明测量依据、候选与异常断言的区别、仍需补读的信息和后续几何工具计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r022"
+    },
+    {
+      "task_id": "t02",
+      "entrypoint": "focus",
+      "geometry_alias": "o0406",
+      "request_text": "对我已明确指定的目标准备后续更饱满且平顺的定向精修。先细读当前目标与周边，给出目标质心、面积、包围盒和法向依据。背景属于保护范围，可以观察。说明还需什么参考或幅度信息并制定几何工具操作计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r001"
+    },
+    {
+      "task_id": "t03",
+      "entrypoint": "inspect",
+      "geometry_alias": "o0132",
+      "request_text": "检查指定F范围内值得继续查看的局部表面形状，最多分配25%当前F面积作为注意候选。说明测量依据、候选与异常断言的区别、仍需补读的信息和后续几何工具计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r021"
+    },
+    {
+      "task_id": "t04",
+      "entrypoint": "focus",
+      "geometry_alias": "o0153",
+      "request_text": "对我已明确指定的目标准备后续更饱满且平顺的定向精修。先细读当前目标与周边，给出目标质心、面积、包围盒和法向依据。背景属于保护范围，可以观察。说明还需什么参考或幅度信息并制定几何工具操作计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r020"
+    },
+    {
+      "task_id": "t05",
+      "entrypoint": "inspect",
+      "geometry_alias": "o0303",
+      "request_text": "检查指定F范围内值得继续查看的局部表面形状，最多分配25%当前F面积作为注意候选。说明测量依据、候选与异常断言的区别、仍需补读的信息和后续几何工具计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r024"
+    },
+    {
+      "task_id": "t06",
+      "entrypoint": "focus",
+      "geometry_alias": "o0179",
+      "request_text": "对我已明确指定的目标准备后续更饱满且平顺的定向精修。先细读当前目标与周边，给出目标质心、面积、包围盒和法向依据。背景属于保护范围，可以观察。说明还需什么参考或幅度信息并制定几何工具操作计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r016"
+    },
+    {
+      "task_id": "t07",
+      "entrypoint": "inspect",
+      "geometry_alias": "o0073",
+      "request_text": "检查指定F范围内值得继续查看的局部表面形状，最多分配25%当前F面积作为注意候选。说明测量依据、候选与异常断言的区别、仍需补读的信息和后续几何工具计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r018"
+    },
+    {
+      "task_id": "t08",
+      "entrypoint": "focus",
+      "geometry_alias": "o0541",
+      "request_text": "对我已明确指定的目标准备后续更饱满且平顺的定向精修。先细读当前目标与周边，给出目标质心、面积、包围盒和法向依据。背景属于保护范围，可以观察。说明还需什么参考或幅度信息并制定几何工具操作计划。保持当前数据。",
+      "input_file": "input.npz",
+      "roi_alias": "r009"
+    }
+  ],
+  "selection": "DATA source order, each source ROI0 inspect andROI1 focus, alternating states by source+slot, damaged first usable combo alphabetically, no model-score selection",
+  "focus_pairs": [
+    {
+      "roi_alias": "r022",
+      "normal_alias": "o0271",
+      "damaged_alias": "o0135"
+    },
+    {
+      "roi_alias": "r001",
+      "normal_alias": "o0407",
+      "damaged_alias": "o0406"
+    },
+    {
+      "roi_alias": "r021",
+      "normal_alias": "o0214",
+      "damaged_alias": "o0132"
+    },
+    {
+      "roi_alias": "r020",
+      "normal_alias": "o0153",
+      "damaged_alias": "o0319"
+    },
+    {
+      "roi_alias": "r024",
+      "normal_alias": "o0303",
+      "damaged_alias": "o0039"
+    },
+    {
+      "roi_alias": "r016",
+      "normal_alias": "o0494",
+      "damaged_alias": "o0179"
+    },
+    {
+      "roi_alias": "r018",
+      "normal_alias": "o0404",
+      "damaged_alias": "o0073"
+    },
+    {
+      "roi_alias": "r009",
+      "normal_alias": "o0541",
+      "damaged_alias": "o0005"
+    }
+  ],
+  "focus_target_rule": "F-min-sourceID breadth-first traversal, neighbors ascending, first64, complete disconnected remainder by ascending seeds if needed; background/protected=F minus target; same source IDs for normal and preselected dent"
+}
