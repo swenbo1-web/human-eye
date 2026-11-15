@@ -1,0 +1,122 @@
+{
+  "cycle_id": "M6-SHAPE-TASK-001",
+  "task": "undo the recorded artificial dent while preserving the same-index unperturbed shape",
+  "case_id": "Stanford_Armadillo_patch_03/sample_06",
+  "witness_source_vertex_id": 172749,
+  "classification": "synthetic research example, real imported-asset repair acceptance unestablished",
+  "observed_input_sources": [
+    "inputs/sample_06.npz",
+    "observed/sample_06.npy",
+    "graph.npz",
+    "mapping.npz"
+  ],
+  "region_provenance": "384-vertex synthetic patch plan; real operator coarse-region evidence not present",
+  "counts": {
+    "context": 520,
+    "allowed": 384,
+    "boundary": 61,
+    "free": 323,
+    "true_support_evaluation_only": 105,
+    "normal_allowed": 279,
+    "normal_free": 218,
+    "free_coordinate_unknowns": 969
+  },
+  "desired_output": "same-topology coordinates Y with Y_fixed=X_fixed; if accepted R provided, Y_free=R_free",
+  "target_answer_source": "reference_local.npy copied from unperturbed Stanford snapshot during public pair generation",
+  "true_support_center_radius_vector_in_inference": false,
+  "no_reference_proposal": {
+    "inputs": [
+      "X,T,current identity",
+      "actual operator allowed region",
+      "declared edit intent"
+    ],
+    "output_type": "free-domain 3D displacement",
+    "target_coordinates_available": false
+  },
+  "reference_given_direct_baseline": {
+    "formula": "Y_i=R_i for i in F, Y_i=X_i otherwise",
+    "preconditions": [
+      "R approved for this edit",
+      "same-index correspondence",
+      "compatible frame/scale",
+      "R_fixed=X_fixed for exact full-target agreement"
+    ],
+    "unknown_shape_variables_after_reference": 0,
+    "numerical_score_run": false,
+    "basis": "coordinate assignment equation and existing kernel source"
+  },
+  "coarse_region_ambiguity": {
+    "formula": "Y=X+t*w on free vertices, w_fixed=0; varying t preserves the same fixed boundary",
+    "implication": "boundary constraints leave shape degrees of freedom; regularization chooses an objective-specific solution"
+  },
+  "saved_direct_baselines": {
+    "no_op": {
+      "actual_changed_vertices": 0,
+      "A_rmse_over_scale": 0.4524094184158637,
+      "S_rmse_over_scale": 0.8651722880367594
+    },
+    "mls": {
+      "actual_changed_vertices": 0,
+      "A_rmse_over_scale": 0.4524094184158637,
+      "S_rmse_over_scale": 0.8651722880367594
+    }
+  },
+  "existing_product_coverage": {
+    "owned_limits": {
+      "vertices": 128,
+      "selected": 8,
+      "displacement_m": 0.001,
+      "duration_s": 30
+    },
+    "reference_preview_selected_limit": 64,
+    "case_free_vertices": 323,
+    "public_physical_units": "unconfirmed",
+    "this_case_product_execution": "not_verified"
+  },
+  "historical_undo": "requires a retained exact prior state or a known invertible edit and valid identity; current generic observation cache and rigid rollback records do not establish arbitrary sculpt undo",
+  "geometry_arrays_opened_this_batch": 0,
+  "inherited_geometry_file_identities": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\graph.npz",
+      "bytes": 6542,
+      "sha256": "3106a33b448368ec893fb6fae47177dae7e47ff560973dc451bea1d4be0bb379",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\inputs\\sample_06.npz",
+      "bytes": 57333,
+      "sha256": "3b7158b45307c5545f6b51c1ca3916c5307ae24372ca97ecc12bdcc2514165ea",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\labels\\sample_06.npz",
+      "bytes": 5257,
+      "sha256": "ba182893d71d54620df06fbc9668122085515cf297364239df47a9a9669208cd",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\mapping.npz",
+      "bytes": 13295,
+      "sha256": "46ad7b823277dc9e6901246d731a4dd92fbc5c81bdc9a9521cb5a1aeca2ad4a5",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\observed\\sample_06.npy",
+      "bytes": 12608,
+      "sha256": "621220af761049bfce8b952b076723e860cbe1bc9ca43c888c72c788496a1396",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\public_data\\patches\\Stanford_Armadillo_patch_03\\reference_local.npy",
+      "bytes": 12608,
+      "sha256": "ae50b9ed8befb01418fd98b407ca68980d70a354ce18a59a413907ad64114751",
+      "identity_source": "OBSERVE001 accepted REUSED_INPUTS.json",
+      "current_binary_read": false
+    }
+  ]
+}

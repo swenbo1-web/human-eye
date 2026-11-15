@@ -1,0 +1,410 @@
+{
+  "cycle_id": "M6-SHAPE-TASK-001",
+  "review_scope": "text/source equations and saved JSON metadata only",
+  "status": "completed",
+  "recommended_learning_decision": "do_not_enter_current_no_reference_local_dent_learning",
+  "representative": {
+    "case_id": "Stanford_Armadillo_patch_03/sample_06",
+    "evidence_id": "validation_center",
+    "source_vertex_id": 172749,
+    "saved_context_local_index": 515,
+    "paired_unperturbed_case": "Stanford_Armadillo_patch_03/sample_00",
+    "source": "Stanford_Armadillo",
+    "deployment_classification": "synthetic research example with known generator-held target",
+    "physical_units": "native physical scale unconfirmed",
+    "context_vertices": 520,
+    "allowed_vertices": 384,
+    "boundary_vertices": 61,
+    "free_vertices": 323,
+    "context_fixed_vertices": 197,
+    "support_points_diagnostic_only": 105,
+    "normal_free_points_diagnostic_only": 218,
+    "vector_unknown_scalars_in_free_domain": 969,
+    "saved_witness_displacement_over_observed_scale": 1.6987394341312494,
+    "saved_witness_p": 0.6246895790100098,
+    "actual_asset_or_array_reads_this_review": 0
+  },
+  "concrete_task": {
+    "intent": "restore the pre-perturbation surface in a chosen local region while preserving protected vertices",
+    "output": "binary64 free-vertex coordinate correction field, with zero correction on fixed/context and full source outside the free set",
+    "available_from_this_saved_observation": [
+      "observed positions and mesh topology through frozen source mapping",
+      "source/context vertex correspondence",
+      "allowed/boundary/free domain",
+      "observed-scale normalization and normals/features"
+    ],
+    "user_evidence_needed_for_real_task": [
+      "operator-recorded coarse allowed region tied to object/revision",
+      "operator-approved repair intent and preservation constraints",
+      "independently approved desired output for held-out evaluation"
+    ],
+    "synthetic_only": [
+      "reference_local.npy copied from the original frozen source before artificial perturbation",
+      "damaged_mask",
+      "target_normalized and target_world_m",
+      "generator center, radius, amplitude and direction"
+    ],
+    "inference_target_answer_source": "no user-approved real target is supplied for the proposed no-reference deployment case",
+    "research_evaluation_answer_source": "pre-perturbation reference_local.npy indexed by context_source_ids",
+    "pair_status": "the unperturbed source is defined by the generator and has no recorded artist acceptance for a real repair objective"
+  },
+  "reference_backed_direct_baseline": {
+    "input_conditions": [
+      "reference is authored or independently approved as intended target",
+      "same indexed vertex correspondence and topology",
+      "matching coordinate frame and unit scale",
+      "reference-target binding for the actual target object incarnation",
+      "desired target agrees with all protected observed vertices"
+    ],
+    "equation": "Y_i = R_i for i in F, Y_i = X_i for i outside F",
+    "consequence": "when R_i = X_i outside F, Y equals R over the saved context by assignment; target coordinates are already provided",
+    "floating_point_detail": "direct coordinate assignment copies the trusted reference value; a learned float32 residual and arithmetic addition need separate error accounting",
+    "measurement": "algebraic consequence only, no restoration arrays or zero-error benchmark executed",
+    "learning_need_for_this_subtask": "none when the goal is exact restoration to that supplied reference",
+    "existing_implementation": {
+      "binding": "surface_reference.ReferenceRegistry.bind/resolve with ReferenceIntent",
+      "copy_preview": "surface_reference.preview_restore directly assigns each selected reference vertex",
+      "execution": "surface_restore.RestoreController has durable journal, trusted capture/set callbacks, approval scope, contact/orientation checks and readback",
+      "preview_read_write_status": "preview_only, execution_authority false",
+      "limits": {
+        "preview_selected_maximum": 64,
+        "preview_default_displacement_m": 0.001,
+        "preview_maximum_displacement_m": 0.01,
+        "finite_owned_product_vertices": 128,
+        "finite_owned_product_triangles": 256,
+        "finite_owned_product_selected": 8,
+        "finite_owned_product_displacement_m": 0.001,
+        "finite_owned_product_duration_ns": 30000000000
+      }
+    },
+    "current_witness_live_eligibility": "unverified and outside the finite owned product counts because context520 and free323 exceed128 vertices/8 selected; native physical scale is also unconfirmed",
+    "existing_entry_calls_this_review": 0
+  },
+  "history_undo_baseline": {
+    "conditions": [
+      "a trusted previous state was captured before the unwanted change",
+      "operator approves that particular state as desired target",
+      "stable topology/vertex correspondence and compatible frame",
+      "the undo transaction preserves subsequent approved edits and protected geometry"
+    ],
+    "consequence": "restoring that approved prior state can determine all required coordinates directly",
+    "reference_capture_semantics": "a previous cached observation alone supplies freshness and identity, while target acceptance requires explicit provenance/semantic intent",
+    "reviewed_history_scope": "host_motion_ledger stores initial_world/last_world three-component position vectors and restricts setters to world Z; this is an existing motion rollback path",
+    "existing_shape_restoration_scope": "the separate same-index reference restore implementation is present and has explicit trusted-target conditions",
+    "whole_application_undo_inventory": "not exhaustively surveyed, and no Blender history or restore operation invoked"
+  },
+  "coarse_selection_underdetermination": {
+    "equations": [
+      "d_i = 0 for i outside F",
+      "Y_i = X_i + d_i for i in F",
+      "d_i(lambda) = lambda * phi_i * n_i for i in F with phi zero outside F"
+    ],
+    "free_domain_size": 323,
+    "remaining_vector_scalar_variables": 969,
+    "claim": "the fixed domain determines permissible support and preservation, while interior target coordinates remain free under these equations",
+    "geometric_feasibility_note": "the saved input has zero degenerate incident triangles and no input-generation reversals; sufficiently small variations can retain discrete orientation and nondegeneracy by continuity, without selecting an intended shape",
+    "direct_smoothing_role": "a smoothing or MLS objective can select a prior-dependent shape but that objective requires separate acceptance against the intended task",
+    "interpretation_limit": "this degree-of-freedom argument describes boundary constraints, and leaves learnable data priors and complete-observation identifiability unresolved"
+  },
+  "frozen_direct_baselines": {
+    "source": "previous frozen baseline JSON only, no recomputation",
+    "records": {
+      "no_op": {
+        "method": "no_op",
+        "actual_changed_vertices": 0,
+        "A_RMSE_over_observed_scale": 0.4524094184158637,
+        "S_RMSE_over_observed_scale": 0.8651722880367594,
+        "N_RMSE_over_observed_scale": 0.0,
+        "NF_RMSE_over_observed_scale": 0.0,
+        "support_ratio_to_noop": 1.0,
+        "A_improvement_to_noop": 0.0,
+        "fixed_preserved": true,
+        "boundary_preserved": true,
+        "outside_preserved": true,
+        "incident_faces": 835,
+        "new_degenerate_faces": 0,
+        "reversed_from_input_faces": 0,
+        "intersection_check": "not_evaluated_by_this_shape_metric"
+      },
+      "mls": {
+        "method": "mls",
+        "actual_changed_vertices": 0,
+        "A_RMSE_over_observed_scale": 0.4524094184158637,
+        "S_RMSE_over_observed_scale": 0.8651722880367594,
+        "N_RMSE_over_observed_scale": 0.0,
+        "NF_RMSE_over_observed_scale": 0.0,
+        "support_ratio_to_noop": 1.0,
+        "A_improvement_to_noop": 0.0,
+        "fixed_preserved": true,
+        "boundary_preserved": true,
+        "outside_preserved": true,
+        "incident_faces": 835,
+        "new_degenerate_faces": 0,
+        "reversed_from_input_faces": 0,
+        "intersection_check": "not_evaluated_by_this_shape_metric"
+      }
+    },
+    "evaluation_with_synthetic_target": [
+      "A/S/N/N_F normalized RMSE/p95/max",
+      "normal controls and protected-coordinate byte preservation",
+      "all incident triangle degeneracy and orientation",
+      "full source readback and complete task costs where actually measured"
+    ],
+    "evaluation_without_target_reference": [
+      "fixed/outside preservation",
+      "nonfinite/degenerate and discrete orientation checks",
+      "self-contact and product constraints only when a suitable verified evaluator is available"
+    ],
+    "evaluation_answer_missing_without_target": [
+      "correct restored coordinates",
+      "artist acceptance of shape and detail preservation"
+    ],
+    "limitation": "this frozen MLS instance and its high training-control gate describe one direct baseline; broader geometric methods have not been established ineffective"
+  },
+  "closure_and_minimum_evidence": {
+    "decision": "do_not_train_current_subtask",
+    "trusted_reference_case_reason": "the target coordinates are supplied and a direct indexed restoration implementation already exists",
+    "no_reference_case_reason": "the current deployment description lacks an independently accepted expected shape and a demonstrated supervision/condition source for a real task; the old synthetic restoration candidate is closed after its fixed attempts",
+    "coarse_region_case_reason": "permitted edits and boundary preservation are defined, while desired interior shape and acceptance source remain unspecified",
+    "minimal_next_artifact_source": "an operator performs and accepts a real local shape correction on an existing asset, recording the uncorrected observation, actual coarse selection/task statement, approved corrected coordinates, vertex/topology correspondence, frame and approval provenance",
+    "supervision_separation": "approved corrected coordinates serve as training/evaluation targets held apart from inference; inference uses only conditions the operator actually supplies",
+    "single_pair_limit": "one accepted example can fix a task specification but does not establish a sufficient training or generalization sample count",
+    "remaining_direct_baseline_requirement": "evaluate a credible constrained direct geometry baseline on the same independently accepted targets with full preparation/readback cost before claiming residual learning value",
+    "this_review_collection_or_new_study_actions": 0,
+    "root_cause_statement": "no claim that missing task intent caused the old network failure, or that a task condition will fix it"
+  },
+  "code_citations": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\prepare_public.py",
+      "sha256": "2b5d76f40cd12c6eca7999c7b7f855b738cf9954a584e871a19c5c593bde4263",
+      "bytes": 47172,
+      "cited_line_spans": [
+        {
+          "start": 267,
+          "end": 284
+        },
+        {
+          "start": 377,
+          "end": 394
+        },
+        {
+          "start": 407,
+          "end": 430
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\data_io.py",
+      "sha256": "7ee5f3f781dc6f044e627aaf9cff246c93ea3aadd30a7350ec38cc44a24b6f13",
+      "bytes": 4888,
+      "cited_line_spans": [
+        {
+          "start": 16,
+          "end": 35
+        },
+        {
+          "start": 48,
+          "end": 53
+        },
+        {
+          "start": 85,
+          "end": 94
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\evaluate.py",
+      "sha256": "d71bc936befa7d90decd4821951febf17a35577ee409d4d44d0a610f34e01137",
+      "bytes": 10465,
+      "cited_line_spans": [
+        {
+          "start": 80,
+          "end": 109
+        },
+        {
+          "start": 124,
+          "end": 139
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\features.py",
+      "sha256": "9a78cb98d60317431bf4705b03cc6b987068a476c087c8f6de0fbdac39941f56",
+      "bytes": 4473,
+      "cited_line_spans": [
+        {
+          "start": 9,
+          "end": 21
+        },
+        {
+          "start": 25,
+          "end": 31
+        },
+        {
+          "start": 70,
+          "end": 78
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "sha256": "c3805f6c79e569cfdda95dbfdce3b0c52059ee4e2f05770527303de7194e082b",
+      "bytes": 13269,
+      "cited_line_spans": [
+        {
+          "start": 14,
+          "end": 51
+        },
+        {
+          "start": 138,
+          "end": 161
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_restore.py",
+      "sha256": "497dc8b601a8d6674c244dd1fc8e11836fd49a0d594c24e6a7cf5b2def81e6e9",
+      "bytes": 17260,
+      "cited_line_spans": [
+        {
+          "start": 107,
+          "end": 118
+        },
+        {
+          "start": 133,
+          "end": 171
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned.py",
+      "sha256": "8065947877f8dc2aae415474c5c73ac3b9e4cbd0edd5012e1f8a2e8dd5a1ce49",
+      "bytes": 3282,
+      "cited_line_spans": [
+        {
+          "start": 1,
+          "end": 13
+        },
+        {
+          "start": 43,
+          "end": 57
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "sha256": "99cee242c8d31c01b061c50dbdceb8c64fe031892863de67b29037329d3250b3",
+      "bytes": 100067,
+      "cited_line_spans": [
+        {
+          "start": 83,
+          "end": 91
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\host_motion_ledger.py",
+      "sha256": "6c4a7527b520b4352ca935b590bc0d4a1d02e7d68c4ccf8eea57a8d4af8b60d9",
+      "bytes": 25449,
+      "cited_line_spans": [
+        {
+          "start": 53,
+          "end": 62
+        },
+        {
+          "start": 262,
+          "end": 285
+        },
+        {
+          "start": 290,
+          "end": 312
+        }
+      ],
+      "tracked_in_baseline": true
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\blender_host.py",
+      "sha256": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9",
+      "bytes": 221977,
+      "cited_line_spans": [
+        {
+          "start": 2261,
+          "end": 2293
+        }
+      ],
+      "tracked_in_baseline": true
+    }
+  ],
+  "metadata_citations": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\PUBLIC_DATASET_INDEX.json",
+      "sha256": "19211995bf2d8c9eb0802c974fb37a9502fa487f6d88dab19683933a0e18c962",
+      "bytes": 1024957,
+      "json_pointer": "/cases/45",
+      "anchor_line": 4775
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_observe_001\\EVIDENCE_PLAN.json",
+      "sha256": "df42dc9ef6c5a0290f0d8ea9a8d2878cafc59a1e05507abaf97e507da49df7e0",
+      "bytes": 11749,
+      "json_pointer": "/evidence/4",
+      "anchor_line": 77
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\BASELINE_RESULTS.json",
+      "sha256": "b372e5ca76c002f26c3359d5c9a38d1f2d154a133b7f1b2706cd907adafd8e07",
+      "bytes": 4675426,
+      "json_pointer": "/validation/cases/45",
+      "anchor_line": 88652
+    }
+  ],
+  "actual_operations": {
+    "source_or_JSON_reads": true,
+    "geometry_arrays_opened": 0,
+    "new_model_forwards": 0,
+    "training": 0,
+    "new_baseline_runs": 0,
+    "new_repair_or_preview_runs": 0,
+    "new_scoring": 0,
+    "threshold_or_description_search": 0,
+    "Bunny_arrays_or_scores": 0,
+    "Blender_or_API": 0
+  },
+  "read_command_failure_log": [
+    {
+      "path": "human_eye_plugin/owned_goal_scheduler.py",
+      "error": "one named read-search path absent, rg exit1",
+      "recovery": "continued with explicit existing goal_execution/goal_journal/host_motion_ledger and the actual surface reference/restore implementation",
+      "scientific_actions_before_or_after_error": 0
+    }
+  ],
+  "measurement": {
+    "read_command_tool_wall_s": [
+      0.1654539,
+      0.1258485,
+      0.2159947,
+      0.1708821,
+      0.1454556,
+      0.1811015,
+      0.2051983
+    ],
+    "read_command_CPU_or_peak": null,
+    "scope": "recorded read-command subprocess walls only, excluding reasoning, coordination, tool-service latency and full research interaction costs",
+    "metadata_assembly_wall_s_before_write": 0.3448539999953937,
+    "metadata_assembly_CPU_s_before_write": 0.15625,
+    "metadata_assembly_process_lifetime_before_write": {
+      "cpu_s": 0.171875,
+      "peak_working_set_bytes": 49975296,
+      "working_set_bytes": 45359104
+    },
+    "read_command_wall_sum_s": 1.2099346
+  }
+}

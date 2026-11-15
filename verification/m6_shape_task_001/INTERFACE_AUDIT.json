@@ -1,0 +1,709 @@
+{
+  "cycle_id": "M6-SHAPE-TASK-001",
+  "status": "completed_source_interface_audit",
+  "review_kind": "read-only code and saved text metadata",
+  "base_commit": "66e171ceb72c930ba534e1eb8317791d00bd2dba",
+  "evidence": {
+    "current_geometry": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\task_query.py",
+      "start_line": 218,
+      "end_line": 250,
+      "fields": [
+        "query.geometry.objects",
+        "query.geometry.include_triangles",
+        "objects[].object_id",
+        "objects[].name",
+        "objects[].vertices_world",
+        "objects[].triangles"
+      ],
+      "meaning": "Opt-in geometry uses original task bindings and current evaluated world-metre capture order. Triangles are zero-based indices into that same capture."
+    },
+    "evaluated_capture": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\blender_host.py",
+      "start_line": 951,
+      "end_line": 985,
+      "fields": [
+        "evaluated_get",
+        "to_mesh",
+        "matrix_world",
+        "scale",
+        "vertices"
+      ],
+      "meaning": "Current evaluated geometry may include evaluated mesh changes. Capture-order vertex identity alone does not establish cross-time correspondence."
+    },
+    "raw_original_identity": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\mesh_structure.py",
+      "start_line": 114,
+      "end_line": 178,
+      "fields": [
+        "object_id",
+        "object_instance",
+        "document_epoch",
+        "capture_id",
+        "raw_sha256",
+        "raw.vertices",
+        "raw.edges",
+        "raw.polygons",
+        "raw.matrix_world",
+        "raw.unit_scale"
+      ],
+      "meaning": "Raw-source API detaches original indices, binds source incarnation, coordinate frame and scale, and commits raw geometry identity."
+    },
+    "user_instruction": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "start_line": 182,
+      "end_line": 188,
+      "fields": [
+        "task_instruction",
+        "focal_id",
+        "reference_id",
+        "session_id"
+      ],
+      "meaning": "The caller can supply task text and select objects. Task text does not encode desired per-vertex coordinates."
+    },
+    "goal_fields": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "start_line": 130,
+      "end_line": 159,
+      "fields": [
+        "goal.target_clearance_m",
+        "goal.clearance_tolerance_m",
+        "goal.target_focal_pivot_world_m",
+        "goal.position_tolerance_m",
+        "goal.max_contact_normal_angle_deg",
+        "goal.max_tangent_yaw_mismatch_deg"
+      ],
+      "meaning": "Existing goal criteria express pair gap, rigid pivot or contact orientation. The schema states these caller criteria have no independent human-intent verification."
+    },
+    "query_target_object": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "start_line": 330,
+      "end_line": 341,
+      "fields": [
+        "target",
+        "candidates",
+        "geometry"
+      ],
+      "meaning": "The target selector names the current object whose spatial relationships are measured."
+    },
+    "clearance_reference": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\goal_segment.py",
+      "start_line": 28,
+      "end_line": 46,
+      "fields": [
+        "focal_id",
+        "reference_id",
+        "axis",
+        "target_clearance_m",
+        "clearance_tolerance_m"
+      ],
+      "meaning": "Pair reference_id names a distinct spatial reference object for a clearance goal."
+    },
+    "selection_binding": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\goal_segment.py",
+      "start_line": 57,
+      "end_line": 71,
+      "fields": [
+        "selection_binding.scene_revision",
+        "selection_binding.scene_fingerprint",
+        "selection_binding.focal_id",
+        "selection_binding.reference_id"
+      ],
+      "meaning": "The existing binding establishes captured-scene freshness and pair identity. It does not establish verified user intent or a normal target shape."
+    },
+    "correlation_only": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\request_context.py",
+      "start_line": 1,
+      "end_line": 19,
+      "fields": [
+        "task_context.task_id",
+        "task_context.task_run_id"
+      ],
+      "meaning": "These fields are correlation labels. They contain no per-vertex target or semantic reference."
+    },
+    "selected_vertex_interface": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "start_line": 279,
+      "end_line": 299,
+      "fields": [
+        "selection.mesh_name",
+        "selection.armature_name",
+        "selection.bone_names",
+        "selection.vertex_indices",
+        "selection.sections"
+      ],
+      "meaning": "An explicit arm-twist diagnostic can consume original vertex indices and ordered sections. This is a task-specific bounded selection interface."
+    },
+    "surface_query": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "start_line": 83,
+      "end_line": 92,
+      "fields": [
+        "query.mode=mesh_surface",
+        "query.operation",
+        "query.reference_ref",
+        "query.indices",
+        "query.patch_ref",
+        "query.task_ref"
+      ],
+      "meaning": "A separate opt-in single-mesh service exposes reference deviation, reference patches and restore preview using an opaque locally bound reference."
+    },
+    "surface_route_conditions": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_service.py",
+      "start_line": 1078,
+      "end_line": 1081,
+      "fields": [
+        "query.mode=mesh_surface",
+        "reference_id",
+        "goal",
+        "scene_delta"
+      ],
+      "meaning": "Surface reference reads use their own reference_ref and reject pair reference_id, pair goals and scene deltas."
+    },
+    "reference_service_injection": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_service.py",
+      "start_line": 285,
+      "end_line": 292,
+      "fields": [
+        "surface_references",
+        "ReferenceRegistry"
+      ],
+      "meaning": "The registry is an optional trusted local dependency. This source review does not establish that a running service has one configured."
+    },
+    "reference_service_resolution": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_task_service.py",
+      "start_line": 74,
+      "end_line": 109,
+      "fields": [
+        "surface_diagnostics_enabled",
+        "service._surface_references",
+        "reference_ref",
+        "binding.triangles",
+        "binding.polygon_indices",
+        "indices"
+      ],
+      "meaning": "Locally enabled registered tasks resolve the reference against current target incarnation and tessellation before diagnosis or restore preview."
+    },
+    "reference_intent_and_binding": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "start_line": 13,
+      "end_line": 45,
+      "fields": [
+        "ReferenceIntent.provenance",
+        "ReferenceIntent.semantic_target",
+        "ReferenceIntent.correspondence",
+        "same_index_from_owned_copy",
+        "target_identity.object_id",
+        "target_identity.object_instance",
+        "target_identity.document_epoch"
+      ],
+      "meaning": "A trusted local owner binds an intended same-index reference. Textual reference IDs supplied to the model only look up that binding. They do not create correspondence or validate intended-shape truth."
+    },
+    "reference_compatibility": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "start_line": 48,
+      "end_line": 51,
+      "fields": [
+        "raw.vertices count",
+        "raw.edges",
+        "raw.polygons",
+        "raw.matrix_world",
+        "raw.unit_scale"
+      ],
+      "meaning": "Compatibility requires same vertex count, ordered edges and polygons, frame and unit scale. Vertex-count equality alone is insufficient."
+    },
+    "reference_deviation_semantics": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "start_line": 99,
+      "end_line": 108,
+      "fields": [
+        "intent",
+        "damage_classification",
+        "not_checked"
+      ],
+      "meaning": "The reference result labels its measurement reference_deviation_not_semantic_damage and leaves noncorresponding assets, topology changes, rig pose and intent inference outside its checked scope."
+    },
+    "direct_preview": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "start_line": 138,
+      "end_line": 161,
+      "fields": [
+        "indices",
+        "max_displacement_m",
+        "proposed_local_vertices",
+        "status=preview_only"
+      ],
+      "meaning": "Existing direct preview copies reference coordinates to selected same-index vertices while retaining every unselected vertex. It supports at most64 indices, a displacement bound, reference-relative orientation checks and explicit preview-only status."
+    },
+    "owned_operator_config": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned.py",
+      "start_line": 43,
+      "end_line": 64,
+      "fields": [
+        "reference_file",
+        "reference_sha256",
+        "reference_intent.provenance",
+        "reference_intent.semantic_target",
+        "reference_intent.correspondence",
+        "indices"
+      ],
+      "meaning": "The finite owned product already has explicit operator-supplied pinned reference bytes and intended same-index provenance, plus selected indices."
+    },
+    "owned_product_limits": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned.py",
+      "start_line": 1,
+      "end_line": 14,
+      "fields": [
+        "LIMITS.vertices=128",
+        "LIMITS.triangles=256",
+        "LIMITS.selected=8",
+        "LIMITS.displacement_m=.001",
+        "LIMITS.duration_ns=30000000000"
+      ],
+      "meaning": "This product is a finite single-mesh same-index restore path. The operator remains responsible for intended-reference authorship."
+    },
+    "owned_restore_tool": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_mcp.py",
+      "start_line": 13,
+      "end_line": 21,
+      "fields": [
+        "human_eye_owned_reference_restore",
+        "human_eye_owned_reference_inspect",
+        "indices"
+      ],
+      "meaning": "A dedicated opt-in owned reference restore tool already proposes up to8 original vertices to restore to the registered reference. This audit did not call it."
+    },
+    "owned_exact_assignment": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_task.py",
+      "start_line": 49,
+      "end_line": 69,
+      "fields": [
+        "predicted.vertices[index]",
+        "reference.raw.vertices[index]",
+        "semantic_target",
+        "source",
+        "reference_source"
+      ],
+      "meaning": "The owned task explicitly constructs the expected endpoint by same-index reference assignment before execution."
+    },
+    "owned_runtime_approval": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_restore.py",
+      "start_line": 107,
+      "end_line": 171,
+      "fields": [
+        "RestoreController",
+        "capture",
+        "set_vertex",
+        "approve",
+        "RestoreJournal",
+        "scope_sha256"
+      ],
+      "meaning": "The existing restore controller uses trusted capture/setter/approval callbacks and a durable journal. It verifies source/geometry and requested scope independently of any learned correction."
+    },
+    "owned_readback_semantics": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_task.py",
+      "start_line": 101,
+      "end_line": 111,
+      "fields": [
+        "after.raw_snapshot",
+        "source.object_instance",
+        "source.document_epoch",
+        "human_form_verified=False",
+        "task_readback_verified"
+      ],
+      "meaning": "Final readback is checked against the exact predicted reference assignment. Human-form verification remains explicitly false."
+    },
+    "observation_history": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\scene_cache.py",
+      "start_line": 290,
+      "end_line": 315,
+      "fields": [
+        "snapshot(index)",
+        "find_snapshot(revision,fingerprint)"
+      ],
+      "meaning": "The cache can retrieve retained detached observation snapshots and exact matching provenance. It carries observed geometry without selecting which historical shape is the intended target."
+    },
+    "observation_history_persistence": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\scene_cache.py",
+      "start_line": 489,
+      "end_line": 509,
+      "fields": [
+        "purpose=observation_only",
+        "blobs",
+        "frames"
+      ],
+      "meaning": "Persisted cache state is observation-only history. The cache module states it has no host writes or rollback (lines1–8)."
+    },
+    "motion_rollback": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\host_motion_ledger.py",
+      "start_line": 262,
+      "end_line": 322,
+      "fields": [
+        "initial_world",
+        "last_world",
+        "requested_world",
+        "kind=rollback"
+      ],
+      "meaning": "The motion ledger records bounded world-position setters. Its registered setter requires unchanged world X/Y; this is separate from general per-vertex edit history."
+    },
+    "host_transform_and_recovery": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\blender_host.py",
+      "start_line": 3363,
+      "end_line": 3382,
+      "fields": [
+        "translation",
+        "rotation_euler_deg",
+        "expected_revision",
+        "expected_fingerprint"
+      ],
+      "meaning": "The reviewed general transform entry applies explicit world-metre SE3 deltas. Its failure recovery restores that attempted object transform, not an arbitrary selected-vertex normal shape."
+    },
+    "synthetic_patch_reference": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\prepare_patches.py",
+      "start_line": 148,
+      "end_line": 158,
+      "fields": [
+        "graph.allowed_mask",
+        "graph.boundary_mask",
+        "graph.free_mask",
+        "mapping.context_source_ids",
+        "reference_local.npy",
+        "center_vertex_id"
+      ],
+      "meaning": "The offline generator has original source-index mappings, a pre-perturbation reference and geometrically selected allowed patch. These are saved study artifacts, not evidence of an operator-approved deployment target."
+    },
+    "synthetic_damage_answers": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\generate.py",
+      "start_line": 138,
+      "end_line": 179,
+      "fields": [
+        "radius_ratio",
+        "amplitude_ratio",
+        "support",
+        "delta",
+        "damaged_mask",
+        "target_normalized",
+        "target_world_m"
+      ],
+      "meaning": "The generator creates damage from reference using chosen radius, amplitude, distances and normal, then derives the exact support and reference-minus-observed target. These answers are available because the perturbation was authored."
+    },
+    "inference_label_boundary": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\data_io.py",
+      "start_line": 16,
+      "end_line": 35,
+      "fields": [
+        "with_labels",
+        "reference",
+        "labels",
+        "mapping"
+      ],
+      "meaning": "Saved reference and answer labels are loaded only on the supervision side when with_labels is true."
+    },
+    "old_inference_arguments": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\data_io.py",
+      "start_line": 48,
+      "end_line": 53,
+      "fields": [
+        "node_features",
+        "edge_features",
+        "positions",
+        "normals",
+        "edge_index",
+        "free_mask"
+      ],
+      "meaning": "The old numeric forward boundary contains observation features, graph and free mask. It does not accept a trusted reference or target displacement."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "observed_import_only",
+      "available_under_supported_capture": [
+        "current geometry and original capture indices",
+        "object/source incarnation and coordinate provenance",
+        "caller task_instruction",
+        "caller object selectors"
+      ],
+      "needs_operator_input": [
+        "which object or allowed vertex region may change",
+        "desired-shape criterion or approved target evidence if artist-specific correction is expected"
+      ],
+      "synthetic_only": [
+        "true damaged_mask",
+        "generation center/radius/amplitude",
+        "reference_local.npy as known pre-perturbation answer",
+        "exact target_normalized vector"
+      ],
+      "valid_evaluations": [
+        "allowed/protected vertex preservation",
+        "degenerate or reversed incident face checks",
+        "existing structural or contact facts within their supported domains"
+      ],
+      "desired_shape_answer_source": "not established by current observed geometry plus text/region",
+      "evidence_keys": [
+        "current_geometry",
+        "raw_original_identity",
+        "user_instruction",
+        "goal_fields",
+        "synthetic_damage_answers",
+        "old_inference_arguments"
+      ]
+    },
+    {
+      "id": "trusted_same_topology_reference",
+      "existing_code_inputs": [
+        "ReferenceIntent with provenance/semantic_target/same_index_from_owned_copy",
+        "registered reference_ref for target incarnation",
+        "same ordered topology/frame/unit scale",
+        "selected original indices"
+      ],
+      "operator_responsibility": [
+        "provide pinned intended reference bytes",
+        "establish same-index authorship",
+        "recognize which historical or user-supplied shape is the desired endpoint"
+      ],
+      "direct_baseline": "reference coordinate assignment on selected indices; existing preview and finite owned restore implementations already express that endpoint",
+      "learning_unknown_for_exact_recovery": "no missing target coordinates once reference and correspondence are supplied; a learned coordinate predictor is unnecessary for this exact endpoint definition",
+      "current_deployment_instance": "not inspected or invoked",
+      "limits": "existing finite owned product128vertices/8selected/1mm/30s; generic read preview has64selected and bounded displacement; large native-unit Armadillo compatibility remains unestablished",
+      "evidence_keys": [
+        "reference_intent_and_binding",
+        "reference_compatibility",
+        "owned_operator_config",
+        "owned_product_limits",
+        "direct_preview",
+        "owned_exact_assignment",
+        "owned_readback_semantics"
+      ]
+    },
+    {
+      "id": "coarse_region_without_reference",
+      "additional_information": "indices identify the authorized edit domain and its boundary/protected complement",
+      "still_unknown": [
+        "which subset is defective",
+        "desired coordinates of free vertices",
+        "target normal/curvature or artist-approved shape",
+        "actual magnitude/direction of correction"
+      ],
+      "bounds_interpretation": "fixing boundary/protected vertices constrains the edit domain while leaving internal coordinate degrees of freedom; rough region does not numerically specify the target",
+      "implementation_scope": "task-specific vertex-index interfaces already exist; the exact live mapping of a coarse gesture to a general M6 patch has not been established in this source audit",
+      "evidence_keys": [
+        "selected_vertex_interface",
+        "surface_query",
+        "direct_preview",
+        "synthetic_patch_reference"
+      ]
+    }
+  ],
+  "central_finding": "A dedicated trusted same-index reference and direct restore path already exists. Ordinary pair reference_id and observation history have different semantics. Actual configured intended reference availability for the representative M6 witness remains unknown.",
+  "historical_undo_scope": "Reviewed scene history and bounded transform rollback only. No arbitrary per-vertex edit-stack undo was established by these source paths. Existing same-index reference restore is the relevant direct baseline. This limited review makes no claim about all application-level undo mechanisms.",
+  "names_to_keep_distinct": {
+    "reference_id": "current pair reference object",
+    "reference_ref": "opaque trusted local intended-reference registry binding",
+    "reference_file": "operator-pinned same-index reference snapshot",
+    "task_context": "correlation IDs",
+    "goal.target_clearance_m": "caller-supplied spatial endpoint criterion",
+    "reference_local.npy": "synthetic study pre-perturbation answer"
+  },
+  "availability_qualification": "Static capability and schemas were inspected. No live configuration, registered reference, deployed artist target or permitted large-mesh restoration was tested.",
+  "no_root_decision_imposed": "This audit supplies fields and direct-baseline evidence; root makes the final learning/no-learning decision.",
+  "source_files": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\task_query.py",
+      "bytes": 45825,
+      "sha256": "d16a6652cd9a32058ed7d16fbd6f64e6cbc6bb34bf896ec9cbcdeeff3fec412a",
+      "lines": 760
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "bytes": 100067,
+      "sha256": "99cee242c8d31c01b061c50dbdceb8c64fe031892863de67b29037329d3250b3",
+      "lines": 1615
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\goal_segment.py",
+      "bytes": 24471,
+      "sha256": "b936470f7d4b574a9eb0c0d544dd1cc30cdc6a028d786542f6b9089a0cb6157d",
+      "lines": 444
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\goal_execution.py",
+      "bytes": 49268,
+      "sha256": "89b23b2f902bf3c790749f2a47fa82dc79a5a32e8184813ec071f48b20e566bc",
+      "lines": 794
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\scene_cache.py",
+      "bytes": 30892,
+      "sha256": "2af13585e0f404fab3068dd38e78b9f8d4382582a67e43233903aa27f7615e76",
+      "lines": 566
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\task_intent.py",
+      "bytes": 12408,
+      "sha256": "4ca023f33b3125db9f7d0a34522131730fb13b6d22751eb123bbced856f2389a",
+      "lines": 166
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\request_context.py",
+      "bytes": 4197,
+      "sha256": "489193f2898212598783c7bd9efe5969efd9314fb8def29082fa7f8718b0f33d",
+      "lines": 96
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\native_observation.py",
+      "bytes": 55184,
+      "sha256": "11b66d601a6e8fa06d1ad9098e59ace8d14a0490ff00f6dce719d89366e8edf7",
+      "lines": 798
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\blender_host.py",
+      "bytes": 221977,
+      "sha256": "9a63545aec488cead3be508f97afefc9fa7135beb82e85cff10ca7ad4d3b59e9",
+      "lines": 3515
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\blender_worker.py",
+      "bytes": 23591,
+      "sha256": "0be1560c9774689c2b322ac22d7f48905a18b3995e1c1a91e534eda177876daa",
+      "lines": 341
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\live_service.py",
+      "bytes": 116463,
+      "sha256": "a1b3a2b177853d3041e1a3262f255dada44c1fbb105576e5083ab3c2447be39d",
+      "lines": 1851
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\host_motion_ledger.py",
+      "bytes": 25449,
+      "sha256": "6c4a7527b520b4352ca935b590bc0d4a1d02e7d68c4ccf8eea57a8d4af8b60d9",
+      "lines": 431
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\mesh_structure.py",
+      "bytes": 34893,
+      "sha256": "a9c50cdf2141158a2eff16a5827581cbae5e506a8e40f64b236f4ee676752d5d",
+      "lines": 621
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_reference.py",
+      "bytes": 13269,
+      "sha256": "c3805f6c79e569cfdda95dbfdce3b0c52059ee4e2f05770527303de7194e082b",
+      "lines": 198
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_restore.py",
+      "bytes": 17260,
+      "sha256": "497dc8b601a8d6674c244dd1fc8e11836fd49a0d594c24e6a7cf5b2def81e6e9",
+      "lines": 238
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_task_service.py",
+      "bytes": 13732,
+      "sha256": "d307e5f9a22a899456f60fbdb05e5529e58dee3d58915acd38c8203e6545e642",
+      "lines": 162
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned.py",
+      "bytes": 3282,
+      "sha256": "8065947877f8dc2aae415474c5c73ac3b9e4cbd0edd5012e1f8a2e8dd5a1ce49",
+      "lines": 65
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_task.py",
+      "bytes": 8314,
+      "sha256": "70534abb9747dcf4fa78be7750f6378924de75098b687a4d7095f1779c56b453",
+      "lines": 120
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_process.py",
+      "bytes": 10343,
+      "sha256": "196ea69253bf94a971ac650b0ed7ca1fe0cee70256779eb3c06099492b87655c",
+      "lines": 153
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_owned_mcp.py",
+      "bytes": 12701,
+      "sha256": "77b728859024b6bbfdcfea75f67fc01303ba40c7d60aebae364a8b4e7a21e9f2",
+      "lines": 194
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\human_eye_plugin\\surface_geometry.py",
+      "bytes": 42241,
+      "sha256": "a7f4375b2e4552a93ddfd2253184cda92b51c1212f55b3768d3f745e23cfee95",
+      "lines": 822
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\features.py",
+      "bytes": 4473,
+      "sha256": "9a78cb98d60317431bf4705b03cc6b987068a476c087c8f6de0fbdac39941f56",
+      "lines": 78
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\generate.py",
+      "bytes": 13056,
+      "sha256": "acd7b361aa628d8dc21b061fc4966fa2724daa71ca3c2434144a0db1ba534b4a",
+      "lines": 211
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_data_001\\prepare_patches.py",
+      "bytes": 12166,
+      "sha256": "abaad1d180d20b47b1ddac8620343e248c319052275a71c9bc3e4a5dfc48a474",
+      "lines": 189
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\data_io.py",
+      "bytes": 4888,
+      "sha256": "7ee5f3f781dc6f044e627aaf9cff246c93ea3aadd30a7350ec38cc44a24b6f13",
+      "lines": 94
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_task_001\\M6_SHAPE_TASK_001_TASK.md",
+      "bytes": 5516,
+      "sha256": "ad1bb4d9105567b283cbaab1a3821835be5d9ce623741d8a0eab772bbf8d9047",
+      "lines": 43
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_task_001\\PLAN.json",
+      "bytes": 1672,
+      "sha256": "cb571cae4bd4911ff22f9127cfe1faefe06f8f9ad502399c288ec5dabd31fa17",
+      "lines": 37
+    }
+  ],
+  "read_search_incidents": [
+    {
+      "guessed_path": "human_eye_plugin/mesh_surface.py",
+      "result": "path absent, recovered through rg --files to surface_reference/surface_restore/surface_task_service",
+      "command_wall_s": 0.1359179
+    },
+    {
+      "guessed_path": "human_eye_plugin/task_context.py",
+      "result": "path absent, recovered from live_spatial_mcp import to request_context.py",
+      "command_wall_s": 0.1364364
+    }
+  ],
+  "nonexecution": {
+    "geometry_arrays_read": 0,
+    "model_imports": 0,
+    "model_forwards": 0,
+    "training": 0,
+    "Bunny_arrays": 0,
+    "Blender_started": 0,
+    "MCP_calls": 0,
+    "network_calls": 0,
+    "product_actions": 0,
+    "old_file_writes": 0
+  },
+  "cost": {
+    "recorded_read_command_wall_s_sum": 1.8333234,
+    "recorded_read_command_CPU_s": null,
+    "identity_scan_and_report_prepare_wall_s_before_write": 0.032083400001283735,
+    "identity_scan_and_report_prepare_CPU_s_before_write": 0.015625,
+    "own_process_lifetime_before_final_write": {
+      "cpu_s": 0.03125,
+      "peak_working_set_bytes": 20168704,
+      "working_set_bytes": 20168704
+    },
+    "scope": "All command wall figures are observed exec-command durations; they exclude orchestration/model/interaction overhead. Prior search CPU/peak and final serialization are unmeasured. Own-process metrics below apply to this identity/JSON assembly process only."
+  }
+}

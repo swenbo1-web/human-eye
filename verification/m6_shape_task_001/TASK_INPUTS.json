@@ -1,0 +1,143 @@
+{
+  "cycle_id": "M6-SHAPE-TASK-001",
+  "field_classification": [
+    {
+      "fields": [
+        "vertices_world",
+        "triangles"
+      ],
+      "source": "task_query.project_task_geometry current evaluated capture",
+      "status": "implemented_capture_fields",
+      "meaning": "observed geometry and captured vertex order, desired shape unspecified"
+    },
+    {
+      "fields": [
+        "task_instruction",
+        "task_kind"
+      ],
+      "source": "task_intent.classify_task_intent",
+      "status": "user_or_trusted_host_supplied",
+      "meaning": "routing/request text, no target coordinates inferred"
+    },
+    {
+      "fields": [
+        "indices"
+      ],
+      "source": "surface_task_service.query and surface_owned.indices",
+      "status": "explicit_selection_for_a_bound_reference_operation",
+      "meaning": "chosen write points, semantic damage truth not supplied by the list"
+    },
+    {
+      "fields": [
+        "allowed_mask",
+        "boundary_mask",
+        "free_mask",
+        "mapping.context_source_ids"
+      ],
+      "source": "offline features.prepare_topology and data_io.load_sample",
+      "status": "available_in_synthetic_offline_record",
+      "deployment_requirement": "actual operator region and current-source identity/mapping required"
+    },
+    {
+      "fields": [
+        "reference_file",
+        "reference_sha256",
+        "reference_intent.provenance",
+        "reference_intent.semantic_target",
+        "reference_intent.correspondence",
+        "reference_ref"
+      ],
+      "source": "surface_owned.load_config and surface_reference.ReferenceRegistry",
+      "status": "implemented_trusted_owner_reference_path_activation_unverified",
+      "meaning": "owner supplies intended same-index reference, source binding and compatibility checks apply"
+    },
+    {
+      "fields": [
+        "reference_id",
+        "target_clearance_m"
+      ],
+      "source": "goal_segment pair goal",
+      "status": "implemented_spatial_pair_fields",
+      "meaning": "reference object and clearance target, no target mesh implied"
+    },
+    {
+      "fields": [
+        "reference_local.npy",
+        "target_normalized",
+        "damaged_mask",
+        "center_vertex_id",
+        "radius_ratio",
+        "amplitude_ratio"
+      ],
+      "source": "synthetic generation and label/evaluation records",
+      "status": "synthetic_supervision_or_generation_metadata",
+      "proposed_no_reference_inference_use": false
+    },
+    {
+      "fields": [
+        "approved repair before/after pair",
+        "pre-edit operator region",
+        "accepted output identity"
+      ],
+      "source": "future owner-authored editing record",
+      "status": "missing_for_actual_no_reference_task",
+      "meaning": "training/evaluation target evidence, held out from inference"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "import_without_target",
+      "runtime_inputs": [
+        "current source-bound geometry",
+        "task text"
+      ],
+      "user_inputs_needed": [
+        "actual permitted region",
+        "meaning of desired edit"
+      ],
+      "unknown_to_predict": "intended 3D displacement over free vertices",
+      "available_evaluation": [
+        "domain preservation",
+        "geometric validity predicates within supported scope"
+      ],
+      "target_answer_source": "no approved real repair target in this batch",
+      "learning_entry": false
+    },
+    {
+      "id": "trusted_same_topology_reference",
+      "runtime_inputs": [
+        "current raw mesh identity",
+        "owner-bound reference_ref",
+        "explicit indices"
+      ],
+      "user_or_owner_inputs_needed": [
+        "trusted intended reference with same-index provenance",
+        "semantic target acknowledgement"
+      ],
+      "compatibility": [
+        "vertex count/edges/polygons",
+        "matrix_world/unit_scale",
+        "object_instance/document_epoch"
+      ],
+      "target_answer_source": "accepted reference vertices",
+      "unknown_shape_to_learn": null,
+      "direct_baseline": "existing preview_restore and bounded RestoreController",
+      "learning_entry": false
+    },
+    {
+      "id": "coarse_region_without_target",
+      "runtime_inputs": [
+        "current geometry",
+        "operator region",
+        "task text"
+      ],
+      "region_adds": "permitted support of edits and fixed-domain constraints",
+      "unknown_to_predict": "which allowed vertices should move, displacement direction and magnitude, retained natural features",
+      "target_answer_source": "requires independently accepted repair or equivalent measurable target",
+      "learning_entry": false
+    }
+  ],
+  "cache_semantics": "scene_cache snapshots are observation-only; a previous state can become a target only through explicit trusted reference intent and correspondence",
+  "appearance_reference": "2D appearance reference has no established same-index 3D vertex target in this task",
+  "new_schema_or_runtime_implemented": false
+}
