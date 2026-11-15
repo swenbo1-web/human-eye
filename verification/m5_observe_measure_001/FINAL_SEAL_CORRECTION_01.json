@@ -1,0 +1,12 @@
+{
+  "schema": "m5-saved-seal-correction-v1",
+  "initial_sealer": "final_seal_initial.py",
+  "initial_sealer_sha256": "5723ec5ee0adbd2debf9bbfd2c76d1cb7e6abea1cf7d88beceb116209ad71284",
+  "first_attempt": "Stopped at budget source identity before any final seal output was written.",
+  "cause": "Blender start claims use slot labels. Raster request claims use JSON-RPC request IDs. The sealer incorrectly treated both labels as slot names.",
+  "correction": "Keep start-slot binding strict. Bind each raster claim through the original audit path and phase, the exact original server reservation token, the actual RPC ID and its image-request arguments. Preserve original audit-byte and render-count validation.",
+  "runtime_archive_changed": false,
+  "original_runtime_data_changed": false,
+  "product_sources_or_thresholds_changed": false,
+  "new_owned_raster_model_paid_calls": 0
+}
