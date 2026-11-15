@@ -1,0 +1,73 @@
+{
+  "cycle_id": "M6-SHAPE-OBJECTIVE-001",
+  "base_commit": "29e81ed1d1b2fde2464cdbf856f96086f9ae4b46",
+  "contract_commit": "75fa50b9d66aa91a5ba336438b4895354ec97500",
+  "human_source": "latest source human question 当前哪个问题类确定模型了吗; existing advance/implementation-review authority and explicit synthetic-pair authorization retained",
+  "normal_decomposition": {
+    "cases": 306,
+    "support": "old true damaged_mask, label-assisted diagnostic only",
+    "d": "float64 (reference_local-observed)/each observed scale",
+    "n": "same-patch sample00 saved normals promotedfloat64 and renormalized",
+    "invalid": "nonfinite normal or zero norm retained; no extra reliability threshold",
+    "normal": "(d dot n)*n",
+    "tangent": "d-normal",
+    "groups": [
+      "development_center",
+      "validation_center",
+      "validation_offcenter",
+      "source",
+      "radius/amplitude"
+    ],
+    "totals": "sum energies over valid support, denominator and invalid target energy separately; percase fractions and distributions"
+  },
+  "surface": {
+    "cases": "six frozen OBSERVE001 evidence observations, no reselect",
+    "methods": [
+      "no_op",
+      "mls",
+      "train_final",
+      "opt_final_hard"
+    ],
+    "candidate_sources": "old saved binary64 candidate arrays, no new forward or corrections",
+    "query_domain": "all saved allowed vertices A (including fixed boundary)",
+    "triangle_domain": "all mapping.context_triangles for same saved context, candidate/reference each use identical connectivity",
+    "directions": [
+      "candidate allowed vertices to reference context triangles",
+      "reference allowed vertices to candidate context triangles"
+    ],
+    "precision": "float64, center on observation origin then divide by observed scale before geometry, block32queries and256triangles",
+    "distances": "point-to-closed-triangle nearest Euclidean, degenerate triangles treatedas boundary segments and vertices and counted; nonfinite or empty surfaces mark unavailable",
+    "statistics": "eachdirection RMSE/p95/max; symmetric MSE=.5*(mean_dforward_squared+mean_dreverse_squared); also symmetric RMSE sqrt",
+    "boundary": "context triangle incidence1 edges mapped throughcontext_source_ids tofullsource topology: fullincidence>1=cut boundary, fullincidence1=naturalopen, otherwiseunknown. Allcontextboundary/cut/natural/unknown separately. Fullsource topology usedonly classification, distance faces unchanged.",
+    "ties": "strict minimum float64 squaredistance, firstoriginaltriangle row for exactties; no distance snapping",
+    "saved_details": "bothdirections querysourceIDs, nearesttriangleID, nearestpoint/barycentric, squaredistance, boundaryflag private; publicsummary/counters",
+    "boundary_roundoff": "closestpoint-to-anyboundarysegment length <=64*float64eps*max(1,maxabs normalizedsurfacecoords); square this lengthtol forcomparison; classificationonly, no error tolerance or qualitygate change"
+  },
+  "legacy": "reuse original A/S/N/NF coordinate/errors/protection/incident flags percase/method unchanged; separately recalc storedcandidateidentity only no evaluator thresholdchanges",
+  "meter_QA": [
+    "plane-interior projection",
+    "nearest-edge",
+    "nearest-vertex",
+    "in-surface tangential slide",
+    "off-surface displacement",
+    "degenerate triangle segment/point",
+    "permutation ofvertices/triangles",
+    "commonrigid rotation/translation"
+  ],
+  "QA_scope": "synthetic metric checks only, no repair examples or new gains",
+  "decision": "if no valid engineeringjudgment difference close surface-target-solves-failure explanation; if concrete rank/magnitude/shape differences occur propose one future shape objective with preservation/detail/validity mandatory; never reacceptoldcandidate",
+  "literature": "PointCleanNet v3 section5 methodological motivation only; no paper score transfer",
+  "cost": "oldarrayread/decomposition/trianglequeries/QA/summary/failures separated, existingCPU singlethreadNumPy, no install",
+  "zero_operations": [
+    "training",
+    "model_forward",
+    "newrepair_candidate",
+    "thresholdsearch",
+    "Bunnyarray",
+    "Blender",
+    "product",
+    "paidAPI",
+    "newsource"
+  ],
+  "judgment": "compare percase method order and each method surface-vs-coordinate magnitudes onexactA; rankties exact identical numbers, nearroundoff differences described with QA error, no new acceptance threshold. Stronger difference requires actual coordinate/surface relationship beyondroundoff with original protection/incident failures still visible; geometric diagnosis is descriptive, no failure override."
+}
