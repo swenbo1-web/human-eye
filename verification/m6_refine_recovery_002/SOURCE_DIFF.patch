@@ -1,0 +1,25 @@
+diff --git a/verification/m6_refine_001/session_api.py b/verification/m6_refine_001/session_api.py
+index 876f229a..fea817a3 100644
+--- a/verification/m6_refine_001/session_api.py
++++ b/verification/m6_refine_001/session_api.py
+@@ -175,9 +175,17 @@ def save_readback(directory):
+         state = read(state_path(directory))
+         if state.get("pending"):
+             raise RuntimeError("pending_edit_requires_state_recovery")
+-        number = len(list((directory / "readbacks").glob("*"))) + 1
+-        output = directory / "readbacks" / str(number).zfill(3)
+-        label = "q" + hashlib.sha256((directory.name + ":" + str(number)).encode()).hexdigest()[:16]
++        number = state.get("next_readback_attempt", 1)
++        if type(number) is not int or number < 1:
++            raise ValueError("invalid_next_readback_attempt")
++        while True:
++            output = directory / "readbacks" / str(number).zfill(3)
++            label = "q" + hashlib.sha256((directory.name + ":" + str(number)).encode()).hexdigest()[:16]
++            if not output.exists() and not (HERE / "private/jobs" / label).exists():
++                break
++            number += 1
++        state["next_readback_attempt"] = number + 1
++        write(state_path(directory), state)
+         result, quality = read_actual(directory, state, state["current_blend"], label, output)
+         final = dict(version=state["version"], saved_blend=identity(state["current_blend"]),
+             readback=identity(output / "readback.npz"), independently_reopened=True, quality=short_quality(quality),
