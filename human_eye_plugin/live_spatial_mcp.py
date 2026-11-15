@@ -1574,6 +1574,19 @@ class LiveSpatialMCPServer:
         if isinstance(exc, (StateBindingError, RequestBudgetError)):
             metadata.update(exc.to_error_fields())
             metadata['allow_action'] = False
+        from .blender_host import BlenderHostError
+        from .blender_process import HostRemoteError
+        numeric_reason = 'active_observation_target_camera_numeric_insufficient'
+        numeric_insufficient = type(exc) is BlenderHostError and str(exc) == numeric_reason
+        if isinstance(exc, HostRemoteError):
+            remote = exc.error
+            numeric_insufficient = (type(remote) is dict
+                and set(remote) == {'type', 'message', 'mutation_uncertain'}
+                and remote['type'] == 'BlenderHostError' and remote['message'] == numeric_reason
+                and remote['mutation_uncertain'] is False)
+        if numeric_insufficient:
+            metadata.update(status='unknown', reason=numeric_reason,
+                observation_status='numeric_insufficient', observation_mode='active_observation')
         return _tool_result(metadata, is_error=True)
 
     def _dispatch_tool(self, name: str, arguments: dict) -> dict:

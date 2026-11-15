@@ -537,6 +537,20 @@ def _observation_target_cameras(target_vertices, world_bounds):
     low = [min(point[k] for point in vertices) for k in range(3)]
     high = [max(point[k] for point in vertices) for k in range(3)]
     center = [a * .5 + b * .5 for a, b in zip(low, high)]
+    relative_vertices = [[point[k] - center[k] for k in range(3)] for point in vertices]
+    unit = 2. ** -53
+    gamma = 32 * unit / (1 - 32 * unit)
+    try:
+        # Bound local subtraction/dot, the center dot and the raster's global
+        # dot separately. Positive outward sums preserve the final error bound.
+        magnitudes = []
+        for axis in range(3):
+            relative_extent = math.nextafter(max(abs(low[axis] - center[axis]),
+                                                 abs(high[axis] - center[axis])), math.inf)
+            magnitudes.append(math.nextafter(math.fsum((relative_extent, abs(center[axis]),
+                max(abs(low[axis]), abs(high[axis])))), math.inf))
+    except (OverflowError, ValueError) as error:
+        raise BlenderHostError('active_observation_target_camera_numeric_insufficient') from error
     directions = [('SCENE', (4, -4, 3)), ('TOP', (0, 0, 1)),
                   ('LEFT', (-1, 0, 1)), ('RIGHT', (1, 0, 1)),
                   ('FRONT', (0, -1, 1)), ('BACK', (0, 1, 1))]
@@ -548,9 +562,11 @@ def _observation_target_cameras(target_vertices, world_bounds):
         right = _cross([-x for x in direction], up_seed)
         right = [x / _norm(right) for x in right]
         up = _cross(right, [-x for x in direction])
-        projected = [[_dot([point[k] - center[k] for k in range(3)], axis)
-                      for axis in (right, up)] for point in vertices]
-        half_unpadded = max(abs(x) for point in projected for x in point)
+        projected_x = [_dot(point, right) for point in relative_vertices]
+        projected_y = [_dot(point, up) for point in relative_vertices]
+        projected_bounds = [[min(projected_x), min(projected_y)],
+                            [max(projected_x), max(projected_y)]]
+        half_unpadded = max(abs(value) for row in projected_bounds for value in row)
         half_span = half_unpadded * 1.1
         if not math.isfinite(half_span) or half_span <= 0:
             raise BlenderHostError('active_observation_target_camera_span')
@@ -563,6 +579,30 @@ def _observation_target_cameras(target_vertices, world_bounds):
         eye = [center[k] + direction[k] * distance for k in range(3)]
         view = [axis + [-_dot(axis, eye)] for axis in (right, up, direction)]
         view.append([0., 0., 0., 1.])
+        inverse_half_span = 1 / half_span
+        for axis_index, axis in enumerate((right, up)):
+            translation = view[axis_index][3]
+            shift = _dot(axis, center) + translation
+            try:
+                terms = [abs(translation), abs(translation)]
+                terms.extend(math.nextafter(abs(coefficient) * magnitude, math.inf)
+                             for coefficient, magnitude in zip(axis, magnitudes))
+                magnitude = math.nextafter(math.fsum(terms), math.inf)
+                error = math.nextafter(gamma * magnitude + 32 * math.ulp(0.), math.inf)
+                lower = math.nextafter(math.nextafter(projected_bounds[0][axis_index] + shift,
+                                                       -math.inf) - error, -math.inf)
+                upper = math.nextafter(math.nextafter(projected_bounds[1][axis_index] + shift,
+                                                       math.inf) + error, math.inf)
+                ndc_lower = math.nextafter(lower * inverse_half_span, -math.inf)
+                ndc_upper = math.nextafter(upper * inverse_half_span, math.inf)
+            except (OverflowError, ValueError) as cause:
+                raise BlenderHostError('active_observation_target_camera_numeric_insufficient') from cause
+            # This uses the actual published view/projection coefficients and
+            # encloses exact coverage and the two-stage binary64 raster path.
+            # Insufficient precision has its own outcome, without enlarging XY.
+            if (not math.isfinite(ndc_lower) or not math.isfinite(ndc_upper)
+                    or ndc_lower < -1 or ndc_upper > 1):
+                raise BlenderHostError('active_observation_target_camera_numeric_insufficient')
         camera_depth = [_observation_affine_interval(box, direction, view[2][3]) for box in world_bounds]
         if any(interval is None for interval in camera_depth):
             raise BlenderHostError('active_observation_target_camera_depth_unknown')
@@ -572,7 +612,7 @@ def _observation_target_cameras(target_vertices, world_bounds):
         far = math.nextafter(max(.081, farthest + max(2 * half_span, .01)), math.inf)
         if nearest <= near or not math.isfinite(far):
             raise BlenderHostError('active_observation_target_camera_depth_unrepresentable')
-        projection = [[1 / half_span, 0., 0., 0.], [0., 1 / half_span, 0., 0.],
+        projection = [[inverse_half_span, 0., 0., 0.], [0., inverse_half_span, 0., 0.],
                       [0., 0., -2 / (far - near), -(far + near) / (far - near)],
                       [0., 0., 0., 1.]]
         poses.append(dict(name=name, projection='orthographic', size_px=[512, 512],
@@ -583,8 +623,7 @@ def _observation_target_cameras(target_vertices, world_bounds):
             camera_eye_world_m=eye, view_span_m=2 * half_span, half_span_m=half_span,
             near_m=near, far_m=far, view_matrix=view, projection_matrix=projection,
             m_per_pixel=2 * half_span / 511,
-            unpadded_projected_bounds_xy_m=[[min(p[k] for p in projected) for k in range(2)],
-                                            [max(p[k] for p in projected) for k in range(2)]],
+            unpadded_projected_bounds_xy_m=projected_bounds,
             unpadded_symmetric_half_span_m=half_unpadded,
             target_vertices_checked=len(vertices), min_camera_depth_m=nearest,
             max_camera_depth_m=farthest, depth_scope='all_scene_conservative_bounds'))
