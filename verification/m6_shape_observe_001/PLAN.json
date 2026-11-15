@@ -1,0 +1,158 @@
+{
+  "cycle_id": "M6-SHAPE-OBSERVE-001",
+  "contract_commit": "bc86c84f6019457a3a2d75ee8cdbf7f5a1d00653",
+  "base_commit": "36694d0e3730a60b0611376b017f978f809a79c0",
+  "human_source": {
+    "thread_id": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "verified_turn": "01a1dd8d-7a0e-7753-8d0b-ce9ad50acdd2",
+    "text": "推进下一步",
+    "workflow": "implementation then one completion callback and independent review"
+  },
+  "created_UTC": "2026-11-15T06:33:28.983897+00:00",
+  "observations": {
+    "development": 231,
+    "validation": 117,
+    "total": 348,
+    "Bunny_arrays": 0,
+    "Bunny_scores": 0
+  },
+  "labels": "unchanged artificial perturbation support, natural reference is unperturbed geometry, aesthetic suitability unassessed",
+  "A_audit": {
+    "bins": [
+      [
+        0,
+        0.02
+      ],
+      [
+        0.02,
+        0.1
+      ],
+      [
+        0.1,
+        null
+      ]
+    ],
+    "displacement": "float64 norm((reference-observed)/observedscale); compare saved float32 target",
+    "all348_dynamic_reconstruction": "rebuild source observation from frozen original source plus all saved context observations; original feature extraction reused, full source normals and neighbor terms; no Bunny source",
+    "paired_sample": "sample00 ofsamepatch",
+    "domains": [
+      "S",
+      "N_F",
+      "fixed"
+    ],
+    "six_input_identity": [
+      "node_features",
+      "edge_features",
+      "positions",
+      "normals",
+      "edge_index",
+      "free_mask"
+    ],
+    "collision": "complete shape/dtype/bytes of all six inputs equal, compare targets and support",
+    "graph_distance_targets": [
+      "label-normal context vertices",
+      "inputfixed context vertices"
+    ],
+    "standardization": "original18 scalars readonly"
+  },
+  "B_descriptions": {
+    "R0": {
+      "dimensions": 13,
+      "formula": "raw saved node first5 + outgoing edge4 mean + outgoing edge4 population std"
+    },
+    "R1": {
+      "dimensions": 19,
+      "radii": [
+        2,
+        4,
+        8
+      ],
+      "formula": "R0 + c2,c4-c2,c8-c4,v2,v4-v2,v8-v4; closed hopball excludescenter; c=sum dot(n_i,q_j-q_i)/sum squarednorm(q_j-q_i), v=mean(1-clip(dot(n_i,n_j),-1,1))",
+      "geometry": "saved observed float32 q/n lifted float64; normals generated unit beforefloat32; no normal reference inputs",
+      "domain": "same saved context, no expansion"
+    },
+    "invalid": "emptyball,zero denominator ornonfinite ->explicitinvalid, report all-queryrate and shared-valid metrics"
+  },
+  "sampling": {
+    "maximum_per_observation": 64,
+    "ordering": "sourcevertexID ascending amongfree",
+    "rank": "floor(j*(N-1)/(m-1)), m=min64,N; m1rank0",
+    "labels_or_scores_used": false,
+    "query_and_reference": "same fixedsample perobservation",
+    "witness_queries": "six independentlypreselectedpoints separately, excludedfromsamplemetrics"
+  },
+  "retrieval": {
+    "k": 5,
+    "query_block_limit": 128,
+    "precision": "float64 direct squared differences, sqrt",
+    "distance": "referencepool population mean/std floor1e-6 standardized Euclidean",
+    "tie_order": [
+      "distance",
+      "case_id",
+      "source_vertex_id"
+    ],
+    "reference_development": "otherthree members, excludequerymemberentirefile",
+    "reference_validation": "all231 developmentobservations",
+    "normalization": "eachallowedreferencepool separately, validreference rows only; no validationfit",
+    "score": "five reference support labels mean",
+    "full_neighbors_saved": true
+  },
+  "metrics": {
+    "AUC": "pairwise ordering withhalf credit equal scores",
+    "AP": "scoretiegroup grouped precision at group end weighted by recallincrement",
+    "macro": "case then equally weighted damagedcases perpatch then patch equalmean",
+    "groups": [
+      "development",
+      "validation_center",
+      "validation_offcenter",
+      "source",
+      "radius/amplitude",
+      "strong displacement"
+    ],
+    "normalcontrols": "AUC/AP null when no positive; report scoretails",
+    "strong_subset_interpretation": "positive trueS displacement>.10, negative cleanfree; weakerS excluded with explicit denominator, same preselected query points",
+    "comparison": "R0/R1/frozenp on exactsame64 queries and shared-valid subsets; no sampled-vs-fullAUC comparison"
+  },
+  "C_evidence": {
+    "selection": "fourdev members normalcontrolfree point maxfrozenp, tiescaseid/sourceID; valcenter/off case max targetenergy thenpointmaxdisplacement",
+    "selection_source": "old frozen outputs, before new retrieval results",
+    "plan_file": "EVIDENCE_PLAN.json",
+    "max_actual_forwards": 12,
+    "dedup": "reuse exactsame case inputs; preselection yields7unique cases, including one shared validation normalreference",
+    "trace_hidden_steps": [
+      0,
+      4,
+      8,
+      12
+    ],
+    "method": "readonly nodeencoder/layernorm hooks onoriginal forward_components; weights unchanged",
+    "geometry": "actual observation/pairednormal and nearestoppositelabel among5neighbors, sharedview/scales, privateimage",
+    "selection_plan_sha256": "df42dc9ef6c5a0290f0d8ea9a8d2878cafc59a1e05507abaf97e507da49df7e0",
+    "expected_unique_forwards": 7
+  },
+  "decision_rules": {
+    "data_error": "specific label/inputsemantics implementation error ->repairdataextraction first",
+    "R0": "valcenter andoff patchmacroAUC>=.80 and>=frozenp+.05 each ->learning/target research",
+    "R1": "ifR0rulefalse, bothvalpatchmacroAUC>=.80 and>=R0+.05 andAPnondecreasing, same direction strong/geometric ->one multiscale input research",
+    "otherwise": "state unresolved hypotheses and one needed task-condition/reference/label evidence direction"
+  },
+  "limits": {
+    "new_models": 0,
+    "training": 0,
+    "threshold_search": 0,
+    "new_descriptors": 2,
+    "newradii": [
+      2,
+      4,
+      8
+    ],
+    "newk": [
+      5
+    ],
+    "repair_execution": 0,
+    "new_onlinebenchmark": 0,
+    "sharedGUI": 0,
+    "API": 0
+  },
+  "cost": "read/preparation/poolstd/index/query/trace/render/summary separately, all failures; existing singlethreadCPU env; no M4 formal timing claim"
+}
