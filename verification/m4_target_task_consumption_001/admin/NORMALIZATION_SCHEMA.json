@@ -1,0 +1,26 @@
+{
+  "schema": "target-task-consumption-normalized-v1",
+  "administrator_only": true,
+  "slot_order": ["N1", "P1", "P2", "N2", "N3", "P3"],
+  "slot_fields": {
+    "slot_id": "exact actual slot label",
+    "raw_answer_path": "actual final.txt or PUBLIC_FINAL.txt in the current consumer",
+    "raw_answer_sha256": "actual raw final bytes SHA256",
+    "answer": "claims actually present in the final, using the public ANSWER_SCHEMA field names",
+    "answer_excerpt": "exact nonempty contiguous final text containing the structured answer",
+    "sources": [{"id": "unique source id", "kind": "tool_result|tool_request|cited_artifact", "path": "actual current slot file", "sha256": "actual bytes SHA256"}],
+    "claim_support": [{"field": "asserted JSON path or extra assertion", "source_id": "source id or final", "excerpt": "exact nonempty source text"}],
+    "region_reason_codes": "identity->reason code, normalized only from an explicit final reason; no truth fill",
+    "semantic_review": {"entire_final_reviewed": true, "all_claims_entailed": true, "reviewer": "independent reviewer", "review_evidence_path": "source-only pre-grade review pin"},
+    "extra_assertions": "all additional substantive claims with exact final excerpts and disposition",
+    "extra_assertion_errors": [],
+    "contradictions": [],
+    "product_adoption": {
+      "claims": [{"region_identity": "actual asserted region identity", "product_support": [{"source_id": "actual current product response", "excerpt": "task fact actually returned"}], "final_use_excerpt": "same task fact actually used in final", "source_reference_excerpt": "actual current source reference used in final"}]
+    },
+    "extra_tool_classification": [{"attempt": "actual business tool ordinal", "category": "allowed category", "support": [{"source_id": "actual request or output", "excerpt": "actual code or returned text"}], "new_task_information": "true|false|unknown", "repeats_existing_fact": "true|false|unknown"}],
+    "process_diagnostics": {"geometry_reverse_lookup_observed": "true|false|unknown", "full_witness_pixel_recompute_observed": "true|false|unknown", "repeated_image_delivery_observed": "true|false|unknown", "source_support": "exact current request/output excerpts for all classified attempts"}
+  },
+  "allowed_extra_tool_categories": ["existing_fact_query", "cached_image_read", "existing_buffer_lookup", "raw_source_read", "new_native_observation", "new_product_observation", "native_computation", "format_artifact", "unknown"],
+  "requirements": ["All six slots, including failure and not-run, remain in the denominator.", "Current sources and raw final are bound before claims are scored.", "No missing fact, identity, source or reason is filled from administrator truth.", "Entire final and all unretracted extras receive independent semantic review before quality scoring.", "Source quotation proves provenance; semantic entailment is reviewed independently.", "No cost ranking or usage is read before quality seal."]
+}

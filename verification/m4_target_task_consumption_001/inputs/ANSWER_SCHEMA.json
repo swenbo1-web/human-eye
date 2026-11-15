@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Current target planar-region observation answer",
+  "type": "object",
+  "required": ["object_name", "coordinate_frame", "unit", "finite_view_pool_only", "regions", "limitations"],
+  "properties": {
+    "object_name": {"type": "string"},
+    "coordinate_frame": {"const": "world"},
+    "unit": {"const": "m"},
+    "finite_view_pool_only": {"const": true},
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["identity", "center_world_m", "unit_normal_world", "geometry_complete_in_pool", "complete_readable", "complete_witness", "unknown_reason", "source_references"],
+        "properties": {
+          "identity": {
+            "type": "object",
+            "properties": {
+              "object_name": {"type": "string"},
+              "source_triangle_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+              "source_triangle_index_ranges": {
+                "description": "Inclusive integer ranges in the current object's zero-based source triangle list.",
+                "type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}
+              },
+              "roi_id": {"type": "string"},
+              "unique_geometry_description": {"type": "string"}
+            }
+          },
+          "center_world_m": {"$ref": "#/$defs/vector3"},
+          "bounds_world_m": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/vector3"}},
+          "boundary_vertices_world_m": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/vector3"}},
+          "unit_normal_world": {"$ref": "#/$defs/vector3"},
+          "geometry_complete_in_pool": {"type": ["boolean", "null"]},
+          "complete_readable": {"type": ["boolean", "null"]},
+          "complete_witness": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "object", "required": ["frame_ref", "view_name", "surface_pixels", "boundary_pixels"],
+               "properties": {"frame_ref": {"type": "string"}, "view_name": {"type": "string"},
+                 "surface_pixels": {"type": "integer", "minimum": 0}, "boundary_pixels": {"type": "integer", "minimum": 0}}}
+            ]
+          },
+          "unknown_reason": {"type": ["string", "null"]},
+          "source_references": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        },
+        "anyOf": [{"required": ["bounds_world_m"]}, {"required": ["boundary_vertices_world_m"]}]
+      }
+    },
+    "source_references": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {"vector3": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}}
+}
