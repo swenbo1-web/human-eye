@@ -59,13 +59,15 @@ def main():
         observed_images = []
         for path in current['actual_tool_results']:
             observed_images.extend(block for block in saved.read(path)['result']['content'] if block.get('type') == 'image')
-        assert len(observed_images) == 1
+        assert observed_images
         frame = current['summary']['frames'][0]
-        actual_png = hashlib.sha256(__import__('base64').b64decode(observed_images[0]['data'], validate=True)).hexdigest()
-        assert actual_png == frame['PNG_sha256']
+        actual_images = [hashlib.sha256(__import__('base64').b64decode(image['data'], validate=True)).hexdigest()
+                         for image in observed_images]
+        assert all(digest == frame['PNG_sha256'] for digest in actual_images)
         evidence[group] = current
         records.append({'slot_id': slot, 'group': group, 'passed_checked_scope': True, 'actual_model_consumers': 0,
-                        'SLOT_RESULT_sha256': saved.sha(root / 'SLOT_RESULT.json'), 'actual_image_blocks': 1,
+                        'SLOT_RESULT_sha256': saved.sha(root / 'SLOT_RESULT.json'),
+                        'actual_image_blocks': len(observed_images), 'actual_image_delivery_sha256': actual_images,
                         'source_and_frame_review': current['summary']})
     binding = saved.read(HERE / 'PRODUCT_RUN_BINDING.json')
     sys.path.insert(0, binding['dependency_root'])

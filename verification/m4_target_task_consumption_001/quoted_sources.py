@@ -71,6 +71,42 @@ class Sources:
         return True
 
 
+def validate_reference_resolutions(normalized, final, sources, evidence):
+    resolutions = normalized.get('source_reference_resolution', [])
+    if type(resolutions) is not list:
+        raise ValueError('source_reference_resolution_array')
+    for row in resolutions:
+        excerpt = row.get('final_reference_excerpt')
+        attempt = row.get('tool_attempt')
+        canonical = row.get('canonical_ref')
+        support = row.get('support', [])
+        support = support if type(support) is list else [support]
+        if (type(excerpt) is not str or not excerpt or excerpt not in final
+                or type(attempt) is not int or not 1 <= attempt <= len(evidence['actual_tool_results'])
+                or canonical not in evidence['current_source_references']
+                or row.get('unique_current_call') is not True
+                or normalized.get('semantic_review', {}).get('reference_resolutions_entailed') is not True
+                or not sources.support(support, allow_request=True)
+                or not any(sources.paths.get(item.get('source_id')) == Path(evidence['actual_tool_results'][attempt-1]).resolve()
+                           for item in support)):
+            raise ValueError('unproved_current_tool_reference_resolution')
+        request = json.loads(Path(evidence['actual_tool_requests'][attempt-1]).read_bytes())
+        expected_tool_ref = 'current-tool:' + str(attempt) + ':' + request['params']['name']
+        if canonical.startswith('current-tool:'):
+            if canonical != expected_tool_ref:
+                raise ValueError('canonical_tool_reference_attempt_mismatch')
+        elif not any(canonical in body for item in support
+                     if sources.paths.get(item.get('source_id')) == Path(evidence['actual_tool_results'][attempt-1]).resolve()
+                     for body in sources.text[item['source_id']]):
+            raise ValueError('canonical_hash_or_ref_not_publicly_delivered')
+    if normalized.get('semantic_review', {}).get('no_missing_source_references_filled') is not True:
+        raise ValueError('source_reference_nonempty_final_review_required')
+    for region in normalized.get('answer', {}).get('regions', []):
+        for reference in region.get('source_references', []):
+            if reference not in final and not any(row.get('canonical_ref') == reference for row in resolutions):
+                raise ValueError('canonical_reference_without_final_citation')
+
+
 def adoption(normalized, final, sources, evidence, identify, quality):
     actual_paths = {Path(path).resolve() for path in evidence['actual_product_responses']}
     adopted = []
@@ -83,12 +119,19 @@ def adoption(normalized, final, sources, evidence, identify, quality):
         support = support if type(support) is list else [support]
         final_use = claim.get('final_use_excerpt')
         final_reference = claim.get('source_reference_excerpt')
+        current_reference_used = (type(final_reference) is str and any(
+            reference in final_reference for reference in evidence['current_source_references']))
+        if type(final_reference) is str:
+            current_reference_used = current_reference_used or any(
+                row.get('final_reference_excerpt') in final_reference
+                and row.get('canonical_ref') in evidence['current_source_references']
+                for row in normalized.get('source_reference_resolution', []))
         valid = (normalized.get('semantic_review', {}).get('adoption_claims_entailed') is True
                  and region is not None and sources.support(support)
                  and all(sources.paths.get(item.get('source_id')) in actual_paths for item in support)
                  and type(final_use) is str and bool(final_use) and final_use in final
                  and type(final_reference) is str and bool(final_reference) and final_reference in final
-                 and any(reference in final_reference for reference in evidence['current_source_references']))
+                 and current_reference_used)
         if valid:
             adopted.append(region)
     observed = bool(actual_paths and adopted)

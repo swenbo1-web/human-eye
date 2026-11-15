@@ -45,10 +45,26 @@ def terminal(slot, outer, result, publication, envelope, consumer):
     need('envelope_identity', envelope.get('slot_id') == slot and envelope.get('group') == slot[:1])
     need('current_product_source', result.get('source', {}).get('product_source141_sha256') == PRODUCT
          and envelope.get('source', {}).get('product_source141_sha256') == PRODUCT)
+    need('current_fixed_asset', result.get('source', {}).get('asset_sha256') ==
+         '2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164')
+    clocks = result.get('clocks', {})
+    start = clocks.get('slot_started_ns')
+    valid_deadlines = (type(start) is int and clocks.get('consumer_deadline_ns') == start+450_000_000_000
+                       and clocks.get('owned_deadline_ns') == start+600_000_000_000)
+    need('original_absolute_deadlines', valid_deadlines
+         and consumer.get('deadline_ns') == clocks.get('consumer_deadline_ns')
+         and result.get('owned', {}).get('worker_deadline_ns') == clocks.get('consumer_deadline_ns')
+         and result.get('owned', {}).get('owned_deadline_ns') == clocks.get('owned_deadline_ns'))
+    need('publication_within_original_lifecycle', valid_deadlines
+         and publication.get('slot_started_ns') == start
+         and type(publication.get('slot_result_published_ns')) is int
+         and start <= publication['slot_result_published_ns'] <= clocks['owned_deadline_ns'])
     for field, path in (('common_task_sha256', HERE / 'inputs/COMMON_TASK.txt'), ('answer_schema_sha256', HERE / 'inputs/ANSWER_SCHEMA.json')):
         digest = hashlib.sha256(raw(path)).hexdigest()
         need(field, result.get('source', {}).get(field) == envelope.get('source', {}).get(field) == digest)
-    need('actual_prompt_hash', consumer.get('input_sha256') == envelope.get('source', {}).get('prompt_sha256'))
+    launcher = load(HERE / 'launcher.py', '_consume_expected_common_prompt')
+    expected_prompt = hashlib.sha256(launcher.common_prompt(slot[:1])).hexdigest()
+    need('actual_prompt_hash', consumer.get('input_sha256') == envelope.get('source', {}).get('prompt_sha256') == expected_prompt)
     need('consumer_valid_completion', consumer.get('valid_completion') is True and consumer.get('status') == 'completed')
     need('fixed_model_effort', consumer.get('model') == 'gpt-6.1-sol' and consumer.get('requested_effort') == 'medium')
     need('consumer_single_turn', consumer.get('turn_index') == 1 and consumer.get('expected_thread_id') is None)
@@ -131,6 +147,9 @@ def grade_slot(slot, row, outer, runtime_root, truth, claims, saved, quoted):
         raise ValueError('actual_answer_excerpt')
     evidence = saved.evaluate_slot(folder, truth)
     bind_tools(evidence, consumer)
+    for index, request_path in enumerate(evidence['actual_tool_requests'], 1):
+        name = read(request_path)['params']['name']
+        evidence['current_source_references'].append('current-tool:' + str(index) + ':' + name)
     if slot[:1] == 'P' and not evidence['initial_product_entry']:
         raise ValueError('configured_P_first_entry')
     if slot[:1] == 'N' and evidence['actual_product_responses']:
@@ -138,6 +157,7 @@ def grade_slot(slot, row, outer, runtime_root, truth, claims, saved, quoted):
     source = quoted.Sources(folder, final, row.get('sources', []), evidence['actual_tool_results'], evidence['actual_tool_requests'])
     if not row.get('claim_support') or not all(source.support(support) for support in row['claim_support']):
         raise ValueError('actual_claim_quotations_required')
+    quoted.validate_reference_resolutions(row, final, source, evidence)
     try:
         quality = claims.grade_answer(row['answer'], row, truth, evidence)
     except (ValueError, TypeError, KeyError, IndexError, ZeroDivisionError) as error:
@@ -177,6 +197,18 @@ def score(args):
             or run.get('outer_retries') != 0 or run.get('replacement_samples') != 0
             or run.get('planned_slots') != 6):
         raise ValueError('actual_six_slot_producer_contract')
+    consumers = []
+    for outer in records:
+        if outer['status'] == 'not_run':
+            continue
+        result = read(outer['result_path'])
+        path = result.get('consumer_record')
+        if path is not None and Path(path).is_file():
+            consumer = read(path)
+            if consumer.get('consumer_pid') is not None:
+                consumers.append(consumer)
+    if type(run.get('actual_consumers')) is not int or run['actual_consumers'] != len(consumers):
+        raise ValueError('actual_consumer_count_binding')
     truth = read(HERE / 'admin/TRUTH.json')
     claims = load(HERE / 'grade_claims.py', '_consume_exact_claims')
     saved = load(HERE / 'saved_evidence.py', '_consume_current_saved_evidence')

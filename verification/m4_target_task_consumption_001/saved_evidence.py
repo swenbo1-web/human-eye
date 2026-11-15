@@ -219,7 +219,12 @@ def evaluate_slot(slot_root, truth):
     pixel = load(HERE / 'pixel_oracle.py', '_consume_independent_pixels')
     manifest = asset_manifest()
     expected_objects = {row['object_name']: row for row in manifest['objects']}
-    native_config = read(runtime / 'native/CONFIG.json')
+    native_config = read(runtime / 'native/SESSION.json')
+    initial_config = read(runtime / 'native/CONFIG.json')
+    ready = read(runtime / 'native/READY.json')
+    if (any(native_config[key] != value for key, value in initial_config.items())
+            or native_config['pid'] != ready['pid']):
+        raise ValueError('owned_native_session_ready_binding')
     if native_config['asset_sha256'] != ASSET or sha(native_config['asset']) != ASSET or sha(native_config['asset_copy']) != ASSET:
         raise ValueError('actual_owned_asset_changed')
     records = wire_records(runtime)

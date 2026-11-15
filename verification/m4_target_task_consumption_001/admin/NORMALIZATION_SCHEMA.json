@@ -1,6 +1,7 @@
 {
   "schema": "target-task-consumption-normalized-v1",
   "administrator_only": true,
+  "semantic_review_path": "Top-level path to an independent target-task-consumption-semantic-review-v1 report, binding normalized_sha256 and stating all_six_reviewed=true and passed=true for source-only normalization accuracy. It does not assert answer correctness.",
   "slot_order": ["N1", "P1", "P2", "N2", "N3", "P3"],
   "slot_fields": {
     "slot_id": "exact actual slot label",
@@ -11,7 +12,8 @@
     "sources": [{"id": "unique source id", "kind": "tool_result|tool_request|cited_artifact", "path": "actual current slot file", "sha256": "actual bytes SHA256"}],
     "claim_support": [{"field": "asserted JSON path or extra assertion", "source_id": "source id or final", "excerpt": "exact nonempty source text"}],
     "region_reason_codes": "identity->reason code, normalized only from an explicit final reason; no truth fill",
-    "semantic_review": {"entire_final_reviewed": true, "all_claims_entailed": true, "reviewer": "independent reviewer", "review_evidence_path": "source-only pre-grade review pin"},
+    "semantic_review": {"entire_final_reviewed": true, "all_claims_entailed": true, "no_missing_source_references_filled": true, "reference_resolutions_entailed": true, "reviewer": "independent reviewer", "review_evidence_path": "source-only pre-grade review pin"},
+    "source_reference_resolution": [{"final_reference_excerpt": "exact explicit current tool/ROI/frame/binding reference from final", "canonical_ref": "validated current source ref or current-tool:<attempt>:<name>", "tool_attempt": "unique actual attempt ordinal", "unique_current_call": true, "support": [{"source_id": "actual current tool result and optional request", "excerpt": "exact text supporting reference resolution"}]}],
     "extra_assertions": "all additional substantive claims with exact final excerpts and disposition",
     "extra_assertion_errors": [],
     "contradictions": [],
