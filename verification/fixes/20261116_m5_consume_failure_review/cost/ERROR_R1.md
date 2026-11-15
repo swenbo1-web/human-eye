@@ -1,0 +1,1 @@
+Independent saved-field adaptation error. The decision records original_usage_events as raw usage dictionaries, while the checker initially expected a nested terminal-event usage field. The corrected comparison uses that actual saved dictionary and still independently checks the unique raw stdout turn.completed event. No source evidence or consumer was changed.

@@ -1,0 +1,1 @@
+R2 used a generic substring combination for raw fallback declarations and failed A1's equivalent original wording. The final checker records an exact, independently read quotation per affected answer. Distance and source geometry were already verified numerically, and all withheld replies are independently tracked. No answer text was normalized or changed; R2 is retained.
