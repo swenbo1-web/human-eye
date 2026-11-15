@@ -1,0 +1,136 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "source_triangle_index_ranges": [[0, 511]],
+        "roi_id": "roi_8e86ecd4ee8ee363517fa26b",
+        "unique_geometry_description": "位于 x=1、y∈[0,1]、z∈[0,1] 的最大边连通平面正方形，绕序法向为负 X。"
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "O:regions/roi_8e86ecd4ee8ee363517fa26b",
+        "O:unobserved_view_groups",
+        "O:pixels/image_index=0,region_index=1",
+        "R:live-source-001/M4_Far_00",
+        "C:REGION_CHECK/[0,511]"
+      ],
+      "notes": "512 个源三角形全部边连通，面积为 1 平方米，所有绕序单位法向均为 [-1,0,0]。有限池中 SCENE、RIGHT 为背向；TOP、FRONT、BACK 为侧向；唯一正向候选 LEFT 存在正面积几何遮挡。因此池中没有整个区域几何完整的正向无遮挡视图。实际 SCENE 图中有 22931 个可见表面像素、561 个达标对比边界像素，但该视图背向，不能作为完整正向可读见证。其他尚未构造图像的像素可读性未运行；几何排除结论不依赖这些图像的像素检测。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "source_triangle_index_ranges": [[512, 513]],
+        "roi_id": "roi_302a5fafb5f3297564c25caf",
+        "unique_geometry_description": "位于 z=2、x∈[1,2]、y∈[0,1] 的最大边连通平面正方形，绕序法向为正 Z。"
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "active-host-image:b89ae7d60d1ace77fd49f5ee1419c476110d88bd1797eb0649f42b5d8bceb5bd",
+        "view_name": "SCENE",
+        "surface_pixels": 17131,
+        "boundary_pixels": 538
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "O:regions/roi_302a5fafb5f3297564c25caf",
+        "O:pixels/image_index=0,region_index=0",
+        "O:images/image_index=0",
+        "R:live-source-001/M4_Far_00",
+        "C:REGION_CHECK/[512,513]"
+      ],
+      "notes": "2 个源三角形全部边连通，面积为 1 平方米，绕序单位法向均为 [0,0,1]。当前实际交付的同一张 SCENE 图同时证明整个区域正向、几何完整且可读。17131≥16，538≥4；边界计数使用四邻域外侧 RGB 欧氏距离≥24 的规则。frame_ref 字段填写的是公开观察入口实际返回的 images.image_ref，未另造帧标识。"
+    }
+  ],
+  "measurement": {
+    "object_a_name": "M4_Far_00",
+    "object_b_name": "M4_Near",
+    "measurement_scope": "whole_objects",
+    "status": "measured",
+    "distance_m": 0.9959999998100102,
+    "nearest_witness": {
+      "a": [1, 0, 0],
+      "b": [0.004000000189989805, 0, 0],
+      "direction_a_to_b": [-1, 0, 0]
+    },
+    "object_source_bindings": [
+      {
+        "object_name": "M4_Far_00",
+        "object_id": "blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d",
+        "instance_id": "160",
+        "source_triangle_count": 514,
+        "source_triangle_index_ranges": [[0, 513]],
+        "source_references": [
+          "O:objects/object_index=5",
+          "R:live-source-001/M4_Far_00",
+          "C:WHOLE_OBJECT_PROXIMITY_RAW_CERTIFICATE"
+        ]
+      },
+      {
+        "object_name": "M4_Near",
+        "object_id": "blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f",
+        "instance_id": "173",
+        "source_triangle_count": 1,
+        "source_triangle_index_ranges": [[0, 0]],
+        "source_references": [
+          "O:objects/object_index=2",
+          "R:live-source-001/M4_Near",
+          "C:WHOLE_OBJECT_PROXIMITY_RAW_CERTIFICATE"
+        ]
+      }
+    ],
+    "source_references": [
+      "R:live-source-001",
+      "C:WHOLE_OBJECT_PROXIMITY_RAW_CERTIFICATE"
+    ],
+    "unknown_reason": null,
+    "notes": "这是完整三角表面的 surface_proximity，不是中心距离，也不是仅对观察区域量测。公开 task 入口失败后，使用当前原始世界几何进行可核对的全局下界与可达见证计算。M4_Far_00 全部 514 个三角形的最小 x=1；M4_Near 全部 1 个三角形的最大 x=0.004000000189989805。因此任意跨对象点对距离均不小于 0.9959999998100102。所报点对分别是两对象源三角形 0 的顶点，其距离恰好达到此下界，故为整个对象之间的全局三角表面最短距离。"
+  },
+  "observation_measurement_correspondence": {
+    "observation_object_name": "M4_Far_00",
+    "measurement_object_names": ["M4_Far_00", "M4_Near"],
+    "same_current_source": true,
+    "explanation": "观察入口以 M4_Far_00 为唯一目标，其他捕获对象参与遮挡；两个区域恰好覆盖该目标的全部 514 个源三角形。量测入口使用 scene_data 返回的完整 M4_Far_00 和 M4_Near。两个入口中的对象名、公开 object_id/host_id 与 instance_id 分别一致；目标三角形总数 514、两个区域的编号范围、中心、边界与绕序法向均经原始几何核对一致。所有读取和计算期间场景保持只读。观察 capture_state.instance_id 与原始 source.instance_id 属于不同入口的来源字段，未将二者错误等同。",
+    "source_references": [
+      "O:binding",
+      "O:objects",
+      "O:scope.patch_support",
+      "R:live-source-001",
+      "C:REGION_CHECK",
+      "C:WHOLE_OBJECT_PROXIMITY_RAW_CERTIFICATE"
+    ],
+    "parent_binding_sha256": "6f4f29f3cd1555705e977d760b3c1d0241b697873f608ec7bb7d58bfc8a1ac67",
+    "parent_source_binding_sha256": "a2d31dd958c4bd06bb03c388bb67636c5b6ffd0e5280a13f81b345e577383657"
+  },
+  "source_references": [
+    "O = 本槽 execute_python 中 observe({mode:active_observation,objects:[{name:M4_Far_00}]},include_image=True) 的原始 brief 结果；session_id=m5-task-consumption-001。",
+    "O:binding.scene_revision = blender:c5226a4884014fff1580d9aa15f700b2d05e89ea5796f3e0313903e340499b76。",
+    "O:binding.document_epoch = 3184d90b56807fd392cc2c06e40835caa6e4182d34ea9dbdd332f25f502c3d68。",
+    "O:binding.observation_target.full_scene_identity_sha256 = 43d3d9257fffad2ea05259e81f494b2547c9d9e7611219251f371d879a5f5d16。",
+    "O:images/image_index=0 = SCENE，image_ref=active-host-image:b89ae7d60d1ace77fd49f5ee1419c476110d88bd1797eb0649f42b5d8bceb5bd；image_sha256=7252aee6e760c949a070cc74f8d5bf7d3889d048fa37c30872aa868f78802516；512×512 实际 PNG 已在本槽交付。",
+    "R = 本槽 scene_data(['M4_Far_00','M4_Near']) 原始结果；source_ref=live-source-001；kind=actual_owned_Blender_evaluated_mesh；source.instance_id=65bbadcfb25945c784fd5cde52910f20；frame=1；subframe=0；scale_length=1；asset_sha256=2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164。",
+    "C:REGION_CHECK = 本槽 execute_python 对 R 中两个完整三角形编号区间计算的边连通性、世界范围、叉积单位法向及面积结果。",
+    "C:WHOLE_OBJECT_PROXIMITY_RAW_CERTIFICATE = 本槽 execute_python 对 R 中两对象完整三角集合计算的全局轴向距离下界、达到下界的表面点对及单位方向结果。"
+  ],
+  "limitations": [
+    "完整性结论仅针对注册的六个有限视图：SCENE、TOP、LEFT、RIGHT、FRONT、BACK，不推广到其他可能相机。",
+    "仅 SCENE 已取得实际图像及像素检测；其余视图的像素可读性未运行，不将未构造图像当作可读证据。",
+    "首次 task 请求仅含 surface_proximity，被公开入口拒绝。补充 spatial_relation 后，以及直接工具补充 closed_solid_relation 后，均发生 same_producer_archive_receipt_missing；未取得成功的公开 task 量测结果。距离结论由当前完整原始几何的独立全局证书支持，并非该失败接口的输出。",
+    "观察结果的来源状态为 loaded_generation，disk_status=disk_not_checked；本结论针对当前加载场景，不声称核对磁盘文件。",
+    "未移动、编辑或保存场景或文件。几何形状、可见性和距离事实不构成损伤判断。"
+  ]
+}

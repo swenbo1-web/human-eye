@@ -1,0 +1,18 @@
+{
+  "schema": "m5-task-static-preparation-fixes-v1",
+  "actual_owned_starts": 0,
+  "actual_MCP_starts": 0,
+  "actual_model_consumers": 0,
+  "issues": [
+    {
+      "issue": "Old P-only frame archive sorted binding.objects before checking frames; ordinary A task rows do not contain object_index",
+      "found_by": "independent scoring source review",
+      "resolution": "Read observed object_index only when producer actually has frames; ordinary task remains unchanged",
+      "regression": "static_checks ordinary task without object_index"
+    },
+    {
+      "issue": "Early startup failure before binding load could obscure cleanup snapshot",
+      "resolution": "Unloaded snapshot source_sha256 is null; cleanup still reaches owned-process closure"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_302a5fafb5f3297564c25caf",
+        "source_triangle_index_ranges": [[512, 513]],
+        "unique_geometry_description": "世界平面 z=2 上的矩形，x∈[1,2]、y∈[0,1]；源三角形绕序法向为 +Z。"
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "boundary_vertices_world_m": [
+        [1, 0, 2],
+        [2, 0, 2],
+        [2, 1, 2],
+        [1, 1, 2]
+      ],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "active-host-image:d20ff5ad55cf838851f62bf563afcf38ba27a5dad89a4686166605aad546622f",
+        "view_name": "SCENE",
+        "surface_pixels": 17131,
+        "boundary_pixels": 538
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "O.regions.rows[0]",
+        "O.pixels.rows[0]",
+        "O.images.rows[0]",
+        "O.observations.rows[0]",
+        "O.binding"
+      ],
+      "notes": "该最大边连通平面区域包含2个源三角形。SCENE 是实际取得的当前512×512图像；工具将本区域报告为 covered / observed_readable，并指定 complete_witness_pixel_index=0。17131个可见表面像素和538个合格对比边界像素均超过16和4的阈值；边界对比采用四邻域外侧RGB欧氏距离至少24的规则。此处 frame_ref 使用该公开入口实际返回的 image_ref，未另造帧标识。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_8e86ecd4ee8ee363517fa26b",
+        "source_triangle_index_ranges": [[0, 511]],
+        "unique_geometry_description": "世界平面 x=1 上的矩形，y∈[0,1]、z∈[0,1]；源三角形绕序法向为 -X。"
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "boundary_vertices_world_m": [
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0]
+      ],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "O.regions.rows[1]",
+        "O.unobserved_view_groups",
+        "O.inspection",
+        "O.pixels.rows[1]",
+        "O.binding"
+      ],
+      "notes": "该最大边连通平面区域包含512个源三角形。有限池中的 SCENE、RIGHT 为背向，TOP、FRONT、BACK 为侧向，唯一正向视图 LEFT 存在正面积几何遮挡。因此池内不存在整个区域几何完整的正向无遮挡视图，这不是单纯像素分辨率不足。实际 SCENE 图像中虽有22931个区域表面像素和561个对比边界像素，但 front_facing=false、readable=false，不能作为完整正向可读见证。LEFT及其余未构造图像的像素可读性未运行；不能从几何判定推称已检查其图像像素。"
+    }
+  ],
+  "measurement": {
+    "object_a_name": "M4_Far_00",
+    "object_b_name": "M4_Near",
+    "measurement_scope": "whole_objects",
+    "status": "measured",
+    "distance_m": 0.9959999998100102,
+    "nearest_witness": {
+      "a": [1, 0, 0],
+      "b": [0.004000000189989805, 0, 0],
+      "direction_a_to_b": [-1, 0, 0]
+    },
+    "object_source_bindings": [
+      {
+        "object_name": "M4_Far_00",
+        "object_id": "blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d",
+        "instance_id": "160",
+        "source_triangle_count": 514,
+        "source_triangle_index_ranges": [[0, 513]],
+        "ordered_geometry_sha256": "fed9b88d792db0273b6bfc654b68f514355d56c687d65cc5c46f61c297eec396",
+        "source_references": [
+          "T.binding.objects[0]",
+          "T.binding.observation_source.objects[1]",
+          "O.objects.rows[5]"
+        ]
+      },
+      {
+        "object_name": "M4_Near",
+        "object_id": "blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f",
+        "instance_id": "173",
+        "source_triangle_count": 1,
+        "source_triangle_index_ranges": [[0, 0]],
+        "ordered_geometry_sha256": "56e1001aaf9b2f93b456eed4b5654516eb4dbf5c1c82ae5f68da2bf3cff95169",
+        "source_references": [
+          "T.binding.objects[1]",
+          "T.binding.observation_source.objects[0]",
+          "O.objects.rows[2]"
+        ]
+      }
+    ],
+    "source_references": [
+      "T.facts.surface_proximity",
+      "T.binding",
+      "T.binding.observation_source"
+    ],
+    "unknown_reason": null,
+    "notes": "这是当前求值后的三角表面最短距离，不是对象中心距离、包围盒间隙或仅可见区域距离。M4_Far_00 的全部514个源三角形和 M4_Near 的全部1个源三角形参与量测。公开方法字段为 exact_binary64_triangle_surface_hulls_v3；距离、最近点对和方向均为 measured。最近点不要求唯一。"
+  },
+  "observation_measurement_correspondence": {
+    "observation_object_name": "M4_Far_00",
+    "measurement_object_names": ["M4_Far_00", "M4_Near"],
+    "same_current_source": true,
+    "explanation": "O 的观察目标是对象索引5、实例160的 M4_Far_00；仅对此对象识别区域，其他5个捕获网格作为遮挡物参与观察。两个区域的闭区间集合[0,511]和[512,513]互不重叠，完整覆盖目标的514个源三角形。T 是同一次 observe 调用返回的 task_result，明确以 whole_objects 为量测范围。T.binding.observation_source 的 parent_binding_sha256 和 parent_source_binding_sha256 分别等于 O.binding 的对应值；双方 capture_state 的 instance_id、epoch=1、revision=1一致。T 中对象的 object_id、instance_id、observation_object_index 与 O 对象表一致。因此观察区域和整对象量测通过公开父来源绑定对应到同一当前场景，而不是仅凭名称推断。两个入口的 scene_revision 字符串作用域不同，不将其误称为相同。",
+    "source_references": [
+      "O.binding.observation_target",
+      "O.binding.capture_state",
+      "O.objects",
+      "O.scope.patch_support",
+      "T.binding.observation_source"
+    ],
+    "parent_binding_sha256": "9d82e43ae586f402124dc9006631a272152a506b0ec29806858008995bcfc908",
+    "parent_source_binding_sha256": "18c4f97995b61f859b8051e214ad46a69fdd04b7c56ced3138947054fa7453d8"
+  },
+  "source_references": [
+    "O := 本槽 execute_python 首次调用保留的 result，即 observe(mode=active_observation, objects=[M4_Far_00], task_query={mode:task, objects:[M4_Far_00,M4_Near], requested_facts:[surface_proximity]}, include_image=True) 的原始公开返回；schema=active-observation-brief-v5，session_id=m5-task-consumption-001。",
+    "T := O.task_result；schema_version=task-query-v3，status=observed。",
+    "O.binding.scene_revision=blender:fe179145e743670a740d87563fd263f7f7c20ba6002a94196b5e712ca2bcd825；source_binding_sha256=18c4f97995b61f859b8051e214ad46a69fdd04b7c56ced3138947054fa7453d8；binding_sha256=9d82e43ae586f402124dc9006631a272152a506b0ec29806858008995bcfc908。",
+    "O.binding.capture_state={instance_id:78be27b9c3ca4e5c9c441a645a7011e5, epoch:1, revision:1}；source_frame={frame:1, subframe:0.0, scale_length:1.0}。",
+    "O.regions 的中心及两个半边向量用于计算本答案的边界角点和世界AABB；front_direction_world 分别为[0,0,1]与[-1,0,0]，本例均已是单位向量。源三角编号语义为 zero_based_object_local_inclusive。",
+    "O.scope.patch_support 对 M4_Far_00 报告 source_triangle_count=514、supported_triangle_count=514、unsupported_triangle_count=0、fully_supported；区域域为 maximal edge-connected exact planar rectangular patches。",
+    "O.images.rows[0]: view_name=SCENE；image_ref=active-host-image:d20ff5ad55cf838851f62bf563afcf38ba27a5dad89a4686166605aad546622f；image_sha256=7252aee6e760c949a070cc74f8d5bf7d3889d048fa37c30872aa868f78802516。该PNG在本次工具回复中实际交付。",
+    "T.binding.scene_revision=observation-task:195fcd12c7785d0a83ccd51714ce86892106d6431200a26019d190f85b274a2b；scene_fingerprint=ce17427e50de151bc3c3e90090ab315abbeae0f595f7313957971a0597cce976。",
+    "O及T的 runtime_source_sha256=7d2d4352f462c64a46e6fccf447c6f030c08b96e95517a3b2b6776ed50b69a6a；source_status=loaded_generation，source_check_scope=bound_generation_identity。"
+  ],
+  "limitations": [
+    "完整性结论仅限当前注册的有限视图池：SCENE、TOP、LEFT、RIGHT、FRONT、BACK，不推广到任意新相机。",
+    "本槽实际取得1张当前图像：SCENE。其余视图具有公开几何分类证据，但未构造图像的像素可读性保持未运行、待证实；这不改变第二个区域已被否定的池内正向几何完整性。",
+    "公开观察状态为 finite_pool_exhausted、no_unobserved_geometric_candidates：2个区域中1个已有完整可读见证，另1个没有几何完整候选；无待取的几何完整候选图像。",
+    "来源绑定针对当前已加载场景代次；公开字段 disk_status=disk_not_checked，未宣称核验磁盘文件。",
+    "本次仅观察和量测，未移动、编辑或保存场景或文件。",
+    "几何形状、可见性和距离事实本身不构成损伤判断。"
+  ]
+}

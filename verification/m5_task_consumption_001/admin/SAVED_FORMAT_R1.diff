@@ -1,0 +1,160 @@
+--- product_evidence.py
++++ product_evidence_saved_R1.py
+@@ -151,12 +151,29 @@
+                   'response_path': call['response_path'], 'request_sha256': call['request_sha256'],
+                   'response_sha256': call['response_sha256'], 'mode': mode, 'joint': joint,
+                   'is_error': response.get('result', {}).get('isError'), 'public': public,
+-                  'outer_result_path': responses[attempt-1], 'measurement': None}
++                  'outer_result_path': responses[attempt-1], 'measurement': None,
++                  'outer_is_error': outer_response.get('result', {}).get('isError'),
++                  'delivered_to_model': outer_response.get('result', {}).get('isError') is False
++                                        and response.get('result', {}).get('isError') is False,
++                  'recorded_expected_producer_index': call['producer_archive_index']}
+         if review['is_error'] is True:
+             reviews.append(review)
+             continue
+-        entry = entries.get(call['producer_archive_index'])
+-        require(entry is not None and sha(entry['path']) == entry['sha256'], 'same_producer_API_archive_binding')
++        matches = []
++        for candidate in all_full_entries:
++            if not call['started_ns'] <= candidate['started_ns'] <= candidate['producer_returned_ns'] <= call['closed_ns']:
++                continue
++            require(sha(candidate['path']) == candidate['sha256'], 'actual_same_producer_archive_pin')
++            archived = read(candidate['path'])
++            content_match = (archived.get('binding', {}).get('binding_sha256') == public.get('binding', {}).get('binding_sha256')
++                             if mode == 'active_observation' else archived == public)
++            if content_match:
++                matches.append(candidate)
++        require(len(matches) == 1, 'actual_same_producer_content_and_call_window_bijection')
++        entry = matches[0]
++        review['actual_producer_archive_index'] = entry['index']
++        review['actual_producer_archive_path'] = entry['path']
++        review['recorded_producer_index_agrees'] = entry['index'] == call['producer_archive_index']
+         full = read(entry['path'])
+         if mode == 'active_observation':
+             parents = [row for row in captures if row['binding'] is not None
+@@ -174,7 +191,8 @@
+             review['observation_source_binding_sha256'] = full['binding']['source_binding_sha256']
+         elif mode == 'task':
+             require(public == full, 'actual_public_ordinary_task_unchanged')
+-            review['measurement'] = validate_measurement(public, captures)
++            if review['delivered_to_model']:
++                review['measurement'] = validate_measurement(public, captures)
+         for value in (public.get('binding', {}), public.get('task_result', {}).get('binding', {})):
+             for key in ('binding_sha256', 'source_binding_sha256', 'scene_revision', 'scene_fingerprint'):
+                 if type(value.get(key)) is str:
+@@ -183,9 +201,9 @@
+     whole, generation = current_whole_sources(captures)
+     api_by_attempt = {tool['attempt']: [row for row in reviews if row['outer_attempt'] == tool['attempt']] for tool in tools}
+     batches = [attempt for attempt, calls in api_by_attempt.items()
+-               if any(row['mode'] == 'active_observation' and not row['is_error'] for row in calls)
+-               and any(row['mode'] == 'task' and row['measurement'] is not None and not row['is_error'] for row in calls)]
+-    joints = [row['index'] for row in reviews if row['joint'] and row['measurement'] is not None and not row['is_error']]
++               if any(row['mode'] == 'active_observation' for row in calls) and any(row['mode'] == 'task' for row in calls)]
++    joints = [row['index'] for row in reviews if row['joint'] and row['measurement'] is not None
++              and row['delivered_to_model'] and not row['is_error']]
+     return {'public_calls': reviews, 'public_index_path': str(path), 'public_index_sha256': sha(path),
+             'actual_product_outer_results': sorted(current_outer_paths), 'current_public_source_references': sorted(public_refs),
+             'whole_object_sources': whole, 'one_current_generation': generation,
+--- saved_evidence.py
++++ saved_evidence_R1.py
+@@ -405,7 +405,7 @@
+             raise ValueError('actual_tool_response_id')
+         requests.append(str(request_path))
+         responses.append(str(response_path))
+-    api = load(HERE / 'product_evidence.py', '_m5_consume_actual_public_API')
++    api = load(HERE / 'product_evidence_saved_R1.py', '_m5_consume_actual_public_API_saved_R1')
+     product = api.audit_calls(runtime, tools, requests, responses, captures, all_full_entries, aliases, truth, validate_brief)
+     source_refs.update(product['current_public_source_references'])
+     for attempt, request_path in enumerate(requests, 1):
+--- score_saved.py
++++ score_saved_R1.py
+@@ -230,7 +230,7 @@
+         raise ValueError('actual_six_slot_producer_contract')
+     consumers = []
+     for outer in records:
+-        if outer['status'] == 'not_run':
++        if outer['status'] == 'not_run' or outer.get('result_path') is None:
+             continue
+         result = read(outer['result_path'])
+         path = result.get('consumer_record')
+@@ -244,19 +244,21 @@
+     for pin in truth['independent_reference_pins']:
+         if hashlib.sha256(raw(pin['path'])).hexdigest() != pin['sha256']:
+             raise ValueError('private_independent_reference_changed')
+-    claims = load(HERE / 'grade_claims.py', '_consume_exact_claims')
+-    saved = tracked_load(HERE / 'saved_evidence.py', '_consume_current_saved_evidence')
+-    quoted = load(HERE / 'quoted_sources.py', '_consume_source_quotations')
++    claims = load(HERE / 'grade_claims_saved_R1.py', '_consume_exact_claims_saved_R1')
++    saved = tracked_load(HERE / 'saved_evidence_R1.py', '_consume_current_saved_evidence_R1')
++    quoted = load(HERE / 'quoted_sources_saved_R1.py', '_consume_source_quotations_saved_R1')
+     results = []
+     for slot in ORDER:
+         row = next(row for row in rows if row['slot_id'] == slot)
+         outer = next(row for row in records if row['slot_id'] == slot)
+-        if outer['status'] == 'not_run':
+-            results.append({'slot_id': slot, 'group': slot[:1], 'execution_state': 'not_run',
++        if outer['status'] == 'not_run' or outer.get('result_path') is None:
++            results.append({'slot_id': slot, 'group': slot[:1], 'execution_state': outer['status'],
++                            'answer_state': 'no_actual_consumer_answer',
+                             'final_quality_passed': False, 'adoption': {'actual_product_facts_adopted': False,
+                                 'observation_facts_adopted': False, 'measurement_facts_adopted': False,
+                                 'whole_objects_scope_correct': False, 'actual_A_batch_used': False},
+-                            'errors': ['not_run', outer.get('reason')]})
++                            'original_dispatch_status': outer['status'], 'original_dispatch_record': outer,
++                            'errors': ['no_original_consumer_answer', outer.get('reason'), outer.get('error')]})
+             continue
+         try:
+             results.append(grade_slot(slot, row, outer, args.runtime_root, truth, claims, saved, quoted))
+--- grade_claims.py
++++ grade_claims_saved_R1.py
+@@ -218,7 +218,17 @@
+             if asserted_faces is not None:
+                 check(prefix + '.whole_original_source_faces', asserted_faces == set(range(len(actual['faces']))))
+             if 'ordered_geometry_sha256' in row:
+-                check(prefix + '.ordered_current_geometry_hash', row['ordered_geometry_sha256'] == ordered_geometry_hash(actual))
++                declared = normalized.get('declared_hash_schemes', {}).get(name)
++                expected_hash = ordered_geometry_hash(actual)
++                if declared is not None:
++                    valid_declaration = (declared.get('scheme') == 'source_order_vertices_triangles_json_compact'
++                        and declared.get('explicit_final_definition_quoted') is True
++                        and normalized.get('semantic_review', {}).get('declared_hash_definitions_entailed') is True)
++                    check(prefix + '.declared_hash_definition', valid_declaration)
++                    if valid_declaration:
++                        payload = {'vertices': actual['vertices'], 'triangles': actual['faces']}
++                        expected_hash = hashlib.sha256(json.dumps(payload, separators=(',', ':')).encode()).hexdigest()
++                check(prefix + '.ordered_current_geometry_hash', row['ordered_geometry_sha256'] == expected_hash)
+     witness = value.get('nearest_witness')
+     check('measurement.nearest_witness_present', type(witness) is dict)
+     if type(witness) is dict:
+--- normalize_saved.py
++++ normalize_saved_R1.py
+@@ -143,6 +143,7 @@
+             'contradictions': copy.deepcopy(annotation.get('contradictions', [])),
+             'semantic_review': copy.deepcopy(annotation.get('semantic_review', {})),
+             'product_adoption': adoption,
++            'declared_hash_schemes': copy.deepcopy(annotation.get('declared_hash_schemes', {})),
+             'extra_tool_classification': copy.deepcopy(annotation.get('extra_tool_classification', [])),
+             'process_diagnostics': diagnostics}
+ 
+--- quoted_sources.py
++++ quoted_sources_saved_R1.py
+@@ -133,7 +133,7 @@
+                 and row.get('canonical_ref') in evidence['current_source_references']
+                 for row in normalized.get('source_reference_resolution', []))
+         valid = (normalized.get('semantic_review', {}).get('adoption_claims_entailed') is True
+-                 and call is not None and not call['is_error'] and sources.support(support)
++                 and call is not None and not call['is_error'] and call.get('delivered_to_model') is True and sources.support(support)
+                  and all(sources.paths.get(item.get('source_id')) in actual_paths for item in support)
+                  and any(sources.paths.get(item.get('source_id')) == Path(call['outer_result_path']).resolve() for item in support)
+                  and type(final_use) is str and bool(final_use) and final_use in final
+@@ -196,7 +196,8 @@
+             'source_quoted_joint_public_call_indices': sorted(joint_indices),
+             'source_quoted_adopted_regions': sorted({region for _, region in observations}),
+             'accepted_fact_adoption_claims': accepted,
+-            'actual_A_batch_used': batch_used, 'actual_A_batch_facts_adopted': batch_fact_adoption,
++            'actual_A_batch_used': batch_used and normalized['slot_id'].startswith('A'),
++            'actual_batch_path_used': batch_used, 'actual_A_batch_facts_adopted': batch_fact_adoption,
+             'actual_batch_outer_attempts': evidence['actual_batch_outer_attempts'],
+             'actual_joint_public_call_indices': evidence['actual_joint_public_call_indices'],
+             'direct_only': None if unresolved else bool(quality and observed and all(category in direct for category in categories)),

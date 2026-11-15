@@ -1,0 +1,380 @@
+{
+  "actual_model_delivery": [
+    {
+      "attempt": "tool_01",
+      "internal_public_call_indices": [
+        1,
+        2
+      ],
+      "model_delivered_error": null,
+      "model_delivered_isError": false,
+      "name": "execute_python"
+    },
+    {
+      "attempt": "tool_02",
+      "internal_public_call_indices": [
+        3
+      ],
+      "model_delivered_error": {
+        "message": "same_producer_archive_receipt_missing",
+        "type": "ValueError"
+      },
+      "model_delivered_isError": true,
+      "name": "execute_python"
+    },
+    {
+      "attempt": "tool_03",
+      "internal_public_call_indices": [],
+      "model_delivered_error": null,
+      "model_delivered_isError": false,
+      "name": "execute_python"
+    },
+    {
+      "attempt": "tool_04",
+      "internal_public_call_indices": [
+        4
+      ],
+      "model_delivered_error": {
+        "message": "same_producer_archive_receipt_missing",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m5_task_consumption_001\\bridge.py\", line 160, in call\n    result, _ = self.session.public_request(arguments)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m5_task_consumption_001\\native_tools.py\", line 217, in public_request\n    response = self.runtime.public_request(copy.deepcopy(arguments))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m5_task_consumption_001\\harness\\owned_runtime.py\", line 390, in public_request\n    raise ValueError(\"same_producer_archive_receipt_missing\")\nValueError: same_producer_archive_receipt_missing\n",
+        "type": "ValueError"
+      },
+      "model_delivered_isError": true,
+      "name": "human_eye_scene_observe"
+    },
+    {
+      "attempt": "tool_05",
+      "internal_public_call_indices": [],
+      "model_delivered_error": null,
+      "model_delivered_isError": false,
+      "name": "execute_python"
+    }
+  ],
+  "actual_public_requests": [
+    {
+      "actual_MCP_isError": false,
+      "actual_product_error": null,
+      "actual_public_result_kind": "active_observation",
+      "actual_public_status": "complete",
+      "actual_response_pin": {
+        "bytes": 12454,
+        "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_04\\RX.bin",
+        "sha256": "b42e102c851e9047ab168d96adcf35b19f8be2f9d69afd75497898694939c681"
+      },
+      "arguments": {
+        "include_image": true,
+        "query": {
+          "mode": "active_observation",
+          "objects": [
+            {
+              "name": "M4_Far_00"
+            }
+          ]
+        },
+        "session_id": "m5-task-consumption-001"
+      },
+      "id": "observe-1",
+      "incorrect_persisted_expected_producer_index": 1
+    },
+    {
+      "actual_MCP_isError": true,
+      "actual_product_error": "task set requires surface_proximity with closed_solid_relation or spatial_relation and optional aabb",
+      "actual_public_result_kind": null,
+      "actual_public_status": "error",
+      "actual_response_pin": {
+        "bytes": 879,
+        "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_05\\RX.bin",
+        "sha256": "f14c2af61a95a4bbfb3775a9e7706ed82677e63be4bb2fb965a77b267ec799f2"
+      },
+      "arguments": {
+        "include_image": false,
+        "query": {
+          "candidates": [
+            {
+              "name": "M4_Near"
+            }
+          ],
+          "mode": "task",
+          "requested_facts": [
+            "surface_proximity"
+          ],
+          "target": {
+            "name": "M4_Far_00"
+          }
+        },
+        "session_id": "m5-task-consumption-001"
+      },
+      "id": "observe-2",
+      "incorrect_persisted_expected_producer_index": 2
+    },
+    {
+      "actual_MCP_isError": false,
+      "actual_product_error": null,
+      "actual_public_result_kind": "task_query",
+      "actual_public_status": "observed",
+      "actual_response_pin": {
+        "bytes": 3611,
+        "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_06\\RX.bin",
+        "sha256": "e12019509606fc537d38d4f193446c7b2e69228498d289564a76a16dc7578791"
+      },
+      "arguments": {
+        "include_image": false,
+        "query": {
+          "candidates": [
+            {
+              "name": "M4_Near"
+            }
+          ],
+          "mode": "task",
+          "requested_facts": [
+            "spatial_relation",
+            "surface_proximity"
+          ],
+          "target": {
+            "name": "M4_Far_00"
+          }
+        },
+        "session_id": "m5-task-consumption-001"
+      },
+      "id": "observe-3",
+      "incorrect_persisted_expected_producer_index": 3
+    },
+    {
+      "actual_MCP_isError": false,
+      "actual_product_error": null,
+      "actual_public_result_kind": "task_query",
+      "actual_public_status": "partial",
+      "actual_response_pin": {
+        "bytes": 3159,
+        "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_07\\RX.bin",
+        "sha256": "87d6a691a18861cebd6cf73d3fb4f4b7e27774ab4c687b85cdd2e0e6a4004318"
+      },
+      "arguments": {
+        "include_image": false,
+        "query": {
+          "candidates": [
+            {
+              "name": "M4_Near"
+            }
+          ],
+          "mode": "task",
+          "requested_facts": [
+            "closed_solid_relation",
+            "surface_proximity"
+          ],
+          "target": {
+            "name": "M4_Far_00"
+          }
+        }
+      },
+      "id": "observe-4",
+      "incorrect_persisted_expected_producer_index": 4
+    }
+  ],
+  "author_association": "Reviewer authored the runtime correlation code. Finding based on actual raw responses and outer delivered originals; independent root decides batch validity.",
+  "comparability": "A1 subsequent recovery and computation costs include harness-caused loss of successful product replies. They cannot be attributed solely to baseline product behavior.",
+  "correlation": [
+    {
+      "actual_public_ids_by_original_window": [
+        "observe-1"
+      ],
+      "producer_returned_ns": 263259119798900,
+      "producer_started_ns": 263258472070200,
+      "service_archive_index": 1,
+      "service_archive_path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_001\\SERVICE_RESULT.json",
+      "service_archive_sha256": "ab6ecb25de9e2fe79dd419b03adef674e60d39e62f2c68ed9ded9d49cf435d4c"
+    },
+    {
+      "actual_public_ids_by_original_window": [
+        "observe-3"
+      ],
+      "producer_returned_ns": 263265605848300,
+      "producer_started_ns": 263265475120400,
+      "service_archive_index": 2,
+      "service_archive_path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_002\\SERVICE_RESULT.json",
+      "service_archive_sha256": "aedc8b6a07d8037e7fa0e76cbc88e410efd11b1c9a69138674131d55255b6001"
+    },
+    {
+      "actual_public_ids_by_original_window": [
+        "observe-4"
+      ],
+      "producer_returned_ns": 263286076835100,
+      "producer_started_ns": 263285962264900,
+      "service_archive_index": 3,
+      "service_archive_path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_003\\SERVICE_RESULT.json",
+      "service_archive_sha256": "b295bd7944386fa2b02c6d40f9b9e0fe9b8177bb037b9e668b3e0afa1d1d2674"
+    }
+  ],
+  "finding": "Confirmed harness interference after an ordinary rejected query. Valid later product replies were received internally and replaced with archive-correlation errors before model delivery.",
+  "input_pins": [
+    {
+      "bytes": 27343,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\PUBLIC_REQUESTS.jsonl",
+      "sha256": "a2e5e358752acbc43528e3f60776c3920b7439ce2acbea3a893c4970153a94bb"
+    },
+    {
+      "bytes": 1551,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\INDEX.jsonl",
+      "sha256": "89ffcb35fa44f3234fbb8c26a247d6e2866afc5b58882211ab3d3ac9b0f7826f"
+    },
+    {
+      "bytes": 29422,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m5_task_consumption_001\\harness\\owned_runtime.py",
+      "sha256": "5d2f252d3abba832297547c4087f6f9ffba3b0b429090d028f75060516d50b73"
+    },
+    {
+      "bytes": 265,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_001\\REQUEST.json",
+      "sha256": "9afdd9c15045fe7141fea356b1e8bcf515337235eafe8041a62c41c8969dd021"
+    },
+    {
+      "bytes": 12453,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_001\\RESPONSE.json",
+      "sha256": "dc90d8f0c880dcffe5eada2a7c4ca4c7c1a5210168b40fbc774ed6ad51a3b03a"
+    },
+    {
+      "bytes": 12454,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_04\\RX.bin",
+      "sha256": "b42e102c851e9047ab168d96adcf35b19f8be2f9d69afd75497898694939c681"
+    },
+    {
+      "bytes": 328,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_002\\REQUEST.json",
+      "sha256": "8d223bf1b97786be0074bd7294f5a72802441cc2df36af1bca95ef8498a8c513"
+    },
+    {
+      "bytes": 878,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_002\\RESPONSE.json",
+      "sha256": "7671b91662313fa5f6f20ec9a83598c0252d3aff74c0ea369b51ce07596aa56b"
+    },
+    {
+      "bytes": 879,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_05\\RX.bin",
+      "sha256": "f14c2af61a95a4bbfb3775a9e7706ed82677e63be4bb2fb965a77b267ec799f2"
+    },
+    {
+      "bytes": 348,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_003\\REQUEST.json",
+      "sha256": "26eb157568fefb808372db47db1225989bec250a61af8d8ffb1cdd7db485a40f"
+    },
+    {
+      "bytes": 3610,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_003\\RESPONSE.json",
+      "sha256": "feb20ff8603a9ada5778ba672ac041b23892933cbeac802dfa854cad5dd84fbc"
+    },
+    {
+      "bytes": 3611,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_06\\RX.bin",
+      "sha256": "e12019509606fc537d38d4f193446c7b2e69228498d289564a76a16dc7578791"
+    },
+    {
+      "bytes": 312,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_004\\REQUEST.json",
+      "sha256": "470fd6a0075c6e2d7a85b9daa8e8dab009b6330b50b5c8ebc10545857f8b7652"
+    },
+    {
+      "bytes": 3158,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_calls\\call_004\\RESPONSE.json",
+      "sha256": "3e252d6ed5c28eb11b956b57e1ee1f2b9f99ee138f563b6e4e5ca5829867e933"
+    },
+    {
+      "bytes": 3159,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\mcp\\rpc_07\\RX.bin",
+      "sha256": "87d6a691a18861cebd6cf73d3fb4f4b7e27774ab4c687b85cdd2e0e6a4004318"
+    },
+    {
+      "bytes": 991,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_01\\REQUEST.json",
+      "sha256": "f128761b3bac789331aa72fe68fdbea100da38c690857c6d2562d408edfd3814"
+    },
+    {
+      "bytes": 13088,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_01\\RESPONSE.json",
+      "sha256": "51ddf781b4f6e6af92c84bcd0903e9aa07412a0cd0f97e99bedcb7925b975ae7"
+    },
+    {
+      "bytes": 1424,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_01\\RECEIPT.json",
+      "sha256": "a253e51c6e7b0936ec04a0a6e1957198075c1da1980052447001b25680f69212"
+    },
+    {
+      "bytes": 955,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_02\\REQUEST.json",
+      "sha256": "fb8c205a29eb7566bc3922796a3e36fac03e619b4fc3c485be34799036287d74"
+    },
+    {
+      "bytes": 212,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_02\\RESPONSE.json",
+      "sha256": "50813cf8948f470cb13f0521efd40c5b51ce94b5e5f9e4c84970f84e7fdeb3d0"
+    },
+    {
+      "bytes": 486,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_02\\RECEIPT.json",
+      "sha256": "1c66dd559f3d5e55cd196780c19746b9fbfd32f4db30890296fa2b7085e458e9"
+    },
+    {
+      "bytes": 906,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_03\\REQUEST.json",
+      "sha256": "f1559d2680b37da6c38f9cd163569a6cd07c58c0287718bf2abedaeaa0852bc8"
+    },
+    {
+      "bytes": 15948,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_03\\RESPONSE.json",
+      "sha256": "7e5d7eeb9ceedd7addc709526021a41aff00a8963940d4e150c3375925da30bf"
+    },
+    {
+      "bytes": 478,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_03\\RECEIPT.json",
+      "sha256": "4856fbaf291f38ac8a7824a391216d99828b32d4efd7190f617974bb802ba879"
+    },
+    {
+      "bytes": 900,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_04\\REQUEST.json",
+      "sha256": "e6f13d3cf21f915f42a120db18de58b1c1b4b4ffcf4fdfce1b561402b60657ce"
+    },
+    {
+      "bytes": 150,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_04\\RESPONSE.json",
+      "sha256": "4dd6cfe1b644dc0cf69708451e43fdbee6773dd617b89d46dea6b4438fb2b66a"
+    },
+    {
+      "bytes": 1460,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_04\\RECEIPT.json",
+      "sha256": "0205d398101a7a4dd79cae5894ecb4dc44bb4885462986fd7a5081976ef997e1"
+    },
+    {
+      "bytes": 2640,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_05\\REQUEST.json",
+      "sha256": "0e996facd58955e937e9e77b1d742225a34c5da6df27a6715508b6120a9b9dbe"
+    },
+    {
+      "bytes": 1556,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_05\\RESPONSE.json",
+      "sha256": "47b824ddd252324d0f331c2c93ab048af99e282ec4a54b5002e03756ff64393d"
+    },
+    {
+      "bytes": 476,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\owner\\tool_05\\RECEIPT.json",
+      "sha256": "44a8d663f427727616ede6e3b5322bde7c3b9177b189c6ef02d28904c05de626"
+    },
+    {
+      "bytes": 42202,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_001\\SERVICE_RESULT.json",
+      "sha256": "ab6ecb25de9e2fe79dd419b03adef674e60d39e62f2c68ed9ded9d49cf435d4c"
+    },
+    {
+      "bytes": 3412,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_002\\SERVICE_RESULT.json",
+      "sha256": "aedc8b6a07d8037e7fa0e76cbc88e410efd11b1c9a69138674131d55255b6001"
+    },
+    {
+      "bytes": 2960,
+      "path": "D:\\he_m5_task_consume_001\\formal\\A1\\product_full\\call_003\\SERVICE_RESULT.json",
+      "sha256": "b295bd7944386fa2b02c6d40f9b9e0fe9b8177bb037b9e668b3e0afa1d1d2674"
+    }
+  ],
+  "mechanism": "RootRuntime increments _product_calls for all public requests. ObservedService increments archive counter only when observe is actually entered. After MCP validation rejection, the counters diverge. Runtime public_request demands equality and raises same_producer_archive_receipt_missing despite a valid actual MCP response.",
+  "product_initial_rejection": "observe-2 uses target/candidates surface_proximity alone and is rejected under its existing task-set contract before LiveSpatialService.observe. This is a real product validation reply, not the later harness failure.",
+  "schema": "m5-A1-archive-correlation-diagnosis-v1",
+  "scope": "Bounded saved-only A1 protocol/correlation inspection. Formal sequence/source unchanged, no retries or replacement, no cost/usage ranking, no new actual execution."
+}

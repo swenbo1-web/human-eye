@@ -1,0 +1,101 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_8e86ecd4ee8ee363517fa26b",
+        "source_triangle_index_ranges": [[0, 511]]
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": ["OBS", "RAW", "CHECK"],
+      "notes": "该最大连通平面区域包含512个源三角形；源顶点绕序计算的法向全部为[-1,0,0]，共享边连通检查覆盖全部512面。有限视图池中，SCENE和RIGHT背向，TOP、FRONT和BACK侧向，唯一正向视图LEFT存在正面积遮挡，因此不存在整个区域几何完整的正向无遮挡视图。当前SCENE图像虽有22931个区域表面像素和561个对比边界像素，但front_facing=false、readable=false，不能作为完整正向可读见证。这不是像素数量不足导致的失败。其余尚未构造视图的像素可读性未运行。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_302a5fafb5f3297564c25caf",
+        "source_triangle_index_ranges": [[512, 513]]
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "active-host-image:91498699df239b75ad411e681943a289ac671c31c2264c395ae2088977b9180f",
+        "view_name": "SCENE",
+        "surface_pixels": 17131,
+        "boundary_pixels": 538
+      },
+      "unknown_reason": null,
+      "source_references": ["OBS", "RAW", "CHECK", "IMAGE"],
+      "notes": "该最大连通平面区域包含2个源三角形，共享边连通，源顶点绕序计算的法向均为[0,0,1]。OBS将其标为covered/observed_readable，并指定当前SCENE图像为完整见证。该图中区域正向，表面像素17131≥16，对比边界像素538≥4；边界对比使用四邻域外侧RGB欧氏距离≥24的公开规则。像素界限为[120,23,390,149]，坐标原点为图像左上角。"
+    }
+  ],
+  "measurement": {
+    "object_a_name": "M4_Far_00",
+    "object_b_name": "M4_Near",
+    "measurement_scope": "whole_objects",
+    "status": "measured",
+    "distance_m": 0.9959999998100102,
+    "nearest_witness": {
+      "a": [1, 0, 0],
+      "b": [0.004000000189989805, 0, 0],
+      "direction_a_to_b": [-1, 0, 0]
+    },
+    "object_source_bindings": [
+      {
+        "object_name": "M4_Far_00",
+        "object_id": "blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d",
+        "instance_id": "160",
+        "source_triangle_count": 514,
+        "source_triangle_index_ranges": [[0, 513]],
+        "source_references": ["RAW", "CHECK", "OBS"]
+      },
+      {
+        "object_name": "M4_Near",
+        "object_id": "blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f",
+        "instance_id": "173",
+        "source_triangle_count": 1,
+        "source_triangle_index_ranges": [[0, 0]],
+        "source_references": ["RAW", "CHECK", "OBS"]
+      }
+    ],
+    "source_references": ["RAW", "CHECK", "TASK_FAILURE"],
+    "unknown_reason": null,
+    "notes": "距离由当前完整源几何独立核算，而非成功的task测距返回。M4_Far_00全部514面和M4_Near全部1面均纳入范围：前者所有三角形顶点的x≥1，后者全部三角形顶点的x=0.004000000189989805，故任意表面点对距离至少为0.9959999998100102。给出的点a和b分别是两对象局部源三角形0的顶点，距离恰好达到此全局下界，因此是整个三角表面的最短距离。未将量测限制在观察成功区域，也未仅测对象中心或包围盒。"
+  },
+  "observation_measurement_correspondence": {
+    "observation_object_name": "M4_Far_00",
+    "measurement_object_names": ["M4_Far_00", "M4_Near"],
+    "same_current_source": true,
+    "explanation": "OBS以M4_Far_00为唯一观察目标，其余5个捕获对象仅参与遮挡。OBS对象表中的目标为object_index=5、instance_id=160，M4_Near为object_index=2、instance_id=173；两者host_id分别与RAW返回的object_id逐字一致。RAW目标的514个源三角形完整分为[0,511]和[512,513]，逐区域计算的范围、中心、绕序法向及面数均与OBS对应区域一致。量测使用同一RAW读取中的这514面及M4_Near的完整1面。观察与原始读取入口的顶层实例标识不同，未将它们冒充为相同的绑定哈希；对应依据是公开对象身份、实例身份和经核对的区域几何。",
+    "source_references": ["OBS", "RAW", "CHECK", "IMAGE"],
+    "parent_binding_sha256": "3e740fd9a8480c42eddeef3ccf356a8772a371af876ca94052b36a0337fe7402",
+    "parent_source_binding_sha256": "9aaefa0348f6c44bd309a028cc424a12f1e298499e332517ea041e30de4c1e47"
+  },
+  "source_references": [
+    "OBS：本槽execute_python调用observe({mode:active_observation,objects:[{name:M4_Far_00}]},include_image=True)保留的原始brief结果；schema=active-observation-brief-v5，session_id=m5-task-consumption-001；scene_revision=blender:5da12eb0f18040764ac05858067982e2ffa4ef972446289ad16accc3da5134c5；document_epoch=dbd96c122893091c139ad0a554b654cbf781522e7803f7d265a3c353b1aab8bb；capture_state={instance_id:fc44c13bd5184aec86a8460ef938fdbd,epoch:1,revision:1}。使用其objects、regions、pixels、inspection及unobserved_view_groups。",
+    "IMAGE：OBS实际交付的当前512×512原生PNG；view_name=SCENE；image_ref=active-host-image:91498699df239b75ad411e681943a289ac671c31c2264c395ae2088977b9180f；image_sha256=7252aee6e760c949a070cc74f8d5bf7d3889d048fa37c30872aa868f78802516；patch_mapping_identity=82953461c49e1400af7ce54ce8622acdd7921e017bcf8507e19ab2776c0823b0。complete_witness.frame_ref引用此真实image_ref。",
+    "RAW：本槽scene_data(selectors=[M4_Far_00,M4_Near])原始结果，source_ref=live-source-001；source.kind=actual_owned_Blender_evaluated_mesh；source.instance_id=3056efc076e24a30a39143c7c3bcaf56；pid=30024；frame=1；subframe=0；scale_length=1；asset_sha256=2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164。保留原顺序世界顶点及对象局部源三角列表。",
+    "CHECK：本槽execute_python对保留的RAW执行的公开普通Python计算结果REGION_CHECK及WHOLE_OBJECT_DISTANCE_PROOF；核对各区域全部三角形的范围、绕序法向、共享边连通性，并用完整两对象源面集的x坐标全局下界和达到下界的源顶点对证明最短距离。",
+    "TASK_FAILURE：首次task仅请求surface_proximity，返回要求同时请求closed_solid_relation或spatial_relation的参数错误；随后分别通过execute_python请求spatial_relation+surface_proximity、通过human_eye_scene_observe请求closed_solid_relation+surface_proximity，均失败并报告ValueError: same_producer_archive_receipt_missing。不存在成功的原生task距离结果。"
+  ],
+  "limitations": [
+    "完整性判断仅覆盖已注册有限视图池：SCENE、TOP、LEFT、RIGHT、FRONT、BACK，不推广到任意相机。",
+    "本槽实际取得的图像仅为SCENE；其余未构造图像的像素可读性保持未运行、待证实，不据几何判断臆造像素计数。",
+    "原生task测距接口存在上述失败；距离已由完整当前源几何独立证明，但原生task返回值仍未取得。",
+    "场景保持只读：未移动、编辑或保存文件。",
+    "这些几何、可见性和距离事实不构成损伤判断。"
+  ]
+}
