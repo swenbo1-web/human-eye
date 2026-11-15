@@ -1,0 +1,29 @@
+{
+  "schema": "m5-task-consumption-normalized-v1",
+  "administrator_only": true,
+  "formal_order": ["A1", "B1", "B2", "A2", "A3", "B3"],
+  "source_annotations": "Post-run exact transcriptions of actual final/tool records, without truth, usage or timing input. One row per fixed slot.",
+  "slot_fields": {
+    "raw_answer_path_and_sha256": "Actual current consumer/PUBLIC_FINAL.txt raw bytes.",
+    "answer_and_excerpt": "The single actual JSON answer and its exact contiguous raw substring. Missing/ambiguous JSON is retained as parser failure.",
+    "sources": "Current actual outer tool REQUEST/RESPONSE files, or artifacts explicitly cited by the actual final, each with SHA256.",
+    "source_reference_resolution": [{"json_path": "Actual existing nonempty source reference field", "original_reference": "Exact parsed final value", "canonical_ref": "Current source ref or current-tool:<attempt>:<tool name>", "tool_attempt": "Actual unique outer attempt", "unique_current_call": true, "support": "Exact current request/result quotation. Original reference excerpt is preserved by normalizer."}],
+    "region_reasons": [{"region_index": "Actual region array index", "source_region_id": "Canonical label from actual source-face set", "reason_code": "Semantic classification of the explicitly asserted final reason"}],
+    "entire_final_json_leaves": "Every original parsed leaf, including extra keys, pinned to raw final bytes. Prose outside the JSON is preserved.",
+    "semantic_review": {"entire_final_reviewed": true, "all_claims_entailed": true, "adoption_claims_entailed": true, "reference_resolutions_entailed": true, "no_missing_source_references_filled": true, "reviewer": "Source-only author with independent root confirmation before first quality grade"},
+    "extra_assertions": "All extra substantive assertions, notes, limitations and prose are registered with actual excerpts and a source-based disposition.",
+    "extra_assertion_errors": "Physical or semantic errors found from original current evidence, preserved even if core fields are correct.",
+    "contradictions": "All unretracted contradictory final assertions.",
+    "product_adoption": {"claims": [{"kind": "observation|measurement", "public_call_index": "Actual internal public call", "region_index": "Actual answer region for observation claim", "fact": "surface_proximity for measurement claim", "product_support": "Actual delivered outer tool result quotations", "final_use_excerpt": "Actual final task use", "source_reference_excerpt": "Actual final current-source citation"}]},
+    "extra_tool_classification": "Every outer attempt 1..N, including the initial route, errors and recovery, with actual code/result quotations and allowed category.",
+    "process_diagnostics": "Source-quoted geometry reverse lookup, measurement/pixel recomputation, new information and repeated image delivery. Necessity remains unknown unless demonstrated."
+  },
+  "allowed_categories": ["existing_fact_query", "cached_image_read", "existing_buffer_lookup", "raw_source_read", "new_native_observation", "new_product_observation", "native_computation", "format_artifact", "unknown"],
+  "independent_semantic_review": "admin/SEMANTIC_REVIEW.json binds exact normalized_sha256, all_six_reviewed=true and passed=true for faithful full-answer transcription and source resolution. It precedes first content score.",
+  "consumer_local_roi_labels": "Either group may define local labels using an asserted unique source-face set or complete exact geometric description. Labels conflicting with actual current ROI aliases or with another final identity are rejected.",
+  "A_source_binding": "Current ordinary observe and task objects/source references. No required B-specific parent binding.",
+  "B_joint_adoption": "Observation and measurement final use must resolve to the same actual successful joint public call, with correct whole_objects scope.",
+  "missing_values_filled_from_truth": false,
+  "background_full_used_as_model_consumption": false,
+  "quality_before_cost": true
+}
