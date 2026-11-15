@@ -1,0 +1,170 @@
+{
+  "status": "passed",
+  "checks": 900,
+  "actual_frames": 11,
+  "actual_slots": 6,
+  "additional_view_rows": 12,
+  "exact_shadow_area": "73786983304225/9223372036854775808",
+  "slots": [
+    {
+      "slot": "N1",
+      "raw_answer_sha256": "78bb19646f6b555f4cf4db933772fbcadbc4d9f5f185883a89479eabba869c02",
+      "frames": 1,
+      "image_blocks": 1,
+      "regions": [
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "唯一正向视图为 LEFT，但存在已证实的正面积几何遮挡：M4_Near 的局部源三角形 0 遮住该区域靠近 [1,0,0] 的微小三角部分。遮挡区域近似满足 y>=0、z>=0、y+z<=0.004000000189989805，世界表面积约 0.00000800000076 平方米；LEFT 中的 NDC 投影遮挡面积为 0.000004155632533968272，而区域投影总面积为 0.5194540174005858。区域完整位于 LEFT 视锥内，失败原因不是裁切。SCENE、RIGHT 为背向；TOP、FRONT、BACK 为侧向零投影面积。因此有限池内不存在整个区域正向无遮挡视图，不能以局部可见或清楚边缘充当完整见证。本次未构造 LEFT 图像，其像素可读性保持未运行；这一待证实的像素属性不改变已证实的几何不完整结论。",
+          "actual_witness": null
+        },
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "连续几何核验表明 SCENE、TOP、LEFT、RIGHT、FRONT、BACK 均为该区域的正向、完整入框、无遮挡视图。实际取得的 TOP 图像已经构成完整可读见证。表面掩码使用 owners=13 且全局 triangle_ids 在闭区间 [6146,6147]，通过该帧 source_face_offsets[13]=5634 对应局部三角形 [512,513]。216225 个可见表面像素超过阈值16；1856 个去重边界表面像素各自至少有一个四邻域外侧像素，其8位 RGB 欧氏距离达到24，超过阈值4。区域 RGB 为 [164,173,187]。其余五个视图未构造图像，像素可读性未运行，仍待证实；不影响 TOP 已成立的见证。",
+          "actual_witness": {
+            "frame_ref": "native-image-001",
+            "view_name": "TOP",
+            "surface_pixels": 216225,
+            "boundary_pixels": 1856
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "slot": "P1",
+      "raw_answer_sha256": "50e75e7c782fbe7e74ca301a1ea360a7e036ff1cfc23fe9db6121f16339e2b7d",
+      "frames": 1,
+      "image_blocks": 2,
+      "regions": [
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "最大边连通平面矩形区域，共2个源三角形。SCENE 同一张图同时证明整个区域正向、几何完整、无遮挡且可读。表面像素17131≥16；与四邻域外侧像素RGB欧氏距离≥24的边界像素538≥4。",
+          "actual_witness": {
+            "frame_ref": "active-host-image:71c5102e10a759a7dad92db93963afa690bb3a8fc6995731fc1cb26027a7caf7",
+            "view_name": "SCENE",
+            "surface_pixels": 17131,
+            "boundary_pixels": 538
+          }
+        },
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "最大边连通平面矩形区域，共512个源三角形。有限视图池中：SCENE、RIGHT为背向；TOP、FRONT、BACK为侧立；唯一正向视图LEFT存在正面积几何遮挡。因此整个池内不存在完整正向无遮挡视图，也不存在完整可读见证。已取得的SCENE虽有22931个可见表面像素和561个达标对比边界像素，但该区域背向，不能作为完整正向可读见证。失败原因是朝向及几何遮挡，不是已证实的像素数量不足。其余五个视图尚未构造图像，像素可读性未运行、待证实；这些未运行像素检查不改变已经排除完整正向几何见证的结论。",
+          "actual_witness": null
+        }
+      ],
+      "passed": true
+    },
+    {
+      "slot": "P2",
+      "raw_answer_sha256": "b2229fe13ce99e81af11adbfe4206d6a0aeaa6c111138b65d70ed588b664363c",
+      "frames": 1,
+      "image_blocks": 1,
+      "regions": [
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "两个源三角形共享对角边，构成完整的1米×1米最大连通平面区域。SCENE 中存在整个区域正向、几何完整且无遮挡的实际图像见证；17131≥16，538≥4。边界计数采用四邻域外侧像素 RGB 欧氏距离≥24 的当前工具规则。frame_ref 保留工具实际返回的原生图像引用，原字段名为 image_ref。",
+          "actual_witness": {
+            "frame_ref": "active-host-image:deed2f93c7a0d474faca4519923b5a7c5bafc347e66ce38f9beb2ba646395aea",
+            "view_name": "SCENE",
+            "surface_pixels": 17131,
+            "boundary_pixels": 538
+          }
+        },
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "全部512个三角形属于同一最大边连通平面区域，不能将网格单元分别视为独立区域。有限池内无完整正向无遮挡视图：SCENE、RIGHT 为背向；TOP、FRONT、BACK 为侧向；唯一正向候选 LEFT 存在正面积几何遮挡。因此不存在满足本任务要求的完整可读见证。SCENE 虽有22931个区域可见像素和561个达标对比边界像素，但为背向图像，不能据此证明完整正向可读；失败原因不是像素数量不足。其余五个视图未构造实际图像，像素可读性保持未运行，若要报告它们的像素表现仍待取证；这不改变已经证实的有限池几何否定结论。",
+          "actual_witness": null
+        }
+      ],
+      "passed": true
+    },
+    {
+      "slot": "N2",
+      "raw_answer_sha256": "7f6216acb0967597932ad7dad86c870f6a0c8ae787279aa81855f54693b66b9d",
+      "frames": 1,
+      "image_blocks": 1,
+      "regions": [
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "唯一正向视图为LEFT，法向与指向观察设备的单位方向点积为0.7071067811865475。该视图中区域整体位于裁剪范围内，但被M4_Near遮挡：目标平面上的遮挡三角形顶点约为[1,0,0]、[1,0.004000000189989805,0]、[1,0,0.004000000189989805]，面积约0.000008000000759959平方米，严格大于零，故不是几何完整视图。投影遮挡面积约为0.000004155632533969 NDC平方单位。SCENE和RIGHT为背向；TOP、FRONT和BACK为侧向零投影面积。没有完整可读图像见证的原因已由几何遮挡及朝向证实，而不是已证明像素对比不足。LEFT等未构造图像的像素可读性保持未运行；不以可能看不见的细小遮挡推定几何完整。",
+          "actual_witness": null
+        },
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "SCENE、TOP、LEFT、RIGHT、FRONT、BACK均存在几何完整的正向无遮挡观察。实际完整可读见证采用TOP：全部区域位于裁剪范围内，连续几何检查不存在前方遮挡。图中表面RGB为[164,173,187]，外侧RGB为[18,22,30]；1856个不同的区域边界像素各自至少具有一个四邻域外侧像素，其RGB欧氏距离达到24。表面像素数≥16且合格边界像素数≥4，满足同一张图像的可读性要求。",
+          "actual_witness": {
+            "frame_ref": "native-image-001",
+            "view_name": "TOP",
+            "surface_pixels": 216225,
+            "boundary_pixels": 1856
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "slot": "N3",
+      "raw_answer_sha256": "ad10d140f96a347e75d2251cfa95212e092c880753593d410adc8c1ae38d1e56",
+      "frames": 6,
+      "image_blocks": 2,
+      "regions": [
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "LEFT 图中的可见像素与对比边界数量均达到阈值，但连续几何仍有微小遮挡，因此不能证明整个区域完整。失败原因是几何遮挡及其他视图的朝向，不是 LEFT 的像素可读性不足。",
+          "actual_witness": null
+        },
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "TOP 同一张实际图像同时满足整个区域几何完整、可见表面像素不少于 16、合格对比边界像素不少于 4。",
+          "actual_witness": {
+            "frame_ref": "native-image-002",
+            "view_name": "TOP",
+            "surface_pixels": 216225,
+            "boundary_pixels": 1856
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "slot": "P3",
+      "raw_answer_sha256": "062e0a6658bab34bcea3c174182f397a9a459c3ad68ab185e0d025c3fc0c884e",
+      "frames": 1,
+      "image_blocks": 1,
+      "regions": [
+        {
+          "first_source_face": 512,
+          "source_count": 2,
+          "original_notes": "最大边连通平面区域，完整绑定源三角形512至513。法向遵循源三角形绕序，已为单位向量。SCENE实际图像同时证明整个区域正向、几何完整、无遮挡且可读；538个对比边界像素满足与四邻域外侧像素RGB欧氏距离至少24的条件，表面像素和边界像素计数均超过要求。",
+          "actual_witness": {
+            "frame_ref": "active-host-image:2e78c643b5d559d78c3c39be17fe4349ab13c7a743bf943991ded2518375c376",
+            "view_name": "SCENE",
+            "surface_pixels": 17131,
+            "boundary_pixels": 538
+          }
+        },
+        {
+          "first_source_face": 0,
+          "source_count": 512,
+          "original_notes": "最大边连通平面区域，完整绑定源三角形0至511。法向遵循源三角形绕序，已为单位向量。有限视图池中，SCENE和RIGHT背向；TOP、FRONT和BACK为侧向零面积投影；唯一正向视图LEFT存在正面积几何遮挡，因此没有整个区域正向无遮挡的视图。已取得的SCENE图像中，该区域有22931个可见表面像素及561个对比边界像素，但其为背向观察，不能作为完整正向可读见证；像素数量充足不能消除朝向或遮挡问题。其余五个视图尚未取得实际图像，像素可读性未运行、待证实；这不影响已证实的有限池几何不完整结论。",
+          "actual_witness": null
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "new_Blender": 0,
+  "new_raster": 0,
+  "new_models": 0,
+  "scope": "Independent source geometry, six original finals, actual frames and public product adoption. Manual semantic review complements these exact checks."
+}

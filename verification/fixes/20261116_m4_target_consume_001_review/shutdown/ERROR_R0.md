@@ -1,0 +1,1 @@
+The first independent replay stopped before any local subprocess was launched. It requested a nonexistent slot.clocks.slot_completed_ns field. The original final publication record is SLOT_PUBLICATION.json/slot_result_published_ns. The script was corrected to that recorded field and the original version retained. No author evidence or product was changed.
