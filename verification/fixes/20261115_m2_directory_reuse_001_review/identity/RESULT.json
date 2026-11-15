@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "checks": 280,
+  "groups": {
+    "git": 4,
+    "manifest": 27,
+    "git_blob": 27,
+    "final_artifact": 25,
+    "protected_old_pin": 12,
+    "source": 143,
+    "targeted_evidence_pin": 27,
+    "plan": 1,
+    "raw_cache_control": 3,
+    "raw_technical": 5,
+    "recorded_denominator": 4,
+    "zero_product": 1,
+    "AL": 1
+  },
+  "failures": [],
+  "unique_read_files": 347,
+  "baseline": "8f2a739e789b777358d84a168154bc7c50b929e5",
+  "head": "fde0e9ab21fb6eaee1750befd64ad1bebdde2961",
+  "selected_runner_lines": [
+    {
+      "line": 219,
+      "text": "                'session_id': 'm4-host-bridge-001', 'query': {'mode': 'active_observation', 'unsupported': True}}}})"
+    },
+    {
+      "line": 220,
+      "text": "        assert bad['result']['isError'] is True"
+    },
+    {
+      "line": 221,
+      "text": "        assert client.call({'jsonrpc': '2.0', 'id': 'ping_after_bad_request', 'method': 'ping'})['result'] == {}"
+    },
+    {
+      "line": 222,
+      "text": "        old = client.call({'jsonrpc': '2.0', 'id': 'old_readonly_regression', 'method': 'tools/call',"
+    },
+    {
+      "line": 223,
+      "text": "            'params': {'name': 'human_eye_scene_observe', 'arguments': {'session_id': 'm4-host-bridge-001',"
+    },
+    {
+      "line": 224,
+      "text": "                       'include_image': False, 'query': {'mode': 'directory'}}}})"
+    },
+    {
+      "line": 225,
+      "text": "        assert old['result'].get('isError') is False and all(block['type'] == 'text' for block in old['result']['content'])"
+    },
+    {
+      "line": 226,
+      "text": "        assert len(list((external / 'run/render_budget').glob('attempt_*/INTENT.json'))) == 6"
+    },
+    {
+      "line": 227,
+      "text": "        guard.verify_loaded()"
+    },
+    {
+      "line": 228,
+      "text": "        result['passed'] = True"
+    },
+    {
+      "line": 229,
+      "text": "    except BaseException as error:"
+    }
+  ],
+  "new_product_model_Blender_raster_calls": 0,
+  "limitations": [
+    "Did not rerun the authors 4702-file M2, 1622-file M4, 2221-file context or prior M1 archive matrices. All 12 major old pins plus 27 source/evidence pins were checked; three raw cache cases and one raw technical case inspected.",
+    "Recorded session/task inventory totals checked for internal agreement only, not independently re-enumerated as raw host events.",
+    "Zero calls are independently true of this reviewer. Author no-call statements cannot prove an absence of unrecorded external execution; namespace-only Git changes, unchanged 141-source install and no candidate runtime independently checked.",
+    "Own AL handle resolves to stale prior-task assignment(current=false); parent task is current but not a substitute for child registration."
+  ]
+}

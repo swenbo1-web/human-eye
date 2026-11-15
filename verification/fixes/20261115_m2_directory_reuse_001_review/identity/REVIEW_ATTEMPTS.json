@@ -1,0 +1,16 @@
+{
+  "attempt_01": {
+    "script": "audit_R0.py",
+    "outcome": "reviewer_schema_error",
+    "exit_code": 1,
+    "error": "KeyError: context_bound at AL completion context check",
+    "cause": "Reviewer initially read context_bound at document root; the saved actual response is nested under actual_response.",
+    "product_or_author_failure": false,
+    "result_file_written": false
+  },
+  "attempt_02": {
+    "script": "audit.py",
+    "change": "Read actual_response.context_bound directly; no default value or skipped assertion.",
+    "result": "RESULT.json"
+  }
+}
