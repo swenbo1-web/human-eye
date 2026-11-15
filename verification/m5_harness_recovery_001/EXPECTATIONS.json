@@ -1,0 +1,121 @@
+{
+  "schema": "m5-harness-recovery-independent-expectations-v1",
+  "task": "M5-HARNESS-RECOVERY-001",
+  "administrator_plan_sha256": "4e37508e0fa047c13b832bd2f9c6b03442d0493f062da1fbe00d3f83bb627ee2",
+  "baseline_git": "baf8799d9e1cb411d39da58c28171b00ac76f12f",
+  "products": {
+    "A": "776b0f0914e116fece16d2b3875ee16ffebf4896a7e394861287ffaa6fe025be",
+    "B": "7d2d4352f462c64a46e6fccf447c6f030c08b96e95517a3b2b6776ed50b69a6a"
+  },
+  "asset_sha256": "2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164",
+  "sessions": ["A", "B"],
+  "session_count": 2,
+  "outer_execute_python_count_per_session": 4,
+  "public_request_count_per_session": 5,
+  "expected_service_archive_indices": [1, null, 2, 3, 4],
+  "expected_original_MCP_isError": [false, true, false, false, false],
+  "public_delivery": {
+    "marker": "M5_RECOVERY_PUBLIC:",
+    "record_fields": ["step", "isError", "public_result"],
+    "public_result": "The exact original public JSON returned by observe/task. It receives no harness fields or private full-result fields.",
+    "original_isError_sources": ["original inner MCP response.result.isError", "Owner receipt.product_requests[].is_error", "existing ordinary Python last_product_is_error immediately captured in the marker container"],
+    "outer_error_response_cannot_count_as_successful_delivery": true,
+    "background_service_result_is_consumer_delivery": false
+  },
+  "sequence": [
+    {
+      "step": "observation_initial",
+      "outer_attempt": 1,
+      "public_call_index": 1,
+      "query": {"mode": "active_observation", "objects": [{"name": "M4_Far_00"}]},
+      "include_image": true,
+      "public_schema": "active-observation-brief-v5",
+      "inspection": {"supported": 2, "covered": 1, "unobserved": 1},
+      "real_current_PNG_delivery_required": true
+    },
+    {
+      "step": "invalid_task",
+      "outer_attempt": 1,
+      "public_call_index": 2,
+      "query": {"mode": "task", "target": {"name": "M4_Far_00"}, "candidates": [{"name": "M4_Near"}], "requested_facts": ["surface_proximity"]},
+      "include_image": false,
+      "public_status": "error",
+      "expected_error": "task set requires surface_proximity with closed_solid_relation or spatial_relation and optional aabb",
+      "executed": false,
+      "execution_status": "not_executed",
+      "service_archive_record": null,
+      "archive_bytes_unchanged": true
+    },
+    {
+      "step": "valid_surface",
+      "outer_attempt": 2,
+      "public_call_index": 3,
+      "query": {"mode": "task", "objects": [{"name": "M4_Far_00"}, {"name": "M4_Near"}], "requested_facts": ["surface_proximity"]},
+      "include_image": false,
+      "public_schema_version": "task-query-v3",
+      "public_status": "observed",
+      "surface_proximity_status": "measured"
+    },
+    {
+      "step": "valid_surface_closed",
+      "outer_attempt": 3,
+      "public_call_index": 4,
+      "query": {"mode": "task", "objects": [{"name": "M4_Far_00"}, {"name": "M4_Near"}], "requested_facts": ["surface_proximity", "closed_solid_relation"]},
+      "include_image": false,
+      "public_schema_version": "task-query-v3",
+      "public_status": "partial",
+      "surface_proximity_status": "measured",
+      "closed_solid_relation_status": "unknown",
+      "unknown_payload_preserved_exactly": true
+    },
+    {
+      "step": "final_observation_or_joint",
+      "outer_attempt": 4,
+      "public_call_index": 5,
+      "A_query": {"mode": "active_observation", "objects": [{"name": "M4_Far_00"}]},
+      "B_query": {"mode": "active_observation", "objects": [{"name": "M4_Far_00"}], "task_query": {"mode": "task", "objects": [{"name": "M4_Far_00"}, {"name": "M4_Near"}], "requested_facts": ["surface_proximity"]}},
+      "include_image": true,
+      "public_schema": "active-observation-brief-v5",
+      "inspection": {"supported": 2, "covered": 1, "unobserved": 1},
+      "real_current_PNG_delivery_required": true,
+      "B_actual_public_task_result_required": true
+    }
+  ],
+  "archive_association": {
+    "public_and_service_serials_are_independent": true,
+    "before_after_original_byte_prefix_required": true,
+    "per_completed_observe_delta_records": 1,
+    "front_reject_delta_records": 0,
+    "strictly_increasing_service_serials": true,
+    "generic_service_serial_gaps_allowed_when_actual_records_show_them": true,
+    "cross_slot_or_noncanonical_archive_path_rejected": true,
+    "same_public_call_window_required": true,
+    "exact_current_entry_content_SHA_required": true,
+    "public_brief_compared_with_private_full_by_existing_public_projection": true
+  },
+  "independent_geometry": {
+    "accepted_truth_path": "verification/m5_task_consumption_001/admin/TRUTH.json",
+    "accepted_truth_sha256": "50588329cb0829df5cd66aa11d7016e6db779b5760788158c34197235760e558",
+    "producer_distance": "Independent exact global X-gap proof and correctly rounded binary64 value.",
+    "measurement_scope": "whole_objects",
+    "nearest_points": "Any legal nonunique pair on current complete source surfaces, preserving the original 1e-9 m publication contract and A-to-B direction.",
+    "entire_source_faces_required": true,
+    "finite_pool_and_current_frame_pixel_checks": true,
+    "whole_source_current_identity_and_generation_checks": true
+  },
+  "final_frame_and_availability": {
+    "actual_frame_registration_and_PNG_NPZ_source_chain_required": true,
+    "cache_hits_reported_as_observed": true,
+    "cache_hit_is_a_performance_gate": false,
+    "at_least_two_valid_delivered_replies_after_rejection": true,
+    "last_ping_scope_and_original_reply_preserved": true,
+    "original_source_scene_and_file_unchanged": true,
+    "owned_processes_closed_and_budget_settled": true
+  },
+  "limits": {"owned_starts": 2, "actual_rasters": 12, "model_consumers": 0, "paid_APIs": 0, "product_request_seconds": 30, "owned_lifecycle_seconds": 600},
+  "performance_ranking_or_product_benefit_gate": false,
+  "historical_pure_matrices": "Reference accepted 104/19/96 records. Changed-context checks and independent prefix/record/path/time/hash counterexamples are reported separately.",
+  "new_actual_calls_by_independent_checker": 0,
+  "new_models_by_independent_checker": 0,
+  "new_rasters_by_independent_checker": 0
+}

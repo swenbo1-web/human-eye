@@ -1,0 +1,125 @@
+{
+  "expected_isError": [
+    false,
+    true,
+    false,
+    false,
+    false
+  ],
+  "expected_markers": [
+    "observation_initial",
+    "invalid_task",
+    "valid_surface",
+    "valid_surface_closed",
+    "final_observation_or_joint"
+  ],
+  "expected_service_indices": [
+    1,
+    null,
+    2,
+    3,
+    4
+  ],
+  "groups": {
+    "A": [
+      {
+        "id": "recovery-step-1",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = observe(query={'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}]}, include_image=True)\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'observation_initial', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\nvalue = task({'mode': 'task', 'target': {'name': 'M4_Far_00'}, 'candidates': [{'name': 'M4_Near'}], 'requested_facts': ['surface_proximity']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'invalid_task', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-2",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = task({'mode': 'task', 'objects': [{'name': 'M4_Far_00'}, {'name': 'M4_Near'}], 'requested_facts': ['surface_proximity']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'valid_surface', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-3",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = task({'mode': 'task', 'objects': [{'name': 'M4_Far_00'}, {'name': 'M4_Near'}], 'requested_facts': ['surface_proximity', 'closed_solid_relation']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'valid_surface_closed', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-4",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = observe(query={'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}]}, include_image=True)\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'final_observation_or_joint', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      }
+    ],
+    "B": [
+      {
+        "id": "recovery-step-1",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = observe(query={'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}]}, include_image=True)\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'observation_initial', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\nvalue = task({'mode': 'task', 'target': {'name': 'M4_Far_00'}, 'candidates': [{'name': 'M4_Near'}], 'requested_facts': ['surface_proximity']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'invalid_task', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-2",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = task({'mode': 'task', 'objects': [{'name': 'M4_Far_00'}, {'name': 'M4_Near'}], 'requested_facts': ['surface_proximity']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'valid_surface', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-3",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = task({'mode': 'task', 'objects': [{'name': 'M4_Far_00'}, {'name': 'M4_Near'}], 'requested_facts': ['surface_proximity', 'closed_solid_relation']})\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'valid_surface_closed', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      },
+      {
+        "id": "recovery-step-4",
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {
+          "arguments": {
+            "code": "import json\nvalue = observe(query={'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}], 'task_query': {'mode': 'task', 'objects': [{'name': 'M4_Far_00'}, {'name': 'M4_Near'}], 'requested_facts': ['surface_proximity']}}, include_image=True)\nprint('M5_RECOVERY_PUBLIC:' + json.dumps({'step':'final_observation_or_joint', 'isError':last_product_is_error, 'public_result':value}, sort_keys=True, allow_nan=False))\n"
+          },
+          "name": "execute_python"
+        }
+      }
+    ]
+  },
+  "internal_public_calls": 5,
+  "marker_prefix": "M5_RECOVERY_PUBLIC:",
+  "model_consumers": 0,
+  "outer_tool_calls": 4,
+  "owned_seconds": 600,
+  "product_request_seconds": 30,
+  "schema": "m5-harness-recovery-requests-v1",
+  "source_sha256": "cc59aafd595f7ab88bd053a644e221f840dc46a39761b662521afa793f58d6e4"
+}

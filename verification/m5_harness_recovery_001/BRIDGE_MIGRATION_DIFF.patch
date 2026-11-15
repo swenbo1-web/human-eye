@@ -1,0 +1,51 @@
+--- old/bridge.py
++++ new/bridge.py
+@@ -27,7 +27,7 @@
+     return module
+ 
+ 
+-COMMON = load("_m5_task_common_python", HERE / "native_tools.py")
++COMMON = load("_m5_recovery_common_python", HERE / "native_tools.py")
+ IMAGE_PATH = HERE.with_name("m4_active_coverage_consumption_001") / "image_content.py"
+ IMAGE = load("_target_task_image_delivery", IMAGE_PATH)
+ encoded, save = COMMON.encoded, COMMON.save
+@@ -130,8 +130,8 @@
+         try:
+             self.session.check()
+             self.budget.reserve("business_tool", self.label, self.phase, 1)
+-            if self.calls > 12 or type(arguments) is not dict:
+-                raise ValueError("twelve_business_admissions_and_object_arguments")
++            if type(arguments) is not dict:
++                raise ValueError("object_arguments_required")
+             self.session.attached_refs = []
+             self.session.product_images = []
+             if name in ("execute_python", "execute_blender_code"):
+@@ -192,7 +192,7 @@
+         self.session.check()
+         if method == "initialize":
+             result = {"protocolVersion": request.get("params", {}).get("protocolVersion", "2025-03-26"),
+-                      "capabilities": {"tools": {}}, "serverInfo": {"name": "m5-task-consumption", "version": "1"}}
++                      "capabilities": {"tools": {}}, "serverInfo": {"name": "m5-harness-recovery-001", "version": "1"}}
+         elif method == "tools/list":
+             result = {"tools": public_tools(self.group)}
+         elif method == "ping":
+@@ -284,7 +284,7 @@
+     parser.add_argument("--config", type=Path, required=True)
+     options = parser.parse_args()
+     config = json.loads(options.config.read_bytes())
+-    runtime_module = load("_m5_task_owned_runtime", Path(config.get('runtime_module', HERE / 'harness/owned_runtime.py')))
++    runtime_module = load("_m5_recovery_owned_runtime", Path(config.get('runtime_module', HERE / 'harness/owned_runtime.py')))
+     budget = runtime_module.Budget(Path(config["budget_root"]))
+     runtime = owner = None
+     errors = []
+--- old/native_tools.py
++++ new/native_tools.py
+@@ -239,7 +239,7 @@
+     def observe(self, query=None, include_image=True):
+         if (query is not None and type(query) is not dict) or type(include_image) is not bool:
+             raise ValueError("public_query_object_and_image_boolean")
+-        arguments = {"session_id": "m5-task-consumption-001", "include_image": include_image}
++        arguments = {"session_id": "m5-harness-recovery-001", "include_image": include_image}
+         arguments["query"] = copy.deepcopy(query) if query is not None else {
+             'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}]}
+         _, value = self.public_request(arguments, queue_images=True)
