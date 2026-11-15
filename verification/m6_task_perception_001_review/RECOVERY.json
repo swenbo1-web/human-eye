@@ -1,0 +1,51 @@
+{
+  "reviewer_errors": [
+    {
+      "stage": "prepare_snapshot",
+      "error": "Windows path length exceeded in archived historical recovery cache",
+      "original_script": "prepare_long_path_first.py",
+      "recovery": "Use shorter review-only directory verification/_m6tp1/batch and verify the same complete manifest",
+      "author_files_modified": false,
+      "original_partial_snapshot_retained": true
+    },
+    {
+      "stage": "prediction_replay",
+      "error": "Reviewer assumed scores key, actual saved NPZ key probability",
+      "original_script": "review_prediction_key_first.py",
+      "recovery": "Read actual saved field; full1200 replays then passed",
+      "candidate_results_changed": false
+    },
+    {
+      "stage": "runtime_isolation",
+      "error": "Review copy initially lacked existing SciPy dependency path",
+      "original_script": "runtime_dependency_first.py",
+      "recovery": "Reuse existing read-only SciPy deps via launcher, no package changes",
+      "raw_stderr": "private/cold_inspect_missing_scipy.stderr"
+    },
+    {
+      "stage": "runtime_resolution_check",
+      "error": "Reviewer assumed source_ids nested under identity; actual top-level field",
+      "original_script": "runtime_resolver_key_first.py",
+      "recovery": "Use returned schema; fresh isolated run five entrypoint checks passed",
+      "first_successful_entrypoint_calls": 4
+    },
+    {
+      "stage": "feature_check_environment",
+      "error": "Base Python lacked torch imported by shared reviewer geometry module",
+      "recovery": "Use existing training Python; 36queries180fits passed",
+      "data_or_source_changed": false
+    },
+    {
+      "stage": "old_label_binding",
+      "error": "Reviewer assumed damaged_mask, actual previous label field changed_mask",
+      "original_script": "input_label_key_first.py",
+      "recovery": "Read previous frozen schema and compare all600 masks successfully",
+      "source_or_label_changed": false
+    }
+  ],
+  "exploratory_read_errors": [
+    "Initial metadata read requested absent METRICS.json; actual files are EVALUATION_v1/v2.json"
+  ],
+  "actual_review_runtime_process_launches": 10,
+  "new_candidate_training": 0
+}

@@ -24,7 +24,7 @@
   },
   "current_cycle": {
     "id": "M6-TASK-PERCEPTION-001",
-    "status": "dispatched",
+    "status": "independently_reviewed_complete",
     "dispatch_base": "a463116f52cc954812cfb6f54513ecfea0eb46ef",
     "contract": "docs/M6_TASK_PERCEPTION_001_TASK.md",
     "purpose": "Shared local perception for inspect and user-directed focus, readable facts and complete LLM consumption",
@@ -33,13 +33,18 @@
     "maximum_consumer_tasks": 24,
     "automatic_next_training": false,
     "original_asset_edits": false,
-    "contract_commit": "28b44c9db9bdc3a3c8e934c18bd87add6f93fb9c"
+    "contract_commit": "28b44c9db9bdc3a3c8e934c18bd87add6f93fb9c",
+    "author_commit": "fb529836f3b665be4f22eee886690d583aa9dc31",
+    "review_doc": "docs/M6_TASK_PERCEPTION_001_REVIEW.md",
+    "candidate_adoption": "failed_closed",
+    "actual_training_runs": 2,
+    "consumer_tasks": 24
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:18",
-  "last_observed_status": "One M6-TASK-PERCEPTION-001 message accepted; no repeated polling",
-  "pending_followup": true,
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:20",
+  "last_observed_status": "Author idle/completed; fixed fb529836 independently reviewed; closure prepared",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -162,6 +167,13 @@
       "review_doc": "docs/M6_PERCEPTION_DATA_001_REVIEW.md",
       "evidence": "verification/m6_perception_data_001_review/GEOMETRY_RESULTS.json",
       "review_commit": "4b8a6545162ad9d743a80b30855f1fba3f03a53a"
+    },
+    {
+      "cycle_id": "M6-TASK-PERCEPTION-001",
+      "commit": "fb529836f3b665be4f22eee886690d583aa9dc31",
+      "decision": "engineering_accepted_localization_candidate_closed_focus_prototype_reusable",
+      "review_doc": "docs/M6_TASK_PERCEPTION_001_REVIEW.md",
+      "evidence": "verification/m6_task_perception_001_review/NUMERICAL_RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -235,9 +247,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-PERCEPTION-DATA-001",
+    "cycle": "M6-TASK-PERCEPTION-001",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "a463116f52cc954812cfb6f54513ecfea0eb46ef"
+    "fixed_delivery": "fb529836f3b665be4f22eee886690d583aa9dc31"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -422,11 +434,14 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "dispatched_awaiting_completion_callback",
-    "cycle_id": "M6-TASK-PERCEPTION-001",
+    "status": "current_candidate_closed_next_concrete_refinement_goal_to_define",
     "M6_overall_complete": false,
     "new_experts_accepted": 0,
-    "reason": "User confirmed task-driven perception including normal regions for fine refinement; complete one prototype and consumer comparison in same batch",
+    "preserved_value": "direct focus and version references; actual LLM comprehension and planning",
+    "reason": "Current shared-statistics model failed both versions; next useful scope follows an explicit task/refinement objective and actual result evaluation",
+    "required_benchmark_correction": "Executor preflight and align inspect wording with scored goal before new performance claims",
+    "next_scope": "Task-directed refinement with given region plus reference or measurable requested change; exact execution and scoring to be fixed",
+    "new_task_dispatched": false,
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -672,5 +687,36 @@
     "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
     "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
     "polling": false
+  },
+  "task_perception_review": {
+    "author_commit": "fb529836f3b665be4f22eee886690d583aa9dc31",
+    "fixed_manifest_members": 18687,
+    "independent_prediction_replays": 1200,
+    "replayed_points": 460800,
+    "independent_assertions": 13784,
+    "independent_feature_queries": 36,
+    "scale_fits": 180,
+    "focus_requests_independently_measured": 16,
+    "consumer_answers_geometry_checked": 24,
+    "independent_blind_text_review": {
+      "raters": 1,
+      "pass": 23,
+      "partial": 1
+    },
+    "validation_area_recall": {
+      "v1": 0.33505925004397996,
+      "v2": 0.3717445060025446,
+      "geometry": 0.41729212771905544
+    },
+    "review_runtime_entrypoints": 5,
+    "stale_reference_rejected": true,
+    "new_training": 0,
+    "new_consumer_calls": 0,
+    "current_inputs_bound_to_prior_snapshot": 600
+  },
+  "task_perception_closure_notice": {
+    "status": "prepared",
+    "new_task": false,
+    "reply_required": false
   }
 }
