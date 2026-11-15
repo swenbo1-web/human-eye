@@ -1,5 +1,7 @@
 # M6-SHAPE-TASK-001：固定一个值得学习的实际修复任务
 
+后续澄清：本批已由固定29e81ed1交付，见 [独立复核](M6_SHAPE_TASK_001_REVIEW.md)。下文收口规则关闭当前失败候选及缺乏新依据的下一训练；不把真人认可修正记录设成用户已授权合成配对研究的普遍前置。运行参考、监督答案与艺术验收分别判断。
+
 2026-11-15。继续由实施聊天 `local/01a1d9cc-0cc2-7702-ba1f-7e210022ba6b` 在 `C:/Users/Administrator/.codex/worktrees/m6-model-selection/hefe`、`codex/m6-model-selection-001` 执行，基线 `66e171ceb72c930ba534e1eb8317791d00bd2dba`。新增内容只放 `verification/m6_shape_task_001/`。复核来源为 `local/01a1d986-24a4-73f1-9689-6845d1f01ef3` 的既有人类授权与 [OBSERVE001复核](M6_SHAPE_OBSERVE_001_REVIEW.md)。
 
 ## 本批只回答一个问题
