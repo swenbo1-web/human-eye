@@ -811,7 +811,7 @@ def _project_active_patch_support(patch_support, objects, regions):
     mapping = patch_support['regions']
     if len(mapping) != len(regions):
         raise ValueError('active_patch_region_mapping_mismatch')
-    region_counts, region_faces = [], [set() for _ in objects]
+    region_counts, region_ranges, region_faces = [], [], [set() for _ in objects]
     for source, region in zip(mapping, regions):
         if (set(source) != {'roi_id', 'object_index', 'triangle_indices'}
                 or source['roi_id'] != region['roi_id'] or type(source['object_index']) is not int
@@ -825,6 +825,13 @@ def _project_active_patch_support(patch_support, objects, regions):
             raise ValueError('active_patch_region_triangle_overlap')
         owned.update(indices)
         region_counts.append(len(indices))
+        ranges = []
+        for triangle_index in sorted(indices):
+            if ranges and triangle_index == ranges[-1][1] + 1:
+                ranges[-1][1] = triangle_index
+            else:
+                ranges.append([triangle_index, triangle_index])
+        region_ranges.append(ranges)
     support_rows, component_rows = [], []
     sources = patch_support['objects']
     object_fields = {'object_index', 'host_id', 'instance_id', 'object_name'}
@@ -884,7 +891,7 @@ def _project_active_patch_support(patch_support, objects, regions):
                         'triangle_index_ranges'],
             'rows': component_rows,
         }
-    return result, region_counts
+    return result, region_counts, region_ranges
 
 
 def _valid_region_location_vector(values):
@@ -1150,9 +1157,10 @@ def project_active_observation_brief(value):
                 'columns': ['object_index', 'status'],
                 'rows': [[obj['object_index'], obj['status']] for obj in unsupported],
             }
-        region_counts = None
+        region_counts, region_source_ranges = None, None
         if patch_support is not None:
-            compact_scope['patch_support'], region_counts = _project_active_patch_support(patch_support, objects, regions)
+            compact_scope['patch_support'], region_counts, region_source_ranges = _project_active_patch_support(
+                patch_support, objects, regions)
 
         frames = value['frames']
         image_indices = {frame['image_ref']: index for index, frame in enumerate(frames)}
@@ -1232,9 +1240,10 @@ def project_active_observation_brief(value):
             result['regions'] = {'columns': region_columns,
                                  'rows': [[region[key] for key in region_columns] for region in regions]}
             if region_counts is not None:
-                result['regions']['columns'].append('triangle_count')
-                for row, count in zip(result['regions']['rows'], region_counts):
+                result['regions']['columns'].extend(['triangle_count', 'source_triangle_index_ranges'])
+                for row, count, ranges in zip(result['regions']['rows'], region_counts, region_source_ranges):
                     row.append(count)
+                    row.append(ranges)
             if located:
                 result['regions']['columns'].extend(world_fields)
                 for row, region in zip(result['regions']['rows'], regions):
@@ -1268,6 +1277,10 @@ def project_active_observation_brief(value):
                     row.extend(extra)
             if view_groups['rows']:
                 result['unobserved_view_groups'] = view_groups
+        if region_source_ranges is not None:
+            result['schema'] = 'active-observation-brief-v5'
+            result['source_triangle_index_ranges_semantics'] = (
+                'zero_based_object_local_inclusive; object_index_in_objects; scoped_to_this_binding')
         return copy.deepcopy(result)
     except (KeyError, TypeError, IndexError, AttributeError, ValueError):
         return None
