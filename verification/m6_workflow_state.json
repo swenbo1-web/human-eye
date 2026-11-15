@@ -23,24 +23,20 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-REFINE-001",
-    "status": "dispatched",
-    "dispatch_base": "fb529836f3b665be4f22eee886690d583aa9dc31",
-    "contract": "docs/M6_REFINE_001_TASK.md",
-    "purpose": "LLM-directed nonrigid refinement on isolated current meshes with saved Blender readback and matched native comparison",
-    "geometry_tasks": 2,
-    "maximum_consumer_tasks": 6,
+    "id": "M6-REFINE-RECOVERY-002",
+    "status": "prepared",
+    "dispatch_base": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
+    "contract": "docs/M6_REFINE_RECOVERY_002_TASK.md",
+    "purpose": "Independent save_readback durable attempt allocation and legacy failed-label recovery",
+    "consumer_calls": 0,
     "training_runs": 0,
-    "original_asset_edits": false,
-    "isolated_copy_edits": true,
-    "one_targeted_optimization": true,
-    "contract_commit": "2ef3ce26d1e7a821170eecefcd22714a65a06e40"
+    "original_edits": false
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:21",
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:22",
   "last_observed_status": "M6 implementation idle before one accepted REFINE001 dispatch; source current hash verified",
-  "pending_followup": true,
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -171,6 +167,13 @@
       "review_doc": "docs/M6_TASK_PERCEPTION_001_REVIEW.md",
       "evidence": "verification/m6_task_perception_001_review/NUMERICAL_RESULTS.json",
       "review_commit": "5559e9c6fec13c6589eb3f9f0858f744e046175c"
+    },
+    {
+      "cycle_id": "M6-REFINE-001",
+      "commit": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
+      "decision": "six_geometry_results_accepted_component_IPC_gain_only_save_readback_retry_defect_confirmed",
+      "review_doc": "docs/M6_REFINE_001_REVIEW.md",
+      "evidence": "verification/m6_refine_001_review/RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -431,14 +434,12 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "dispatched_awaiting_completion_callback",
-    "cycle_id": "M6-REFINE-001",
+    "status": "minimal_recovery_fix_prepared",
+    "cycle_id": "M6-REFINE-RECOVERY-002",
     "M6_overall_complete": false,
-    "new_experts_accepted": 0,
-    "reason": "User says continue; focus is reusable for an actual editing and feedback task, without another learned candidate",
-    "goal_parameters_chosen_by_planner": true,
-    "goal": "two-layer fixed boundary; center outward0.1 local median edge length; connected core retained",
-    "new_task_dispatched": true,
+    "reason": "Confirmed public reader retry reuses reserved job label after pre-output failure",
+    "following_direction": "Reference image plus whole-model context to bind one visible refinement region; continue after fix review",
+    "new_task_dispatched": false,
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -656,22 +657,20 @@
     "next_training_dispatched": false
   },
   "previous_completed_cycle": {
-    "id": "M6-TASK-PERCEPTION-001",
-    "status": "independently_reviewed_complete",
-    "dispatch_base": "a463116f52cc954812cfb6f54513ecfea0eb46ef",
-    "contract": "docs/M6_TASK_PERCEPTION_001_TASK.md",
-    "purpose": "Shared local perception for inspect and user-directed focus, readable facts and complete LLM consumption",
-    "maximum_learning_candidates": 1,
-    "maximum_candidate_training_runs": 2,
-    "maximum_consumer_tasks": 24,
-    "automatic_next_training": false,
+    "id": "M6-REFINE-001",
+    "status": "independently_reviewed_geometry_pass_recovery_defect",
+    "dispatch_base": "fb529836f3b665be4f22eee886690d583aa9dc31",
+    "contract": "docs/M6_REFINE_001_TASK.md",
+    "purpose": "LLM-directed nonrigid refinement on isolated current meshes with saved Blender readback and matched native comparison",
+    "geometry_tasks": 2,
+    "maximum_consumer_tasks": 6,
+    "training_runs": 0,
     "original_asset_edits": false,
-    "contract_commit": "28b44c9db9bdc3a3c8e934c18bd87add6f93fb9c",
-    "author_commit": "fb529836f3b665be4f22eee886690d583aa9dc31",
-    "review_doc": "docs/M6_TASK_PERCEPTION_001_REVIEW.md",
-    "candidate_adoption": "failed_closed",
-    "actual_training_runs": 2,
-    "consumer_tasks": 24
+    "isolated_copy_edits": true,
+    "one_targeted_optimization": true,
+    "contract_commit": "2ef3ce26d1e7a821170eecefcd22714a65a06e40",
+    "author_commit": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
+    "review_doc": "docs/M6_REFINE_001_REVIEW.md"
   },
   "task_perception_dispatch": {
     "cycle_id": "M6-TASK-PERCEPTION-001",
@@ -726,5 +725,18 @@
     "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
     "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
     "polling": false
+  },
+  "refine_review": {
+    "author_commit": "154ff39a9a0fa0ed25c59aec282f0bbd315a8a15",
+    "manifest_members": 1499,
+    "physical_bytes": 192249492,
+    "root_geometry_results": 6,
+    "root_fresh_Blender_reads": 2,
+    "new_consumer_calls": 0,
+    "new_training": 0,
+    "recovery_counterexample": "actual fixed function with substituted failed reader; same label selected twice",
+    "new_defect_source": "save_readback attempts inferred from completed output directories",
+    "IPC_full_task_gain": false,
+    "reference_artistic_acceptance": "not_established"
   }
 }
