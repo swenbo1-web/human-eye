@@ -454,8 +454,8 @@
     "full_observed_construction": "same saved source snapshot current outside task plus observed context positions, source IDs preserved",
     "radius": "0.05 * bbox diagonal of each iteration current complete source",
     "PCA": "original sklearn PCA based official pca_alignment, official forward and inverse transforms",
-    "sampling": "500, >500 without replacement, <=500 with replacement, legacy RandomState1729 reproduces np.random.choice",
-    "order": "case IDs then iteration1/2 then sorted free source IDs, each method starts same RNG sequence",
+    "sampling": "500, >500 without replacement, <=500 with replacement, RandomState1729 reset for each case and each method; no seed search",
+    "order": "case IDs then iteration1/2 then sorted free source IDs; each case/method resets1729, iteration2 continues its case RNG; all first-iteration samples match across methods",
     "batch": 64,
     "threads": 1,
     "iterations": 2,
@@ -530,5 +530,10 @@
       "recovery": "used rg -g on directories",
       "new_geometry_or_forward": 0
     }
-  ]
+  ],
+  "precompute_plan_amendment": {
+    "previous_plan_commit": "fcb0d4b5434be70ebad8f9460a3a7d62594158ef",
+    "before_any_new_array_read_or_forward": true,
+    "reason": "A global cross-case RNG stream diverges after different iteration2 neighborhoods. Reset the same1729 per case/method to meet all-case first-sampling equality."
+  }
 }
