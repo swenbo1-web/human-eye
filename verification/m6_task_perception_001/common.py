@@ -12,7 +12,6 @@ ROOT = HERE.parents[1]
 DATA = HERE.parent / "m6_perception_data_001"
 DEPS = HERE.parent / "m6_shape_pretrain_001/private/deps"
 sys.path.insert(0, str(DEPS))
-sys.path.append("C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/Lib/site-packages")
 
 
 def read(name):
@@ -41,10 +40,3 @@ def measure(timings, name):
         row["wall_s"] += time.perf_counter() - wall
         row["cpu_s"] += time.process_time() - cpu
         row["calls"] += 1
-
-
-def configure():
-    import torch
-    torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
-    torch.use_deterministic_algorithms(True)

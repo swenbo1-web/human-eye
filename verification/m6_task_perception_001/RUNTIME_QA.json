@@ -1,0 +1,119 @@
+{
+  "status": "passed",
+  "checks": {
+    "cold_executes_real_current_features_and_model": true,
+    "second_uses_version_bound_cache": true,
+    "cold_and_batch_prediction_bitwise": true,
+    "cache_preserves_identical_attention": true,
+    "focus_reads_without_model": true,
+    "focus_import_does_not_prepare_features": true,
+    "resolver_exact_source_ids": true,
+    "resolver_exact_current_positions": true,
+    "runtime_reads_zero_supervision": true
+  },
+  "actual_current_input": {
+    "path": "private/consumer_cases/t01/input.npz",
+    "bytes": 192119,
+    "sha256": "7b14e34fb4d72fdc0a3e7ee60fbceac1ccaf0d870ab44c2f773aea474df4dc2f"
+  },
+  "requests": [
+    {
+      "label": "cold_inspect",
+      "wall_s": 3.2021071999915875,
+      "returncode": 0,
+      "stdout_bytes": 8858
+    },
+    {
+      "label": "cached_inspect",
+      "wall_s": 0.22575579999829642,
+      "returncode": 0,
+      "stdout_bytes": 8318
+    },
+    {
+      "label": "direct_focus",
+      "wall_s": 0.23060310000437312,
+      "returncode": 0,
+      "stdout_bytes": 6835
+    },
+    {
+      "label": "resolve_current_scope",
+      "wall_s": 0.17693610000424087,
+      "returncode": 0,
+      "stdout_bytes": 51303
+    }
+  ],
+  "cold_runtime": {
+    "request_directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_task_perception_001\\private\\request_cache\\f642425e8363acdd",
+    "current_input": {
+      "path": "private/consumer_cases/t01/input.npz",
+      "bytes": 192119,
+      "sha256": "7b14e34fb4d72fdc0a3e7ee60fbceac1ccaf0d870ab44c2f773aea474df4dc2f"
+    },
+    "model_called": true,
+    "preparation_cached": false,
+    "timings": {
+      "current_surface_preparation_and_cache_wall_s": 0.18778380000730976,
+      "surface_preparation_stages": {
+        "current_area_vertex_normals": {
+          "wall_s": 0.002176200010580942,
+          "cpu_s": 0.0,
+          "calls": 1
+        },
+        "one_KDtree_and_batched_maximal_neighbor_query": {
+          "wall_s": 0.03651450001052581,
+          "cpu_s": 0.046875,
+          "calls": 1
+        },
+        "five_scale_shared_prefix_geometry_descriptors": {
+          "wall_s": 0.13864059999468736,
+          "cpu_s": 0.125,
+          "calls": 1
+        }
+      },
+      "first_Torch_import_and_model_load_wall_s": 2.1282503999827895,
+      "inference_and_prediction_cache_wall_s": 0.0024274000024888664
+    },
+    "wall_s": 2.6325612999789882,
+    "cpu_s": 2.234375,
+    "imports_and_call_wall_s": 2.710398499999428,
+    "labels_or_reference_coordinates_read": 0,
+    "adoption_status": "research_candidate_failed_fixed_validation_gates"
+  },
+  "cached_runtime": {
+    "request_directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_task_perception_001\\private\\request_cache\\f642425e8363acdd",
+    "current_input": {
+      "path": "private/consumer_cases/t01/input.npz",
+      "bytes": 192119,
+      "sha256": "7b14e34fb4d72fdc0a3e7ee60fbceac1ccaf0d870ab44c2f773aea474df4dc2f"
+    },
+    "model_called": false,
+    "preparation_cached": true,
+    "timings": {},
+    "wall_s": 0.07465399999637157,
+    "cpu_s": 0.03125,
+    "imports_and_call_wall_s": 0.16559040002175607,
+    "labels_or_reference_coordinates_read": 0,
+    "adoption_status": "research_candidate_failed_fixed_validation_gates"
+  },
+  "focus_runtime": {
+    "request_directory": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_task_perception_001\\private\\request_cache\\d6334dda26dd1f0b",
+    "current_input": {
+      "path": "private/consumer_cases/t02/input.npz",
+      "bytes": 193204,
+      "sha256": "e0a17b2822d7841e862cba13b83e1daa98c6fd9588e626042fa8550a58f4f259"
+    },
+    "model_called": false,
+    "preparation_cached": false,
+    "timings": {},
+    "wall_s": 0.045986899989657104,
+    "cpu_s": 0.046875,
+    "imports_and_call_wall_s": 0.15447939999285154,
+    "labels_or_reference_coordinates_read": 0,
+    "adoption_status": "research_candidate_failed_fixed_validation_gates"
+  },
+  "model_training_runs": 0,
+  "new_runtime_model_forwards": 1,
+  "wall_s_before_write": 3.84632809998584,
+  "cpu_s_before_write": 0.0,
+  "scope": "four independent subprocess entrypoint calls, first real feature/model preparation and warm-cache/direct-focus/resolver costs, current geometry unchanged"
+}

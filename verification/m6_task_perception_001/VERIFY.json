@@ -1,0 +1,267 @@
+{
+  "cycle_id": "M6-TASK-PERCEPTION-001",
+  "status": "passed_fixed_inference_and_evidence_verification",
+  "check_count": 42893,
+  "failures": [],
+  "inventory": {
+    "unique_observations": 600,
+    "valid_dent_pairs": 503,
+    "normal_observations": 24,
+    "retained_failed_dents": 73,
+    "validation_dents": 165,
+    "validation_normals": 8
+  },
+  "inference_replay": {
+    "versions": [
+      "v1",
+      "v2"
+    ],
+    "observation_predictions": 1200,
+    "point_predictions": 460800,
+    "model_forward_calls": 1200,
+    "maximum_absolute_probability_difference": 0.0,
+    "bitwise_required": true
+  },
+  "training_replays": 0,
+  "optimizer_steps": 0,
+  "optimizer_checkpoint_states_inspected": {
+    "v1": 8,
+    "v2": 8
+  },
+  "original_candidate_training_runs": 2,
+  "original_steps_per_run": 1200,
+  "model_selection": "fixed v2 remains final and rejected by original gate, v1 retained as comparison",
+  "hierarchical_positive_label_prior": 0.03994606075984515,
+  "normalization_scope": "development only, independently reconstructed group/mesh/pose/ROI/combination probabilities",
+  "context_coverage_cases": 503,
+  "old_center_context_wholly_changed": {
+    "development": 8,
+    "validation": 55
+  },
+  "ring_counts": {
+    "scale_minimum_points": {
+      "16": 2,
+      "48": 8,
+      "128": 18,
+      "384": 34,
+      "1024": 260
+    },
+    "scale_query_rows_with_fewer_than6_ring_points": {
+      "16": 1525,
+      "48": 0,
+      "128": 0,
+      "384": 0,
+      "1024": 0
+    },
+    "total_query_scale_rows": 1152000,
+    "interpretation": "under-six ring rows use the frozen ridge solution, retain them without scale/case replacement"
+  },
+  "spacing_definition": "distance to the 16th returned current nearest vertex, including the query itself. First-scale log(radius/R16) is identically zero.",
+  "validation_side_tables": {
+    "v1": {
+      "original165_observation_equal_area_recall": {
+        "geometry": 0.41729212771905544,
+        "learned": 0.33505925004397996
+      },
+      "normal_false_cases": 2,
+      "roi_equal_area_recall": {
+        "geometry": 0.4058520228970055,
+        "learned": 0.33130774979128025
+      },
+      "by_ROI": {
+        "r001": {
+          "geometry": 0.15804804749719029,
+          "learned": 0.3768054551746722
+        },
+        "r009": {
+          "geometry": 0.7964972526903212,
+          "learned": 0.4771915651756717
+        },
+        "r016": {
+          "geometry": 0.4110789647676045,
+          "learned": 0.3774076384662526
+        },
+        "r018": {
+          "geometry": 0.41683675208706356,
+          "learned": 0.4234011874881795
+        },
+        "r020": {
+          "geometry": 0.6731861939343423,
+          "learned": 0.10600857685147573
+        },
+        "r021": {
+          "geometry": 0.29015027991554454,
+          "learned": 0.15741718657740073
+        },
+        "r022": {
+          "geometry": 0.2179567890437898,
+          "learned": 0.33882632677381824
+        },
+        "r024": {
+          "geometry": 0.283061903240188,
+          "learned": 0.3934040618227712
+        }
+      },
+      "by_source": {
+        "cat": {
+          "count": 84,
+          "geometry": 0.34379724479773255,
+          "learned": 0.2507636598754613
+        },
+        "lion": {
+          "count": 81,
+          "geometry": 0.4935090433411679,
+          "learned": 0.422476899107629
+        }
+      },
+      "by_validation_scale": {
+        ".5<r/R<=1": {
+          "count": 42,
+          "geometry": 0.3231755156068458,
+          "learned": 0.2923014301066057
+        },
+        "r/R<=.5": {
+          "count": 47,
+          "geometry": 0.19611899812955896,
+          "learned": 0.3350614394514421
+        },
+        "r/R>1": {
+          "count": 76,
+          "geometry": 0.6060820592903597,
+          "learned": 0.3586872176126509
+        }
+      },
+      "anomaly_damaged_report_cases": 48,
+      "anomaly_damaged_area_recall": 0.0062822886327551794
+    },
+    "v2": {
+      "original165_observation_equal_area_recall": {
+        "geometry": 0.41729212771905544,
+        "learned": 0.3717445060025446
+      },
+      "normal_false_cases": 2,
+      "roi_equal_area_recall": {
+        "geometry": 0.4058520228970055,
+        "learned": 0.36458599620816423
+      },
+      "by_ROI": {
+        "r001": {
+          "geometry": 0.15804804749719029,
+          "learned": 0.3963714242621191
+        },
+        "r009": {
+          "geometry": 0.7964972526903212,
+          "learned": 0.5993692870510787
+        },
+        "r016": {
+          "geometry": 0.4110789647676045,
+          "learned": 0.39893332083590183
+        },
+        "r018": {
+          "geometry": 0.41683675208706356,
+          "learned": 0.4116675776626758
+        },
+        "r020": {
+          "geometry": 0.6731861939343423,
+          "learned": 0.1675128004133912
+        },
+        "r021": {
+          "geometry": 0.29015027991554454,
+          "learned": 0.1660050376482179
+        },
+        "r022": {
+          "geometry": 0.2179567890437898,
+          "learned": 0.370046747644002
+        },
+        "r024": {
+          "geometry": 0.283061903240188,
+          "learned": 0.4067817741479274
+        }
+      },
+      "by_source": {
+        "cat": {
+          "count": 84,
+          "geometry": 0.34379724479773255,
+          "learned": 0.2832652221126138
+        },
+        "lion": {
+          "count": 81,
+          "geometry": 0.4935090433411679,
+          "learned": 0.4635008004069174
+        }
+      },
+      "by_validation_scale": {
+        ".5<r/R<=1": {
+          "count": 42,
+          "geometry": 0.3231755156068458,
+          "learned": 0.2830817277883342
+        },
+        "r/R<=.5": {
+          "count": 47,
+          "geometry": 0.19611899812955896,
+          "learned": 0.3597320985459181
+        },
+        "r/R>1": {
+          "count": 76,
+          "geometry": 0.6060820592903597,
+          "learned": 0.4281710827848905
+        }
+      },
+      "anomaly_damaged_report_cases": 49,
+      "anomaly_damaged_area_recall": 0.03275667269642044
+    }
+  },
+  "independent_original_gates": {
+    "v1": {
+      "macro_area_recall_ge060": false,
+      "gain_over_geometry_ge010": false,
+      "normal_false_cases_le1_of8": false,
+      "nonempty_anomaly_predictions_on_damaged": true
+    },
+    "v2": {
+      "macro_area_recall_ge060": false,
+      "gain_over_geometry_ge010": false,
+      "normal_false_cases_le1_of8": false,
+      "nonempty_anomaly_predictions_on_damaged": true
+    }
+  },
+  "two_query_rigid_transform_diagnostics": [
+    {
+      "alias": "o0260",
+      "source_vertex_id": 12,
+      "original_replay_max_abs_error": 0.0,
+      "translation_max_abs_error": 0.0,
+      "rotation_max_abs_error": 7.450580596923828e-08,
+      "diagnostic_tolerance": 0.0001,
+      "translation_within_tolerance": true,
+      "rotation_within_tolerance": true,
+      "scope": "two predetermined source-order queries only. Six-coefficient ridge and tangent-axis choice do not establish exact arbitrary-rotation invariance."
+    },
+    {
+      "alias": "o0088",
+      "source_vertex_id": 1492,
+      "original_replay_max_abs_error": 0.0,
+      "translation_max_abs_error": 0.0,
+      "rotation_max_abs_error": 9.238719940185547e-07,
+      "diagnostic_tolerance": 0.0001,
+      "translation_within_tolerance": true,
+      "rotation_within_tolerance": true,
+      "scope": "two predetermined source-order queries only. Six-coefficient ridge and tangent-axis choice do not establish exact arbitrary-rotation invariance."
+    }
+  ],
+  "independent_metric_scope": "all per-case AUC/AP, attention and anomaly area metrics, same165 observation-equal gate. ROI/source/scale tables are explanatory side results",
+  "resources": {
+    "process_CPU_s": 23.171875,
+    "working_set_bytes": 501248000,
+    "process_lifetime_peak_working_set_bytes": 505036800
+  },
+  "wall_s_before_write": 32.77230589999817,
+  "CPU_s_before_write": 22.0625,
+  "scope": "inference and evidence verification only, no optimizer object, optimizer step, training replay, threshold change or model choice",
+  "full_evidence": {
+    "path": "private/verification/VERIFY_FULL.json",
+    "bytes": 7478260,
+    "sha256": "8ce17760fa841ddad9b592d00ab60298ed07b574722b17d8b7e7bb28c0037f62"
+  },
+  "detail_scope": "full check rows and all actual reused input identities remain in the private byte-bound evidence"
+}

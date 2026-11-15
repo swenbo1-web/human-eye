@@ -155,7 +155,7 @@ def main():
                 initial_probability=initial["probability"]
             path=folder/(alias+".npz")
             np.savez_compressed(path,initial_probability=initial_probability,optimized_probability=outputs[alias]["prediction"]["scores"],source_ids=outputs[alias]["source_ids"])
-            predictions.append(dict(alias=alias,**identity(path)))
+            predictions.append(dict(alias=alias,current_input_sha256=case["input"]["sha256"],**identity(path)))
         write("PREDICTIONS.json",dict(cases=predictions,models=dict(initial=first["model"],optimized=model_identity),candidate_versions=2))
         write("CALIBRATION.json",dict(initial=dict(threshold=first["calibration"]["thresholds"]["learned"]),optimized=dict(threshold=calibration["thresholds"]["learned"]),geometry=dict(threshold=calibration["thresholds"]["geometry"]),
             rule=calibration["rule"],development_normals=16,validation_labels_for_calibration=0))

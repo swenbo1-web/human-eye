@@ -20,7 +20,8 @@ monitor.HERE = HERE
 PHASES = {"prepare": ["prepare.py"], "features": ["features.py"], "train_v1": ["train.py", "--version", "v1"],
           "train_v2": ["train.py", "--version", "v2"], "initial": ["evaluate.py", "--version", "v1"],
           "evaluate": ["evaluate.py", "--version", "v2"], "focus_qa": ["focus_qa.py"],
-          "consumer_prepare": ["consumer_prepare.py"], "score": ["score_consumers.py"], "verify": ["verify.py"]}
+          "consumer_prepare": ["consumer_prepare.py"], "runtime_qa": ["runtime_qa.py"], "inspect_reports": ["inspect_reports.py"],
+          "score": ["score_consumers.py"], "verify": ["verify.py"]}
 
 
 def main():
