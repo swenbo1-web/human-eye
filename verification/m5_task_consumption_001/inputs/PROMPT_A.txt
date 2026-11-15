@@ -1,0 +1,136 @@
+Begin by obtaining the task facts from the installed public product API through execute_python or human_eye_scene_observe. Use default brief responses and current images. In one execute_python call you may invoke observe(query,include_image=True) and task(query) sequentially, retain both original results, and print the needed information. Their native PNG content is delivered in the same tool reply. Reuse current-session evidence and computed facts. Obtain additional evidence when it is missing or inconsistent. Both groups have the same ordinary Python, raw-source, low-level image and cache helpers. Keep the current scene read-only. Complete this single task within the existing turn and tool budget.
+
+This installed version provides active_observation and the original separate mode=task query. Both public requests may be issued together in one execute_python call using observe(...) followed by task(...). Each function returns the original public JSON.
+
+检查当前独立 Blender 场景中的对象 M4_Far_00，并测量整个 M4_Far_00 到整个 M4_Near 的 surface_proximity。只读，不移动、不编辑、不保存文件。
+
+识别 M4_Far_00 的各个最大连通平面表面区域。以完整的源三角形集合绑定每个区域，也可以提供足以唯一确定同一区域的世界几何描述。只按本槽当前场景和实际取得的证据回答。
+
+逐区域报告以下内容。
+
+- 区域身份，源三角形编号为该对象当前原始三角列表中的零起始局部编号，可用明确的闭区间集合压缩。使用唯一几何描述时，给出对象名、中心、范围和带方向的单位法向。
+- 世界坐标中心、世界轴对齐范围或完整边界角点、带方向的单位法向，法向朝向遵循当前源三角形的顶点绕序。坐标和长度采用米。
+- 在当前观察设备提供的有限视图池中，该整个区域是否存在几何完整的正向无遮挡视图。
+- 是否已有本槽实际图像同时证明整个区域几何完整且可读。可读要求同一张图中该区域至少有16个可见表面像素，至少4个边界像素与四邻域外侧像素的 RGB 欧氏距离达到24。图像可见一部分或只有清楚的边缘不足以证明整个区域完整。
+- 成立时引用该张当前图像的实际 frame_ref 和 view_name，并给出使用的表面像素和对比边界像素计数。若没有完整可读见证，说明已证实的具体原因，区分几何遮挡、朝向、图像可读性不足以及尚未取得证据。
+- 引用实际使用的当前源数据或工具结果，使区域、数值和图像能回溯到本槽来源。
+
+另报告整个 M4_Far_00 到整个 M4_Near 的当前三角表面最短距离、米制最近点对和从 M4_Far_00 指向 M4_Near 的单位方向，说明两对象各自完整源三角集合参与了量测。最近点可能不唯一，可以使用任何有当前来源支持的合法最近点对。
+
+明确图像观察的对象与区域范围，以及定量量测的 whole_objects 范围。说明观察目标、区域源面与量测对象如何对应到同一当前场景来源，分别引用实际观察和量测结果。使用各自入口真实公开的对象身份和来源字段即可，源字段之间的对应关系应有依据。附加的面编号、计数或哈希也应能由本槽原件核对。
+
+完整仅指上述有限视图池。尚未构造的图像，其像素可读性保持未运行。对仍可取得但尚未取得的证据，明确标为待证实。几何形状、可见性和距离事实本身不构成损伤判断。
+
+可以批量读取和计算。已经取得且来源有效的事实、图片和缓冲可直接复用，按任务需要补查。采用可核对的结构化 JSON，字段约定见 ANSWER_SCHEMA.json。若无法完成，保留已知事实和 unknown，列出遗漏或失败原因。
+
+
+ANSWER_SCHEMA.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Current target planar-region observation and whole-object proximity answer",
+  "type": "object",
+  "required": ["object_name", "coordinate_frame", "unit", "finite_view_pool_only", "regions", "measurement", "observation_measurement_correspondence", "limitations"],
+  "properties": {
+    "object_name": {"type": "string"},
+    "coordinate_frame": {"const": "world"},
+    "unit": {"const": "m"},
+    "finite_view_pool_only": {"const": true},
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["identity", "center_world_m", "unit_normal_world", "geometry_complete_in_pool", "complete_readable", "complete_witness", "unknown_reason", "source_references"],
+        "properties": {
+          "identity": {
+            "type": "object",
+            "properties": {
+              "object_name": {"type": "string"},
+              "source_triangle_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+              "source_triangle_index_ranges": {
+                "description": "Inclusive integer ranges in the current object's zero-based source triangle list.",
+                "type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}
+              },
+              "roi_id": {"type": "string"},
+              "unique_geometry_description": {"type": "string"}
+            }
+          },
+          "center_world_m": {"$ref": "#/$defs/vector3"},
+          "bounds_world_m": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/vector3"}},
+          "boundary_vertices_world_m": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/vector3"}},
+          "unit_normal_world": {"$ref": "#/$defs/vector3"},
+          "geometry_complete_in_pool": {"type": ["boolean", "null"]},
+          "complete_readable": {"type": ["boolean", "null"]},
+          "complete_witness": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "object", "required": ["frame_ref", "view_name", "surface_pixels", "boundary_pixels"],
+               "properties": {"frame_ref": {"type": "string"}, "view_name": {"type": "string"},
+                 "surface_pixels": {"type": "integer", "minimum": 0}, "boundary_pixels": {"type": "integer", "minimum": 0}}}
+            ]
+          },
+          "unknown_reason": {"type": ["string", "null"]},
+          "source_references": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        },
+        "anyOf": [{"required": ["bounds_world_m"]}, {"required": ["boundary_vertices_world_m"]}]
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "required": ["object_a_name", "object_b_name", "measurement_scope", "status", "distance_m", "nearest_witness", "object_source_bindings", "source_references", "unknown_reason"],
+      "properties": {
+        "object_a_name": {"type": "string"},
+        "object_b_name": {"type": "string"},
+        "measurement_scope": {"const": "whole_objects"},
+        "status": {"enum": ["measured", "unknown"]},
+        "distance_m": {"type": ["number", "null"]},
+        "nearest_witness": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "required": ["a", "b", "direction_a_to_b"],
+             "properties": {"a": {"$ref": "#/$defs/vector3"}, "b": {"$ref": "#/$defs/vector3"}, "direction_a_to_b": {"$ref": "#/$defs/vector3"}}}
+          ]
+        },
+        "object_source_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["object_name", "source_references"],
+            "properties": {
+              "object_name": {"type": "string"},
+              "object_id": {"type": "string"},
+              "instance_id": {"type": "string"},
+              "source_triangle_count": {"type": "integer", "minimum": 0},
+              "source_triangle_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+              "source_triangle_index_ranges": {
+                "description": "Inclusive integer ranges in this whole object's current zero-based source triangle list.",
+                "type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}
+              },
+              "ordered_geometry_sha256": {"type": "string"},
+              "source_references": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "source_references": {"type": "array", "items": {"type": "string"}},
+        "unknown_reason": {"type": ["string", "null"]},
+        "notes": {"type": "string"}
+      }
+    },
+    "observation_measurement_correspondence": {
+      "type": "object",
+      "required": ["observation_object_name", "measurement_object_names", "same_current_source", "explanation", "source_references"],
+      "properties": {
+        "observation_object_name": {"type": "string"},
+        "measurement_object_names": {"type": "array", "items": {"type": "string"}},
+        "same_current_source": {"type": ["boolean", "null"]},
+        "explanation": {"type": "string"},
+        "source_references": {"type": "array", "items": {"type": "string"}},
+        "parent_binding_sha256": {"type": "string"},
+        "parent_source_binding_sha256": {"type": "string"}
+      }
+    },
+    "source_references": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {"vector3": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}}
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Current target planar-region observation and whole-object proximity answer",
+  "type": "object",
+  "required": ["object_name", "coordinate_frame", "unit", "finite_view_pool_only", "regions", "measurement", "observation_measurement_correspondence", "limitations"],
+  "properties": {
+    "object_name": {"type": "string"},
+    "coordinate_frame": {"const": "world"},
+    "unit": {"const": "m"},
+    "finite_view_pool_only": {"const": true},
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["identity", "center_world_m", "unit_normal_world", "geometry_complete_in_pool", "complete_readable", "complete_witness", "unknown_reason", "source_references"],
+        "properties": {
+          "identity": {
+            "type": "object",
+            "properties": {
+              "object_name": {"type": "string"},
+              "source_triangle_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+              "source_triangle_index_ranges": {
+                "description": "Inclusive integer ranges in the current object's zero-based source triangle list.",
+                "type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}
+              },
+              "roi_id": {"type": "string"},
+              "unique_geometry_description": {"type": "string"}
+            }
+          },
+          "center_world_m": {"$ref": "#/$defs/vector3"},
+          "bounds_world_m": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/vector3"}},
+          "boundary_vertices_world_m": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/vector3"}},
+          "unit_normal_world": {"$ref": "#/$defs/vector3"},
+          "geometry_complete_in_pool": {"type": ["boolean", "null"]},
+          "complete_readable": {"type": ["boolean", "null"]},
+          "complete_witness": {
+            "oneOf": [
+              {"type": "null"},
+              {"type": "object", "required": ["frame_ref", "view_name", "surface_pixels", "boundary_pixels"],
+               "properties": {"frame_ref": {"type": "string"}, "view_name": {"type": "string"},
+                 "surface_pixels": {"type": "integer", "minimum": 0}, "boundary_pixels": {"type": "integer", "minimum": 0}}}
+            ]
+          },
+          "unknown_reason": {"type": ["string", "null"]},
+          "source_references": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        },
+        "anyOf": [{"required": ["bounds_world_m"]}, {"required": ["boundary_vertices_world_m"]}]
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "required": ["object_a_name", "object_b_name", "measurement_scope", "status", "distance_m", "nearest_witness", "object_source_bindings", "source_references", "unknown_reason"],
+      "properties": {
+        "object_a_name": {"type": "string"},
+        "object_b_name": {"type": "string"},
+        "measurement_scope": {"const": "whole_objects"},
+        "status": {"enum": ["measured", "unknown"]},
+        "distance_m": {"type": ["number", "null"]},
+        "nearest_witness": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "required": ["a", "b", "direction_a_to_b"],
+             "properties": {"a": {"$ref": "#/$defs/vector3"}, "b": {"$ref": "#/$defs/vector3"}, "direction_a_to_b": {"$ref": "#/$defs/vector3"}}}
+          ]
+        },
+        "object_source_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["object_name", "source_references"],
+            "properties": {
+              "object_name": {"type": "string"},
+              "object_id": {"type": "string"},
+              "instance_id": {"type": "string"},
+              "source_triangle_count": {"type": "integer", "minimum": 0},
+              "source_triangle_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+              "source_triangle_index_ranges": {
+                "description": "Inclusive integer ranges in this whole object's current zero-based source triangle list.",
+                "type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 0}}
+              },
+              "ordered_geometry_sha256": {"type": "string"},
+              "source_references": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "source_references": {"type": "array", "items": {"type": "string"}},
+        "unknown_reason": {"type": ["string", "null"]},
+        "notes": {"type": "string"}
+      }
+    },
+    "observation_measurement_correspondence": {
+      "type": "object",
+      "required": ["observation_object_name", "measurement_object_names", "same_current_source", "explanation", "source_references"],
+      "properties": {
+        "observation_object_name": {"type": "string"},
+        "measurement_object_names": {"type": "array", "items": {"type": "string"}},
+        "same_current_source": {"type": ["boolean", "null"]},
+        "explanation": {"type": "string"},
+        "source_references": {"type": "array", "items": {"type": "string"}},
+        "parent_binding_sha256": {"type": "string"},
+        "parent_source_binding_sha256": {"type": "string"}
+      }
+    },
+    "source_references": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {"vector3": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}}}
+}
