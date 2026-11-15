@@ -1,0 +1,57 @@
+{
+  "cycle_id": "M6-REFERENCE-REFINE-001",
+  "author_commit": "9a759efd7d4acdbc7917fad709d350bd86b33ae2",
+  "review_scope": "Three independent read-only reviews. No new Pro consumer, Blender job, training or asset edit.",
+  "source_review": {
+    "reviewer": "/root/model_source_review",
+    "similarity_roundtrip_error": 0,
+    "station_source_mappings_checked": 5,
+    "unique_observation_source_ids": 599,
+    "findings": [
+      "Projection, signed directions, source triangle/polygon and barycentric mappings agree.",
+      "Wrist conventions differ beyond the primary local perturbation radii.",
+      "Cross-zero finite sensitivity scenarios do not preclude actual visual model reasoning."
+    ]
+  },
+  "consumer_cost_review": {
+    "reviewer": "/root/consumer_cost_review",
+    "actual_Pro_consumers": 0,
+    "actual_Pro_image_consumption": 0,
+    "local_image_blocks": 4,
+    "decoded_local_image_bytes": 2678659,
+    "controller_wall_s": 3.8222819000075106,
+    "controller_tree_CPU_s": 3.453125,
+    "nested_Blender_wall_s": 2.3020687999669462,
+    "findings": [
+      "Four planned consumer cells and the optimization were not run.",
+      "Consumer preflight used MockAPI. Real new-task edit and quality preflight is absent.",
+      "PLAN consumer_plan differs from runner consumer. TOOL_FREEZE and actual API_PREFLIGHT results are absent.",
+      "Planning uncertainty exit skipped model consumption. No further user approval is needed for the already authorized scope.",
+      "Controller timing excludes unmeasured visual reasoning and is not full-task timing."
+    ]
+  },
+  "visual_review": {
+    "reviewer": "/root/blind_answers",
+    "views_read": ["reference", "annotated reference", "contour overlay", "whole front", "forearm front", "side", "45 degree"],
+    "findings": [
+      "Elbow points reflect location disagreement within the same visible structure.",
+      "Wrist points also differ in longitudinal anatomical convention.",
+      "Current whole and local images support actual Pro visual observation without a third annotation search."
+    ]
+  },
+  "next_contract_read_only_review": {
+    "reviewer": "/root/consumer_cost_review",
+    "document": "docs/M6_REFERENCE_CONSUME_002_TASK.md",
+    "finding": "No consumer-skipping exit, route variable contradiction, session-limit contradiction or real API integration contradiction found. Implementation remains subject to actual execution and review."
+  },
+  "root_independent_execution": {
+    "manifest_members": 247,
+    "projected_vertices": 27304,
+    "projected_triangles": 53264,
+    "independent_stations": 10,
+    "result": "passed_observation_only",
+    "new_Pro_consumers": 0,
+    "new_Blender_jobs": 0,
+    "new_training": 0
+  }
+}
