@@ -1,0 +1,123 @@
+{
+  "schema": "m4-selective-002-formal-schedule-v1",
+  "preregistration_sha256": "5013cc3402410dab014bff5b54c2c342f2146aa7c282332fb291174af920167e",
+  "formal_schedule": [
+    {
+      "input": "main",
+      "label": "A1_main",
+      "pair": 1,
+      "variant": "A"
+    },
+    {
+      "input": "main",
+      "label": "B1_main",
+      "pair": 1,
+      "variant": "B"
+    },
+    {
+      "input": "main",
+      "label": "B2_main",
+      "pair": 2,
+      "variant": "B"
+    },
+    {
+      "input": "main",
+      "label": "A2_main",
+      "pair": 2,
+      "variant": "A"
+    },
+    {
+      "input": "main",
+      "label": "A3_main",
+      "pair": 3,
+      "variant": "A"
+    },
+    {
+      "input": "main",
+      "label": "B3_main",
+      "pair": 3,
+      "variant": "B"
+    },
+    {
+      "input": "target_only",
+      "label": "A1_target_only",
+      "pair": 1,
+      "variant": "A"
+    },
+    {
+      "input": "target_only",
+      "label": "B1_target_only",
+      "pair": 1,
+      "variant": "B"
+    },
+    {
+      "input": "target_only",
+      "label": "B2_target_only",
+      "pair": 2,
+      "variant": "B"
+    },
+    {
+      "input": "target_only",
+      "label": "A2_target_only",
+      "pair": 2,
+      "variant": "A"
+    },
+    {
+      "input": "target_only",
+      "label": "A3_target_only",
+      "pair": 3,
+      "variant": "A"
+    },
+    {
+      "input": "target_only",
+      "label": "B3_target_only",
+      "pair": 3,
+      "variant": "B"
+    }
+  ],
+  "formal_slots": 12,
+  "formal_repetitions": 1,
+  "runner": "harness/run_formal.py",
+  "runner_sha256": "e2af40a7e4cf457c82a56135f51996467dc1a05c6b699d9c5c0eebb22435e826",
+  "frozen_case_sha256": "107958fd211958a969a40dce39d6a19e3cb59325734b1075d7475e42cd573595",
+  "requests": {
+    "include_image": true,
+    "mode": "active_observation",
+    "objects": [
+      {
+        "name": "M4_Far_00"
+      }
+    ],
+    "response_detail": "full",
+    "sequence": [
+      "main_observe",
+      "ping",
+      "task_aabb_readback",
+      "ping"
+    ],
+    "session_id": "m4-target-acquisition-002"
+  },
+  "timing_scopes": {
+    "client_call": "StdioClient.call started_ns to closed_ns",
+    "client_transport": "stdin_flushed_ns to received_complete_ns",
+    "complete_session": "owned wrapper start through original process closes; postrun validation separate",
+    "nested_intervals_additive": false,
+    "server": "MCP request_received_ns to reply_completed_ns"
+  },
+  "acceptance": {
+    "main_business_faster_pairs_min": 2,
+    "main_business_paired_ratio_median_max": 0.9,
+    "main_complete_session_paired_ratio_median_max": 1.0,
+    "quality_all_pass": true,
+    "target_only_business_paired_ratio_median_max": 1.05
+  },
+  "complete_session_gate": "median of paired B/A ratios, never ratio of independent medians",
+  "readiness_required": {
+    "formal_allowed": true,
+    "A_source_sha256": "9f2c5ca150f968841b64f4d4eda89313069453853c877ba21b6a262999e29a61",
+    "B_source_sha256": "root frozen B identity",
+    "assets_manifest_sha256": "443ae7f059e870309683ff26bcba417c73113ebfe4dc1f67c9742342bbb0d805",
+    "qualification_evidence_pins": "nonempty pinned root qualification evidence"
+  },
+  "no_extra_observe_or_diagnostic_images": "same frozen four-call sequence via run_case; qualification-only diagnostic/fixture mutations excluded from formal"
+}

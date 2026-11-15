@@ -1,0 +1,291 @@
+"""Root-invoked, fixed Far11 move and restore in one owned Blender session."""
+
+import argparse
+import copy
+import json
+from pathlib import Path
+import sys
+import time
+import traceback
+
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from budget import Budget, save
+from cache_extract_saved import extract, forward
+from run_case import digest, load, module, producer_frames, request_sequence, rows, verify_install
+
+
+MATRIX = [[0.0, 0.0, 1.0, 1.125], [0.0, 1.0, 0.0, -0.125],
+          [-1.0, 0.0, 0.0, 14.09375], [0.0, 0.0, 0.0, 1.0]]
+ASSETS_SHA256 = "443ae7f059e870309683ff26bcba417c73113ebfe4dc1f67c9742342bbb0d805"
+CASE_SHA256 = "107958fd211958a969a40dce39d6a19e3cb59325734b1075d7475e42cd573595"
+
+
+def last_sequence(native_folder):
+    return max((row.get("sequence", 0) for row in rows(native_folder / "WORKER_EVENTS.jsonl")), default=0)
+
+
+def phase_asset(asset, folder, phase):
+    """Pin the expected setup state independently of the actual capture."""
+    geometry = load(asset["geometry"])
+    if digest(asset["geometry"]) != asset["geometry_sha256"]:
+        raise ValueError("original_cache_geometry_changed")
+    if phase == "moved":
+        far = next(row for row in geometry["objects"] if row["name"] == "M4_Far_11")
+        far["matrix_world"] = MATRIX
+        far["vertices_world"] = forward(far["vertices_local"], MATRIX, geometry["scale_length"])
+    geometry["test_setup_phase"] = phase
+    geometry["test_setup_scope"] = "expected owned in-memory matrix state, independently checked against actual host capture"
+    path = folder / "EXPECTED_GEOMETRY.json"
+    save(path, geometry)
+    expected = copy.deepcopy(asset)
+    expected.update(geometry=str(path), geometry_sha256=digest(path))
+    return expected
+
+
+def run_phase(client, native, output, phase, asset):
+    folder = output / "phases" / phase
+    folder.mkdir(parents=True, exist_ok=False)
+    state = {"phase": phase, "output": str(folder), "started_ns": time.perf_counter_ns(),
+             "wire_sequence_before": last_sequence(output / "native"), "requests": [], "errors": []}
+    state["expected_asset"] = phase_asset(asset, folder, phase)
+    for index, message in enumerate(request_sequence(asset["target"]), 1):
+        save(folder / f"REQUEST_{index:02}.json", message)
+        began = time.perf_counter_ns()
+        response = client.call(message)
+        completed = time.perf_counter_ns()
+        save(folder / f"RESPONSE_{index:02}.json", response)
+        receipt = client.records[-1]
+        common = {"index": index, "id": message.get("id"), "phase": phase,
+                  "client_call_started_ns": began, "client_call_completed_ns": completed,
+                  "complete_client_call_ns": completed - began,
+                  "raw_RX_bytes": receipt.get("RX_bytes"),
+                  "client_stdin_flushed_ns": receipt.get("stdin_flushed_ns"),
+                  "client_received_complete_ns": receipt.get("received_complete_ns"),
+                  "client_flush_to_received_ns": receipt["received_complete_ns"] - receipt["stdin_flushed_ns"],
+                  "response_json_sha256": digest(folder / f"RESPONSE_{index:02}.json")}
+        if message.get("method") == "ping":
+            common.update(result_kind="ping", ping_success=response.get("result") == {})
+            if not common["ping_success"]:
+                state["errors"].append({"stage": "ping", "id": message["id"]})
+            state["requests"].append(common)
+            continue
+        content = response.get("result", {}).get("content", [])
+        texts = [json.loads(block["text"]) for block in content if block.get("type") == "text"]
+        if len(texts) != 1:
+            raise ValueError("cache_phase_public_text_result_count")
+        value = texts[0]
+        save(folder / f"PUBLIC_{index:02}.json", value)
+        common.update(is_error=response.get("result", {}).get("isError"), result_kind=value.get("result_kind"),
+                      image_blocks=sum(block.get("type") == "image" for block in content),
+                      public_text_UTF8_bytes=sum(len(block["text"].encode("utf-8"))
+                                                for block in content if block.get("type") == "text"))
+        if response.get("result", {}).get("isError") is True:
+            state["errors"].append({"stage": "public_result", "id": message["id"], "value": value})
+        elif index == 1:
+            if value.get("result_kind") != "active_observation" or "frames" not in value:
+                state["errors"].append({"stage": "main", "message": "full producer result required"})
+            else:
+                state["producer_frames"] = producer_frames(value, output)
+        elif value.get("result_kind") != "task_query":
+            state["errors"].append({"stage": "readback", "value": value})
+        state["requests"].append(common)
+    state["wire_sequence_after"] = last_sequence(output / "native")
+    state["closed_ns"] = time.perf_counter_ns()
+    state["passed_operationally"] = not state["errors"]
+    save(folder / "PHASE_CALLS.json", state)
+    return state
+
+
+def run(binding_path, assets_path, output, ledger):
+    output = Path(output).resolve()
+    if not output.is_relative_to(Path("D:/he_m4_target_002").resolve()):
+        raise ValueError("cache_output_outside_owned_batch")
+    if digest(assets_path) != ASSETS_SHA256 or digest(HERE / "run_case.py") != CASE_SHA256:
+        raise ValueError("cache_frozen_assets_or_public_harness_changed")
+    plan_path = HERE.parent / "fixtures/CACHE_CONTROL_PLAN.json"
+    plan = load(plan_path)
+    for pin in plan["harness_pins"]:
+        if digest(pin["path"]) != pin["sha256"]:
+            raise ValueError("cache_frozen_harness_changed")
+    binding = load(binding_path)
+    verify_install(binding)
+    asset = next(row for row in load(assets_path)["inputs"] if row["name"] == "main")
+    if digest(asset["asset"]) != asset["asset_sha256"]:
+        raise ValueError("cache_original_asset_changed")
+    public = load(HERE.parent / "fixtures/INPUT_PLAN.json")["public_deadlines"]
+    if digest(public["source"]["path"]) != public["source"]["sha256"]:
+        raise ValueError("public_timeout_source_changed")
+    output.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter_ns()
+    deadline = started + 600_000_000_000
+    budget = Budget(ledger)
+    claim = budget.reserve("Blender_start", "B_cache_move_restore", "qualification")
+    helper = module("_target_cache_native", HERE / "cache_owned_native.py")
+    transport = module("_target_cache_stdio", HERE / "reused/stdio_checks.py")
+    proof_module = module("_target_cache_proof", HERE / "reused/process_proof.py")
+    native = client = runtime_handle = actual_identity = None
+    fixture_stage = 0
+    result = {"schema": "m4-target-002-cache-control-v1", "started_ns": started,
+              "original_lifecycle_deadline_ns": deadline, "source_sha256": binding["source_sha256"],
+              "binding_file": str(Path(binding_path).resolve()), "binding_sha256": digest(binding_path),
+              "asset": asset, "assets_manifest_sha256": digest(assets_path),
+              "plan_sha256": digest(plan_path), "start_budget_claim": claim,
+              "public_request_budget_s": public["request_budget_s"],
+              "blender_timeout_s": public["blender_timeout_s"], "phases": [], "setup_mutations": [],
+              "errors": [], "model_calls": 0, "passed": False}
+    try:
+        native = helper.NativeSession.start(blender="D:/Tools/blender5.2/blender.exe", asset=asset["asset"],
+            workspace=output / "native", deadline_ns=deadline, condition="P",
+            expected_asset_sha256=asset["asset_sha256"], max_calls=128)
+        config = {"schema_version": "1.0", "enabled": True, "observe_on_prompt": False,
+                  "project_root": binding["install_root"], "state_file": str(output / "state.json"),
+                  "audit_file": str(output / "audit.jsonl"),
+                  "expected_identity": {"source_sha256": binding["source_sha256"]},
+                  "request_budget_s": public["request_budget_s"],
+                  "blender": {"host": native.host, "port": native.port, "timeout_s": public["blender_timeout_s"]}}
+        save(output / "CONFIG.json", config)
+        command = [binding.get("dependency_python", sys.executable), "-I", "-B", "-X", "utf8",
+                   str(HERE / "mcp_entry.py"), "--binding", str(Path(binding_path).resolve()),
+                   "--config", str(output / "CONFIG.json"), "--ledger", str(Path(ledger).resolve()),
+                   "--evidence", str(output / "io_audit"), "--phase", "qualification"]
+        client = transport.StdioClient(command, output, output / "stdio", deadline)
+        initialized = client.call({"jsonrpc": "2.0", "id": "initialize", "method": "initialize", "params": {
+            "protocolVersion": "2025-03-26", "capabilities": {},
+            "clientInfo": {"name": "m4-target-cache-engineering", "version": "002"}}})
+        save(output / "INITIALIZE.json", initialized)
+        actual_identity = initialized["result"]["_meta"]["human_eye"]
+        if (actual_identity["source_sha256"] != binding["source_sha256"]
+                or actual_identity["source_kind"] != "installed_distribution"):
+            raise ValueError("cache_actual_runtime_identity_changed")
+        client.call({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        save(output / "TOOLS.json", client.call({"jsonrpc": "2.0", "id": "tools", "method": "tools/list"}))
+        if client.call({"jsonrpc": "2.0", "id": "ping", "method": "ping"}).get("result") != {}:
+            raise ValueError("cache_initial_ping_failed")
+        if rows(output / "native/WORKER_EVENTS.jsonl"):
+            raise ValueError("cache_metadata_warmed_geometry")
+        runtime = load(output / "io_audit/RUNTIME.json")
+        if (runtime.get("pid") != client.process.pid
+                or runtime.get("entry_sha256") != digest(HERE / "mcp_entry.py")
+                or runtime.get("binding_sha256") != digest(binding_path)
+                or runtime.get("source_sha256") != binding["source_sha256"]):
+            raise ValueError("cache_MCP_entry_identity_changed")
+        proof, runtime_handle = proof_module._windows_runtime_proof(client.process, runtime["pid"], deadline)
+        save(output / "RUNTIME_PROOF.json", proof)
+        if proof.get("confirmed") is not True:
+            raise ValueError("cache_MCP_runtime_not_proved")
+        result["setup_closed_ns"] = time.perf_counter_ns()
+        for phase in ("baseline", "moved", "restored"):
+            if phase in ("moved", "restored"):
+                receipt = native.qa_far11_move() if phase == "moved" else native.qa_far11_restore()
+                fixture_stage = 1 if phase == "moved" else 2
+                result["setup_mutations"].append({"phase_entered": phase, "fixture_stage": fixture_stage,
+                    "receipt": receipt, "scope": "test setup matrix setter, explicitly outside product requests"})
+            result["phases"].append(run_phase(client, native, output, phase, asset))
+        result["passed"] = True
+    except BaseException as error:
+        result["errors"].append({"stage": "cache_control", "type": type(error).__name__,
+                                  "message": str(error), "traceback": traceback.format_exc()})
+    finally:
+        result["cleanup_started_ns"] = time.perf_counter_ns()
+        if native is not None and fixture_stage == 1 and not (output / "native/POISONED.json").exists():
+            try:
+                receipt = native.qa_far11_restore()
+                fixture_stage = 2
+                result["cleanup_restore"] = receipt
+            except BaseException as error:
+                result["errors"].append({"stage": "fixture_cleanup_restore", "message": str(error)})
+        if client is not None:
+            try:
+                result["stdio_close"] = client.finish()
+                if runtime_handle is None:
+                    result["MCP_runtime_exit"] = {"confirmed": None, "reason": "retained_runtime_handle_not_acquired",
+                                                  "held_stdio_process_exit": result["stdio_close"].get("exit_code")}
+                else:
+                    result["MCP_runtime_exit"] = proof_module._runtime_exit(runtime_handle)
+                    runtime_handle = None
+                if (not result["stdio_close"].get("confirmed")
+                        or result["MCP_runtime_exit"].get("confirmed") is False):
+                    raise RuntimeError("cache_MCP_cleanup_unconfirmed")
+            except BaseException as error:
+                result["errors"].append({"stage": "MCP_cleanup", "message": str(error)})
+        if runtime_handle is not None:
+            result["MCP_runtime_exit_after_failure"] = proof_module._runtime_exit(runtime_handle)
+        if native is not None:
+            try:
+                result["native_close"] = native.close()
+                result["native_final"] = native.status()
+                closed = result["native_final"]["closed"]
+                if (result["native_close"].get("exit_code") != 0 or not result["native_close"].get("process_reaped")
+                        or closed is None or closed.get("poisoned") or closed.get("cache_fixture_stage") != 2
+                        or closed["initial_geometry_fingerprint"] != closed["final_geometry_fingerprint"]):
+                    raise RuntimeError("cache_owned_cleanup_or_restore_unconfirmed")
+            except BaseException as error:
+                result["errors"].append({"stage": "Blender_cleanup", "message": str(error)})
+        budget.settle_start(claim, pid=None if native is None else native.config["pid"],
+                            spawn_status="unknown" if native is None else "spawned",
+                            outcome="failed" if result["errors"] else "completed")
+        result["session_closed_ns"] = time.perf_counter_ns()
+        result["complete_session_ns"] = result["session_closed_ns"] - started
+    try:
+        result["io_audit"] = rows(output / "io_audit/MCP_IO.jsonl")
+        setup_pins = []
+        for name in ("QA_FAR11_MOVE_RECEIPT.json", "QA_FAR11_RESTORE_RECEIPT.json"):
+            path = output / "native" / name
+            if path.exists():
+                setup_pins.append({"path": str(path), "sha256": digest(path)})
+        for phase in result["phases"]:
+            phase_name = phase["phase"]
+            folder = Path(phase["output"])
+            if actual_identity is not None:
+                phase["saved_capture_extraction"] = extract(folder, phase["expected_asset"], binding, actual_identity,
+                    wire_root=output / "native/WIRE",
+                    sequence_range=(phase["wire_sequence_before"] + 1, phase["wire_sequence_after"]),
+                    phase=phase_name, setup_receipts=setup_pins)
+            for request in phase["requests"]:
+                matches = [row for row in result["io_audit"] if row["id"] == request["id"]
+                           and request["client_call_started_ns"] <= row["request_received_ns"]
+                           <= row["reply_completed_ns"] <= request["client_call_completed_ns"]]
+                if len(matches) != 1:
+                    raise ValueError("cache_phase_server_interval_not_unique")
+                request["server_request_to_reply_ns"] = matches[0]["request_to_reply_ns"]
+            save(folder / "PHASE_RESULT.json", phase)
+            result["errors"].extend({"stage": "phase", "phase": phase_name, "detail": error} for error in phase["errors"])
+        verify_install(binding)
+        if digest(asset["asset"]) != asset["asset_sha256"] or digest(assets_path) != ASSETS_SHA256:
+            raise ValueError("cache_original_file_changed")
+    except BaseException as error:
+        result["errors"].append({"stage": "postrun_saved_evidence", "type": type(error).__name__,
+                                  "message": str(error), "traceback": traceback.format_exc()})
+    result["postrun_closed_ns"] = time.perf_counter_ns()
+    result["postrun_validation_ns"] = result["postrun_closed_ns"] - result["session_closed_ns"]
+    result["passed"] = result["passed"] and not result["errors"]
+    result["fixture_final_stage"] = fixture_stage
+    result["quality_status"] = "pending independent phase source, geometry, directory and witness invalidation checks"
+    result["measurement_semantics"] = {
+        "server_request_to_reply": "main request received to stdout flush completion per phase",
+        "client_flush_to_received": "stdin flush to received_complete, including original raw response recording",
+        "complete_client_call": "enclosing original call, including its finally receipt save",
+        "complete_session": "single startup, metadata, three phase four-call sequences, two setup setters, settlement and cleanup",
+        "postrun_validation": "separate from complete_session; nested intervals are not summed"}
+    result["budget_snapshot"] = budget.snapshot()
+    save(output / "RESULT.json", result)
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--binding", type=Path, required=True)
+    parser.add_argument("--assets", type=Path, default=Path("D:/he_m4_target_002/assets_01/ASSETS.json"))
+    parser.add_argument("--output", type=Path, default=Path("D:/he_m4_target_002/controls/B_cache_move_restore"))
+    parser.add_argument("--ledger", type=Path, default=Path("D:/he_m4_target_002/budget"))
+    args = parser.parse_args()
+    result = run(args.binding, args.assets, args.output, args.ledger)
+    print(json.dumps({"passed": result["passed"], "output": str(args.output), "errors": result["errors"]}))
+    if not result["passed"]:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

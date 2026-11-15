@@ -1,0 +1,58 @@
+{
+  "schema": "m4-target-acquisition-002-product-pure-check-plan-v1",
+  "phase": "design_only_before_AQUALPASS_and_production_edit",
+  "baseline_git": "4f8c41f89c9b40b3f310cf3f8e8b711bf09864a6",
+  "A_source141_sha256": "9f2c5ca150f968841b64f4d4eda89313069453853c877ba21b6a262999e29a61",
+  "frozen_geometry_sha256": "decdcc1532f31ceb5c75203705ba5b533520f7a525fa8c6ea0391ba3a1fa36da",
+  "expected_production_files": ["human_eye_plugin/blender_host.py"],
+  "helper_contract": {
+    "name": "_observation_outside_xy_viewports",
+    "inputs": ["conservative_world_bounds", "published_six_view_cameras"],
+    "output": ["outside_all_six", "actual_view_tests"],
+    "boundary": "all six viewports strictly separated in at least one XY axis",
+    "unknown": "retain",
+    "numerics": "view affine interval then outward-rounded published projection XY coefficients"
+  },
+  "cases": [
+    {"id": "all_six_strictly_outside", "scope": "numeric", "expected": "exclude only with six independent strict proofs"},
+    {"id": "one_view_overlap", "scope": "numeric", "expected": "retain"},
+    {"id": "touching_view_boundary", "scope": "numeric", "expected": "retain"},
+    {"id": "one_ulp_boundary_uncertainty", "scope": "numeric", "expected": "retain when outward envelope touches"},
+    {"id": "finite_strict_margin", "scope": "numeric", "expected": "exclude when all published-matrix enclosures separate"},
+    {"id": "unknown_evaluated_bounds", "scope": "acquisition", "expected": "initial detailed read and retain"},
+    {"id": "projection_nonfinite_or_unsupported_structure", "scope": "numeric", "expected": "retain"},
+    {"id": "large_triangle_crossing_window", "scope": "numeric", "expected": "retain despite no triangle vertex inside"},
+    {"id": "rotated_nonbox_mesh", "scope": "numeric", "expected": "use conservative world box and preserve true intersections"},
+    {"id": "near_and_behind_occluders", "scope": "numeric", "expected": "retain all XY intersections without depth filtering"},
+    {"id": "unsupported_non_target_occluder", "scope": "binding", "expected": "preserve faces and occluder_only role when overlapping"},
+    {"id": "require_complete_metadata_budget", "scope": "acquisition", "expected": "all objects retained, zero selective bound tests"},
+    {"id": "initial_unknown_outside_after_expansion", "scope": "acquisition", "expected": "retain previously read object"},
+    {"id": "target_extracted_once", "scope": "acquisition", "expected": "cold fake-host counters one target to_mesh/triangulation/world forward"},
+    {"id": "source_order_equal_depth", "scope": "acquisition", "expected": "retained objects and local faces keep original relative order"},
+    {"id": "legal_subset_binding_and_brief", "scope": "binding", "expected": "full directory plus subset actual identity, shifted target index, M1 ranges preserved"},
+    {"id": "excluded_object_moves_into_view", "scope": "cache", "expected": "updated generation/directory invalidates old result and includes changed occluder"},
+    {"id": "replacement_delete_geometry_frame_scale", "scope": "cache", "expected": "existing source invalidation applies"},
+    {"id": "fixed_Far11", "scope": "frozen_main", "expected": "independent strict six-window proof and no detailed extraction"},
+    {"id": "target_only_no_exclusion", "scope": "frozen_control", "expected": "zero exclusion, both supported faces retain source mappings"},
+    {"id": "legacy_full_numeric_unknown_and_prediction", "scope": "regression", "expected": "existing accepted semantics and no fabricated image evidence"}
+  ],
+  "independent_oracle": {
+    "owner": "quality agent",
+    "method": "Fraction projection and independent two-stage binary64 enclosure; finite rational fixtures",
+    "production_helper_is_not_expected_answer": true,
+    "no_new_fuzz_search": true
+  },
+  "actual_validation_owner": "root and owned harness agent",
+  "root_exclusive_operations": ["Blender start", "raster", "formal 12-slot experiment"],
+  "work_count_semantics": {
+    "bound_tests": "actual object-view checks entered",
+    "residency_delta": "actual host counters",
+    "expanded_geometry": "actual captured/returned geometry size, distinct from new reads"
+  },
+  "coverage_count_warning": "Plan items and assertions are not independent assets or camera scenes.",
+  "new_Blender_starts": 0,
+  "new_rasters": 0,
+  "new_product_observations": 0,
+  "new_model_calls": 0,
+  "production_edits": 0
+}

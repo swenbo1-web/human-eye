@@ -1,0 +1,152 @@
+{
+  "schema": "m4-target-002-cost-checker-independent-review-r1",
+  "passed_checked_scope": true,
+  "ready_for_first_cost_decision": true,
+  "reviewer_association": "B product author, separate from root cost-checker author. No formal results or timings read.",
+  "reviewed_source": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\cost_decision.py",
+    "sha256": "9c397cc933a08e7ca21202644591d50a6536de60061e54b666013917a451ffeb",
+    "text_snapshot": "\"\"\"Recompute the fixed engineering gates from original formal receipts.\"\"\"\n\nfrom fractions import Fraction\nimport hashlib\nimport json\nfrom pathlib import Path\nimport statistics\nimport time\n\n\nHERE = Path(__file__).resolve().parent\nRUNTIME = Path('D:/he_m4_target_002')\n\n\ndef read(path):\n    return json.loads(Path(path).read_bytes())\n\n\ndef sha(path):\n    return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n\n\ndef require(value, label):\n    if not value:\n        raise AssertionError(label)\n\n\ndef positive_interval(start, end, label):\n    require(type(start) is int and type(end) is int and 0 < start < end, label)\n    return end - start\n\n\ndef main():\n    prereg = read(HERE / 'PREREGISTRATION.json')\n    require(sha(HERE / 'PREREGISTRATION.json') ==\n            '5013cc3402410dab014bff5b54c2c342f2146aa7c282332fb291174af920167e', 'frozen preregistration')\n    formal = read(RUNTIME / 'formal/RESULT.json')\n    intent = read(RUNTIME / 'formal/INTENT.json')\n    require(intent == read(RUNTIME / 'FORMAL_ONCE.json'), 'single formal intent')\n    require(intent['formal_schedule'] == prereg['formal_schedule'], 'formal intent schedule')\n    bindings = {'A': read(HERE / 'A_RUN_BINDING.json'), 'B': read(HERE / 'build_B/RUN_BINDING.json')}\n    for variant, binding in bindings.items():\n        require(intent[variant + '_source_sha256'] == binding['source_sha256'], 'formal source ' + variant)\n    assets = {row['name']: row for row in prereg['assets']}\n    quality_path = HERE / 'FORMAL_QUALITY.json'\n    quality = read(quality_path)\n    quality_passed = quality.get('passed_checked_scope', quality.get('passed')) is True\n    schedule = prereg['formal_schedule']\n    require(len(schedule) == 12 and len({row['label'] for row in schedule}) == 12, 'twelve unique slots')\n    result_labels = [row['label'] for row in formal['results']]\n    labels = [row['label'] for row in schedule]\n    dispatch_labels = [row['label'] for row in formal['dispatches']]\n    require(dispatch_labels == labels[:len(dispatch_labels)]\n            and result_labels == dispatch_labels[:len(result_labels)], 'ordered registered result prefix')\n    require(formal['remaining_not_dispatched'] == schedule[len(dispatch_labels):], 'unrun suffix')\n    declared = {row['label']: row for row in formal['results']}\n    for slot in schedule[:len(result_labels)]:\n        row = declared[slot['label']]\n        require(row['asset'] == slot['input'] and row['variant'] == slot['variant']\n                and row['pair'] == slot['pair'], 'registered slot identity')\n    require(formal['retries'] == 0 and formal['replacement_samples'] == 0, 'one formal execution')\n    records = []\n    pins = []\n    unavailable = []\n    for slot in schedule:\n        folder = RUNTIME / 'formal' / slot['label']\n        if slot['label'] not in declared or not (folder / 'RESULT.json').is_file():\n            unavailable.append(dict(**slot, reason='missing_or_not_dispatched'))\n            continue\n        result = read(folder / 'RESULT.json')\n        require(sha(folder / 'RESULT.json') == declared[slot['label']]['result_sha256'], 'declared result bytes')\n        require(result['label'] == slot['label'] and result['variant'] == slot['variant']\n                and result['phase'] == 'formal' and result['asset'] == assets[slot['input']]\n                and result['source_sha256'] == bindings[slot['variant']]['source_sha256'], 'actual slot identity')\n        if not result['passed'] or result['errors']:\n            unavailable.append(dict(**slot, reason='failed_operational_slot', errors=result['errors']))\n            pins.append(dict(path=str(folder / 'RESULT.json'), sha256=sha(folder / 'RESULT.json')))\n            continue\n        events = [json.loads(row) for row in (folder / 'io_audit/MCP_IO.jsonl').read_bytes().splitlines() if row.strip()]\n        server_rows = [row for row in events if row.get('id') == 'target_observation']\n        client_rows = [(path, read(path)) for path in (folder / 'stdio').glob('rpc_*/RECEIPT.json')]\n        clients = [(path, row) for path, row in client_rows if row.get('id') == 'target_observation']\n        requests = [row for row in result['requests'] if row.get('id') == 'target_observation']\n        require(len(server_rows) == len(clients) == len(requests) == 1, 'one main request per slot')\n        server = server_rows[0]\n        client_path, client = clients[0]\n        request = requests[0]\n        response_path = client_path.parent / 'RX.bin'\n        raw = response_path.read_bytes()\n        require(len(raw) == client['RX_bytes'] and hashlib.sha256(raw).hexdigest() == client['RX_sha256'], 'original wire bytes')\n        decoded = json.loads(raw)\n        expected_request = {'jsonrpc': '2.0', 'id': 'target_observation', 'method': 'tools/call',\n            'params': {'name': 'human_eye_scene_observe', 'arguments': {\n                'session_id': 'm4-target-acquisition-002', 'include_image': True, 'response_detail': 'full',\n                'query': {'mode': 'active_observation', 'objects': [{'name': 'M4_Far_00'}]}}}}\n        require(read(folder / 'REQUEST_01.json') == read(client_path.parent / 'TX.bin') ==\n                intent['requests_per_input'][slot['input']][0] == expected_request, 'frozen original request')\n        require(decoded['id'] == client['id'] == request['id'] == expected_request['id'], 'main reply identity')\n        text = [row['text'] for row in decoded['result']['content'] if row['type'] == 'text']\n        require(len(text) == 1, 'one public text')\n        public = json.loads(text[0])\n        require(public['binding']['runtime_source_sha256'] == result['source_sha256'], 'public source identity')\n        server_ns = positive_interval(server['request_received_ns'], server['reply_completed_ns'], 'positive server interval')\n        transport_ns = positive_interval(client['stdin_flushed_ns'], client['received_complete_ns'], 'positive transport interval')\n        complete_call_ns = positive_interval(request['client_call_started_ns'], request['client_call_completed_ns'], 'positive complete call')\n        session_ns = positive_interval(result['started_ns'], result['session_closed_ns'], 'positive complete session')\n        require(session_ns == result['complete_session_ns'], 'session recomputation')\n        require(result['started_ns'] <= request['client_call_started_ns'] <= client['stdin_flushed_ns']\n                < client['received_complete_ns'] <= request['client_call_completed_ns'] <= result['session_closed_ns'], 'client containment')\n        require(result['started_ns'] <= server['request_received_ns'] < server['reply_completed_ns']\n                <= result['session_closed_ns'], 'server containment')\n        require(server_ns == server['request_to_reply_ns'] == request['server_request_to_reply_ns'], 'server interval')\n        require(transport_ns == request['client_flush_to_received_ns'], 'transport interval')\n        require(complete_call_ns == request['client_outer_including_recording_ns'], 'outer complete call interval')\n        work = public['work']['target_acquisition']\n        records.append(dict(**slot, server_ns=server_ns, client_transport_ns=transport_ns,\n             complete_client_call_ns=complete_call_ns, complete_session_ns=session_ns,\n             postrun_validation_ns=result['postrun_validation_ns'], raw_MCP_reply_bytes=len(raw),\n             public_text_UTF8_bytes=len(text[0].encode('utf-8')),\n             image_blocks=sum(row['type'] == 'image' for row in decoded['result']['content']),\n             acquisition=work, host_wire_index=result['host_wire_index']))\n        for path in (folder / 'RESULT.json', folder / 'io_audit/MCP_IO.jsonl', client_path, response_path):\n            pins.append(dict(path=str(path), sha256=sha(path)))\n    gates = {}\n    for asset in ('main', 'target_only'):\n        rows = {(row['variant'], row['pair']): row for row in records if row['input'] == asset}\n        if len(rows) != 6:\n            gates[asset] = dict(timing_gate_passed=False, status='not_evaluable_failed_or_missing_slots')\n            continue\n        paired = []\n        for index in (1, 2, 3):\n            a, b = rows['A', index], rows['B', index]\n            business = Fraction(b['server_ns'], a['server_ns'])\n            session = Fraction(b['complete_session_ns'], a['complete_session_ns'])\n            paired.append(dict(pair=index, server_ratio_exact=str(business), server_ratio=float(business),\n                               session_ratio_exact=str(session), session_ratio=float(session)))\n        business_median = statistics.median(Fraction(row['server_ratio_exact']) for row in paired)\n        session_median = statistics.median(Fraction(row['session_ratio_exact']) for row in paired)\n        faster = sum(Fraction(row['server_ratio_exact']) < 1 for row in paired)\n        gate_passed = business_median <= (Fraction(9, 10) if asset == 'main' else Fraction(21, 20))\n        if asset == 'main':\n            gate_passed = gate_passed and faster >= 2 and session_median <= 1\n        gates[asset] = dict(pairs=paired, business_ratio_median=float(business_median),\n             business_ratio_median_exact=str(business_median), session_ratio_median=float(session_median),\n             session_ratio_median_exact=str(session_median), B_faster_pairs=faster,\n             timing_gate_passed=bool(gate_passed))\n    evidence = ('A_QUALIFICATION_R1.json', 'B_QUALIFICATION.json', 'LEGACY_REGRESSION_R1.json',\n                'CACHE_REVIEW.json', 'FORMAL_QUALITY.json', 'B_INSTALLED_PURE.json')\n    evidence_status = {}\n    for name in evidence:\n        result = read(HERE / name)\n        evidence_status[name] = result.get('passed_checked_scope', result.get('passed')) is True\n        pins.append(dict(path=str(HERE / name), sha256=sha(HERE / name)))\n    accepted = (quality_passed and all(evidence_status.values()) and not unavailable\n                and all(row['timing_gate_passed'] for row in gates.values()))\n    decision = dict(schema='m4-target-acquisition-002-engineering-decision-v1',\n         disposition='qualified_engineering_gain_ready_for_review' if accepted else 'not_admitted_ready_for_review',\n         passed_frozen_gates=accepted, quality_passed=quality_passed, gates=gates, records=records,\n         evidence_status=evidence_status, failed_or_unavailable_slots=unavailable,\n         formal_slots=12, formal_repetitions=1, retries=0, replacement_samples=0,\n         preregistration_sha256=sha(HERE / 'PREREGISTRATION.json'),\n         clarification_sha256=sha(HERE / 'MEASUREMENT_CLARIFICATION.json'),\n         computed_from='Original per-slot server IO, client receipts and outer request timestamps',\n         scope='Three fixed engineering pairs per input. Population tails, model quality, tokens and fees unmeasured.',\n         experimental_models=0, paid_experiment_APIs=0, input_pins=pins,\n         decision_source_sha256=sha(__file__), closed_ns=time.perf_counter_ns())\n    with (HERE / 'DECISION.json').open('x', encoding='utf-8', newline='\\n') as stream:\n        json.dump(decision, stream, ensure_ascii=False, sort_keys=True, indent=2)\n        stream.write('\\n')\n    print(json.dumps(dict(disposition=decision['disposition'], gates=gates)))\n\n\nif __name__ == '__main__':\n    main()\n"
+  },
+  "preregistration": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\PREREGISTRATION.json",
+    "sha256": "5013cc3402410dab014bff5b54c2c342f2146aa7c282332fb291174af920167e",
+    "acceptance": {
+      "main_business_faster_pairs_min": 2,
+      "main_business_paired_ratio_median_max": 0.9,
+      "main_complete_session_paired_ratio_median_max": 1.0,
+      "quality_all_pass": true,
+      "target_only_business_paired_ratio_median_max": 1.05
+    }
+  },
+  "resolved_prior_findings": {
+    "C1": "Intent matches FORMAL_ONCE and frozen schedule; dispatch/results must form ordered prefixes; missing/unlisted slots are unavailable and prevent admission.",
+    "C2": "Registered slot IDs plus exact RESULT SHA, label/variant/phase/asset/source, original TX/request and reply/public source are cross-bound.",
+    "C3": "All four timed intervals require ordered positive integer endpoints. Session is recomputed from original endpoints and compared back; containment checks retain nested-clock scope."
+  },
+  "tiny_checks": [
+    {
+      "id": "complete_ordered_manifest_passes",
+      "passed": true
+    },
+    {
+      "id": "empty_manifest_is_valid_interruption_prefix",
+      "passed": true
+    },
+    {
+      "id": "empty_manifest_cannot_be_admitted",
+      "passed": true
+    },
+    {
+      "id": "missing_middle_result_rejected",
+      "passed": true
+    },
+    {
+      "id": "reordered_results_rejected",
+      "passed": true
+    },
+    {
+      "id": "duplicate_results_rejected",
+      "passed": true
+    },
+    {
+      "id": "extra_tail_result_rejected",
+      "passed": true
+    },
+    {
+      "id": "valid_partial_prefix_allowed",
+      "passed": true
+    },
+    {
+      "id": "partial_unrun_suffix_matches_frozen_schedule",
+      "passed": true
+    },
+    {
+      "id": "bound_slot_identity_passes",
+      "passed": true
+    },
+    {
+      "id": "wrong_label_rejected",
+      "passed": true
+    },
+    {
+      "id": "wrong_variant_rejected",
+      "passed": true
+    },
+    {
+      "id": "wrong_asset_rejected",
+      "passed": true
+    },
+    {
+      "id": "wrong_source_sha256_rejected",
+      "passed": true
+    },
+    {
+      "id": "positive_interval_returns_original_difference",
+      "passed": true
+    },
+    {
+      "id": "invalid_clock_negative_rejected",
+      "passed": true
+    },
+    {
+      "id": "invalid_clock_zero_rejected",
+      "passed": true
+    },
+    {
+      "id": "invalid_clock_reversed_rejected",
+      "passed": true
+    },
+    {
+      "id": "invalid_clock_float_rejected",
+      "passed": true
+    },
+    {
+      "id": "invalid_clock_bool_rejected",
+      "passed": true
+    },
+    {
+      "id": "contradictory_session_field_rejected",
+      "passed": true
+    },
+    {
+      "id": "matching_session_field_passes",
+      "passed": true
+    },
+    {
+      "id": "wrong_reply_id_rejected",
+      "passed": true
+    },
+    {
+      "id": "first_scorer_byte_preserved",
+      "passed": true
+    },
+    {
+      "id": "final_evidence_uses_current_legacy_R1",
+      "passed": true
+    },
+    {
+      "id": "preregistration_is_original_fixed_file",
+      "passed": true
+    },
+    {
+      "id": "exact_fraction_gate_literals_present",
+      "passed": true
+    }
+  ],
+  "tiny_check_count": 27,
+  "findings": [],
+  "scope_limitations": [
+    "Static grader integrity and tiny expressions only.",
+    "Empty/partial manifests remain readable interruption states and cannot be admitted; their original slot data are not filled.",
+    "No actual formal receipt/cost recomputation performed here.",
+    "Evidence-source runtime correctness remains covered by separate quality and source audits."
+  ],
+  "checker_main_executions": 0,
+  "formal_invocations": 0,
+  "new_Blender_starts": 0,
+  "new_rasters": 0,
+  "new_model_calls": 0,
+  "production_edits": 0,
+  "root_checker_edits": 0
+}

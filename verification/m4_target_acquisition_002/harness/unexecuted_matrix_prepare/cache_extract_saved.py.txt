@@ -1,0 +1,173 @@
+"""Decode saved real-host wire and bind local source faces to frozen owned assets."""
+
+import ast
+import base64
+import copy
+import hashlib
+import json
+from pathlib import Path
+import re
+import zlib
+
+from budget import save
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def object_id(name):
+    raw = json.dumps(["", name], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return "blender:" + hashlib.sha256(raw).hexdigest()
+
+
+def forward(points, matrix, scale):
+    return [[(((matrix[axis][0] * point[0] + matrix[axis][1] * point[1])
+                + matrix[axis][2] * point[2]) + matrix[axis][3]) * scale
+             for axis in range(3)] for point in points]
+
+
+def extract(slot, asset, binding, actual_identity, *, wire_root, sequence_range, phase, setup_receipts):
+    slot = Path(slot)
+    first_sequence, last_sequence = sequence_range
+    if not (type(first_sequence) is int and type(last_sequence) is int and 0 < first_sequence <= last_sequence):
+        raise ValueError("cache_phase_wire_sequence_range")
+    source = json.loads(Path(asset["geometry"]).read_bytes())
+    if digest(asset["geometry"]) != asset["geometry_sha256"] or digest(asset["asset"]) != asset["asset_sha256"]:
+        raise ValueError("saved_capture_asset_pin_changed")
+    expected = {object_id(row["name"]): row for row in source["objects"]}
+    ordered = sorted(expected)
+    complete_offsets, offset = {}, 0
+    manifest_objects = []
+    for ordinal, host_id in enumerate(ordered):
+        row = expected[host_id]
+        complete_offsets[host_id] = offset
+        offset += len(row["source_triangles"])
+        manifest_objects.append({"asset_key": asset["name"] + "/" + row["name"],
+                                 "source_order": ordinal, "object_id": host_id,
+                                 "object_name": row["name"],
+                                 "vertices_world": forward(row["vertices_local"], row["matrix_world"], source["scale_length"]),
+                                 "triangles": row["source_triangles"]})
+    manifest = {"asset_sha256": asset["asset_sha256"],
+                "target_asset_key": asset["name"] + "/" + asset["target"],
+                "objects": manifest_objects,
+                "source_frame": {key: source[key] for key in ("frame", "subframe", "scale_length")}}
+    product_pins = {row["path"]: row["sha256"] for row in binding["source_manifest"]}
+    resources, captures, source_payloads = {}, [], []
+    loaded_host_sha = None
+    for request_path in sorted(Path(wire_root).glob("*/REQUEST.bin")):
+        request = json.loads(request_path.read_bytes())
+        if request.get("type") != "execute_code":
+            continue
+        code = request["params"]["code"]
+        for node in ast.walk(ast.parse(code)):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id == "compile" and len(node.args) >= 2):
+                continue
+            expression = node.args[0]
+            if not (isinstance(expression, ast.Call) and isinstance(expression.func, ast.Attribute)
+                    and expression.func.attr == "decompress"):
+                continue
+            compressed = ast.literal_eval(expression.args[0].args[0])
+            blob = zlib.decompress(base64.b64decode(compressed, validate=True))
+            path = Path(ast.literal_eval(node.args[1]))
+            relative = path.relative_to(Path(binding["install_root"])).as_posix()
+            actual_sha = hashlib.sha256(blob).hexdigest()
+            if actual_sha != product_pins[relative]:
+                raise ValueError("actual_wire_bootstrap_source_changed")
+            source_payloads.append({"wire_request": str(request_path), "path": relative,
+                                    "bytes": len(blob), "sha256": actual_sha})
+            if relative == "human_eye_plugin/blender_host.py":
+                loaded_host_sha = actual_sha
+        actual_request = re.search(r"_request = _json.loads\((.+)\)\n", code)
+        if actual_request is None:
+            continue
+        command = json.loads(ast.literal_eval(actual_request.group(1)))
+        response_path = request_path.with_name("RESPONSE.bin")
+        response = json.loads(response_path.read_bytes())
+        if response.get("status") != "success":
+            continue
+        stdout = response["result"]["result"]
+        marked = [line for line in stdout.splitlines() if line.startswith("HUMAN_EYE_BLENDER_MCP:")]
+        if len(marked) != 1:
+            raise ValueError("actual_host_result_marker_count")
+        inner = json.loads(marked[0].split(":", 1)[1])
+        if "error" in inner:
+            continue
+        packet = inner.get("result", {})
+        if not isinstance(packet, dict):
+            continue
+        for resource in packet.get("resources", []):
+            resources[(resource["id"], resource["revision"])] = resource
+        sequence = int(request_path.parent.name)
+        if not first_sequence <= sequence <= last_sequence:
+            continue
+        capture = packet.get("capture", packet)
+        if not isinstance(capture, dict) or not capture.get("meshes"):
+            continue
+        capture = copy.deepcopy(capture)
+        offset = 0
+        mapping = []
+        for index, mesh in enumerate(capture["meshes"]):
+            host_id = mesh["object_id"]
+            frozen = expected[host_id]
+            ref = mesh.pop("_scene_resource", None)
+            if ref is not None:
+                resource = resources[(ref["id"], ref["revision"])]
+                if (resource["vertices_local"] != frozen["vertices_local"]
+                        or resource["faces"] != frozen["source_triangles"]
+                        or ref["matrix"] != frozen["matrix_world"]
+                        or ref["scale"] != source["scale_length"]):
+                    raise ValueError("actual_resource_asset_geometry_or_face_order_mismatch")
+                mesh.update(vertices=forward(resource["vertices_local"], ref["matrix"], ref["scale"]),
+                            faces=resource["faces"], edges=resource["edges"])
+            if (mesh["name"] != frozen["name"] or mesh["faces"] != frozen["source_triangles"]
+                    or mesh["vertices"] != forward(frozen["vertices_local"], frozen["matrix_world"], source["scale_length"])):
+                raise ValueError("actual_capture_asset_geometry_or_face_order_mismatch")
+            mapping.append({"capture_object_index": index, "asset_key": asset["name"] + "/" + frozen["name"],
+                            "source_order": ordered.index(host_id), "object_id": host_id,
+                            "instance_id": capture["host_identity"]["object_instances"][host_id],
+                            "source_triangle_count": len(mesh["faces"]),
+                            "captured_global_triangle_offset": offset,
+                            "asset_global_triangle_offset": complete_offsets[host_id]})
+            offset += len(mesh["faces"])
+        if [row["source_order"] for row in mapping] != sorted(row["source_order"] for row in mapping):
+            raise ValueError("retained_asset_relative_order_changed")
+        target = capture.get("observation_target")
+        if target is not None:
+            if target["source_frame"] != manifest["source_frame"]:
+                raise ValueError("actual_target_source_frame_changed")
+            if (target["retained_object_ids"] != [row["object_id"] for row in mapping]
+                    or target["target_object_id"] != object_id(asset["target"])):
+                raise ValueError("actual_target_retained_or_selector_identity_changed")
+        role = "main_target_capture" if command["command"] == "capture_active_observation" else "post_main_source_readback" if command["command"] == "capture_task" else "other_actual_capture"
+        prefix = "MAIN_CAPTURE" if role == "main_target_capture" else "READBACK_CAPTURE" if role == "post_main_source_readback" else "OTHER_CAPTURE"
+        path = slot / (prefix + "_" + str(len(captures) + 1).zfill(2) + ".json")
+        save(path, capture)
+        captures.append({"capture": str(path), "capture_sha256": digest(path), "mapping": mapping, "role": role,
+                         "receipt_scope": "geometry actually delivered by this host command; later readback never substitutes for a failed main capture",
+                         "command": command, "wire_request": str(request_path),
+                         "wire_request_sha256": digest(request_path), "wire_response": str(response_path),
+                         "wire_response_sha256": digest(response_path),
+                         "phase": phase, "wire_sequence": sequence})
+    if captures and loaded_host_sha != product_pins["human_eye_plugin/blender_host.py"]:
+        raise ValueError("loaded_actual_host_source_not_bound")
+    owner = {"schema": "m4-target-saved-source-owner-binding-v1", "asset_manifest": manifest,
+             "source_proof": {"expected_source_sha256": binding["source_sha256"],
+                              "expected_host_source_sha256": product_pins["human_eye_plugin/blender_host.py"],
+                              "actual_runtime_identity": actual_identity,
+                              "actual_loaded_host_sha256": loaded_host_sha,
+                              "material_pins": source_payloads},
+             "test_setup_phase": phase, "phase_wire_sequence_range": [first_sequence, last_sequence],
+             "expected_phase_geometry": {"path": asset["geometry"], "sha256": asset["geometry_sha256"],
+                "scope": "fixed in-memory test setup state, not a saved change to the original blend"},
+             "setup_receipts": setup_receipts,
+             "captures": captures,
+             "main_capture_count": sum(row["role"] == "main_target_capture" for row in captures),
+             "post_main_readback_count": sum(row["role"] == "post_main_source_readback" for row in captures),
+             "new_product_calls": 0, "new_rasters": 0,
+             "normalization": "Source identities/vertices/local faces verified before any owner index normalization."}
+    save(slot / "OWNER_BINDING.json", owner)
+    save(slot / "SAVED_CAPTURES.json", {"captures": captures, "source_payloads": source_payloads,
+        "test_setup_phase": phase, "phase_wire_sequence_range": [first_sequence,last_sequence]})
+    return {"capture_count": len(captures), "owner_binding": str(slot / "OWNER_BINDING.json")}

@@ -1,0 +1,27 @@
+{
+  "schema": "target-002-cache-setup-amendment-v1",
+  "parent_expectations_sha256": "be6615747dc8ddcffb44615adf656d2cf8394b4f13c6fb47b0d4060bf735c26d",
+  "world_geometry_and_shadow_answers_unchanged": true,
+  "superseded_unexecuted_setup": "Assign the ideal 90-degree object matrix to unchanged Far11 local points.",
+  "reason": "The owned Blender matrix setter can decompose the matrix through binary32 TRS and add small numerical residuals.",
+  "executed_setup_contract": {
+    "object_matrix": "identity throughout the control",
+    "move_local_point": "(x,y,z) becomes (z+9/8,y-1/8,67/32) for the original frozen x=12 Far11 panel",
+    "restore_local_point": "Restore the exact original frozen local point by the same vertex index",
+    "local_point_count": 289,
+    "source_faces_and_vertex_order": "unchanged",
+    "asset_file_save": false,
+    "product_setter_calls": 0,
+    "fixture_move_and_restore_writes": "Controller must record actual vector/coordinate assignment counts with explicit units. The checker validates actual readback values."
+  },
+  "evidence_requirements": [
+    "Check every moved vertex against the exact world transform in the parent expectations and every restored vertex against the original frozen input.",
+    "Verify actual object matrix remains identity, with exact source faces and point order.",
+    "Retain the original setup draft and its not-executed status.",
+    "Label this as fixture geometry-change invalidation. Do not claim an actual object-matrix invalidation control from these steps.",
+    "Keep the original six shadow union areas and first-blocker interpretation unchanged."
+  ],
+  "new_Blender_starts_by_this_amendment": 0,
+  "new_rasters_by_this_amendment": 0,
+  "new_product_observations_by_this_amendment": 0
+}

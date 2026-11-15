@@ -1,0 +1,17 @@
+{
+  "name": "human-eye-spatial-plugin",
+  "version": "9.7.2",
+  "displayName": "Human-Eye (人类之眼) 3D 空间视觉与 6-DoF 闭环控制插件",
+  "description": "面向 agent 的真实三维场景观察、局部注意力与缓存、受检查的刚体变换及实际场景回读；默认生产入口要求可信宿主配置。视觉 Token、精度及任务收益需按场景实测。",
+  "entry": "human_eye_plugin.production_server",
+  "mcpConfig": "./mcp_config.json",
+  "modules": {
+    "module_1_core": "human_eye_module1_operators",
+    "module_1_scratchpad": "native_3d_spatial_scratchpad.py",
+    "module_2_scene_bridge": "module_2_low_token_mcp_scene_bridge.py",
+    "module_3_1_ipc_engine": "module_3_1_mcp_protocol_ipc_engine.py",
+    "module_3_2_vlm_agent": "module_3_2_vlm_grounding_closed_loop_agent.py",
+    "module_3_3_closed_loop_controller": "module_3_3_closed_loop_control_engine.py"
+  },
+  "supportedVendors": ["openai", "deepseek", "qwen", "anthropic", "gemini", "mcp"]
+}

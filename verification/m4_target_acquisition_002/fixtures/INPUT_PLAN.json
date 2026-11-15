@@ -1,0 +1,150 @@
+{
+  "schema": "m4-target-acquisition-002-fixed-input-plan-v1",
+  "plan_sha256": "3936842f28b18647c5f664d82e633443b979a38d2723e5b888768e877e55a576",
+  "baseline_git": "4f8c41f89c9b40b3f310cf3f8e8b711bf09864a6",
+  "frozen_geometry": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\FROZEN_GEOMETRY.json",
+    "bytes": 640358,
+    "sha256": "decdcc1532f31ceb5c75203705ba5b533520f7a525fa8c6ea0391ba3a1fa36da"
+  },
+  "source_pins": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\FROZEN_GEOMETRY.json",
+      "bytes": 640358,
+      "sha256": "decdcc1532f31ceb5c75203705ba5b533520f7a525fa8c6ea0391ba3a1fa36da"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\ANALYTICAL_QUALIFICATION.json",
+      "bytes": 3250,
+      "sha256": "40794431b0f1e5f587e9418f027b2f30f6c2cfe0c2fbe062b580cfcbb396e1d0"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\freeze_geometry.py",
+      "bytes": 4927,
+      "sha256": "5d876d164c38ee479b2c3f76b6af330849ab5c2b7ed88e8545cce2c972103057"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\M4_TARGET_ACQUISITION_002_PLAN.md",
+      "bytes": 9568,
+      "sha256": "3936842f28b18647c5f664d82e633443b979a38d2723e5b888768e877e55a576"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\reference\\M4_TARGET_CAMERA_RELIABILITY_001_INDEPENDENT_REVIEW.md",
+      "bytes": 6801,
+      "sha256": "48babf321492ce89c8b77ddbfcbcd65104812f688af8a43b06e526f8433db749"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_target_acquisition_002\\A_RUN_BINDING.json",
+      "bytes": 22051,
+      "sha256": "36d953557c34c01ee552ee2d66e982879960245d4cbcf72263a3c0a367a4e8f5"
+    },
+    {
+      "path": "D:\\he_m4_target_001\\qualification\\A_peripheral_02\\CAPTURE_01.json",
+      "bytes": 307339,
+      "sha256": "6bf15a59a63a9704d13485e55bf72a915baaf97099ef8717a8f15398c14c029a"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m2_tight_directory_001\\measurement\\run_01\\dir_simple_boxes_1_new\\config.json",
+      "bytes": 846,
+      "sha256": "a9c1d043d04916b4aa519e679af70dad8a3af9f3e24a04ced5fcf996bef08919"
+    }
+  ],
+  "target": "M4_Far_00",
+  "construction": "Use exact frozen world coordinates as local binary32 mesh coordinates and identity matrices. Do not reapply historical object translations. Preserve object name/order, vertex order and triangle order.",
+  "inputs": [
+    {
+      "name": "main",
+      "objects": 14,
+      "vertices": 3478,
+      "triangles": 6148,
+      "target_vertices": 293,
+      "target_triangles": 514,
+      "expected_supported_regions": 2,
+      "expected_complete_witnesses": 1,
+      "expected_unknown_regions": 1
+    },
+    {
+      "name": "target_only",
+      "objects": 1,
+      "vertices": 293,
+      "triangles": 514,
+      "target_vertices": 293,
+      "target_triangles": 514,
+      "expected_supported_regions": 2,
+      "expected_complete_witnesses": 2,
+      "expected_unknown_regions": 0
+    }
+  ],
+  "public_request": {
+    "session_id": "m4-target-acquisition-002",
+    "include_image": true,
+    "response_detail": "full",
+    "query": {
+      "mode": "active_observation",
+      "objects": [
+        {
+          "name": "M4_Far_00"
+        }
+      ]
+    }
+  },
+  "slot_sequence": [
+    "active full/imageTrue",
+    "ping",
+    "task one-object aabb/imageFalse",
+    "ping"
+  ],
+  "public_deadlines": {
+    "request_budget_s": 30.0,
+    "blender_timeout_s": 30.0,
+    "source": {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m2_tight_directory_001\\measurement\\run_01\\dir_simple_boxes_1_new\\config.json",
+      "bytes": 846,
+      "sha256": "a9c1d043d04916b4aa519e679af70dad8a3af9f3e24a04ced5fcf996bef08919"
+    },
+    "lifecycle_seconds": 600
+  },
+  "formal_order": {
+    "main": [
+      "A1",
+      "B1",
+      "B2",
+      "A2",
+      "A3",
+      "B3"
+    ],
+    "target_only": [
+      "A1",
+      "B1",
+      "B2",
+      "A2",
+      "A3",
+      "B3"
+    ]
+  },
+  "formal_slots": 12,
+  "limits": {
+    "Blender_start_attempts": 24,
+    "qualification_rasters": 48,
+    "formal_rasters": 72,
+    "all_rasters": 120
+  },
+  "gates": {
+    "main_server_business_paired_median_B_over_A_max": 0.9,
+    "main_faster_pairs_min": 2,
+    "main_complete_session_paired_median_B_over_A_max": 1.0,
+    "target_only_server_business_paired_median_B_over_A_max": 1.05,
+    "quality_equal_required": true
+  },
+  "measurement_windows": [
+    "server request_received to reply_completed",
+    "client stdin_flush to received_complete",
+    "entire client call including recording",
+    "complete lifecycle including startup, fixed post-main readback, ledger and cleanup"
+  ],
+  "qualifier": "Only the original main active request can satisfy its witness gate. A diagnostic extra image is separate and cannot repair qualification.",
+  "old_001_not_realized": "retained unchanged",
+  "AL": "current chat unbound pending, no borrowed handle",
+  "execution_owner": "root only",
+  "models_and_paid_consumers": 0
+}

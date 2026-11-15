@@ -1,0 +1,37 @@
+# 六视窗选择性采集的最小产品方案
+
+本方案绑定本批reference计划及相机独立验收。A沿已接受的141源9f2c版本。生产编辑须收到根代理的AQUALPASS，包含混合主输入与target-only原定主请求资格。
+
+## 改动范围
+
+预计只改blender_host.py。增加一个纯2D包围界判定函数，并替换capture_active_observation中相机生成后的retained选择段及真实工作计数。相机、完整场景深度、目标分区、coverage、像素阈值和公开请求沿A保持。
+
+现有active_observation_host校验已接受实际mesh子集，核对完整目录、完整实例映射、retained/excluded集合及各自原序。target_object_index由实际保留列表重新定位。source binding包含完整目录摘要、相机plan摘要、目标实例、保留与排除顺序、实际几何revision及capture_state。ReadContext按这些既有绑定隔离结果。brief-v5已分别表达实际capture对象数、全场对象数及排除数，目标源面范围仍为对象局部原序号。预计这些文件需要定向回归。
+
+## 纯判定合同
+
+拟函数为_observation_outside_xy_viewports(bounds,cameras)，返回outside_all_six布尔值与实际进入的view测试数。
+
+输入bounds为_acquisition_bounds得到的保守米制world范围。检查发布的六个完整orthographic相机及XY对角投影结构，无法确认结构或数值时返回保留。
+
+每个view内，先使用_observation_affine_interval对实际view矩阵的X/Y行得到camera-space区间。该函数已包住真实仿射与binary64点积、平移的误差。随后用发布的projection XY对角系数，向外舍入最终NDC区间端点。该第二阶段须覆盖exact coverage矩阵系数与attention_raster的两次矩阵求值。
+
+一个view存在至少一轴完全且严格小于−1或大于+1，才证明该对象不进入该完整视窗。六个view都满足该条件后方可排除。任意视窗重叠、触边、未知或数值不足均保留。选择只用XY，全场深度仍参与同一相机生成。
+
+每进入一个view，bound_tests增加1。已证明该view严格外侧后可停止其余轴，遇到可见候选可停止剩余view。返回计数取实际执行值。新增状态只含固定数量标量和短区间，不遍历对象全部顶点。
+
+## 同步宿主读取
+
+1. 保留现有同步depsgraph、完整对象/实例目录、单位、帧和cheap bounds读取。
+2. 保留初读target、未知bounds对象及require_complete分支的完整细采。
+3. 使用相同target实际世界顶点及全场保守depth bounds生成A相同相机。
+4. require_complete时全保留。否则target与initial_ids先保留，其他对象才进入六窗测试。已细采的unknown对象继续保留。
+5. 从原objects顺序生成retained/excluded及remaining列表。每个被排除对象都在remaining实际细采之前排除。目标的to_mesh、三角化和world forward不重复。
+6. 保留全部对象的末尾来源检查、原几何/字节/期限预算和原有资源失效。完整目录与实际已读mesh分别发布。
+7. work.strategy标明选择性XY策略，bound_tests和residency_delta记录真实发生的工作。expanded字段保留实际返回几何规模的原含义。
+
+## 验证边界
+
+PRODUCT_CHECK_PLAN.json固定数值、采集、绑定及缓存检查方向。独立quality代理负责Fraction与两阶段舍入oracle，运行代理负责真实owned入口，根独占Blender与raster。主请求资格及正式成绩以根记录为准。
+
+A资格不成立时停止B性能阶段，保留本方案及现有结果。此设计阶段新增产品执行、Blender、raster、模型和付费调用均为0，AL未绑定保持pending。
