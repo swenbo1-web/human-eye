@@ -24,7 +24,7 @@
   },
   "current_cycle": {
     "id": "M6-PERCEPTION-DATA-001",
-    "status": "prepared_not_dispatched",
+    "status": "dispatched",
     "dispatch_base": "38fa3e2d01300498aabd43a051876a6f779dab68",
     "contract": "docs/M6_PERCEPTION_DATA_001_TASK.md",
     "purpose": "Actual multi-location normal/dent paired dataset and balanced sampler with deformation-family transfer split",
@@ -35,13 +35,14 @@
     "maximum_unique_observations": 600,
     "public_source": "MIT Deformation Transfer six poses packages",
     "independent_final_test": "not_available_this_pilot",
-    "automatic_next_training": false
+    "automatic_next_training": false,
+    "contract_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b"
   },
-  "reviewed_plan_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077",
+  "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
   "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:14",
-  "last_observed_status": "PERCEPTION001 complete, author idle and tracked clean at38fa3e2d; next data contract prepared, not yet dispatched",
-  "pending_followup": false,
+  "last_observed_status": "Author idle and clean at38fa3e2d before dispatch; one DATA001 message accepted; no post-dispatch polling",
+  "pending_followup": true,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -154,7 +155,8 @@
       "commit": "38fa3e2d01300498aabd43a051876a6f779dab68",
       "decision": "engineering_and_regions_accepted_localization_failed_paired_normal_shortcut_evidence",
       "review_doc": "docs/M6_PERCEPTION_001_REVIEW.md",
-      "evidence": "verification/m6_perception_001_review/MODEL_RESULTS.json"
+      "evidence": "verification/m6_perception_001_review/MODEL_RESULTS.json",
+      "review_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -181,13 +183,16 @@
     "contract_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077"
   },
   "last_dispatch": {
-    "cycle_id": "M6-PERCEPTION-001",
-    "contract_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077",
+    "cycle_id": "M6-PERCEPTION-DATA-001",
+    "contract_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
     "accepted": true,
     "attempts": 1,
-    "accepted_UTC": "2026-11-15T11:03:43.636791+00:00",
+    "accepted_UTC": "2026-11-15T12:33:40.237362+00:00",
     "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
     "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "tool_return": {
+      "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
+    },
     "polling": false
   },
   "coupling_design": {
@@ -412,7 +417,7 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "prepared_not_dispatched",
+    "status": "dispatched_awaiting_completion_callback",
     "cycle_id": "M6-PERCEPTION-DATA-001",
     "M6_overall_complete": false,
     "new_experts_accepted": 0,
@@ -569,6 +574,20 @@
       0.4729046864283387,
       0.45866785991127085
     ],
-    "decision": "prepare_paired_multilocation_data_for_one_evidence_based_perception_optimization"
+    "decision": "prepare_paired_multilocation_data_for_one_evidence_based_perception_optimization",
+    "review_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b"
+  },
+  "perception_data_dispatch": {
+    "cycle_id": "M6-PERCEPTION-DATA-001",
+    "contract_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
+    "accepted": true,
+    "attempts": 1,
+    "accepted_UTC": "2026-11-15T12:33:40.237362+00:00",
+    "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
+    "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "tool_return": {
+      "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
+    },
+    "polling": false
   }
 }
