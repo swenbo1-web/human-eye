@@ -1,0 +1,19 @@
+For this comparison, begin with whichever available native entry is most efficient. Reuse current-session evidence and computed facts; obtain additional evidence only when it is missing or inconsistent. Complete the task below within this turn.
+
+Inspect this current CAPTURE_REPLAY equipment-rack scene within the registered finite SCENE/TOP/LEFT/RIGHT/FRONT/BACK camera pool. Complete the overall supported-surface inspection, localize two image samples, and explain the state of two source-face targets.
+
+A supported surface is one connected planar rectangle with its source triangles. Use the current material and world geometry. For each supported surface report a unique identity, covered or unknown state, and its reason. Covered requires the whole front-facing surface, fully in one actual current frame with zero positive-area occlusion, at least16 visible surface pixels and4 contrasting boundary pixels. RGB Euclidean contrast threshold is24. Neighbor pairs are horizontal/vertical, and unique owned endpoints count as boundary pixels after merging the source triangles of each surface. Retain unsupported components and source-face identities with their reasons. Give complete sets, including the remaining supported surfaces and finite-pool reasons. Distinguish no front-facing candidate, occlusion of every front candidate, and any insufficient evidence. State the finite-pool scope of your conclusion.
+
+Localize these exact zero-based upper-left image pixels in the registered views:
+- sample_A: (TOP,135,175).
+- sample_B: (LEFT,234,483).
+For each, identify the source surface and report its world center in metres, world rectangle corners or equivalent extent, front orientation, and current image reference for the specified view. When this surface has a complete-readable witness, give its current view/reference as well.
+
+Judge these original source-face targets, using local triangle indices within the named object:
+- target_C: object "RackBase", object_index=0, local source_triangle_indices=[2, 3].
+- target_D: object "RackBase", object_index=0, local source_triangle_indices=[0, 1].
+For each report whether it is covered or unknown in this finite pool, with a current complete-readable witness when covered and the specific reason when unknown.
+
+Common available libraries are NumPy2.3.5, Pillow12.3.0, fractions.Fraction and Shapely2.1.2, including ordinary shapely.geometry.Polygon operations. You may use the available raw geometry, views, ordinary Python and current saved buffers. Reuse current evidence and computed facts, and supplement when facts are missing or inconsistent. Images and source geometry can be requested in batches. Stable current-session image references and fresh=False caching are available to both routes. The per-turn budget is450seconds,12business tool admissions and6actual raster constructions.
+
+Return a concise human-readable conclusion with the complete facts either in your final answer or in a complete JSON file written under scratch and explicitly cited by full path in your final answer. Use source object/local triangle sets, world corners, or unique center plus front orientation to identify each surface. Current product ROI identifiers may be included as aliases. In a JSON report use surfaces, unsupported, pixel_targets and source_targets arrays, and include finite_pool_only=true. Include the full covered and remaining sets and all four target results. Save any report in the current turn and bind image references to the actual generated current frames.
