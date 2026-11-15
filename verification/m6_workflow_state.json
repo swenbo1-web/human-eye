@@ -23,23 +23,21 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-MATCHED-REFINE-003",
-    "status": "dispatched",
-    "dispatch_base": "159181eede633063e8a5becbaa33210ebb4223a0",
-    "contract": "docs/M6_MATCHED_REFINE_003_TASK.md",
-    "purpose": "Existing fixed sample_05 with pose/camera-matched normal reference images, hidden clean3D and actual local restoration",
-    "existing_case": "M6-SHAPE-PAIRS-001/sample_05",
-    "maximum_consumers": 4,
+    "id": "M6-DEGRID-004",
+    "status": "prepared_not_dispatched",
+    "dispatch_base": "c58e464d454c83b90b3c9baa026478c590e578e6",
+    "contract": "docs/M6_DEGRID_004_TASK.md",
+    "purpose": "Shared nonlattice perturbation removes differential coordinate cue; same-image native/facts actual repair comparison",
+    "maximum_consumers": 2,
     "training": 0,
-    "one_optimization": true,
-    "original_file_edits": false,
-    "contract_commit": "99497e8ea6a9f57fd9ac31ad2b98abf80422fba6"
+    "uses_previously_optimized_V2": true,
+    "original_file_edits": false
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:28",
-  "last_observed_status": "One matched-reference restoration task accepted; await completion callback",
-  "pending_followup": true,
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:30",
+  "last_observed_status": "Implementer idle at fixedc58e464d after completed matched restoration",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -202,6 +200,13 @@
       "review_doc": "docs/M6_REFERENCE_CONSUME_002_REVIEW.md",
       "evidence": "verification/m6_reference_consume_002_review/RESULTS.json",
       "review_commit": "99497e8ea6a9f57fd9ac31ad2b98abf80422fba6"
+    },
+    {
+      "cycle_id": "M6-MATCHED-REFINE-003",
+      "commit": "c58e464d454c83b90b3c9baa026478c590e578e6",
+      "decision": "accept_saved_fixed_case_restoration_lattice_limited_visual_facts_causality_unestablished",
+      "review_doc": "docs/M6_MATCHED_REFINE_003_REVIEW.md",
+      "evidence": "verification/m6_matched_refine_003_review/RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -275,9 +280,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-REFERENCE-CONSUME-002",
+    "cycle": "M6-MATCHED-REFINE-003",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "159181eede633063e8a5becbaa33210ebb4223a0"
+    "fixed_delivery": "c58e464d454c83b90b3c9baa026478c590e578e6"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -462,11 +467,11 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "matched_reference_restoration_dispatched",
-    "cycle_id": "M6-MATCHED-REFINE-003",
+    "status": "single_confound_probe_prepared",
+    "cycle_id": "M6-DEGRID-004",
     "M6_overall_complete": false,
-    "reason": "Actual visual consumption works, current photo task lacks resolved edit evidence. Test one existing known defect using matched reference images with a reachable repair budget.",
-    "new_task_dispatched": true,
+    "reason": "Near-exact fixed programs need only current geometry. Preserve image condition while removing differential lattice cue before changing features or training.",
+    "new_task_dispatched": false,
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -684,18 +689,19 @@
     "next_training_dispatched": false
   },
   "previous_completed_cycle": {
-    "id": "M6-REFERENCE-CONSUME-002",
-    "status": "independently_reviewed_conditional_visual_consumption",
-    "dispatch_base": "9a759efd7d4acdbc7917fad709d350bd86b33ae2",
-    "contract": "docs/M6_REFERENCE_CONSUME_002_TASK.md",
-    "purpose": "Actual image-native versus geometry-facts consumption, correspondence reasoning and supported isolated refinement",
+    "id": "M6-MATCHED-REFINE-003",
+    "status": "independently_reviewed_fixed_case_pass_lattice_limited",
+    "dispatch_base": "159181eede633063e8a5becbaa33210ebb4223a0",
+    "contract": "docs/M6_MATCHED_REFINE_003_TASK.md",
+    "purpose": "Existing fixed sample_05 with pose/camera-matched normal reference images, hidden clean3D and actual local restoration",
+    "existing_case": "M6-SHAPE-PAIRS-001/sample_05",
     "maximum_consumers": 4,
     "training": 0,
     "one_optimization": true,
     "original_file_edits": false,
-    "contract_commit": "7dbcc26e0cdc0bbe8ae984f9d56f00e43300d93d",
-    "author_commit": "159181eede633063e8a5becbaa33210ebb4223a0",
-    "review_doc": "docs/M6_REFERENCE_CONSUME_002_REVIEW.md"
+    "contract_commit": "99497e8ea6a9f57fd9ac31ad2b98abf80422fba6",
+    "author_commit": "c58e464d454c83b90b3c9baa026478c590e578e6",
+    "review_doc": "docs/M6_MATCHED_REFINE_003_REVIEW.md"
   },
   "task_perception_dispatch": {
     "cycle_id": "M6-TASK-PERCEPTION-001",
@@ -864,5 +870,50 @@
       "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
     },
     "polling": false
+  },
+  "matched_refine_review": {
+    "author_commit": "c58e464d454c83b90b3c9baa026478c590e578e6",
+    "public_files": 77,
+    "manifest_members": 2258,
+    "bytes": 194940597,
+    "actual_saved_repairs": 4,
+    "root_independent_saved_scores": 4,
+    "actual_image_blocks": 48,
+    "PNG_bytes": 19063285,
+    "actual_Pro_tools": 40,
+    "input_tokens": 992717,
+    "cached_input_tokens": 836224,
+    "output_tokens": 12907,
+    "consumer_wall_s": 572.4359642,
+    "support_RMSE_reduction_percent": [
+      99.9924566,
+      73.9015331,
+      99.9946389,
+      34.8853785
+    ],
+    "normal_editable_misedit_RMSE_m": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "current_normals_recomputed": 27304,
+    "geometry_only_frozen_replays": 2,
+    "hidden_truth_access_found": false,
+    "image_facts_independent_benefit": null,
+    "artistic_acceptance": null,
+    "V2_selection": "versioned_preview_component_only_prebound_rules_met",
+    "report_erratum": "v1 native actually submitted displacements_world",
+    "review_doc": "docs/M6_MATCHED_REFINE_003_REVIEW.md"
+  },
+  "degrid_plan": {
+    "seed": 2026111604,
+    "noise_scope_points": 410,
+    "noise_RMS_m": 0.00012213431777488015,
+    "noise_array_sha256": "cd8e84d38618d3de642a7023ea02d3244a61d3353a94582747130fd12118e5fb",
+    "fixed_detector_TP": 47,
+    "fixed_detector_FP": 227,
+    "actual_saved_mesh_QA": "pending",
+    "preflight": "verification/m6_degrid_004_plan/PREFLIGHT.json"
   }
 }
