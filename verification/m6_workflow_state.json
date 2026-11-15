@@ -24,7 +24,7 @@
   },
   "current_cycle": {
     "id": "M6-PERCEPTION-DATA-001",
-    "status": "dispatched",
+    "status": "independently_reviewed_complete",
     "dispatch_base": "38fa3e2d01300498aabd43a051876a6f779dab68",
     "contract": "docs/M6_PERCEPTION_DATA_001_TASK.md",
     "purpose": "Actual multi-location normal/dent paired dataset and balanced sampler with deformation-family transfer split",
@@ -36,13 +36,15 @@
     "public_source": "MIT Deformation Transfer six poses packages",
     "independent_final_test": "not_available_this_pilot",
     "automatic_next_training": false,
-    "contract_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b"
+    "contract_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
+    "fixed_author_commit": "a463116f52cc954812cfb6f54513ecfea0eb46ef",
+    "review_doc": "docs/M6_PERCEPTION_DATA_001_REVIEW.md"
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:14",
-  "last_observed_status": "Author idle and clean at38fa3e2d before dispatch; one DATA001 message accepted; no post-dispatch polling",
-  "pending_followup": true,
+  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:17",
+  "last_observed_status": "Author idle/completed at a463116f; independent data review complete; no subsequent implementation task dispatched",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -157,6 +159,13 @@
       "review_doc": "docs/M6_PERCEPTION_001_REVIEW.md",
       "evidence": "verification/m6_perception_001_review/MODEL_RESULTS.json",
       "review_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b"
+    },
+    {
+      "cycle_id": "M6-PERCEPTION-DATA-001",
+      "commit": "a463116f52cc954812cfb6f54513ecfea0eb46ef",
+      "decision": "accept_data_engineering_not_model_quality_or_product_benefit",
+      "review_doc": "docs/M6_PERCEPTION_DATA_001_REVIEW.md",
+      "evidence": "verification/m6_perception_data_001_review/GEOMETRY_RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -230,9 +239,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-SHAPE-RING-001",
+    "cycle": "M6-PERCEPTION-DATA-001",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "7ae143a6b062ac3c9fedcbf50939b79082884963"
+    "fixed_delivery": "a463116f52cc954812cfb6f54513ecfea0eb46ef"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -417,12 +426,12 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "dispatched_awaiting_completion_callback",
-    "cycle_id": "M6-PERCEPTION-DATA-001",
+    "status": "architecture_reassessment_no_new_training_dispatched",
     "M6_overall_complete": false,
     "new_experts_accepted": 0,
-    "reason": "Paired normal scores reproduce developmental localization; change data position/state exposure and source grouping before capacity",
-    "Pointfilter_repair_finetuning": "deferred",
+    "reason": "Data correctness does not establish transfer quality; choose a useful task-facing perception output and representation before selecting a model",
+    "next_scope": "One concrete perception gap with a complete task and existing data where suitable; implementation and evaluation in the same bounded batch",
+    "old_encoder_optimization": "research_option_not_automatic",
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -589,5 +598,50 @@
       "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
     },
     "polling": false
+  },
+  "perception_data_review": {
+    "author_commit": "a463116f52cc954812cfb6f54513ecfea0eb46ef",
+    "source_identities": 6,
+    "source_lineage_groups": 3,
+    "poses": 12,
+    "ROIs": 24,
+    "centers": 96,
+    "unique_observations": 600,
+    "dent_pairs": 576,
+    "usable_pairs": 503,
+    "retained_failed_pairs": 73,
+    "independent_geometry_assertions": 25053,
+    "independent_evidence_assertions": 162,
+    "sampler_rows_replayed": 1228800,
+    "sampler_events_replayed": 614400,
+    "validation_sampling_rows": 0,
+    "physical_development_normal_observations": 16,
+    "center_neighborhood_wholly_damaged": {
+      "development": [
+        8,
+        338
+      ],
+      "validation": [
+        55,
+        165
+      ]
+    },
+    "scale_finding_scope": "center query only, not all F queries and not a proof of model impossibility",
+    "new_training": 0,
+    "model_forwards": 0,
+    "model_adopted": false,
+    "review_doc": "docs/M6_PERCEPTION_DATA_001_REVIEW.md"
+  },
+  "latest_user_steering": {
+    "intent": "Reassess shared perception preprocessing, its relationship to expert models, and slow research/runtime startup",
+    "architecture_position": "Shared task-facing perception is the proposed main direction; selective action experts remain useful. Dent data is one specialization, not a prerequisite for general perception.",
+    "next_training_dispatched": false,
+    "data_batch_completed": true
+  },
+  "perception_data_closure_notice": {
+    "status": "prepared",
+    "cycle_id": "M6-PERCEPTION-DATA-001",
+    "new_task": false,
+    "reply_required": false
   }
 }
