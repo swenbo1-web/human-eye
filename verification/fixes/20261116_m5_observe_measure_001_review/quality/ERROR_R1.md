@@ -1,0 +1,1 @@
+第二轮独立checker把状态初始full的缓存命中要求为surface_pair_count==1而失败。实际result_cache_hit为true、pair求解0，符合复用语义。修正检查为新计算1或已缓存结果0。原checker保留为check_quality_R1.py。

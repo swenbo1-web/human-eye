@@ -1,0 +1,1 @@
+首轮独立checker在读取binding.objects[i].geometry_id时KeyError。该表只含host_id、instance_id、object_index、object_name。修正后根据原始点面独立重建geometry别名，并核真实对象/实例索引。原checker保留为check_quality_R0.py。

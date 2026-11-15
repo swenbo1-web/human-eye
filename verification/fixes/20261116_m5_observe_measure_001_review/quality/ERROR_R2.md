@@ -1,0 +1,1 @@
+第三轮独立checker按几何scene_revision唯一选择父捕获，恢复几何使其与初始内容hash相同，误选revision1而非当前revision3。修正后同时匹配capture_state的instance_id、epoch、revision。原checker保留为check_quality_R2.py，原产品和证据未修改。

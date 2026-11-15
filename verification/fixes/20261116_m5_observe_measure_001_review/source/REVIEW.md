@@ -1,0 +1,34 @@
+# M5-OBSERVE-MEASURE-001 独立源码与接线复核
+
+2026-11-16。固定最终交付14c8c6b8206dcaecc373bc9aa895cda1d622eee3、产品ccb608aa83de4b0e6671da89e0c8f387bd3f800e，基线bc177d/c309。六产品文件实际字节与固定Git逐份相同。源码范围内通过，未发现需阻止后续消费验收的产品缺陷。
+
+## 实际验证
+
+check_source.py独立编写，62项检查通过。直接调用固定产品的纯准备/定量函数、真实ReadContext和M3，并以保存观察结果替代渲染器完成服务缓存与公开formatter控制。没有导入作者checker，没有新增Blender、raster、模型或API调用。保存图片仅供真实formatter读取与编码。
+
+- 父捕获保持target_observation_meshes和原始capture_state。派生定量视图保留真实object_id、instance及完整对象源面，独立重算有序顶点/面摘要并核对；只改派生selection_key，原instance_id/epoch/revision一致。父捕获深内容保持不变。
+- M4缓存geometry:标识通过父对象索引映回真实host_id和instance。错误实例、缺失标识列表被拒绝。定量MeshEntity继续使用真实对象ID，任务请求顺序与目录顺序不同仍按显式绑定生成A→B见证。
+- 主对象已有时补采集为0；实际数据纯求解得到2138893713/2147483648米，方向负X。反转请求得到正X。未知对象保留partial和object_not_found，不展开额外对象。
+- 缺失Far11仅按缺少的真实ID调用capture_task_scene，允许不同selection_key。同代、文档、实例和选择校验通过才合用。独立用冻结Far11几何求解得到sqrt(101)。补读对象的观察索引和geometry别名保持null。
+- 同代revision、epoch、host instance、文档或对象实例改变，缺generation、选择不符和名称不符都被拒绝。预算耗尽发生在补读前时没有调用host。
+- observation_task_objects只通过私有_observation_task_capture进入规范化。普通task/完整scene入口继续拒绝这类scope。源面引用在一个小型非共面折面对象上也保持原面序。
+- 缓存控制中观察替身只运行一次，重复请求得到同一量测事实，测量cache命中。随后普通观察不带task_result。私有geometry标识容器未泄漏进公开对象。
+- 真正公开formatter的brief与full均交付任务事实。brief投影拒绝父绑定、父source绑定或scope不一致的附项。
+
+## 代码判断与一次优化
+
+live_service.py:1391在观察构图前准备选定数据和补缺对象，补读沿现有host入口及预算。1470处将已有图像别名与真实父对象身份绑定。1588处在同代ReadContext中激活派生选择，1593只执行一次定量规范化，后续直接调用原task_result。task_query.py与auto_router.py只增加内部派生scope，旧入口的事实和求解路径继续复用。
+
+初版162b523c到最终ccb608aa的变化确实删除两个所需对象的geometry重新解析，通过active_observation_host.py:394回调传递同次构网得到的tuple，并与观察结果一起放入现有缓存。两次有序几何摘要与一次规范化仍执行。该优化避免了别名解析，内存复制次数和峰值仍须按未测记录；不据源码推断它们已减少。
+
+project_active_observation_brief在1331处验证附项的whole_objects、派生scope、父binding和三项generation后公开原task_result；full内容也包含task_result。公开task_query仍复用legacy task校验，至多1–4个对象，pair事实要求两选择，错误或未支持测量沿原事实unknown状态保留。
+
+## 当前能力范围
+
+本批量测作用于整个选定对象。observation_source.measurement_scope明确为whole_objects，每条source_triangle_index_ranges为该对象[0,count−1]。新task_query只有objects选择，没有任意子区域选择或子区域量测参数。非共面控制证明整个曲面对象的源面和坐标可绑定；M6按任意focus区域细读/量测还需要后续具体接口接线。
+
+本批来源关联已经能使图像对象、真实对象和完整源面互相追溯，可供后续区域接口复用。下一步优先验模型对一次公开响应中的观察、距离、最近点和来源的实际采用，继续记录较大的公开文本成本。
+
+## 独立检查器修正
+
+R0误猜作者reference/FROZEN_GEOMETRY.json路径，最终读取根已冻结原件。R1将原始SERVICE_RESULT直接交给brief projector，遗漏正常formatter先移除camera_specification并生成image_delivery的步骤；原始保存结果同样返回None。最终改用真实formatter后验证brief与full，原稿和ERROR_R0/R1保留。修正只影响独立检查器，产品与作者原件没有改变。

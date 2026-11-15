@@ -1,0 +1,1 @@
+Independent checker called brief projector on raw SERVICE_RESULT before the normal formatter strips camera_specification and adds image_delivery. Raw saved result also returns None. Corrected control uses the real public formatter then validates projection and task payload. Product evidence unchanged.
