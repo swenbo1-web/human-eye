@@ -1,0 +1,85 @@
+{
+  "cycle_id": "M6-MATCHED-REFINE-003",
+  "baseline_commit": "159181eede633063e8a5becbaa33210ebb4223a0",
+  "contract_commit": "99497e8ea6a9f57fd9ac31ad2b98abf80422fba6",
+  "fixed_sample": "PAIRS001/sample_05",
+  "objective": "Actual local restoration of the saved damaged forearm toward normal same-camera rendered PNGs",
+  "consumer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "max_tool_calls": 12,
+    "max_session_seconds": 600,
+    "image_transport": "mcp",
+    "required_API_preflight": "API_PREFLIGHT.json",
+    "python_timeout_s": 45,
+    "python_output_chars": 5000,
+    "fact_output_chars": 18000,
+    "answer_schema": {
+      "task_id": "matched",
+      "decision_status": "completed or incomplete",
+      "modification_decision": "edit or no_edit",
+      "visual_evidence": "brief actual normal/current comparison",
+      "active_region": "own region or stable reference with transition",
+      "operation_id": "actual operation or null",
+      "version": "actual final version",
+      "saved_blend": "actual saved artifact reference",
+      "readback": "independent saved-model readback reference",
+      "target_result": "observed result",
+      "remaining_issues": "actual limitations or incomplete repair"
+    }
+  },
+  "input": {
+    "current_3D": "Actual saved damaged Blender readback only, including damaged initial V0 and recomputed normals",
+    "target": "Eight actual normal/current whole/front/side/45 PNGs, identical cameras and shading",
+    "shared_domains": {
+      "F": 410,
+      "I": 274
+    },
+    "images": {
+      "path": "IMAGE_BINDING.json",
+      "bytes": 15422,
+      "sha256": "ac8eecf31335c769865b9719aeab0aaa0865a1134dc1f93abf3852a5975136b9"
+    }
+  },
+  "displacement_budget": {
+    "operation_m": 0.006893660855829761,
+    "cumulative_m": 0.006893660855829761,
+    "definition": "Mean of the fixed old normal region's 1158 undirected edges"
+  },
+  "technical_quality": "Native coordinates outside I, source IDs, topology, UVs, materials, matrix, finite coordinates, new degeneracy/reversal and exact local contact. Gradient and normal change are observations.",
+  "scoring": {
+    "private_target": "private/scoring/target.npz",
+    "support_points": 47,
+    "support_RMSE_reduction_minimum": 0.3,
+    "F_RMSE": "strictly decreases",
+    "normal_editable_points": 227,
+    "normal_editable_displacement_RMS_maximum_m": 0.0001,
+    "additional": "363 normal points and 227 normal editable points RMSE/p95/max, support p95/max, transitions, depth/inner observations",
+    "final_input": "Final actual saved-file independent Blender readback",
+    "no_edit": "support improvement zero and restoration quality fails"
+  },
+  "hidden_information": "Clean3D, true support, generation parameters and inverse displacement remain in construction/scoring processes. Python and public tool fields restrict access and retain file audit records.",
+  "initial_sequence": [
+    "native",
+    "facts"
+  ],
+  "second_sequence": [
+    "facts",
+    "native"
+  ],
+  "actual_session_limit": 4,
+  "optimization": "One evidence-bound dominant first-stage failure or cost. Same sample, cameras, images, damage and scoring. No third stage.",
+  "limits": {
+    "numerical_Blender_s": 7200,
+    "target_RSS_bytes": 4294967296,
+    "threads": 1,
+    "training": 0,
+    "Google_API": 0
+  },
+  "completion": "Fixed Git commit, local actual artifacts and full costs, one authorized planner callback, independent review",
+  "case_binding": {
+    "path": "CASE_BINDING.json",
+    "bytes": 2987,
+    "sha256": "f18d4e267dadd749119f9c7942cfb0336b5c4accf061b77454ed2b776a2d04d4"
+  }
+}

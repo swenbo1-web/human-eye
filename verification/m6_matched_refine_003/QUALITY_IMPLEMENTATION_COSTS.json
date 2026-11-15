@@ -1,0 +1,56 @@
+{
+  "cycle_id": "M6-MATCHED-REFINE-003",
+  "subtask": "quality_evaluate_facts_private_score",
+  "status": "implemented_and_numerically_preflighted",
+  "allowed_write_directory": "verification/m6_matched_refine_003/",
+  "attempts": [
+    {
+      "id": "python_windowsapps_shim",
+      "command": "python verification/m6_matched_refine_003/quality_preflight.py",
+      "result": "exit_1_without_stdout_or_started_preflight_directory",
+      "shell_wall_s": 0.2165355,
+      "child_cpu_s": null,
+      "child_peak_RSS_bytes": null,
+      "cost_measurement": "exec_command wall time. Python did not produce a preflight attempt record."
+    },
+    {
+      "id": "python_venv_location_lookup",
+      "result": "existing_m6_shape_train_001_private_venv_selected",
+      "shell_wall_s": 1.7211623,
+      "read_failure": "Referenced old ENVIRONMENT.json did not exist. Reused the Python path declared in the old common.py."
+    },
+    {
+      "id": "numerical_preflight_001",
+      "command": "verification/m6_shape_train_001/private/venv/Scripts/python.exe verification/m6_matched_refine_003/quality_preflight.py",
+      "result": "pass_23_of_23",
+      "shell_wall_s": 4.8233932,
+      "nested_preflight_wall_s": 4.313895300030708,
+      "nested_preflight_cpu_s": 4.203125,
+      "process_cpu_s": 4.46875,
+      "process_peak_working_set_bytes": 174993408,
+      "process_working_set_bytes": 143556608,
+      "record": "private/quality_preflight/attempt_001/ATTEMPT.json",
+      "exact_contact_scans": 2,
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    }
+  ],
+  "source_read_path_corrections": [
+    "Old case directories use private/cases/<case>/ rather than private/case/.",
+    "Initial rg of the new batch directory preceded its creation."
+  ],
+  "nested_cost_rule": "The nested preflight and process CPU values overlap. Count shell wall once and retain nested measurements as breakdowns.",
+  "implementation_development_wall_s": null,
+  "implementation_development_wall_measurement": "Not independently timed in this subtask. Parent dispatch and task-tool timeline retain the development interval.",
+  "unmeasured_costs": [
+    "Editor/model development token or monetary cost",
+    "File-search and implementation process CPU/RSS outside the measured numerical preflight",
+    "Full developer wall time outside the parent task timeline"
+  ],
+  "actual_Blender_calls": 0,
+  "actual_Pro_calls": 0,
+  "paid_API_calls": 0,
+  "training_calls": 0,
+  "git_commits": 0,
+  "final_read_only_handoff": true
+}

@@ -1,0 +1,144 @@
+{
+  "default": "v2",
+  "requirements": {
+    "v2_two_repairs_pass": true,
+    "v2_technical_QA_pass": true,
+    "v2_two_saved_previews": true,
+    "v2_stage_wall_at_most_v1": true
+  },
+  "selection_scope": "Version-aware saved-model preview component in this isolated experiment",
+  "decision_rule": {
+    "required": "Both v2 saved repairs pass fixed restoration and technical criteria, and both obtain actual saved-version views",
+    "default_selection": "Retain V1 if second-stage total Pro wall is higher, or repair/technical quality criteria fail. Component feedback availability and full-stage performance are reported separately.",
+    "generalization": "Single fixed synthetic case, no general causal performance or image-reconstruction claim"
+  },
+  "stage_costs": {
+    "v1": {
+      "wall_s": 296.28660809999997,
+      "tools": 21,
+      "PNG_bytes": 9531462,
+      "public_text_UTF8_bytes": 64399,
+      "input_tokens": 514201,
+      "cached_input_tokens": 452992,
+      "output_tokens": 7099,
+      "saved_version_preview_sessions": 0
+    },
+    "v2": {
+      "wall_s": 276.1493561,
+      "tools": 19,
+      "PNG_bytes": 9531823,
+      "public_text_UTF8_bytes": 74155,
+      "input_tokens": 478516,
+      "cached_input_tokens": 383232,
+      "output_tokens": 5808,
+      "saved_version_preview_sessions": 2
+    }
+  },
+  "stage_comparison": {
+    "wall_s": {
+      "v1": 296.28660809999997,
+      "v2": 276.1493561,
+      "delta": -20.13725199999999,
+      "percent_change": -6.796544781127417
+    },
+    "tools": {
+      "v1": 21,
+      "v2": 19,
+      "delta": -2,
+      "percent_change": -9.523809523809524
+    },
+    "PNG_bytes": {
+      "v1": 9531462,
+      "v2": 9531823,
+      "delta": 361,
+      "percent_change": 0.0037874567406343328
+    },
+    "public_text_UTF8_bytes": {
+      "v1": 64399,
+      "v2": 74155,
+      "delta": 9756,
+      "percent_change": 15.149303560614296
+    },
+    "input_tokens": {
+      "v1": 514201,
+      "v2": 478516,
+      "delta": -35685,
+      "percent_change": -6.939893154622414
+    },
+    "cached_input_tokens": {
+      "v1": 452992,
+      "v2": 383232,
+      "delta": -69760,
+      "percent_change": -15.399830460582086
+    },
+    "output_tokens": {
+      "v1": 7099,
+      "v2": 5808,
+      "delta": -1291,
+      "percent_change": -18.18565995210593
+    },
+    "saved_version_preview_sessions": {
+      "v1": 0,
+      "v2": 2,
+      "delta": 2,
+      "percent_change": null
+    }
+  },
+  "current_sources": [
+    {
+      "path": "consumer_bridge.py",
+      "bytes": 33224,
+      "sha256": "6b790107543e179cfe1cf66ff3161bd72feea37fe1a57db1b0e8239ef7c6ef1b"
+    },
+    {
+      "path": "consumer_runner.py",
+      "bytes": 26232,
+      "sha256": "c7e0a494b5442edf14ad861242d732aaf68553a95db42cb47835f14336d75477"
+    }
+  ],
+  "candidate_patch": {
+    "path": "OPTIMIZATION_DIFF.patch",
+    "bytes": 16714,
+    "sha256": "bda00037a4e3ecfd9be4b7eca8c8676667dd2d67b2b3048aa1f113d09e3ef558"
+  },
+  "score_by_session": [
+    {
+      "session": "v1_matched_native",
+      "technical": "pass",
+      "quality_pass": true,
+      "support_RMSE_m": 1.280640175927803e-07,
+      "support_reduction_fraction": 0.9999245655905884
+    },
+    {
+      "session": "v1_matched_facts",
+      "technical": "pass",
+      "quality_pass": true,
+      "support_RMSE_m": 0.00044307028485242485,
+      "support_reduction_fraction": 0.7390153308170804
+    },
+    {
+      "session": "v2_matched_facts",
+      "technical": "pass",
+      "quality_pass": true,
+      "support_RMSE_m": 9.101527606735687e-08,
+      "support_reduction_fraction": 0.9999463886599325
+    },
+    {
+      "session": "v2_matched_native",
+      "technical": "pass",
+      "quality_pass": true,
+      "support_RMSE_m": 0.0011054424754660518,
+      "support_reduction_fraction": 0.34885378545223766
+    }
+  ],
+  "interpretation": "All four meet the fixed minimum restoration criteria. V2 adds actual saved-file visual feedback. Native restoration precision declined substantially between stages. The observed timing difference does not establish a matched-quality or general causal speed benefit.",
+  "causal_image_contribution_to_repair": null,
+  "same_quality_speed_benefit_established": false,
+  "preview_after_final_geometry": "Each V2 preview followed its only submit. No edit followed either preview.",
+  "model_method_variation": "Both routes identify current coordinate-grid residuals. Their independently chosen restoration algorithms differ across stages.",
+  "formal_plugin_deployment": false,
+  "additional_Pro": 0,
+  "additional_Blender": 0,
+  "wall_s": 0.031110199983231723,
+  "cpu_s": 0.0
+}

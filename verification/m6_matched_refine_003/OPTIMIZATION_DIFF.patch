@@ -1,0 +1,254 @@
+--- a/verification/m6_matched_refine_003/consumer_bridge.py
++++ b/verification/m6_matched_refine_003/consumer_bridge.py
+@@ -1,12 +1,14 @@
+ """Stdio tools for actual consumer edits and independent saved-mesh readback."""
+ 
+ import argparse
++import base64
+ import hashlib
+ import importlib.util
+ import json
+ import os
+ from pathlib import Path
+ import re
++import struct
+ import sys
+ import tempfile
+ import time
+@@ -68,6 +70,113 @@
+         if not any(path.is_relative_to(root) for root in allowed_roots):
+             return "[server-private path]"
+     return value
++
++
++def png_row(path, index, role, camera):
++    identity = file_identity(Path(path))
++    raw = Path(path).read_bytes()
++    if len(raw) < 24 or raw[:8] != b"\x89PNG\r\n\x1a\n" or raw[12:16] != b"IHDR":
++        raise ValueError("preview_requires_valid_PNG_header")
++    width, height = struct.unpack(">II", raw[16:24])
++    if [width, height] != camera["specification"]["resolution"]:
++        raise ValueError("preview_resolution_must_match_frozen_camera")
++    return dict(identity, index=index, role=role, width=width, height=height, mimeType="image/png", camera=camera)
++
++
++def checked_identity(expected):
++    path = Path(expected["path"])
++    path = (path if path.is_absolute() else HERE / path).resolve()
++    actual = file_identity(path)
++    if any(actual[key] != expected[key] for key in ("bytes", "sha256")):
++        raise ValueError("preview_bound_artifact_identity_changed")
++    return path
++
++
++def validate_preview(manifest_path, task, session=None):
++    manifest_path = Path(manifest_path).resolve()
++    manifest = json.loads(manifest_path.read_bytes())
++    binding = manifest["binding"]
++    session = Path(session).resolve() if session else manifest_path.parents[2]
++    session_key = hashlib.sha256(str(session).casefold().encode()).hexdigest()
++    version = binding["version"]
++    if type(version) is not int or version < 1 or binding["session_key"] != session_key:
++        raise ValueError("preview_session_version_binding_invalid")
++    if manifest_path != session / "previews" / ("v" + str(version)) / "PREVIEW.json":
++        raise ValueError("preview_manifest_outside_bound_session_version")
++    saved_path = checked_identity(binding["saved_blend"])
++    if not saved_path.is_relative_to(session):
++        raise ValueError("preview_saved_blend_outside_session")
++    renderer_path = checked_identity(manifest["renderer"])
++    camera_path = checked_identity(manifest["cameras"])
++    if renderer_path != HERE / "blender_render.py" or camera_path != HERE / "CAMERAS.json":
++        raise ValueError("preview_renderer_or_camera_binding_invalid")
++    views = json.loads(camera_path.read_bytes())["views"]
++    receipt_path = checked_identity(manifest["render_receipt"])
++    run_path = checked_identity(manifest["render_run"])
++    expected_job_folder = HERE / "private/jobs" / manifest["render_job_label"]
++    if receipt_path != expected_job_folder / "receipt.json" or run_path != expected_job_folder / "run.json":
++        raise ValueError("preview_receipt_outside_bound_render_job")
++    receipt, run = json.loads(receipt_path.read_bytes()), json.loads(run_path.read_bytes())
++    if run["process"]["returncode"] != 0 or receipt.get("status") != "rendered_actual_saved_full_character":
++        raise ValueError("preview_requires_successful_actual_render")
++    if receipt["current_blend"]["sha256"] != binding["saved_blend"]["sha256"] or Path(receipt["current_blend"]["path"]).resolve() != saved_path:
++        raise ValueError("preview_rendered_saved_blend_identity_mismatch")
++    if receipt["execution"]["script"]["sha256"] != manifest["renderer"]["sha256"] or receipt.get("geometry_scale") != 1 or receipt.get("displacement_scale") != 1 or receipt.get("scene_changes_saved") is not False:
++        raise ValueError("preview_render_execution_binding_invalid")
++    if len(receipt["views"]) != len(views) or len(manifest["images"]) != len(views):
++        raise ValueError("preview_must_include_every_frozen_view")
++    rows = []
++    for index, (view, rendered) in enumerate(zip(views, receipt["views"])):
++        reference = next(item["camera"] for item in task["images"] if item["role"] == "current_" + view["name"])
++        camera = {key: rendered[key] for key in ("specification", "camera_matrix_world", "world_to_image_affine_2_by_3", "world_to_image_offset", "pixel_convention")}
++        if rendered["specification"] != view or camera != reference:
++            raise ValueError("preview_camera_differs_from_frozen_input_camera")
++        path = checked_identity(rendered["image"])
++        if path.parent != manifest_path.parent / "images":
++            raise ValueError("preview_PNG_outside_bound_version_directory")
++        rows.append(png_row(path, index + 1, "current_" + view["name"], camera))
++    if rows != manifest["images"]:
++        raise ValueError("preview_PNG_metadata_changed")
++    return manifest, rows
++
++
++def verify_image_response(directory, task, initial_rows, session):
++    directory = Path(directory)
++    payload = json.loads((directory / "COMPLETE_RESULT.json").read_bytes())
++    response = json.loads((directory / "RESPONSE.json").read_bytes())
++    kind = payload.get("delivery_kind", "frozen_initial")
++    rows = payload["images"]
++    if kind == "frozen_initial":
++        if rows != initial_rows:
++            raise ValueError("initial_image_delivery_differs_from_frozen_binding")
++        version = 0
++    elif kind == "saved_version_preview":
++        manifest_path = checked_identity(payload["preview_manifest"])
++        manifest, expected = validate_preview(manifest_path, task, session)
++        if rows != expected or payload["saved_blend"] != manifest["binding"]["saved_blend"]:
++            raise ValueError("preview_delivery_differs_from_actual_render_binding")
++        version = manifest["binding"]["version"]
++        if payload["version"] != version or payload["session_key"] != manifest["binding"]["session_key"]:
++            raise ValueError("preview_delivery_session_version_mismatch")
++    else:
++        raise ValueError("unknown_image_delivery_kind")
++    blocks = [block for block in response.get("content", []) if block.get("type") == "image"]
++    if response.get("isError") or len(blocks) != len(rows):
++        raise ValueError("MCP_image_block_count_mismatch")
++    text = next(block["text"] for block in response["content"] if block["type"] == "text")
++    if json.loads(text)["images"] != rows:
++        raise ValueError("MCP_image_text_binding_mismatch")
++    for block, row in zip(blocks, rows):
++        raw = base64.b64decode(block["data"], validate=True)
++        if block["mimeType"] != "image/png" or raw != Path(row["path"]).read_bytes() or len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest() != row["sha256"]:
++            raise ValueError("MCP_image_bytes_differ_from_bound_PNG")
++    cost = json.loads((directory / "COST.json").read_bytes())
++    return dict(index=cost["index"], delivery_kind=kind, version=version, image_blocks=len(blocks),
++        exact_source_PNG_bytes=True, PNG_bytes=sum(row["bytes"] for row in rows),
++        base64_bytes=sum(len(block["data"]) for block in blocks),
++        stdio_response_UTF8_bytes=cost.get("stdio_response_UTF8_bytes"), wall_s=cost["wall_s"],
++        response=file_identity(directory / "RESPONSE.json"), preview=cost.get("preview"),
++        saved_blend_sha256=payload.get("saved_blend", {}).get("sha256"))
+ 
+ 
+ class Bridge:
+@@ -81,7 +190,7 @@
+         self.input_hashes = {name: hashlib.sha256((self.case / name).read_bytes()).hexdigest() for name in ("task.json", "input.npz")}
+         self.images = image_inputs(self.case)
+         self.tools = [
+-            tool("images", "View normal-reference and damaged-current PNGs with matching whole, local front, side and 45-degree cameras. Returns actual MCP images and identities.", {}),
++            tool("images", "At version zero, view the eight frozen normal-reference and damaged-current PNGs. After an edit, view four actual current saved-model PNGs using the same frozen cameras. Saved-version previews are cached by session/version/saved SHA.", {}),
+             tool("execute_python", "Run numerical Python in a fresh bounded interpreter with NumPy/SciPy and numeric standard-library imports. "
+                  "V/current/vertices are current world coordinates [N,3], V0 initial world coordinates, faces full source triangles, "
+                  "F_ids/I_ids/protected_ids/source_ids, version,task,G,geometry are available. V0 and optional n0/normals come from the saved damaged initial/current model. "
+@@ -206,6 +315,59 @@
+         cost["registered_reference_packet_count"] = len(extras)
+         return dict(version=state["version"], array_packet=packet, read_only_packets=extras, snapshot_cost=cost), task
+ 
++    def current_images(self):
++        started = time.perf_counter()
++        state = self.state()
++        version = state["version"]
++        if version == 0:
++            return self.images, dict(delivery_kind="frozen_initial", version=0), dict(cache_hit=True, render_invoked=False)
++        saved = file_identity(self.path(state["current_blend"]))
++        if not Path(saved["path"]).is_relative_to(self.session):
++            raise ValueError("preview_saved_model_must_belong_to_this_session")
++        session_key = hashlib.sha256(str(self.session).casefold().encode()).hexdigest()
++        binding = dict(session_key=session_key, version=version, saved_blend=saved)
++        directory = self.session / "previews" / ("v" + str(version))
++        manifest_path = directory / "PREVIEW.json"
++        cache_hit, render_invoked = manifest_path.exists(), False
++        job_label = "preview_" + binding_digest(binding)[:24]
++        job_folder = HERE / "private/jobs" / job_label
++        if not cache_hit:
++            run_path = job_folder / "run.json"
++            if not run_path.exists():
++                if job_folder.exists():
++                    raise RuntimeError("preview_render_attempt_incomplete_inspect_owned_job_" + job_label)
++                from background import run_job
++                source_spec = json.loads(self.path(state["source_spec"]).read_bytes())
++                cameras = json.loads((HERE / "CAMERAS.json").read_bytes())["views"]
++                run_job("blender_render.py", dict(current_blend=saved["path"], object_name=source_spec["object_name"],
++                    source_original=source_spec["source_original"], expected_input_sha256=saved["sha256"],
++                    output_dir=str(directory / "images"), views=cameras), job_label)
++                render_invoked = True
++            run = json.loads(run_path.read_bytes())
++            receipt_path = job_folder / "receipt.json"
++            if run["process"]["returncode"] != 0 or not receipt_path.exists():
++                raise RuntimeError("preview_render_attempt_failed_inspect_owned_job_" + job_label)
++            receipt = json.loads(receipt_path.read_bytes())
++            rows = [png_row(item["image"]["path"], index + 1, "current_" + item["specification"]["name"],
++                {key: item[key] for key in ("specification", "camera_matrix_world", "world_to_image_affine_2_by_3", "world_to_image_offset", "pixel_convention")})
++                for index, item in enumerate(receipt["views"])]
++            manifest = dict(binding=binding, renderer=file_identity(HERE / "blender_render.py"),
++                cameras=file_identity(HERE / "CAMERAS.json"), render_job_label=job_label,
++                render_run=file_identity(run_path), render_receipt=file_identity(receipt_path), images=rows)
++            temporary_manifest = directory / "PREVIEW.next.json"
++            write(temporary_manifest, manifest)
++            os.replace(temporary_manifest, manifest_path)
++        manifest, rows = validate_preview(manifest_path, self.task, self.session)
++        if manifest["binding"] != binding or file_identity(self.path(state["current_blend"])) != saved:
++            raise ValueError("preview_saved_model_changed_during_image_delivery")
++        metadata = dict(delivery_kind="saved_version_preview", version=version, session_key=session_key,
++            saved_blend=saved, preview_manifest=file_identity(manifest_path), render_job_label=job_label,
++            render_receipt_sha256=manifest["render_receipt"]["sha256"],
++            renderer={key: manifest["renderer"][key] for key in ("bytes", "sha256")}, cameras=manifest["cameras"]["sha256"])
++        cost = dict(cache_hit=cache_hit, render_invoked=render_invoked, render_job_label=job_label,
++            render_run=manifest["render_run"], wall_s=time.perf_counter()-started)
++        return rows, metadata, cost
++
+     def call(self, params):
+         started = time.perf_counter()
+         index = len(self.calls) + 1
+@@ -221,9 +383,12 @@
+             if name == "images":
+                 if arguments:
+                     raise ValueError("images_requires_empty_arguments")
+-                images = image_content(self.images)
+-                payload = dict(images=self.images, transport="native_MCP_ImageContent")
+-                record.update(public_image_count=len(self.images), public_image_bytes=sum(row["bytes"] for row in self.images),
++                rows, metadata, preview_cost = self.current_images()
++                payload = dict(images=rows, transport="native_MCP_ImageContent", **metadata)
++                images = image_content(rows)
++                images[0] = dict(type="text", text=json.dumps(payload, ensure_ascii=True, allow_nan=False))
++                record.update(public_image_count=len(rows), public_image_bytes=sum(row["bytes"] for row in rows),
++                    image_delivery_kind=metadata["delivery_kind"], image_version=metadata["version"], preview=preview_cost,
+                     image_base64_bytes=sum(len(block["data"]) for block in images if block["type"]=="image"))
+             elif name == "execute_python":
+                 if set(arguments) != {"code"} or type(arguments["code"]) is not str:
+--- a/verification/m6_matched_refine_003/consumer_runner.py
++++ b/verification/m6_matched_refine_003/consumer_runner.py
+@@ -15,7 +15,7 @@
+ HERE = Path(__file__).resolve().parent
+ sys.path.insert(0, str(HERE))
+ from image_inputs import image_inputs
+-from consumer_bridge import public_value
++from consumer_bridge import public_value, verify_image_response
+ LEGACY = HERE.parent / "plugin_version_llm_ab_001/run_consumers.py"
+ spec = importlib.util.spec_from_file_location("_refine_pro_helpers", LEGACY)
+ legacy = importlib.util.module_from_spec(spec)
+@@ -260,7 +260,25 @@
+         record["bridge"]=bridge
+         record["MCP_image_count"]=sum(call.get("public_image_count",0) for call in bridge.get("calls",[]))
+         record["MCP_image_bytes"]=sum(call.get("public_image_bytes",0) for call in bridge.get("calls",[]))
+-        record["actual_image_delivery_verified"]=bool(record["initial_image_count"] or record["MCP_image_count"]>=len(images))
++        image_deliveries = []
++        for call in bridge.get("calls", []):
++            if call["name"] != "images":
++                continue
++            try:
++                image_deliveries.append(verify_image_response(folder / "bridge" / ("tool_" + str(call["index"]).zfill(2)), task, images,
++                    HERE / "private/sessions" / (stage + "_" + task["task_id"] + "_" + route)))
++            except BaseException as error:
++                image_deliveries.append(dict(index=call["index"], exact_source_PNG_bytes=False, error=str(error)))
++        completed_image_events = sum(item.get("item", {}).get("tool") == "images" for item in record["tool_calls"])
++        record["image_delivery_audit"] = image_deliveries
++        record["actual_image_delivery_verified"] = bool(
++            (record["initial_image_count"] or any(row.get("delivery_kind") == "frozen_initial" for row in image_deliveries))
++            and all(row.get("exact_source_PNG_bytes") for row in image_deliveries)
++            and completed_image_events >= len(image_deliveries))
++        preview_deliveries = [row for row in image_deliveries if row.get("delivery_kind") == "saved_version_preview" and row.get("exact_source_PNG_bytes")]
++        record["saved_version_preview_count"] = len(preview_deliveries)
++        record["saved_version_preview_versions"] = sorted({row["version"] for row in preview_deliveries})
++        record["saved_version_preview_render_calls"] = sum(bool(row.get("preview", {}).get("render_invoked")) for row in preview_deliveries)
+         record["first_tool_images"]=bool(bridge.get("calls") and bridge["calls"][0]["name"]=="images")
+         readbacks=[]
+         for call in bridge.get("calls",[]):

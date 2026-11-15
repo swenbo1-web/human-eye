@@ -1,0 +1,126 @@
+{
+  "cycle_id": "M6-MATCHED-REFINE-003",
+  "bound_at_UTC": "2026-11-15T20:27:56.550818+00:00",
+  "initial_results": [
+    {
+      "route": "native",
+      "consumer": {
+        "path": "private/consumers/v1/matched/native/CONSUMER.json",
+        "bytes": 2209229,
+        "sha256": "4f78ef2ec31fd99804d82ac47bb8d587d2438581232bec802d687ea613c4e89d"
+      },
+      "session": {
+        "path": "private/sessions/v1_matched_native/session.json",
+        "bytes": 7601,
+        "sha256": "fe082d35666df0b47e2627168a6c5226dd2576dbecbd4205f12c81558032aa7b"
+      },
+      "final": {
+        "path": "private/consumers/v1/matched/native/PUBLIC_FINAL.txt",
+        "bytes": 1277,
+        "sha256": "8f91cce3f4817eefc8a1c536547e39161327ca7ae44dcb11436e650a4b38396c"
+      },
+      "actual_score": {
+        "path": "private/final_verify/v1_matched_native/SCORE.json",
+        "bytes": 10482,
+        "sha256": "f19ccf41953cbfc662a6f18104d9dbe21a958d66791f7be152aee551dd27c9db"
+      },
+      "final_views": {
+        "path": "private/results/v1_matched_native/RESULT.json",
+        "bytes": 19172,
+        "sha256": "718d49cd69ea23af3715e6546e1293323d65fe099300c1b7023563de9c5a5fe5"
+      },
+      "wall_s": 146.423083,
+      "usage": {
+        "input_tokens": 225163,
+        "cached_input_tokens": 195840,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3484,
+        "reasoning_output_tokens": 1061
+      },
+      "image_blocks": 16,
+      "repair_quality_pass": true,
+      "support_RMSE_reduction_fraction": 0.9999245655905884
+    },
+    {
+      "route": "facts",
+      "consumer": {
+        "path": "private/consumers/v1/matched/facts/CONSUMER.json",
+        "bytes": 1177957,
+        "sha256": "be2c75965e8946670bc1f36adc6acb1507ab070a1c746188d89541320b0823e0"
+      },
+      "session": {
+        "path": "private/sessions/v1_matched_facts/session.json",
+        "bytes": 7603,
+        "sha256": "2ebb46e16281b79ca1419602c55b673525195e06d3f3411db69a7fa492b875da"
+      },
+      "final": {
+        "path": "private/consumers/v1/matched/facts/PUBLIC_FINAL.txt",
+        "bytes": 1274,
+        "sha256": "f485469f06d35660fefbfd9e32446dff3cb2938d4dcd135174dceb12954fd015"
+      },
+      "actual_score": {
+        "path": "private/final_verify/v1_matched_facts/SCORE.json",
+        "bytes": 10495,
+        "sha256": "ca558c79d36345642086c79782938ad54194f8ce381b60dd071fe10326269d86"
+      },
+      "final_views": {
+        "path": "private/results/v1_matched_facts/RESULT.json",
+        "bytes": 19150,
+        "sha256": "20171c57db6ab6248c49633ce5aca3699a772891ec606aafd5375a3f88070818"
+      },
+      "wall_s": 149.8635251,
+      "usage": {
+        "input_tokens": 289038,
+        "cached_input_tokens": 257152,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 3615,
+        "reasoning_output_tokens": 660
+      },
+      "image_blocks": 8,
+      "repair_quality_pass": true,
+      "support_RMSE_reduction_fraction": 0.7390153308170804
+    }
+  ],
+  "initial_analysis": {
+    "path": "CONSUMER_STATS_v1.json",
+    "bytes": 13401,
+    "sha256": "b647e348d7bf66c4fffb16a22a1cd7c2f3bb404dcbbc8a62e728e13c71a0c3f0"
+  },
+  "initial_tools": {
+    "path": "TOOL_FREEZE.json",
+    "bytes": 9537,
+    "sha256": "2853478475b45a1d2f1d72a5d76a2a5e9e29750ed4fcfba107a452ddd2c93afc"
+  },
+  "first_stage_verification": {
+    "path": "FINAL_VERIFICATION_v1.json",
+    "bytes": 35963,
+    "sha256": "b52c2e41cf4a86a90fedb424038079e3d83a5c5bc12c335df193a2a14594260e"
+  },
+  "issue": "Both first-stage final answers lack post-edit visual feedback. Native's second images call redelivered the same eight initial PNGs.",
+  "selected_change": "Keep initial eight-image delivery. Once the isolated saved model is edited, images() renders four current same-camera model views, version- and saved-SHA-bound with caching. Both routes have the same tool and shared usage guidance.",
+  "expected_component_effect": "Actual saved-model visual feedback replaces stale initial-image repetition after edits. Rendering has an explicit additional cost. Target geometry remains unavailable.",
+  "consumer_changes": {
+    "instruction_addendum": "After an edit, images() now returns four views rendered from your current saved model with the same frozen cameras. Compare these with the normal reference images you already received before finishing. Initial images remain fixed; numerical and saved-file quality records remain available."
+  },
+  "invariants": "Same sample, initial damaged blend, clean PNGs, cameras, initial public packet, task, domains, displacement budgets, model/effort, tool count/deadline, hidden target and scoring code. No hidden target or mask enters the image tool.",
+  "permitted_source_changes": [
+    "consumer_bridge.py",
+    "consumer_runner.py",
+    "analyze_consumers.py"
+  ],
+  "supporting_audit_change": "Image audit must validate each response's actual PNG source and distinguish frozen input blocks from saved-version preview blocks. This measures the selected change.",
+  "acceptance": {
+    "required": "Both v2 saved repairs pass fixed restoration and technical criteria, and both obtain actual saved-version views",
+    "default_selection": "Retain V1 if second-stage total Pro wall is higher, or repair/technical quality criteria fail. Component feedback availability and full-stage performance are reported separately.",
+    "generalization": "Single fixed synthetic case, no general causal performance or image-reconstruction claim"
+  },
+  "second_order": [
+    "facts",
+    "native"
+  ],
+  "additional_Pro_sessions": 2,
+  "additional_optimizations_allowed": 0,
+  "synthetic_cue": "V1 native identifies 1/4096 m coordinate-grid residuals and infers a shared correction direction. The high restoration precision depends on that current-input cue; PNG causal contribution is unmeasured.",
+  "wall_s": 0.03268439997918904,
+  "cpu_s": 0.0
+}
