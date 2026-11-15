@@ -1,0 +1,159 @@
+{
+  "cycle_id": "M6-SHAPE-RING-001",
+  "base_commit": "96d5249f2a08ead5ecde7e644e9a6b4f1f997c0e",
+  "contract_commit": "8c47b6dd225b174edba6a3345c7bafe0bc6410d8",
+  "contracts": [
+    {
+      "source": "docs/M6_SHAPE_RING_001_TASK.md",
+      "path": "M6_SHAPE_RING_001_TASK.md",
+      "bytes": 7345,
+      "sha256": "ede2aeba6243c469b2261252a0b8a299a8c00c596fcc07b6b4407d195245d260"
+    },
+    {
+      "source": "docs/M6_SHAPE_PRETRAIN_001_REVIEW.md",
+      "path": "M6_SHAPE_PRETRAIN_001_REVIEW.md",
+      "bytes": 5517,
+      "sha256": "587efdfed7ee785bf1c5a3059556de6a8aba0d28d744dedffbbc749e90374fee"
+    },
+    {
+      "source": "docs/M6_SHAPE_RING_PROPOSAL_REVIEW.md",
+      "path": "M6_SHAPE_RING_PROPOSAL_REVIEW.md",
+      "bytes": 8233,
+      "sha256": "575f321d80a304119b87e8daf6d55d0289a707a07de7980781893cce11568870"
+    }
+  ],
+  "source_user": {
+    "thread": "local/01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "turn": "01a1de97-2244-7bd3-855c-411409af7fb7",
+    "content": "user outer annulus, cluster integral and detail preservation reference, empirical guarantees unverified",
+    "read_before_registration": true
+  },
+  "fixed_cases": {
+    "total": 348,
+    "patches": 42,
+    "development": {
+      "normal": 33,
+      "dents": 198
+    },
+    "validation": {
+      "normal": 9,
+      "center_dents": 54,
+      "offcenter_dents": 54
+    }
+  },
+  "fit": {
+    "queries": "all original F source IDs, complete current source topology",
+    "branches": {
+      "solid": [
+        1,
+        10
+      ],
+      "ring": [
+        6,
+        10
+      ]
+    },
+    "points": "all vertices in hop interval, no sampling or cropped domain",
+    "cache": "source adjacency and source/query-ID BFS to10 shared across all observations and overlapping patches",
+    "neighbor_order": "hop ascending then source ID",
+    "origin": "current query vertex",
+    "normal": "saved observation input normal promotedfloat64 and unit-renormalized; only zero/nonfinite invalid",
+    "frame": "axis e=argmin(abs(n)) ties xyz, t1=unit(cross(n,e)), t2=cross(n,t1), basis columns[t1,t2,n]",
+    "Ri": "max current Euclidean length over same full1-10 neighborhood, shared acrossbranches",
+    "coordinates": "(currentneighbor-currentquery) dot basis / Ri",
+    "quadratic": "[u²,uv,v²,u,v,1], z WLS exp(-4||q||²) then3 Tukey IRLS c4.685 MAD1.4826 floor1e-4",
+    "rank": "at least6 points and full6 rank at every np.linalg.lstsq(rcond=None), otherwise output0 with failure denominator",
+    "prediction": "r=f*Ri, positive along current observation unitnormal",
+    "condition": "weighted design 2-norm via singular values, nonfinite serializednull with reason",
+    "area": "sum complete CURRENT source incident triangle area/3 for each vertex",
+    "precision": "binary64 all geometry/fitting/scoring"
+  },
+  "aggregation": {
+    "configurations": [
+      "solid_point",
+      "ring_point",
+      "solid_cluster",
+      "ring_cluster"
+    ],
+    "point_score": "abs(r)/ell",
+    "ell": "old observation median edge scale in native units",
+    "seed_calibration": "33dev normal all F pooled scores, linear q90 independently solid/ring, strict>",
+    "components": "topology-induced F selected by abs(r)/ell>q90, not split by sign; >=5 points",
+    "E": "sum(A*abs(r))/ell³",
+    "C": "abs(sum(A*r))/sum(A*abs(r)), zero denominator0",
+    "T": "abs(sum(A*r))/ell³ = E*C, broadcast constant per retained component, otherwise0",
+    "operation_points": "four own q95 of33development normal perpatch maxima, linear interpolation, strict>",
+    "freeze_order": "CALIBRATION and freeze committed before validation score summaries or labels read for evaluation",
+    "normal_FPR": "same dev calibration target, report actual calibration and validation FPR separately"
+  },
+  "evaluation": {
+    "ordinary_y": "original damaged mask S on all F",
+    "strong_y": "norm(reference-observed)>0.10ell on all F, weakdamaged count explicit as strong-task negatives",
+    "ROC": "average ranks for score ties, only when both classes, elseNone",
+    "AP": "threshold-grouped average precision sum(delta_recall*precision), no positivesNone, singleton positives with no negative AP defined and flag",
+    "per_case": "all eligible F same denominator including invalid fits withscore0",
+    "patch_macro": "average valid case metrics withinpatch for specified subset, then equal average patches, absentclasscases excluded with count",
+    "point_pool": "all F in subset including normalcontrols, report counts",
+    "groups": "all/development/validation center/offcenter, source/patch/strength, ordinary and strong separately",
+    "operation_recall_gate": "position group pooled selectedS currentarea / S currentarea, case and patchmacro also reported",
+    "operation_metrics": "point/area precision-recall, missed damage area, selected normal area, zero detection cases, false normalpatches, components and failure denominators",
+    "history": "same-F saved old OPT p ranking only, no old model forward or new repair"
+  },
+  "depth": {
+    "target": "d=(reference-observed) dot saved observation unitnormal",
+    "S_metrics": "r vs d RMSE/native and /ell, zero-prediction baseline, bias, sign, amplitude and completevalid/invalid denominators",
+    "normal_metrics": "legitimate current normal residual tails/p95/max, never use reference normal in fit",
+    "baseline_nearzero": "ratio N/A when baseline_RMSE<=64*float64eps*ell numerical roundoff, retain absolute/eligible/full denominators",
+    "fit_failure": "r0 on allF, labels only in evaluation",
+    "candidate_output": false
+  },
+  "decision_targets": {
+    "depth": {
+      "validation_center_and_offcenter_each_ratio_median_max": 0.85,
+      "relative_improvement_vs_solid_median_min": 0.1
+    },
+    "localization": {
+      "both_position_patch_macro_AUC_min": 0.8,
+      "AUC_gain_vs_solid_point_min": 0.05,
+      "AP_change_min": 0.0,
+      "pooled_area_recall_gain_vs_solid_point_min": 0.1,
+      "validation_normal_false_patches_max": 1,
+      "false_patches_vs_solid_point_max_gain": 0
+    },
+    "result": "failed fixed construction closes, partial success identifies one concrete gap; no score/ring/degree/seed/threshold search or architecture promise"
+  },
+  "views": {
+    "max": 3,
+    "selection": [
+      "development normal maximum T",
+      "validation center maximum depth RMSE",
+      "validation offcenter maximum depth RMSE"
+    ],
+    "scope": "explain saved real geometry only, no added cases"
+  },
+  "budget": {
+    "compute_wall_s": 7200,
+    "target_tree_RSS_bytes": 4294967296,
+    "threads": 1,
+    "dependencies": "existing CPUvenv and PRETRAIN private/deps read-only, no new install",
+    "performance": "machine exclusivity unverified, no formal speedup claim"
+  },
+  "cost": "shared source/topology/BFS/cache/frames/areas and each branch fit, seed/q95 calibration, cluster, all evaluation, recovery and report wall/CPU/RSS; independent complete cost plus4marginals, shared cache consumption explicit",
+  "zero_operations": [
+    "training",
+    "new neural forward",
+    "repair output",
+    "Bunny arrays/scoring",
+    "Blender/source assets/product",
+    "Google/paid",
+    "new sources/cases",
+    "other branch mutation"
+  ],
+  "delivery": "fixed commit under current directory, private arrays/plots excluded fromGit, HANDOFF one callback then end for review",
+  "preparation_window": {
+    "metadata_contract_copy_wall_s": 0.09901869998429902,
+    "CPU_s": 0.0625,
+    "arrays_deserialized": 0,
+    "new_scores": 0
+  }
+}
