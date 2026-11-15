@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_365c2c9ef9e14718a996dfddfffae392",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1de57-8b7d-77d1-aaaf-4ccb81acfae5",
+        "thread_id": "01a1de57-8b7d-77d1-aaaf-4ccb81acfae5",
+        "turn_started_at_unix_ms": 1794731641883,
+        "turn_id": "01a1de57-8c13-7922-ab49-de197a7051dc",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1de57-8b7d-77d1-aaaf-4ccb81acfae5",
+      "itemId": "fc_09b274966a7f7c8b016af96eab3b4c87d0befdbb01b0b39321",
+      "progressToken": 5
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "offsets=np.cumsum([0]+[len(o['triangles']) for o in geometry['objects']])\nlookup=np.full(int(offsets[-1]),-1,dtype=int)\nfor index,reg in enumerate(regions):\n for low,high in reg['source_triangle_index_ranges']: lookup[offsets[reg['object_index']]+low:offsets[reg['object_index']]+high+1]=index\nfor view in ['SCENE','LEFT','BACK','TOP']:\n frame=buffers[view]; tids=frame['triangle_ids']; labels=np.full(tids.shape,-1,dtype=int); valid=tids>=0; labels[valid]=lookup[tids[valid]]\n # Unsupported source triangles retain distinct labels, different from background and supported patches.\n unsupported=valid & (labels<0); labels[unsupported]=1000+tids[unsupported]\n color=frame['color'].astype(float); boundary=np.zeros(labels.shape,dtype=bool)\n for dy,dx in [(0,1),(1,0)]:\n  a=(slice(0,512-dy),slice(0,512-dx)); b=(slice(dy,512),slice(dx,512))\n  contrasting=(labels[a]!=labels[b]) & (np.linalg.norm(color[a]-color[b],axis=2)>=24)\n  boundary[a]|=contrasting; boundary[b]|=contrasting\n if view=='TOP': print('TOP roof',np.sum(labels==25),np.sum((labels==25)&boundary))\n for index,reg in enumerate(regions):\n  wp=reg['complete_witness_pixel_index']\n  if wp is not None:\n   p=pixels[wp]\n   if imgs[p['image_index']]['view_name']==view:\n    count=int(np.sum(labels==index)); bc=int(np.sum((labels==index)&boundary)); print('WITNESS',index,objects[reg['object_index']]['object_name'],reg['source_triangle_index_ranges'],view,count,bc,'matches',count==p['visible_surface_pixels'] and bc==p['contrasting_boundary_pixels'])\nprint('COMPLETE SET BY OBJECT')\nfor obj in objects:\n entries=[]\n for index,reg in enumerate(regions):\n  if reg['object_index']==obj['object_index']:\n   groups_for=[groups[g] for g in reg['unobserved_view_group_indices']]\n   entries.append({'triangles':reg['source_triangle_index_ranges'],'region_index':index,'state':reg['status'],'reason':reg['unobserved_reason'],'view_groups':groups_for})\n print(obj['object_index'],obj['object_name'],json.dumps(sorted(entries,key=lambda r:r['triangles'])))\nprint('count reasons', {reason:sum(r['unobserved_reason']==reason for r in regions) for reason in ['no_front_facing_candidate','positive_area_occlusion_all_front_views']})"
+    }
+  }
+}

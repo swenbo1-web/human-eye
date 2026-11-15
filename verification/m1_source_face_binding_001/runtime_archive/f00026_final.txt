@@ -1,0 +1,66 @@
+## Conclusion
+
+**18 of 61 supported rectangular surfaces are covered; 43 remain unknown.** Of the unknown surfaces, 10 have no front-facing camera and 33 have positive-area occlusion in every front-facing candidate. None remain unknown merely because of insufficient pixel evidence.
+
+This conclusion is **finite-pool only**, restricted to the registered SCENE/TOP/LEFT/RIGHT/FRONT/BACK cameras and the current geometry/material.
+
+## Complete Surface Inventory
+
+Each cell uniquely identifies a surface by **object plus the listed local source-triangle set**. Triangles were merged before counting boundary pixels.
+
+- **S / L / B:** covered, with a complete-readable current witness in SCENE / LEFT / BACK, respectively. The whole front-facing rectangle is in-frame with zero positive-area occlusion.
+- **N:** unknown—no front-facing candidate in this finite pool.
+- **O:** unknown—positive-area occlusion in every front-facing candidate.
+
+| Object index / name | [0,1] | [2,3] | [4,5] | [6,7] | [8,9] | [10,11] |
+|---|---|---|---|---|---|---|
+| 0 RackBase | N | O | S | S | B | L |
+| 1 RackRoof | N | L | S | S | B | L |
+| 2 LeftUpright | N | O | O | O | O | L |
+| 3 RightUpright | N | O | O | O | O | O |
+| 4 LowerRearUnit | N | O | O | O | B | O |
+| 5 UpperRearUnit | N | O | O | O | O | O |
+| 6 FrontRightUnit | N | O | O | O | O | O |
+| 7 LowerFrontRail | N | S | S | S | O | O |
+| 8 UpperFrontRail | N | S | S | S | O | O |
+| 9 TurnedUnit | N | O | O | O | O | O |
+| 10 SlantedIndicator | L | — | — | — | — | — |
+
+All 18 witnesses pass the required **≥16 visible surface pixels and ≥4 contrasting boundary pixels**. Across these witnesses, the minimum visible count is 67 and minimum boundary count is 9. Boundary validation uses horizontal/vertical different-surface neighbors, RGB Euclidean contrast ≥24, and unique surface-owned endpoints.
+
+**Unsupported component:** object **11 ConnectedLBracket**, connected component 0, local source triangles **[0,1,2,3]**, remains **unknown/unsupported**. Its connected planar union is L-shaped, not a four-corner rectangle (`four_corners_required`). All four source faces are retained in this finding and participate in occlusion; they are not silently discarded or treated as supported rectangles.
+
+## Pixel Localization
+
+Coordinates are zero-based `(x,y)` from the upper-left; all world coordinates below are in metres.
+
+**sample_A — TOP (135,175)**
+- Source: **RackRoof**, object 1, surface **[2,3]**; sampled local triangle **3**.
+- Center: **(0, 0, 6.5)**; front orientation: **(0,0,+1)**.
+- Rectangle: **z=6.5, x∈[-7,7], y∈[-6,6]**.
+- Specified frame: **TOP**, reference `image-04`.
+- Complete-readable witness: **LEFT**, reference below; **71,148 visible pixels / 1,068 contrasting boundary pixels**.
+
+**sample_B — LEFT (234,483)**
+- Source: **RackBase**, object 0, surface **[10,11]**; sampled local triangle **10**.
+- Center: **(-7, 0, -0.25)**; front orientation: **(-1,0,0)**.
+- Rectangle: **x=-7, y∈[-6,6], z∈[-0.5,0]**.
+- Specified frame and complete-readable witness: **LEFT**, reference below; **2,646 visible pixels / 332 contrasting boundary pixels**.
+
+## Original Source-Face Targets
+
+| Target | Source surface | State | Specific reason |
+|---|---|---|---|
+| target_C | RackBase, object 0, local triangles **[2,3]** | **Unknown** | Upper rectangle, center **(0,0,0)**, front **+Z**. All six cameras are front-facing, but every candidate has positive-area occlusion. Partial visible/readable portions do not establish complete coverage. |
+| target_D | RackBase, object 0, local triangles **[0,1]** | **Unknown** | Underside, center **(0,0,-0.5)**, front **−Z**. All six cameras are back-facing; there is no front-facing candidate. |
+
+## Current Frame References
+
+These references bind the inventory’s witness codes and pixel results to actual current-session frames:
+
+- **SCENE (S):** `active-host-image:0d5f2333d4b6aac5bffecbb97edd2804449b796441b976f5538b3caa80bb9e04`
+- **LEFT (L):** `active-host-image:3ea67d6006801d0f134d75d5e2eddb96875d3033d891b158ac00f851a094fe84`
+- **BACK (B):** `active-host-image:c92346ef8dd953fda7d2be0fcdb9cb631a5e7b9f1119156304d08ea91ac5a615`
+- **TOP:** `image-04`
+
+Existing observation evidence was reused; only the missing TOP sample frame required an additional raster construction.

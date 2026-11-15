@@ -1,0 +1,61 @@
+## Conclusion
+
+**Within the registered SCENE/TOP/LEFT/RIGHT/FRONT/BACK pool: 18 of 61 supported surfaces are covered; 43 remain unknown.** Of those unknown surfaces, 33 have positive-area occlusion in every front-facing candidate and 10 have no front-facing candidate. None remain unknown merely from insufficient evidence.
+
+Covered means the entire rectangle is front-facing, fully inside one current frame, and has zero positive-area occlusion, ≥16 visible surface pixels, and ≥4 contrasting boundary pixels. I independently verified all 18 witnesses’ pixel counts against current raw buffers, merging source triangles before counting unique boundary endpoints with horizontal/vertical RGB contrast ≥24.
+
+These conclusions are **finite-pool only**, not claims about visibility from arbitrary cameras.
+
+## Complete Surface Inventory
+
+Each bracketed pair is one surface’s **object-local source-triangle set**, not separate surfaces. The object name plus that pair uniquely identifies the surface. `@VIEW` gives its current complete-readable witness.
+
+| Object index / name | Covered: whole rectangle readable and unoccluded | Unknown: positive-area occlusion in every front candidate | Unknown: no front-facing candidate |
+|---|---|---|---|
+| 0 `RackBase` | [4,5] @SCENE; [6,7] @SCENE; [8,9] @BACK; [10,11] @LEFT | [2,3] | [0,1] |
+| 1 `RackRoof` | [2,3] @LEFT; [4,5] @SCENE; [6,7] @SCENE; [8,9] @BACK; [10,11] @LEFT | — | [0,1] |
+| 2 `LeftUpright` | [10,11] @LEFT | [2,3]; [4,5]; [6,7]; [8,9] | [0,1] |
+| 3 `RightUpright` | — | [2,3]; [4,5]; [6,7]; [8,9]; [10,11] | [0,1] |
+| 4 `LowerRearUnit` | [8,9] @BACK | [2,3]; [4,5]; [6,7]; [10,11] | [0,1] |
+| 5 `UpperRearUnit` | — | [2,3]; [4,5]; [6,7]; [8,9]; [10,11] | [0,1] |
+| 6 `FrontRightUnit` | — | [2,3]; [4,5]; [6,7]; [8,9]; [10,11] | [0,1] |
+| 7 `LowerFrontRail` | [2,3] @SCENE; [4,5] @SCENE; [6,7] @SCENE | [8,9]; [10,11] | [0,1] |
+| 8 `UpperFrontRail` | [2,3] @SCENE; [4,5] @SCENE; [6,7] @SCENE | [8,9]; [10,11] | [0,1] |
+| 9 `TurnedUnit` | — | [2,3]; [4,5]; [6,7]; [8,9]; [10,11] | [0,1] |
+| 10 `SlantedIndicator` | [0,1] @LEFT | — | — |
+
+**Unsupported:** Object 11, `ConnectedLBracket`, component 0, source triangles **[0,1,2,3]**, remains **unknown / unsupported**. Its connected planar patch fails the four-corner rectangle requirement (`four_corners_required`); it is not split into artificial supported rectangles. All its triangles still participate in occlusion.
+
+## Pixel Localization
+
+Coordinates are zero-based `(x,y)` from the upper-left; world coordinates are metres.
+
+**sample_A — TOP (135,175)**
+- Source: object 1 `RackRoof`, surface **[2,3]**; the exact pixel hits local triangle **3**.
+- World center: **(0, 0, 6.5)**; front orientation: **(0, 0, +1)**.
+- Rectangle corners: **(-7,-6,6.5), (7,-6,6.5), (7,6,6.5), (-7,6,6.5)**.
+- Specified current TOP image: **`image-04`**.
+- **Covered**, with current complete-readable witness **LEFT / L** below: **71,148 surface pixels; 1,068 contrasting boundary pixels**.
+
+**sample_B — LEFT (234,483)**
+- Source: object 0 `RackBase`, surface **[10,11]**; the exact pixel hits local triangle **10**.
+- World center: **(-7, 0, -0.25)**; front orientation: **(-1, 0, 0)**.
+- Rectangle corners: **(-7,-6,-0.5), (-7,-6,0), (-7,6,0), (-7,6,-0.5)**.
+- Specified current image and complete-readable witness: **LEFT / L**.
+- **Covered**: **2,646 surface pixels; 332 contrasting boundary pixels**.
+
+## Original Source-Face Targets
+
+| Target | Source surface and geometry | State and specific reason |
+|---|---|---|
+| **target_C** | `RackBase` / object 0 / **[2,3]**; center **(0,0,0)**; extent **x∈[-7,7], y∈[-6,6], z=0**; front **+Z** | **Unknown.** All six registered views are front-facing candidates, but every one has positive-area occlusion. No current complete-readable witness. Partial readable pixels do not establish coverage. |
+| **target_D** | `RackBase` / object 0 / **[0,1]**; center **(0,0,-0.5)**; extent **x∈[-7,7], y∈[-6,6], z=-0.5**; front **−Z** | **Unknown.** All six registered views are back-facing to this underside; there is no front-facing candidate and no complete-readable witness. |
+
+## Current Image References
+
+The inventory’s witness views refer to these actual current frames:
+
+- **SCENE / S:** `active-host-image:0d5f2333d4b6aac5bffecbb97edd2804449b796441b976f5538b3caa80bb9e04`
+- **LEFT / L:** `active-host-image:3ea67d6006801d0f134d75d5e2eddb96875d3033d891b158ac00f851a094fe84`
+- **BACK / B:** `active-host-image:c92346ef8dd953fda7d2be0fcdb9cb631a5e7b9f1119156304d08ea91ac5a615`
+- **TOP:** `image-04`

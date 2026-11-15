@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_c5632bf4113b4a08ab26d76aad9e91c3",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1de50-a659-79b3-be5f-02e6e7290b40",
+        "thread_id": "01a1de50-a659-79b3-be5f-02e6e7290b40",
+        "turn_started_at_unix_ms": 1794731190005,
+        "turn_id": "01a1de50-a6ee-76b1-aeb0-20773b64e552",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1de50-a659-79b3-be5f-02e6e7290b40",
+      "itemId": "fc_02b36b3f433a9062016af96cbf6a9c87d081cbbb7e75a82f7e",
+      "progressToken": 2
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "import json\nobs=json.loads(last_observation_json)\nprint(obs.keys())\nfor key in ['images','views','complete_witnesses','pixels','view_observations']:\n if key in obs: print(key, str(obs[key])[:16000])\nprint('region columns',obs['regions']['columns'])\nprint('other structured keys',[(k, list(v.keys()) if isinstance(v,dict) else type(v).__name__) for k,v in obs.items()])\nprint('camera',str(cameras)[:2200])\nprint('scratch',scratch)\n"
+    }
+  }
+}

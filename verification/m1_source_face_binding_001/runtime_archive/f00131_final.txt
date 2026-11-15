@@ -1,0 +1,59 @@
+## Conclusion
+
+Within **SCENE/TOP/LEFT/RIGHT/FRONT/BACK only**, **18 of 61 supported rectangular surfaces are covered**; **43 remain unknown**:
+- **33:** positive-area occlusion in every front-facing candidate.
+- **10:** no front-facing candidate.
+- **0:** insufficient evidence or pixel-readability failures.
+
+Covered means the entire front-facing rectangle is in one current frame, without positive-area occlusion, with ≥16 visible pixels and ≥4 contrasting boundary pixels. Witness counts were checked from current buffers after merging source triangles, using horizontal/vertical neighbors and RGB Euclidean contrast ≥24.
+
+## Complete Surface Sets
+
+Each `a–b` denotes **one surface comprising local source triangles `[a,b]`**, uniquely identified together with its object. Covered entries include a complete-readable witness view; its current reference is listed below.
+
+| Object (index) | Covered — witness view | Unknown — every front candidate occluded | Unknown — no front-facing candidate |
+|---|---|---|---|
+| RackBase (0) | 4–5 SCENE; 6–7 SCENE; 8–9 BACK; 10–11 LEFT | 2–3 | 0–1 |
+| RackRoof (1) | 2–3 LEFT; 4–5 SCENE; 6–7 SCENE; 8–9 BACK; 10–11 LEFT | — | 0–1 |
+| LeftUpright (2) | 10–11 LEFT | 2–3; 4–5; 6–7; 8–9 | 0–1 |
+| RightUpright (3) | — | 2–3; 4–5; 6–7; 8–9; 10–11 | 0–1 |
+| LowerRearUnit (4) | 8–9 BACK | 2–3; 4–5; 6–7; 10–11 | 0–1 |
+| UpperRearUnit (5) | — | 2–3; 4–5; 6–7; 8–9; 10–11 | 0–1 |
+| FrontRightUnit (6) | — | 2–3; 4–5; 6–7; 8–9; 10–11 | 0–1 |
+| LowerFrontRail (7) | 2–3 SCENE; 4–5 SCENE; 6–7 SCENE | 8–9; 10–11 | 0–1 |
+| UpperFrontRail (8) | 2–3 SCENE; 4–5 SCENE; 6–7 SCENE | 8–9; 10–11 | 0–1 |
+| TurnedUnit (9) | — | 2–3; 4–5; 6–7; 8–9; 10–11 | 0–1 |
+| SlantedIndicator (10) | 0–1 LEFT | — | — |
+
+**Unsupported:** `ConnectedLBracket` (object 11), connected component 0, local source triangles **[0,1,2,3]**, remains **unknown**. Its planar L-shaped component is not a rectangle (`four_corners_required`); it is not discarded or counted among the 61 supported surfaces. Its triangles still participate in occlusion.
+
+### Current Frame References
+
+- **SCENE:** `active-host-image:0d5f2333d4b6aac5bffecbb97edd2804449b796441b976f5538b3caa80bb9e04`
+- **LEFT:** `active-host-image:3ea67d6006801d0f134d75d5e2eddb96875d3033d891b158ac00f851a094fe84`
+- **BACK:** `active-host-image:c92346ef8dd953fda7d2be0fcdb9cb631a5e7b9f1119156304d08ea91ac5a615`
+- **TOP:** `image-04`
+
+## Pixel Localization
+
+All coordinates below are world metres; image coordinates are zero-based from the upper left.
+
+**sample_A — TOP (135,175)**
+- Surface: **RackRoof (1), local triangles [2,3]**.
+- Center: **(0,0,6.5)**; front orientation: **(0,0,+1)**.
+- Rectangle corners: **(-7,-6,6.5), (7,-6,6.5), (7,6,6.5), (-7,6,6.5)**.
+- Specified frame: **TOP / `image-04`**.
+- Complete-readable witness: **LEFT**, using the LEFT reference above; **71,148 visible pixels, 1,068 contrasting boundary pixels**.
+
+**sample_B — LEFT (234,483)**
+- Surface: **RackBase (0), local triangles [10,11]**.
+- Center: **(-7,0,-0.25)**; front orientation: **(-1,0,0)**.
+- Rectangle corners: **(-7,-6,-0.5), (-7,-6,0), (-7,6,0), (-7,6,-0.5)**.
+- Specified frame and complete-readable witness: **LEFT**, using the LEFT reference above; **2,646 visible pixels, 332 contrasting boundary pixels**.
+
+## Source-Face Targets
+
+- **target_C — RackBase (0), [2,3]: unknown.** This is the top rectangle, center **(0,0,0)**, extent **x∈[-7,7], y∈[-6,6], z=0**, front **+Z**. **All six registered views are front-facing candidates, but each has positive-area occlusion.** Visible/readable portions do not establish whole-surface coverage; no complete-readable witness exists in this pool.
+- **target_D — RackBase (0), [0,1]: unknown.** This is the bottom rectangle, center **(0,0,-0.5)**, extent **x∈[-7,7], y∈[-6,6], z=-0.5**, front **−Z**. **All six registered views are back-facing**, so there is no front-facing candidate or complete-readable witness.
+
+These are **finite-pool conclusions**, not claims that the unknown surfaces cannot be inspected from other camera positions.
