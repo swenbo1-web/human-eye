@@ -1,0 +1,109 @@
+{
+  "cycle_id": "M6-DEGRID-004",
+  "scope": "Additional observed preparation and finalization attempts. Nested and shell observations are retained without adding them to monitored process totals.",
+  "attempts": [
+    {
+      "operation": "consumer analysis caller used unsupported --stage all",
+      "status": "failed_exit_2",
+      "monitor": "private/measured/analyze_all.json",
+      "full_process_wall_s": 0.5285922000184655,
+      "tree_CPU_s": 0.140625,
+      "recovery": "Corrected invocation to --stage run. No consumer or edit was replayed.",
+      "recovered_monitor": "private/measured/analyze_run.json"
+    },
+    {
+      "operation": "first cost collector caller supplied a twice-prefixed helper path",
+      "status": "failed_exit_2_before_collector",
+      "monitor": "private/measured/collect_costs_initial.json",
+      "full_process_wall_s": 0.06833659997209907,
+      "tree_CPU_s": 0.015625,
+      "recovery": "Used the batch-relative collect_costs.py argument.",
+      "recovered_monitor": "private/measured/collect_costs_01.json"
+    },
+    {
+      "operation": "initial cost snapshot root-parent attribution",
+      "status": "PID_reuse_discovered",
+      "preserved_snapshot": "private/accounting/COSTS_INITIAL_PID_ALIAS.json",
+      "issue": "Separate actual_api_control and analyze_run launches reused root PID 34360. The initial collector excluded both as enclosing each other.",
+      "recovery": "Require different root PIDs, descendant PID evidence and observed lifetime containment. Missing lifetime evidence retains the outer root. Corrected source and final COSTS retain all launches."
+    },
+    {
+      "operation": "read-only normal perturbation summary initially requested I_ids from a raw readback",
+      "status": "failed_KeyError",
+      "shell_wall_s": 1.7841821,
+      "recovery": "Read the F_source_ids domain from the public initial packet and recomputed the summary.",
+      "recovery_shell_wall_s": 6.9732103
+    },
+    {
+      "operation": "saved-preview independent-render pixel comparison",
+      "status": "passed_8_of_8",
+      "record": "PREVIEW_PIXEL_VERIFICATION.json",
+      "shell_wall_s": 0.9311423,
+      "internal_wall_s": 0.2391844000085257,
+      "internal_CPU_s": 0.09375,
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    },
+    {
+      "operation": "consumer-method final read-only audit",
+      "status": "four_shells_completed",
+      "wall_s": null,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    },
+    {
+      "operation": "quality final independent numerical, contact and PNG read-only audit",
+      "status": "four_shells_completed",
+      "shell_wall_s_sum_approx": 9.414,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    },
+    {
+      "operation": "collector source preparation",
+      "status": "completed",
+      "AST_shell_wall_s": [
+        0.1444138,
+        0.1589825
+      ],
+      "failed_read_only_guessed_path_shell_wall_s": 0.239966,
+      "issue": "Guessed prepare label construct_fixed_case_001 was absent. Actual label prepare_fixed_case was located.",
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    },
+    {
+      "operation": "final diagnostics/report/collector audit and correction",
+      "status": "completed",
+      "read_only_shell_wall_s": [
+        0.5384096,
+        2.1025945,
+        0.6313602
+      ],
+      "correction_AST_and_roots_shell_wall_s": 0.7626255,
+      "correction_internal_wall_s": 0.3101575,
+      "observed_lookup_error": "CONSUMER_STATS_all.json absent, used CONSUMER_STATS_run.json",
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "operation": "final REPORT quantitative and contact-scope independent audit",
+      "status": "completed_two_read_only_shells",
+      "shell_wall_s_sum_approx": 2.397,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "actual_Blender_calls": 0,
+      "actual_Pro_calls": 0
+    }
+  ],
+  "root_model_usage": null,
+  "collaboration_model_usage": null,
+  "root_and_collaboration_fees": null,
+  "whole_task_CPU_s": null,
+  "whole_task_peak_RSS_bytes": null,
+  "accounting": "Exact recorded helper and job receipts are enumerated by COSTS. These additional shell and agent observations can overlap those receipts. Unrecorded authoring, read-only inspection and coordination CPU, memory and token costs remain unmeasured."
+}

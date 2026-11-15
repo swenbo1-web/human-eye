@@ -1,0 +1,85 @@
+{
+  "cycle_id": "M6-DEGRID-004",
+  "subtask": "quality_facts_score_and_delivery_wiring",
+  "status": "static_and_numerical_preflights_pass_handoff_read_only",
+  "actual_Blender_calls": 0,
+  "actual_Pro_calls": 0,
+  "training_calls": 0,
+  "paid_API_calls": 0,
+  "attempts": [
+    {
+      "id": "delivery_static_001",
+      "command": "verification/m6_shape_train_001/private/venv/Scripts/python.exe -I -B -X utf8 verification/m6_degrid_004/delivery_preflight.py",
+      "result": "pass_18_of_18",
+      "shell_wall_s": 0.1718783,
+      "record": "DELIVERY_HELPER_PREFLIGHT.json"
+    },
+    {
+      "id": "delivery_static_002",
+      "command": "verification/m6_shape_train_001/private/venv/Scripts/python.exe -I -B -X utf8 verification/m6_degrid_004/delivery_preflight.py",
+      "result": "pass_18_of_18_after_derived_triangle_reporting",
+      "shell_wall_s": 0.1759129,
+      "record": "DELIVERY_HELPER_PREFLIGHT.json"
+    },
+    {
+      "id": "construction_geometry_preflight_001",
+      "result": "pass_two_saved_state_comparisons_21_checks_each",
+      "full_process_wall_s": 5.442660500004422,
+      "tree_CPU_s": 5.25,
+      "tree_sampled_peak_RSS_bytes": 221306880,
+      "record": "private/measured/construction_geometry_preflight_001.json"
+    },
+    {
+      "id": "quality_numeric_preflight_001",
+      "result": "pass_25_of_25",
+      "full_process_wall_s": 4.893176999990828,
+      "tree_CPU_s": 4.671875,
+      "tree_sampled_peak_RSS_bytes": 188862464,
+      "record": "private/measured/quality_numeric_preflight_001.json"
+    }
+  ],
+  "read_path_failures": [
+    {
+      "path": "PLANNING_PREFLIGHT.md",
+      "reason": "The copied planning inputs are PLANNING_PREFLIGHT.py and PLANNING_PREFLIGHT.json. Both were read."
+    },
+    {
+      "path": "../_m6ref3/batch/CASE_BINDING.json",
+      "reason": "This planning-review path is absent in the implementation worktree. The frozen 003 implementation CASE_BINDING and case files exist and were read directly."
+    }
+  ],
+  "runtime_cost_records": [
+    "QUALITY_PREFLIGHT.json",
+    "CONSTRUCTION_GEOMETRY_QA.json",
+    "private/measured/quality_numeric_preflight_001.json",
+    "private/measured/construction_geometry_preflight_001.json"
+  ],
+  "development_wall_s": null,
+  "development_CPU_s": null,
+  "development_peak_RSS_bytes": null,
+  "development_usage": "Parent dispatch and tool timeline retain the interval. Agent model usage remains unmeasured here.",
+  "remaining_parent_execution": [
+    "Actual clean-target control through submit, save and independent readback",
+    "Two final independent saved-file reads and private scoring after terminal consumers",
+    "Two four-view actual saved-file render jobs using the frozen cameras"
+  ],
+  "handoff": {
+    "default_stage": "run",
+    "accepted_stages": ["run", "all"],
+    "sessions": ["run_repair_facts", "run_repair_native"],
+    "quality_evaluate_facts_byte_identical_to_003": true,
+    "score_only_cycle_identity_changed": true,
+    "support_points": 47,
+    "normal_region_points": 363,
+    "normal_editable_points": 227,
+    "normal_target": "private/construction/normal_readback.npz actual saved world coordinates",
+    "construction_derived_triangle_changes": 0,
+    "construction_new_degenerates": 0,
+    "construction_reversals": 0,
+    "construction_new_extra_contact_pairs": 0,
+    "preexisting_degenerate_count_under_003_scale_relative_tolerance": 11,
+    "actual_saved_numerical_candidate": false,
+    "final_read_only_handoff": true
+  },
+  "cost_rule": "Attempt wall and CPU times nest inside measured process records. Sum unique measured labels for runtime totals."
+}
