@@ -1,0 +1,106 @@
+{
+  "status": "pass",
+  "checks": {
+    "s01_0_cache_hit_expected": true,
+    "s01_0_all_array_bits_dtypes_namespace_equal": true,
+    "s01_0_raw_saved_payload_equal": true,
+    "s01_1_cache_hit_expected": true,
+    "s01_1_all_array_bits_dtypes_namespace_equal": true,
+    "s01_1_raw_saved_payload_equal": true,
+    "s01_2_cache_hit_expected": true,
+    "s01_2_all_array_bits_dtypes_namespace_equal": true,
+    "s01_2_raw_saved_payload_equal": true,
+    "s01_normal_bridge_entrypoint": true,
+    "s01_session_asset_inputs_unchanged": true,
+    "s02_0_cache_hit_expected": true,
+    "s02_0_all_array_bits_dtypes_namespace_equal": true,
+    "s02_0_raw_saved_payload_equal": true,
+    "s02_1_cache_hit_expected": true,
+    "s02_1_all_array_bits_dtypes_namespace_equal": true,
+    "s02_1_raw_saved_payload_equal": true,
+    "s02_2_cache_hit_expected": true,
+    "s02_2_all_array_bits_dtypes_namespace_equal": true,
+    "s02_2_raw_saved_payload_equal": true,
+    "s02_normal_bridge_entrypoint": true,
+    "s02_session_asset_inputs_unchanged": true,
+    "worker_rejects_checksum": true,
+    "worker_rejects_version": true,
+    "worker_rejects_schema": true,
+    "worker_rejects_session": true,
+    "formal_v2_snapshots_remain_cold": true,
+    "all_v1_archived_source_bytes_unchanged": true
+  },
+  "comparison": [
+    {
+      "case_id": "s01",
+      "sample": "cold",
+      "samples_per_mode": 1,
+      "sequential_component_wall_s": {
+        "inline": 0.7846347000158858,
+        "NPZ": 0.6031781999627128
+      },
+      "difference_inline_minus_NPZ_s": 0.18145650005317293
+    },
+    {
+      "case_id": "s01",
+      "sample": "warm",
+      "samples_per_mode": 2,
+      "sequential_component_wall_s": {
+        "inline": 1.5876401999848895,
+        "NPZ": 1.1568364999839105
+      },
+      "difference_inline_minus_NPZ_s": 0.430803700000979
+    },
+    {
+      "case_id": "s02",
+      "sample": "cold",
+      "samples_per_mode": 1,
+      "sequential_component_wall_s": {
+        "inline": 0.8293158000160474,
+        "NPZ": 0.5845678999612574
+      },
+      "difference_inline_minus_NPZ_s": 0.24474790005479008
+    },
+    {
+      "case_id": "s02",
+      "sample": "warm",
+      "samples_per_mode": 2,
+      "sequential_component_wall_s": {
+        "inline": 1.7398048000177369,
+        "NPZ": 1.1195244999835268
+      },
+      "difference_inline_minus_NPZ_s": 0.6202803000342101
+    }
+  ],
+  "totals": {
+    "inline": {
+      "calls": 6,
+      "input_JSON_bytes": 39939567,
+      "sequential_component_wall_s": 4.9413955000345595,
+      "JSON_encode_wall_s": 0.6760335999715608
+    },
+    "NPZ": {
+      "calls": 6,
+      "input_JSON_bytes": 35763,
+      "sequential_component_wall_s": 3.4641070998914074,
+      "JSON_encode_wall_s": 0.00037719999090768397
+    }
+  },
+  "wall_s": 11.077883199992357,
+  "accounting": "One cold packet and two warm invocations per mode per real case. API module imports are completed and separately timed before component samples. Same fresh v2 worker supports both wire formats. Frozen v1 parent and snapshot source are compiled with original __file__. Inline JSON encoding is timed by a delegating wrapper. Component timers are nested, only sequential snapshot plus executor wall is added. Order alternates, worker imports and OS cache can affect individual samples. Normal entrypoint and guard probes are additional local checks, included only in benchmark total wall.",
+  "formal_v2_snapshot_cache_before": {
+    "s01": false,
+    "s02": false
+  },
+  "formal_v2_snapshot_cache_after": {
+    "s01": false,
+    "s02": false
+  },
+  "actual_Pro_sessions": 0,
+  "actual_Blender_calls": 0,
+  "full_local_evidence": {
+    "path": "TRANSPORT_BENCHMARK.json",
+    "bytes": 4961,
+    "sha256": "6b2bbe9e2fb8bc731ee0cb072a02f7a21dcc3dc60feb5cc42ea8ed13e21e1f1f"
+  }
+}

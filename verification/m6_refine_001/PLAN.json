@@ -1,0 +1,165 @@
+{
+  "cycle_id": "M6-REFINE-001",
+  "baseline_commit": "fb529836f3b665be4f22eee886690d583aa9dc31",
+  "contract_commit": "2ef3ce26d1e7a821170eecefcd22714a65a06e40",
+  "authorized_write_scope": "verification/m6_refine_001/",
+  "cases": [
+    {
+      "case_id": "s01",
+      "F": 410,
+      "B0": 72,
+      "B1": 64,
+      "I": 274,
+      "C": 42,
+      "center_source_id": 24205,
+      "ell": 0.0071429388859022315,
+      "h": 0.0007142938885902232,
+      "Dmax": 0.040111755457673134,
+      "center_D": 0.03884890850677822,
+      "local_components": 1,
+      "F_unreferenced_by_complete_triangles": [],
+      "I_unreachable": [],
+      "normal_mean_F": [
+        0.07511328731491913,
+        -0.08706923584530249,
+        -0.0025153762148627094
+      ],
+      "initial": {
+        "path": "private/cases/s01/initial.npz",
+        "bytes": 1731172,
+        "sha256": "525830f93be2b4aaa657776ab6d34d87626372cca58e872783ff42ac32dda129"
+      },
+      "spec": {
+        "path": "private/cases/s01/spec.json",
+        "bytes": 1913,
+        "sha256": "9647eb8a7dd49ce677cd8ea5330dcac8e4360323d49fa2d17b1268fac38963b2"
+      },
+      "baseline_native_matches_source_seed": true
+    },
+    {
+      "case_id": "s02",
+      "F": 384,
+      "B0": 86,
+      "B1": 78,
+      "I": 220,
+      "C": 18,
+      "center_source_id": 23453,
+      "ell": 0.11916492899661732,
+      "h": 0.011916492899661733,
+      "Dmax": 0.751458022335833,
+      "center_D": 0.751458022335833,
+      "local_components": 3,
+      "F_unreferenced_by_complete_triangles": [
+        20928,
+        25860
+      ],
+      "I_unreachable": [
+        20928,
+        25860
+      ],
+      "normal_mean_F": [
+        -0.7706127986148122,
+        -0.16575045242575173,
+        0.6139067505144866
+      ],
+      "initial": {
+        "path": "private/cases/s02/initial.npz",
+        "bytes": 2285303,
+        "sha256": "f3b3d6d84c53ecc4aed3867422a6e994a84c46195e1ed77ecc0f3c415e8e64c1"
+      },
+      "spec": {
+        "path": "private/cases/s02/spec.json",
+        "bytes": 1977,
+        "sha256": "8da67a9ea4a1e808f451d502f86eb4dd6e735952d6e27fc0155f35e2010b3d4c"
+      },
+      "baseline_native_matches_source_seed": true
+    }
+  ],
+  "objective": "actual LLM-directed normal-field local refinement, full isolated Blender save and independent fresh-process readback",
+  "normal_definition": "full-source area-weighted unit normals, then normalize(0.5 self + 0.5 mean one-ring unit normals), initial directions fixed",
+  "amplitude": "h=0.1 median initial full-world local-edge length for edges whose two endpoints lie in I",
+  "targets": "F/B0/B1/I/C/center and numerical goals identical for native and facts routes, task JSON is shared byte-for-byte",
+  "preservation": "outside-I local float32 coordinates bitwise equal, full source mapping and native polygon loops, matrices and scene fingerprints fixed",
+  "world_tolerance": "max(case native precision floor, 8*eps_float32*max(abs(initial world coordinates))), exact values fixed in each spec",
+  "safety": "all full-source edges incident to I, template affected normal angle <=5 degrees, no new degenerate/reversed triangles, exact affected-triangle versus full-source self-contact candidates with shared-simplex handling",
+  "retessellation": "native polygon loops are authoritative topology, actual loop triangles and stable polygon+vertex triangle keys separately checked; unprovable new-contact attribution remains unknown",
+  "face_unreachable": "source IDs 20928 and 25860 remain in I and are fixed at zero displacement, excluded from finite distance maximum and C",
+  "reference_control": "independent hidden smoothstep distance construction, used before consumers to confirm feasibility, omitted from supplied consumer geometry namespace and packets",
+  "consumer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "max_tool_calls": 10,
+    "max_session_seconds": 480,
+    "python_timeout_s": 45,
+    "python_output_chars": 16000,
+    "fact_output_chars": 50000,
+    "answer_schema": {
+      "task_id": "s01 or s02",
+      "status": "pass, fail or unknown from actual readback",
+      "operation_id": "actual submitted operation",
+      "version": "saved version integer",
+      "saved_blend": "actual saved artifact identity",
+      "readback": "independent record reference",
+      "center_over_h": "measured number",
+      "core_median_over_h": "measured number",
+      "remaining": "unmet or unknown checks"
+    }
+  },
+  "initial_sequence": [
+    [
+      "s01",
+      "native"
+    ],
+    [
+      "s01",
+      "facts"
+    ],
+    [
+      "s02",
+      "facts"
+    ],
+    [
+      "s02",
+      "native"
+    ]
+  ],
+  "optimization_sequence": [
+    [
+      "s02",
+      "facts"
+    ],
+    [
+      "s01",
+      "facts"
+    ]
+  ],
+  "optimization": "one evidence-selected intervention after all four v1 results are immutable, preserve original native results, never copy their final displacement to facts",
+  "limits": {
+    "real_Pro_sessions": 6,
+    "training": 0,
+    "numerical_seconds": 7200,
+    "numerical_RSS_bytes": 4294967296,
+    "threads": 1
+  },
+  "costs": "inclusive numerical and consumer controllers, nested Blender/Python/facts scopes separately stated, disjoint enclosing roots summed without double counting, full bytes/cache/images/tokens and unknown fees",
+  "rendering": "same initial frozen three cameras, actual saved geometry at original displacement scale and shared neutral clay lighting, full blends and local OBJ also delivered",
+  "preflight": {
+    "actual_protocol": {
+      "path": "TOOL_PREFLIGHT.json",
+      "bytes": 10376,
+      "sha256": "fc44d4388cc861f1314fd80f077245b85a43bb5c33359ba33ead95157a3a2272"
+    },
+    "hidden_feasibility": {
+      "path": "REFERENCE_CONTROL.json",
+      "bytes": 755696,
+      "sha256": "fb225f801a9ae6413577bef28231419f073470c997bf887f61cbb1645ba1f588"
+    },
+    "render": {
+      "path": "RENDER_PREFLIGHT.json",
+      "bytes": 155486,
+      "sha256": "f510c3d0273184e7b2776ebcb92dcb60b65790623cb5e8f9ada6b770f6f9582f"
+    }
+  },
+  "human_visual_judgement": "Engineering task chosen by planning contract. Human artistic acceptance remains unmeasured.",
+  "completion": "fixed public commit, private artifacts and one completion callback to planning chat, independent review selects next M6 task"
+}

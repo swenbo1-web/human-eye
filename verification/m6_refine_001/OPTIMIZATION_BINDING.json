@@ -1,0 +1,148 @@
+{
+  "bound_at_UTC": "2026-11-15T16:32:49.367289+00:00",
+  "initial_results": [
+    {
+      "task_id": "s01",
+      "route": "native",
+      "consumer": {
+        "path": "private/consumers/v1/s01/native/CONSUMER.json",
+        "bytes": 30255,
+        "sha256": "4049f2a148728bae6a4a22766e20353c60acdacbe3904c28a753803e6255397b"
+      },
+      "session": {
+        "path": "private/sessions/v1_s01_native/session.json",
+        "bytes": 5884,
+        "sha256": "d7450c5ab536547cd7261d46b29fc34369e2bb0305c49ae27d9e601c6b68ed6f"
+      },
+      "wall_s": 76.6385274,
+      "quality": "pass"
+    },
+    {
+      "task_id": "s01",
+      "route": "facts",
+      "consumer": {
+        "path": "private/consumers/v1/s01/facts/CONSUMER.json",
+        "bytes": 33307,
+        "sha256": "98df07a15afc44a8917ddda9efa83a0396c7797fa1e6570e6e699bf392fba0d3"
+      },
+      "session": {
+        "path": "private/sessions/v1_s01_facts/session.json",
+        "bytes": 5864,
+        "sha256": "5f9fc1171ec32cebc7187af4920d190009192f3c7f2123e4640d1481582d7bee"
+      },
+      "wall_s": 67.7160128,
+      "quality": "pass"
+    },
+    {
+      "task_id": "s02",
+      "route": "facts",
+      "consumer": {
+        "path": "private/consumers/v1/s02/facts/CONSUMER.json",
+        "bytes": 30554,
+        "sha256": "f0c521d3acda869be9bed09c849fd42f68a136778db17a658bfa3fee538bddac"
+      },
+      "session": {
+        "path": "private/sessions/v1_s02_facts/session.json",
+        "bytes": 5838,
+        "sha256": "41e9e7603facaede6d6bb9435e3d36252e68ce89ea2a061cd1dcabe905c35b51"
+      },
+      "wall_s": 59.512834,
+      "quality": "pass"
+    },
+    {
+      "task_id": "s02",
+      "route": "native",
+      "consumer": {
+        "path": "private/consumers/v1/s02/native/CONSUMER.json",
+        "bytes": 27805,
+        "sha256": "81f52588784497e2a0500b52f4b2d84dcfa159bc733c6a95bf7715e92415204d"
+      },
+      "session": {
+        "path": "private/sessions/v1_s02_native/session.json",
+        "bytes": 5858,
+        "sha256": "c0d93313bb30a48b0a3874de7bc01f8446cdcb9191975d3da5629712c2ee8a2f"
+      },
+      "wall_s": 67.6451943,
+      "quality": "pass"
+    }
+  ],
+  "source_version": {
+    "path": "TOOL_FREEZE.json",
+    "bytes": 8451,
+    "sha256": "3e31f9cb2d88d5b6cb2248d89416a49b404f231e13448874f4a1b4e5ed30d43d"
+  },
+  "analysis": {
+    "path": "CONSUMER_STATS_v1.json",
+    "bytes": 21226,
+    "sha256": "c50aa8df25f708dfa0b0fabbc664da3573ec5b889397f63d180e0b6bdba63e88"
+  },
+  "evidence": {
+    "Python_calls": 8,
+    "inline_geometry_JSON_bytes": 52746408,
+    "same_version_repeated_snapshots": 4,
+    "Python_execution_wall_s": 4.2457,
+    "Python_worker_wall_s": 2.8586,
+    "bridge_snapshot_remainder_s": 0.7592,
+    "required_submission_wall_s": 20.7032,
+    "total_tool_wall_s": 26.5522,
+    "total_consumer_wall_s": 271.5125685
+  },
+  "selected_performance_change": "Version-bound binary NPZ geometry transport and reuse for fresh ordinary Python workers, replacing repeated array-to-list JSON serialization and parsing",
+  "invariant": "Every exposed array, dtype, namespace name and submitted value stays identical; fresh interpreter and saved-model readback semantics remain the same",
+  "target": "reduce measured input geometry JSON bytes and repeated local transport cost, measure first creation and reuse separately",
+  "correctness_fix": {
+    "evidence": {
+      "path": "AUDIT_IMPLEMENTATION.json",
+      "bytes": 8102,
+      "sha256": "bd82857286e77d013270f024c6be960971f07e2fcbb7a2fad4f37638761b7f50"
+    },
+    "issue": "A reader failure before creating its output directory reserves the job label, and retry can select that same label",
+    "repair": "Persist a monotonically advancing read-attempt number before each independent reader launch",
+    "consumer_occurrences_in_v1": 0,
+    "speedup_attribution": false,
+    "required_real_recovery_regression": true,
+    "actual_recovery_regression": {
+      "path": "RECOVERY_REGRESSION.json",
+      "bytes": 770018,
+      "sha256": "a484d6b362f5df4eb2de92e28f750a3d66225d44ae34eec8e4168743a74cc1e0"
+    }
+  },
+  "future_runs": [
+    [
+      "s02",
+      "facts"
+    ],
+    [
+      "s01",
+      "facts"
+    ]
+  ],
+  "additional_Pro_sessions": 2,
+  "additional_training": 0,
+  "comparison_limits": "Two tasks, sequential runs, provider token cache and cold local packet creation can affect timings; component savings and single-run task wall are reported separately",
+  "native_answers_reused": false,
+  "thresholds_or_targets_changed": false,
+  "evidence_supplement": {
+    "at_UTC": "2026-11-15T16:37:27.407557+00:00",
+    "original_binding": {
+      "path": "private/optimization/BOUND_ORIGINAL.json",
+      "bytes": 4307,
+      "sha256": "2b54105573a94a153d38db4202414cf4f499fef6b9784eec47ca6ebaa7efac8c"
+    },
+    "prior_metadata": {
+      "analysis": {
+        "path": "CONSUMER_STATS_v1.json",
+        "bytes": 20363,
+        "sha256": "5ae3e4afa87addeb92d2c1e1bcdd19cf28ec37ec6c96b8eed5255ae3aba00504"
+      },
+      "correctness_audit": {
+        "path": "AUDIT_IMPLEMENTATION.json",
+        "bytes": 6937,
+        "sha256": "f97d31026d0c9687deed2a2cf2d34d261342a22fcf86d3b4f32ed65c8d5cc33e"
+      }
+    },
+    "reason": "Analyzer appended actual Blender-job status and audit appended completed recovery regression. Four raw consumer and session records remain byte-identical. Performance selection and numeric targets retain original binding.",
+    "v2_claims_before_supplement": 0,
+    "selection_changed": false
+  }
+}

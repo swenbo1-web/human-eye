@@ -1,0 +1,37 @@
+{
+  "status": "pass",
+  "checks": {
+    "expected_prelaunch_fault_raised": true,
+    "saved_blend_retained_after_reader_fault": true,
+    "read_attempt_persisted_before_launch": true,
+    "failed_reader_did_not_commit_version": true,
+    "one_recovered_version_committed": true,
+    "recovery_selected_new_attempt_r1": true,
+    "recovery_used_independent01": true,
+    "independent00_packet_never_created": true,
+    "same_operation_replay_idempotent": true,
+    "replay_started_no_job": true,
+    "exactly_one_actual_writer_and_one_actual_reader": true,
+    "actual_reader_reopened_saved_blend": true,
+    "recovery_preserved_saved_writer_bytes": true,
+    "independent_before_copy_unchanged": true,
+    "original_asset_unchanged": true,
+    "submitted_center_matches_float32_quantization": true,
+    "all_unsubmitted_native_coordinates_bitwise_preserved": true,
+    "native_polygon_topology_preserved": true,
+    "frozen_sources_unchanged_during_regression": true
+  },
+  "wall_s": 4.024727299984079,
+  "parent_cpu_s": 2.34375,
+  "nested_Blender_wall_s": 1.9479779999819584,
+  "full_local_evidence": {
+    "path": "RECOVERY_REGRESSION.json",
+    "bytes": 770018,
+    "sha256": "a484d6b362f5df4eb2de92e28f750a3d66225d44ae34eec8e4168743a74cc1e0"
+  },
+  "repair": "Persist independent-reader attempt index before launch, so a prelaunch failure can recover through a fresh job identity",
+  "actual_writer_processes": 1,
+  "actual_reader_processes": 1,
+  "injected_prelaunch_faults": 1,
+  "formal_consumer_occurrences": 0
+}
