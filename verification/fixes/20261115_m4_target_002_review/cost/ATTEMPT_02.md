@@ -1,0 +1,3 @@
+Independent checker containment correction
+
+The second run imposed strict server-reply-before-client-receive ordering. A3_main target_observation sampled server reply completion 2100 ns after the client receive completion marker. The server marker is sampled after the output flush returns, so the client can already have recorded receipt. Each interval remains within its enclosing complete client call. The corrected reconstruction checks the actual independent intervals and records cross-marker sampling order. No tolerance was introduced and no source timings were changed. Author cost_decision.py already checks client and server containment separately.
