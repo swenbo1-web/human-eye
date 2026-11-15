@@ -23,23 +23,22 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-SHAPE-RING-001",
-    "status": "dispatched",
-    "dispatch_base": "96d5249f2a08ead5ecde7e644e9a6b4f1f997c0e",
-    "contract": "docs/M6_SHAPE_RING_001_TASK.md",
-    "training_runs_authorized": 0,
-    "model_forwards_authorized": 0,
+    "id": "M6-PERCEPTION-001",
+    "status": "contract_prepared_not_yet_sent",
+    "dispatch_base": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+    "contract": "docs/M6_PERCEPTION_001_TASK.md",
+    "training_runs_authorized": 1,
+    "model": "frozen Pointfilter encoder plus1024-64-1GELU localization head",
+    "repair_outputs_authorized": 0,
     "reserved_Bunny_scores_authorized": 0,
     "cases": 348,
-    "normal_controls": 42,
-    "purpose": "One hollow-versus-filled geometry and point-versus-cluster diagnostic before domain-training decision",
-    "contract_commit": "8c47b6dd225b174edba6a3345c7bafe0bc6410d8"
+    "purpose": "Plugin-internal perception and stable region facts before LLM consumption, limited to existing task ROI"
   },
   "reviewed_plan_commit": "65baaec94eabdf29edcd7a182f117f76d6771615",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
   "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:10",
-  "last_observed_status": "One RING001 task message accepted after PRETRAIN independent review; no subsequent poll or duplicate reminder",
-  "pending_followup": true,
+  "last_observed_status": "Author completed idle; fixed delivery reviewed; next perception contract prepared",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -138,31 +137,39 @@
       "review_doc": "docs/M6_SHAPE_PRETRAIN_001_REVIEW.md",
       "evidence": "verification/m6_shape_pretrain_001_review/INDEPENDENT_RESULTS.json",
       "review_commit": "8c47b6dd225b174edba6a3345c7bafe0bc6410d8"
+    },
+    {
+      "cycle_id": "M6-SHAPE-RING-001",
+      "commit": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+      "decision": "engineering_accepted_fixed_ring_cluster_construction_closed",
+      "review_doc": "docs/M6_SHAPE_RING_001_REVIEW.md",
+      "evidence": "verification/m6_shape_ring_001_review/INDEPENDENT_RESULTS.json"
     }
   ],
-  "model_selection": "Local dent residual candidate closed after first6290-parameter trial and one6339-parameter localization/conditional optimization; quality failed. Six problem families remain a roadmap, not six trained models.",
+  "model_selection": "Current first perception candidate is frozen pretrained local geometry encoder with small localization head; old repair networks and fixed annular construction closed; no product model accepted.",
   "optional_probe": "M6-CANDIDATE-VALUE-001 remains optional, not dispatched",
   "workflow_doc": "docs/M6_REVIEW_WORKFLOW.md",
   "operation_boundaries": [
-    "Current learned candidate and bounded diagnostics closed; no third training or additional witness",
-    "Future surface-loss training effect remains unmeasured; no claim all shape experts impossible",
-    "No automatic next family/value probe; no model/asset/product/paid operations",
+    "One new perception candidate and once fixed training; no repair decoder or full-encoder fine-tune",
+    "Existing synthetic ROI task only; full-scene coverage and semantic part labels not established",
+    "No original assets, production, competitor branches or paid API",
     "Callback/user instruction only; no timer or polling"
   ],
   "stop_rule": "Finish reviewed authorized stage or report a true external blocker with no independent work. No scheduled polling. Do not create tasks merely to keep looping.",
   "previous_cycle": {
-    "id": "M6-SHAPE-TASK-001",
-    "status": "independently_reviewed_scope_clarified",
-    "dispatch_base": "66e171ceb72c930ba534e1eb8317791d00bd2dba",
-    "contract": "docs/M6_SHAPE_TASK_001_TASK.md",
-    "review_status": "source_and_no_new_training_accepted_scope_clarified",
+    "id": "M6-SHAPE-RING-001",
+    "status": "independently_reviewed_closed",
+    "dispatch_base": "96d5249f2a08ead5ecde7e644e9a6b4f1f997c0e",
+    "contract": "docs/M6_SHAPE_RING_001_TASK.md",
     "training_runs_authorized": 0,
+    "model_forwards_authorized": 0,
     "reserved_Bunny_scores_authorized": 0,
-    "purpose": "One deployable task/input/direct-baseline decision; enter one justified learning task or close current no-reference dent training route",
-    "contract_commit": "7dbbdd4fe53273b867d9c34e31ab367cad75f88f",
-    "delivery_commit": "29e81ed1d1b2fde2464cdbf856f96086f9ae4b46",
-    "review_doc": "docs/M6_SHAPE_TASK_001_REVIEW.md",
-    "review_commit": "75fa50b9d66aa91a5ba336438b4895354ec97500"
+    "cases": 348,
+    "normal_controls": 42,
+    "purpose": "One hollow-versus-filled geometry and point-versus-cluster diagnostic before domain-training decision",
+    "contract_commit": "8c47b6dd225b174edba6a3345c7bafe0bc6410d8",
+    "delivery_commit": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+    "review_doc": "docs/M6_SHAPE_RING_001_REVIEW.md"
   },
   "last_dispatch": {
     "cycle_id": "M6-SHAPE-OBJECTIVE-001",
@@ -215,9 +222,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-SHAPE-OBJECTIVE-001",
+    "cycle": "M6-SHAPE-RING-001",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "e2d163159bd9c3110395304b16ac9cd43a0da905"
+    "fixed_delivery": "7ae143a6b062ac3c9fedcbf50939b79082884963"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -402,14 +409,12 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "dispatched_awaiting_completion_callback",
-    "cycle_id": "M6-SHAPE-RING-001",
+    "status": "contract_prepared_not_yet_sent",
+    "cycle_id": "M6-PERCEPTION-001",
     "M6_overall_complete": false,
     "new_experts_accepted": 0,
-    "reason": "User supplied a distinct annular hypothesis; prior R1 did not test it, and pretrained raw transfer failed. One bounded geometry screen before selecting learning input/target.",
-    "model_size_cap": null,
-    "Pointfilter_finetuning": "not_run_pending_bounded_diagnostic",
-    "no_additional_radius_or_threshold_search": true,
+    "reason": "Latest user explicitly wants small-model perception processing before LLM; test one learned localization readout, defer direct repair fine-tune",
+    "Pointfilter_repair_finetuning": "deferred",
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -505,5 +510,24 @@
     "thread_id": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b",
     "callback_to": "01a1d986-24a4-73f1-9689-6845d1f01ef3",
     "polling": false
+  },
+  "shape_ring_review": {
+    "author_commit": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+    "new_manifest_records": 850,
+    "prior_independent_input_matches": 1526,
+    "cases": 348,
+    "F_point_observations": 109443,
+    "independent_fit_queries": 2088,
+    "independent_BFS_queries": 124,
+    "numeric_assertions": 102033,
+    "evidence_assertions": 133,
+    "depth_ratio_median_center_off": [
+      2.380436713,
+      3.738802989
+    ],
+    "validation_dents_zero_detected": 108,
+    "decision": "close_fixed_ring_cluster",
+    "new_training": 0,
+    "new_model_forward": 0
   }
 }
