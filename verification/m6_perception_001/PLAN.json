@@ -1,0 +1,178 @@
+{
+  "cycle_id": "M6-PERCEPTION-001",
+  "base_commit": "7ae143a6b062ac3c9fedcbf50939b79082884963",
+  "contract_commit": "9f0d2cc3dcd9d7c0213c4fe62ad24af7b85ac077",
+  "contracts": [
+    {
+      "source": "docs/M6_PERCEPTION_001_TASK.md",
+      "path": "M6_PERCEPTION_001_TASK.md",
+      "bytes": 9676,
+      "sha256": "aeb560208d94df52be310e5ed3f22ac6989b64550dbd92c2b644c3adf7fd0c3d"
+    },
+    {
+      "source": "docs/M6_SHAPE_RING_001_REVIEW.md",
+      "path": "M6_SHAPE_RING_001_REVIEW.md",
+      "bytes": 5587,
+      "sha256": "b0d1f22b884bf8189b1a31c70b923897deafe48929d0f0548df1db9c905899d5"
+    }
+  ],
+  "human_instruction": {
+    "thread": "local/01a1d986-24a4-73f1-9689-6845d1f01ef3",
+    "turn": "01a1dec3-9b2e-7b31-9feb-2728bf167abc",
+    "message_id": "01a1dec7-0d7e-7f30-9e3a-db1aa7de5093",
+    "text": "我的意思我们后续可以在插件做一个小模型，直接对当前插件的数据也做一个处理，给大语言模型，然后处理",
+    "read_before_registration": true
+  },
+  "data": {
+    "observations": 348,
+    "development_training": 231,
+    "transfer_validation": 117,
+    "patches": 42,
+    "F_point_observations": 109443,
+    "normal_controls": 42,
+    "calibration_development_normal": 33,
+    "validation_normal": 9,
+    "center_dents": 54,
+    "offcenter_dents": 54,
+    "scope": "task-supplied F only, current full source for neighborhood, no whole-object/scene scan or body-part semantics",
+    "source_limits": "four characters unknown common upstream group and dependent patches/amplitudes, Armadillo previously used transfer shape with official pretraining shape overlap"
+  },
+  "encoder": {
+    "repository": "dongbo-z/Pointfilter",
+    "commit": "6e0ec1eac59ca9f81ee9ca6751c5b3f25effeda2",
+    "checkpoint_sha256": "86600e6d57fab7887fbda0cf54292578a52d956c36766a130d1e32a475d18cee",
+    "source_cache": "verification/m6_shape_pretrain_001/private/pointfilter",
+    "module": "model.encoder only, including max pooling, decoder forwards0",
+    "expected_parameters": 702464,
+    "state": "all parameters and BatchNorm buffers frozen eval, canonical tensor-state hash before/after including BN plus checkpoint file identities separately",
+    "input": "PRETRAIN first iteration complete current bbox diagonal*.05, current point center, official sklearn PCA and500 sampling",
+    "sampling": "case-independent RandomState1729, sorted case IDs and ascending original F sourceIDs, <=500 with replacement elsewithoutreplacement",
+    "batch": 64,
+    "threads": 1,
+    "output": "float32 N-by1024 cache plus validmask and actual neighbors/sample/PCA identities",
+    "invalid": "feature0, original F retained, failure reasons preserved, predictedscore0"
+  },
+  "normalization": {
+    "population": "allF development231 only, including invalid zero features",
+    "statistics": "float64 two-pass channel mean and population std ddof0",
+    "divisor": "std<1e-6 ->1, otherwise std",
+    "transform": "float64 (features-mean)/divisor then castfloat32",
+    "validation_statistics_used": false
+  },
+  "head": {
+    "architecture": "Linear(1024,64)->GELU(approximate=none)->Linear(64,1)",
+    "expected_parameters": 65665,
+    "expected_active_encoder_plus_head_parameters": 768129,
+    "seed": 1729,
+    "Torch_seed_scope": "manual_seed1729 for head initialization",
+    "sampler": "independent NumPy RandomState1729, each sample draws sorted development case index uniformly then that case F row uniformly, sequential alternating draws",
+    "steps": 1200,
+    "batch": 1024,
+    "optimizer": "AdamW lr1e-3 weight_decay1e-4 betas(.9,.999) eps1e-8 foreachFalse",
+    "loss": "BCEWithLogits mean, pos_weight=(1-pi)/pi where pi is equal-case mean S fraction across231dev",
+    "labels": "ordinary damaged mask for allF, normal and weakdamaged retained, no strong-only head",
+    "selection": "final step1200 only, no validation checkpoint selection",
+    "save": "initial/final head and encoder canonical identity, optimizer/RNG/log/sampling trajectory, allpredictions"
+  },
+  "execution_order": [
+    "freezePLAN",
+    "label-free encoder features348",
+    "normalize+train on231dev only and devpredictions",
+    "calibrate33normal q95 once",
+    "commit developer features/training/calibration identities",
+    "predict117 validation withoutlabels",
+    "evaluate348 A/B withvalidationlabels",
+    "region facts+reference roundtrip+internalQA",
+    "fixedresult commit+HANDOFF+one callback"
+  ],
+  "ranking_metrics": {
+    "scores": [
+      "perception",
+      "old_p",
+      "solid_point",
+      "ring_point"
+    ],
+    "same_F": true,
+    "ordinary": "old S label on fullF",
+    "strong": "norm(reference-observed)>0.10ell on same F, weakdamaged negatives counted",
+    "ROC": "average-rank tie AUC, no bothclassesNone",
+    "AP": "grouped thresholds, nopositiveNone",
+    "patch_macro": "mean valid case metrics withinpatch then equal mean patches, full denominators",
+    "point_pool": "allF includingnormalcontrols",
+    "missing_baseline": "score0 retained with availablefalse and no candidate gain pass onmissingcomparison"
+  },
+  "A_attention": {
+    "budget": 0.25,
+    "area": "current fullsource lumped vertex area, old RING currentarea cache can be reused byidentity",
+    "ordering": "score descending, source ID ascending ties",
+    "prefix": "add in order while next keeps sum<=.25sumFarea, stop onfirstexceed, no skipping orlabeluse",
+    "metrics": "ordinary/strong point and area recall/precision, actual area fraction, zerohit cases, largest missed S component bycurrentarea and size, normal candidates remain unconfirmed",
+    "gates_each_validation_position": {
+      "patch_macro_AUC_min": 0.8,
+      "patch_macro_AP_gain_vs_old_p_min": 0.05,
+      "patch_macro_area_recall_min": 0.6,
+      "patch_macro_area_recall_gain_vs_old_p_min": 0.1
+    }
+  },
+  "B_anomaly": {
+    "calibration": "newscore only, linearq95 of33developer normal patchmax once, strict>",
+    "normal_calibration_reused_training": "yes descriptiveFPR only",
+    "gates": {
+      "validation_normal_false_patches_max": 1,
+      "validation_center_patch_macro_area_recall_min": 0.6,
+      "validation_offcenter_patch_macro_area_recall_min": 0.6
+    },
+    "score_semantics": "uncalibrated anomaly score, AandB verdicts separate"
+  },
+  "facts": {
+    "A_regions": "connected original F source topology, sort sum(currentarea*score)descending then minsourceID, top3 text+remaining count/area coverage, complete regions kept",
+    "B": "separate thresholded model prediction report, A stays unconfirmed inspectioncandidate",
+    "fields": [
+      "source/objectID",
+      "observation SHA/version",
+      "Fscope",
+      "regionreference",
+      "pointcount/currentarea",
+      "current centroid/bbox",
+      "score summary",
+      "selection method",
+      "append-read geometry location"
+    ],
+    "centroid": "current lumped-area weighted, zero total fallback pointmean explicitlymarked",
+    "references": "bind source+observationSHA+snapshotSHA+FIDsSHA+encoder/head/normalization identity+mode+sortedregion sourceIDs, roundtrip verify",
+    "semantics": "geometric measurements actual, suspected dent model prediction only, no partnames/causalstory/artisticclaim",
+    "raw_embeddings_in_ordinary_text": false,
+    "manual_checks": "lex first devnormal, valcenter/offcenter firstnonnormal, remaining348fields/reference machinechecked",
+    "LLMconsumer_or_product_integration": false
+  },
+  "budget": {
+    "compute_wall_s": 7200,
+    "target_tree_RSS_bytes": 4294967296,
+    "threads": 1,
+    "new_dependencies": 0,
+    "environment": "old CPUvenv and PRETRAIN private deps read-only",
+    "performance": "sharedmachine, complete pipeline cost measured, noformal speedclaim"
+  },
+  "cost": "data/fullsource indexing/PCA/sampling/encoder/cache/load/head training/headprediction/regionaggregation/report/evaluation/verification/failures, encoder first cost included despiteheadcache reuse",
+  "zero_operations": [
+    "decoder forwards",
+    "repair outputs",
+    "encoderfinetuning",
+    "model or seed sweeps",
+    "Bunny scoring",
+    "LLMconsumer/API",
+    "Blender/asset/product/M3 integration",
+    "newdependencyinstall",
+    "GoogleKey/APIpaidcalls",
+    "otherbranchwrites"
+  ],
+  "decision": "A/B separately tested, one evidence-based next suggestion for review, no automaticsecondround orPointfilterrepairfinetune",
+  "delivery": "onlynew currentbatch publiccode/results, privateweights/geometry/cache, fixedcommit HANDOFF one callback thenend",
+  "preparation": {
+    "metadata_contract_copy_wall_s": 0.06515680000302382,
+    "CPU_s": 0.03125,
+    "newfeature_ortraining_runs": 0,
+    "read_thread_argument_failure": "first maxOutputCharsPerItem22000 exceededtool limit20000, retried18000 successful",
+    "agent_early_directory_reads": "directory notcreated yet, noarrays/forward"
+  }
+}
