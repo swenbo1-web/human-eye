@@ -529,6 +529,49 @@ def _observation_affine_interval(bounds, coefficients, translation):
         return None
 
 
+def _observation_outside_xy_viewports(bounds, cameras):
+    """Prove strict exclusion from all six published XY viewports."""
+    tested = 0
+    if bounds is None:
+        return False, tested
+    try:
+        views = cameras['views']
+        if (type(views) is not list or len(views) != 6
+                or [pose['name'] for pose in views] != ['SCENE', 'TOP', 'LEFT', 'RIGHT', 'FRONT', 'BACK']):
+            return False, tested
+        for pose in views:
+            tested += 1
+            view, projection = pose['view_matrix'], pose['projection_matrix']
+            if (pose.get('projection') != 'orthographic'
+                    or any(type(matrix) is not list or len(matrix) != 4
+                           or any(type(row) is not list or len(row) != 4 for row in matrix)
+                           for matrix in (view, projection))
+                    or any(type(value) not in (int, float) or not math.isfinite(value)
+                           for matrix in (view, projection) for row in matrix for value in row)
+                    or view[3] != [0., 0., 0., 1.] or projection[3] != [0., 0., 0., 1.]
+                    or projection[0][1:] != [0., 0., 0.]
+                    or [projection[1][0], projection[1][2], projection[1][3]] != [0., 0., 0.]
+                    or projection[0][0] <= 0 or projection[1][1] <= 0):
+                return False, tested
+            outside = False
+            for axis in (0, 1):
+                interval = _observation_affine_interval(bounds, view[axis][:3], view[axis][3])
+                if interval is None:
+                    return False, tested
+                lower = math.nextafter(interval[0] * projection[axis][axis], -math.inf)
+                upper = math.nextafter(interval[1] * projection[axis][axis], math.inf)
+                if not math.isfinite(lower) or not math.isfinite(upper):
+                    return False, tested
+                if upper < -1 or lower > 1:
+                    outside = True
+                    break
+            if not outside:
+                return False, tested
+        return True, tested
+    except (TypeError, ValueError, KeyError, IndexError, OverflowError):
+        return False, tested
+
+
 def _observation_target_cameras(target_vertices, world_bounds):
     """Fit target XY and enclose whole-scene depth using dependency-free math."""
     vertices = [_vector(point, 'target vertex') for point in target_vertices]
@@ -1386,7 +1429,7 @@ class BlenderSceneHost:
             return self._capture_state(self._capture(_resident=True),_digest(['scene']))
 
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
-        """Acquire a single observation target and its whole-scene occluders."""
+        """Acquire one target and possible occluders in its six viewports."""
         self._main_thread()
         if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
                 or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
@@ -1491,6 +1534,21 @@ class BlenderSceneHost:
             retained = objects
             retained_ids = ids
             excluded_ids = []
+            bound_tests = 0
+            if not require_complete and len(initial_ids) < len(objects):
+                retained, retained_ids = [], []
+                for obj, row in zip(objects, rows):
+                    checkpoint()
+                    oid = row['object_id']
+                    outside = False
+                    if oid not in initial_ids:
+                        outside, tested = _observation_outside_xy_viewports(row['bounds_world_m'], cameras)
+                        bound_tests += tested
+                    if outside:
+                        excluded_ids.append(oid)
+                    else:
+                        retained.append(obj)
+                        retained_ids.append(oid)
             stages['viewport_selection'] = interval(started)
             started = time.perf_counter_ns()
             remaining = [obj for obj in retained if self.object_id(obj) not in meshes]
@@ -1537,12 +1595,12 @@ class BlenderSceneHost:
             scene = self._capture_state(scene, selection_key)
             stages['source_validation_and_binding'] = interval(started)
             metadata = scene['observation_target']
-            metadata['work'] = dict(strategy='complete', scene_objects=len(objects), retained_objects=len(retained),
+            metadata['work'] = dict(strategy='selective_xy_viewports', scene_objects=len(objects), retained_objects=len(retained),
                 excluded_objects=len(excluded_ids), source_vertices_metadata=source_vertices,
                 triangle_budget_upper=triangle_budget, source_counts_require_complete=require_complete,
                 expanded_vertices=sum(len(mesh['vertices']) for mesh in ordered),
                 expanded_triangles=sum(len(mesh['faces']) for mesh in ordered),
-                bound_tests=0, tight_bounds_vertices_scanned=tight_vertices,
+                bound_tests=bound_tests, tight_bounds_vertices_scanned=tight_vertices,
                 target_camera_vertex_projections=6 * len(meshes[target_id]['vertices']),
                 residency_delta={key: self._residency_stats[key] - value for key, value in before.items()},
                 stages=stages)

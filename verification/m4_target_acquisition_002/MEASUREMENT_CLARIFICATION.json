@@ -1,0 +1,29 @@
+{
+  "clarified_ns": 241822673397100,
+  "client_complete_call": {
+    "duration_field": "RESULT.requests.client_outer_including_recording_ns",
+    "end_field": "RESULT.requests.client_call_completed_ns",
+    "semantics": "Outer StdioClient.call including its finally RECEIPT.json write",
+    "start_field": "RESULT.requests.client_call_started_ns"
+  },
+  "client_transport": {
+    "duration_field": "RESULT.requests.client_flush_to_received_ns",
+    "end_field": "RESULT.requests.client_received_complete_ns",
+    "semantics": "Existing reader event follows original raw stdout recording",
+    "start_field": "RESULT.requests.client_stdin_flushed_ns"
+  },
+  "frozen_harness_sha256": "107958fd211958a969a40dce39d6a19e3cb59325734b1075d7475e42cd573595",
+  "internal_client_record": {
+    "end_field": "stdio call RECEIPT.closed_ns",
+    "semantics": "Internal interval closes before RECEIPT.json persistence and is separate from complete outer call",
+    "start_field": "stdio call RECEIPT.started_ns"
+  },
+  "preregistration_sha256": "5013cc3402410dab014bff5b54c2c342f2146aa7c282332fb291174af920167e",
+  "primary_acceptance": {
+    "complete_session": "RESULT.complete_session_ns",
+    "server": "RESULT.requests.server_request_to_reply_ns",
+    "thresholds_from": "PREREGISTRATION.json"
+  },
+  "schema": "m4-acquisition-002-measurement-clarification-v1",
+  "scope": "Pre-formal naming clarification from frozen actual harness code"
+}
