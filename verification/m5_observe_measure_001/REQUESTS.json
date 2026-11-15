@@ -1,0 +1,185 @@
+{
+  "A_main": [
+    {
+      "id": "observe",
+      "jsonrpc": "2.0",
+      "method": "tools/call",
+      "params": {
+        "arguments": {
+          "include_image": true,
+          "query": {
+            "mode": "active_observation",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              }
+            ]
+          },
+          "session_id": "m5-observe-measure-001"
+        },
+        "name": "human_eye_scene_observe"
+      }
+    },
+    {
+      "id": "measure",
+      "jsonrpc": "2.0",
+      "method": "tools/call",
+      "params": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "mode": "task",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              },
+              {
+                "name": "M4_Near"
+              }
+            ],
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          },
+          "session_id": "m5-observe-measure-001"
+        },
+        "name": "human_eye_scene_observe"
+      }
+    }
+  ],
+  "B_main": [
+    {
+      "id": "observe_measure",
+      "jsonrpc": "2.0",
+      "method": "tools/call",
+      "params": {
+        "arguments": {
+          "include_image": true,
+          "query": {
+            "mode": "active_observation",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              }
+            ],
+            "task_query": {
+              "mode": "task",
+              "objects": [
+                {
+                  "name": "M4_Far_00"
+                },
+                {
+                  "name": "M4_Near"
+                }
+              ],
+              "requested_facts": [
+                "surface_proximity"
+              ]
+            }
+          },
+          "session_id": "m5-observe-measure-001"
+        },
+        "name": "human_eye_scene_observe"
+      }
+    }
+  ],
+  "full_delivery_check": "Actual full formatter of the same installed producer evidence, plus a registered full response during the state-control slot. No extra qualification starts or uncounted observation.",
+  "public_default_detail": "omitted; active observation defaults to brief, ordinary task defaults to full",
+  "schema": "m5-observe-measure-public-requests-v1",
+  "state_main": {
+    "id": "state_observe_measure",
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "arguments": {
+        "include_image": true,
+        "query": {
+          "mode": "active_observation",
+          "objects": [
+            {
+              "name": "M4_Far_00"
+            }
+          ],
+          "task_query": {
+            "mode": "task",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              },
+              {
+                "name": "M4_Near"
+              }
+            ],
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          }
+        },
+        "session_id": "m5-observe-measure-001"
+      },
+      "name": "human_eye_scene_observe"
+    }
+  },
+  "state_missing": {
+    "id": "missing_object",
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "arguments": {
+        "include_image": true,
+        "query": {
+          "mode": "active_observation",
+          "objects": [
+            {
+              "name": "M4_Far_00"
+            }
+          ],
+          "task_query": {
+            "mode": "task",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              },
+              {
+                "name": "M4_Far_11"
+              }
+            ],
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          }
+        },
+        "session_id": "m5-observe-measure-001"
+      },
+      "name": "human_eye_scene_observe"
+    }
+  },
+  "task_only": [
+    {
+      "id": "measure",
+      "jsonrpc": "2.0",
+      "method": "tools/call",
+      "params": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "mode": "task",
+            "objects": [
+              {
+                "name": "M4_Far_00"
+              },
+              {
+                "name": "M4_Near"
+              }
+            ],
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          },
+          "session_id": "m5-observe-measure-001"
+        },
+        "name": "human_eye_scene_observe"
+      }
+    }
+  ]
+}
