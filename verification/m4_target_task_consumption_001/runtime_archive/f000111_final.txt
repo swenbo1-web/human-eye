@@ -1,0 +1,90 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "R0",
+        "source_triangle_index_ranges": [[0, 511]],
+        "unique_geometry_description": "位于 x=1 的完整单位正方形，y、z 均在 [0,1]；512 个源三角形共享边连通且共面，绕序法向为负 X。"
+      },
+      "center_world_m": [1.0, 0.5, 0.5],
+      "bounds_world_m": [[1.0, 0.0, 0.0], [1.0, 1.0, 1.0]],
+      "boundary_vertices_world_m": [
+        [1.0, 0.0, 0.0],
+        [1.0, 0.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [1.0, 1.0, 0.0]
+      ],
+      "unit_normal_world": [-1.0, 0.0, 0.0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "live-source-001：M4_Far_00 当前世界顶点和原始源三角列表。",
+        "live-source-002：全场景遮挡物几何，包含 M4_Near。",
+        "execute_python 区域计算结果：REGION 0 511，count=512。",
+        "execute_python 六视图连续投影及深度比较结果：region=0。"
+      ],
+      "notes": "唯一正向视图为 LEFT，但存在已证实的正面积几何遮挡：M4_Near 的局部源三角形 0 遮住该区域靠近 [1,0,0] 的微小三角部分。遮挡区域近似满足 y>=0、z>=0、y+z<=0.004000000189989805，世界表面积约 0.00000800000076 平方米；LEFT 中的 NDC 投影遮挡面积为 0.000004155632533968272，而区域投影总面积为 0.5194540174005858。区域完整位于 LEFT 视锥内，失败原因不是裁切。SCENE、RIGHT 为背向；TOP、FRONT、BACK 为侧向零投影面积。因此有限池内不存在整个区域正向无遮挡视图，不能以局部可见或清楚边缘充当完整见证。本次未构造 LEFT 图像，其像素可读性保持未运行；这一待证实的像素属性不改变已证实的几何不完整结论。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "R1",
+        "source_triangle_index_ranges": [[512, 513]],
+        "unique_geometry_description": "位于 z=2 的完整单位正方形，x 在 [1,2]、y 在 [0,1]；两个源三角形共享边连通且共面，绕序法向为正 Z，与 R0 不连通。"
+      },
+      "center_world_m": [1.5, 0.5, 2.0],
+      "bounds_world_m": [[1.0, 0.0, 2.0], [2.0, 1.0, 2.0]],
+      "boundary_vertices_world_m": [
+        [1.0, 0.0, 2.0],
+        [2.0, 0.0, 2.0],
+        [2.0, 1.0, 2.0],
+        [1.0, 1.0, 2.0]
+      ],
+      "unit_normal_world": [0.0, 0.0, 1.0],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "native-image-001",
+        "view_name": "TOP",
+        "surface_pixels": 216225,
+        "boundary_pixels": 1856
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "live-source-001：M4_Far_00 局部源三角形 512、513 及其世界顶点。",
+        "live-source-002：完整当前场景几何。",
+        "execute_python 区域计算结果：REGION 512 513，count=2。",
+        "execute_python 六视图连续投影及深度比较结果：region=1。",
+        "render_views(['TOP'])：native-image-001，source_ref=live-source-002，512×512。",
+        "execute_python READABILITY：native-image-001 的 color、owners、triangle_ids 缓冲统计。",
+        "read_images(['native-image-001'])：实际 TOP PNG 图像。"
+      ],
+      "notes": "连续几何核验表明 SCENE、TOP、LEFT、RIGHT、FRONT、BACK 均为该区域的正向、完整入框、无遮挡视图。实际取得的 TOP 图像已经构成完整可读见证。表面掩码使用 owners=13 且全局 triangle_ids 在闭区间 [6146,6147]，通过该帧 source_face_offsets[13]=5634 对应局部三角形 [512,513]。216225 个可见表面像素超过阈值16；1856 个去重边界表面像素各自至少有一个四邻域外侧像素，其8位 RGB 欧氏距离达到24，超过阈值4。区域 RGB 为 [164,173,187]。其余五个视图未构造图像，像素可读性未运行，仍待证实；不影响 TOP 已成立的见证。"
+    }
+  ],
+  "source_references": [
+    "源身份：kind=actual_owned_Blender_evaluated_mesh；instance_id=423b8f9f53194f959d3587a76503ace6；pid=22332；frame=1；subframe=0；scale_length=1。",
+    "asset_sha256=2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164。",
+    "目标 object_id=blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d；instance_id=160。",
+    "live-source-001 为目标读取；live-source-002 为同源全场景读取，两者源身份一致。",
+    "execute_python 实际读取的 cameras['views']：SCENE、TOP、LEFT、RIGHT、FRONT、BACK；均为512×512正交观察设备。",
+    "区域划分采用共享源边连通与共面同向条件；中心采用三角形面积加权质心。全部514个源三角形恰好划分为两个最大连通平面区域。",
+    "几何完整性使用相机矩阵连续投影、视锥检查及全场景源三角形交叠深度比较，不以像素是否采到微小遮挡替代连续几何判断。",
+    "native-image-001：view_name=TOP；source_ref=live-source-002；PNG_sha256=257746c95fb7059523f6ced852a0f5138b63e67ba12ecfbcca0f6401a40b1a2e；NPZ_sha256=1939778223d3565131cb5114e8a0042e8f1e5ae5b07b94cf6991063993e72512；camera_sha256=349120c56ef51295bb2d40f49e1c7031cd5ea09712f3b80cedcf1fad1a664337。"
+  ],
+  "limitations": [
+    "完整性结论仅适用于当前六个有限观察设备，不推广到任意其他视点。",
+    "本次仅实际构造并读取 TOP 图像；其他视图的像素可读性未运行，不能声称已取得其图像证据。",
+    "边界像素按区域表面掩码的四邻域外侧比较，按表面像素去重计数，不按邻接像素对重复累计。",
+    "几何计算采用浮点数：共面与法向比较容差为1e-10，投影面积过滤阈值为1e-14；已报告的 LEFT 遮挡面积明显高于该阈值。",
+    "操作仅为读取与计算，未移动、编辑或保存场景及文件。",
+    "几何形状和可见性事实本身不构成损伤判断。"
+  ]
+}

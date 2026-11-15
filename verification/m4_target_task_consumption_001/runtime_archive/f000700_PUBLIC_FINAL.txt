@@ -1,0 +1,83 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_302a5fafb5f3297564c25caf",
+        "source_triangle_index_ranges": [[512, 513]],
+        "unique_geometry_description": "位于 z=2、x∈[1,2]、y∈[0,1] 的最大边连通平面正方形区域；源三角形绕序法向为 +Z。"
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "boundary_vertices_world_m": [
+        [1, 0, 2],
+        [2, 0, 2],
+        [2, 1, 2],
+        [1, 1, 2]
+      ],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "active-host-image:deed2f93c7a0d474faca4519923b5a7c5bafc347e66ce38f9beb2ba646395aea",
+        "view_name": "SCENE",
+        "surface_pixels": 17131,
+        "boundary_pixels": 538
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "E1: regions.rows[0]，完整源三角形集合、中心、半边向量、法向和 covered/observed_readable 结论",
+        "E1: pixels 中 image_index=0、region_index=0 的记录；front_facing=true，visible_surface_pixels=17131，contrasting_boundary_pixels=538",
+        "E1: images.rows[0] 与 observations.rows[0]，将 SCENE 实际图像绑定至区域0",
+        "E2: live-source-001，M4_Far_00 的局部源三角形512=[289,290,291]、513=[289,291,292]及对应世界顶点"
+      ],
+      "notes": "两个源三角形共享对角边，构成完整的1米×1米最大连通平面区域。SCENE 中存在整个区域正向、几何完整且无遮挡的实际图像见证；17131≥16，538≥4。边界计数采用四邻域外侧像素 RGB 欧氏距离≥24 的当前工具规则。frame_ref 保留工具实际返回的原生图像引用，原字段名为 image_ref。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_8e86ecd4ee8ee363517fa26b",
+        "source_triangle_index_ranges": [[0, 511]],
+        "unique_geometry_description": "位于 x=1、y∈[0,1]、z∈[0,1] 的最大边连通平面正方形区域，由16×16网格的512个源三角形组成；源三角形绕序法向为 -X。"
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "boundary_vertices_world_m": [
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0]
+      ],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "E1: regions.rows[1]，源三角形闭区间[0,511]、中心、半边向量及法向",
+        "E1: regions.rows[1].unobserved_reason=positive_area_occlusion_all_front_views",
+        "E1: unobserved_view_groups 与 inspection.view_names；SCENE/RIGHT 背向，TOP/FRONT/BACK 侧向，LEFT 存在正面积遮挡",
+        "E1: pixels 中 image_index=0、region_index=1 的记录；front_facing=false，visible_surface_pixels=22931，contrasting_boundary_pixels=561，readable=false",
+        "E2: live-source-001，M4_Far_00 的世界顶点0至288及局部源三角形0至511"
+      ],
+      "notes": "全部512个三角形属于同一最大边连通平面区域，不能将网格单元分别视为独立区域。有限池内无完整正向无遮挡视图：SCENE、RIGHT 为背向；TOP、FRONT、BACK 为侧向；唯一正向候选 LEFT 存在正面积几何遮挡。因此不存在满足本任务要求的完整可读见证。SCENE 虽有22931个区域可见像素和561个达标对比边界像素，但为背向图像，不能据此证明完整正向可读；失败原因不是像素数量不足。其余五个视图未构造实际图像，像素可读性保持未运行，若要报告它们的像素表现仍待取证；这不改变已经证实的有限池几何否定结论。"
+    }
+  ],
+  "source_references": [
+    "E1: 本槽P2实际调用 active_observation(include_images=true) 的完整返回结果及随附512×512原生图像；schema=active-observation-brief-v5；read_only=true；scene_revision=blender:7a356bb91df5e06760cf8920e43a8089917b556360d133ee2d25426ec5eb4a92；binding_sha256=05339939a229ec1eeba6abe62237bc9d474e1cfa4098bd7e8e548a5e6be67821",
+    "E1图像: view_name=SCENE；image_ref=active-host-image:deed2f93c7a0d474faca4519923b5a7c5bafc347e66ce38f9beb2ba646395aea；image_sha256=7252aee6e760c949a070cc74f8d5bf7d3889d048fa37c30872aa868f78802516",
+    "E2: 本轮 scene_data(selectors=[\"M4_Far_00\"])；source_ref=live-source-001；kind=actual_owned_Blender_evaluated_mesh；frame=1；subframe=0；scale_length=1；object_id=blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d；instance_id=160",
+    "有限视图池: [SCENE, TOP, LEFT, RIGHT, FRONT, BACK]；E1 inspection.state=finite_pool_exhausted，stop_reason=no_unobserved_geometric_candidates；目标514个源三角形全部受支持，恰分为上述两个区域"
+  ],
+  "limitations": [
+    "仅针对本槽当前加载场景及注册的六视图有限池；不外推其他相机位置或连续视点空间。",
+    "实际取得的图像只有SCENE；其他视图的几何判定复用当前观察工具已完成的有限池结果，其像素可读性未运行。",
+    "中心为各完整矩形区域的几何中心；边界列表为完整外轮廓角点，省略共线网格边界顶点；法向均为按源三角形顶点绕序得到的带方向单位向量。",
+    "仅执行只读观察与源数据读取，未移动、编辑或保存场景；未独立核对磁盘文件。",
+    "几何形状、朝向、遮挡及可见性事实本身不构成损伤判断。"
+  ]
+}

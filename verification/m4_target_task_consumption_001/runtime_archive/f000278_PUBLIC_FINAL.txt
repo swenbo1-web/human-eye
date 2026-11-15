@@ -1,0 +1,72 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "R0",
+        "source_triangle_index_ranges": [[0, 511]],
+        "unique_geometry_description": "位于 x=1 的完整单位正方形，0≤y≤1、0≤z≤1；源三角形绕序法向为世界 -X。"
+      },
+      "center_world_m": [1.0, 0.5, 0.5],
+      "bounds_world_m": [[1.0, 0.0, 0.0], [1.0, 1.0, 1.0]],
+      "unit_normal_world": [-1.0, 0.0, 0.0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "live-source-001：M4_Far_00 当前世界顶点及局部源三角形 0–511。",
+        "execute_python：按有向共面条件及共享几何边计算连通分量，得到本区域共512个三角形，面积1平方米。",
+        "execute_python：使用 cameras.views 的六个实际正交观察设备，对全部当前场景三角形进行前后深度裁剪及投影多边形相交。",
+        "live-source-001：M4_Near 局部源三角形0，顶点为 [0.004000000189989805,0,0]、[0.004000000189989805,1,0]、[0.004000000189989805,0,1]。"
+      ],
+      "notes": "唯一正向视图为LEFT，法向与指向观察设备的单位方向点积为0.7071067811865475。该视图中区域整体位于裁剪范围内，但被M4_Near遮挡：目标平面上的遮挡三角形顶点约为[1,0,0]、[1,0.004000000189989805,0]、[1,0,0.004000000189989805]，面积约0.000008000000759959平方米，严格大于零，故不是几何完整视图。投影遮挡面积约为0.000004155632533969 NDC平方单位。SCENE和RIGHT为背向；TOP、FRONT和BACK为侧向零投影面积。没有完整可读图像见证的原因已由几何遮挡及朝向证实，而不是已证明像素对比不足。LEFT等未构造图像的像素可读性保持未运行；不以可能看不见的细小遮挡推定几何完整。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "R1",
+        "source_triangle_index_ranges": [[512, 513]],
+        "unique_geometry_description": "位于 z=2 的完整单位正方形，1≤x≤2、0≤y≤1；源三角形绕序法向为世界 +Z。"
+      },
+      "center_world_m": [1.5, 0.5, 2.0],
+      "bounds_world_m": [[1.0, 0.0, 2.0], [2.0, 1.0, 2.0]],
+      "unit_normal_world": [0.0, 0.0, 1.0],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "native-image-001",
+        "view_name": "TOP",
+        "surface_pixels": 216225,
+        "boundary_pixels": 1856
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "live-source-001：M4_Far_00 当前局部源三角形512、513，分别使用顶点[289,290,291]和[289,291,292]。",
+        "execute_python：共享边连通分量及源顶点绕序计算，得到本区域共2个三角形，面积1平方米。",
+        "execute_python：六个当前设备的连续投影、裁剪及遮挡检查均判定本区域正向、完整且无遮挡。",
+        "render_views(names=['TOP'], include_images=true)：当前实际图像native-image-001，source_ref=live-source-001，尺寸512×512。",
+        "execute_python：读取buffers['native-image-001']的color、owners、triangle_ids；本区域owner=13，全局三角形编号6146–6147；统计得到216225个表面像素、1856个满足RGB对比阈值的边界像素。"
+      ],
+      "notes": "SCENE、TOP、LEFT、RIGHT、FRONT、BACK均存在几何完整的正向无遮挡观察。实际完整可读见证采用TOP：全部区域位于裁剪范围内，连续几何检查不存在前方遮挡。图中表面RGB为[164,173,187]，外侧RGB为[18,22,30]；1856个不同的区域边界像素各自至少具有一个四邻域外侧像素，其RGB欧氏距离达到24。表面像素数≥16且合格边界像素数≥4，满足同一张图像的可读性要求。"
+    }
+  ],
+  "source_references": [
+    "scene_data()通过execute_python读取的当前源：live-source-001；kind=actual_owned_Blender_evaluated_mesh；instance_id=1e9912a790084207b5d6135c4963a165；frame=1；subframe=0；scale_length=1。",
+    "源asset_sha256=2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164。",
+    "目标object_id=blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d；当前293个顶点、514个源三角形。",
+    "当前原生cameras.views有限池：SCENE、TOP、LEFT、RIGHT、FRONT、BACK。",
+    "native-image-001：view_name=TOP；PNG_sha256=257746c95fb7059523f6ced852a0f5138b63e67ba12ecfbcca0f6401a40b1a2e；NPZ_sha256=1939778223d3565131cb5114e8a0042e8f1e5ae5b07b94cf6991063993e72512。"
+  ],
+  "limitations": [
+    "仅检查当前场景及上述六个实际观察设备，不外推到其他视角。",
+    "最大连通平面区域依据源三角形共面性和共享几何边识别；共得到两个区域，完整覆盖局部源三角形0–513。",
+    "本次仅实际构造TOP图像。SCENE、LEFT、RIGHT、FRONT、BACK的图像像素可读性未运行、待证实；这些视图的连续几何完整性已单独计算。",
+    "没有把像素采样未呈现遮挡当作几何无遮挡证明。",
+    "全程只读，未移动、编辑场景或保存文件；几何形状、朝向及可见性事实不构成损伤判断。"
+  ]
+}

@@ -1,0 +1,59 @@
+--- frozen/score_saved.py
++++ derived/score_saved_R1.py
+@@ -146,6 +146,22 @@
+     if type(excerpt) is not str or not excerpt or excerpt not in final:
+         raise ValueError('actual_answer_excerpt')
+     evidence = saved.evaluate_slot(folder, truth)
++    local_aliases = {}
++    if slot[:1] == 'N':
++        import copy
++        for region in row['answer'].get('regions', []):
++            label = region.get('identity', {}).get('roi_id')
++            if label is None:
++                continue
++            if type(label) is not str or not label:
++                raise ValueError('native_local_label_type')
++            descriptor = copy.deepcopy(region)
++            descriptor['identity'].pop('roi_id')
++            resolved = claims.identify(descriptor, truth, evidence['aliases'])
++            if resolved is None or label in local_aliases and local_aliases[label] != resolved:
++                raise ValueError('native_local_label_source_conflict')
++            local_aliases[label] = resolved
++        evidence['aliases'].update(local_aliases)
+     bind_tools(evidence, consumer)
+     for index, request_path in enumerate(evidence['actual_tool_requests'], 1):
+         name = read(request_path)['params']['name']
+@@ -168,11 +184,13 @@
+     return {'slot_id': slot, 'group': slot[:1], 'execution_state': result['status'],
+             'final_quality_passed': term['passed'] and quality['passed'], 'terminal_binding': term,
+             'claim_quality': quality, 'adoption': adopted, 'saved_evidence': evidence['summary'],
++            'native_local_aliases_validated': local_aliases,
++            'raw_field_observations': row.get('raw_field_observations'),
+             'errors': term['failed_fields'] + quality['errors']}
+ 
+ 
+ def score(args):
+-    contract = read(HERE / 'admin/SCORING_CONTRACT.json')
++    contract = read(HERE / 'admin/SCORING_CONTRACT_R1.json')
+     if contract['schema'] != 'target-task-consumption-scoring-contract-v1':
+         raise ValueError('frozen_scoring_contract')
+     for path, digest in contract['files_sha256'].items():
+@@ -189,7 +207,7 @@
+             or review['normalized_sha256'] != hashlib.sha256(raw(args.normalized)).hexdigest()
+             or review.get('all_six_reviewed') is not True or review.get('passed') is not True):
+         raise ValueError('source_only_independent_semantic_review_required')
+-    run = read(args.runtime_root / 'RUN_RESULT.json')
++    run = read(args.runtime_root.parent / 'RUN_RESULT.json')
+     records = run['records']
+     if (run['schema'] != 'target-task-consumption-run-v1' or len(records) != 6
+             or [row['slot_id'] for row in records] != list(ORDER)
+@@ -205,7 +223,8 @@
+         path = result.get('consumer_record')
+         if path is not None and Path(path).is_file():
+             consumer = read(path)
+-            if consumer.get('consumer_pid') is not None:
++            if (consumer.get('consumer_pid') is not None
++                    and consumer.get('image_delivery', {}).get('CLI_process_launched') is True):
+                 consumers.append(consumer)
+     if type(run.get('actual_consumers')) is not int or run['actual_consumers'] != len(consumers):
+         raise ValueError('actual_consumer_count_binding')

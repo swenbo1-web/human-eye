@@ -1,0 +1,202 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "planar_region_0",
+        "source_triangle_index_ranges": [[0, 511]],
+        "unique_geometry_description": "平面 x=1 上的完整单位正方形，y∈[0,1]、z∈[0,1]；512 个源三角形通过共边连接，绕序法向为世界 -X。"
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "boundary_vertices_world_m": [
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0]
+      ],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "view_evidence": [
+        {
+          "view_name": "LEFT",
+          "frame_ref": "native-image-003",
+          "orientation": "front_facing",
+          "normal_dot_direction_to_camera": 0.7071067811865475,
+          "entire_region_inside_frustum": true,
+          "geometrically_complete": false,
+          "failure_reason": "几何遮挡：M4_Near 的源三角形 0 遮挡区域底部的一个非零面积三角形。",
+          "occluded_area_world_m2": 0.000008000000759959239,
+          "occluded_fraction": 0.000008000000759959297,
+          "occluded_boundary_vertices_world_m": [
+            [1, 0, 0],
+            [1, 0.004000000189989805, 0],
+            [1, 0, 0.004000000189989805]
+          ],
+          "surface_pixels": 33945,
+          "boundary_pixels": 526,
+          "pixel_thresholds_pass": true,
+          "complete_readable": false
+        },
+        {
+          "view_name": "SCENE",
+          "frame_ref": "native-image-001",
+          "orientation": "back_facing",
+          "normal_dot_direction_to_camera": -0.6246950475544243,
+          "failure_reason": "朝向不满足正向观察；背面显示的像素不能作为正向完整见证。"
+        },
+        {
+          "view_name": "RIGHT",
+          "frame_ref": "native-image-004",
+          "orientation": "back_facing",
+          "normal_dot_direction_to_camera": -0.7071067811865475,
+          "failure_reason": "朝向不满足正向观察。"
+        },
+        {
+          "view_name": "TOP",
+          "frame_ref": "native-image-002",
+          "orientation": "edge_on",
+          "surface_pixels": 0,
+          "boundary_pixels": 0,
+          "failure_reason": "侧向退化投影，不能呈现完整二维表面。"
+        },
+        {
+          "view_name": "FRONT",
+          "frame_ref": "native-image-005",
+          "orientation": "edge_on",
+          "surface_pixels": 0,
+          "boundary_pixels": 0,
+          "failure_reason": "侧向退化投影，不能呈现完整二维表面。"
+        },
+        {
+          "view_name": "BACK",
+          "frame_ref": "native-image-006",
+          "orientation": "edge_on",
+          "surface_pixels": 0,
+          "boundary_pixels": 0,
+          "failure_reason": "侧向退化投影，不能呈现完整二维表面。"
+        }
+      ],
+      "source_references": [
+        "live-source-001：M4_Far_00 当前世界顶点及源三角列表，局部编号 0–511。",
+        "execute_python：共边邻接与共面分组结果；geom_results 中 region=0 的六视图结果。",
+        "execute_python：M4_Near 源三角形投影到 x=1 后与区域求交，得到所列遮挡边界及面积。",
+        "native-image-003：LEFT 当前实际 color、triangle_ids 缓冲；pixel_results 中 region=0；read_images 已取得该图。"
+      ],
+      "notes": "LEFT 图中的可见像素与对比边界数量均达到阈值，但连续几何仍有微小遮挡，因此不能证明整个区域完整。失败原因是几何遮挡及其他视图的朝向，不是 LEFT 的像素可读性不足。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "planar_region_1",
+        "source_triangle_index_ranges": [[512, 513]],
+        "unique_geometry_description": "平面 z=2 上的完整单位正方形，x∈[1,2]、y∈[0,1]；两个源三角形共边连接，绕序法向为世界 +Z。"
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "boundary_vertices_world_m": [
+        [1, 0, 2],
+        [2, 0, 2],
+        [2, 1, 2],
+        [1, 1, 2]
+      ],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "native-image-002",
+        "view_name": "TOP",
+        "surface_pixels": 216225,
+        "boundary_pixels": 1856
+      },
+      "unknown_reason": null,
+      "view_evidence": [
+        {
+          "view_name": "TOP",
+          "frame_ref": "native-image-002",
+          "orientation": "front_facing",
+          "normal_dot_direction_to_camera": 1,
+          "entire_region_inside_frustum": true,
+          "occluded_fraction": 0,
+          "geometrically_complete": true,
+          "surface_pixels": 216225,
+          "boundary_pixels": 1856,
+          "complete_readable": true
+        },
+        {
+          "view_name": "SCENE",
+          "frame_ref": "native-image-001",
+          "geometrically_complete": true,
+          "surface_pixels": 17131,
+          "boundary_pixels": 538,
+          "complete_readable": true
+        },
+        {
+          "view_name": "LEFT",
+          "frame_ref": "native-image-003",
+          "geometrically_complete": true,
+          "surface_pixels": 33945,
+          "boundary_pixels": 744,
+          "complete_readable": true
+        },
+        {
+          "view_name": "RIGHT",
+          "frame_ref": "native-image-004",
+          "geometrically_complete": true,
+          "surface_pixels": 33945,
+          "boundary_pixels": 744,
+          "complete_readable": true
+        },
+        {
+          "view_name": "FRONT",
+          "frame_ref": "native-image-005",
+          "geometrically_complete": true,
+          "surface_pixels": 33945,
+          "boundary_pixels": 744,
+          "complete_readable": true
+        },
+        {
+          "view_name": "BACK",
+          "frame_ref": "native-image-006",
+          "geometrically_complete": true,
+          "surface_pixels": 33945,
+          "boundary_pixels": 744,
+          "complete_readable": true
+        }
+      ],
+      "source_references": [
+        "live-source-001：M4_Far_00 当前世界顶点 289–292，源三角形局部编号 512–513。",
+        "execute_python：共边邻接与共面分组结果；geom_results 中 region=1 的六视图结果，均正向、完整处于视锥内且无面积遮挡。",
+        "native-image-002：TOP 当前实际 color、triangle_ids 缓冲；pixel_results 中 region=1；read_images 已取得该图。",
+        "native-image-001、native-image-003、native-image-004、native-image-005、native-image-006：其他五视图当前实际缓冲及像素计数。"
+      ],
+      "notes": "TOP 同一张实际图像同时满足整个区域几何完整、可见表面像素不少于 16、合格对比边界像素不少于 4。"
+    }
+  ],
+  "source_references": [
+    "scene_data() 返回 live-source-001，来源类型 actual_owned_Blender_evaluated_mesh；instance_id=16833d9d39b9453c80bafe4ad87dc212，frame=1，subframe=0，scale_length=1。",
+    "live-source-001 的 asset_sha256=2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164。",
+    "目标 object_id=blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d，目标 instance_id=160。",
+    "当前 cameras.views 提供 SCENE、TOP、LEFT、RIGHT、FRONT、BACK 六个正交观察设备及其矩阵，各图像为 512×512。",
+    "render_views 六视图结果全部 completed，均绑定 live-source-001；目标对象的全局三角形起始偏移为 5634。因此区域 0 对应全局 5634–6145，区域 1 对应全局 6146–6147。",
+    "execute_python：以源三角形绕序叉积计算法向，以共边连接及共面条件取得两个最大区域；中心按世界三角形面积加权。",
+    "execute_python：使用相机矩阵投影连续几何，将更近的源三角形部分裁剪后求交并合并，核验遮挡；不以离散像素覆盖替代几何完整性。",
+    "execute_python：根据 triangle_ids 构造各区域可见像素掩码；boundary_pixels 为至少有一个四邻域区域外像素且 RGB 欧氏距离达到 24 的区域内边界像素数量，每个边界像素只计一次。",
+    "native-image-002 的 PNG_sha256=257746c95fb7059523f6ced852a0f5138b63e67ba12ecfbcca0f6401a40b1a2e；native-image-003 的 PNG_sha256=686a6f3c6acbd8193191af3e6db027816fbcfbe9cdae10a589948911f09f34c1。"
+  ],
+  "limitations": [
+    "结论仅适用于当前有限六视图池，不推及其他相机位置或连续观察方向。",
+    "六张图像均已实际构造并完成区域像素统计，无尚未构造图像的可读性推断，也无待证实的必需证据。",
+    "连续几何遮挡使用浮点运算；竖直区域的微小遮挡另以世界平面求交独立核对，其面积约为 8.0×10^-6 平方米。",
+    "当前渲染缓冲可能显示背面像素；本报告单独遵循源绕序法向核验正向条件，不将背面像素作为完整正向见证。",
+    "读取、计算及取得图像均未移动或编辑场景，未保存文件。",
+    "几何形状和可见性事实本身不构成损伤判断。"
+  ]
+}

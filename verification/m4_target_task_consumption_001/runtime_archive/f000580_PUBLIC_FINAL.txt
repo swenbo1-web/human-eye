@@ -1,0 +1,81 @@
+{
+  "object_name": "M4_Far_00",
+  "coordinate_frame": "world",
+  "unit": "m",
+  "finite_view_pool_only": true,
+  "regions": [
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_302a5fafb5f3297564c25caf",
+        "source_triangle_index_ranges": [[512, 513]]
+      },
+      "center_world_m": [1.5, 0.5, 2],
+      "bounds_world_m": [[1, 0, 2], [2, 1, 2]],
+      "boundary_vertices_world_m": [
+        [1, 0, 2],
+        [2, 0, 2],
+        [2, 1, 2],
+        [1, 1, 2]
+      ],
+      "unit_normal_world": [0, 0, 1],
+      "geometry_complete_in_pool": true,
+      "complete_readable": true,
+      "complete_witness": {
+        "frame_ref": "active-host-image:71c5102e10a759a7dad92db93963afa690bb3a8fc6995731fc1cb26027a7caf7",
+        "view_name": "SCENE",
+        "surface_pixels": 17131,
+        "boundary_pixels": 538
+      },
+      "unknown_reason": null,
+      "source_references": [
+        "S1: regions.rows[0]，源三角形闭区间、中心、半边向量及绕序法向",
+        "S1: pixels 中 image_index=0、region_index=0；observations.rows[0]；覆盖状态 observed_readable",
+        "S2: frames[0]，实际 SCENE 图像引用及缓存复用确认"
+      ],
+      "notes": "最大边连通平面矩形区域，共2个源三角形。SCENE 同一张图同时证明整个区域正向、几何完整、无遮挡且可读。表面像素17131≥16；与四邻域外侧像素RGB欧氏距离≥24的边界像素538≥4。"
+    },
+    {
+      "identity": {
+        "object_name": "M4_Far_00",
+        "roi_id": "roi_8e86ecd4ee8ee363517fa26b",
+        "source_triangle_index_ranges": [[0, 511]]
+      },
+      "center_world_m": [1, 0.5, 0.5],
+      "bounds_world_m": [[1, 0, 0], [1, 1, 1]],
+      "boundary_vertices_world_m": [
+        [1, 0, 0],
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0]
+      ],
+      "unit_normal_world": [-1, 0, 0],
+      "geometry_complete_in_pool": false,
+      "complete_readable": false,
+      "complete_witness": null,
+      "unknown_reason": null,
+      "source_references": [
+        "S1: regions.rows[1]，源三角形闭区间、中心、半边向量及绕序法向",
+        "S1: unobserved_view_groups，结合 inspection.view_names 映射全部六个视图",
+        "S1: pixels 中 image_index=0、region_index=1",
+        "S1: inspection.state=finite_pool_exhausted，no_geometric_complete_candidate=1"
+      ],
+      "notes": "最大边连通平面矩形区域，共512个源三角形。有限视图池中：SCENE、RIGHT为背向；TOP、FRONT、BACK为侧立；唯一正向视图LEFT存在正面积几何遮挡。因此整个池内不存在完整正向无遮挡视图，也不存在完整可读见证。已取得的SCENE虽有22931个可见表面像素和561个达标对比边界像素，但该区域背向，不能作为完整正向可读见证。失败原因是朝向及几何遮挡，不是已证实的像素数量不足。其余五个视图尚未构造图像，像素可读性未运行、待证实；这些未运行像素检查不改变已经排除完整正向几何见证的结论。"
+    }
+  ],
+  "source_references": [
+    "S1 = 本槽 active_observation(include_images=true) 实际返回，schema=active-observation-brief-v5，session_id=P1，read_only=true。",
+    "S1 当前源绑定：scene_revision=blender:b9e017c03df765ddaa4ad1ece537fc509b6d5a22b316d12a5315085453815327；binding_sha256=6228299f0d2b35c4ad764294bb6c2bc62fc1c2f8adad437ec065a6b7d1dfd0e1。",
+    "S1 目标：object_index=5；target_object_id=blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d；source_triangle_count=514，supported_triangle_count=514，unsupported_triangle_count=0。",
+    "S1 有限视图池按索引排列：[SCENE, TOP, LEFT, RIGHT, FRONT, BACK]；所有观察范围内对象及其三角形均参与遮挡计算。",
+    "S2 = 本槽 render_views(names=[SCENE], include_images=true) 实际返回；cached=true，new_raster_attempts=0；复用S1同一图像，尺寸512×512。",
+    "S2 frame_ref=active-host-image:71c5102e10a759a7dad92db93963afa690bb3a8fc6995731fc1cb26027a7caf7；PNG_sha256=7252aee6e760c949a070cc74f8d5bf7d3889d048fa37c30872aa868f78802516；source_ref=product-binding:6228299f0d2b35c4ad764294bb6c2bc62fc1c2f8adad437ec065a6b7d1dfd0e1。"
+  ],
+  "limitations": [
+    "结论仅覆盖当前注册的六视图有限池，不外推到其他观察位置。",
+    "两个区域的源三角形闭区间互不重叠，合计覆盖目标全部514个源三角形；编号均为当前对象原始三角列表中的零起始局部编号。",
+    "实际图像证据仅取得SCENE；TOP、LEFT、RIGHT、FRONT、BACK的像素可读性尚未运行，不推断其像素计数。",
+    "几何完整性与未覆盖原因复用当前绑定的观察工具结果；未将部分可见或清楚边缘误判为完整区域见证。",
+    "全程只读，未移动、编辑或保存场景；几何形状及可见性事实不构成损伤判断。"
+  ]
+}
