@@ -1,0 +1,30 @@
+{
+  "cycle_id": "M6-IMAGE-CORRESPONDENCE-005",
+  "rule_frozen_before_correspondence_results_and_hidden_scoring": true,
+  "views": [
+    "forearm_front",
+    "forearm_side",
+    "forearm_45"
+  ],
+  "pixel_center_grid": {
+    "axes": "round(linspace(0, dimension - 1, 11)) + 0.5",
+    "per_view_samples": 121,
+    "sampling_dependency": "image dimensions only"
+  },
+  "vertex_projection_rays": {
+    "source_ids": "sort(I_ids)[::17]",
+    "sampling_dependency": "current public editable source IDs only",
+    "projection": "actual unrounded floating-point vertex projection",
+    "visibility_test": "nearest independent ray intersection equals the current source point within 1e-8 m"
+  },
+  "algorithm": "Independent full-mesh Moller-Trumbore ray/triangle intersections, orthographic ray origins reconstructed at the camera plane from the 2x3 projection affine.",
+  "barycentric_tolerance": 1e-09,
+  "equal_depth_tolerance_m": 1e-09,
+  "hit_position_tolerance_m": 1e-08,
+  "projection_tolerance_pixels": 1e-06,
+  "private_labels_used": false,
+  "implementation_revision": 2,
+  "ray_direction": "Exact nullspace cross product of the two supplied affine rows, oriented toward the camera forward direction.",
+  "camera_axis_alignment_tolerance": "16 * float32 epsilon in unit-vector norm, with raw affine(camera_back_axis) and measured difference retained",
+  "recovery_reason": "The separately exported Blender projection affine and camera basis differ at float32 precision. Following the affine nullspace gives exact pixel-center rays for the supplied projection."
+}

@@ -1,0 +1,143 @@
+{
+  "cycle_id": "M6-IMAGE-CORRESPONDENCE-005",
+  "scope": "Additional root observations and ordinary recovery attempts. Monitored helper/job receipts and agent implementation notes retain authoritative per-scope measurements.",
+  "attempts": [
+    {
+      "operation": "v1 final rendering scheduled concurrently with its required independent audit",
+      "status": "failed_before_Blender",
+      "monitor": "private/measured/render_v1.json",
+      "full_process_wall_s": 0.1262614000006579,
+      "tree_CPU_s": 0.078125,
+      "reason": "Root started rendering before independent_v1 had created AUDIT.json.",
+      "recovery": "Ran independent verification to completion before the next rendering invocation."
+    },
+    {
+      "operation": "v1 final rendering referenced the expected initial OBJ alias",
+      "status": "failed_after_one_completed_native_render",
+      "monitor": "private/measured/render_v1_retry.json",
+      "full_process_wall_s": 2.1207810000050813,
+      "tree_CPU_s": 2.0,
+      "reason": "The fresh input reader generated current_local.obj. Delivery expected before_local.obj.",
+      "recovery": "Copied the actual fresh current_local.obj bytes to before_local.obj. Resumed rendering and reused the completed native render job, then rendered facts once.",
+      "recovered_monitor": "private/measured/render_v1_resume.json",
+      "new_Pro_sessions": 0
+    },
+    {
+      "operation": "four-session preview-comparison helper edit",
+      "status": "apply_patch_rejected_before_write",
+      "reason": "The patch attempted a delete and add against the same file in one operation.",
+      "recovery": "Updated the existing helper and AST-validated the result.",
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "v1 delivered-preview versus final-render pixel comparison",
+      "status": "passed_8_of_8",
+      "record": "PREVIEW_PIXEL_VERIFICATION_v1.json",
+      "internal_wall_s": 0.10265770001569763,
+      "internal_CPU_s": 0.078125,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "v1 independent consumer-method audit",
+      "status": "completed_four_read_only_shells",
+      "shell_wall_s_sum_approx": 1.38405,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "v1 independent quality and actual fitting audit",
+      "status": "completed_three_read_only_shells",
+      "shell_wall_s_sum_approx": 0.848,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "independent optimized-support audit initially used batch-relative explicit paths",
+      "status": "failed_before_data_read",
+      "monitor": "private/measured/optimized_support_audit_001.json",
+      "full_process_wall_s": 0.18236989999422804,
+      "tree_CPU_s": 0.140625,
+      "reason": "run_measured starts helpers with repository-root cwd, while the supplied explicit paths assumed the batch cwd",
+      "recovery": "Used absolute packet and correspondence paths without changing the algorithm or audit implementation",
+      "recovered_monitor": "private/measured/optimized_support_audit_002.json"
+    },
+    {
+      "operation": "stage-v2 snapshot before stage-specific consumer stats existed",
+      "status": "failed_before_snapshot_write",
+      "monitor": "private/measured/stage_v2_snapshot.json",
+      "full_process_wall_s": 0.20023880002554506,
+      "tree_CPU_s": 0.0625,
+      "recovery": "Generated CONSUMER_STATS_v2.json after the complete all-session analysis, then retried stage_v2_snapshot_retry"
+    },
+    {
+      "operation": "all delivered-preview versus final-render pixel comparison",
+      "status": "passed_16_of_16",
+      "record": "PREVIEW_PIXEL_VERIFICATION_all.json",
+      "internal_wall_s": 0.19124199997168034,
+      "internal_CPU_s": 0.171875,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "v2 independent consumer method audit",
+      "status": "completed_four_read_only_shells",
+      "shell_wall_s_sum_approx": 1.7470743,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "v2 independent quality read-only audit",
+      "status": "primary_metrics_and_payload_checks_complete_additional_reads_failed",
+      "shell_wall_s_sum_approx": 2.248112,
+      "shell_exit_codes": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "failed_additional_reads": [
+        "Looked for diagnostic metadata associated with a fit_work NPZ",
+        "Interpreted serialized STDOUT.bin as plain printed rows"
+      ],
+      "recovery": "Primary score, error-vector, payload and final diagnostic checks were completed. Runtime audit independently recovered trial support usage and final solver methods. Full raw files remain retained.",
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0
+    },
+    {
+      "operation": "final REPORT independent narrow audit",
+      "status": "completed_two_read_only_shells",
+      "shell_wall_s_sum_approx": 0.354262,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "new_Pro_sessions": 0,
+      "new_Blender_jobs": 0,
+      "clarifications": [
+        "v2 facts fails the normal-editable criterion only",
+        "Old .354 normal dot refers to the declared fitting axis",
+        "Old packet array bytes are preserved while new session/source reference bindings differ"
+      ]
+    }
+  ],
+  "agent_implementation_notes": [
+    "RUNTIME_IMPLEMENTATION_COSTS.json",
+    "QUALITY_IMPLEMENTATION_COSTS.json",
+    "RUNTIME_V2_IMPLEMENTATION_COSTS.json"
+  ],
+  "root_model_usage_and_fees": null,
+  "collaboration_model_usage_and_fees": null,
+  "whole_task_CPU_s": null,
+  "whole_task_peak_RSS_bytes": null,
+  "accounting": "Shell and body timers can overlap monitored roots and are preserved without an additive grand total. All failed ray, component and runtime preflights retain their original receipts. Unrecorded authoring and coordination resources remain unmeasured."
+}

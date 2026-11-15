@@ -1,0 +1,86 @@
+{
+  "cycle_id": "M6-IMAGE-CORRESPONDENCE-005",
+  "subtask": "independent_ray_scoring_fit_and_delivery_helpers",
+  "status": "preflights_ready_actual_consumers_pending",
+  "actual_Blender_calls": 0,
+  "actual_Pro_calls": 0,
+  "training_calls": 0,
+  "ray_attempts": [
+    {
+      "label": "ray_preflight_001",
+      "status": "failed",
+      "returncode": 1,
+      "wall_s": 2.30259609996574,
+      "tree_CPU_s": 2.1875,
+      "sampled_tree_peak_RSS_bytes": 104206336,
+      "monitor": "private/measured/ray_preflight_001.json"
+    },
+    {
+      "label": "ray_preflight_002",
+      "status": "failed",
+      "returncode": 1,
+      "wall_s": 2.1089205000316724,
+      "tree_CPU_s": 1.96875,
+      "sampled_tree_peak_RSS_bytes": 103399424,
+      "monitor": "private/measured/ray_preflight_002.json"
+    },
+    {
+      "label": "ray_preflight_003",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 2.1393466999870725,
+      "tree_CPU_s": 2.078125,
+      "sampled_tree_peak_RSS_bytes": 104214528,
+      "monitor": "private/measured/ray_preflight_003.json"
+    }
+  ],
+  "recoveries": [
+    {
+      "attempt": "ray_preflight_001",
+      "issue": "Camera matrix back axis differed from separately exported 2x3 projection affine nullspace at float32 metadata precision. Pixel ownership matched, but strict projection/depth checks failed.",
+      "recovery": "Reconstructed exact orthographic rays from affine nullspace, oriented by camera; sampling and original projection/depth tolerances retained.",
+      "preserved": "private/ray_preflight/attempt_001"
+    },
+    {
+      "attempt": "ray_preflight_002",
+      "issue": "NumPy bool from alignment tolerance comparison was not JSON serializable; the prior RAY_PREFLIGHT result remained on disk.",
+      "recovery": "Normalize the comparison to a Python bool; actual independent ray_preflight_003 passed 24 checks.",
+      "preserved": "private/ray_preflight/attempt_002"
+    }
+  ],
+  "preparatory_errors": [
+    {
+      "action": "PowerShell read command included unsupported shell brace syntax",
+      "exit_code": 1,
+      "shell_wall_s": 0.1264769
+    },
+    {
+      "action": "apply_patch attempted delete and add of same path in one patch",
+      "result": "rejected_before_mutation",
+      "CPU_s": null,
+      "wall_s": null
+    }
+  ],
+  "additional_read_only_or_copy_shell_wall_s": [
+    0.1468256,
+    0.2820744,
+    0.23834,
+    0.1449203,
+    0.1682376,
+    0.1582799,
+    0.2300702,
+    0.1528218,
+    0.1608586,
+    0.1555599
+  ],
+  "cost_rule": "Observed shell times may overlap monitored tasks and are not added to their wall or CPU totals. Parent-owned runs contain source, geometry, module-score and static-preflight costs. All root/agent model usage and fees remain unmeasured.",
+  "root_and_agent_usage": null,
+  "fees": null,
+  "development_CPU_s": null,
+  "development_peak_RSS_bytes": null,
+  "remaining_parent_execution": [
+    "Four real consumers, with stage-end independent saved-file scoring",
+    "fit_audit.py --stage v1/v2 for consumer-recorded fitting evidence",
+    "Final snapshot render/delivery helpers using frozen provenance"
+  ]
+}

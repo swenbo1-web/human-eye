@@ -1,0 +1,162 @@
+{
+  "cycle_id": "M6-IMAGE-CORRESPONDENCE-005",
+  "subtask": "consumer_runtime",
+  "status": "source_complete_read_only",
+  "checks": {
+    "CONSUMER_PREFLIGHT.json": {
+      "status": "pass",
+      "checks": 59,
+      "wall_s": 12.073309700004756,
+      "failed": []
+    },
+    "CONSUMER_CASE_PREFLIGHT.json": {
+      "status": "pass",
+      "checks": 29,
+      "wall_s": 15.146173000044655,
+      "failed": []
+    },
+    "IMAGE_PIXEL_PREFLIGHT.json": {
+      "status": "pass",
+      "checks": 10,
+      "wall_s": 4.433788799971808,
+      "failed": []
+    }
+  },
+  "attempts": [
+    {
+      "label": "runtime_mock_001",
+      "status": "failed",
+      "returncode": 1,
+      "wall_s": 0.5384508999995887,
+      "tree_CPU_s": 0.21875,
+      "tree_peak_RSS_bytes": 61190144,
+      "record": "private/measured/runtime_mock_001.json"
+    },
+    {
+      "label": "runtime_mock_002",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 13.853840199997649,
+      "tree_CPU_s": 9.578125,
+      "tree_peak_RSS_bytes": 157696000,
+      "record": "private/measured/runtime_mock_002.json"
+    },
+    {
+      "label": "runtime_mock_003",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 12.346913399989717,
+      "tree_CPU_s": 8.890625,
+      "tree_peak_RSS_bytes": 157429760,
+      "record": "private/measured/runtime_mock_003.json"
+    },
+    {
+      "label": "runtime_mock_final",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 12.28512580000097,
+      "tree_CPU_s": 9.15625,
+      "tree_peak_RSS_bytes": 157552640,
+      "record": "private/measured/runtime_mock_final.json"
+    },
+    {
+      "label": "runtime_actual_case_001",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 15.271056299970951,
+      "tree_CPU_s": 14.3125,
+      "tree_peak_RSS_bytes": 222883840,
+      "record": "private/measured/runtime_actual_case_001.json"
+    },
+    {
+      "label": "runtime_actual_case_002",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 15.606766899989452,
+      "tree_CPU_s": 14.734375,
+      "tree_peak_RSS_bytes": 221958144,
+      "record": "private/measured/runtime_actual_case_002.json"
+    },
+    {
+      "label": "runtime_actual_case_003",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 15.106761799950618,
+      "tree_CPU_s": 14.234375,
+      "tree_peak_RSS_bytes": 227192832,
+      "record": "private/measured/runtime_actual_case_003.json"
+    },
+    {
+      "label": "runtime_case_final",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 15.392647899978328,
+      "tree_CPU_s": 14.421875,
+      "tree_peak_RSS_bytes": 226680832,
+      "record": "private/measured/runtime_case_final.json"
+    },
+    {
+      "label": "image_pixel_preflight_001",
+      "status": "completed",
+      "returncode": 0,
+      "wall_s": 4.556667400000151,
+      "tree_CPU_s": 4.421875,
+      "tree_peak_RSS_bytes": 64466944,
+      "record": "private/measured/image_pixel_preflight_001.json"
+    }
+  ],
+  "source_identities": [
+    {
+      "path": "consumer_bridge.py",
+      "bytes": 38256,
+      "sha256": "a316c1feca3dc4837a72a9249883a154a2ce9951205d0366a6f2d59c0dd80970"
+    },
+    {
+      "path": "python_executor.py",
+      "bytes": 28498,
+      "sha256": "bbbf6552a6bb32e09fb7dd5909d4124ef2ccd035a541e27fc2e3a2e6f6733c7c"
+    },
+    {
+      "path": "consumer_runner.py",
+      "bytes": 28333,
+      "sha256": "f326c0971252f69318586710d2fdd01b0af9cec75eb2300e80e4a64590147115"
+    },
+    {
+      "path": "consumer_preflight.py",
+      "bytes": 23992,
+      "sha256": "f0e29389adea84a9ea215b2bc4df69c4930dde0f9dd3d0843b5ed62b5e5dd500"
+    },
+    {
+      "path": "consumer_case_preflight.py",
+      "bytes": 9100,
+      "sha256": "bd3f4623c4e7d26c158fb654e0c09129f6ff0c62d7ff2b5d6b9a86625097f7f1"
+    },
+    {
+      "path": "consumer_preview_preflight.py",
+      "bytes": 4429,
+      "sha256": "41f28454574d6b8451789319fff651d98d3a004f044708243015d2b59d46bd38"
+    },
+    {
+      "path": "image_inputs.py",
+      "bytes": 4922,
+      "sha256": "c45231891148bc26aedde88f454ae1b7c6fc241f025c69e5e73cc510dd010c8d"
+    },
+    {
+      "path": "image_pixel_preflight.py",
+      "bytes": 3555,
+      "sha256": "a9d0b03b14b97f0cc21d4cf063a670ad273c5b57fa7dbc866b5b43d782eb7a18"
+    }
+  ],
+  "actual_Pro_calls": 0,
+  "actual_Blender_calls": 0,
+  "failures": [
+    {
+      "label": "runtime_mock_001",
+      "issue": "-I worker local image_inputs import before HERE was added to sys.path",
+      "recovery": "Move local import after adding HERE; subsequent complete protocol runs pass"
+    }
+  ],
+  "accounting": "Recorded process roots include their Python/CLI-help children. Pure mock and real-case preflights have zero Pro and Blender launches. Reads/authoring/coordination without monitor remain unmeasured.",
+  "model_usage": null,
+  "fees": null
+}

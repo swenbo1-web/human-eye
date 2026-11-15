@@ -1,0 +1,75 @@
+{
+  "cycle_id": "M6-IMAGE-CORRESPONDENCE-005",
+  "stage": "v2",
+  "status": "source_complete_read_only",
+  "reports": {
+    "LOCAL_SUPPORT_RUNTIME_PREFLIGHT.json": {
+      "status": "pass",
+      "checks": 20,
+      "failed": [],
+      "internal_wall_s": 5.946310800034553
+    },
+    "CONSUMER_PREFLIGHT_v2.json": {
+      "status": "pass",
+      "checks": 59,
+      "failed": [],
+      "internal_wall_s": 12.046770500019193
+    }
+  },
+  "attempts": [
+    {
+      "label": "local_support_runtime_001",
+      "status": "failed",
+      "wall_s": 5.209504899976309,
+      "tree_CPU_s": 4.84375,
+      "tree_peak_RSS_bytes": 202522624
+    },
+    {
+      "label": "local_support_runtime_002",
+      "status": "completed",
+      "wall_s": 6.177260100026615,
+      "tree_CPU_s": 5.734375,
+      "tree_peak_RSS_bytes": 207147008
+    },
+    {
+      "label": "runtime_mock_v2",
+      "status": "completed",
+      "wall_s": 12.223663799988572,
+      "tree_CPU_s": 8.640625,
+      "tree_peak_RSS_bytes": 156164096
+    }
+  ],
+  "source_identities": [
+    {
+      "path": "python_executor.py",
+      "bytes": 34638,
+      "sha256": "6e0fa06e8777da178843f0b8575eb582ab0fb1216f87723a25a0b173ce90a0d7"
+    },
+    {
+      "path": "local_support_runtime_preflight.py",
+      "bytes": 8246,
+      "sha256": "c7ce11aa0c7686e23c02dac5495b6d86699218981ea1b36d1941c05833903e4e"
+    },
+    {
+      "path": "runtime_v2_mock_preflight.py",
+      "bytes": 1068,
+      "sha256": "f789ea929599b7e5582f2acf452663db76c33b019471a31753e433b905a9c6c4"
+    }
+  ],
+  "unchanged_runtime_sources": {
+    "consumer_runner.py": true,
+    "consumer_bridge.py": true,
+    "image_inputs.py": true
+  },
+  "actual_Pro_calls": 0,
+  "actual_Blender_calls": 0,
+  "hidden_geometry_or_labels_read": false,
+  "failure": {
+    "label": "local_support_runtime_001",
+    "issue": "Longer test-session name produced FileNotFound for a relative reference path that existed and passed absolute validation",
+    "recovery": "Shortened only the isolated test-session name; actual consumer names and runtime path handling preserved"
+  },
+  "accounting": "Monitored roots contain their child Python and CLI-help costs. Read-only inspection/authoring/coordination model costs and unmonitored resource use remain unmeasured.",
+  "model_usage": null,
+  "fees": null
+}
