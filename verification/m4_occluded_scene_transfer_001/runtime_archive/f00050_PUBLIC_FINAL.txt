@@ -1,0 +1,97 @@
+## Conclusion
+
+**Finite pool only:** SCENE, TOP, LEFT, RIGHT, FRONT and BACK, using the current geometry/material and actual current frames.
+
+- **61 supported rectangular surfaces:** **18 covered**, **43 unknown**.
+- Unknown comprises **10 with no front-facing candidate** and **33 occluded in every front-facing candidate**.
+- **No surfaces remain unknown because of insufficient evidence.**
+- One connected, nonrectangular component is retained as unsupported.
+
+Coverage uses whole-surface geometric visibility—not merely visible raster pixels. Occlusion was checked with exact rational projected geometry. Boundary counts merge each surface’s source triangles and count unique target-owned endpoints of horizontal/vertical different-surface pairs with RGB distance ≥24.
+
+## Complete Supported-Surface Inventory
+
+Each identity is **object name + local source-triangle set** shown in the column. Object indices follow the table’s first ten rows, starting at 0; SlantedIndicator is object 10.
+
+- **C:** covered; complete-readable witness listed below.
+- **N:** unknown—no strictly front-facing camera in this pool.
+- **O:** unknown—positive-area occlusion in every front-facing camera.
+
+| Object | [0,1] | [2,3] | [4,5] | [6,7] | [8,9] | [10,11] |
+|---|---|---|---|---|---|---|
+| RackBase | N | O | C | C | C | C |
+| RackRoof | N | C | C | C | C | C |
+| LeftUpright | N | O | O | O | O | C |
+| RightUpright | N | O | O | O | O | O |
+| LowerRearUnit | N | O | O | O | C | O |
+| UpperRearUnit | N | O | O | O | O | O |
+| FrontRightUnit | N | O | O | O | O | O |
+| LowerFrontRail | N | C | C | C | O | O |
+| UpperFrontRail | N | C | C | C | O | O |
+| TurnedUnit | N | O | O | O | O | O |
+| SlantedIndicator | C | — | — | — | — | — |
+
+All ten **N** surfaces face downward; none of these six cameras views their front.
+
+For every **O** surface, RackRoof supplies positive-area occlusion in every front candidate, **except**:
+- RightUpright `[6,7]`: ConnectedLBracket occludes both candidates, SCENE and RIGHT.
+- LowerRearUnit `[10,11]`, LowerFrontRail `[10,11]`, UpperFrontRail `[10,11]`: LeftUpright occludes their sole candidate, LEFT.
+- FrontRightUnit `[4,5]`: UpperFrontRail occludes SCENE; RackRoof occludes FRONT.
+
+These are sufficient blockers; other blockers may also occur.
+
+## Complete-Readable Witnesses
+
+Every listed witness contains the **entire front-facing rectangle**, fully in frame, with **zero positive-area occlusion**, ≥16 visible pixels and ≥4 contrasting boundary pixels.
+
+Current frame bindings: **SCENE=`image-01`**, **TOP=`image-02`**, **LEFT=`image-03`**, **RIGHT=`image-04`**, **FRONT=`image-05`**, **BACK=`image-06`**.
+
+| Surface | Witness view | Visible pixels | Boundary pixels |
+|---|---|---:|---:|
+| RackBase [4,5] | SCENE | 2,629 | 495 |
+| RackBase [6,7] | SCENE | 2,252 | 233 |
+| RackBase [8,9] | BACK | 3,830 | 782 |
+| RackBase [10,11] | LEFT | 2,646 | 332 |
+| RackRoof [2,3] | TOP | 133,172 | 1,460 |
+| RackRoof [4,5] | SCENE | 2,630 | 310 |
+| RackRoof [6,7] | SCENE | 2,250 | 227 |
+| RackRoof [8,9] | BACK | 3,830 | 730 |
+| RackRoof [10,11] | LEFT | 2,646 | 332 |
+| LeftUpright [10,11] | LEFT | 28,080 | 208 |
+| LowerRearUnit [8,9] | BACK | 2,652 | 210 |
+| LowerFrontRail [2,3] | SCENE | 1,548 | 238 |
+| LowerFrontRail [4,5] | SCENE | 2,055 | 360 |
+| LowerFrontRail [6,7] | SCENE | 99 | 18 |
+| UpperFrontRail [2,3] | SCENE | 1,547 | 378 |
+| UpperFrontRail [4,5] | SCENE | 2,056 | 255 |
+| UpperFrontRail [6,7] | SCENE | 99 | 9 |
+| SlantedIndicator [0,1] | TOP | 619 | 82 |
+
+## Pixel Localization
+
+Coordinates are zero-based `(x,y)` from the upper-left; world coordinates are metres.
+
+**sample_A — TOP `(135,175)`**
+- Hits **RackRoof**, object 1, local triangle **3**, supported surface **[2,3]**.
+- World center: **(0, 0, 6.5)**; front unit normal: **(0, 0, +1)**.
+- Rectangle corners: `(-7,-6,6.5)`, `(7,-6,6.5)`, `(7,6,6.5)`, `(-7,6,6.5)`.
+- Specified-view frame and complete-readable witness: **TOP / `image-02`**.
+
+**sample_B — LEFT `(234,483)`**
+- Hits **RackBase**, object 0, local triangle **10**, supported surface **[10,11]**.
+- World center: **(-7, 0, -0.25)**; front unit normal: **(-1, 0, 0)**.
+- Rectangle corners: `(-7,-6,-0.5)`, `(-7,6,-0.5)`, `(-7,6,0)`, `(-7,-6,0)`.
+- Specified-view frame and complete-readable witness: **LEFT / `image-03`**.
+
+## Original Source-Face Targets
+
+- **target_C — RackBase, object 0, [2,3]: unknown.** This is the upward-facing rectangle at `z=0`, center `(0,0,0)`, spanning `x∈[-7,7]`, `y∈[-6,6]`. All six cameras are front-facing candidates, but **RackRoof occludes positive area in every one**. TOP has zero target-owned pixels; partial visibility elsewhere does not establish coverage. No complete-readable witness exists in this pool.
+- **target_D — RackBase, object 0, [0,1]: unknown.** This is the downward-facing rectangle at `z=-0.5`, center `(0,0,-0.5)`, with the same XY extent and front normal `(0,0,-1)`. **No camera in the pool is front-facing**, so no complete-readable witness exists.
+
+## Unsupported Component
+
+**ConnectedLBracket**, object **11**, retains local source triangles **[0,1,2,3]**. It is one connected planar **L-shaped**, nonrectangular component—not one supported rectangle. It was not artificially subdivided and remains included in occlusion calculations.
+
+Its boundary is `(7.5,2,3)`, `(9.5,2,3)`, `(9.5,2.5,3)`, `(8,2.5,3)`, `(8,4,3)`, `(7.5,4,3)`.
+
+These conclusions apply **only to the registered six-camera finite pool**, not to arbitrary additional viewpoints.

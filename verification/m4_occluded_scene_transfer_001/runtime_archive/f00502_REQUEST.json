@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_92619610685f4c4fbfaa06dca457f167",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1ddfc-b5f2-7be2-844f-7c3e16c5c44c",
+        "thread_id": "01a1ddfc-b5f2-7be2-844f-7c3e16c5c44c",
+        "turn_started_at_unix_ms": 1794725689000,
+        "turn_id": "01a1ddfc-b6a1-71d3-a61d-0fba66b66a08",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1ddfc-b5f2-7be2-844f-7c3e16c5c44c",
+      "itemId": "fc_04dc1a70388f24f5016af9574422bc87d0bc26d845592ecdc0",
+      "progressToken": 2
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "import json\nobs=json.loads(last_observation_json)\nprint('KEYS',list(obs))\nfor key in ['regions','pixels','images','views','witnesses','pixel_evidence']:\n if key in obs:\n  value=obs[key]; print(key, (list(value) if isinstance(value,dict) else str(value)[:400]))\nprint('geometry',[(o['name'],len(o['triangles'])) for o in geometry['objects']])\nprint('cameras',str(cameras)[:1600])\nprint('buffers',list(buffers))\nprint('regions',json.dumps(obs['regions']))"
+    }
+  }
+}

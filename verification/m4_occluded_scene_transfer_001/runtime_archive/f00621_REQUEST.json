@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "callId": "call_50b4f8df2ea841208a111cb80ca78d6d",
+      "x-codex-turn-metadata": {
+        "session_id": "01a1de03-39be-7850-baf6-d9fd01f45f40",
+        "thread_id": "01a1de03-39be-7850-baf6-d9fd01f45f40",
+        "turn_started_at_unix_ms": 1794726115926,
+        "turn_id": "01a1de03-3a4e-7f03-8234-9d54f8717969",
+        "node_repl_disabled": false,
+        "thread_source": "user",
+        "sandbox": "none",
+        "sandbox_mode": "read-only",
+        "auto_review_enabled": false,
+        "node_repl_auto_review_required": false,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium"
+      },
+      "threadId": "01a1de03-39be-7850-baf6-d9fd01f45f40",
+      "itemId": "fc_067c85e505ec0454016af95915684887d089117ab60f59652b",
+      "progressToken": 4
+    },
+    "name": "execute_python",
+    "arguments": {
+      "code": "from fractions import Fraction\nnum=lambda value: float(Fraction(str(value)))\nregions=[dict(zip(obs['regions']['columns'],row)) for row in obs['regions']['rows']]\nimages=[dict(zip(obs['images']['columns'],row)) for row in obs['images']['rows']]\npixels=[dict(zip(obs['pixels']['columns'],row)) for row in obs['pixels']['rows']]\nview_refs={item['view_name']:item['image_ref'] for item in images}; view_refs['TOP']='image-04'\noffsets=np.cumsum([0]+[len(obj['triangles']) for obj in geometry['objects']])\nglobal_surface=np.full(int(offsets[-1]),-1,dtype=int)\nfor index,region in enumerate(regions):\n obj=geometry['objects'][region['object_index']]; vertices=np.array([[num(value) for value in vertex] for vertex in obj['vertices']])\n center=np.array([num(value) for value in region['center_world_m']]); normal=np.array([num(value) for value in region['front_direction_world']]); matches=[]\n for triangle_index,triangle in enumerate(obj['triangles']):\n  points=vertices[triangle]; triangle_normal=np.cross(points[1]-points[0],points[2]-points[0])\n  if np.max(np.abs((points-center)@normal))<1e-8 and np.dot(triangle_normal,normal)>0: matches.append(triangle_index)\n assert len(matches)==region['triangle_count'],(index,matches)\n region['source_triangle_indices']=matches\n global_surface[offsets[region['object_index']]+np.array(matches)]=index\nprint('samples')\nfor name,view,x,y in [('sample_A','TOP',135,175),('sample_B','LEFT',234,483)]:\n frame=buffers[view]; triangle=int(frame['triangle_ids'][y,x]); surface=int(global_surface[triangle]); print(name,triangle,surface,regions[surface])\nprint('reasons',__import__('collections').Counter(region['unobserved_reason'] for region in regions))\nprint('covered mappings',[(index,region['object_index'],region['source_triangle_indices']) for index,region in enumerate(regions) if region['status']=='covered'])\n\ndef measured_counts(view,surface):\n frame=buffers[view]; triangles=frame['triangle_ids']; labels=np.full(triangles.shape,-1,dtype=int); hit=triangles>=0; labels[hit]=global_surface[triangles[hit]]\n labels[hit & (labels<0)]=61\n color=frame['color'].astype(float); boundary=np.zeros(labels.shape,bool)\n for first,second in [((slice(None),slice(None,-1)),(slice(None),slice(1,None))),((slice(None,-1),slice(None)),(slice(1,None),slice(None)))]:\n  qualifying=(labels[first]!=labels[second]) & (np.linalg.norm(color[first]-color[second],axis=2)>=24)\n  boundary[first]|=qualifying; boundary[second]|=qualifying\n return {'visible_surface_pixels':int(np.sum(labels==surface)),'contrasting_boundary_pixels':int(np.sum(boundary & (labels==surface)))}\nfor index,region in enumerate(regions):\n if region['status']=='covered':\n  witness=pixels[region['complete_witness_pixel_index']]; view=images[witness['image_index']]['view_name']; measured=measured_counts(view,index)\n  print('witness',index,view,measured,'product',witness['visible_surface_pixels'],witness['contrasting_boundary_pixels'])\n"
+    }
+  }
+}

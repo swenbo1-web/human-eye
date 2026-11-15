@@ -1,0 +1,89 @@
+## Conclusion
+
+**Finite-pool only:** among the 61 supported rectangular surfaces, **18 are covered and 43 remain unknown**:
+- **33:** positive-area occlusion in every front-facing candidate.
+- **10:** no front-facing candidate.
+- **0:** unresolved because of insufficient evidence.
+
+This conclusion applies only to the registered **SCENE/TOP/LEFT/RIGHT/FRONT/BACK** pool, not arbitrary viewpoints. Partial readability does not establish coverage.
+
+## Complete surface inventory
+
+Each cell identifies one surface by **object plus its local source-triangle pair**. These are the complete covered and remaining sets.
+
+View abbreviations: **S**=SCENE, **T**=TOP, **L**=LEFT, **R**=RIGHT, **F**=FRONT, **B**=BACK.
+
+- **C:view** — covered: the whole front-facing rectangle is in that current frame, with zero positive-area occlusion and sufficient pixels/contrast.
+- **O:views** — unknown: every front-facing candidate, listed here, has positive-area occlusion; other pool views are edge-on or back-facing.
+- **N** — unknown: no front-facing candidate anywhere in the pool.
+
+| Object index/name | [0,1] | [2,3] | [4,5] | [6,7] | [8,9] | [10,11] |
+|---|---|---|---|---|---|---|
+| 0 RackBase | N | O:S,T,L,R,F,B | C:S | C:S | C:B | C:L |
+| 1 RackRoof | N | C:L | C:S | C:S | C:B | C:L |
+| 2 LeftUpright | N | O:S,T,L,R,F,B | O:S,F | O:S,R | O:B | C:L |
+| 3 RightUpright | N | O:S,T,L,R,F,B | O:S,F | O:S,R | O:B | O:L |
+| 4 LowerRearUnit | N | O:S,T,L,R,F,B | O:S,F | O:S,R | C:B | O:L |
+| 5 UpperRearUnit | N | O:S,T,L,R,F,B | O:S,F | O:S,R | O:B | O:L |
+| 6 FrontRightUnit | N | O:S,T,L,R,F,B | O:S,F | O:S,R | O:B | O:L |
+| 7 LowerFrontRail | N | C:S | C:S | C:S | O:B | O:L |
+| 8 UpperFrontRail | N | C:S | C:S | C:S | O:B | O:L |
+| 9 TurnedUnit | N | O:S,T,L,R,F,B | O:S,R,F | O:R,B | O:L,B | O:S,L,F |
+| 10 SlantedIndicator | C:L | — | — | — | — | — |
+
+**Unsupported:** object **11 ConnectedLBracket**, connected component 0, local triangles **[0,1,2,3]**, remains **unknown/unsupported**. Its connected planar patch is L-shaped, not one rectangle; support rejection reason: `four_corners_required`. These source faces remain part of the occluding geometry.
+
+## Covered-surface pixel evidence
+
+Counts use merged source triangles, horizontal/vertical different-surface neighbors, RGB Euclidean contrast **≥24**, and unique surface-owned boundary endpoints. Every witness meets **≥16 surface pixels and ≥4 contrasting boundary pixels**.
+
+| Surface: object / local triangles | Witness | Surface pixels | Boundary pixels |
+|---|---|---:|---:|
+| RackBase / [4,5] | S | 2,629 | 495 |
+| RackBase / [6,7] | S | 2,252 | 233 |
+| RackBase / [8,9] | B | 3,830 | 782 |
+| RackBase / [10,11] | L | 2,646 | 332 |
+| RackRoof / [2,3] | L | 71,148 | 1,068 |
+| RackRoof / [4,5] | S | 2,630 | 310 |
+| RackRoof / [6,7] | S | 2,250 | 227 |
+| RackRoof / [8,9] | B | 3,830 | 730 |
+| RackRoof / [10,11] | L | 2,646 | 332 |
+| LeftUpright / [10,11] | L | 28,080 | 208 |
+| LowerRearUnit / [8,9] | B | 2,652 | 210 |
+| LowerFrontRail / [2,3] | S | 1,548 | 238 |
+| LowerFrontRail / [4,5] | S | 2,055 | 360 |
+| LowerFrontRail / [6,7] | S | 99 | 18 |
+| UpperFrontRail / [2,3] | S | 1,547 | 378 |
+| UpperFrontRail / [4,5] | S | 2,056 | 255 |
+| UpperFrontRail / [6,7] | S | 99 | 9 |
+| SlantedIndicator / [0,1] | L | 67 | 55 |
+
+## Pixel localizations
+
+All coordinates below are world metres; sample coordinates are zero-based **(x,y)** from the upper-left.
+
+**sample_A — TOP (135,175)**
+- Source: **object 1 RackRoof, local triangles [2,3]**; the sampled triangle is local **3**.
+- Surface center: **(0,0,6.5)**; front orientation: **(0,0,+1)**.
+- Rectangle corners: **(-7,-6,6.5), (7,-6,6.5), (7,6,6.5), (-7,6,6.5)**.
+- Specified-view current image: **TOP `image-04`**.
+- Complete-readable witness: **LEFT**, reference L below. TOP is also a complete-readable witness, with **133,172 surface pixels / 1,460 boundary pixels**.
+
+**sample_B — LEFT (234,483)**
+- Source: **object 0 RackBase, local triangles [10,11]**; the sampled triangle is local **10**.
+- Surface center: **(-7,0,-0.25)**; front orientation: **(-1,0,0)**.
+- Rectangle corners: **(-7,-6,-0.5), (-7,-6,0), (-7,6,0), (-7,6,-0.5)**.
+- Specified-view current image and complete-readable witness: **LEFT**, reference L below, with **2,646 surface pixels / 332 boundary pixels**.
+
+## Source-face targets
+
+- **target_C — RackBase [2,3]: unknown.** This is the upward-facing base top, center **(0,0,0)**, extent **x∈[-7,7], y∈[-6,6], z=0**, front **(0,0,+1)**. **All six front-facing pool candidates have positive-area occlusion.** No complete-readable witness exists in this pool.
+- **target_D — RackBase [0,1]: unknown.** This is the base underside, center **(0,0,-0.5)**, extent **x∈[-7,7], y∈[-6,6], z=-0.5**, front **(0,0,-1)**. **No pool camera is front-facing** to it. No complete-readable witness exists.
+
+## Current frame references
+
+These references bind the witness abbreviations to the actual current frames:
+- **S / SCENE:** `active-host-image:0d5f2333d4b6aac5bffecbb97edd2804449b796441b976f5538b3caa80bb9e04`
+- **L / LEFT:** `active-host-image:3ea67d6006801d0f134d75d5e2eddb96875d3033d891b158ac00f851a094fe84`
+- **B / BACK:** `active-host-image:c92346ef8dd953fda7d2be0fcdb9cb631a5e7b9f1119156304d08ea91ac5a615`
+- **T / TOP:** `image-04`
