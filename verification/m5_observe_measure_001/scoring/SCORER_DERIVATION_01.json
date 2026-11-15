@@ -1,0 +1,39 @@
+{
+  "schema": "m5-independent-checker-derivation-v1",
+  "original_contract_path": "scoring/SCORING_CONTRACT.json",
+  "original_contract_sha256": "2b4e1dec7f48381a33d6c528f46bd84fa663a3ef9bc90cdf27ca91637487d805",
+  "original_bytes_preserved": true,
+  "contract_clarification_path": "PUBLIC_CONTRACT_CLARIFICATION.json",
+  "contract_clarification_sha256": "1f374b4422de1f945b9e37113e68274b2bb3421a82329b569b626a879fe0e9d6",
+  "field_name_clarification": {
+    "public_field": "measurement_scope",
+    "value": "whole_objects",
+    "original_shorthand": "scope",
+    "public_alias_added": false,
+    "geometry_truth_threshold_or_outcome_changed": false,
+    "actual_B_executions_at_clarification": 0
+  },
+  "source_checker": {
+    "initial": {"path": "source_contract.py", "sha256": "ff1cf71b0478353d0b71b9dc1aece8f7098dc63b29ddca1d41fe9b7a7dfebe6e"},
+    "derived": {"path": "source_contract_r1.py", "sha256": "b48f1519ab91d6158c83b27e58aec6c6c3219e6360f992e7485d05b3a86240f3"},
+    "changes": ["Use the exact clarified public measurement_scope field.", "Additionally compare current object instances, including supplemented objects, with the actual parent full-scene identity.", "Check the full-scene document epoch against the parent document."],
+    "initial_control_report": {"path": "scoring/SOURCE_CONTROLS.json", "sha256": "4104e4486986768aac2112debb96c2c4c04d5927703df7e9b38410738b24bdf9", "cases": 27},
+    "derived_control_report": {"path": "scoring/SOURCE_CONTROLS_R1.json", "sha256": "fb2e34d6da0c1f0bc01c9bed8a36b6391ed8bd4fc3f6107d4de7c11c4b574a65", "cases": 29},
+    "all_controls_passed": true
+  },
+  "quality_checker": {
+    "initial": {"path": "quality_saved.py", "sha256": "993635a4b34c5b7ca7d782f3c92a66afecb7f971dc64a125ccfa33bf3a1538ff"},
+    "derived": {"path": "quality_saved_r1.py", "sha256": "24a4a3de45f1d00f54c357ba4eebe4e42f080399b1db8deb7e023a825b4494e7"},
+    "changes": ["Require the actual ordinary task scene revision, capture scope, source and selector bindings to match its original host capture.", "Independently count triangle boundary and nonmanifold edges for the published topology.", "Check read-only world-metre A-to-B task semantics and the registered fact set."],
+    "initial_A_qualification": {"path": "A_QUALIFICATION.json", "sha256": "eac74a415aafceba2b3f67b255863159f86cbd9f4e6342a27b10a0257f8c022f"},
+    "derived_A_qualification": {"path": "A_QUALIFICATION_R1.json", "sha256": "3634f783da593b34a0889ea660530be7f6e4fabb9a504709cb6754e4ecc4722b"},
+    "same_original_runtime_evidence": true,
+    "both_A_reviews_passed": true,
+    "failed_quality_executions": 0
+  },
+  "actual_runtime_retries": 0,
+  "new_actual_calls": 0,
+  "new_rasters": 0,
+  "new_models": 0,
+  "quality_does_not_score_runtime_or_cost_rankings": true
+}
