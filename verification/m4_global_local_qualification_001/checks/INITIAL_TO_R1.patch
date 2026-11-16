@@ -1,0 +1,40 @@
+--- saved_frames.py
++++ saved_frames_r1.py
+@@ -102,7 +102,7 @@
+     targeted = 'observation_target' in capture
+     scope = 'target_observation_meshes' if targeted else 'complete_scene_meshes'
+     identity = capture['host_identity']
+-    evidence.check(capture['capture_scope'] == identity['capture_scope'] == binding['capture_scope'] == scope,
++    evidence.check(capture.get('capture_scope', 'complete_scene_meshes') == identity['capture_scope'] == binding['capture_scope'] == scope,
+                    'parent_scope_preserved')
+     evidence.check(binding['scene_revision'] == capture['revision']
+                    and binding['document_epoch'] == identity['document_epoch']
+@@ -115,9 +115,17 @@
+                    and binding['coordinate_frame'] == capture['coordinate_frame'] == 'world'
+                    and binding['source'] == capture['source'] == 'blender', 'actual_source_units')
+     base = {key: item for key, item in binding.items() if key not in {
+-        'source_binding_sha256', 'camera_specification', 'geometry_identity', 'camera_identity', 'binding_sha256'}}
++        'source_binding_sha256', 'camera_specification', 'geometry_identity', 'camera_identity', 'binding_sha256',
++        'runtime_source_sha256', 'source_status', 'disk_status', 'source_check_scope'}}
+     evidence.check(fingerprint(base) == binding['source_binding_sha256'], 'source_binding_preimage')
+-    complete = {key: item for key, item in binding.items() if key != 'binding_sha256'}
++    added_keys = {'runtime_source_sha256', 'source_status', 'disk_status', 'source_check_scope'}
++    if set(binding) & added_keys:
++        evidence.check(binding.get('runtime_source_sha256') == '7d2d4352f462c64a46e6fccf447c6f030c08b96e95517a3b2b6776ed50b69a6a'
++                       and binding.get('source_status') == 'loaded_generation'
++                       and binding.get('disk_status') == 'disk_not_checked'
++                       and binding.get('source_check_scope') == 'bound_generation_identity',
++                       'service_appended_frozen_runtime_source_attestation')
++    complete = {key: item for key, item in binding.items() if key not in added_keys | {'binding_sha256'}}
+     evidence.check(fingerprint(complete) == binding['binding_sha256'], 'camera_binding_preimage')
+     cameras = binding['camera_specification']
+     views = cameras['views']
+@@ -385,7 +393,7 @@
+     evidence.check(loaded.get('human_eye_plugin/blender_host.py') == manifest['human_eye_plugin/blender_host.py'],
+                    'fixed_host_source_loaded_from_actual_request')
+     matches = [capture for capture in captures if capture.get('revision') == expected_binding['scene_revision']
+-               and capture.get('capture_scope') == expected_binding['capture_scope']]
++               and capture.get('capture_scope', 'complete_scene_meshes') == expected_binding['capture_scope']]
+     evidence.check(len(matches) == 1, 'unique_current_original_capture')
+     return matches[0], steps
+ 

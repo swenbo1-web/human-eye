@@ -1,0 +1,30 @@
+--- saved_frames_r1.py
++++ saved_frames_r2.py
+@@ -283,7 +283,7 @@
+         surface = int(np.count_nonzero(mask))
+         contrast = int(np.count_nonzero(mask & boundary))
+         bounds, anchor = pixel_location(mask)
+-        front = float(np.dot(np.asarray(facts[roi]['front_direction_world'], dtype=float),
++        front = float(np.dot(np.asarray([float(F(value)) for value in facts[roi]['front_direction_world']], dtype=float),
+                              np.asarray(pose['target_to_eye_unit']))) > 0
+         readable = front and surface >= 16 and contrast >= 4
+         row = row_by_id[roi]
+@@ -417,6 +417,8 @@
+     ys, xs = np.indices((size, size), dtype=np.float64)
+     camera_x = (2 * (xs.ravel() + .5) / 511 - 1) / projection[0, 0]
+     camera_y = (1 - 2 * (ys.ravel() + .5) / 511) / projection[1, 1]
++    sample_inside_xy_frustum = ((np.abs(2 * (xs.ravel() + .5) / 511 - 1) <= 1)
++                                & (np.abs(1 - 2 * (ys.ravel() + .5) / 511) <= 1))
+     origins = (camera_x[:, None] * inverse[:3, 0] + camera_y[:, None] * inverse[:3, 1]
+                + inverse[:3, 3])
+     ray = -inverse[:3, 2]
+@@ -453,7 +455,8 @@
+             weight_u = (vv * pu - uv * pv) / determinant
+             weight_v = (uu * pv - uv * pu) / determinant
+             minimum = np.minimum(np.minimum(weight_u, weight_v), 1 - weight_u - weight_v)
+-            valid = (minimum >= -tolerance) & (depth >= pose['near']) & (depth <= pose['far'])
++            valid = (sample_inside_xy_frustum & (minimum >= -tolerance)
++                     & (depth >= pose['near']) & (depth <= pose['far']))
+             boundary = valid & (minimum <= tolerance)
+             ambiguous |= boundary
+             # Original order is retained for exact analytic ties. Approximate

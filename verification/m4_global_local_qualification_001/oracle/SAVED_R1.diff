@@ -1,0 +1,45 @@
+--- frozen/check_saved.py
++++ derived/check_saved_R1.py
+@@ -162,7 +162,7 @@
+                   and clocks["public_deadline_ns"]<=clocks["owned_deadline_ns"]
+                   and clocks["public_deadline_ns"]-clocks["public_started_ns"]<=30_000_000_000
+                   and clocks["owned_deadline_ns"]-clocks["slot_started_ns"]==600_000_000_000,"original_request_and_owned_deadlines/"+label)
+-    frames = audit.read(NS/"checks"/(label+"_FRAMES.json"))
++    frames = audit.read(NS/"checks"/(label+"_FRAMES_R2.json"))
+     audit.require(frames["passed_checked_scope"] is True and Path(frames["session"]).resolve()==session.resolve(),"independent_frame_checker_current_slot/"+label)
+     for item in frames["input_pins"]:
+         audit.file(item["path"],item["sha256"])
+@@ -228,9 +228,11 @@
+     by_expected = {(row["object_name"],tuple(row["source_triangle_indices"])):row for row in expected_components}
+     for key,roi in actual_components.items():
+         expected,fact = by_expected[key],facts[roi]
+-        audit.require(tuple(map(F,fact["center_world_m"]))==tuple(expected["center_world_m"]),"exact_region_center/"+label+"/"+roi)
+-        normal = oracle.inormalize(tuple(oracle.Interval(x) for x in expected["plane_normal_integer"]))
+-        audit.require(all(interval_contains(axis,value) for axis,value in zip(normal,fact["front_direction_world"])),"oriented_unit_normal_rounding_enclosure/"+label+"/"+roi)
++        audit.require(tuple(map(F,fact["center_world_m"]))==tuple(map(F,expected["center_world_m"])),"exact_region_center/"+label+"/"+roi)
++        expected_normal = tuple(map(F,expected["plane_normal_integer"]))
++        published_direction = tuple(map(F,fact["front_direction_world"]))
++        audit.require(oracle.cross(published_direction,expected_normal)==(0,0,0) and oracle.dot(published_direction,expected_normal)>0,
++                      "oriented_rational_direction_exact_positive_parallel/"+label+"/"+roi)
+         center,u,v = [tuple(map(F,fact[field])) for field in ("center_world_m","half_edge_u_world_m","half_edge_v_world_m")]
+         actual_corners = {tuple(c+su*a+sv*b for c,a,b in zip(center,u,v)) for su,sv in itertools.product((-1,1),repeat=2)}
+         expected_corners = {fixture_by_name[key[0]]["vertices"][i] for i in expected["boundary_loops"][0]}
+@@ -262,6 +264,9 @@
+             witness = None
+             geometric_proof = "static exact six-direction strict cover proof" if expected["object_name"]=="Obj_06" else "static six-view pixel upper bound plus actual constructed-view pixels"
+         outcome_rows.append(dict(object_name=expected["object_name"],source_triangle_indices=expected["source_triangle_indices"],roi_id=roi,
++                                 independent_normal_integer=expected["plane_normal_integer"],
++                                 independent_unit_normal_exact={"numerator":expected["plane_normal_integer"],"denominator":"sqrt("+str(oracle.dot(expected["plane_normal_integer"],expected["plane_normal_integer"]))+")"},
++                                 public_front_direction_world=fact["front_direction_world"],
+                                  status=fact["status"],reason=fact["reason"],unobserved_reason=evidence_row["unobserved_reason"],
+                                  complete_witness=witness,independent_proof=geometric_proof))
+     if label=="global":
+@@ -279,7 +284,7 @@
+                 document_epoch=binding["document_epoch"],capture_state=binding["capture_state"],binding_sha256=binding["binding_sha256"],
+                 source_binding_sha256=binding["source_binding_sha256"],source_correspondence=correspondence,cameras=cameras,
+                 outcomes=outcome_rows,rendered_views=frames["rendered_views"],unrendered_views=frames["unrendered_views"],
+-                frame_report_pin=oracle.pin(NS/"checks"/(label+"_FRAMES.json")),
++                frame_report_pin=oracle.pin(NS/"checks"/(label+"_FRAMES_R2.json")),
+                 product_parent_child_binding_claim=False)
+ 
+ 

@@ -1,0 +1,26 @@
+{
+  "changes": [
+    {
+      "producer_source": "human_eye_plugin/active_observation.py:64-96",
+      "reason": "Public lossless rational normals can contain strings such as -1/3. Convert through Fraction before the independent float front test."
+    },
+    {
+      "all_on_last_row_or_column": true,
+      "diagnostic": "R1_COVERED_RAY_DIAGNOSTIC.json",
+      "difference_pixels": 1023,
+      "new_rule": "Reject world-ray samples whose pixel centres lie outside NDC [-1,1], before source-triangle intersection admission.",
+      "reason": "Inverse-camera rays must respect inclusive XY NDC clipping even when retained geometry extends beyond the viewport."
+    }
+  ],
+  "corrected_source": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_global_local_qualification_001\\checks\\saved_frames_r2.py",
+    "sha256": "a7e7fb4d42fc845e43b37e0870af10beb79da333a70f5017bcf534cb11390f34"
+  },
+  "new_actual_operations": 0,
+  "prior_source": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_global_local_qualification_001\\checks\\saved_frames_r1.py",
+    "sha256": "955c84d5f6618e66a82cbbf32f01a76e69add0e51c4d1c780573d5cc0e5d431e"
+  },
+  "prior_sources_and_failures_preserved": true,
+  "schema": "m4-global-local-saved-checker-correction-v1"
+}
