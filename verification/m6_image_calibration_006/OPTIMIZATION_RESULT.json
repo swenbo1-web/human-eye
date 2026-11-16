@@ -1,0 +1,131 @@
+{
+  "cycle_id": "M6-IMAGE-CALIBRATION-006",
+  "decision": "adopt_v2_for_this_fixed_case_cold_calibration",
+  "UTC": "2026-11-16T01:23:20.726832+00:00",
+  "plan": "OPTIMIZATION_PLAN.json",
+  "binding": "OPTIMIZATION_BINDING.json",
+  "comparison": "CALIBRATION_COMPARISON.json",
+  "comparison_passed": 86,
+  "comparison_total": 86,
+  "RGBA_pairs_equal": 21,
+  "exact_readback_and_payload_candidate_pairs": 6,
+  "cold": {
+    "v1": {
+      "wall_s": 50.959160200029146,
+      "tree_CPU_s": 45.625,
+      "peak_tree_RSS_bytes": 615383040
+    },
+    "v2": {
+      "wall_s": 32.264752500050236,
+      "tree_CPU_s": 32.40625,
+      "peak_tree_RSS_bytes": 648314880
+    },
+    "wall_reduction_fraction": 0.3668507806368484,
+    "tree_CPU_reduction_fraction": 0.2897260273972603,
+    "peak_tree_RSS_increase_fraction": 0.05351437699680517
+  },
+  "warm": {
+    "v1": {
+      "wall_s": 0.8486929000355303,
+      "tree_CPU_s": 0.5625,
+      "peak_tree_RSS_bytes": 93085696
+    },
+    "v2": {
+      "wall_s": 1.3175465999520384,
+      "tree_CPU_s": 0.9375,
+      "peak_tree_RSS_bytes": 119672832
+    },
+    "wall_increase_fraction": 0.5524421140990805,
+    "wall_increase_s": 0.46885369991650805,
+    "new_Blender_processes_each_request": 0
+  },
+  "individual_protocol_measurements": {
+    "v1_v1_native_cold": {
+      "full_process_wall_s": 25.458320599980652,
+      "tree_cpu_s": 22.609375,
+      "tree_sampled_peak_working_set_bytes": 610369536
+    },
+    "v1_v1_native_warm": {
+      "full_process_wall_s": 0.4249267000122927,
+      "tree_cpu_s": 0.28125,
+      "tree_sampled_peak_working_set_bytes": 88436736
+    },
+    "v1_v2_facts_cold": {
+      "full_process_wall_s": 25.500839600048494,
+      "tree_cpu_s": 23.015625,
+      "tree_sampled_peak_working_set_bytes": 615383040
+    },
+    "v1_v2_facts_warm": {
+      "full_process_wall_s": 0.4237662000232376,
+      "tree_cpu_s": 0.28125,
+      "tree_sampled_peak_working_set_bytes": 93085696
+    },
+    "v2_v1_native_cold": {
+      "full_process_wall_s": 16.25390430004336,
+      "tree_cpu_s": 16.09375,
+      "tree_sampled_peak_working_set_bytes": 646692864
+    },
+    "v2_v1_native_warm": {
+      "full_process_wall_s": 0.656615599989891,
+      "tree_cpu_s": 0.46875,
+      "tree_sampled_peak_working_set_bytes": 115630080
+    },
+    "v2_v2_facts_cold": {
+      "full_process_wall_s": 16.010848200006876,
+      "tree_cpu_s": 16.3125,
+      "tree_sampled_peak_working_set_bytes": 648314880
+    },
+    "v2_v2_facts_warm": {
+      "full_process_wall_s": 0.6609309999621473,
+      "tree_cpu_s": 0.46875,
+      "tree_sampled_peak_working_set_bytes": 119672832
+    }
+  },
+  "processes": {
+    "v1": 18,
+    "v2": 2,
+    "current_total": 20
+  },
+  "logical_write_read_render_operations": {
+    "v1": 18,
+    "v2": 18,
+    "current_total": 36
+  },
+  "decoding": {
+    "v1": {
+      "cold_decodes": 36,
+      "cache_hits": 0,
+      "RGB_decoded_bytes": 44236800
+    },
+    "v2": {
+      "cold_decodes": 24,
+      "cache_hits": 12,
+      "RGB_decoded_bytes": 29491200,
+      "per_request_cache_peak_bytes": 14745600
+    }
+  },
+  "selection": {
+    "v1_native": {
+      "alpha": 0.5,
+      "restoration_quality_pass": true
+    },
+    "v2_facts": {
+      "alpha": 0,
+      "restoration_quality_pass": false
+    }
+  },
+  "activation": "Invoke protocol_client.py with --stage v2. The frozen default stage v1 remains available to existing callers.",
+  "scope": {
+    "assets": 1,
+    "fixed_historical_proposals": 2,
+    "alphas": [
+      0,
+      0.5,
+      1
+    ],
+    "new_LLM_consumers": 0,
+    "end_to_end_LLM_consumer_speedup": null,
+    "OS_cache_coldness": null
+  },
+  "accounting": "Protocol measurements include the whole local client and its descendants. Batch whole-process resources and per-operation deltas are nested observations."
+}

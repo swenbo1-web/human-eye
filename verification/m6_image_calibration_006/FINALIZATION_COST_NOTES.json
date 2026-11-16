@@ -1,0 +1,104 @@
+{
+  "cycle_id": "M6-IMAGE-CALIBRATION-006",
+  "new_Pro_consumers": 0,
+  "new_Blender_processes": 0,
+  "failures": [
+    {
+      "label": "freeze_v1",
+      "status": "failed_before_freeze_output_and_before_Blender",
+      "cause": "HERE-relative initial blend path resolved against repository cwd",
+      "correction": "Resolve binding path against batch directory",
+      "wall_s": 0.1248763,
+      "tree_CPU_s": 0.0625,
+      "retry": "freeze_v1_retry",
+      "retry_wall_s": 0.3039144,
+      "retry_tree_CPU_s": 0.171875
+    }
+  ],
+  "pure_mock_iterations": [
+    {
+      "label": "batch_mock_001",
+      "wall_s": 3.5575502,
+      "tree_CPU_s": 2.796875,
+      "peak_tree_RSS_bytes": 88608768
+    },
+    {
+      "label": "batch_mock_002",
+      "wall_s": 3.3435392,
+      "tree_CPU_s": 2.640625,
+      "peak_tree_RSS_bytes": 90619904
+    },
+    {
+      "label": "batch_mock_003",
+      "wall_s": 3.316161,
+      "tree_CPU_s": 2.84375,
+      "peak_tree_RSS_bytes": 88797184
+    }
+  ],
+  "readonly_agent_audits": [
+    {
+      "agent": "cal006_runtime",
+      "scope": "frozen runtime and optimized source",
+      "shell_count": 3,
+      "wall_s": 0.505704,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "agent": "cal006_quality",
+      "scope": "v1 snapshot/source and scoring",
+      "shell_count": 2,
+      "wall_s": 0.5622583999999999,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "agent": "cal006_quality",
+      "scope": "final v2 pixel/array/private score/cost schema",
+      "shell_count": 3,
+      "wall_s": 1.4445292,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "agent": "cal006_batch_oracle",
+      "scope": "final two actual batches, 18 steps and identity/resources",
+      "shell_count": 3,
+      "wall_s": 1.0209955,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "agent": "cal006_quality",
+      "scope": "final report and adoption/cost notes",
+      "shell_count": 2,
+      "wall_s": 0.3251869,
+      "CPU_s": null,
+      "peak_RSS_bytes": null
+    },
+    {
+      "agent": "cal006_runtime",
+      "scope": "final report actual protocol/default/adoption and historical costs",
+      "shell_count": 2,
+      "wall_s": 0.376604,
+      "CPU_s": null,
+      "peak_RSS_bytes": null,
+      "failed_shell_count": 1,
+      "failure": "First shell appended a guessed PROTOCOL_PREFLIGHT.json path after successful requested file reads; that file does not exist. Second shell verified actual protocol evidence successfully."
+    }
+  ],
+  "audit_failures": 1,
+  "source_frozen_after_actual_execution": true,
+  "unmeasured": {
+    "whole_task_CPU_s": null,
+    "whole_task_peak_RSS_bytes": null,
+    "root_model_usage": null,
+    "collaboration_model_usage": null,
+    "provider_fees": null
+  },
+  "scope": "Audit shell elapsed times are tool observations. Pure mock monitors are already included in COSTS roots and retain their labels. This file adds context without a second additive total.",
+  "report_review_clarifications": [
+    "Explicit four nonzero candidates per stage, eight physical scans total",
+    "Explicit pre-registered coefficient set and image-selected half amplitude"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "cycle_id": "M6-IMAGE-CALIBRATION-006",
+  "status": "fixed_after_first_stage_before_optimized_execution",
+  "UTC": "2026-11-16T00:50:11.760121+00:00",
+  "epoch": 1794790211.760121,
+  "first_stage_snapshot": "STAGE_V1_SNAPSHOT.json",
+  "first_stage_score_snapshot": "STAGE_V1_SCORING_SNAPSHOT.json",
+  "first_stage_cost": "COSTS_v1.json",
+  "observed_repetition": {
+    "Blender_processes": 18,
+    "logical_engine_operations": 18,
+    "protocol_cold_wall_s": [
+      25.458320599980652,
+      25.500839600048494
+    ],
+    "protocol_warm_wall_s": [
+      0.4249267000122927,
+      0.4237662000232376
+    ],
+    "warm_new_Blender": 0,
+    "PNG_cold_decodes": 36,
+    "PNG_cache_hits": 0
+  },
+  "single_change": "Owned per-proposal three-candidate engine batching with shared reference-RGB preparation",
+  "fixed_math": {
+    "alphas": [
+      0,
+      0.5,
+      1
+    ],
+    "pooled_RGB_samples": 3686400,
+    "loss": "integer absolute RGB sum divided by fixed count; ratio to alpha0",
+    "selector": "minimum image sum among technically valid candidates; exact tie smaller alpha",
+    "proposal_shapes": "Exact two original sourceID/world-displacement payloads"
+  },
+  "batch_execution": {
+    "owned_processes_target": 2,
+    "logical_write_read_render_operations": 18,
+    "candidates_per_process": 3,
+    "before_each_candidate": "Reload same initial saved blend",
+    "after_each_save": "Fresh disk reopen before mesh export and render",
+    "resource_accounting": "Per-operation wall/CPU deltas; shared process lifetime CPU/RSS counted once"
+  },
+  "acceptance": [
+    "All six candidate native coordinates and complete readback fields unchanged",
+    "All candidate cameras and RGBA unchanged",
+    "All integer image sums, ratios and selected coefficients unchanged",
+    "Full calibration cost measured, cold and exact identity reuse separated"
+  ],
+  "new_Pro": 0,
+  "new_training": 0,
+  "new_API": 0,
+  "hidden_target_used_by_optimized_execution": false
+}

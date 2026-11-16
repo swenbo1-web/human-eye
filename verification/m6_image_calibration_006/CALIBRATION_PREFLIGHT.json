@@ -1,0 +1,88 @@
+{
+  "cycle_id": "M6-IMAGE-CALIBRATION-006",
+  "status": "pass",
+  "checks": {
+    "actual_JSON_lines_status_client_exit_zero": true,
+    "actual_status_no_error": true,
+    "actual_status_formal_unstarted": true,
+    "actual_protocol_rejects_changed_reference_before_execution": true,
+    "actual_protocol_stdout_exactly_one_JSON_line": true,
+    "cold_executes_exactly_three_candidates": true,
+    "three_fixed_alphas": true,
+    "integer_MAE_selects_half": true,
+    "normalizes_to_current": true,
+    "selection_freeze_exists_before_private_scoring": true,
+    "warm_result_identity_preserved": true,
+    "warm_validates_and_reuses_zero_execution": true,
+    "warm_reports_zero_new_Blender": true,
+    "missing_freeze_receipt_recovered_from_verified_result": true,
+    "exact_tie_selects_smallest_alpha": true,
+    "technical_failure_excluded_from_selection": true,
+    "no_eligible_candidate_is_explicit": true,
+    "changed_camera_reference_rejected": true,
+    "unknown_proposal_rejected": true,
+    "cached_request_rejects_runtime_source_change": true,
+    "warm_rejects_modified_saved_artifact": true,
+    "partial_candidate_receipt_preserved": true,
+    "query_exposes_pending_failure_state": true,
+    "failed_call_does_not_freeze_image_selection": true,
+    "resume_only_incomplete_candidate": true,
+    "fixture_source_current_alpha_contract": true,
+    "formal_candidate_sessions_uncreated": true
+  },
+  "passed": 27,
+  "total": 27,
+  "expected_errors": [
+    {
+      "name": "changed_camera_reference_rejected",
+      "type": "ValueError",
+      "message": "request_references_differ_from_fixed_source_binding"
+    },
+    {
+      "name": "unknown_proposal_rejected",
+      "type": "ValueError",
+      "message": "unknown_fixed_proposal"
+    },
+    {
+      "name": "cached_request_rejects_runtime_source_change",
+      "type": "ValueError",
+      "message": "calibration_input_or_runtime_binding_changed"
+    },
+    {
+      "name": "warm_rejects_modified_saved_artifact",
+      "type": "ValueError",
+      "message": "bound_file_identity_changed_C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_image_calibration_006\\private\\calibration_preflight\\c423b7\\unit\\private\\sessions\\v1_v1_native_a0\\saved_blend.fixture"
+    },
+    {
+      "name": "partial_candidate_receipt_preserved",
+      "type": "RuntimeError",
+      "message": "candidate_execution_incomplete_actual_state_preserved"
+    }
+  ],
+  "attempts": [
+    {
+      "stage": "pure_fixture",
+      "counters": {
+        "executions": 7,
+        "decodes": 6,
+        "fail_once": false
+      }
+    }
+  ],
+  "protocol_status_evidence": {
+    "path": "private/calibration_preflight/c423b7/status/RESULT.json",
+    "bytes": 17302,
+    "sha256": "6c54704b3bbfb9042d61064d51f23c41b05287af3a9843834bbcc5d40258f63f"
+  },
+  "protocol_rejection_evidence": {
+    "path": "private/calibration_preflight/c423b7/badref/RESULT.json",
+    "bytes": 17328,
+    "sha256": "f1e454e4e496234619ad16247f7e280fbb96be3d740369458ee3c9ef88125b60"
+  },
+  "scope": "Synthetic candidate artifacts exercise state/receipt/selection logic. Actual subprocess protocol calls are read-only status and changed-reference rejection. No fixture blend is opened by Blender.",
+  "evidence_directory": "private\\calibration_preflight\\c423b7",
+  "actual_Blender_calls": 0,
+  "actual_Pro_calls": 0,
+  "wall_s": 0.8550248999963515,
+  "CPU_s": 0.28125
+}

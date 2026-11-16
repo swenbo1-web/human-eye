@@ -1,0 +1,126 @@
+{
+  "cycle_id": "M6-IMAGE-CALIBRATION-006",
+  "baseline_commit": "644012279d8c0d43e2bee9d8b5d38ea30195e5da",
+  "contract_commit": "0b681d1315f99be1856835fa4336e8e852d14a2b",
+  "task_registration_epoch": 1794788664.5798278,
+  "proposals": [
+    {
+      "proposal_id": "v1_native",
+      "source_payload": {
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_image_correspondence_005\\private\\sessions\\v1_repair_native\\payloads\\p59a66b65695b4432a60aac31c839f05e.npz",
+        "bytes": 898,
+        "sha256": "755b346daf3ac08ec6100dc8d939beee63a551ca296518dc4798bd67144d3eb2"
+      },
+      "payload": {
+        "path": "private/input/proposals/v1_native.npz",
+        "bytes": 898,
+        "sha256": "755b346daf3ac08ec6100dc8d939beee63a551ca296518dc4798bd67144d3eb2"
+      },
+      "source_points": 40
+    },
+    {
+      "proposal_id": "v2_facts",
+      "source_payload": {
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_image_correspondence_005\\private\\sessions\\v2_repair_facts\\payloads\\p730dcab2cdc14dfe964c73d2d90fd0d2.npz",
+        "bytes": 3172,
+        "sha256": "5b465de62574ef4fd8583c29d88c01dfcc266fcb8e54091bc006c080e0e516b0"
+      },
+      "payload": {
+        "path": "private/input/proposals/v2_facts.npz",
+        "bytes": 3172,
+        "sha256": "5b465de62574ef4fd8583c29d88c01dfcc266fcb8e54091bc006c080e0e516b0"
+      },
+      "source_points": 107
+    }
+  ],
+  "alphas": [
+    0,
+    0.5,
+    1
+  ],
+  "geometry_rule": "Each coefficient starts at the same actual V0, preserving source IDs and multiplying the frozen original world-displacement payload by alpha.",
+  "metric": {
+    "local_views": [
+      "forearm_front",
+      "forearm_side",
+      "forearm_45"
+    ],
+    "resolution": [
+      640,
+      640
+    ],
+    "RGB_sample_count": 3686400,
+    "rule": "Pooled integer RGB absolute error sum divided by sample count; report per-view errors and ratio to actual alpha0.",
+    "selection": "Minimum image error among technically available candidates, exact tie chooses smaller alpha.",
+    "binding": "Current geometry, proposal, reference/current PNG bytes, camera and renderer source identities"
+  },
+  "stage_v1": {
+    "entrypoint": "Actual calibration protocol client calling the reusable calibrator",
+    "execution": "Six cold candidates, each actual sparse write/save, independent fresh read and three-view render using existing owned workers.",
+    "expected_Blender_processes": 18,
+    "warm_reuse": "Repeat identical requests after validating complete input/output identities, with zero new owned Blender jobs."
+  },
+  "stage_v2": {
+    "boundary": "Only after all first-stage candidate/image/technical results, image choices and complete cost are fixed.",
+    "allowed_optimization": "One owned-process batch per proposal, resetting to the same initial file before each candidate, then saving and freshly reopening for reading/rendering. Reference RGB reuse belongs to the same batch preparation change.",
+    "invariants": "Alpha set, proposals, target images, sample count, metric, tie rule, actual native coordinates, camera, RGBA, image errors and selected coefficient.",
+    "adoption": "Compare complete calibration wall/CPU/RSS, process versus logical operation counts and cold/warm costs. Retain first version if measured benefit is insufficient."
+  },
+  "independent_scoring": {
+    "order": "Freeze actual image result and coefficient choice before loading private target coordinates or support labels.",
+    "support_points": 47,
+    "support_RMSE_reduction_minimum": 0.3,
+    "observation_points": 410,
+    "observation_RMSE": "strict_decrease",
+    "normal_editable_points": 227,
+    "normal_editable_RMS_maximum_m": 0.0001,
+    "normal_observation_points": 363,
+    "report": "RMSE/p95/max, normal displacement, actual activity, exterior/native preservation, boundary/side-depth and complete scoped contacts."
+  },
+  "technical_QA": "Existing source/native topology, matrix, UV/material/scene and protected-coordinate preservation, operation/cumulative budget, finite coordinates, new degeneracy/reversal and full associated-domain contact comparison.",
+  "midpoint": {
+    "source": {
+      "path": "MIDPOINT_SOURCE_BINDING.json",
+      "bytes": 8272,
+      "sha256": "4300dcee0972008959b8445da1c8994e7a22efe1b11a774eca8b5561422c15a2"
+    },
+    "image_result": {
+      "path": "MIDPOINT_IMAGE_RESULT.json",
+      "bytes": 6739,
+      "sha256": "8b5874fcba63b92731d3e4deff5f5c5e769e1bedaa9406fcea0ad04513bca086"
+    },
+    "role": "Historical independent pre-registered alpha0.5 control. New entrypoint reproduces its saved arrays and image ordering and completes its technical/contact QA."
+  },
+  "isolation": "Calibration and image selection use current state, fixed proposals, matched reference PNGs/cameras and technical QA. Private geometry target and damaged labels are read only by the independent scorer after image freezing.",
+  "recovery": "Persist candidate and operation state. Inspect completed owned artifacts and identity-bound receipts before resuming. Preserve operation IDs and read attempt counters.",
+  "source_binding": {
+    "path": "SOURCE_BINDING.json",
+    "bytes": 31073,
+    "sha256": "0c8e679e2a64dce0f9ade4e3a44d233c66f52c7136803e86896c7e962f290684"
+  },
+  "Python": {
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_shape_train_001\\private\\venv\\Scripts\\python.exe",
+    "bytes": 277808,
+    "sha256": "b95409b2edc04f3db3f2a5021fa52d2e0791ae978c13cdeb857cab0f35476919"
+  },
+  "Blender": {
+    "path": "D:\\Tools\\blender5.2\\blender.exe",
+    "bytes": 113014232,
+    "sha256": "284f4041f98e113f3dc10654a7193ffaaa9bfdfec8b87fa116620a48b5f6d4cb"
+  },
+  "resources": {
+    "threads": 1,
+    "target_RSS_bytes": 4294967296,
+    "numerical_Blender_timeout_s": 7200
+  },
+  "limits": {
+    "new_Pro_consumers": 0,
+    "training": 0,
+    "Google_API_calls": 0,
+    "new_paid_API_calls": 0,
+    "formal_deployment": 0
+  },
+  "accounting": "Separate actual protocol clients, historical proposal-model generation, all current calibration work/failed attempts, nested worker operations, process resources and image decode/cache observations. Unmeasured fees and root/agent usage remain unknown.",
+  "conclusion_scope": "One fixed development asset and two historical proposals at exactly three coefficients. Report failure within these sampled coefficients and independent target quality separately from image improvement.",
+  "completion": "Fixed commit, complete local evidence and source references, one authorized planning callback, AL delivery and batch end for independent review."
+}
