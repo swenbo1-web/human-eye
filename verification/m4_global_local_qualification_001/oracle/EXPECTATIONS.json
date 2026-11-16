@@ -1,0 +1,64 @@
+{
+  "schema": "global-local-independent-expectations-v1",
+  "task": "M4-GLOBAL-LOCAL-QUALIFICATION-001",
+  "geometry_sha256": "34c4ad599c6ead7548b21300315df25808fa274dad9dccafbf3b5808fee56ad8",
+  "static_qualification_sha256": "549fda4551f5b54c873e59b9c0fa83bea0599966c414e5eaea5a2368ec0cacca",
+  "static_oracle_sha256": "019242f0d881dff998daca74ec5303bda86b202233e207da966b9773673d87f2",
+  "source": {
+    "object_count": 9,
+    "vertex_count": 54,
+    "triangle_count": 56,
+    "maximal_coplanar_component_count": 24,
+    "rectangle_supported_component_count": 22,
+    "supported_triangle_count": 44,
+    "unsupported_component_count": 2,
+    "unsupported_triangle_count": 12,
+    "eligible_object_names": ["Obj_02", "Obj_06", "Obj_09"],
+    "eligible_local_triangle_indices": [0, 1],
+    "unsupported_object_names": ["Obj_05", "Obj_07"],
+    "source_face_meaning": "Current evaluated capture triangle rows. Fixed fixture order is independently checked. No general original-polygon or original-vertex ID claim."
+  },
+  "sessions": {
+    "global": {
+      "query": {"mode": "active_observation"},
+      "scope": "complete_scene_meshes",
+      "eligible_regions": 3,
+      "all_eligible_actual_surface_pixels_upper": 2,
+      "open_region_coverage": "unknown",
+      "open_region_reason": "pixel_evidence_insufficient",
+      "covered_region_coverage": "unknown",
+      "covered_region_reason": "positive_area_occlusion_all_front_views",
+      "complete_readable_eligible_witness_count": 0,
+      "actual_view_count": "Record only constructed views. Unconstructed views remain unrun. Static six-direction geometry is a separate proof."
+    },
+    "local_open": {
+      "query": {"mode": "active_observation", "objects": [{"name": "Obj_02"}]},
+      "scope": "target_observation_meshes",
+      "selected_eligible_object": "Obj_02",
+      "supported_target_regions": 1,
+      "complete_readable_target_witness_count": 1,
+      "expected_TOP_geometry": "Entire region forward and unobstructed. Actual chosen readable witness may use another geometrically complete direction if valid.",
+      "actual_readability_rule": {"surface_pixels_at_least": 16, "contrasting_boundary_pixels_at_least": 4, "rgb_euclidean_contrast_at_least": 24}
+    },
+    "local_covered": {
+      "query": {"mode": "active_observation", "objects": [{"name": "Obj_06"}]},
+      "scope": "target_observation_meshes",
+      "selected_eligible_object": "Obj_06",
+      "supported_target_regions": 1,
+      "complete_readable_target_witness_count": 0,
+      "target_coverage": "unknown",
+      "target_reason": "positive_area_occlusion_all_front_views"
+    }
+  },
+  "binding": {
+    "same_slot_geometry": "Actual raw world vertices and each ordered triangle must equal frozen JSON by object name.",
+    "current_identity": ["document_epoch", "host_id", "instance_id", "local_triangle_index", "ordered_geometry"],
+    "scope_independence": "Global and local capture ordering, object_index, camera and identities are independently retained. Fresh-host identities are checked within their slot and matched by frozen object geometry across scopes.",
+    "no_product_parent_child_claim": true,
+    "frame_checks": ["native image delivery", "PNG RGB equality", "NPZ hashes and dtypes", "depth", "object owner", "global source triangle to local triangle", "patch owner", "published matrix", "current source and camera binding", "pixel metrics", "witness entails complete readable region"],
+    "wrong_or_missing_current_source": "fail",
+    "unsupported_or_unrendered": "retain unknown or unrun"
+  },
+  "operations": {"model_consumers": 0, "paid_API_calls": 0, "qualification_owned_limit": 3, "qualification_raster_limit": 18, "constructor_processes_separately_counted": 1},
+  "gate": "All static and three actual qualification conditions must pass. If geometry or local positive control fails, not_realized with original evidence and no replacement scene."
+}
