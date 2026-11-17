@@ -6,6 +6,7 @@ import copy
 from fractions import Fraction
 import hashlib
 import json
+import math
 import time
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from .active_observation import (
     fingerprint, geometry, subtract,
 )
 from .active_observation_images import ActiveObservationImages, _meshes_from_objects
-from .blender_host import _observation_target_cameras
+from .blender_host import _observation_affine_interval, _observation_target_cameras
 from .query_policy import validate_region_task
 
 
@@ -85,13 +86,126 @@ def _local_patch_scope(objects, region):
                       triangle_indices=list(region.triangle_indices))])
 
 
-def _task_next_view(session, relevant):
+def _outward(value, direction):
+    return math.nextafter(value, direction)
+
+
+def _subtract_interval(first, second):
+    return (_outward(first[0] - second[1], -math.inf), _outward(first[1] - second[0], math.inf))
+
+
+def _multiply_interval(first, second):
+    values = [a * b for a in first for b in second]
+    return (_outward(min(values), -math.inf), _outward(max(values), math.inf))
+
+
+def _float_upper(value):
+    result = float(value)
+    return _outward(result, math.inf) if Fraction(result) < value else result
+
+
+def _screen_intervals(point, pose):
+    view, projection = pose['view_matrix'], pose['projection_matrix']
+    world = [float(value) for value in point]
+    camera = [_observation_affine_interval([world, world], row[:3], row[3]) for row in view[:3]]
+    if any(row is None for row in camera) or camera[2][1] >= 0:
+        return None
+    bounds = [[row[0] for row in camera], [row[1] for row in camera]]
+    ndc = [_observation_affine_interval(bounds, row[:3], row[3]) for row in projection[:3]]
+    # Avoid polygon-clipping interpolation entirely. Its uncertainty returns to
+    # the existing real observation path instead of receiving a pixel bound.
+    if any(row is None or row[0] <= -1 or row[1] >= 1 for row in ndc):
+        return None
+    x = _subtract_interval(ndc[0], (-1., -1.))
+    y = _subtract_interval((1., 1.), ndc[1])
+    return tuple(_multiply_interval(_multiply_interval(axis, (511., 511.)), (.5, .5)) for axis in (x, y))
+
+
+def pixel_center_upper_bound(region, objects, pose):
+    """Enclose accepted half-integer samples, including floating barycentrics.
+
+    Published binary64 matrices are the inputs to both the exact classifier
+    and the two-stage raster transform. The host affine interval encloses each
+    dot ordering and gradual underflow. Every source triangle is checked.
+    """
+    unknown = dict(roi_id=region.roi_id, status='unknown', upper_bound=None)
+    try:
+        if (pose.get('projection') != 'orthographic' or pose.get('size_px') != [512, 512]
+                or any(matrix[3] != [0., 0., 0., 1.] for matrix in
+                       (pose['view_matrix'], pose['projection_matrix']))):
+            return dict(unknown, reason='unsupported_pixel_projection')
+        source = objects[region.object_index]
+        vertices = sorted({index for face in region.triangle_indices for index in source[1][face]})
+        screens = {index: _screen_intervals(source[0][index], pose) for index in vertices}
+        if any(value is None for value in screens.values()):
+            return dict(unknown, reason='clipping_or_transform_bound_unknown')
+        unit = Fraction(1, 2**53)
+        gamma = 32 * unit / (1 - 32 * unit)
+        gamma4 = 4 * unit / (1 - 4 * unit)
+        underflow = 32 * Fraction(math.ulp(0.))
+        lower, upper = [math.inf, math.inf], [-math.inf, -math.inf]
+        certificates = []
+        for face_index in region.triangle_indices:
+            points = [screens[index] for index in source[1][face_index]]
+            a, b, c = points
+            area = _subtract_interval(
+                _multiply_interval(_subtract_interval(b[0], a[0]), _subtract_interval(c[1], a[1])),
+                _multiply_interval(_subtract_interval(b[1], a[1]), _subtract_interval(c[0], a[0])))
+            area_lower = min(abs(value) for value in area) if area[0] * area[1] > 0 else 0
+            if area_lower <= 2. ** -31:
+                return dict(unknown, reason='triangle_area_bound_unresolved')
+            low = [min(point[axis][0] for point in points) for axis in (0, 1)]
+            high = [max(point[axis][1] for point in points) for axis in (0, 1)]
+            span = [_outward(high[axis] - low[axis], math.inf) for axis in (0, 1)]
+            # The raster only visits floor(min)..ceil(max), followed by +.5.
+            # Thus each numerator's coordinate differences are bounded by
+            # span+1.5. Using span+2 also covers endpoint-rounding intervals.
+            sx, sy, minimum_area = Fraction(span[0]), Fraction(span[1]), Fraction(area_lower)
+            numerator_max = 2 * (sx + 2) * (sy + 2)
+            area_max = 2 * sx * sy
+            area_error = gamma * area_max + underflow
+            numerator_error = gamma * numerator_max + underflow
+            quotient_max = (numerator_max + numerator_error) / minimum_area * (1 + 2 * unit) + underflow
+            error = (numerator_error / minimum_area
+                + (numerator_max / minimum_area) * (area_error / minimum_area)
+                + 4 * unit * quotient_max + underflow)
+            # w2 is evaluated as two further subtractions, whereas its exact
+            # counterpart is 1-lambda0-lambda1. This bounds all three lambdas.
+            # Exact rational bound arithmetic prevents the bound calculation
+            # itself from rounding inward. Only its final publication is float.
+            epsilon = _float_upper(Fraction(1e-10) + 2 * error + gamma4 * (1 + 2 * quotient_max) + underflow)
+            if not math.isfinite(epsilon) or epsilon >= .01:
+                return dict(unknown, reason='barycentric_conditioning_unresolved')
+            # All accepted exact lambdas are >=-epsilon and sum to one.
+            # At most two negative terms extend either axis past its extrema.
+            for axis in (0, 1):
+                expansion = _outward(2 * epsilon * span[axis], math.inf)
+                lower[axis] = min(lower[axis], _outward(low[axis] - expansion, -math.inf))
+                upper[axis] = max(upper[axis], _outward(high[axis] + expansion, math.inf))
+            certificates.append(dict(source_triangle_index=face_index, area_interval=list(area),
+                area_absolute_lower=area_lower, barycentric_coordinate_error_bound=epsilon - 1e-10,
+                accepted_exact_lambda_lower=-epsilon))
+        ranges = []
+        for low, high in zip(lower, upper):
+            first = max(0, math.ceil(_outward(low - .5, -math.inf)))
+            last = min(511, math.floor(_outward(high - .5, math.inf)))
+            ranges.append([first, last])
+        count = math.prod(max(0, last - first + 1) for first, last in ranges)
+        return dict(roi_id=region.roi_id, status='bounded', upper_bound=count,
+            screen_bounds=[lower, upper], pixel_index_ranges=ranges, source_triangles=certificates,
+            method='outward_two_stage_projection_and_barycentric_error',
+            threshold_surface_pixels=16, actual_observation=False)
+    except (KeyError, TypeError, ValueError, IndexError, OverflowError, ZeroDivisionError):
+        return dict(unknown, reason='pixel_bound_numeric_unresolved')
+
+
+def _task_next_view(session, relevant, skipped=()):
     if not session.state.observed_views:
         return 'SCENE' if relevant else None
     mask = sum(1 << index for index, region in enumerate(session.regions) if region.roi_id in relevant)
     unresolved = mask & ~session.state.covered_mask
     candidates = [(name, (bits & unresolved).bit_count()) for name, bits in session.index.view_masks.items()
-                  if name not in session.state.observed_views and bits & unresolved]
+                  if name not in session.state.observed_views and name not in skipped and bits & unresolved]
     return max(candidates, key=lambda row: row[1])[0] if candidates else None
 
 
@@ -124,7 +238,7 @@ def _witness(scope, region_id, frames_by_id):
 def _render_scope(session, meshes, binding, scope_id, relevant, output, work, stages,
                   check_budget, construction_callback, include_image):
     from .active_observation_host import _interval
-    frames, steps = [], []
+    frames, steps, skipped = [], [], []
     images = None
     if include_image and relevant:
         started = time.perf_counter_ns()
@@ -133,9 +247,27 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
                                          _prepared_meshes=(session.objects, meshes), _measure_stages=True)
         stages['patch_mapping_' + scope_id] = _interval(started)
     while images is not None:
-        name = _task_next_view(session, relevant)
+        name = _task_next_view(session, relevant, {row['view_name'] for row in skipped})
         if name is None:
             break
+        if scope_id == 'global' and frames:
+            started = time.perf_counter_ns()
+            pose = next(item for item in session.cameras['views'] if item['name'] == name)
+            covered = set(session.summary()['covered_roi_ids'])
+            bounds = [pixel_center_upper_bound(region, session.objects, pose) for region in session.regions
+                      if region.roi_id in relevant and region.roi_id not in covered
+                      and session.index.classifications[name][region.roi_id]['complete']]
+            work['pixel_bound_region_calls'] += len(bounds)
+            stages['pixel_bounds_' + name] = _interval(started)
+            if bounds and all(row['status'] == 'bounded' and row['upper_bound'] < 16 for row in bounds):
+                skipped.append(dict(view_name=name, reason='pixel_upper_bound_below_readability',
+                    regions=bounds, actual_observation=False,
+                    geometric_non_candidates=[dict(roi_id=region.roi_id,
+                        classification=session.index.classifications[name][region.roi_id]['status'])
+                        for region in session.regions if region.roi_id in relevant and region.roi_id not in covered
+                        and not session.index.classifications[name][region.roi_id]['complete']]))
+                work['global_views_skipped'] += 1
+                continue
         if check_budget is not None:
             check_budget('active_observation_before_raster')
         if construction_callback is not None:
@@ -163,7 +295,7 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
         steps.append(dict(scope_id=scope_id, view_name=name, frame_identity=frame['frame_identity'],
                           update=feedback['update'], summary=feedback['summary']))
     facts = _facts(session, binding, scope_id, frames)
-    return dict(scope_id=scope_id, binding=binding, facts=facts,
+    return dict(scope_id=scope_id, binding=binding, facts=facts, skipped_views=skipped,
                 frame_refs=[frame['frame_identity'] for frame in frames], steps=steps), frames
 
 
@@ -181,7 +313,8 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
     work = dict(mapping_calls=0, geometry_parse_calls=0, mesh_conversions=0, partition_calls=0,
                 camera_calls=0, local_camera_calls=0, prepare_calls=0, index_calls=0,
                 patch_mapping_calls=0, raster_attempts=0, raster_completed=0,
-                local_verified_images=0, PNG_bytes=0, NPZ_bytes=0, array_payload_bytes=0)
+                local_verified_images=0, PNG_bytes=0, NPZ_bytes=0, array_payload_bytes=0,
+                pixel_bound_region_calls=0, global_views_skipped=0)
     stages = {}
     try:
         if check_budget is not None:
