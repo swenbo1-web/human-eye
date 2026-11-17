@@ -1551,8 +1551,8 @@ def project_active_observation_brief(value):
         return None
 
 
-def project_source_region_brief(value):
-    """Place measured facts and image evidence before one complete selection ref."""
+def _validate_source_region_projection(value):
+    """Share the existing source-selection and frame checks across both details."""
     from .query_policy import validate_source_region_query
 
     task = value['task_result']
@@ -1562,11 +1562,17 @@ def project_source_region_brief(value):
     if (value['result_kind'] != 'source_region' or task['region_ref'] != reference
             or value['facts']['region']['source_triangle_indices'] != reference['source_triangle_indices']):
         raise ValueError('source_region_result_scope_mismatch')
-    images = []
-    for index, frame in enumerate(value['frames'], 1):
+    for frame in value['frames']:
         if frame['host_binding_sha256'] != value['binding']['binding_sha256']:
             raise ValueError('source_region_frame_binding_mismatch')
-        images.append({key: copy.deepcopy(frame[key]) for key in (
+
+
+def _project_source_region_brief(value):
+    task = value['task_result']
+    reference = value['region_ref']
+    images = []
+    for index, frame in enumerate(value['frames'], 1):
+        images.append({key: frame[key] for key in (
             'image_ref', 'view_name', 'frame_identity', 'image_sha256', 'camera_identity',
             'host_binding_sha256', 'display_identity', 'image_scope_identity') if key in frame})
         images[-1]['image_block_index'] = index
@@ -1610,17 +1616,27 @@ def project_source_region_brief(value):
     return copy.deepcopy(brief)
 
 
+def project_source_region_brief(value):
+    """Place measured facts and image evidence before one complete selection ref."""
+    _validate_source_region_projection(value)
+    return _project_source_region_brief(value)
+
+
 def _active_observation_content(value, *, is_error, audit, response_detail=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
         consumer_read_status='unconfirmed')
     source_region = value.get('result_kind') == 'source_region'
-    metadata = copy.deepcopy(value) if source_region else {key: copy.deepcopy(value[key]) for key in (
-        'status', 'result_kind', 'observation_status', 'session_id', 'facts',
-        'work', 'generation_work', 'stages', 'generation_stages',
-        'read_only', 'execution_authority', 'target_view_classifications', 'task_result',
-    ) if key in value}
+    source_region_brief = source_region and response_detail != 'full' and not is_error
+    if source_region:
+        metadata = {} if source_region_brief else copy.deepcopy(value)
+    else:
+        metadata = {key: copy.deepcopy(value[key]) for key in (
+            'status', 'result_kind', 'observation_status', 'session_id', 'facts',
+            'work', 'generation_work', 'stages', 'generation_stages',
+            'read_only', 'execution_authority', 'target_view_classifications', 'task_result',
+        ) if key in value}
     if 'binding' in value and not source_region:
         metadata['binding'] = {key: copy.deepcopy(item) for key, item in value['binding'].items()
             if key != 'camera_specification'}
@@ -1629,19 +1645,20 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
     try:
         if type(frames) is not list or len(frames) > (1 if source_region else 6):
             raise ValueError('Active observation requires at most six frame references')
-        metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
-            'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
-            'image_path', 'image_sha256', 'PNG_bytes', 'arrays_path', 'arrays_sha256',
-            'compressed_array_file_bytes', 'array_payload_bytes',
-            'host_binding_sha256', 'source_revision', 'stages', 'feedback_stages',
-            'patch_mapping_version', 'patch_roi_ids', 'patch_mapping_identity',
-            'patch_owner_array_bytes', 'patch_mapping_array_bytes',
-            'mesh_order_identity', 'owner_schema', 'owner_mapping_identity', 'triangle_id_scope',
-            'owner_capabilities', 'frame_identity', 'triangle_owner_array_bytes', 'owner_metadata_array_bytes',
-            'scope_id', 'camera_identity',
-        ) if key in frame} for frame in frames]
         if source_region:
-            metadata['frames'] = copy.deepcopy(frames)
+            _validate_source_region_projection(value)
+        else:
+            metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
+                'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
+                'image_path', 'image_sha256', 'PNG_bytes', 'arrays_path', 'arrays_sha256',
+                'compressed_array_file_bytes', 'array_payload_bytes',
+                'host_binding_sha256', 'source_revision', 'stages', 'feedback_stages',
+                'patch_mapping_version', 'patch_roi_ids', 'patch_mapping_identity',
+                'patch_owner_array_bytes', 'patch_mapping_array_bytes',
+                'mesh_order_identity', 'owner_schema', 'owner_mapping_identity', 'triangle_id_scope',
+                'owner_capabilities', 'frame_identity', 'triangle_owner_array_bytes', 'owner_metadata_array_bytes',
+                'scope_id', 'camera_identity',
+            ) if key in frame} for frame in frames]
         region_task = 'region_task' in value.get('facts', {})
         if region_task:
             metadata['scopes'] = copy.deepcopy(value['scopes'])
@@ -1669,18 +1686,21 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             row.update(base64_ns=time.perf_counter_ns()-mark, base64_chars=len(data), status='constructed')
             content.append({'type': 'image', 'mimeType': 'image/png', 'data': data})
             audit['native_blocks_constructed'] = len(content)
-        metadata['image_delivery'] = {
+        image_delivery = {
             'local_verified_image_count': len(value.get('constructed_frames', frames)),
             'mcp_content_constructed_image_count': len(content),
             'consumer_read_status': 'unconfirmed',
             'frame_reuses': value.get('work', {}).get('frame_reuses', 0),
             'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
         }
+        if source_region_brief:
+            metadata = _project_source_region_brief({**value, 'image_delivery': image_delivery})
+            projected = metadata
+        else:
+            metadata['image_delivery'] = image_delivery
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
             projected = _project_region_task_brief(metadata)
-        if source_region:
-            projected = project_source_region_brief(metadata)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)

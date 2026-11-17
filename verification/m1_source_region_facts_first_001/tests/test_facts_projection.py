@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from human_eye_plugin import live_spatial_mcp as mcp
 from human_eye_plugin.query_policy import validate_source_region_query
@@ -165,6 +166,33 @@ class FactsProjectionTests(unittest.TestCase):
         self.assertEqual(audit['status'], 'failed')
         self.assertFalse(audit['mcp_content_ready'])
         self.assertEqual(audit['native_blocks_constructed'], 0)
+
+    def test_brief_copies_delivered_fields_and_validates_once(self):
+        value = producer('main', 1)
+        copied = []
+        real_deepcopy = copy.deepcopy
+
+        def record_copy(item, memo=None):
+            copied.append(id(item))
+            return real_deepcopy(item, memo)
+
+        with patch.object(mcp.copy, 'deepcopy', side_effect=record_copy), patch.object(
+                mcp, '_validate_source_region_projection', wraps=mcp._validate_source_region_projection) as validate:
+            mcp._tool_result(value, is_error=False)
+        self.assertEqual(validate.call_count, 1)
+        self.assertNotIn(id(value), copied)
+        self.assertNotIn(id(value['facts']['region']['vertices_world_m']), copied)
+        self.assertNotIn(id(value['facts']['region']['triangles_source_vertices']), copied)
+        self.assertNotIn(id(value['task_result']['source_mapping']['region']), copied)
+
+    def test_full_validates_once_without_constructing_undelivered_brief(self):
+        value = producer('main', 1)
+        with patch.object(mcp, '_validate_source_region_projection',
+                wraps=mcp._validate_source_region_projection) as validate, patch.object(
+                mcp, '_project_source_region_brief', wraps=mcp._project_source_region_brief) as project:
+            mcp._tool_result(value, is_error=False, response_detail='full')
+        self.assertEqual(validate.call_count, 1)
+        project.assert_not_called()
 
 
 if __name__ == '__main__':
