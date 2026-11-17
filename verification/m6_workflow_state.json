@@ -23,23 +23,21 @@
     "review_trigger": "implementation completion callback or direct user instruction only"
   },
   "current_cycle": {
-    "id": "M6-IMAGE-CALIBRATION-006",
-    "status": "dispatched",
-    "dispatch_base": "644012279d8c0d43e2bee9d8b5d38ea30195e5da",
-    "contract": "docs/M6_IMAGE_CALIBRATION_006_TASK.md",
-    "purpose": "Finite three-alpha actual image calibration of two frozen model proposals, followed by equivalent batch/decoding optimization",
-    "maximum_consumers": 0,
-    "deterministic_proposal_cases": 2,
+    "id": "M6-CALIBRATION-TRANSFER-007",
+    "status": "prepared_not_dispatched",
+    "dispatch_base": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+    "contract": "docs/M6_CALIBRATION_TRANSFER_007_TASK.md",
+    "purpose": "One existing external-lineage cat case, one fresh Pro proposal, frozen006V2 before/after transfer evaluation",
+    "maximum_consumers": 1,
     "training": 0,
-    "one_optimization": true,
-    "original_file_edits": false,
-    "contract_commit": "0b681d1315f99be1856835fa4336e8e852d14a2b"
+    "component_frozen_after_prior_optimization": true,
+    "original_file_edits": false
   },
   "reviewed_plan_commit": "9191dd8df4999ead991254a5eb4100f1c9944b0b",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "b93c1944-ffcc-464d-b357-b55ad795b98d:32",
-  "last_observed_status": "Finite deterministic calibration task accepted; await completion callback",
-  "pending_followup": true,
+  "last_wait_cursor": "0e153e4c-c965-44c3-8433-090281433fe3:1",
+  "last_observed_status": "Implementer notLoaded with completed006; independent review resumed after interruption",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -226,6 +224,13 @@
       "review_doc": "docs/M6_IMAGE_CORRESPONDENCE_005_REVIEW.md",
       "evidence": "verification/m6_image_correspondence_005_review/RESULTS.json",
       "review_commit": "0b681d1315f99be1856835fa4336e8e852d14a2b"
+    },
+    {
+      "cycle_id": "M6-IMAGE-CALIBRATION-006",
+      "commit": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+      "decision": "accept_fixed_three_alpha_calibration_and_equivalent_v2_cold_optimization_with_warm_memory_tradeoffs",
+      "review_doc": "docs/M6_IMAGE_CALIBRATION_006_REVIEW.md",
+      "evidence": "verification/m6_image_calibration_006_review/RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -299,9 +304,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-IMAGE-CORRESPONDENCE-005",
+    "cycle": "M6-IMAGE-CALIBRATION-006",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "644012279d8c0d43e2bee9d8b5d38ea30195e5da"
+    "fixed_delivery": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -486,11 +491,11 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "image_amplitude_component_dispatched",
-    "cycle_id": "M6-IMAGE-CALIBRATION-006",
+    "status": "external_case_frozen_component_transfer_prepared",
+    "cycle_id": "M6-CALIBRATION-TRANSFER-007",
     "M6_overall_complete": false,
-    "reason": "Correspondence works; internal candidate magnitude/shape is wrong. A frozen actual half-amplitude candidate improves image feedback and numeric repair, supporting a finite local calibration component.",
-    "new_task_dispatched": true,
+    "reason": "Finite calibration and once-optimized batching are verified. Move to a fixed external asset and new proposal without additional algorithm tuning.",
+    "new_task_dispatched": false,
     "timer_or_polling": false
   },
   "objective_closure_notice": {
@@ -708,18 +713,19 @@
     "next_training_dispatched": false
   },
   "previous_completed_cycle": {
-    "id": "M6-IMAGE-CORRESPONDENCE-005",
-    "status": "independently_reviewed_correspondence_pass_restoration1of4",
-    "dispatch_base": "6ed6c88e2ae91d08cff1e80fed436d2e3572bf77",
-    "contract": "docs/M6_IMAGE_CORRESPONDENCE_005_TASK.md",
-    "purpose": "Matched image/current sourceID attention with actual outer fitting support exclusion, followed by real restoration comparison",
-    "maximum_consumers": 4,
+    "id": "M6-IMAGE-CALIBRATION-006",
+    "status": "independently_reviewed_finite_calibration_pass",
+    "dispatch_base": "644012279d8c0d43e2bee9d8b5d38ea30195e5da",
+    "contract": "docs/M6_IMAGE_CALIBRATION_006_TASK.md",
+    "purpose": "Finite three-alpha actual image calibration of two frozen model proposals, followed by equivalent batch/decoding optimization",
+    "maximum_consumers": 0,
+    "deterministic_proposal_cases": 2,
     "training": 0,
     "one_optimization": true,
     "original_file_edits": false,
-    "contract_commit": "b6a03e79807b494352eca71fd44dec9204780ecd",
-    "author_commit": "644012279d8c0d43e2bee9d8b5d38ea30195e5da",
-    "review_doc": "docs/M6_IMAGE_CORRESPONDENCE_005_REVIEW.md"
+    "contract_commit": "0b681d1315f99be1856835fa4336e8e852d14a2b",
+    "author_commit": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+    "review_doc": "docs/M6_IMAGE_CALIBRATION_006_REVIEW.md"
   },
   "task_perception_dispatch": {
     "cycle_id": "M6-TASK-PERCEPTION-001",
@@ -1092,5 +1098,67 @@
       "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
     },
     "polling": false
+  },
+  "image_calibration_review": {
+    "author_commit": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+    "public_files": 73,
+    "manifest_members": 1286,
+    "bytes": 321005985,
+    "actual_saved_candidates": 12,
+    "root_recomputed_saved_scores": 12,
+    "root_candidate_PNG_decodes": 36,
+    "root_exact_stage_mesh_pairs": 6,
+    "root_exact_stage_RGB_pairs": 18,
+    "root_selections_checked": 4,
+    "selected_alpha_native_facts": [
+      0.5,
+      0
+    ],
+    "selected_restoration_pass_native_facts": [
+      true,
+      false
+    ],
+    "negative_scope": "Only alpha0,.5,1 tested; continuous interval unmeasured",
+    "cold_wall_s": [
+      50.9591602,
+      32.2647525
+    ],
+    "warm_wall_s": [
+      0.8486929,
+      1.3175466
+    ],
+    "cold_peak_tree_RSS": [
+      615383040,
+      648314880
+    ],
+    "actual_new_Pro": 0,
+    "actual_Blender_processes": 20,
+    "logical_write_read_render_operations": 36,
+    "v2_read_semantics": "same_owned_process_fresh_disk_reopen",
+    "adoption": "explicit_v2_for_fixed_case_cold_calibration_default_v1_retained",
+    "root_new_Pro": 0,
+    "root_new_Blender": 0,
+    "root_new_training": 0,
+    "independent_full_contact_rescan": false,
+    "whitespace_scope": "default_git_check364_warnings;cr_at_eol_one_inherited_EOF;both_exit2",
+    "review_doc": "docs/M6_IMAGE_CALIBRATION_006_REVIEW.md"
+  },
+  "calibration_transfer_plan": {
+    "preflight": "verification/m6_calibration_transfer_007_plan/PREFLIGHT.json",
+    "case_selection": "First validation&&candidate_valid&&usable pair in existing DATASET_INDEX order",
+    "pair_id": "cat_reference_roi0_c0_r0_a0_pair",
+    "source_lineage": "cat_transfer",
+    "F_I_S_normalI_normalF": [
+      384,
+      274,
+      43,
+      231,
+      341
+    ],
+    "physical_unit": "unlabelled_source_native",
+    "budget_operation_and_cumulative": 0.002567906610453878,
+    "normal_editable_RMS_limit_over_ell": 0.014506080599458708,
+    "known_quantization_cue": "1e-6_decimal_grid;fixed1e-9_residual_TP43FP0;actual_model_use_audited",
+    "claim_scope": "External asset previously used validation material; calibrator transfer, no perception advantage attribution"
   }
 }

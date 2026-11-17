@@ -6,6 +6,8 @@
 
 ## 1. 当前决定：先筛选，一个首选，必要时比较
 
+2026-11-17当前[IMAGE-CALIBRATION006独立复核](M6_IMAGE_CALIBRATION_006_REVIEW.md)确认12实际候选、RGB目标/四选择与6组批处理数组等价，native半幅通过、facts三档均失败。冷校准下降36.69%、复用增加0.469秒、RSS增加5.35%，V2显式采用。下一[CALIBRATION-TRANSFER007](M6_CALIBRATION_TRANSFER_007_TASK.md)固定cat_reference_roi0_c0_r0_a0外资产个案，新增一Pro提案后复用冻结V2，比较同提案前后质量和完整增量成本。该源有十进制格点线索，且属于旧验证材料，收益范围据实限定。算法不再在Yanyite上调参，训练0。
+
 2026-11-16最新[IMAGE-CORRESPONDENCE005复核](M6_IMAGE_CORRESPONDENCE_005_REVIEW.md)确认对应TP47/FP22、414射线见证成立，实际恢复1/4通过。局部支撑优化峰值rank1且最终未采用，候选内部正常误改不能靠裁mask修好。根固定V1 native半幅并实际保存/回读/渲染，图像排序改善，支持误差改善35.39%、正常误改RMS0.00875mm，完整接触待补。下一[M6-IMAGE-CALIBRATION-006](M6_IMAGE_CALIBRATION_006_TASK.md)实现固定提案三档图像幅度校准，首版加一次保持结果的批处理优化，复用历史模型提案，新增Pro0/训练0。当前只验证候选后处理，完整新模型消费和跨资产效果另列。
 
 2026-11-16当前[DEGRID004独立复核](M6_DEGRID_004_REVIEW.md)确认两路恢复质量失败。native错位遗漏47点，facts覆盖47点但误改129正常点且拟合46支撑中30受损，支持改善14.74%。执行与输入隔离成立。下一批[M6-IMAGE-CORRESPONDENCE-005](M6_IMAGE_CORRESPONDENCE_005_TASK.md)实现同相机PNG差异到当前sourceID注意力，活动候选与外围拟合支撑共同交付。一次固定几何/图像预检在69点中TP47/FP22，作为开发可行性证据。首版加一次优化、原生/事实四会话检验定位、幅度及实际保存质量，当前训练0。

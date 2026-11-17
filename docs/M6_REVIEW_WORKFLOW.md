@@ -10,6 +10,8 @@
 
 ## 每批怎样推进
 
+2026-11-17当前006固定d7cbbac8完成[独立复核](M6_IMAGE_CALIBRATION_006_REVIEW.md)，首版与一次等价优化收口。下一[CALIBRATION-TRANSFER007](M6_CALIBRATION_TRANSFER_007_TASK.md)只做一个按既有顺序选定的外资产和一个新Pro提案，随后同提案三档校准，组件冻结。其结果用于阶段去留，缺少新机制证据时不追加模型会话、换资产或改阈值。实际图像选择与私有几何评分、原提案共同成本与后处理增量分开验收。
+
 2026-11-16当前IMAGE-CORRESPONDENCE005固定64401227完成[独立复核](M6_IMAGE_CORRESPONDENCE_005_REVIEW.md)，定位通过、完整恢复1/4通过。下一[IMAGE-CALIBRATION006](M6_IMAGE_CALIBRATION_006_TASK.md)固定已有提案，以相同图像目标选择三档幅度，第一版及一次批处理优化保持数学结果，新增Pro0。根已经新增3个独立Bpy完成一个半幅反例，原件与作者日志分开。图像排序先冻结再读私有几何评分，候选后处理与通用模型消费分别验收。
 
 2026-11-16当前DEGRID004固定6ed6c88e的[独立复核](M6_DEGRID_004_REVIEW.md)保留两路失败，下一[M6-IMAGE-CORRESPONDENCE-005](M6_IMAGE_CORRESPONDENCE_005_TASK.md)只推进图像—当前源点对应及其拟合支撑接口。首版和一次优化后分别验收对应质量与完整修复，不能用更准mask代替幅度和保存质量。当前候选已有无标签构造/后置评分的几何图像依据，原生同样可读像素和相机。完成回报驱动继续复核。
