@@ -86,7 +86,12 @@ def session(label):
         public=json.loads(next(block['text'] for block in response['result']['content'] if block['type']=='text'))
         images=[block for block in response['result']['content'] if block['type']=='image']
         frames=original.get('frames',[])
-        check(prefix+'/readonly',public['read_only'] is True and public['execution_authority'] is False)
+        if original['result_kind']=='task_query':
+            check(prefix+'/legacy_readonly_entry',call['request']['params']['arguments']['query']['mode']=='task'
+                  and call['request']['params']['arguments']['include_image'] is False and not frames)
+        else:
+            check(prefix+'/readonly',original['read_only'] is True and original['execution_authority'] is False
+                  and public.get('read_only') is True and public.get('execution_authority') is False)
         check(prefix+'/delivery_count',len(images)==len(frames))
         for block,frame in zip(images,frames,strict=True):
             check(prefix+'/nativePNG',hashlib.sha256(base64.b64decode(block['data'],validate=True)).hexdigest()==frame['image_sha256'])

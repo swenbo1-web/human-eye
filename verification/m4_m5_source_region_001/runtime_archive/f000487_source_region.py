@@ -1,0 +1,377 @@
+"""Current captured triangle selections, full-scene images and M3 distances."""
+from __future__ import annotations
+
+import copy
+from dataclasses import dataclass
+import time
+
+import numpy as np
+
+from .active_observation import fingerprint, geometry
+from .active_observation_host import scene_from_capture, source_binding
+from .active_observation_images import SceneObservationImages, _meshes_from_objects
+from .blender_host import _observation_target_cameras
+from .scene_cache import _validate_scene
+from .surface_proximity import measure_surface_proximity
+from .task_query import _surface_proximity_fact
+
+
+REGION_REF_SCHEMA = 'human-eye-source-region-ref-v1'
+SOURCE_INDEX_DOMAIN = 'zero_based_object_local_current_evaluated_capture_triangle_rows'
+
+
+def _checkpoint(stage):
+    pass
+
+
+def _interval(started):
+    closed = time.perf_counter_ns()
+    return {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+
+
+def _ordered_geometry(capture, binding):
+    return fingerprint([
+        {'host_id': row['host_id'], 'instance_id': row['instance_id'],
+         'vertices': mesh['vertices'], 'faces': mesh['faces']}
+        for row, mesh in zip(binding['objects'], capture['meshes'])])
+
+
+def ordered_geometry_identity(capture, binding):
+    """Hash complete ordered source arrays once per fresh service capture."""
+    return _ordered_geometry(capture, binding)
+
+
+def _generation(binding):
+    state = binding['capture_state']
+    return None if state is None else {key: state[key] for key in ('instance_id', 'epoch', 'revision')}
+
+
+def _source_ref(capture, binding, object_index, faces, ordered_sha):
+    row = binding['objects'][object_index]
+    value = {'schema': REGION_REF_SCHEMA, 'document_epoch': binding['document_epoch'],
+             'host_id': row['host_id'], 'instance_id': row['instance_id'],
+             'capture_generation': _generation(binding),
+             'ordered_geometry_sha256': ordered_sha, 'source_triangle_indices': list(faces)}
+    return {**value, 'region_id': 'source-region:' + fingerprint(value)}
+
+
+def _indices(values, face_count):
+    if (type(values) is not list or not values
+            or any(type(index) is not int or not 0 <= index < face_count for index in values)
+            or len(set(values)) != len(values)):
+        raise ValueError('source_region_unique_current_triangle_indices_required')
+    return tuple(sorted(values))
+
+
+def _object_index(binding, selector):
+    if (type(selector) is not dict or len(selector) != 1
+            or not set(selector) <= {'id', 'name'}
+            or any(type(value) is not str or not value for value in selector.values())):
+        raise ValueError('source_region_explicit_object_selector_required')
+    key = 'host_id' if 'id' in selector else 'object_name'
+    value = next(iter(selector.values()))
+    matches = [index for index, row in enumerate(binding['objects']) if row[key] == value]
+    if len(matches) != 1:
+        raise ValueError('object_not_found' if not matches else 'object_name_ambiguous')
+    return matches[0]
+
+
+def validate_region_ref(capture, region_ref, check_budget=_checkpoint, *, _binding=None,
+                        _ordered_geometry_sha256=None):
+    """Validate a self-contained reference against the complete fresh capture."""
+    check_budget('source_region_validate_reference')
+    keys = {'schema', 'region_id', 'document_epoch', 'host_id', 'instance_id',
+            'capture_generation', 'ordered_geometry_sha256', 'source_triangle_indices'}
+    if type(region_ref) is not dict or set(region_ref) != keys or region_ref.get('schema') != REGION_REF_SCHEMA:
+        raise ValueError('source_region_ref_schema_invalid')
+    unsigned = {key: value for key, value in region_ref.items() if key != 'region_id'}
+    if region_ref['region_id'] != 'source-region:' + fingerprint(unsigned):
+        raise ValueError('source_region_ref_identity_mismatch')
+    binding = source_binding(capture) if _binding is None else _binding
+    if region_ref['document_epoch'] != binding['document_epoch']:
+        raise ValueError('source_region_ref_document_epoch_changed')
+    matches = [index for index, row in enumerate(binding['objects']) if row['host_id'] == region_ref['host_id']]
+    if not matches:
+        raise ValueError('source_region_ref_object_missing')
+    object_index = matches[0]
+    if binding['objects'][object_index]['instance_id'] != region_ref['instance_id']:
+        raise ValueError('source_region_ref_object_instance_changed')
+    if region_ref['capture_generation'] != _generation(binding):
+        raise ValueError('source_region_ref_capture_generation_changed')
+    ordered_sha = (_ordered_geometry(capture, binding) if _ordered_geometry_sha256 is None
+                   else _ordered_geometry_sha256)
+    if region_ref['ordered_geometry_sha256'] != ordered_sha:
+        raise ValueError('source_region_ref_ordered_geometry_changed')
+    faces = _indices(region_ref['source_triangle_indices'], len(capture['meshes'][object_index]['faces']))
+    if list(faces) != region_ref['source_triangle_indices']:
+        raise ValueError('source_region_ref_canonical_triangle_order_required')
+    check_budget('source_region_reference_validated')
+    return ordered_sha
+
+
+@dataclass
+class PreparedSourceRegion:
+    binding: dict
+    region_ref: dict
+    objects: tuple
+    meshes: tuple
+    object_index: int
+    source_triangle_indices: tuple
+    source_vertex_indices: tuple
+    region_mesh: object
+    region_facts: dict
+    source_mapping: dict
+    cameras: dict
+    preparation_stages: dict
+    images: object = None
+    observation: dict | None = None
+
+
+def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
+                   _validated_region_ref=False, _ordered_geometry_sha256=None):
+    """Prepare a complete capture once, retaining a compact selected submesh."""
+    started = time.perf_counter_ns()
+    check_budget('source_region_prepare_source')
+    binding = source_binding(capture) if _binding is None else _binding
+    if binding['capture_scope'] != 'complete_scene_meshes':
+        raise ValueError('source_region_complete_scene_required')
+    if 'region_ref' in query:
+        ordered_sha = (query['region_ref']['ordered_geometry_sha256'] if _validated_region_ref
+                       else validate_region_ref(capture, query['region_ref'], check_budget, _binding=binding,
+                                                _ordered_geometry_sha256=_ordered_geometry_sha256))
+        object_index = _object_index(binding, {'id': query['region_ref']['host_id']})
+        faces = tuple(query['region_ref']['source_triangle_indices'])
+    else:
+        ordered_sha = (_ordered_geometry(capture, binding) if _ordered_geometry_sha256 is None
+                       else _ordered_geometry_sha256)
+        region = query['region']
+        object_index = _object_index(binding, region['object'])
+        faces = _indices(region['source_triangle_indices'], len(capture['meshes'][object_index]['faces']))
+    region_ref = _source_ref(capture, binding, object_index, faces, ordered_sha)
+    source_stage = _interval(started)
+    started = time.perf_counter_ns()
+    _validate_scene(capture)
+    parsed, _, scene_identity = geometry(scene_from_capture(capture))
+    # Host instances disambiguate geometrically identical scene objects.
+    objects = tuple((item[0], item[1], (item[2], row['host_id'], row['instance_id']), item[3])
+                    for item, row in zip(parsed, binding['objects']))
+    meshes = _meshes_from_objects(objects)
+    normalization_stage = _interval(started)
+    started = time.perf_counter_ns()
+    mesh = meshes[object_index]
+    source_faces = mesh.faces[list(faces)]
+    vertex_indices = tuple(int(index) for index in np.unique(source_faces))
+    reverse_vertices = np.full(len(mesh.vertices), -1, dtype=np.int32)
+    reverse_vertices[list(vertex_indices)] = np.arange(len(vertex_indices), dtype=np.int32)
+    compact_faces = reverse_vertices[source_faces]
+    compact_vertices = mesh.vertices[list(vertex_indices)]
+    selected_object = (tuple(map(tuple, compact_vertices)), tuple(map(tuple, compact_faces)),
+                       region_ref['region_id'], mesh.name)
+    region_mesh = _meshes_from_objects((selected_object,))[0]
+    mapping = {'index_domain': SOURCE_INDEX_DOMAIN,
+               'submesh_to_source_triangle_indices': list(faces),
+               'submesh_to_source_vertex_indices': list(vertex_indices),
+               'triangles_source_vertices': source_faces.tolist(),
+               'triangles_submesh_vertices': compact_faces.tolist()}
+    region_facts = {'host_id': region_ref['host_id'], 'instance_id': region_ref['instance_id'],
+                    'object_name': mesh.name, 'index_domain': SOURCE_INDEX_DOMAIN,
+                    'source_triangle_indices': list(faces), 'source_vertex_indices': list(vertex_indices),
+                    'triangles_source_vertices': source_faces.tolist(),
+                    'vertices_world_m': compact_vertices.tolist(),
+                    'bbox_min_world_m': compact_vertices.min(axis=0).tolist(),
+                    'bbox_max_world_m': compact_vertices.max(axis=0).tolist()}
+    mapping_stage = _interval(started)
+    started = time.perf_counter_ns()
+    world_bounds = [[item.vertices.min(axis=0).tolist(), item.vertices.max(axis=0).tolist()]
+                    for item in meshes]
+    cameras = _observation_target_cameras(compact_vertices.tolist(), world_bounds)
+    cameras.update(schema='active-coverage-source-region-cameras-v1',
+                   scope='source_region_fitted_XY_whole_scene_conservative_depth')
+    cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
+    binding = copy.deepcopy(binding)
+    binding['camera_policy'].update(scope='region_fitted_viewport_full_scene_depth',
+                                    region_id=region_ref['region_id'])
+    binding.pop('source_binding_sha256')
+    binding['source_binding_sha256'] = fingerprint(binding)
+    binding.update(ordered_geometry_sha256=ordered_sha, geometry_identity=scene_identity,
+                   camera_specification=cameras, camera_identity=fingerprint(cameras))
+    binding['binding_sha256'] = fingerprint(binding)
+    camera_stage = _interval(started)
+    check_budget('source_region_prepared')
+    return PreparedSourceRegion(binding, region_ref, objects, meshes, object_index, faces,
+        vertex_indices, region_mesh, region_facts, mapping, cameras,
+        {'source_validation': source_stage, 'geometry_normalization': normalization_stage,
+         'region_array_preparation': mapping_stage, 'camera_preparation': camera_stage})
+
+
+def observe_region(prepared, directory, *, include_image, construction_callback=None,
+                   check_budget=_checkpoint):
+    """Observe actual selected-face samples using every scene mesh as an occluder."""
+    if type(include_image) is not bool:
+        raise ValueError('include_image_must_be_boolean')
+    work = {'raster_attempts': 0, 'raster_completed': 0, 'frame_reuses': 0,
+            'PNG_bytes': 0, 'NPZ_bytes': 0, 'array_payload_bytes': 0,
+            'local_verified_images': 0, 'frame_array_decodes': 0, 'fresh_payload_reuses': 0,
+            'temporary_encoded_archive_bytes': 0}
+    if include_image and prepared.observation is not None:
+        result = copy.deepcopy(prepared.observation)
+        work['frame_reuses'] = len(result['frames'])
+        result.update(work=work, stages={})
+        return result
+    frames, stages = [], {}
+    visibility = {'status': 'unknown', 'reason': 'image_not_requested',
+                  'visible_source_triangle_indices': [],
+                  'unseen_source_triangle_indices': list(prepared.source_triangle_indices),
+                  'selected_surface_pixels': 0, 'complete_witness': None,
+                  'visibility_scope': 'actual_frame_source_triangle_samples'}
+    if include_image:
+        check_budget('source_region_before_frame')
+        started = time.perf_counter_ns()
+        prepared.images = SceneObservationImages(prepared.objects, prepared.cameras, directory,
+            scene_identity=prepared.binding['geometry_identity'],
+            candidate_identity=prepared.binding['camera_identity'],
+            _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
+        if construction_callback is not None:
+            construction_callback('SCENE')
+        work['raster_attempts'] += 1
+        frame = prepared.images.render_view('SCENE')
+        work['raster_completed'] += 1
+        frame['host_binding_sha256'] = prepared.binding['binding_sha256']
+        frame['source_revision'] = prepared.binding['scene_revision']
+        frame['image_ref'] = 'source-region-image:' + fingerprint((
+            prepared.region_ref['region_id'], frame['frame_identity'], frame['image_sha256']))
+        stages['render_and_publish_SCENE'] = _interval(started)
+        check_budget('source_region_after_frame')
+        started = time.perf_counter_ns()
+        buffers = prepared.images.validate_frame(frame, _diagnostics=work)
+        if 'triangle_ids' not in buffers:
+            raise ValueError('source_region_actual_triangle_owner_required')
+        offset = int(prepared.images._patch_mapping['arrays']['face_patch_offsets'][prepared.object_index])
+        selected = np.asarray(prepared.source_triangle_indices, dtype=np.int32) + offset
+        mask = np.isin(buffers['triangle_ids'], selected)
+        visible = sorted(int(index) - offset for index in np.unique(buffers['triangle_ids'][mask]))
+        y, x = np.nonzero(mask)
+        visibility = {'status': 'observed_samples', 'view_name': 'SCENE',
+            'visible_source_triangle_indices': visible,
+            'unseen_source_triangle_indices': sorted(set(prepared.source_triangle_indices) - set(visible)),
+            'selected_surface_pixels': int(mask.sum()),
+            'visible_pixel_bounds': [int(x.min()), int(y.min()), int(x.max()), int(y.max())] if len(x) else None,
+            'complete_witness': None, 'visibility_scope': 'actual_frame_source_triangle_samples',
+            'unknown': ['complete_surface_visibility'], 'image_ref': frame['image_ref'],
+            'frame_identity': frame['frame_identity']}
+        stages['frame_validation_and_selected_pixels'] = _interval(started)
+        frames.append({key: value for key, value in frame.items() if key != 'buffers'})
+        work.update(PNG_bytes=frame['PNG_bytes'], NPZ_bytes=frame['compressed_array_file_bytes'],
+                    array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1,
+                    temporary_encoded_archive_bytes=frame.get('temporary_encoded_archive_bytes', 0))
+    check_budget('source_region_before_observation_result')
+    result = {'schema': 'human-eye-source-region-observation-v1', 'result_kind': 'source_region',
+              'status': 'complete', 'observation_status': 'locally_observed' if include_image else 'image_not_requested',
+              'binding': copy.deepcopy(prepared.binding), 'region_ref': copy.deepcopy(prepared.region_ref),
+              'facts': {'region': copy.deepcopy(prepared.region_facts), 'visibility': visibility},
+              'source_mapping': copy.deepcopy(prepared.source_mapping),
+              'frames': frames, 'work': work, 'stages': stages,
+              'image_delivery': {'local_verified': len(frames), 'mcp_content_constructed': 0,
+                                 'external_consumer_verified': False},
+              'read_only': True, 'execution_authority': False}
+    result['generation_work'] = copy.deepcopy(work)
+    result['generation_stages'] = copy.deepcopy(stages)
+    if include_image:
+        prepared.observation = copy.deepcopy(result)
+    return result
+
+
+def _subtract(left, right):
+    return tuple(a - b for a, b in zip(left, right))
+
+
+def _dot(left, right):
+    return sum(a * b for a, b in zip(left, right))
+
+
+def _cross(left, right):
+    return (left[1] * right[2] - left[2] * right[1],
+            left[2] * right[0] - left[0] * right[2],
+            left[0] * right[1] - left[1] * right[0])
+
+
+def _contains_exact(point, triangle):
+    points, normal, squared, _, _ = triangle
+    delta = _subtract(point, points[0])
+    if not squared:
+        if len(points) == 1:
+            return point == points[0]
+        edge = _subtract(points[1], points[0])
+        return (not any(_cross(delta, edge)) and 0 <= _dot(delta, edge) <= _dot(edge, edge))
+    if _dot(delta, normal):
+        return False
+    u = _dot(_cross(_subtract(points[2], points[0]), normal), delta)
+    v = _dot(_cross(normal, _subtract(points[1], points[0])), delta)
+    return u >= 0 and v >= 0 and u + v <= squared
+
+
+def _witness_sources(holder, side, triangle_indices, vertex_indices, check_budget):
+    points = holder.get('witness_points')
+    if points is None:
+        return {'status': 'unknown', 'reason': 'exact_surface_witness_unavailable'}
+    point = points[side]
+    triangles = holder['pair'][4][side]
+    memberships = []
+    for index, triangle in enumerate(triangles):
+        check_budget('source_region_witness_source_membership')
+        if _contains_exact(point, triangle):
+            memberships.append(index)
+    coordinates = holder['coordinates'][side]
+    vertices = [int(vertex_indices[index]) for index, value in coordinates.items() if value == point]
+    return {'status': 'measured', 'exact_membership': True,
+            'source_triangle_indices': [int(triangle_indices[index]) for index in memberships],
+            'source_vertex_indices': vertices, 'index_domain': SOURCE_INDEX_DOMAIN}
+
+
+def measure_region(prepared, reference, cache, check_budget=_checkpoint, diagnostics=None):
+    """Run the existing triangle-surface solver on the complete selected union."""
+    diagnostics = {} if diagnostics is None else diagnostics
+    index = _object_index(prepared.binding, reference)
+    row = prepared.binding['objects'][index]
+    reference_binding = {'object_id': row['host_id'], 'name': row['object_name'],
+                         'instance_id': row['instance_id'], 'object_index': index}
+    right = prepared.meshes[index]
+    diagnostics.update(surface_pair_count=0, surface_pair_cache_hit=False)
+    started = time.perf_counter_ns()
+
+    def compute():
+        diagnostics['surface_pair_count'] += 1
+        holder, surface_work = {}, {}
+        measured = measure_surface_proximity(prepared.region_mesh, right, check_budget,
+            diagnostics=surface_work, _prepared_holder=holder)
+        diagnostics['surface_work'] = surface_work
+        witness = {
+            'a': _witness_sources(holder, 0, prepared.source_triangle_indices,
+                                   prepared.source_vertex_indices, check_budget),
+            'b': _witness_sources(holder, 1, range(len(right.faces)), range(len(right.vertices)), check_budget)}
+        diagnostics['source_membership_triangle_tests'] = (
+            len(prepared.region_mesh.faces) + len(right.faces) if 'witness_points' in holder else 0)
+        return {'surface': measured, 'nearest_witness_source': witness}
+
+    parameters = {'region_ref': prepared.region_ref, 'reference': reference_binding,
+                  'source_binding_sha256': prepared.binding['source_binding_sha256'],
+                  'unit': 'm', 'coordinate_frame': 'world'}
+    if cache is None:
+        value = compute()
+    else:
+        value, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
+            prepared.region_mesh, right, compute, parameters=parameters,
+            algorithm_version='source-region-surface-proximity-v1')
+    diagnostics['stages'] = {'surface_measurement_and_mapping': _interval(started)}
+    return {'schema': 'human-eye-source-region-measurement-v1', 'status': 'complete',
+            'region_ref': copy.deepcopy(prepared.region_ref), 'reference': reference_binding,
+            'measurement_scope': 'complete_selected_source_triangle_union_to_reference_triangle_surface',
+            'facts': {'surface_proximity': _surface_proximity_fact(value['surface'])},
+            'source_mapping': {'region': copy.deepcopy(prepared.source_mapping),
+                               'nearest_witness': value['nearest_witness_source']},
+            'binding': copy.deepcopy(prepared.binding), 'read_only': True, 'execution_authority': False}
+
+
+__all__ = ['REGION_REF_SCHEMA', 'SOURCE_INDEX_DOMAIN', 'PreparedSourceRegion',
+           'ordered_geometry_identity', 'prepare_region', 'validate_region_ref',
+           'observe_region', 'measure_region']

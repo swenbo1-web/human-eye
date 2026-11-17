@@ -1,0 +1,10 @@
+{
+  "schema": "source-region-runtime-review-saved-correction-v1",
+  "original_source": "review_runtime_initial.py",
+  "original_error": "KeyError: read_only in session() while checking legacy task-query-v3 public brief",
+  "second_source": "review_runtime_attempt1.py",
+  "second_error": "KeyError: read_only in the original legacy task_query producer. Both the established public and producer task_query objects omit those flags.",
+  "correction": "Require original and public read_only/execution_authority for source_region and active_observation. Verify legacy task_query through its original mode=task/include_image=false entry, no image, frozen read-only implementation and owned geometry exit proof.",
+  "scope": "Saved-only checker field compatibility. Original actual requests, results and quality thresholds are preserved.",
+  "actual_operations_added": 0
+}
