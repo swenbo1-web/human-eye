@@ -1552,7 +1552,7 @@ def project_active_observation_brief(value):
 
 
 def project_source_region_brief(value):
-    """Expose curved-source visibility and the complete measurement selection."""
+    """Place measured facts and image evidence before one complete selection ref."""
     from .query_policy import validate_source_region_query
 
     task = value['task_result']
@@ -1570,29 +1570,44 @@ def project_source_region_brief(value):
             'image_ref', 'view_name', 'frame_identity', 'image_sha256', 'camera_identity',
             'host_binding_sha256', 'display_identity', 'image_scope_identity') if key in frame})
         images[-1]['image_block_index'] = index
-    brief = {key: copy.deepcopy(value[key]) for key in (
-        'status', 'result_kind', 'observation_status', 'session_id', 'region_ref',
-        'task_result', 'read_only', 'execution_authority', 'image_delivery') if key in value}
-    brief.update(schema='source-region-brief-v1', binding={key: copy.deepcopy(item)
-        for key, item in value['binding'].items() if key != 'camera_specification'},
-        region=copy.deepcopy(value['facts']['region']),
-        visibility=copy.deepcopy(value['facts']['visibility']), images=images,
-        measurement_scope=copy.deepcopy(task['measurement_scope']))
-    unseen = brief['visibility']['unseen_source_triangle_indices']
-    unknowns = []
-    unknowns.extend({'scope': 'actual_frame_visibility', 'reason': reason}
-                    for reason in brief['visibility'].get('unknown', []))
-    reason = brief['visibility'].get('reason')
-    if reason is not None and reason != 'image_not_requested':
-        unknowns.append({'scope': 'image_evidence', 'reason': reason})
-    if unseen:
-        unknowns.append({'scope': 'actual_frame_visibility', 'source_triangle_indices': unseen,
-                         'reason': 'selected_triangles_have_no_visible_pixel_samples'})
-    fact = task['facts']['surface_proximity']
-    if fact.get('status') == 'unknown':
-        unknowns.append({'scope': 'surface_proximity', 'reason': fact.get('reason')})
-    brief['unknowns'] = unknowns
-    return brief
+    binding = value['binding']
+    region = value['facts']['region']
+    visibility = value['facts']['visibility']
+    brief = {
+        'schema': 'source-region-brief-v2',
+        'status': value['status'],
+        'observation_status': value['observation_status'],
+        'task_result': {
+            'status': task['status'],
+            'reference': task['reference'],
+            'measurement_scope': task['measurement_scope'],
+            'unit': binding['unit'],
+            'coordinate_frame': binding['coordinate_frame'],
+            'facts': task['facts'],
+            'source_mapping': {'nearest_witness': task['source_mapping']['nearest_witness']},
+        },
+        'visibility': {key: item for key, item in visibility.items()
+            if key not in ('visible_source_triangle_indices', 'unseen_source_triangle_indices', 'image_scope')},
+        'images': images,
+        'region': {key: region[key] for key in (
+            'host_id', 'instance_id', 'object_name', 'index_domain', 'bbox_min_world_m', 'bbox_max_world_m')},
+        'image_scope': binding['image_scope'],
+        'binding': {key: binding[key] for key in (
+            'source_binding_sha256', 'binding_sha256', 'runtime_source_sha256', 'source_status', 'disk_status')
+            if key in binding},
+    }
+    brief['visibility'].update(
+        visible_source_triangle_count=len(visibility['visible_source_triangle_indices']),
+        unseen_source_triangle_count=len(visibility['unseen_source_triangle_indices']))
+    brief['region'].update(source_triangle_count=len(region['source_triangle_indices']),
+                           source_vertex_count=len(region['source_vertex_indices']))
+    brief.update({key: value[key] for key in (
+        'result_kind', 'session_id', 'read_only', 'execution_authority', 'image_delivery') if key in value})
+    # Document, generation and ordered geometry identities remain in the original
+    # self-contained v1 ref. Detailed member mappings use the existing full path.
+    brief['details'] = 'response_detail=full'
+    brief['region_ref'] = reference
+    return copy.deepcopy(brief)
 
 
 def _active_observation_content(value, *, is_error, audit, response_detail=None):
