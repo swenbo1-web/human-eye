@@ -1052,7 +1052,7 @@ class LiveSpatialService:
                 raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
             selector = query['objects'][0] if 'objects' in query else None
             return self._observe_active_observation(session_id, include_image=include_image,
-                selector=selector, task_query=query.get('task_query'))
+                selector=selector, task_query=query.get('task_query'), region_task=query.get('region_task'))
         if query['mode'] == 'directory':
             if (include_image or task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1489,7 +1489,7 @@ class LiveSpatialService:
         view['revision'] = 'observation-task:' + selection_key
         return view
 
-    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None):
+    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
         from .active_observation_host import source_binding, observe_capture
         from .read_context import query_key
         if not self.config.get('enabled', True):
@@ -1539,9 +1539,10 @@ class LiveSpatialService:
             def compute():
                 directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
                 geometry_ids = []
+                region_options = {} if region_task is None else {'region_task': region_task}
                 observed = observe_capture(captured, directory, include_image=include_image,
                     construction_callback=before_construction, check_budget=self._check_request_budget,
-                    _geometry_ids_callback=geometry_ids.append)
+                    _geometry_ids_callback=geometry_ids.append, **region_options)
                 return observed, geometry_ids[0]
 
             lookup_started = time.perf_counter_ns()
@@ -1549,6 +1550,8 @@ class LiveSpatialService:
                 request_key = {'mode': 'active_observation', 'include_image': include_image}
                 if selector is not None:
                     request_key['objects'] = [selector]
+                if region_task is not None:
+                    request_key['region_task'] = region_task
                 (result, geometry_ids), hit = context.result(query_key(request_key), compute)
             except Exception as error:
                 self.record_event('active_observation_failed', session_id=session_id,
@@ -1575,6 +1578,9 @@ class LiveSpatialService:
                                'elapsed_ns': lookup_closed - lookup_started})
             result['session_id'] = session_id
             self._bind_read_result(result, source_check)
+            if region_task is not None:
+                for scope in result['scopes']:
+                    self._bind_read_result({'binding': scope['binding']}, source_check)
             if task_view is not None:
                 from .task_query import task_result
                 task_finalize_started = time.perf_counter_ns()

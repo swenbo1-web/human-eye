@@ -1,0 +1,64 @@
+{
+  "schema": "cross-scale-independent-expectations-v1",
+  "task": "M4-CROSS-SCALE-DISCOVERY-001",
+  "baseline_git": "99f939513111637b76a1d486622b4841cad9ccda",
+  "plan_sha256": "f2e13678ff210dd59db9ca565084c55198eb0eec64ab4c0af754617b97d9df1f",
+  "asset_sha256": "a2d55e9212a84d27489aa72a680092b4e91d94d9df27d29c5de40d8a4ca3d0c6",
+  "geometry_sha256": "34c4ad599c6ead7548b21300315df25808fa274dad9dccafbf3b5808fee56ad8",
+  "public_task": {
+    "mode": "active_observation",
+    "region_task": {"area_min_m2": 0.0078125, "area_max_m2": 0.03125, "normal_z_min": 0.75}
+  },
+  "numeric_contract": {
+    "input": "Finite JSON int or float, excluding bool. Integer-valued float canonicalizes to int.",
+    "comparison": "Exact Fraction of int or shortest decimal str(float), area squared, oriented normal comparison with sign handling.",
+    "bounds": "0 <= area_min_m2 <= area_max_m2 and -1 <= normal_z_min <= 1, all equalities included.",
+    "unsupported": "Nonrectangular components remain in original scene and occlusion geometry."
+  },
+  "quality": {
+    "source": {"objects": 9, "vertices": 54, "triangles": 56, "maximal_components": 24, "rectangular_components": 22, "supported_triangles": 44, "unsupported_components": 2, "unsupported_triangles": 12},
+    "eligible": [
+      {"object_name": "Obj_02", "source_triangle_indices": [0, 1], "expected": "covered", "reason": "observed_readable"},
+      {"object_name": "Obj_06", "source_triangle_indices": [0, 1], "expected": "unknown", "reason": "positive_area_occlusion_all_front_views"},
+      {"object_name": "Obj_09", "source_triangle_indices": [0, 1], "expected": "covered", "reason": "observed_readable"}
+    ],
+    "actual_readability": {"minimum_surface_pixels": 16, "minimum_boundary_pixels": 4, "minimum_rgb_boundary_contrast": 24},
+    "local_source": "Same actual captured world vertices, per-object triangle rows, object order and full scene occluders. Each scope keeps its own camera and current frame identities.",
+    "witness": "Source-bound geometry-complete view and actual readable pixels are jointly required. Predicted skip bounds alone never satisfy image evidence.",
+    "selected_delivery": "Global overview and two open target witness native PNGs, all three may be named SCENE and are identified by scope/image_ref/frame_identity/camera identity.",
+    "constructed_archive": "Every constructed frame is retained and costed, including frames omitted from native image delivery."
+  },
+  "variants": {
+    "initial": {"expected_global_rasters": 6, "expected_local_rasters": 2, "expected_total_rasters": 8, "selected_native_images": 3},
+    "optimized": {"target_global_rasters": 1, "target_local_rasters": 2, "target_total_rasters": 3, "selected_native_images": 3,
+      "skip_rule": "After real global SCENE, skip an unconstructed global direction only when a conservative actual-matrix pixel-center upper bound is strictly below 16 for every remaining task region that can benefit. Keep uncertain cases in the existing path."}
+  },
+  "engineering_order": ["initial_qualification", "pair1_initial", "pair1_optimized", "pair2_optimized", "pair2_initial", "pair3_initial", "pair3_optimized", "optimized_state_compatibility"],
+  "performance": {
+    "denominator": 3,
+    "quality_gate_before_ranking": true,
+    "service_interval": "Same producer super.observe start through returned result, with construction and source processing included.",
+    "paired_service_median_reduction_at_least": 0.20,
+    "complete_owned_pairs_faster_at_least": 2,
+    "complete_owned_median_must_improve": true,
+    "client_and_parent_intervals": "Report separately alongside service and complete owned lifecycle. Do not substitute a local algorithm timer.",
+    "if_not_admitted": "Retain the initial functional version and close this performance candidate."
+  },
+  "state_compatibility": {
+    "calls": [
+      {"index": 1, "query": {"mode": "active_observation"}, "response_detail": "brief", "predicted_new_rasters": 6},
+      {"index": 2, "query": "main", "response_detail": "brief", "predicted_new_rasters": 3},
+      {"index": 3, "query": "main", "response_detail": "full", "predicted_new_rasters": 0, "cache_hit_required": true},
+      {"index": 4, "query": "main", "response_detail": "brief", "predicted_new_rasters": 0, "cache_hit_required": true},
+      {"index": 5, "query": {"mode": "active_observation", "region_task": {"area_min_m2": 0.0078125, "area_max_m2": 0.03125, "normal_z_min": 1}}, "response_detail": "brief", "predicted_new_rasters": 2, "expected_eligible": ["Obj_02", "Obj_06"]},
+      {"index": 6, "before": "Owned unsaved fixture copy Obj_02 matrix translation +0.25m world X", "query": "main", "response_detail": "brief", "predicted_new_rasters": 3, "current_binding_change_required": true},
+      {"index": 7, "before": "Restore Obj_02 original identity matrix in the same owned unsaved copy", "query": "main", "response_detail": "brief", "predicted_new_rasters": 3, "restored_geometry_current_new_binding_required": true}
+    ],
+    "predicted_state_rasters": 17,
+    "mutations": "Fixture-only owned unsaved state changes. Product exposes no setters and never saves the original asset.",
+    "same_state": "Repeated full and brief calls must reference cached results and real cached images without new construction.",
+    "changed_condition": "The z=1 task excludes the inclined region and its local witness. Task identity and cache key must distinguish it."
+  },
+  "budget": {"fresh_owned_maximum": 8, "raster_attempts_maximum": 64, "model_consumers": 0, "paid_API_calls": 0, "owned_seconds": 600, "public_request_seconds": 30, "predicted_first_seven_rasters": 41, "predicted_all_rasters": 58},
+  "scope_limits": ["One fixed asset and task domain", "No model task benefit conclusion", "No generic nonrectangular source mapping conclusion", "Numerically ambiguous exact triangle tie ownership stays explicit"]
+}

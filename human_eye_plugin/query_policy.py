@@ -5,6 +5,9 @@ membership checks require the caller's freshly validated scene namespace.
 """
 from __future__ import annotations
 
+from fractions import Fraction
+import math
+
 from .measurement_presentation import finite_metric, present_measurement, valid_unrounded_measurement
 from .top1_query import summarize_top1
 from .support_plane_discovery import validate_support_plane_discovery_request
@@ -23,6 +26,36 @@ NATIVE_VISUAL_SCHEMA = {
     },
     'additionalProperties': False,
 }
+
+REGION_TASK_SCHEMA = {
+    'type': 'object',
+    'description': 'Discover complete connected planar rectangles in the current whole scene. Area and directed unit-normal thresholds are inclusive.',
+    'properties': {
+        'area_min_m2': {'type': 'number', 'minimum': 0},
+        'area_max_m2': {'type': 'number', 'minimum': 0},
+        'normal_z_min': {'type': 'number', 'minimum': -1, 'maximum': 1},
+    },
+    'required': ['area_min_m2', 'area_max_m2', 'normal_z_min'],
+    'additionalProperties': False,
+}
+
+
+def validate_region_task(value):
+    fields = ('area_min_m2', 'area_max_m2', 'normal_z_min')
+    if type(value) is not dict or set(value) != set(fields):
+        raise ValueError('region_task requires area_min_m2, area_max_m2 and normal_z_min')
+    normalized, exact = {}, {}
+    for key in fields:
+        number = value[key]
+        if type(number) not in (int, float) or type(number) is float and not math.isfinite(number):
+            raise ValueError('region_task thresholds must be finite numbers')
+        normalized[key] = int(number) if type(number) is float and number.is_integer() else number
+        exact[key] = Fraction(str(normalized[key]))
+    if not 0 <= exact['area_min_m2'] <= exact['area_max_m2']:
+        raise ValueError('region_task requires 0 <= area_min_m2 <= area_max_m2')
+    if not -1 <= exact['normal_z_min'] <= 1:
+        raise ValueError('region_task normal_z_min must be in [-1, 1]')
+    return normalized
 
 
 def _native_visual(value):
@@ -48,10 +81,14 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     if type(query) is dict and query.get('mode') == 'active_observation':
         if set(query) == {'mode'}:
             return {'mode': 'active_observation'}
-        if set(query) - {'task_query'} not in ({'mode'}, {'mode', 'objects'}):
-            raise ValueError('active_observation accepts mode, one optional object selector and one optional task_query')
+        if set(query) - {'task_query', 'region_task'} not in ({'mode'}, {'mode', 'objects'}):
+            raise ValueError('active_observation accepts mode, one optional object selector, task_query and region_task')
         from .task_query import validate_object_selector, validate_task_query
         result = {'mode': 'active_observation'}
+        if 'region_task' in query:
+            if 'objects' in query:
+                raise ValueError('active_observation region_task requires whole-scene discovery without objects')
+            result['region_task'] = validate_region_task(query['region_task'])
         if 'objects' in query:
             if type(query['objects']) is not list or len(query['objects']) != 1:
                 raise ValueError('active_observation accepts one visual object selector')

@@ -23,7 +23,7 @@ from typing import Any, TextIO
 
 from .runtime_identity import BASE_VERSION, MCP_PROTOCOL_VERSION, runtime_identity
 from .auto_router import _trace_span, _trace_annotate as annotate
-from .query_policy import MAX_VISUAL_LABEL_IDS, NATIVE_VISUAL_SCHEMA, validate_query
+from .query_policy import MAX_VISUAL_LABEL_IDS, NATIVE_VISUAL_SCHEMA, REGION_TASK_SCHEMA, validate_query
 from .task_query import FACTS as TASK_FACTS, SELECTOR_SCHEMA
 from .native_observation import _public_native_png
 from .support_plane_discovery import SUPPORT_PLANE_DISCOVERY_REQUEST_SCHEMA
@@ -80,6 +80,7 @@ _QUERY_SCHEMA = {
                 "requested_facts": {"type": "array", "minItems": 1, "uniqueItems": True,
                     "items": {"type": "string", "enum": list(TASK_FACTS)}}},
             "additionalProperties": False},
+        'region_task': copy.deepcopy(REGION_TASK_SCHEMA),
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
             "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},
@@ -109,7 +110,8 @@ _QUERY_SCHEMA = {
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
     "allOf": [{"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
-               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}}, "additionalProperties": False}},
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}, 'region_task': {}},
+                        'not': {'required': ['objects', 'region_task']}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
@@ -185,6 +187,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
             " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one legacy task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
+            " Optional query.region_task={area_min_m2,area_max_m2,normal_z_min} discovers whole-scene rectangular regions with inclusive area and directed unit-normal z limits, then obtains needed local evidence. It combines with task_query. Its region rows and image references identify each scope and actual frame, including repeated view names."
         ),
         "inputSchema": {
             "type": "object",
@@ -1036,6 +1039,161 @@ def _project_active_inspection(facts, regions, pixel_references):
     return compact, {'columns': ['reason', 'view_indices'], 'rows': groups}
 
 
+def _project_region_task_brief(value):
+    """Project current cross-scale facts using scope and frame identities."""
+    from .query_policy import validate_region_task
+
+    def require(condition, reason):
+        if not condition:
+            raise ValueError('active_region_task_' + reason)
+
+    binding, facts = value['binding'], value['facts']
+    task = facts['region_task']
+    require(task['schema'] == 'active-region-task-v1', 'schema')
+    require(validate_region_task(task['conditions']) == task['conditions'], 'conditions')
+    require(binding['capture_scope'] == 'complete_scene_meshes', 'whole_scene_source')
+    scopes, constructed, selected = value['scopes'], value['constructed_frames'], value['frames']
+    require(type(scopes) is list and type(constructed) is list and type(selected) is list, 'collections')
+    by_scope = {scope['scope_id']: scope for scope in scopes}
+    require(len(by_scope) == len(scopes) and 'global' in by_scope, 'unique_scopes')
+    global_binding = {key: item for key, item in by_scope['global']['binding'].items() if key != 'camera_specification'}
+    require(global_binding == {key: item for key, item in binding.items() if key != 'camera_specification'}, 'global_binding')
+    by_frame = {frame['frame_identity']: frame for frame in constructed}
+    by_image = {frame['image_ref']: frame for frame in constructed}
+    require(len(by_frame) == len(constructed) == len(by_image), 'unique_constructed_frames')
+    selected_indices = {frame['frame_identity']: index for index, frame in enumerate(selected)}
+    require(len(selected_indices) == len(selected) <= 6, 'selected_frame_count')
+    for frame in selected:
+        require(by_frame.get(frame['frame_identity']) == frame, 'selected_frame_original')
+    objects = binding['objects']
+    object_columns = ['object_index', 'host_id', 'instance_id', 'object_name']
+    require(type(objects) is list and all(obj['object_index'] == index for index, obj in enumerate(objects)),
+            'parent_object_order')
+    observations = {}
+    scope_rows = []
+    for scope in scopes:
+        scope_id, source = scope['scope_id'], scope['binding']
+        require(source['document_epoch'] == binding['document_epoch']
+                and source['scene_revision'] == binding['scene_revision']
+                and source['capture_state'] == binding['capture_state']
+                and source['objects'] == objects
+                and source['geometry_identity'] == binding['geometry_identity'], 'scope_current_source')
+        for key in ('runtime_source_sha256', 'source_status', 'disk_status', 'source_check_scope'):
+            require(source.get(key) == binding.get(key), 'scope_runtime_source')
+        if scope_id != 'global':
+            require(source['schema'] == 'active-observation-region-source-v1'
+                    and source['parent_binding_sha256'] == binding['binding_sha256']
+                    and source['parent_source_binding_sha256'] == binding['source_binding_sha256'],
+                    'scope_parent_binding')
+        scope_frames = [frame for frame in constructed if frame['scope_id'] == scope_id]
+        require(scope['frame_refs'] == [frame['frame_identity'] for frame in scope_frames], 'scope_frame_order')
+        require(len({frame['view_name'] for frame in scope_frames}) == len(scope_frames), 'scope_view_unique')
+        scope_facts = scope['facts']
+        require(scope_facts['scene_identity'] == source['geometry_identity']
+                and scope_facts['candidate_identity'] == source['camera_identity'], 'scope_fact_identity')
+        require(len(scope_facts['observations']) == len(scope_frames), 'scope_actual_observations')
+        for frame, observation in zip(scope_frames, scope_facts['observations']):
+            require(frame['scene_identity'] == source['geometry_identity']
+                    and frame['candidate_identity'] == source['camera_identity']
+                    and frame['camera_identity'] == source['camera_identity']
+                    and frame['host_binding_sha256'] == source['binding_sha256']
+                    and frame['source_revision'] == source['scene_revision'], 'frame_scope_binding')
+            require(observation['scope_id'] == scope_id
+                    and observation['frame_identity'] == frame['frame_identity']
+                    and all(observation[key] == frame[key] for key in
+                            ('view_name', 'image_ref', 'image_path', 'image_sha256')), 'frame_observation_binding')
+            observations[frame['frame_identity']] = observation
+        scope_rows.append([scope_id, source['camera_identity'], source['binding_sha256'],
+                           len(scope_frames), len(scope_facts['coverage']['covered_roi_ids'])])
+    require(set(frame['scope_id'] for frame in constructed) <= set(by_scope), 'frame_scope_exists')
+    require(facts['scope'] == by_scope['global']['facts']['scope'], 'global_scope_denominator')
+    support = facts['scope']['patch_support']
+    source_triangles = {(row['object_index'], row['roi_id']): row['triangle_indices'] for row in support['regions']}
+    region_rows = task['rows']
+    require(len({row['roi_id'] for row in region_rows}) == len(region_rows), 'unique_task_regions')
+    world_fields = ('center_world_m', 'half_edge_u_world_m', 'half_edge_v_world_m', 'front_direction_world')
+    compact_rows, pixel_rows = [], []
+    for row in region_rows:
+        index = row['object_index']
+        require(type(index) is int and 0 <= index < len(objects), 'task_object_index')
+        host = objects[index]
+        require(all(row[key] == host[key] for key in ('host_id', 'instance_id', 'object_name')), 'task_host_identity')
+        require(all(_valid_region_location_vector(row[key]) for key in world_fields), 'task_world_location')
+        require(row['source_triangle_indices'] == source_triangles[(index, row['roi_id'])], 'task_source_triangles')
+        source = row['source']
+        require(source['document_epoch'] == binding['document_epoch']
+                and source['scene_revision'] == binding['scene_revision']
+                and source['capture_state'] == binding['capture_state']
+                and source['parent_binding_sha256'] == binding['binding_sha256']
+                and source['parent_source_binding_sha256'] == binding['source_binding_sha256']
+                and all(source[key] == row[key] for key in
+                        ('object_index', 'host_id', 'instance_id', 'source_triangle_indices')),
+                'task_source_binding')
+        digest = source['ordered_geometry_sha256']
+        require(type(digest) is str and len(digest) == 64 and all(char in '0123456789abcdef' for char in digest),
+                'ordered_geometry_digest')
+        witness = row['complete_witness']
+        compact = copy.deepcopy(row)
+        if witness is not None:
+            frame = by_frame[witness['frame_identity']]
+            scope = by_scope[witness['scope_id']]
+            require(frame['scope_id'] == witness['scope_id']
+                    and frame['image_ref'] == witness['image_ref']
+                    and frame['view_name'] == witness['view_name'], 'witness_frame')
+            require(witness['selected_for_delivery'] is (frame['frame_identity'] in selected_indices), 'witness_delivery')
+            if scope['scope_id'] != 'global':
+                require(scope['binding']['region_source'] == source, 'witness_source')
+            observation = observations[frame['frame_identity']]
+            pixel = observation['pixel_rows'][witness['pixel_row_index']]
+            evidence = next(item for item in scope['facts']['region_evidence'] if item['roi_id'] == row['roi_id'])
+            require(row['status'] == 'covered' and pixel['roi_id'] == row['roi_id']
+                    and pixel['readable'] is True and row['roi_id'] in observation['readable_roi_ids']
+                    and evidence['complete_witness'] == {'view_name': witness['view_name'],
+                        'pixel_row_index': witness['pixel_row_index']}, 'complete_readable_witness')
+            require(pixel['visible_surface_pixels'] >= pixel['minimum_surface_pixels'] == 16
+                    and pixel['contrasting_boundary_pixels'] >= pixel['minimum_boundary_pixels'] == 4
+                    and pixel['minimum_rgb_boundary_contrast'] == 24
+                    and pixel['front_facing'] is True
+                    and _valid_visible_pixel_location(pixel, [512, 512]), 'witness_pixel_gates')
+            pixel_rows.append([witness['scope_id'], frame['frame_identity'], row['roi_id'],
+                pixel['visible_surface_pixels'], pixel['contrasting_boundary_pixels'],
+                pixel['visible_pixel_bounds'], pixel['visible_pixel_anchor']])
+            compact['complete_witness']['native_content_block_index'] = (
+                selected_indices[frame['frame_identity']] + 1 if witness['selected_for_delivery'] else None)
+        else:
+            require(row['status'] != 'covered', 'covered_requires_witness')
+        compact_rows.append(compact)
+    result = {key: copy.deepcopy(value[key]) for key in
+              ('status', 'result_kind', 'observation_status', 'session_id', 'read_only', 'execution_authority')}
+    compact_binding = {key: copy.deepcopy(item) for key, item in binding.items()
+                       if key not in ('schema', 'objects', 'camera_policy', 'camera_specification')}
+    result.update(schema='active-observation-region-task-brief-v1', index_base=0,
+        binding=compact_binding,
+        objects={'columns': object_columns, 'rows': [[obj[key] for key in object_columns] for obj in objects]},
+        region_task=dict(schema=task['schema'], conditions=copy.deepcopy(task['conditions']),
+                         summary=copy.deepcopy(task['summary']), rows=compact_rows),
+        scopes={'columns': ['scope_id', 'camera_identity', 'binding_sha256', 'constructed_frame_count',
+                            'locally_covered_region_count'], 'rows': scope_rows},
+        images={'columns': ['scope_id', 'camera_identity', 'view_name', 'frame_identity', 'image_ref',
+                             'image_sha256', 'native_content_block_index'],
+                'rows': [[frame['scope_id'], frame['camera_identity'], frame['view_name'], frame['frame_identity'],
+                          frame['image_ref'], frame['image_sha256'], index + 1] for index, frame in enumerate(selected)]},
+        witness_pixels={'columns': ['scope_id', 'frame_identity', 'roi_id', 'visible_surface_pixels',
+                                    'contrasting_boundary_pixels', 'visible_pixel_bounds', 'visible_pixel_anchor'],
+                        'rows': pixel_rows},
+        image_delivery=copy.deepcopy(value['image_delivery']),
+        source_triangle_index_semantics='zero_based_object_local; current_capture_order; source_binding_per_scope')
+    if 'task_result' in value:
+        task_result = value['task_result']
+        task_source = task_result['binding']['observation_source']
+        require(task_source['measurement_scope'] == 'whole_objects'
+                and task_source['parent_binding_sha256'] == binding['binding_sha256']
+                and task_source['parent_source_binding_sha256'] == binding['source_binding_sha256']
+                and task_source['parent_capture_scope'] == binding['capture_scope'], 'whole_object_task_binding')
+        result['task_result'] = copy.deepcopy(task_result)
+    return result
+
+
 def project_active_observation_brief(value):
     """Deduplicate one complete active result using versioned, local table indices.
 
@@ -1044,6 +1202,8 @@ def project_active_observation_brief(value):
     first image follows its text at index one. Unsupported or conflicting
     references retain the full response through the caller's existing path.
     """
+    if 'region_task' in value.get('facts', {}):
+        return _project_region_task_brief(value)
     object_columns = ['object_index', 'host_id', 'instance_id', 'object_name']
     region_columns = ['roi_id', 'object_index', 'status', 'reason']
     pixel_columns = ['image_index', 'region_index', 'front_facing',
@@ -1377,7 +1537,16 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             'patch_owner_array_bytes', 'patch_mapping_array_bytes',
             'mesh_order_identity', 'owner_schema', 'owner_mapping_identity', 'triangle_id_scope',
             'owner_capabilities', 'frame_identity', 'triangle_owner_array_bytes', 'owner_metadata_array_bytes',
+            'scope_id', 'camera_identity',
         ) if key in frame} for frame in frames]
+        region_task = 'region_task' in value.get('facts', {})
+        if region_task:
+            metadata['scopes'] = copy.deepcopy(value['scopes'])
+            metadata['constructed_frames'] = copy.deepcopy(value['constructed_frames'])
+            # Scope validation uses the exact selected references from the same
+            # construction archive. Each selected image gets its public block
+            # index after selection, independent of repeated view names.
+            metadata['frames'] = copy.deepcopy(frames)
         for frame in frames:
             row = {'image_ref': frame.get('image_ref'), 'view_name': frame.get('view_name'),
                    'PNG_bytes_read': 0, 'base64_chars': 0, 'status': 'reading'}
@@ -1398,15 +1567,18 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             content.append({'type': 'image', 'mimeType': 'image/png', 'data': data})
             audit['native_blocks_constructed'] = len(content)
         metadata['image_delivery'] = {
-            'local_verified_image_count': len(frames),
+            'local_verified_image_count': len(value.get('constructed_frames', frames)),
             'mcp_content_constructed_image_count': len(content),
             'consumer_read_status': 'unconfirmed',
             'frame_reuses': value.get('work', {}).get('frame_reuses', 0),
             'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
         }
+        if region_task:
+            metadata['image_delivery']['selected_image_count'] = len(frames)
+            projected = _project_region_task_brief(metadata)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
-            brief = project_active_observation_brief(metadata)
+            brief = projected if region_task else project_active_observation_brief(metadata)
             if brief is not None:
                 metadata = brief
                 audit['projection_status'] = 'brief'
