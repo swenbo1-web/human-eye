@@ -1,0 +1,10 @@
+{
+  "schema": "cross-scale-root-saved-correction-v1",
+  "original_source": "closeout_initial.py",
+  "observed_error": "ValueError: selected_generation_workspace_mismatch/human_eye_plugin/active_observation_region_task.py",
+  "cause": "The root summary treated state_quality_passed, an integer count of seven passing requests, as a boolean identity. It consequently selected the fallback R0 during workspace verification.",
+  "correction": "Require the summary count and denominator to equal seven, and independently require STATE_QUALITY.passed_checked_scope to be true.",
+  "original_source_and_error_preserved": true,
+  "actual_product_operations_added": 0,
+  "source_bytes_verified_against_R1_install": true
+}

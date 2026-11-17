@@ -1,0 +1,53 @@
+{
+  "AST_scope": "Remove only the new region_task early dispatch. The complete established default projection is AST-identical.",
+  "actual_operations": 0,
+  "correction": "The old default brief already upgrades to v5 with region locations and inspection. Original state checker pinned v2.",
+  "derived": {
+    "bytes": 8396,
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_cross_scale_discovery_001\\checks_saved\\state_adapter_r1.py",
+    "sha256": "66e4be71a98e618af7be02c90ad23f1f560eb36778ee31dad5f9b4ac526b2bae"
+  },
+  "diff": "--- state_adapter.py\n+++ state_adapter_r1.py\n@@ -56,7 +56,7 @@\n     frozen.compare_geometry(capture,frozen.expected.fixture(),audit)\n     frozen.source_binding_checks(capture,parent,install,audit)\n     public = next(json.loads(block['text']) for block in response['result']['content'] if block['type']=='text')\n-    audit.check(public['schema'] == 'active-observation-brief-v2' and 'region_task' not in public, 'unchanged_default_brief_schema')\n+    audit.check(public['schema'] == 'active-observation-brief-v5' and 'region_task' not in public, 'unchanged_default_brief_schema')\n     images = [block for block in response['result']['content'] if block['type']=='image']\n     frames = full['frames']\n     audit.check(len(images) == len(frames) == full['work']['raster_attempts'] == 6, 'legacy_six_actual_frames')\n",
+  "independent_baseline_projection_AST_equal": true,
+  "original": {
+    "bytes": 8396,
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_cross_scale_discovery_001\\checks_saved\\state_adapter.py",
+    "sha256": "ed76094400f44e85fbb9ac5e4409f68e09a8c4d20cd8101a88b1cbd5de8ba76c"
+  },
+  "original_failure_stderr": {
+    "bytes": 1262,
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_cross_scale_discovery_001\\checks_saved\\state.stderr.txt",
+    "sha256": "bac5e214ba5a99ee86bfb75298bac09a18e8636c3fc3f7338339eec1f116a2ee"
+  },
+  "product_changes": 0,
+  "receipt_preparation_failure": {
+    "at": "pin(__file__) while assembling receipt, after writing the exact derived adapter",
+    "error": "'str' object has no attribute 'read_bytes'",
+    "error_type": "AttributeError",
+    "impact": "No actual operation or product state. Derived adapter executed once and all 7 saved requests passed.",
+    "retained": true,
+    "source": {
+      "bytes": 2827,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_cross_scale_discovery_001\\checks_saved\\derive_state_r1.py",
+      "sha256": "649b908d9dc8294ec62de04f7bf108ae31c86821e7a675cb4d2593ad881c2639"
+    }
+  },
+  "schema": "cross-scale-saved-state-correction-v1",
+  "source_inputs": [
+    {
+      "bytes": 114643,
+      "path": "D:\\he_m5_observe_measure_001\\B\\product\\human_eye_plugin\\live_spatial_mcp.py",
+      "sha256": "e39158e9926a8268ee57313ef77adc1f56ad64965284a01d15cd301c2d153c2f"
+    },
+    {
+      "bytes": 127463,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\human_eye_plugin\\live_spatial_mcp.py",
+      "sha256": "4f3687b3bd85fd0b32741e7a22f186f89c231908118b15db862a39b4f3a9861e"
+    },
+    {
+      "bytes": 3159,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_cross_scale_discovery_001\\checks_saved\\state_correction_receipt.py",
+      "sha256": "a4b745b5f5c8a5d4571771a7f513688703e8d5242747f450860251b8022c2519"
+    }
+  ]
+}
