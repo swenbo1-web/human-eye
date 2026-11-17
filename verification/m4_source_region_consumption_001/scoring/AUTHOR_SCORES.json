@@ -1,0 +1,1001 @@
+{
+  "schema": "m4-source-region-consumption-author-scores-v1",
+  "batch_id": "M4-SOURCE-REGION-CONSUMPTION-001",
+  "visibility": "private_scoring_only",
+  "scored_at_utc": "2026-11-17T04:06:14.884Z",
+  "scoring_release": "Root explicitly released unified scoring after sealing S1, S2 and S3. No answers were read before that release.",
+  "read_scope": [
+    "scoring/RUBRIC.json",
+    "scoring/CASE_ANSWERS.json",
+    "answers/S1.txt",
+    "answers/S2.txt",
+    "answers/S3.txt"
+  ],
+  "frozen_inputs": {
+    "rubric_sha256": "1f5deb4b12e083dd5de952e617ee5629f04b68152759dc29bcaed6708d73f9af",
+    "case_answers_sha256": "0c7449a5f7a70ce2982cdada064574e6ef142f8187b7bb0ede9353143baf97f3",
+    "rubric_frozen_at_utc": "2026-11-17T03:52:39.627Z",
+    "rules_changed": false,
+    "numeric_absolute_error_limit_m": 0.0005,
+    "unique_field_reference_alternatives_preserved": true
+  },
+  "method": "Manual source-grounded gate review under the original frozen rubric. Required omissions fail the relevant gate. S1 is unrun on every content gate because no observation was delivered. Execution and original harness statuses are recorded separately.",
+  "cases": [
+    {
+      "case_id": "S1",
+      "answer": {
+        "path": "verification/m4_source_region_consumption_001/answers/S1.txt",
+        "sha256": "cffb146193ba51c041ed5cdd1d940157aec0761444483fdaf2e05170ea1cd316",
+        "line_count": 11,
+        "line_numbering": "One-based physical UTF-8 text lines split at CRLF or LF. Blank lines count."
+      },
+      "frozen_case_binding": {
+        "region_id": "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722",
+        "image_ref": "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578",
+        "capture_state": {
+          "instance_id": "8ee120faccfd4c8fbbeb60dfd391616d",
+          "epoch": 1,
+          "revision": 1,
+          "selection_key": "fa8df2d2b516c63545ed9c309cde8340ea59ac4de7c8dc4d3bba8e9ed5360bd1"
+        }
+      },
+      "execution_and_delivery": {
+        "source": "Root explicit scoring-release message after all three answers were sealed. Author did not inspect raw logs or internal reasoning.",
+        "original_harness_status": "failed",
+        "original_failure_preserved": true,
+        "original_observation_json_delivered": false,
+        "native_png_blocks_delivered": 0,
+        "reported_failure": "Thin MCP rejected the CLI standard _meta, so the original observation was not delivered. No replacement sample was run."
+      },
+      "numeric_adoption": {
+        "expected_m": "0.37011719389236364",
+        "expected_mm": "370.11719389236364",
+        "reported_m": null,
+        "reported_mm": null,
+        "absolute_error_m": null,
+        "assessment": "unrun_no_observation"
+      },
+      "gates": [
+        {
+          "gate_id": "G1",
+          "gate_name": "distance_and_units",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 4,
+              "answer_line_end": 4,
+              "quote": "未取得距离字段、单位定义或最近点对，无法报告数值"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G2",
+          "gate_name": "region_and_original_witness",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 4,
+              "answer_line_end": 4,
+              "quote": "无法报告数值，也无法引用对应区域"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G3",
+          "gate_name": "complete_measurement_scope",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 1,
+              "answer_line_end": 1,
+              "quote": "未提供原始 JSON 或 PNG"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G4",
+          "gate_name": "case_display_scope_and_status",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 5,
+              "answer_line_end": 5,
+              "quote": "未取得图片及选区掩膜，无法核实选区标记、可见范围或像素数量"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G5",
+          "gate_name": "selected_pixel_count",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 5,
+              "answer_line_end": 5,
+              "quote": "未取得图片及选区掩膜"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G6",
+          "gate_name": "observed_samples_and_unseen_parts",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 6,
+              "answer_line_end": 6,
+              "quote": "无法确定哪些部分被遮挡、位于画外，或未被本次观测覆盖"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G7",
+          "gate_name": "complete_visibility_unknown_and_missing_information",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 3,
+              "answer_line_end": 3,
+              "quote": "本次各项结果只能标记为**未知**"
+            },
+            {
+              "answer_line_start": 11,
+              "answer_line_end": 11,
+              "quote": "这同一份封存观测的原始 JSON 和 PNG"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G8",
+          "gate_name": "surface_relation_and_solid_inference",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 7,
+              "answer_line_end": 7,
+              "quote": "目前没有证据支持分离、接触、相交或内外归属中的任何一种结论"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。 原答第9行的通用距离含义说明保留为谨慎表达，本例几何结论仍未得到评测。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G9",
+          "gate_name": "major_citations_binding_and_supported_claims",
+          "verdict": "unrun",
+          "evidence": [
+            {
+              "answer_line_start": 1,
+              "answer_line_end": 1,
+              "quote": "不能把“读取失败”解释为“选区没有可见像素”或“距离为零”"
+            },
+            {
+              "answer_line_start": 11,
+              "answer_line_end": 11,
+              "quote": "逐项引用实际来源"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reference_resolution": "Observation JSON and PNG were unavailable to this consumer. Required original-source references are unevaluated.",
+          "reason": "S1未获得原观测JSON或PNG。按root释放评分时给出的执行事实，该门缺少可消费证据，记unrun并保留原分母。 原答诚实报告读取失败，未伪造本例区域、图像或距离来源。",
+          "failure_classes": [],
+          "subfindings": []
+        }
+      ],
+      "gate_counts": {
+        "pass": 0,
+        "fail": 0,
+        "unrun": 9
+      },
+      "content_result": "unrun",
+      "accepted": false,
+      "content_failure_classes": [],
+      "execution_failure_classes": [
+        "execution_or_image_delivery_failure"
+      ],
+      "attribution": "Missing observation is an execution/delivery failure. The honest answer is not classified as a model geometry error."
+    },
+    {
+      "case_id": "S2",
+      "answer": {
+        "path": "verification/m4_source_region_consumption_001/answers/S2.txt",
+        "sha256": "40a7dcb7e8811c8f1e42851a057c604b8344d81e32c2b397046ecbd68d8726fc",
+        "line_count": 21,
+        "line_numbering": "One-based physical UTF-8 text lines split at CRLF or LF. Blank lines count."
+      },
+      "frozen_case_binding": {
+        "region_id": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873",
+        "image_ref": "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32",
+        "capture_state": {
+          "instance_id": "6b2772cc8bec44f49d99c5cdffd4a48a",
+          "epoch": 1,
+          "revision": 2,
+          "selection_key": "fa8df2d2b516c63545ed9c309cde8340ea59ac4de7c8dc4d3bba8e9ed5360bd1"
+        }
+      },
+      "execution_and_delivery": {
+        "source": "Root explicit scoring-release message after all three answers were sealed. Author did not inspect raw logs or internal reasoning.",
+        "original_harness_status": "failed",
+        "original_failure_preserved": true,
+        "original_observation_json_delivered": true,
+        "native_png_blocks_delivered": 1,
+        "reported_failure": "The old archive algorithm counted CLI generic empty-resource enumeration as an owner read and failed its count-difference check. Exact input boundary and resource enumeration are reserved for independent audit."
+      },
+      "numeric_adoption": {
+        "expected_m": "0.37011719389236364",
+        "expected_mm": "370.11719389236364",
+        "reported_m": null,
+        "reported_mm": null,
+        "absolute_error_m": null,
+        "assessment": "required_quantity_omitted_after_reported_tool_text_truncation"
+      },
+      "gates": [
+        {
+          "gate_id": "G1",
+          "gate_name": "distance_and_units",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 8,
+              "answer_line_end": 8,
+              "quote": "目前不能可靠报告最近距离数值、单位或最近点／三角形见证。"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "原答未报告本例0.37011719389236364 m及毫米换算。数字比较缺少被报告量值，按必需量值遗漏判fail。",
+          "failure_classes": [
+            "distance_or_unit_error"
+          ],
+          "subfindings": [
+            "未编造错误数值。",
+            "原答称JSON中段被截断，实际交付链路由独立audit核查。"
+          ]
+        },
+        {
+          "gate_id": "G2",
+          "gate_name": "region_and_original_witness",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 3,
+              "answer_line_end": 3,
+              "quote": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+            },
+            {
+              "answer_line_start": 9,
+              "answer_line_end": 9,
+              "quote": "参考表面身份，以及最近点对和对应三角形等见证字段"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "区域R正确绑定S2。原答将参考对象身份和原见证视为缺失，没有采用Cube及原nearest_witness或source_mapping，G2必需来源不完整。",
+          "failure_classes": [
+            "measurement_source_or_witness_error"
+          ],
+          "subfindings": [
+            "选区侧原见证为三角48160/48161、vertex24331。",
+            "Cube侧原见证为三角0。",
+            "冻结规则接受唯一字段引用，原答仍未提供该原见证引用。"
+          ]
+        },
+        {
+          "gate_id": "G3",
+          "gate_name": "complete_measurement_scope",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 7,
+              "answer_line_end": 7,
+              "quote": "完整选中源三角形并集到参考三角形表面"
+            },
+            {
+              "answer_line_start": 7,
+              "answer_line_end": 7,
+              "quote": "748 个选中源三角形"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "采用了完整选集并集到参考三角表面的测量范围，并区分图片可见子集。符合G3允许measurement_scope自然语言等价的条款。单位遗漏计入G1。",
+          "failure_classes": [],
+          "subfindings": [
+            "task_result状态complete被正确采用。"
+          ]
+        },
+        {
+          "gate_id": "G4",
+          "gate_name": "case_display_scope_and_status",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 12,
+              "answer_line_end": 12,
+              "quote": "selected_region_displayed_without_pixels"
+            },
+            {
+              "answer_line_start": 13,
+              "answer_line_end": 13,
+              "quote": "selected_object_participates: true"
+            },
+            {
+              "answer_line_start": 21,
+              "answer_line_end": 21,
+              "quote": "测量完成与视觉证据不足并不矛盾"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "原答正确采用选中对象参与显示、0选区像素和图片证据不足的含义。缺少Cube也参与本次active-view-layer有效视口显示的本例事实，故G4组合要求未全部通过。",
+          "failure_classes": [
+            "display_scope_or_status_error"
+          ],
+          "subfindings": [
+            "selected_object_participates=true采用正确。",
+            "selected_region_displayed_without_pixels原因采用正确。",
+            "视觉证据不足为evidence_insufficient的同义表达。",
+            "遗漏binding.image_scope.objects[1].participates=true。"
+          ]
+        },
+        {
+          "gate_id": "G5",
+          "gate_name": "selected_pixel_count",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 12,
+              "answer_line_end": 12,
+              "quote": "选区可见像素数为 0。"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "0像素与S2 visibility.selected_surface_pixels一致，并引用当前图像I。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G6",
+          "gate_name": "observed_samples_and_unseen_parts",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 14,
+              "answer_line_end": 14,
+              "quote": "全部 748 个选中三角形均未获得当前帧的可见像素证据"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "准确识别全部748个所选三角没有当前帧可见样本，引用R的actual_frame_visibility未知集合及I。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G7",
+          "gate_name": "complete_visibility_unknown_and_missing_information",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 14,
+              "answer_line_end": 14,
+              "quote": "全部 748 个选中三角形均未获得当前帧的可见像素证据"
+            },
+            {
+              "answer_line_start": 14,
+              "answer_line_end": 14,
+              "quote": "无法观察选区形状、表面间隙、接触位置或最近距离见证所在位置"
+            },
+            {
+              "answer_line_start": 19,
+              "answer_line_end": 19,
+              "quote": "还需参考网格是否封闭、是否构成有效实体，以及带符号距离、点在实体内外分类或体积相交证据"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "按冻结同义表达条款，全部选区缺少图像样本及无法观察的明确范围足以保留完整曲面可见性未知，并说明实际缺少选区图像证据。实体分类缺少的封闭/有效实体及内外分类来源也已说明。",
+          "failure_classes": [],
+          "subfindings": [
+            "原答未声称完整曲面可见。",
+            "未将参与显示等同于实际可见。"
+          ]
+        },
+        {
+          "gate_id": "G8",
+          "gate_name": "surface_relation_and_solid_inference",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "当前不能判定表面分离、接触或相交"
+            },
+            {
+              "answer_line_start": 18,
+              "answer_line_end": 18,
+              "quote": "若可靠结果为正且超过数值误差，只能支持这两组表面分离"
+            },
+            {
+              "answer_line_start": 19,
+              "answer_line_end": 19,
+              "quote": "正距离也可能对应内含状态"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "原答给出了正确的条件性距离含义和谨慎的实体内外判断。它未采用本例已测正距离，拒绝给出本例选区与Cube参考表面分离/无接触的受支持结论，G8组合要求未全部通过。",
+          "failure_classes": [
+            "surface_or_solid_inference_error"
+          ],
+          "subfindings": [
+            "失败细项为已支持表面关系的遗漏。",
+            "未出现正距离推出实体outside。",
+            "未出现无充分依据肯定inside。",
+            "私有inside事实不作为消费者必答结论。"
+          ]
+        },
+        {
+          "gate_id": "G9",
+          "gate_name": "major_citations_binding_and_supported_claims",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 3,
+              "answer_line_end": 3,
+              "quote": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+            },
+            {
+              "answer_line_start": 4,
+              "answer_line_end": 4,
+              "quote": "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+            },
+            {
+              "answer_line_start": 7,
+              "answer_line_end": 7,
+              "quote": "【来源：R，`task_result`、`measurement_scope`】"
+            },
+            {
+              "answer_line_start": 14,
+              "answer_line_end": 14,
+              "quote": "【来源：R，`unknowns.actual_frame_visibility`；I】"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "R与I均为S2原绑定，已作出的测量范围、像素与未见集合等主要结论具有可唯一解析来源。遮挡、画外、裁剪被作为尚未区分的可能性。G1/G2/G4/G8的必需事实遗漏保留各自fail。工具截断自述的实际原因归独立audit。",
+          "failure_classes": [],
+          "subfindings": [
+            "PNG的均匀外观描述不提供Cube是否参与显示的替代证据。",
+            "未发现跨例region/image引用。"
+          ]
+        }
+      ],
+      "gate_counts": {
+        "pass": 5,
+        "fail": 4,
+        "unrun": 0
+      },
+      "content_result": "failed",
+      "accepted": false,
+      "content_failure_classes": [
+        "distance_or_unit_error",
+        "measurement_source_or_witness_error",
+        "display_scope_or_status_error",
+        "surface_or_solid_inference_error"
+      ],
+      "execution_failure_classes": [
+        "execution_or_image_delivery_failure"
+      ],
+      "attribution": "Required source facts were not adopted in the final answer. The answer reports a truncated tool text. This content score does not establish whether the omission originated in model reasoning, presentation truncation or another input boundary."
+    },
+    {
+      "case_id": "S3",
+      "answer": {
+        "path": "verification/m4_source_region_consumption_001/answers/S3.txt",
+        "sha256": "0a5d57a5c9baef10d4c4cf267554ec7cafcdf91a5d3b90663f87f8f290012325",
+        "line_count": 30,
+        "line_numbering": "One-based physical UTF-8 text lines split at CRLF or LF. Blank lines count."
+      },
+      "frozen_case_binding": {
+        "region_id": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb",
+        "image_ref": "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326",
+        "capture_state": {
+          "instance_id": "6b2772cc8bec44f49d99c5cdffd4a48a",
+          "epoch": 1,
+          "revision": 4,
+          "selection_key": "fa8df2d2b516c63545ed9c309cde8340ea59ac4de7c8dc4d3bba8e9ed5360bd1"
+        }
+      },
+      "execution_and_delivery": {
+        "source": "Root explicit scoring-release message after all three answers were sealed. Author did not inspect raw logs or internal reasoning.",
+        "original_harness_status": "failed",
+        "original_failure_preserved": true,
+        "original_observation_json_delivered": true,
+        "native_png_blocks_delivered": 1,
+        "reported_failure": "The old archive algorithm counted CLI generic empty-resource enumeration as an owner read and failed its count-difference check. Exact input boundary and resource enumeration are reserved for independent audit."
+      },
+      "numeric_adoption": {
+        "expected_m": "0.37011719389236364",
+        "expected_mm": "370.11719389236364",
+        "reported_m": null,
+        "reported_mm": null,
+        "absolute_error_m": null,
+        "assessment": "required_quantity_omitted_after_reported_tool_text_truncation"
+      },
+      "gates": [
+        {
+          "gate_id": "G1",
+          "gate_name": "distance_and_units",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 12,
+              "answer_line_end": 12,
+              "quote": "距离数值、单位及最近点见证无法可靠报告"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "原答未报告本例0.37011719389236364 m及毫米换算。按必需量值遗漏判fail。",
+          "failure_classes": [
+            "distance_or_unit_error"
+          ],
+          "subfindings": [
+            "未编造错误数值。",
+            "原答称JSON中段截断，实际交付链路由独立audit核查。"
+          ]
+        },
+        {
+          "gate_id": "G2",
+          "gate_name": "region_and_original_witness",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 6,
+              "answer_line_end": 6,
+              "quote": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+            },
+            {
+              "answer_line_start": 12,
+              "answer_line_end": 12,
+              "quote": "不能补造见证点坐标或三角形编号"
+            },
+            {
+              "answer_line_start": 13,
+              "answer_line_end": 13,
+              "quote": "选区侧和参考侧的见证点及三角形标识"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "R及采集epoch/revision正确绑定S3，且后文识别Cube。原答没有采用原nearest_witness或source_mapping，G2的原见证来源缺失。",
+          "failure_classes": [
+            "measurement_source_or_witness_error"
+          ],
+          "subfindings": [
+            "冻结规则接受唯一字段引用，未要求抄全坐标或三角列表。"
+          ]
+        },
+        {
+          "gate_id": "G3",
+          "gate_name": "complete_measurement_scope",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 11,
+              "answer_line_end": 11,
+              "quote": "完整选中源三角形并集到参考三角形表面"
+            },
+            {
+              "answer_line_start": 11,
+              "answer_line_end": 11,
+              "quote": "测量状态为 `complete`"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "完整所选三角并集到参考三角表面的自然语言范围正确，且避免将其外推为源对象整体。符合G3允许measurement_scope自然语言等价的条款。单位遗漏计入G1。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G4",
+          "gate_name": "case_display_scope_and_status",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 3,
+              "answer_line_end": 3,
+              "quote": "整体状态为 `partial / evidence_insufficient`"
+            },
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "selected_region_not_displayed"
+            },
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "selected_object_participates=false"
+            },
+            {
+              "answer_line_start": 19,
+              "answer_line_end": 19,
+              "quote": "参考对象 `Cube` 也因不可见而被排除"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "正确采用选区未参加显示及原原因、整体partial/evidence_insufficient，并保留几何量测complete。Cube同样从图片排除的事实采用正确。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G5",
+          "gate_name": "selected_pixel_count",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "选区可见像素为 0"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "0像素与S3 visibility.selected_surface_pixels一致，引用R显示记录与图像I。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G6",
+          "gate_name": "observed_samples_and_unseen_parts",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 18,
+              "answer_line_end": 18,
+              "quote": "未观察到的是全部 748 个选中源三角形的表面外观"
+            },
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "所列选中三角形均没有可见像素样本"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "准确识别全部748个所选三角无当前帧可见样本，并将原因归于本例未显示状态。",
+          "failure_classes": [],
+          "subfindings": []
+        },
+        {
+          "gate_id": "G7",
+          "gate_name": "complete_visibility_unknown_and_missing_information",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 17,
+              "answer_line_end": 17,
+              "quote": "所列选中三角形均没有可见像素样本"
+            },
+            {
+              "answer_line_start": 18,
+              "answer_line_end": 18,
+              "quote": "不能从这张图确认选区形状、朝向、接触位置或最近点位置"
+            },
+            {
+              "answer_line_start": 28,
+              "answer_line_end": 28,
+              "quote": "还需要参考网格是否封闭、是否定义有效实体，以及覆盖相关区域的内外分类或有符号距离证据"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "按冻结同义表达条款，未显示及全部所选表面缺少外观/像素证据明确保留完整可见性未知，并说明所缺图像证据。实体分类所缺封闭实体与内外分类来源也已说明。",
+          "failure_classes": [],
+          "subfindings": [
+            "未将无可见样本提升为完整曲面可见性证书。"
+          ]
+        },
+        {
+          "gate_id": "G8",
+          "gate_name": "surface_relation_and_solid_inference",
+          "verdict": "fail",
+          "evidence": [
+            {
+              "answer_line_start": 23,
+              "answer_line_end": 23,
+              "quote": "本次可读取内容不足以给出确定的接触、分离或实体内外结论"
+            },
+            {
+              "answer_line_start": 26,
+              "answer_line_end": 26,
+              "quote": "只支持**该选区与参考表面分离**"
+            },
+            {
+              "answer_line_start": 26,
+              "answer_line_end": 26,
+              "quote": "更不说明选区在实体外部"
+            },
+            {
+              "answer_line_start": 28,
+              "answer_line_end": 28,
+              "quote": "无符号表面距离不能判定实体内外或包含关系"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "条件性表面距离解释、选区/整对象范围限制和实体分类保留均正确。原答未采用本例已测正距离支持实际表面分离/无接触，G8组合要求未全部通过。",
+          "failure_classes": [
+            "surface_or_solid_inference_error"
+          ],
+          "subfindings": [
+            "失败细项为已支持表面关系的遗漏。",
+            "未出现正距离推出实体outside。",
+            "未出现无充分依据肯定inside。"
+          ]
+        },
+        {
+          "gate_id": "G9",
+          "gate_name": "major_citations_binding_and_supported_claims",
+          "verdict": "pass",
+          "evidence": [
+            {
+              "answer_line_start": 6,
+              "answer_line_end": 6,
+              "quote": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+            },
+            {
+              "answer_line_start": 7,
+              "answer_line_end": 7,
+              "quote": "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+            },
+            {
+              "answer_line_start": 19,
+              "answer_line_end": 19,
+              "quote": "participating_object_indices=[]"
+            },
+            {
+              "answer_line_start": 19,
+              "answer_line_end": 19,
+              "quote": "excluded_object_indices=[0,1]"
+            }
+          ],
+          "expected_original_brief_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reference_resolution": "R and I resolve to this case in CASE_ANSWERS.json. The individual finding states which required measurement source or claim was omitted.",
+          "reason": "R、I、实例162和epoch=1/revision=4均属于S3，显示、未见、测量范围等实际主要结论具有可解析的本例来源。条件性通用解释明确标为解释边界。工具截断自述的实际原因归独立audit。",
+          "failure_classes": [],
+          "subfindings": [
+            "未发现跨例region/image引用。",
+            "未将图像无选区证据解释为已知实体内含。"
+          ]
+        }
+      ],
+      "gate_counts": {
+        "pass": 6,
+        "fail": 3,
+        "unrun": 0
+      },
+      "content_result": "failed",
+      "accepted": false,
+      "content_failure_classes": [
+        "distance_or_unit_error",
+        "measurement_source_or_witness_error",
+        "surface_or_solid_inference_error"
+      ],
+      "execution_failure_classes": [
+        "execution_or_image_delivery_failure"
+      ],
+      "attribution": "Required source facts were not adopted in the final answer. The answer reports a truncated tool text. This content score does not establish whether the omission originated in model reasoning, presentation truncation or another input boundary."
+    }
+  ],
+  "summary": {
+    "case_denominator": 3,
+    "answers_sealed": 3,
+    "observation_json_and_native_png_delivered_cases": 2,
+    "content_evaluated_cases": 2,
+    "content_unrun_cases": 1,
+    "accepted_cases": 0,
+    "accepted_case_fraction": "0/3",
+    "delivered_case_content_pass_fraction": "0/2",
+    "all_cases_accepted": false,
+    "gate_counts": {
+      "pass": 11,
+      "fail": 7,
+      "unrun": 9
+    },
+    "original_harness_failed_cases": 3,
+    "original_harness_status_changed": false,
+    "outside_from_positive_distance_errors": 0,
+    "unsupported_confident_inside_claims": 0,
+    "principal_content_failures": [
+      "S2 and S3 omitted measured distance, metre/millimetre units and original witness sources after reporting tool-text truncation.",
+      "S2 and S3 consequently withheld the supported selected-surface separation conclusion.",
+      "S2 omitted Cube display participation."
+    ],
+    "unverified_pending_independent_audit": [
+      "Actual cause and position of the tool-text truncation reported by S2 and S3.",
+      "Input boundary and empty-resource enumeration audit."
+    ],
+    "image_independent_contribution": "Unmeasured. Native PNG delivery and final-answer image references do not isolate the independent effect of the image on the answer."
+  }
+}

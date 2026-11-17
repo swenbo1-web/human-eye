@@ -57,6 +57,13 @@ def main():
         ledger = {'attempts': 0, 'admitted': 0, 'tools': []}
     normal, sequence, total_tx, total_rx = False, 0, 0, 0
     calls, errors = [], []
+    def publish_bridge():
+        path = options.owner / 'BRIDGE_RESULT.json'
+        save(path, {'calls': calls, 'protocol_errors': errors,
+            'input_sha256': options.input_sha256, 'business_limit': 4,
+            'attempts': ledger['attempts'], 'admitted': ledger['admitted'],
+            'new_Blender': 0, 'new_product_calls': 0, 'raster': 0, 'image_encoding': 0}, replace=path.exists())
+    publish_bridge()
     try:
         while True:
             raw = sys.stdin.buffer.readline(MAX_FRAME + 1)
@@ -84,6 +91,10 @@ def main():
                 result = {'tools': [TOOL]}
             elif method == 'ping':
                 result = {}
+            elif method == 'resources/list':
+                result = {'resources': []}
+            elif method == 'resources/templates/list':
+                result = {'resourceTemplates': []}
             elif method == 'tools/call':
                 ledger['attempts'] += 1
                 attempt = ledger['attempts']
@@ -96,7 +107,11 @@ def main():
                 if attempt > 4:
                     row['status'] = 'business_tool_budget_exhausted'
                     result = {'isError': True, 'content': [{'type': 'text', 'text': 'business_tool_budget_exhausted'}]}
-                elif message.get('params') != {'name': 'read_observation', 'arguments': {}}:
+                elif (type(message.get('params')) is not dict
+                        or set(message['params']) - {'name', 'arguments', '_meta'}
+                        or message['params'].get('name') != 'read_observation'
+                        or message['params'].get('arguments') != {}
+                        or ('_meta' in message['params'] and type(message['params']['_meta']) is not dict)):
                     row['status'] = 'empty_parameter_read_observation_required'
                     result = {'isError': True, 'content': [{'type': 'text', 'text': 'empty_parameter_read_observation_required'}]}
                 else:
@@ -108,6 +123,7 @@ def main():
                 row['closed_ns'] = time.perf_counter_ns()
                 save(ledger_path, ledger, replace=True)
                 calls.append(row.copy())
+                publish_bridge()
             else:
                 errors.append({'method': method, 'reason': 'unsupported_MCP_method'})
             if result is None:
@@ -122,10 +138,7 @@ def main():
             total_rx += len(output)
         normal = True
     finally:
-        save(options.owner / 'BRIDGE_RESULT.json', {'calls': calls, 'protocol_errors': errors,
-            'input_sha256': options.input_sha256, 'business_limit': 4,
-            'attempts': ledger['attempts'], 'admitted': ledger['admitted'],
-            'new_Blender': 0, 'new_product_calls': 0, 'raster': 0, 'image_encoding': 0})
+        publish_bridge()
         save(folder / 'EXIT.json', {**started, 'normal_exit': normal, 'ended_ns': time.perf_counter_ns(),
             'requests': sequence, 'complete_tx_bytes': total_tx, 'complete_rx_bytes': total_rx,
             'backend_close_requested': False})

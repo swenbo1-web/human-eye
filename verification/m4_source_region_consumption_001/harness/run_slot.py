@@ -44,7 +44,13 @@ def main(case_id):
               'task_deadline_ns': task_deadline, 'lifecycle_deadline_ns': lifecycle_deadline}
     save(folder / 'SLOT_STARTED.json', result)
     try:
-        frozen = read(NS / 'FROZEN.json')
+        pointer = NS / 'ACTIVE_FREEZE.json'
+        frozen_path = NS / read(pointer)['name'] if pointer.exists() else NS / 'FROZEN.json'
+        if frozen_path.resolve().parent != NS.resolve():
+            raise ValueError('registered_freeze_path_required')
+        frozen = read(frozen_path)
+        result['freeze_path'] = str(frozen_path)
+        result['freeze_sha256'] = sha(frozen_path)
         for row in frozen['direct_inputs']:
             if sha(row['path']) != row['sha256']:
                 raise ValueError('frozen_direct_input_changed/' + row['path'])
