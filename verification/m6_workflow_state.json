@@ -24,7 +24,7 @@
   },
   "current_cycle": {
     "id": "M6-CALIBRATION-TRANSFER-007",
-    "status": "dispatched",
+    "status": "independently_reviewed_stage_closed",
     "dispatch_base": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
     "contract": "docs/M6_CALIBRATION_TRANSFER_007_TASK.md",
     "purpose": "One existing external-lineage cat case, one fresh Pro proposal, frozen006V2 before/after transfer evaluation",
@@ -32,13 +32,16 @@
     "training": 0,
     "component_frozen_after_prior_optimization": true,
     "original_file_edits": false,
-    "contract_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c"
+    "contract_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c",
+    "author_commit": "9047f179c01de3f699a61a6ffda5a9aab45645bf",
+    "review_doc": "docs/M6_CALIBRATION_TRANSFER_007_REVIEW.md",
+    "next_implementation_dispatched": false
   },
   "reviewed_plan_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c",
   "product_base_commit": "7d42bb939c7881a98fe322c10c216398f6c7aecc",
-  "last_wait_cursor": "0e153e4c-c965-44c3-8433-090281433fe3:1",
-  "last_observed_status": "One external-asset transfer task accepted; await active completion callback",
-  "pending_followup": true,
+  "last_wait_cursor": "0e153e4c-c965-44c3-8433-090281433fe3:2",
+  "last_observed_status": "Author fixed007 submitted; phase closure notice to be sent after idle confirmation",
+  "pending_followup": false,
   "reviewed_deliveries": [
     {
       "cycle_id": "M6-SELECT-001",
@@ -233,6 +236,13 @@
       "review_doc": "docs/M6_IMAGE_CALIBRATION_006_REVIEW.md",
       "evidence": "verification/m6_image_calibration_006_review/RESULTS.json",
       "review_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c"
+    },
+    {
+      "cycle_id": "M6-CALIBRATION-TRANSFER-007",
+      "commit": "9047f179c01de3f699a61a6ffda5a9aab45645bf",
+      "decision": "accept_technical_transfer_close_finite_calibration_direction_restoration_fail",
+      "review_doc": "docs/M6_CALIBRATION_TRANSFER_007_REVIEW.md",
+      "evidence": "verification/m6_calibration_transfer_007_review/RESULTS.json"
     }
   ],
   "model_selection": "Current perception encoder/head not accepted; one evidence-based data/supervision optimization remains. Prepare actual paired corpus first; no new model family.",
@@ -306,9 +316,9 @@
     "contract": "docs/M6_SHAPE_PAIRS_001_TASK.md"
   },
   "author_progress": {
-    "cycle": "M6-IMAGE-CALIBRATION-006",
+    "cycle": "M6-CALIBRATION-TRANSFER-007",
     "status": "completed_independently_reviewed",
-    "fixed_delivery": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0"
+    "fixed_delivery": "9047f179c01de3f699a61a6ffda5a9aab45645bf"
   },
   "specialization_policy": {
     "status": "user_approved",
@@ -493,12 +503,13 @@
     "review_commit": "5eac02e8ea1fa2fa300e70608946ff9c637dc3ca"
   },
   "next_step_decision": {
-    "status": "external_case_frozen_component_transfer_dispatched",
-    "cycle_id": "M6-CALIBRATION-TRANSFER-007",
+    "status": "no_new_implementation_evidence_based_phase_closure",
     "M6_overall_complete": false,
-    "reason": "Finite calibration and once-optimized batching are verified. Move to a fixed external asset and new proposal without additional algorithm tuning.",
-    "new_task_dispatched": true,
-    "timer_or_polling": false
+    "new_task_dispatched": false,
+    "timer_or_polling": false,
+    "remaining_goal": "Reliable task-conditioned3D proposal generation and complete quality/cost benefit; no accepted current expert model",
+    "next_required_basis": "A new proposal-generation mechanism driven only by available current geometry/reference images, with reproducible label-free construction probe before implementation or training",
+    "reason": "Existing material already establishes coverage/direction/amplitude failure. No new mechanism is formed. Do not create another diagnostic or training batch solely to continue the loop."
   },
   "objective_closure_notice": {
     "cycle_id": "M6-SHAPE-OBJECTIVE-001",
@@ -715,19 +726,16 @@
     "next_training_dispatched": false
   },
   "previous_completed_cycle": {
-    "id": "M6-IMAGE-CALIBRATION-006",
-    "status": "independently_reviewed_finite_calibration_pass",
-    "dispatch_base": "644012279d8c0d43e2bee9d8b5d38ea30195e5da",
-    "contract": "docs/M6_IMAGE_CALIBRATION_006_TASK.md",
-    "purpose": "Finite three-alpha actual image calibration of two frozen model proposals, followed by equivalent batch/decoding optimization",
-    "maximum_consumers": 0,
-    "deterministic_proposal_cases": 2,
+    "id": "M6-CALIBRATION-TRANSFER-007",
+    "status": "dispatched",
+    "dispatch_base": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+    "contract": "docs/M6_CALIBRATION_TRANSFER_007_TASK.md",
+    "purpose": "One existing external-lineage cat case, one fresh Pro proposal, frozen006V2 before/after transfer evaluation",
+    "maximum_consumers": 1,
     "training": 0,
-    "one_optimization": true,
+    "component_frozen_after_prior_optimization": true,
     "original_file_edits": false,
-    "contract_commit": "0b681d1315f99be1856835fa4336e8e852d14a2b",
-    "author_commit": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
-    "review_doc": "docs/M6_IMAGE_CALIBRATION_006_REVIEW.md"
+    "contract_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c"
   },
   "task_perception_dispatch": {
     "cycle_id": "M6-TASK-PERCEPTION-001",
@@ -1176,5 +1184,54 @@
       "threadId": "01a1d9cc-0cc2-7702-ba1f-7e210022ba6b"
     },
     "polling": false
+  },
+  "calibration_transfer_review": {
+    "author_commit": "9047f179c01de3f699a61a6ffda5a9aab45645bf",
+    "public_files": 74,
+    "manifest_members": 1151,
+    "bytes": 77518920,
+    "actual_Pro_sessions": 1,
+    "actual_tools": 11,
+    "actual_PNG_blocks": 12,
+    "PNG_bytes": 4405891,
+    "input_tokens": 365804,
+    "cached_input_tokens": 322944,
+    "output_tokens": 4443,
+    "consumer_wall_s": 202.3151511,
+    "root_saved_scores_recomputed": 3,
+    "root_RGB_objectives_recomputed": 3,
+    "unit": "source_native_physical_length_unlabelled",
+    "selected_alpha": 0.5,
+    "raw_restoration_pass": false,
+    "selected_restoration_pass": false,
+    "selected_vs_raw_support_RMSE_increase_fraction": 0.01238696073333645,
+    "final_active_TP_FP_FN": [
+      13,
+      0,
+      30
+    ],
+    "original_attention_core_TP_FP_FN": [
+      43,
+      26,
+      0
+    ],
+    "raw_common_wall_s": 202.6960974,
+    "calibration_increment_wall_s": 13.5067593,
+    "total_wall_s": 216.2028567,
+    "best_continuous_alpha": 0.7935526753598272,
+    "best_continuous_support_reduction_fraction": 0.14546531245726835,
+    "root_new_Pro": 0,
+    "root_new_Blender": 0,
+    "root_new_training": 0,
+    "review_doc": "docs/M6_CALIBRATION_TRANSFER_007_REVIEW.md"
+  },
+  "calibration_phase_decision": {
+    "scope": "006 first version/one equivalent optimization plus007 fixed external-asset transfer",
+    "status": "closed_no_additional_alpha_or_RGB_tuning",
+    "technical_components": "retained as explicit isolated research capabilities",
+    "automatic_geometric_restoration_adoption": false,
+    "formal_default_change": false,
+    "reason": "Fixed007 proposal's continuous amplitude upper bound is14.55percent. Wrong coverage and direction cannot be recovered by scalar calibration.",
+    "phase_review": "docs/M6_CALIBRATION_TRANSFER_007_REVIEW.md"
   }
 }
