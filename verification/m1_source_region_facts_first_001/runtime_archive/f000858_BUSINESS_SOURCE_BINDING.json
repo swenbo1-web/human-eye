@@ -1,0 +1,200 @@
+{
+  "first_owner_attempt": 1,
+  "recorded_owner_attempts": [
+    1
+  ],
+  "sources": [
+    {
+      "original": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\owner\\tool_01\\REQUEST.json",
+      "copy": "owner_turn/tool_01/REQUEST.json",
+      "bytes": 720,
+      "sha256": "278944741868c85c7ed223762e0bffbdb14f0a92f2004182fef9cb373b42d186"
+    },
+    {
+      "original": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\owner\\tool_01\\RESPONSE.json",
+      "copy": "owner_turn/tool_01/RESPONSE.json",
+      "bytes": 13093,
+      "sha256": "afb8fb9e2910d38aa2de369f5187d9fb3929eac765c9ab626aa824021c34a72c"
+    }
+  ],
+  "binding_errors": [],
+  "result_contracts": [
+    {
+      "attempt": 1,
+      "server": "arm_engine",
+      "tool": "read_observation",
+      "caller_identity": {
+        "RPC_id": 2,
+        "CLI_event_item_id": "item_3",
+        "request_metadata_type": "dict",
+        "request_metadata_caller_ids": {
+          "callId": "call_ab2c5562e4574ac7b9b2a50388b0e951",
+          "itemId": "fc_0d209698474b052b016afbdfe77ea487d08ab3419070f97fc7",
+          "threadId": "01a1e7e2-9081-7701-9d73-71d286ca6875"
+        },
+        "exposed_CLI_caller_id_comparisons": [],
+        "caller_id_binding": "caller_ids_unexposed_in_CLI_event",
+        "binding_basis": "server/tool/arguments, original RPC id and exact request/response wire, ordered completed business events"
+      },
+      "matched": true,
+      "classification": "success",
+      "reason": "content_and_envelope_match"
+    }
+  ],
+  "discovery_bindings": [],
+  "tool_accounting": {
+    "completed_CLI_tool_calls": 1,
+    "completed_CLI_tool_limit": 4,
+    "completed_business_calls": 1,
+    "completed_empty_discoveries": 0,
+    "completed_unexpected_tools": 0,
+    "owner_attempts": [
+      1
+    ]
+  },
+  "protocol_RPC_ledger": [
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "elicitation": {
+              "form": {},
+              "url": {}
+            }
+          },
+          "clientInfo": {
+            "name": "codex-mcp-client",
+            "title": "Codex",
+            "version": "0.152.1"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "result": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "sealed-observation-reader",
+            "version": "1.0"
+          }
+        }
+      },
+      "TX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\001\\TX.bin",
+      "TX_sha256": "2d21f1552b669775ab7ea61c365e48c0a2ab5f96b5372c47a09e38d46a7a7fc2",
+      "RX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\001\\RX.bin",
+      "RX_sha256": "513a669050f1a9c0a6933bc70bd3e2e121f0e059dd57c81c30a70a89521ea33a"
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+      },
+      "response": null,
+      "TX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\002\\TX.bin",
+      "TX_sha256": "883a6cf5c9ef985204b1312c393b79d87e3efb378272bbbaca6d2cecf13b5bdd",
+      "RX_path": null,
+      "RX_sha256": null
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {
+          "_meta": {
+            "progressToken": 0
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "tools": [
+            {
+              "name": "read_observation",
+              "description": "读取本会话绑定的一份封存观测，返回原产品JSON和PNG。采集时刻以返回的来源绑定为准。",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      },
+      "TX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\003\\TX.bin",
+      "TX_sha256": "d9a3a4517005c0142634c9f65dac68e738428d2587c5987a0d71d0cd1595aab0",
+      "RX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\003\\RX.bin",
+      "RX_sha256": "4a49dbb1c40383ee3703d51366cfbd04ae412a138e29d67ab6443487756cad4d"
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+          "_meta": {
+            "callId": "call_ab2c5562e4574ac7b9b2a50388b0e951",
+            "x-codex-turn-metadata": {
+              "session_id": "01a1e7e2-9081-7701-9d73-71d286ca6875",
+              "thread_id": "01a1e7e2-9081-7701-9d73-71d286ca6875",
+              "turn_started_at_unix_ms": 1794891747603,
+              "turn_id": "01a1e7e2-910c-7880-848c-9332ae55ca4b",
+              "node_repl_disabled": false,
+              "thread_source": "user",
+              "sandbox": "none",
+              "sandbox_mode": "read-only",
+              "auto_review_enabled": false,
+              "node_repl_auto_review_required": false,
+              "model": "gpt-6.1-sol",
+              "reasoning_effort": "medium"
+            },
+            "threadId": "01a1e7e2-9081-7701-9d73-71d286ca6875",
+            "itemId": "fc_0d209698474b052b016afbdfe77ea487d08ab3419070f97fc7",
+            "progressToken": 1
+          },
+          "name": "read_observation",
+          "arguments": {}
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "content": [
+            {
+              "text": "{\"schema\":\"source-region-brief-v2\",\"status\":\"partial\",\"observation_status\":\"evidence_insufficient\",\"task_result\":{\"status\":\"complete\",\"reference\":{\"instance_id\":\"164\",\"name\":\"Cube\",\"object_id\":\"blender:8e0bf5793801677261ee519cc72c5f36495d55d73893f9918e31d273a404f1f4\",\"object_index\":1},\"measurement_scope\":\"complete_selected_source_triangle_union_to_reference_triangle_surface\",\"unit\":\"m\",\"coordinate_frame\":\"world\",\"facts\":{\"surface_proximity\":{\"direction_status\":\"measured\",\"method\":\"exact_binary64_triangle_surface_hulls_v3\",\"semantics\":\"current_evaluated_triangle_surfaces_world_metres\",\"status\":\"measured\",\"value\":{\"distance_m\":0.37011719389236364,\"nearest_witness\":{\"a\":[-0.016845703125,0.1462402619080522,0.6298828061076364],\"b\":[-0.016845703125,0.1462402619080522,1.0],\"direction_a_to_b\":[0.0,0.0,1.0]},\"topology\":[{\"boundary_edge_count\":72,\"nonmanifold_edge_count\":0},{\"boundary_edge_count\":0,\"nonmanifold_edge_count\":0}]},\"witness_status\":\"measured\"}},\"source_mapping\":{\"nearest_witness\":{\"a\":{\"exact_membership\":true,\"index_domain\":\"zero_based_object_local_current_evaluated_capture_triangle_rows\",\"source_triangle_indices\":[48160,48161],\"source_vertex_indices\":[24331],\"status\":\"measured\"},\"b\":{\"exact_membership\":true,\"index_domain\":\"zero_based_object_local_current_evaluated_capture_triangle_rows\",\"source_triangle_indices\":[0],\"source_vertex_indices\":[],\"status\":\"measured\"}}}},\"visibility\":{\"complete_witness\":null,\"frame_identity\":\"445643ac5ce423a838cebd4ac12ec552fd23d73a0cb3af2ef13a4f1dd1681101\",\"image_ref\":\"source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32\",\"reason\":\"selected_region_displayed_without_pixels\",\"selected_object_participates\":true,\"selected_source_triangle_count\":748,\"selected_surface_pixels\":0,\"status\":\"unknown\",\"unknown\":[\"complete_surface_visibility\"],\"view_name\":\"SCENE\",\"visibility_scope\":\"actual_frame_source_triangle_samples\",\"visible_pixel_bounds\":null,\"visible_source_triangle_count\":0,\"unseen_source_triangle_count\":748},\"images\":[{\"image_ref\":\"source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32\",\"view_name\":\"SCENE\",\"frame_identity\":\"445643ac5ce423a838cebd4ac12ec552fd23d73a0cb3af2ef13a4f1dd1681101\",\"image_sha256\":\"3713294397d7a14f439abe5c4af40028799e9da0d5a98bd200929da8da5f6736\",\"host_binding_sha256\":\"dc141b10b8ccce5375486a490e0a39944d80d79600ce9e5cef8c9b934fe058ba\",\"display_identity\":\"5f75dcb6af181b1a427be49234a7e448a337e8ed5331d54ae7b4c96a389aedb9\",\"image_scope_identity\":\"828067800ca73541fcb3c1002b033305062e95f06bf48821949607932969bf1c\",\"image_block_index\":1}],\"region\":{\"host_id\":\"blender:63719c1bb99e99c7e58aa2c7fd048fc8e6d092896589562257de566f08448f3b\",\"instance_id\":\"162\",\"object_name\":\"0135bbc4-c6c7-4003-a402-6f2e0283497d\",\"index_domain\":\"zero_based_object_local_current_evaluated_capture_triangle_rows\",\"bbox_min_world_m\":[-0.071533203125,0.13061526030729334,0.499999992881959],\"bbox_max_world_m\":[0.020751953125,0.17993166435891786,0.6298828061076364],\"source_triangle_count\":748,\"source_vertex_count\":410},\"image_scope\":{\"excluded_object_indices\":[],\"hide_flag_scope\":{\"hide_get\":\"captured_view_layer\",\"hide_render\":\"object_render\",\"hide_viewport\":\"object_viewport\"},\"identity\":\"5f75dcb6af181b1a427be49234a7e448a337e8ed5331d54ae7b4c96a389aedb9\",\"objects\":[{\"hide_get\":false,\"hide_render\":false,\"hide_viewport\":false,\"host_id\":\"blender:63719c1bb99e99c7e58aa2c7fd048fc8e6d092896589562257de566f08448f3b\",\"instance_id\":\"162\",\"object_index\":0,\"object_name\":\"0135bbc4-c6c7-4003-a402-6f2e0283497d\",\"participates\":true,\"reason\":\"host_visible_get_true\",\"visible_get\":true},{\"hide_get\":false,\"hide_render\":true,\"hide_viewport\":false,\"host_id\":\"blender:8e0bf5793801677261ee519cc72c5f36495d55d73893f9918e31d273a404f1f4\",\"instance_id\":\"164\",\"object_index\":1,\"object_name\":\"Cube\",\"participates\":true,\"reason\":\"host_visible_get_true\",\"visible_get\":true}],\"participating_object_indices\":[0,1],\"participation_mask\":[true,true],\"participation_source\":\"blender.visible_get(view_layer=captured_active_view_layer)\",\"schema\":\"human-eye-source-region-display-v1\",\"scope\":\"active_view_layer_effective_viewport\",\"snapshot_sha256\":\"5f75dcb6af181b1a427be49234a7e448a337e8ed5331d54ae7b4c96a389aedb9\",\"status\":\"captured\",\"view_layer\":{\"instance_id\":\"rna:2057350925984\",\"name\":\"ViewLayer\"}},\"binding\":{\"source_binding_sha256\":\"c82026be7c0962435f3f010fdcb8f348cd383b6b30ad03fc19ff983fe30a471f\",\"binding_sha256\":\"dc141b10b8ccce5375486a490e0a39944d80d79600ce9e5cef8c9b934fe058ba\",\"runtime_source_sha256\":\"af7c2cf6715e11f237e878fd6f66047d632b48e528f6b5abe28f6da66b5e232c\",\"source_status\":\"loaded_generation\",\"disk_status\":\"disk_not_checked\"},\"result_kind\":\"source_region\",\"session_id\":\"source-region-display-001\",\"read_only\":true,\"execution_authority\":false,\"image_delivery\":{\"local_verified_image_count\":1,\"mcp_content_constructed_image_count\":1,\"consumer_read_status\":\"unconfirmed\",\"frame_reuses\":0,\"new_raster_attempts\":1},\"details\":\"response_detail=full\",\"region_ref\":{\"capture_generation\":{\"epoch\":1,\"instance_id\":\"6b2772cc8bec44f49d99c5cdffd4a48a\",\"revision\":2},\"document_epoch\":\"26367f8ea5232fa2bb8eed1082c2dbdc68421fee63643758acfcc3b1f1a2c333\",\"host_id\":\"blender:63719c1bb99e99c7e58aa2c7fd048fc8e6d092896589562257de566f08448f3b\",\"instance_id\":\"162\",\"ordered_geometry_sha256\":\"c042d1664ee527559059ffbb22799dd2ea7bb4861c332c12b44d4b058fb996df\",\"region_id\":\"source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873\",\"schema\":\"human-eye-source-region-ref-v1\",\"source_triangle_indices\":[4332,4333,4334,4336,4337,4338,4339,4340,4341,4342,4343,4344,4345,4346,35618,35619,35620,35621,35622,35623,35624,35625,35626,35627,35628,35629,35630,35631,35634,35635,35636,35637,35638,35639,35640,35641,35642,35643,35644,35645,35646,35647,35648,35649,35650,35651,35652,35653,35654,35655,35656,35657,35658,35659,35660,35661,35662,35663,35664,35665,35666,35667,35668,35669,35670,35671,35672,35673,35674,35675,35676,35677,35678,35679,35680,35681,35682,35683,35684,35685,35686,35687,35688,35689,35690,35691,35692,35693,35694,35695,35696,35697,35698,35699,35700,35701,35702,35703,35704,35705,35706,35707,35708,35709,35710,35711,35712,35713,35714,35715,35716,35717,35718,35719,35720,35721,35726,35727,35746,35747,35748,35749,35752,35753,35754,35756,35757,35762,35763,35764,35765,35766,35767,35768,35769,35770,35771,35772,35773,35774,35775,35776,35777,35778,35779,35780,35781,35782,35783,35784,35785,35786,35787,35788,35789,47684,47685,47686,47687,47688,47689,47690,47691,47692,47693,47694,47695,47696,47697,47698,47699,47700,47701,47702,47703,47704,47705,47706,47707,47708,47709,47710,47711,47712,47713,47714,47715,47716,47717,47718,47719,47720,47721,47722,47723,47724,47725,47726,47727,47728,47729,47730,47731,47732,47733,47734,47735,47736,47737,47738,47739,47740,47741,47742,47743,47744,47745,47746,47747,47748,47749,47750,47751,47752,47753,47754,47755,47756,47757,47758,47759,47760,47761,47762,47763,47764,47765,47766,47767,47768,47769,47770,47771,47772,47773,47774,47775,47776,47777,47778,47779,47780,47781,47782,47783,47784,47785,47786,47787,47788,47789,47790,47791,47792,47793,47794,47795,47796,47797,47798,47799,47800,47801,47802,47803,47804,47805,47806,47807,47808,47809,47810,47811,47812,47813,47814,47815,47816,47817,47818,47819,47820,47821,47822,47823,47824,47825,47826,47827,47828,47829,47830,47831,47832,47833,47834,47835,47836,47837,47838,47839,47840,47841,47842,47843,47844,47845,47846,47847,47848,47849,47850,47851,47852,47853,47854,47855,47856,47857,47858,47859,47860,47861,47862,47863,47864,47865,47914,47915,47916,47917,47920,47921,47922,47923,47936,47938,47939,47942,47948,47949,47950,47951,47952,47953,47954,47955,47956,47957,47958,47959,47960,47961,47962,47963,47964,47965,47966,47967,47968,47969,47970,47971,47972,47973,47974,47975,47978,47980,47981,47982,47983,47988,47990,47991,47992,47993,47994,47995,47996,47997,47998,47999,48000,48001,48002,48006,48007,48010,48011,48012,48013,48014,48015,48016,48017,48018,48019,48020,48021,48022,48023,48024,48025,48026,48027,48028,48029,48030,48031,48032,48033,48034,48035,48036,48037,48038,48039,48040,48041,48042,48043,48044,48045,48046,48047,48048,48049,48050,48051,48052,48053,48054,48055,48056,48057,48058,48059,48061,48063,48066,48067,48068,48069,48070,48071,48072,48073,48074,48075,48078,48079,48080,48081,48082,48083,48084,48085,48086,48087,48088,48089,48090,48091,48092,48093,48094,48095,48096,48097,48098,48099,48100,48101,48102,48103,48104,48105,48106,48107,48108,48109,48110,48111,48114,48115,48116,48118,48119,48120,48121,48122,48123,48124,48125,48130,48131,48134,48135,48136,48137,48138,48139,48140,48141,48142,48143,48144,48145,48146,48147,48148,48149,48150,48151,48152,48153,48154,48155,48156,48157,48158,48159,48160,48161,48162,48163,48166,48167,48168,48169,48170,48171,48172,48173,48174,48175,48176,48177,48178,48179,48182,48183,48185,48186,48187,48188,48189,48190,48191,48192,48193,48194,48195,48196,48197,48198,48199,48200,48201,48202,48203,48204,48205,48206,48207,48208,48209,48211,48214,48215,48218,48219,48220,48221,48222,48223,48224,48225,48226,48227,48228,48229,48230,48231,48232,48233,48234,48235,48236,48237,48238,48239,48240,48241,48242,48243,48244,48245,48246,48247,48248,48249,48250,48251,48252,48253,48254,48255,48256,48257,48258,48259,48260,48261,48262,48263,48264,48265,48266,48267,48268,48269,48270,48271,48272,48273,48274,48275,48276,48277,48278,48279,48280,48281,48282,48283,48284,48285,48286,48287,48288,48289,48290,48291,48292,48293,48294,48295,48296,48297,48300,48302,48303,48304,48305,48306,48307,48308,48309,48310,48311,48312,48313,48314,48315,48316,48317,48318,48319,48320,48321,48322,48323,48324,48325,48326,48327,48328,48329,48330,48331,48332,48333,48334,48335,48336,48337,48338,48339,48340,48341,48342,48343,48344,48345,48346,48347,48348,48349,48350,48351,48352,48353,48354,48355,48356,48357,48358,48359,48360,48361,48362,48363,48364,48365,48366,48367,48368,48369,48370,48371,48372,48373,48374,48375,48376,48377,48378,48379,48380,48381,48382,48383,48384,48385,48386,48387]}}",
+              "type": "text"
+            },
+            {
+              "data": "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAHLklEQVR4nO3VoQFAUAAAUYwgiJaTFFOpJrCcLfxw701w7eb7eScAYq7zWEY3ADCGAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAEQZAECUAQBEGQBAlAEARBkAQJQBAETN67aPbgBg+t8HgycHi+aEvG8AAAAASUVORK5CYII=",
+              "mimeType": "image/png",
+              "type": "image"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "TX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\004\\TX.bin",
+      "TX_sha256": "278944741868c85c7ed223762e0bffbdb14f0a92f2004182fef9cb373b42d186",
+      "RX_path": "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\attachments\\bridge_057fe863e2de40dc84310b219d5b80cd\\004\\RX.bin",
+      "RX_sha256": "afb8fb9e2910d38aa2de369f5187d9fb3929eac765c9ab626aa824021c34a72c"
+    }
+  ],
+  "protocol_RPC_method_counts": {
+    "initialize": 1,
+    "notifications/initialized": 1,
+    "tools/list": 1,
+    "tools/call": 1
+  },
+  "scope": "Original business RPCs and results bound to completed read events. Actual empty discovery RPCs retained and independently matched."
+}

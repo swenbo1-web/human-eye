@@ -1,0 +1,3044 @@
+{
+  "audit_operations": {
+    "PNG_or_NPZ_encoding": 0,
+    "existing_original_PNG_views": 3,
+    "new_Blender": 0,
+    "new_model_CLI_calls": 0,
+    "new_model_consumers": 0,
+    "new_product_calls": 0,
+    "product_or_harness_modifications": 0,
+    "raster": 0
+  },
+  "cases": [
+    {
+      "accepted": false,
+      "additional_assertions": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 21,
+              "line_start": 21,
+              "quotation": "- **肉眼图像证据：**图像 I 显示灰色三角面模型的局部，包括躯干侧部和手臂状结构；没有明确的彩色选区高亮。因此，不能仅凭灰色外观辨认全部选区边界或最近点见证的位置。来源：图像 I。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "灰色三角面模型局部、躯干侧部与手臂状结构且无明确彩色选区高亮",
+          "reason": "已直接查看本例原PNG，外观与该描述一致。",
+          "sources": [
+            "/images/0"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "- **绑定采样证据：**区域 R 共含 **748 个三角形、410 个顶点**；当前帧中有选区采样的三角形为 **385 个**，选区可见像素数为 **35,452**，像素边界记录为 `[226,55,396,487]`。这些数字来自源三角形与图像的绑定记录，而不是人工按颜色计数。来源：`region`、`visibility`。"
+            },
+            {
+              "line_end": 23,
+              "line_start": 23,
+              "quotation": "- **覆盖并不完整：****363 个选中三角形没有当前帧可见采样**。385/748 约为 51.5%，这只是三角形数量比例，不能解释为可见面积比例；有采样的三角形也不代表其整个面都可见。记录明确标注 `complete_surface_visibility` 未知，`complete_witness` 为空。来源：`visibility`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "410顶点、像素边界[226,55,396,487]及385/748约51.5%，并区分数量比例和面积比例",
+          "reason": "数据和简单比值准确，未把采样计数当作完整可见面积。",
+          "sources": [
+            "/region/source_vertex_count",
+            "/visibility/visible_pixel_bounds",
+            "/visibility/visible_source_triangle_count",
+            "/visibility/selected_source_triangle_count"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 26,
+              "line_start": 26,
+              "quotation": "仍未观察到的是那 **363 个无可见采样的选中三角形**、其余三角形可能未显露的部分，以及参考对象的图像外观。本记录未列出这 363 个三角形的具体清单，也未区分遮挡、背向、画外等原因；不能擅自把它们全部归为“背面”。最近点对应三角形是否在当前帧中可见，同样没有逐项证据。来源：`visibility`、`source_mapping`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "当前简报未列出363个无样本三角形具体清单，未区分无样本原因，也未给最近见证的逐项可见性",
+          "reason": "v2简报提供可见与未见计数，没有对应可见/未见索引数组或原因分类。完整region_ref索引数组只标明选区全体。",
+          "sources": [
+            "/visibility",
+            "/task_result/source_mapping/nearest_witness"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "**也不支持：整个源对象与 `Cube` 的实体不重叠、没有穿插或具有包含关系。**测量对象是局部选区，不是源对象全部几何；而表面不相交本身也不能排除实体包含。选区记录有 **72 条边界边**，参考表面记录为 **0 条边界边、0 条非流形边**；这些拓扑计数不足以单独证明参考对象具有有效、无自交且定义明确的实体内部。来源：区域 R、`measurement_scope`、`facts.surface_proximity.value.topology`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "选区72条边界边，参考表面零边界和零非流形边不能独自确立有效无自交实体",
+          "reason": "计数准确，结论保持证据不足，没有推断错误实体关系。",
+          "sources": [
+            "/task_result/facts/surface_proximity/value/topology"
+          ]
+        }
+      ],
+      "answer": {
+        "bytes": 4675,
+        "line_count": 36,
+        "original_file_body_opened_by_scorer": false,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S1.txt",
+        "sealed_copy_identity_verified": true,
+        "sha256": "e5743f65e1e5ddb4bc20a9f96c3a549975d08bd4431301564d1b6b923f694a38"
+      },
+      "case_binding": {
+        "capture_generation": {
+          "epoch": 1,
+          "instance_id": "8ee120faccfd4c8fbbeb60dfd391616d",
+          "revision": 1
+        },
+        "frame_identity": "338b4e2bcaa649ad79d695dab69442bad7dd99747771a9d03fb3dc8bec455497",
+        "image_ref": "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578",
+        "region_id": "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+      },
+      "case_id": "S1",
+      "execution_and_delivery_metadata": {
+        "reported_native_PNG_blocks": 1,
+        "reported_read_calls": 1,
+        "reported_slot_status": "completed",
+        "source": "Root provided after original three-answer sealing, independently audited elsewhere",
+        "used_to_override_content_gate": false
+      },
+      "fail_count": 1,
+      "gate_count": 9,
+      "gates": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**完整选区到参考对象 `Cube` 的三角形表面最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标下、当前求值后三角形表面之间的几何测量，不是从图片估算的距离。测量范围覆盖全部选中源三角形，并非仅覆盖可见部分。  "
+            },
+            {
+              "line_end": 4,
+              "line_start": 4,
+              "quotation": "来源：封存 JSON 的 `task_result.measurement_scope`、`facts.surface_proximity`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference",
+            "/task_result/unit"
+          ],
+          "expected_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "failure_classes": [
+            "distance_or_unit_error"
+          ],
+          "gate_id": "G1",
+          "id": "G1",
+          "missing_claim": "全文缺少毫米量值，已给m及cm。",
+          "name": "distance_and_units",
+          "reason": "米值完整准确，37.0117 cm 为原距离的正确舍入。全文未给毫米量值，未满足冻结合同要求的 m 与 mm 双单位报告。",
+          "verdict": "fail"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 10,
+              "line_start": 10,
+              "quotation": "| 选区点 A | `(-0.016845703125, 0.1462402619080522, 0.6298828061076364)` | 源三角形 `48160、48161`，源顶点 `24331` |"
+            },
+            {
+              "line_end": 11,
+              "line_start": 11,
+              "quotation": "| 参考点 B | `(-0.016845703125, 0.1462402619080522, 1.0)` | `Cube` 的三角形 `0`，未列出顶点归属 |"
+            },
+            {
+              "line_end": 15,
+              "line_start": 15,
+              "quotation": "来源：`task_result.facts.surface_proximity`、`task_result.source_mapping.nearest_witness`。"
+            },
+            {
+              "line_end": 19,
+              "line_start": 19,
+              "quotation": "本报告以 **图像 I** 指封存的唯一 `SCENE` 图片：`source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578`；以 **区域 R** 指 `source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G2",
+          "id": "G2",
+          "missing_claim": null,
+          "name": "region_and_original_witness",
+          "reason": "A 坐标及源三角48160/48161、源顶点24331与B的Cube三角0均准确，原source_mapping字段指针和本例区域R唯一绑定。A到B的+Z方向也与原见证一致。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**完整选区到参考对象 `Cube` 的三角形表面最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标下、当前求值后三角形表面之间的几何测量，不是从图片估算的距离。测量范围覆盖全部选中源三角形，并非仅覆盖可见部分。  "
+            },
+            {
+              "line_end": 30,
+              "line_start": 30,
+              "quotation": "**支持：选区表面与参考表面分离、不接触、不相交。**完整选区到参考表面的最小距离为正，因而在封存的当前求值三角形几何及其数值测量语义下，两组表面不存在公共点。这个结论覆盖全部 748 个选中三角形，包括图片未显示的部分。来源：`measurement_scope`、`facts.surface_proximity`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/coordinate_frame",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "failure_classes": [],
+          "gate_id": "G3",
+          "id": "G3",
+          "missing_claim": null,
+          "name": "complete_measurement_scope",
+          "reason": "明确为世界坐标下当前求值三角表面量测，并覆盖全部选中源三角形。第30行再将结论限制为全部748个选中三角形和参考表面。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 21,
+              "line_start": 21,
+              "quotation": "- **肉眼图像证据：**图像 I 显示灰色三角面模型的局部，包括躯干侧部和手臂状结构；没有明确的彩色选区高亮。因此，不能仅凭灰色外观辨认全部选区边界或最近点见证的位置。来源：图像 I。"
+            },
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "- **绑定采样证据：**区域 R 共含 **748 个三角形、410 个顶点**；当前帧中有选区采样的三角形为 **385 个**，选区可见像素数为 **35,452**，像素边界记录为 `[226,55,396,487]`。这些数字来自源三角形与图像的绑定记录，而不是人工按颜色计数。来源：`region`、`visibility`。"
+            },
+            {
+              "line_end": 24,
+              "line_start": 24,
+              "quotation": "- **参考对象未出现在该图中：**`Cube` 的 `participates: false`、`visible_get: false`，且对象索引 `1` 被排除。因此，图像 I 不能直接展示参考表面、两端最近点或二者之间的间隙。来源：`image_scope`、`image_scope.excluded_object_indices`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/image_scope",
+            "/visibility/selected_object_participates",
+            "/task_result/status"
+          ],
+          "expected_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "failure_classes": [],
+          "gate_id": "G4",
+          "id": "G4",
+          "missing_claim": null,
+          "name": "case_display_scope_and_status",
+          "reason": "本帧的局部图像与385个选区采样说明所选对象参加图像。第24行明确Cube未参加图像，同时第3、11行保留其量测参考角色。观测给出局部采样的事实准确。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "- **绑定采样证据：**区域 R 共含 **748 个三角形、410 个顶点**；当前帧中有选区采样的三角形为 **385 个**，选区可见像素数为 **35,452**，像素边界记录为 `[226,55,396,487]`。这些数字来自源三角形与图像的绑定记录，而不是人工按颜色计数。来源：`region`、`visibility`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "expected_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G5",
+          "id": "G5",
+          "missing_claim": null,
+          "name": "selected_pixel_count",
+          "reason": "在本例图像I的visibility来源下报告35,452个选区像素，恰为35452。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "- **绑定采样证据：**区域 R 共含 **748 个三角形、410 个顶点**；当前帧中有选区采样的三角形为 **385 个**，选区可见像素数为 **35,452**，像素边界记录为 `[226,55,396,487]`。这些数字来自源三角形与图像的绑定记录，而不是人工按颜色计数。来源：`region`、`visibility`。"
+            },
+            {
+              "line_end": 23,
+              "line_start": 23,
+              "quotation": "- **覆盖并不完整：****363 个选中三角形没有当前帧可见采样**。385/748 约为 51.5%，这只是三角形数量比例，不能解释为可见面积比例；有采样的三角形也不代表其整个面都可见。记录明确标注 `complete_surface_visibility` 未知，`complete_witness` 为空。来源：`visibility`。"
+            },
+            {
+              "line_end": 26,
+              "line_start": 26,
+              "quotation": "仍未观察到的是那 **363 个无可见采样的选中三角形**、其余三角形可能未显露的部分，以及参考对象的图像外观。本记录未列出这 363 个三角形的具体清单，也未区分遮挡、背向、画外等原因；不能擅自把它们全部归为“背面”。最近点对应三角形是否在当前帧中可见，同样没有逐项证据。来源：`visibility`、`source_mapping`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/visible_source_triangle_count",
+            "/visibility/unseen_source_triangle_count",
+            "/visibility/selected_source_triangle_count",
+            "/visibility/visibility_scope",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "failure_classes": [],
+          "gate_id": "G6",
+          "id": "G6",
+          "missing_claim": null,
+          "name": "observed_samples_and_unseen_parts",
+          "reason": "准确报告385个有样本和363个无样本三角形，并明确有样本不证明整个三角形均可见。冻结规则允许用计数识别对应集合。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 23,
+              "line_start": 23,
+              "quotation": "- **覆盖并不完整：****363 个选中三角形没有当前帧可见采样**。385/748 约为 51.5%，这只是三角形数量比例，不能解释为可见面积比例；有采样的三角形也不代表其整个面都可见。记录明确标注 `complete_surface_visibility` 未知，`complete_witness` 为空。来源：`visibility`。"
+            },
+            {
+              "line_end": 26,
+              "line_start": 26,
+              "quotation": "仍未观察到的是那 **363 个无可见采样的选中三角形**、其余三角形可能未显露的部分，以及参考对象的图像外观。本记录未列出这 363 个三角形的具体清单，也未区分遮挡、背向、画外等原因；不能擅自把它们全部归为“背面”。最近点对应三角形是否在当前帧中可见，同样没有逐项证据。来源：`visibility`、`source_mapping`。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "**也不支持：整个源对象与 `Cube` 的实体不重叠、没有穿插或具有包含关系。**测量对象是局部选区，不是源对象全部几何；而表面不相交本身也不能排除实体包含。选区记录有 **72 条边界边**，参考表面记录为 **0 条边界边、0 条非流形边**；这些拓扑计数不足以单独证明参考对象具有有效、无自交且定义明确的实体内部。来源：区域 R、`measurement_scope`、`facts.surface_proximity.value.topology`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "若要进一步作出实体内外结论，仍缺少参考对象的有效封闭实体与自交验证，以及可靠的点内外／有符号距离或体积关系结果；若要判断整个源对象，还缺少其完整几何关系测量。以上仅依据本次封存观测，不将未观察部分视为已验证。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/visibility/image_ref",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G7",
+          "id": "G7",
+          "missing_claim": null,
+          "name": "complete_visibility_unknown_and_missing_information",
+          "reason": "明确complete_surface_visibility未知、完整见证为空，并列明363个无样本三角形及已采样三角形未显露部分仍缺图像证据。实体分类缺少有效闭合参考实体与可靠内外/有符号距离证据，符合信息不足边界。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 30,
+              "line_start": 30,
+              "quotation": "**支持：选区表面与参考表面分离、不接触、不相交。**完整选区到参考表面的最小距离为正，因而在封存的当前求值三角形几何及其数值测量语义下，两组表面不存在公共点。这个结论覆盖全部 748 个选中三角形，包括图片未显示的部分。来源：`measurement_scope`、`facts.surface_proximity`。"
+            },
+            {
+              "line_end": 32,
+              "line_start": 32,
+              "quotation": "**不支持：据此判断选区位于 `Cube` 实体内部还是外部。**这里给出的是无符号表面距离；位于封闭表面内部或外部的选区，都可能与该表面保持正距离。`+Z` 只是最近点连线方向，不是外法线或内外判定。来源：`facts.surface_proximity`、`nearest_witness`。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "**也不支持：整个源对象与 `Cube` 的实体不重叠、没有穿插或具有包含关系。**测量对象是局部选区，不是源对象全部几何；而表面不相交本身也不能排除实体包含。选区记录有 **72 条边界边**，参考表面记录为 **0 条边界边、0 条非流形边**；这些拓扑计数不足以单独证明参考对象具有有效、无自交且定义明确的实体内部。来源：区域 R、`measurement_scope`、`facts.surface_proximity.value.topology`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "若要进一步作出实体内外结论，仍缺少参考对象的有效封闭实体与自交验证，以及可靠的点内外／有符号距离或体积关系结果；若要判断整个源对象，还缺少其完整几何关系测量。以上仅依据本次封存观测，不将未观察部分视为已验证。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "facts.surface_proximity.value.topology",
+                "topology"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G8",
+          "id": "G8",
+          "missing_claim": null,
+          "name": "surface_relation_and_solid_inference",
+          "reason": "采用正的完整选区表面距离支持选区与Cube参考表面的分离、无接触、无交点。明确无符号距离和+Z方向不能判定实体内外，且不外推到宿主完整几何。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 4,
+              "line_start": 4,
+              "quotation": "来源：封存 JSON 的 `task_result.measurement_scope`、`facts.surface_proximity`。"
+            },
+            {
+              "line_end": 15,
+              "line_start": 15,
+              "quotation": "来源：`task_result.facts.surface_proximity`、`task_result.source_mapping.nearest_witness`。"
+            },
+            {
+              "line_end": 19,
+              "line_start": 19,
+              "quotation": "本报告以 **图像 I** 指封存的唯一 `SCENE` 图片：`source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578`；以 **区域 R** 指 `source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722`。"
+            },
+            {
+              "line_end": 21,
+              "line_start": 21,
+              "quotation": "- **肉眼图像证据：**图像 I 显示灰色三角面模型的局部，包括躯干侧部和手臂状结构；没有明确的彩色选区高亮。因此，不能仅凭灰色外观辨认全部选区边界或最近点见证的位置。来源：图像 I。"
+            },
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "- **绑定采样证据：**区域 R 共含 **748 个三角形、410 个顶点**；当前帧中有选区采样的三角形为 **385 个**，选区可见像素数为 **35,452**，像素边界记录为 `[226,55,396,487]`。这些数字来自源三角形与图像的绑定记录，而不是人工按颜色计数。来源：`region`、`visibility`。"
+            },
+            {
+              "line_end": 23,
+              "line_start": 23,
+              "quotation": "- **覆盖并不完整：****363 个选中三角形没有当前帧可见采样**。385/748 约为 51.5%，这只是三角形数量比例，不能解释为可见面积比例；有采样的三角形也不代表其整个面都可见。记录明确标注 `complete_surface_visibility` 未知，`complete_witness` 为空。来源：`visibility`。"
+            },
+            {
+              "line_end": 24,
+              "line_start": 24,
+              "quotation": "- **参考对象未出现在该图中：**`Cube` 的 `participates: false`、`visible_get: false`，且对象索引 `1` 被排除。因此，图像 I 不能直接展示参考表面、两端最近点或二者之间的间隙。来源：`image_scope`、`image_scope.excluded_object_indices`。"
+            },
+            {
+              "line_end": 26,
+              "line_start": 26,
+              "quotation": "仍未观察到的是那 **363 个无可见采样的选中三角形**、其余三角形可能未显露的部分，以及参考对象的图像外观。本记录未列出这 363 个三角形的具体清单，也未区分遮挡、背向、画外等原因；不能擅自把它们全部归为“背面”。最近点对应三角形是否在当前帧中可见，同样没有逐项证据。来源：`visibility`、`source_mapping`。"
+            },
+            {
+              "line_end": 30,
+              "line_start": 30,
+              "quotation": "**支持：选区表面与参考表面分离、不接触、不相交。**完整选区到参考表面的最小距离为正，因而在封存的当前求值三角形几何及其数值测量语义下，两组表面不存在公共点。这个结论覆盖全部 748 个选中三角形，包括图片未显示的部分。来源：`measurement_scope`、`facts.surface_proximity`。"
+            },
+            {
+              "line_end": 32,
+              "line_start": 32,
+              "quotation": "**不支持：据此判断选区位于 `Cube` 实体内部还是外部。**这里给出的是无符号表面距离；位于封闭表面内部或外部的选区，都可能与该表面保持正距离。`+Z` 只是最近点连线方向，不是外法线或内外判定。来源：`facts.surface_proximity`、`nearest_witness`。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "**也不支持：整个源对象与 `Cube` 的实体不重叠、没有穿插或具有包含关系。**测量对象是局部选区，不是源对象全部几何；而表面不相交本身也不能排除实体包含。选区记录有 **72 条边界边**，参考表面记录为 **0 条边界边、0 条非流形边**；这些拓扑计数不足以单独证明参考对象具有有效、无自交且定义明确的实体内部。来源：区域 R、`measurement_scope`、`facts.surface_proximity.value.topology`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "若要进一步作出实体内外结论，仍缺少参考对象的有效封闭实体与自交验证，以及可靠的点内外／有符号距离或体积关系结果；若要判断整个源对象，还缺少其完整几何关系测量。以上仅依据本次封存观测，不将未观察部分视为已验证。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "facts.surface_proximity.value.topology",
+                "topology"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding",
+            "/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "failure_classes": [],
+          "gate_id": "G9",
+          "id": "G9",
+          "missing_claim": null,
+          "name": "major_citations_binding_and_supported_claims",
+          "reason": "本例完整区域和图像ref均匹配，短字段引用按邻近语境唯一落到本例量测、可见性、显示或拓扑来源。图像外观、385/748数量比例、像素边界、显示排除、拓扑计数和未知项逐项核对均有来源。未发现额外不支持的肯定结论或主要矛盾。",
+          "verdict": "pass"
+        }
+      ],
+      "major_contradictions": [],
+      "numeric_audit": {
+        "absolute_error_limit_m": "0.0005",
+        "centimetre_absolute_error_m": "1.9389236364E-7",
+        "metre_absolute_error_m": "0",
+        "minimum_significant_digits_met_for_reported_m": true,
+        "reported_cm": "37.0117",
+        "reported_m": "0.37011719389236364",
+        "reported_mm": null,
+        "required_m": "0.37011719389236364",
+        "required_millimetre_conversion_present": false,
+        "required_mm": "370.11719389236364"
+      },
+      "pass_count": 8,
+      "source_input": {
+        "bytes": 9964,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S1\\ORIGINAL_BRIEF.json",
+        "sha256": "c5c1533f40fa4fc38b574be1eddea04126fd92fbfcdc11ee4d9b9e5c60ba30ab"
+      },
+      "source_png": {
+        "bytes": 24734,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S1\\ORIGINAL_IMAGE.png",
+        "sha256": "9186e596688a024f30c4f2e87bc9bea80d80f26efc24a2336a4acbd234d355f9"
+      },
+      "unrun_count": 0,
+      "unsupported_assertions": []
+    },
+    {
+      "accepted": false,
+      "additional_assertions": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "**图像 I 实际呈现为均匀灰色画面，没有可辨识的选区表面、轮廓或最近点见证。**记录中的像素归属统计也明确给出："
+            }
+          ],
+          "assessment": "supported",
+          "claim": "图像为均匀灰色画面，没有可辨识的选区轮廓和最近点见证",
+          "reason": "已直接查看本例原PNG，画面与该描述一致。",
+          "sources": [
+            "/images/0"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "选区所属对象与 `Cube` 都被记录为参与当前视口显示，且未被视口隐藏；但**参与显示不等于实际出现可见像素**。`Cube.hide_render=true` 也不能解释为它被当前视口排除。封存证据不足以区分遮挡、画外、裁剪或其他未成像原因。  "
+            }
+          ],
+          "assessment": "supported",
+          "claim": "两对象参加当前视口，Cube.hide_render=true不能单独说明其被当前视口排除",
+          "reason": "参与标志、hide_render及标志作用域与原字段一致。",
+          "sources": [
+            "/image_scope/objects",
+            "/image_scope/hide_flag_scope",
+            "/image_scope/scope"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "选区所属对象与 `Cube` 都被记录为参与当前视口显示，且未被视口隐藏；但**参与显示不等于实际出现可见像素**。`Cube.hide_render=true` 也不能解释为它被当前视口排除。封存证据不足以区分遮挡、画外、裁剪或其他未成像原因。  "
+            }
+          ],
+          "assessment": "supported",
+          "claim": "封存证据不能区分遮挡、画外、裁剪等未成像原因",
+          "reason": "这些原因按未被区分的可能性列出，未给无来源的肯定因果。",
+          "sources": [
+            "/visibility",
+            "/image_scope"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 42,
+              "line_start": 42,
+              "quotation": "- **能支持：存在一对沿世界 `+Z` 相隔约 0.370117 m 的最近点。**不能把该方向推广为整个选区相对所有参考表面的方向，也不能把最小距离当作各处统一间隙。来源：最近点见证 A、B。"
+            },
+            {
+              "line_end": 44,
+              "line_start": 44,
+              "quotation": "- **不能支持：两个完整对象的实体互不重叠，或源对象整体被包含。**测量只覆盖选区，未覆盖源对象其余部分；表面不相交本身也不排除实体包含。选区拓扑记录有 **72 条边界边**，不能将其直接当作封闭实体；参考表面虽记录边界边和非流形边均为 0，仍不足以单独确立有效实体及其内外。来源：区域 R；`surface_proximity.value.topology`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "最近点方向和拓扑计数的范围限制",
+          "reason": "+Z只限最近点对，边界计数准确，未推广成全局方位或有效实体。",
+          "sources": [
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/facts/surface_proximity/value/topology"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 46,
+              "line_start": 46,
+              "quotation": "**总评：这份观测完成了几何距离测量，但没有提供任何选区表面的可见像素证据，也没有完成实体内外判定。**整体 `partial / evidence_insufficient` 与距离测量 `complete / measured` 并不矛盾。本报告仅使用该封存观测；其来源绑定为已加载代次，磁盘状态未核验，不能外推为当前磁盘文件或后续场景状态。来源：顶层状态、`task_result.status`、`binding`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "来源为已加载代次、磁盘状态未核验",
+          "reason": "对应loaded_generation及disk_not_checked。",
+          "sources": [
+            "/binding/source_status",
+            "/binding/disk_status"
+          ]
+        }
+      ],
+      "answer": {
+        "bytes": 4518,
+        "line_count": 46,
+        "original_file_body_opened_by_scorer": false,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S2.txt",
+        "sealed_copy_identity_verified": true,
+        "sha256": "a02b6d7bb0cc5153dae53cec5503823ad24bbc453c0819799b0adf5ae8375b53"
+      },
+      "case_binding": {
+        "capture_generation": {
+          "epoch": 1,
+          "instance_id": "6b2772cc8bec44f49d99c5cdffd4a48a",
+          "revision": 2
+        },
+        "frame_identity": "445643ac5ce423a838cebd4ac12ec552fd23d73a0cb3af2ef13a4f1dd1681101",
+        "image_ref": "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32",
+        "region_id": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+      },
+      "case_id": "S2",
+      "execution_and_delivery_metadata": {
+        "reported_native_PNG_blocks": 1,
+        "reported_read_calls": 1,
+        "reported_slot_status": "completed",
+        "source": "Root provided after original three-answer sealing, independently audited elsewhere",
+        "used_to_override_content_gate": false
+      },
+      "fail_count": 1,
+      "gate_count": 9,
+      "gates": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**选区到参考对象 `Cube` 表面的最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标下，**完整选区的三角形并集**到参考对象三角形表面的最小距离，不是图片上的距离，也不是对象中心距。封存记录使用方法 `exact_binary64_triangle_surface_hulls_v3`，测量状态为 `measured`。  "
+            },
+            {
+              "line_end": 4,
+              "line_start": 4,
+              "quotation": "来源：`task_result.measurement_scope`、`task_result.facts.surface_proximity`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference",
+            "/task_result/unit"
+          ],
+          "expected_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "failure_classes": [
+            "distance_or_unit_error"
+          ],
+          "gate_id": "G1",
+          "id": "G1",
+          "missing_claim": "全文缺少毫米量值，已给m及cm。",
+          "name": "distance_and_units",
+          "reason": "米值完整准确，37.0117 cm 为原距离的正确舍入。全文未给毫米量值，未满足冻结合同要求的 m 与 mm 双单位报告。",
+          "verdict": "fail"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 10,
+              "line_start": 10,
+              "quotation": "| 选区点 A | `(-0.016845703125, 0.1462402619080522, 0.6298828061076364)` | 选区源三角形 `48160、48161`，源顶点 `24331` |"
+            },
+            {
+              "line_end": 11,
+              "line_start": 11,
+              "quotation": "| 参考点 B | `(-0.016845703125, 0.1462402619080522, 1.0)` | `Cube` 源三角形 `0`，未列出对应顶点 |"
+            },
+            {
+              "line_end": 14,
+              "line_start": 14,
+              "quotation": "来源：`task_result.facts.surface_proximity.value.nearest_witness`、`task_result.source_mapping.nearest_witness`。"
+            },
+            {
+              "line_end": 19,
+              "line_start": 19,
+              "quotation": "- **区域 R**：`source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873`"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness",
+                "最近点见证 A、B"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G2",
+          "id": "G2",
+          "missing_claim": null,
+          "name": "region_and_original_witness",
+          "reason": "本例区域R完整ref正确，A的源三角48160/48161、顶点24331和B的Cube三角0均准确。原nearest_witness与source_mapping.nearest_witness字段引用唯一绑定坐标和成员归属。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**选区到参考对象 `Cube` 表面的最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标下，**完整选区的三角形并集**到参考对象三角形表面的最小距离，不是图片上的距离，也不是对象中心距。封存记录使用方法 `exact_binary64_triangle_surface_hulls_v3`，测量状态为 `measured`。  "
+            },
+            {
+              "line_end": 41,
+              "line_start": 41,
+              "quotation": "- **能支持：完整选区与 `Cube` 的当前求值三角形表面严格分离。**最小距离为正，因此在本次测量的几何范围内，两者没有表面接触、相交或重合；这一判断覆盖完整选区，不依赖图片是否看见选区。来源：区域 R；`task_result.measurement_scope`、`surface_proximity`。"
+            },
+            {
+              "line_end": 44,
+              "line_start": 44,
+              "quotation": "- **不能支持：两个完整对象的实体互不重叠，或源对象整体被包含。**测量只覆盖选区，未覆盖源对象其余部分；表面不相交本身也不排除实体包含。选区拓扑记录有 **72 条边界边**，不能将其直接当作封闭实体；参考表面虽记录边界边和非流形边均为 0，仍不足以单独确立有效实体及其内外。来源：区域 R；`surface_proximity.value.topology`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/coordinate_frame",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "failure_classes": [],
+          "gate_id": "G3",
+          "id": "G3",
+          "missing_claim": null,
+          "name": "complete_measurement_scope",
+          "reason": "明确世界坐标下完整选区三角形并集到Cube三角形表面的最小距离。第41、44行分别保留完整选区范围并拒绝推广到宿主其余几何。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "来源：图像 I；`visibility`，其原因为 `selected_region_displayed_without_pixels`，状态为 `unknown`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "选区所属对象与 `Cube` 都被记录为参与当前视口显示，且未被视口隐藏；但**参与显示不等于实际出现可见像素**。`Cube.hide_render=true` 也不能解释为它被当前视口排除。封存证据不足以区分遮挡、画外、裁剪或其他未成像原因。  "
+            },
+            {
+              "line_end": 37,
+              "line_start": 37,
+              "quotation": "来源：`image_scope.objects`、`image_scope.scope`、`visibility`。"
+            },
+            {
+              "line_end": 46,
+              "line_start": 46,
+              "quotation": "**总评：这份观测完成了几何距离测量，但没有提供任何选区表面的可见像素证据，也没有完成实体内外判定。**整体 `partial / evidence_insufficient` 与距离测量 `complete / measured` 并不矛盾。本报告仅使用该封存观测；其来源绑定为已加载代次，磁盘状态未核验，不能外推为当前磁盘文件或后续场景状态。来源：顶层状态、`task_result.status`、`binding`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope",
+                "image_scope.objects"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/image_scope",
+            "/visibility/selected_object_participates",
+            "/task_result/status",
+            "/visibility/reason"
+          ],
+          "expected_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "failure_classes": [],
+          "gate_id": "G4",
+          "id": "G4",
+          "missing_claim": null,
+          "name": "case_display_scope_and_status",
+          "reason": "准确报告选区对象和Cube均参加当前视口却没有选区像素，引用原selected_region_displayed_without_pixels原因。第46行采用partial/evidence_insufficient并保留complete/measured几何量测。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 20,
+              "line_start": 20,
+              "quotation": "- **图像 I**：`source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32`，视图 `SCENE`"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "| 选区表面可见像素数 | **0** |"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "来源：图像 I；`visibility`，其原因为 `selected_region_displayed_without_pixels`，状态为 `unknown`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "expected_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G5",
+          "id": "G5",
+          "missing_claim": null,
+          "name": "selected_pixel_count",
+          "reason": "在本例SCENE图像I绑定下明确报告选区表面可见像素为0。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 26,
+              "line_start": 26,
+              "quotation": "| 选区源三角形总数 | 748 |"
+            },
+            {
+              "line_end": 28,
+              "line_start": 28,
+              "quotation": "| 可见源三角形数 | **0** |"
+            },
+            {
+              "line_end": 29,
+              "line_start": 29,
+              "quotation": "| 未观察到的源三角形数 | **748** |"
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "因此，**全部 748 个选区三角形都没有获得本帧的可见表面像素证据**，最近点 A、B 也没有图像定位证据。选区的几何身份来自区域 R 和源映射，而非肉眼辨认。  "
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "来源：图像 I；`visibility`，其原因为 `selected_region_displayed_without_pixels`，状态为 `unknown`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/visible_source_triangle_count",
+            "/visibility/unseen_source_triangle_count",
+            "/visibility/selected_source_triangle_count",
+            "/visibility/visibility_scope",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "failure_classes": [],
+          "gate_id": "G6",
+          "id": "G6",
+          "missing_claim": null,
+          "name": "observed_samples_and_unseen_parts",
+          "reason": "明确可见源三角形为0、全部748个所选三角形均未得到本帧可见像素证据。完整未见选集由区域R及计数唯一识别。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "**图像 I 实际呈现为均匀灰色画面，没有可辨识的选区表面、轮廓或最近点见证。**记录中的像素归属统计也明确给出："
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "| 选区表面可见像素数 | **0** |"
+            },
+            {
+              "line_end": 28,
+              "line_start": 28,
+              "quotation": "| 可见源三角形数 | **0** |"
+            },
+            {
+              "line_end": 29,
+              "line_start": 29,
+              "quotation": "| 未观察到的源三角形数 | **748** |"
+            },
+            {
+              "line_end": 31,
+              "line_start": 31,
+              "quotation": "| 完整可见性见证 | `null` |"
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "因此，**全部 748 个选区三角形都没有获得本帧的可见表面像素证据**，最近点 A、B 也没有图像定位证据。选区的几何身份来自区域 R 和源映射，而非肉眼辨认。  "
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "来源：图像 I；`visibility`，其原因为 `selected_region_displayed_without_pixels`，状态为 `unknown`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "选区所属对象与 `Cube` 都被记录为参与当前视口显示，且未被视口隐藏；但**参与显示不等于实际出现可见像素**。`Cube.hide_render=true` 也不能解释为它被当前视口排除。封存证据不足以区分遮挡、画外、裁剪或其他未成像原因。  "
+            },
+            {
+              "line_end": 43,
+              "line_start": 43,
+              "quotation": "- **不能支持：选区在 `Cube` 实体内部还是外部。**无符号表面距离在内部、外部都可能为正；方向 `+Z` 也不是内外分类。仍缺有效闭合实体的确认，以及针对选区的有符号距离、点内外测试或等价包含性证据。来源：`surface_proximity` 仅提供无符号距离，未提供实体分类。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/visibility/image_ref",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G7",
+          "id": "G7",
+          "missing_claim": null,
+          "name": "complete_visibility_unknown_and_missing_information",
+          "reason": "完整可见性见证为空，visibility状态unknown，全部748个选区三角形均缺本帧可见像素证据。按语义等价规则，这保留了完整可见性未知并说明缺少选区图像/可见性证据。第43行另明确实体分类所缺的闭合实体和有来源的内外/有符号距离证据。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 41,
+              "line_start": 41,
+              "quotation": "- **能支持：完整选区与 `Cube` 的当前求值三角形表面严格分离。**最小距离为正，因此在本次测量的几何范围内，两者没有表面接触、相交或重合；这一判断覆盖完整选区，不依赖图片是否看见选区。来源：区域 R；`task_result.measurement_scope`、`surface_proximity`。"
+            },
+            {
+              "line_end": 42,
+              "line_start": 42,
+              "quotation": "- **能支持：存在一对沿世界 `+Z` 相隔约 0.370117 m 的最近点。**不能把该方向推广为整个选区相对所有参考表面的方向，也不能把最小距离当作各处统一间隙。来源：最近点见证 A、B。"
+            },
+            {
+              "line_end": 43,
+              "line_start": 43,
+              "quotation": "- **不能支持：选区在 `Cube` 实体内部还是外部。**无符号表面距离在内部、外部都可能为正；方向 `+Z` 也不是内外分类。仍缺有效闭合实体的确认，以及针对选区的有符号距离、点内外测试或等价包含性证据。来源：`surface_proximity` 仅提供无符号距离，未提供实体分类。"
+            },
+            {
+              "line_end": 44,
+              "line_start": 44,
+              "quotation": "- **不能支持：两个完整对象的实体互不重叠，或源对象整体被包含。**测量只覆盖选区，未覆盖源对象其余部分；表面不相交本身也不排除实体包含。选区拓扑记录有 **72 条边界边**，不能将其直接当作封闭实体；参考表面虽记录边界边和非流形边均为 0，仍不足以单独确立有效实体及其内外。来源：区域 R；`surface_proximity.value.topology`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness",
+                "最近点见证 A、B"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "topology"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G8",
+          "id": "G8",
+          "missing_claim": null,
+          "name": "surface_relation_and_solid_inference",
+          "reason": "正确采用完整选区表面到Cube参考表面的正最小距离，得出所测表面分离、无接触或相交。明确此为无符号距离，+Z只描述最近点对，实体内外及完整对象实体关系均需额外证据。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 4,
+              "line_start": 4,
+              "quotation": "来源：`task_result.measurement_scope`、`task_result.facts.surface_proximity`。"
+            },
+            {
+              "line_end": 14,
+              "line_start": 14,
+              "quotation": "来源：`task_result.facts.surface_proximity.value.nearest_witness`、`task_result.source_mapping.nearest_witness`。"
+            },
+            {
+              "line_end": 19,
+              "line_start": 19,
+              "quotation": "- **区域 R**：`source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873`"
+            },
+            {
+              "line_end": 20,
+              "line_start": 20,
+              "quotation": "- **图像 I**：`source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32`，视图 `SCENE`"
+            },
+            {
+              "line_end": 22,
+              "line_start": 22,
+              "quotation": "**图像 I 实际呈现为均匀灰色画面，没有可辨识的选区表面、轮廓或最近点见证。**记录中的像素归属统计也明确给出："
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "因此，**全部 748 个选区三角形都没有获得本帧的可见表面像素证据**，最近点 A、B 也没有图像定位证据。选区的几何身份来自区域 R 和源映射，而非肉眼辨认。  "
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "来源：图像 I；`visibility`，其原因为 `selected_region_displayed_without_pixels`，状态为 `unknown`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "选区所属对象与 `Cube` 都被记录为参与当前视口显示，且未被视口隐藏；但**参与显示不等于实际出现可见像素**。`Cube.hide_render=true` 也不能解释为它被当前视口排除。封存证据不足以区分遮挡、画外、裁剪或其他未成像原因。  "
+            },
+            {
+              "line_end": 37,
+              "line_start": 37,
+              "quotation": "来源：`image_scope.objects`、`image_scope.scope`、`visibility`。"
+            },
+            {
+              "line_end": 41,
+              "line_start": 41,
+              "quotation": "- **能支持：完整选区与 `Cube` 的当前求值三角形表面严格分离。**最小距离为正，因此在本次测量的几何范围内，两者没有表面接触、相交或重合；这一判断覆盖完整选区，不依赖图片是否看见选区。来源：区域 R；`task_result.measurement_scope`、`surface_proximity`。"
+            },
+            {
+              "line_end": 42,
+              "line_start": 42,
+              "quotation": "- **能支持：存在一对沿世界 `+Z` 相隔约 0.370117 m 的最近点。**不能把该方向推广为整个选区相对所有参考表面的方向，也不能把最小距离当作各处统一间隙。来源：最近点见证 A、B。"
+            },
+            {
+              "line_end": 43,
+              "line_start": 43,
+              "quotation": "- **不能支持：选区在 `Cube` 实体内部还是外部。**无符号表面距离在内部、外部都可能为正；方向 `+Z` 也不是内外分类。仍缺有效闭合实体的确认，以及针对选区的有符号距离、点内外测试或等价包含性证据。来源：`surface_proximity` 仅提供无符号距离，未提供实体分类。"
+            },
+            {
+              "line_end": 44,
+              "line_start": 44,
+              "quotation": "- **不能支持：两个完整对象的实体互不重叠，或源对象整体被包含。**测量只覆盖选区，未覆盖源对象其余部分；表面不相交本身也不排除实体包含。选区拓扑记录有 **72 条边界边**，不能将其直接当作封闭实体；参考表面虽记录边界边和非流形边均为 0，仍不足以单独确立有效实体及其内外。来源：区域 R；`surface_proximity.value.topology`。"
+            },
+            {
+              "line_end": 46,
+              "line_start": 46,
+              "quotation": "**总评：这份观测完成了几何距离测量，但没有提供任何选区表面的可见像素证据，也没有完成实体内外判定。**整体 `partial / evidence_insufficient` 与距离测量 `complete / measured` 并不矛盾。本报告仅使用该封存观测；其来源绑定为已加载代次，磁盘状态未核验，不能外推为当前磁盘文件或后续场景状态。来源：顶层状态、`task_result.status`、`binding`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "区域 R",
+                "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像 I",
+                "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope",
+                "image_scope.objects"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "task_result.measurement_scope",
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping.nearest_witness",
+                "task_result.source_mapping",
+                "nearest_witness",
+                "最近点见证 A、B"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "topology"
+              ]
+            },
+            {
+              "alias": "binding",
+              "current_input_json_pointers": [
+                "/binding"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "binding"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding",
+            "/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "failure_classes": [],
+          "gate_id": "G9",
+          "id": "G9",
+          "missing_claim": null,
+          "name": "major_citations_binding_and_supported_claims",
+          "reason": "完整区域R和图像I与本例一致。字段简写、局部A/B标签及附近分组引用均可解析到本例原测量或图像来源。均匀灰色图、显示标志、拓扑、绑定代次等附加主张均有来源。未把列举的未成像原因断言为已证原因，未发现主要矛盾。",
+          "verdict": "pass"
+        }
+      ],
+      "major_contradictions": [],
+      "numeric_audit": {
+        "absolute_error_limit_m": "0.0005",
+        "centimetre_absolute_error_m": "1.9389236364E-7",
+        "metre_absolute_error_m": "0",
+        "minimum_significant_digits_met_for_reported_m": true,
+        "reported_cm": "37.0117",
+        "reported_m": "0.37011719389236364",
+        "reported_mm": null,
+        "required_m": "0.37011719389236364",
+        "required_millimetre_conversion_present": false,
+        "required_mm": "370.11719389236364"
+      },
+      "pass_count": 8,
+      "source_input": {
+        "bytes": 9991,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S2\\ORIGINAL_BRIEF.json",
+        "sha256": "d64dd699a689fb27ed8f6d32b4f50d0ace2a163d67164541f118929d6b82970a"
+      },
+      "source_png": {
+        "bytes": 1895,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S2\\ORIGINAL_IMAGE.png",
+        "sha256": "3713294397d7a14f439abe5c4af40028799e9da0d5a98bd200929da8da5f6736"
+      },
+      "unrun_count": 0,
+      "unsupported_assertions": []
+    },
+    {
+      "accepted": false,
+      "additional_assertions": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 15,
+              "line_start": 15,
+              "quotation": "本次 `SCENE` 图片呈均一深色，**没有可辨认的选区或参考对象表面，也没有最近点或距离线的视觉见证**。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "SCENE为均一深色，未见可辨认的选区、参考对象表面或距离线",
+          "reason": "已直接查看本例原PNG，画面与该描述一致。",
+          "sources": [
+            "/images/0"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 25,
+              "line_start": 25,
+              "quotation": "这不是仅凭暗图推测遮挡：`image_scope` 明确记录，**选区宿主和 `Cube` 均未参与当前视图显示**，两者的 `visible_get=false`、`hide_get=true`，排除原因均为 `host_visible_get_false`。因此，选区全部表面、参考表面及最近点对在此图中都未得到观察；不能把“未显示”解释为“被参考对象遮住”或“位于其内部”。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "两对象未参加显示，visible_get=false、hide_get=true且原因为host_visible_get_false",
+          "reason": "与两对象原显示记录一致，未将未显示归因为遮挡或内部关系。",
+          "sources": [
+            "/image_scope/objects",
+            "/visibility/reason"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 32,
+              "line_start": 32,
+              "quotation": "- **可以确认：最近点 B 在 A 的世界 +Z 方向。**但不能据此说整片选区与参考表面平行，也不能说整片选区都位于整个 `Cube` 下方。来源：`nearest_witness`；其方向仅描述这一最近点对。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "B在A的世界+Z方向，该方向不能推广为选区平行或全局上下方",
+          "reason": "原见证方向准确，范围限制保守。",
+          "sources": [
+            "/task_result/facts/surface_proximity/value/nearest_witness"
+          ]
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "- **不能确认：选区在 `Cube` 实体内部还是外部。**这里是无符号表面距离；内部点和外部点都可能与边界保持正距离。参考表面记录了零边界边、零非流形边，但这些统计本身不足以证明其构成有效、无自交且内外定义明确的实体，更没有提供点内外分类。还缺参考实体有效性及有符号距离、绕数或射线包含判定等证据。来源：`surface_proximity.value.topology` 及本次仅有的表面距离语义。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "- **不能推广到选区宿主整体的实体关系。**测量只覆盖指定的 748 个三角形，不覆盖宿主其余表面；选区自身还记录有 **72 条边界边**，不能把该局部片区当作封闭实体。判断整个对象是否穿插、包含或实体重叠，还缺宿主完整几何和实体关系检测。来源：`region`、`measurement_scope`、`topology`。"
+            }
+          ],
+          "assessment": "supported",
+          "claim": "参考表面零边界/非流形和选区72条边界边不足以确立实体内外",
+          "reason": "计数准确，内外结论保持信息不足。",
+          "sources": [
+            "/task_result/facts/surface_proximity/value/topology"
+          ]
+        }
+      ],
+      "answer": {
+        "bytes": 4230,
+        "line_count": 36,
+        "original_file_body_opened_by_scorer": false,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S3.txt",
+        "sealed_copy_identity_verified": true,
+        "sha256": "9a76af61b58bbd7830e0986b21841812c712fd8a7349125a26f6cd3827c7705f"
+      },
+      "case_binding": {
+        "capture_generation": {
+          "epoch": 1,
+          "instance_id": "6b2772cc8bec44f49d99c5cdffd4a48a",
+          "revision": 4
+        },
+        "frame_identity": "ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948",
+        "image_ref": "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326",
+        "region_id": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+      },
+      "case_id": "S3",
+      "execution_and_delivery_metadata": {
+        "reported_native_PNG_blocks": 1,
+        "reported_read_calls": 1,
+        "reported_slot_status": "completed",
+        "source": "Root provided after original three-answer sealing, independently audited elsewhere",
+        "used_to_override_content_gate": false
+      },
+      "fail_count": 1,
+      "gate_count": 9,
+      "gates": [
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**完整选区到参考对象 `Cube` 三角形表面的最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标系下当前求值后三角形表面的几何测量，不是从图片估算的距离。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "**总结：这份观测的几何距离测量已完成，但视觉证据不足。**它支持“指定选区与参考表面存在约 37.01 cm 的最小间隔”，不支持“选区在实体内／外”或“整个对象互不穿插”。若要视觉核验，还缺实际显示两对象、选区及最近点对的有效图像；本报告未引入其他观测。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference",
+            "/task_result/unit"
+          ],
+          "expected_json_pointers": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "failure_classes": [
+            "distance_or_unit_error"
+          ],
+          "gate_id": "G1",
+          "id": "G1",
+          "missing_claim": "全文缺少毫米量值，已给m及cm。",
+          "name": "distance_and_units",
+          "reason": "米值完整准确，37.0117 cm及总结中的37.01 cm均为正确舍入。全文未给毫米量值，未满足冻结合同要求的 m 与 mm 双单位报告。",
+          "verdict": "fail"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 5,
+              "line_start": 5,
+              "quotation": "- **选区来源**：对象 `0135bbc4-c6c7-4003-a402-6f2e0283497d`，实例 `162`；区域 `source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb`，包含 **748 个三角形、410 个顶点**。"
+            },
+            {
+              "line_end": 6,
+              "line_start": 6,
+              "quotation": "- **参考对象**：`Cube`，实例 `164`。"
+            },
+            {
+              "line_end": 7,
+              "line_start": 7,
+              "quotation": "- **选区侧最近点 A**：`(-0.016845703125, 0.1462402619080522, 0.6298828061076364) m`；精确归属于选区三角形 `48160、48161`，对应顶点 `24331`。"
+            },
+            {
+              "line_end": 8,
+              "line_start": 8,
+              "quotation": "- **参考侧最近点 B**：`(-0.016845703125, 0.1462402619080522, 1.0) m`；精确归属于参考对象三角形 `0`。"
+            },
+            {
+              "line_end": 9,
+              "line_start": 9,
+              "quotation": "- **A→B 方向**：`(0, 0, 1)`，即该最近点对沿世界坐标 **+Z** 方向相隔上述距离。索引均为本次捕获的对象局部、当前求值后三角形行的零基索引。"
+            },
+            {
+              "line_end": 11,
+              "line_start": 11,
+              "quotation": "来源：该区域绑定下的 `task_result.facts.surface_proximity`、`task_result.source_mapping`；测量范围为 `complete_selected_source_triangle_union_to_reference_triangle_surface`，方法为 `exact_binary64_triangle_surface_hulls_v3`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "该区域绑定",
+                "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G2",
+          "id": "G2",
+          "missing_claim": null,
+          "name": "region_and_original_witness",
+          "reason": "完整区域ref、所选对象实例162及参考Cube实例164均与本例一致。A坐标和选区源三角48160/48161、顶点24331以及B坐标和Cube三角0准确，并引用本区域task_result的原见证与源映射。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 3,
+              "line_start": 3,
+              "quotation": "**完整选区到参考对象 `Cube` 三角形表面的最近距离为 `0.37011719389236364 m`，约 `37.0117 cm`。**这是世界坐标系下当前求值后三角形表面的几何测量，不是从图片估算的距离。"
+            },
+            {
+              "line_end": 11,
+              "line_start": 11,
+              "quotation": "来源：该区域绑定下的 `task_result.facts.surface_proximity`、`task_result.source_mapping`；测量范围为 `complete_selected_source_triangle_union_to_reference_triangle_surface`，方法为 `exact_binary64_triangle_surface_hulls_v3`。"
+            },
+            {
+              "line_end": 31,
+              "line_start": 31,
+              "quotation": "- **可以确认：所测完整选区与参考三角形表面分离，不相交、不接触。**全局最小距离为正，因而所测选区没有任何点落在参考表面上；这不是仅对可见部分的结论。来源：上述区域的完整选区测量范围及 `surface_proximity`。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "- **不能推广到选区宿主整体的实体关系。**测量只覆盖指定的 748 个三角形，不覆盖宿主其余表面；选区自身还记录有 **72 条边界边**，不能把该局部片区当作封闭实体。判断整个对象是否穿插、包含或实体重叠，还缺宿主完整几何和实体关系检测。来源：`region`、`measurement_scope`、`topology`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "该区域绑定",
+                "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/coordinate_frame",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "failure_classes": [],
+          "gate_id": "G3",
+          "id": "G3",
+          "missing_claim": null,
+          "name": "complete_measurement_scope",
+          "reason": "明确世界坐标当前求值三角表面量测，并逐字引用完整选区到参考三角表面的measurement_scope。第31、34行保留全体748个选区三角范围且不推广至宿主其余表面。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 25,
+              "line_start": 25,
+              "quotation": "这不是仅凭暗图推测遮挡：`image_scope` 明确记录，**选区宿主和 `Cube` 均未参与当前视图显示**，两者的 `visible_get=false`、`hide_get=true`，排除原因均为 `host_visible_get_false`。因此，选区全部表面、参考表面及最近点对在此图中都未得到观察；不能把“未显示”解释为“被参考对象遮住”或“位于其内部”。"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "来源：图像 `source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326`，帧 `ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948`；对应 `visibility` 与 `image_scope`。记录中的完整表面可见性仍为 `unknown`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "**总结：这份观测的几何距离测量已完成，但视觉证据不足。**它支持“指定选区与参考表面存在约 37.01 cm 的最小间隔”，不支持“选区在实体内／外”或“整个对象互不穿插”。若要视觉核验，还缺实际显示两对象、选区及最近点对的有效图像；本报告未引入其他观测。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像",
+                "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/image_scope",
+            "/visibility/selected_object_participates",
+            "/task_result/status",
+            "/visibility/reason"
+          ],
+          "expected_json_pointers": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "failure_classes": [],
+          "gate_id": "G4",
+          "id": "G4",
+          "missing_claim": null,
+          "name": "case_display_scope_and_status",
+          "reason": "明确选区宿主未参加当前视图显示，原host_visible_get_false和排除事实准确。末段说明量测已完成而视觉证据不足，属于partial/evidence_insufficient及selected_region_not_displayed的忠实等价表达。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 19,
+              "line_start": 19,
+              "quotation": "| 选区可见表面像素 | **0** |"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "来源：图像 `source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326`，帧 `ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948`；对应 `visibility` 与 `image_scope`。记录中的完整表面可见性仍为 `unknown`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像",
+                "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "expected_json_pointers": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G5",
+          "id": "G5",
+          "missing_claim": null,
+          "name": "selected_pixel_count",
+          "reason": "明确本例SCENE选区可见表面像素为0，并由本例图像ref与visibility绑定。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 20,
+              "line_start": 20,
+              "quotation": "| 可见选区三角形 | **0 / 748** |"
+            },
+            {
+              "line_end": 21,
+              "line_start": 21,
+              "quotation": "| 未见选区三角形 | **748 / 748** |"
+            },
+            {
+              "line_end": 25,
+              "line_start": 25,
+              "quotation": "这不是仅凭暗图推测遮挡：`image_scope` 明确记录，**选区宿主和 `Cube` 均未参与当前视图显示**，两者的 `visible_get=false`、`hide_get=true`，排除原因均为 `host_visible_get_false`。因此，选区全部表面、参考表面及最近点对在此图中都未得到观察；不能把“未显示”解释为“被参考对象遮住”或“位于其内部”。"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "来源：图像 `source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326`，帧 `ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948`；对应 `visibility` 与 `image_scope`。记录中的完整表面可见性仍为 `unknown`。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "该区域绑定",
+                "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像",
+                "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/visible_source_triangle_count",
+            "/visibility/unseen_source_triangle_count",
+            "/visibility/selected_source_triangle_count",
+            "/visibility/visibility_scope",
+            "/region_ref/source_triangle_indices"
+          ],
+          "expected_json_pointers": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "failure_classes": [],
+          "gate_id": "G6",
+          "id": "G6",
+          "missing_claim": null,
+          "name": "observed_samples_and_unseen_parts",
+          "reason": "明确可见三角形0/748，未见748/748，并将原因限定为本帧未参加显示。完整未见选集由本例区域及总数识别。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 23,
+              "line_start": 23,
+              "quotation": "| 完整可见性见证 | 无，`complete_witness=null` |"
+            },
+            {
+              "line_end": 25,
+              "line_start": 25,
+              "quotation": "这不是仅凭暗图推测遮挡：`image_scope` 明确记录，**选区宿主和 `Cube` 均未参与当前视图显示**，两者的 `visible_get=false`、`hide_get=true`，排除原因均为 `host_visible_get_false`。因此，选区全部表面、参考表面及最近点对在此图中都未得到观察；不能把“未显示”解释为“被参考对象遮住”或“位于其内部”。"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "来源：图像 `source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326`，帧 `ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948`；对应 `visibility` 与 `image_scope`。记录中的完整表面可见性仍为 `unknown`。"
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "- **不能确认：选区在 `Cube` 实体内部还是外部。**这里是无符号表面距离；内部点和外部点都可能与边界保持正距离。参考表面记录了零边界边、零非流形边，但这些统计本身不足以证明其构成有效、无自交且内外定义明确的实体，更没有提供点内外分类。还缺参考实体有效性及有符号距离、绕数或射线包含判定等证据。来源：`surface_proximity.value.topology` 及本次仅有的表面距离语义。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "**总结：这份观测的几何距离测量已完成，但视觉证据不足。**它支持“指定选区与参考表面存在约 37.01 cm 的最小间隔”，不支持“选区在实体内／外”或“整个对象互不穿插”。若要视觉核验，还缺实际显示两对象、选区及最近点对的有效图像；本报告未引入其他观测。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像",
+                "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/visibility/image_ref",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "failure_classes": [],
+          "gate_id": "G7",
+          "id": "G7",
+          "missing_claim": null,
+          "name": "complete_visibility_unknown_and_missing_information",
+          "reason": "明确完整表面可见性unknown、完整见证为空，解释当前图像排除两对象，末段指出仍缺实际显示两对象、选区及最近点的有效图像。实体分类缺少参考有效实体及有符号距离/绕数/射线包含等证据。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 31,
+              "line_start": 31,
+              "quotation": "- **可以确认：所测完整选区与参考三角形表面分离，不相交、不接触。**全局最小距离为正，因而所测选区没有任何点落在参考表面上；这不是仅对可见部分的结论。来源：上述区域的完整选区测量范围及 `surface_proximity`。"
+            },
+            {
+              "line_end": 32,
+              "line_start": 32,
+              "quotation": "- **可以确认：最近点 B 在 A 的世界 +Z 方向。**但不能据此说整片选区与参考表面平行，也不能说整片选区都位于整个 `Cube` 下方。来源：`nearest_witness`；其方向仅描述这一最近点对。"
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "- **不能确认：选区在 `Cube` 实体内部还是外部。**这里是无符号表面距离；内部点和外部点都可能与边界保持正距离。参考表面记录了零边界边、零非流形边，但这些统计本身不足以证明其构成有效、无自交且内外定义明确的实体，更没有提供点内外分类。还缺参考实体有效性及有符号距离、绕数或射线包含判定等证据。来源：`surface_proximity.value.topology` 及本次仅有的表面距离语义。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "- **不能推广到选区宿主整体的实体关系。**测量只覆盖指定的 748 个三角形，不覆盖宿主其余表面；选区自身还记录有 **72 条边界边**，不能把该局部片区当作封闭实体。判断整个对象是否穿插、包含或实体重叠，还缺宿主完整几何和实体关系检测。来源：`region`、`measurement_scope`、`topology`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "**总结：这份观测的几何距离测量已完成，但视觉证据不足。**它支持“指定选区与参考表面存在约 37.01 cm 的最小间隔”，不支持“选区在实体内／外”或“整个对象互不穿插”。若要视觉核验，还缺实际显示两对象、选区及最近点对的有效图像；本报告未引入其他观测。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "该区域绑定",
+                "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "topology"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "expected_json_pointers": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "failure_classes": [],
+          "gate_id": "G8",
+          "id": "G8",
+          "missing_claim": null,
+          "name": "surface_relation_and_solid_inference",
+          "reason": "正确将正的全选区最小距离用于所测选区表面和参考三角表面的分离、无接触或相交。明确无符号距离、局部最近点方向和拓扑计数不足以决定实体内外，也不推广到宿主整体。",
+          "verdict": "pass"
+        },
+        {
+          "answer_evidence": [
+            {
+              "line_end": 5,
+              "line_start": 5,
+              "quotation": "- **选区来源**：对象 `0135bbc4-c6c7-4003-a402-6f2e0283497d`，实例 `162`；区域 `source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb`，包含 **748 个三角形、410 个顶点**。"
+            },
+            {
+              "line_end": 6,
+              "line_start": 6,
+              "quotation": "- **参考对象**：`Cube`，实例 `164`。"
+            },
+            {
+              "line_end": 7,
+              "line_start": 7,
+              "quotation": "- **选区侧最近点 A**：`(-0.016845703125, 0.1462402619080522, 0.6298828061076364) m`；精确归属于选区三角形 `48160、48161`，对应顶点 `24331`。"
+            },
+            {
+              "line_end": 8,
+              "line_start": 8,
+              "quotation": "- **参考侧最近点 B**：`(-0.016845703125, 0.1462402619080522, 1.0) m`；精确归属于参考对象三角形 `0`。"
+            },
+            {
+              "line_end": 9,
+              "line_start": 9,
+              "quotation": "- **A→B 方向**：`(0, 0, 1)`，即该最近点对沿世界坐标 **+Z** 方向相隔上述距离。索引均为本次捕获的对象局部、当前求值后三角形行的零基索引。"
+            },
+            {
+              "line_end": 11,
+              "line_start": 11,
+              "quotation": "来源：该区域绑定下的 `task_result.facts.surface_proximity`、`task_result.source_mapping`；测量范围为 `complete_selected_source_triangle_union_to_reference_triangle_surface`，方法为 `exact_binary64_triangle_surface_hulls_v3`。"
+            },
+            {
+              "line_end": 15,
+              "line_start": 15,
+              "quotation": "本次 `SCENE` 图片呈均一深色，**没有可辨认的选区或参考对象表面，也没有最近点或距离线的视觉见证**。"
+            },
+            {
+              "line_end": 25,
+              "line_start": 25,
+              "quotation": "这不是仅凭暗图推测遮挡：`image_scope` 明确记录，**选区宿主和 `Cube` 均未参与当前视图显示**，两者的 `visible_get=false`、`hide_get=true`，排除原因均为 `host_visible_get_false`。因此，选区全部表面、参考表面及最近点对在此图中都未得到观察；不能把“未显示”解释为“被参考对象遮住”或“位于其内部”。"
+            },
+            {
+              "line_end": 27,
+              "line_start": 27,
+              "quotation": "来源：图像 `source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326`，帧 `ec44f0ae141d4a318dea9e24e4e8f7064b998431620474692a789d15445ff948`；对应 `visibility` 与 `image_scope`。记录中的完整表面可见性仍为 `unknown`。"
+            },
+            {
+              "line_end": 31,
+              "line_start": 31,
+              "quotation": "- **可以确认：所测完整选区与参考三角形表面分离，不相交、不接触。**全局最小距离为正，因而所测选区没有任何点落在参考表面上；这不是仅对可见部分的结论。来源：上述区域的完整选区测量范围及 `surface_proximity`。"
+            },
+            {
+              "line_end": 32,
+              "line_start": 32,
+              "quotation": "- **可以确认：最近点 B 在 A 的世界 +Z 方向。**但不能据此说整片选区与参考表面平行，也不能说整片选区都位于整个 `Cube` 下方。来源：`nearest_witness`；其方向仅描述这一最近点对。"
+            },
+            {
+              "line_end": 33,
+              "line_start": 33,
+              "quotation": "- **不能确认：选区在 `Cube` 实体内部还是外部。**这里是无符号表面距离；内部点和外部点都可能与边界保持正距离。参考表面记录了零边界边、零非流形边，但这些统计本身不足以证明其构成有效、无自交且内外定义明确的实体，更没有提供点内外分类。还缺参考实体有效性及有符号距离、绕数或射线包含判定等证据。来源：`surface_proximity.value.topology` 及本次仅有的表面距离语义。"
+            },
+            {
+              "line_end": 34,
+              "line_start": 34,
+              "quotation": "- **不能推广到选区宿主整体的实体关系。**测量只覆盖指定的 748 个三角形，不覆盖宿主其余表面；选区自身还记录有 **72 条边界边**，不能把该局部片区当作封闭实体。判断整个对象是否穿插、包含或实体重叠，还缺宿主完整几何和实体关系检测。来源：`region`、`measurement_scope`、`topology`。"
+            },
+            {
+              "line_end": 36,
+              "line_start": 36,
+              "quotation": "**总结：这份观测的几何距离测量已完成，但视觉证据不足。**它支持“指定选区与参考表面存在约 37.01 cm 的最小间隔”，不支持“选区在实体内／外”或“整个对象互不穿插”。若要视觉核验，还缺实际显示两对象、选区及最近点对的有效图像；本报告未引入其他观测。"
+            }
+          ],
+          "citation_resolution": [
+            {
+              "alias": "region",
+              "current_input_json_pointers": [
+                "/region_ref",
+                "/region"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_region_and_context",
+              "tokens": [
+                "该区域绑定",
+                "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb"
+              ]
+            },
+            {
+              "alias": "image",
+              "current_input_json_pointers": [
+                "/visibility/image_ref",
+                "/images/0"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_image",
+              "tokens": [
+                "图像",
+                "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+              ]
+            },
+            {
+              "alias": "visibility",
+              "current_input_json_pointers": [
+                "/visibility"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "visibility"
+              ]
+            },
+            {
+              "alias": "display",
+              "current_input_json_pointers": [
+                "/image_scope"
+              ],
+              "matched": true,
+              "resolution": "exact_current_case_field",
+              "tokens": [
+                "image_scope"
+              ]
+            },
+            {
+              "alias": "measurement",
+              "current_input_json_pointers": [
+                "/task_result/measurement_scope",
+                "/task_result/facts/surface_proximity",
+                "/task_result/reference"
+              ],
+              "matched": true,
+              "resolution": "current_case_unique_measurement_by_local_context",
+              "tokens": [
+                "measurement_scope",
+                "task_result.facts.surface_proximity",
+                "facts.surface_proximity",
+                "surface_proximity"
+              ]
+            },
+            {
+              "alias": "witness",
+              "current_input_json_pointers": [
+                "/task_result/source_mapping/nearest_witness",
+                "/task_result/facts/surface_proximity/value/nearest_witness"
+              ],
+              "matched": true,
+              "resolution": "explicit_membership_pointer_and_nearby_coordinate_witness_same_measurement",
+              "tokens": [
+                "task_result.source_mapping",
+                "nearest_witness"
+              ]
+            },
+            {
+              "alias": "topology",
+              "current_input_json_pointers": [
+                "/task_result/facts/surface_proximity/value/topology"
+              ],
+              "matched": true,
+              "resolution": "unique_topology_field_in_current_measurement",
+              "tokens": [
+                "surface_proximity.value.topology",
+                "topology"
+              ]
+            }
+          ],
+          "contradictions": [],
+          "current_input_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding",
+            "/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "expected_json_pointers": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "failure_classes": [],
+          "gate_id": "G9",
+          "id": "G9",
+          "missing_claim": null,
+          "name": "major_citations_binding_and_supported_claims",
+          "reason": "完整区域ref、图像ref和帧identity均精确属于本例。测量与图片结论按本例原字段分组引用，短字段结合明确上下文可唯一解析。附加对象身份、隐藏标志、方向、拓扑及图像描述逐项有来源，未发现额外不支持的肯定结论或主要矛盾。",
+          "verdict": "pass"
+        }
+      ],
+      "major_contradictions": [],
+      "numeric_audit": {
+        "absolute_error_limit_m": "0.0005",
+        "centimetre_absolute_error_m": "1.9389236364E-7",
+        "metre_absolute_error_m": "0",
+        "minimum_significant_digits_met_for_reported_m": true,
+        "reported_cm": "37.0117",
+        "reported_m": "0.37011719389236364",
+        "reported_mm": null,
+        "required_m": "0.37011719389236364",
+        "required_millimetre_conversion_present": false,
+        "required_mm": "370.11719389236364"
+      },
+      "pass_count": 8,
+      "source_input": {
+        "bytes": 9987,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S3\\ORIGINAL_BRIEF.json",
+        "sha256": "5a29afc6c0b17ed7d4a45754a7120d522b2fd1ea95f4f629a44a4163a1640ada"
+      },
+      "source_png": {
+        "bytes": 1881,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S3\\ORIGINAL_IMAGE.png",
+        "sha256": "1144271cc14ac35ef910eeb7eda4b63f54152f4d5424bcc530c645150618e655"
+      },
+      "unrun_count": 0,
+      "unsupported_assertions": []
+    }
+  ],
+  "contract": {
+    "G7_semantic_judgment": "For S2, null complete visibility witness, visibility unknown and explicit absence of all selected image samples together retain complete visibility unknown and identify the missing image evidence. No acquisition procedure is required by this scoring interpretation.",
+    "applicable_gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5",
+      "G6",
+      "G7",
+      "G8",
+      "G9"
+    ],
+    "citation_interpretation": "Exact current-case fields and uniquely resolving local aliases are accepted. Adjacent grouped citations bind their clearly associated claims.",
+    "frozen_schema": "m4-source-region-consumption-rubric-v1",
+    "observed_brief_schema": "source-region-brief-v2",
+    "reference_files": [
+      {
+        "bytes": 14204,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\scoring\\RUBRIC.json",
+        "sha256": "1f5deb4b12e083dd5de952e617ee5629f04b68152759dc29bcaed6708d73f9af"
+      },
+      {
+        "bytes": 163208,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\scoring\\CASE_ANSWERS.json",
+        "sha256": "0c7449a5f7a70ce2982cdada064574e6ef142f8187b7bb0ede9353143baf97f3"
+      },
+      {
+        "bytes": 3422,
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\scoring\\SCORE_METHOD.md",
+        "sha256": "1cc06b56c4670b1e4aca8c851d86bba03c231bb0b631ea548425dcffe78f687e"
+      }
+    ],
+    "rule": "All nine gates apply to each current v2 brief under the frozen semantic-equivalence and citation policies. Required m and mm conversion remains mandatory."
+  },
+  "independence": {
+    "CONSUMER_files_read": false,
+    "answer_scope": "new namespace sealed public answer copies only",
+    "author_conclusion_seen_only_after_independent_score_file_created": true,
+    "author_conclusion_used_to_set_gate_verdicts": false,
+    "content_judgments_made_by_this_reviewer": true,
+    "current_batch_author_scores_read": false,
+    "raw_stdout_read": false,
+    "reasoning_or_analysis_read": false
+  },
+  "limitations": [
+    "Content scoring is independent of execution and delivery validity. Execution metadata shown here is root-provided and is not reaudited in this score file.",
+    "Original public answer files outside the new namespace were not opened by this scorer. Sealed answer-copy hashes and sizes match the root seal manifest."
+  ],
+  "recorded_UTC": "2026-11-17T05:07:43.287993+00:00",
+  "schema": "m1-source-region-facts-first-independent-scores-v1",
+  "scoring_authority": "Root explicitly released all three sealed original public answers in the direct task message.",
+  "scoring_release": {
+    "all_three_answers_sealed": true,
+    "answers_read_only_after_root_release": true,
+    "manifest": {
+      "bytes": 1819,
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\ANSWERS_SEALED.json",
+      "sha256": "f32ca87d38d5f29f5a6a893abd9fe2500ef8c7af75913121009da7f25f18791d"
+    },
+    "manifest_sealed_ns": 19279244743000
+  },
+  "summary": {
+    "accepted_cases": 0,
+    "case_denominator": 3,
+    "common_failure": "All three report the correct metre value and a correct centimetre conversion, while omitting the required millimetre equivalent.",
+    "fail_gates": 3,
+    "gate_failures": {
+      "S1": [
+        "G1"
+      ],
+      "S2": [
+        "G1"
+      ],
+      "S3": [
+        "G1"
+      ]
+    },
+    "major_contradiction_count": 0,
+    "pass_gates": 24,
+    "rejected_cases": 3,
+    "total_gate_count": 27,
+    "unrun_cases": 0,
+    "unrun_gates": 0,
+    "unsupported_assertion_count": 0
+  },
+  "task": "M1-SOURCE-REGION-FACTS-FIRST-001"
+}
