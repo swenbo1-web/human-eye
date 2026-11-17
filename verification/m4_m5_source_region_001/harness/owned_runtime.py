@@ -79,7 +79,7 @@ class RootRuntime:
         self = cls()
         self.started_ns = time.perf_counter_ns()
         self.deadline_ns = self.started_ns + 600_000_000_000 if deadline_ns is None else deadline_ns
-        if (group not in ("R0", "R1")
+        if (group not in ("R0", "R0F", "R1")
                 or not self.started_ns < self.deadline_ns <= self.started_ns + 600_000_000_000):
             raise ValueError("fixed_owned_phase_group_and_original_deadline")
         self.consumer_deadline_ns = self.deadline_ns

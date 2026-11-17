@@ -176,7 +176,7 @@ def run(label,version):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--label',required=True)
-    parser.add_argument('--version',choices=('R0','R1'),required=True)
+    parser.add_argument('--version',choices=('R0','R0F','R1'),required=True)
     args=parser.parse_args()
     result=run(args.label,args.version)
     print(json.dumps(dict(label=args.label,status=result['status'],errors=result['errors'])))

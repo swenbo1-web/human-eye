@@ -18,7 +18,7 @@ def pin(path):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--version',choices=('R0','R1'),required=True)
+    parser.add_argument('--version',choices=('R0','R0F','R1'),required=True)
     args=parser.parse_args()
     old=json.loads((HERE.with_name('m4_cross_scale_discovery_001')/'R1_RUN_BINDING.json').read_bytes())
     names=sorted({row['path'] for row in old['source_manifest']}|{'human_eye_plugin/source_region.py'})

@@ -1,0 +1,13 @@
+# R0F source-region camera correction
+
+The root's first actual R0 qualification found a region-image framing gap. The two distances and frame reuse were correct, while the full-scene camera covered a 49.78 m span and assigned 13 pixels to the four selected source faces. The original R0 product and qualification records remain the evidence for that first implementation.
+
+`source_region.prepare_region` now calls the existing `_observation_target_cameras` with the compact selected-face vertices and the world bounds of every complete scene mesh. The selected source vertices determine the common center and XY span. Every full-scene mesh, including the unselected wing, references and background, determines conservative camera depth and remains supplied to the common raster.
+
+The camera specification uses `active-coverage-source-region-cameras-v1` and the scope `source_region_fitted_XY_whole_scene_conservative_depth`. The source binding's camera policy uses `region_fitted_viewport_full_scene_depth` and contains the region ID. The source digest is recomputed from its source fields and corrected policy before the ordered geometry, camera specification and camera identity are appended. The final binding digest includes those appended fields. Runtime attestation follows in the existing service boundary. Region identity retains the complete source-scene and selected-face contract.
+
+The new mock counterexample adds a background plane reaching +/-1000 m on X and Y at Z=-1000 m. For all six published directions, selected vertices stay inside the XY viewport and reach the expected maximum absolute NDC coordinate of 1/1.1, while the complete scene stays within the depth range. Selected spans stay below 2 m, and background XY coordinates extend beyond 100 NDC units. The selected center is [4.375, 4.375, 1.0625]. All 12 meshes and 64 source triangles stay retained for raster input. Existing mock-frame checks continue to verify full-scene owner arrays and source-face selection.
+
+`runs/R0F_01` passed all 55 current core, image and cross-scale checks. The two previously confirmed historical R0 assertions remain separately listed. The suite recorded 53 synthetic PNG encoding/publication calls totaling 53,083,800 ns. Blender starts, actual raster calls, model calls and paid calls were all zero.
+
+The product change is confined to source-region camera preparation and binding. The source-region file SHA256 is `86192e04face83a573201af0f54c1af587d52fca84697a53ec9270a4608b7543`. The shared image adapter and M3 source bytes retain their prior hashes. Root-owned actual R0F qualification and hotspot freezing follow this correctness correction.

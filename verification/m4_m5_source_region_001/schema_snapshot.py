@@ -11,7 +11,7 @@ HERE=Path(__file__).resolve().parent
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
-    parser.add_argument('--version',choices=('R0','R1'),required=True)
+    parser.add_argument('--version',choices=('R0','R0F','R1'),required=True)
     args=parser.parse_args()
     binding=json.loads((HERE/(args.version+'_RUN_BINDING.json')).read_bytes())
     sys.path.insert(0,binding['dependency_root'])

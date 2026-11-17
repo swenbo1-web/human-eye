@@ -70,6 +70,38 @@ def no_rectangles():
 
 
 class SourceRegionCoreTests(unittest.TestCase):
+    def test_camera_fits_selected_vertices_with_large_background_and_full_scene_depth(self):
+        capture = captured()
+        capture['meshes'].append({'object_id': 'FarBackground', 'name': 'FarBackground',
+            'vertices': [[-1000, -1000, -1000], [1000, -1000, -1000],
+                         [1000, 1000, -1000], [-1000, 1000, -1000]],
+            'faces': [[0, 1, 2], [0, 2, 3]]})
+        capture['host_identity']['object_instances']['FarBackground'] = 'instance-background'
+        with patch.object(core, '_observation_target_cameras', wraps=core._observation_target_cameras) as cameras:
+            prepared = core.prepare_region(capture, query())
+        np.testing.assert_array_equal(cameras.call_args.args[0], prepared.region_mesh.vertices)
+        self.assertEqual(len(cameras.call_args.args[1]), len(capture['meshes']))
+        np.testing.assert_array_equal(cameras.call_args.args[1][-1], [[-1000, -1000, -1000], [1000, 1000, -1000]])
+        np.testing.assert_array_equal(prepared.cameras['common_center_world_m'], [4.375, 4.375, 1.0625])
+        self.assertEqual(prepared.cameras['schema'], 'active-coverage-source-region-cameras-v1')
+        self.assertEqual(prepared.binding['camera_policy']['scope'], 'region_fitted_viewport_full_scene_depth')
+        self.assertEqual(prepared.binding['camera_policy']['region_id'], prepared.region_ref['region_id'])
+        all_vertices = np.concatenate([mesh.vertices for mesh in prepared.meshes])
+        for pose in prepared.cameras['views']:
+            view, projection = np.asarray(pose['view_matrix']), np.asarray(pose['projection_matrix'])
+            selected_camera = prepared.region_mesh.vertices @ view[:3, :3].T + view[:3, 3]
+            selected_ndc = selected_camera @ projection[:3, :3].T + projection[:3, 3]
+            full_camera = all_vertices @ view[:3, :3].T + view[:3, 3]
+            full_ndc = full_camera @ projection[:3, :3].T + projection[:3, 3]
+            self.assertLess(pose['view_span_m'], 2)
+            self.assertTrue(np.all(np.abs(selected_ndc[:, :2]) < 1))
+            self.assertAlmostEqual(float(np.abs(selected_ndc[:, :2]).max()), 1 / 1.1, places=10)
+            self.assertTrue(np.all(np.abs(full_ndc[:, 2]) <= 1))
+            self.assertTrue(np.all(-full_camera[:, 2] > pose['near_m']))
+            self.assertTrue(np.any(np.abs(full_ndc[:, :2]) > 100))
+        self.assertEqual(len(prepared.meshes), 12)
+        self.assertEqual(sum(len(mesh.faces) for mesh in prepared.meshes), 64)
+
     def test_complete_selected_union_and_whole_object_control(self):
         capture = captured()
         selected = core.prepare_region(capture, query())

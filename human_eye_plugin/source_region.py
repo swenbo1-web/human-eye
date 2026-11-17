@@ -8,8 +8,9 @@ import time
 import numpy as np
 
 from .active_observation import fingerprint, geometry
-from .active_observation_host import freeze_cameras, scene_from_capture, source_binding
+from .active_observation_host import scene_from_capture, source_binding
 from .active_observation_images import SceneObservationImages, _meshes_from_objects
+from .blender_host import _observation_target_cameras
 from .scene_cache import _validate_scene
 from .surface_proximity import measure_surface_proximity
 from .task_query import _surface_proximity_fact
@@ -181,8 +182,17 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
                     'bbox_max_world_m': compact_vertices.max(axis=0).tolist()}
     mapping_stage = _interval(started)
     started = time.perf_counter_ns()
-    cameras = freeze_cameras(meshes)
+    world_bounds = [[item.vertices.min(axis=0).tolist(), item.vertices.max(axis=0).tolist()]
+                    for item in meshes]
+    cameras = _observation_target_cameras(compact_vertices.tolist(), world_bounds)
+    cameras.update(schema='active-coverage-source-region-cameras-v1',
+                   scope='source_region_fitted_XY_whole_scene_conservative_depth')
+    cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
     binding = copy.deepcopy(binding)
+    binding['camera_policy'].update(scope='region_fitted_viewport_full_scene_depth',
+                                    region_id=region_ref['region_id'])
+    binding.pop('source_binding_sha256')
+    binding['source_binding_sha256'] = fingerprint(binding)
     binding.update(ordered_geometry_sha256=ordered_sha, geometry_identity=scene_identity,
                    camera_specification=cameras, camera_identity=fingerprint(cameras))
     binding['binding_sha256'] = fingerprint(binding)

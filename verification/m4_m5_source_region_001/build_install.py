@@ -29,7 +29,7 @@ def save(path, value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', choices=('R0','R1'), required=True)
+    parser.add_argument('--version', choices=('R0','R0F','R1'), required=True)
     args = parser.parse_args()
     started = time.perf_counter_ns()
     old = json.loads((PRIOR / 'R1_RUN_BINDING.json').read_bytes())
