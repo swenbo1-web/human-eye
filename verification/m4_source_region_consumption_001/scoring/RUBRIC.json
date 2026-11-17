@@ -1,0 +1,205 @@
+{
+  "schema": "m4-source-region-consumption-rubric-v1",
+  "batch_id": "M4-SOURCE-REGION-CONSUMPTION-001",
+  "visibility": "private_scoring_only",
+  "status": "frozen_before_consumer_execution",
+  "frozen_at_utc": "2026-11-17T03:52:39.627Z",
+  "plan_commit": "32254517bb6e18cbb3f6e9ab5318b13aa02a8a50",
+  "plan_path": "docs/M4_SOURCE_REGION_CONSUMPTION_001_PLAN.md",
+  "root_confirmation": "Root confirmed the nine gates, uniquely resolving short references and field references, 0.0005 m numeric tolerance, and evidence-insufficient solid classification before this freeze.",
+  "common_prompt_verbatim": "请分析这份已封存的Blender局部观测。报告选区到参考对象表面的最近距离、单位及见证来源，说明当前图片实际提供了哪些选区证据、选区可见像素数量以及仍有哪些部分未观察到。判断这个距离能支持哪些表面关系和实体内外结论。每项主要结论引用对应的区域或图像来源，信息不足时指出还缺什么。仅分析这份观测。",
+  "input_contract": {
+    "case_order": [
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "cases_independent": true,
+    "public_content": "Each case's original RESPONSE.json result.content, including its source-region-brief-v1 JSON text and original native PNG block.",
+    "case_answers_file": "CASE_ANSWERS.json",
+    "consumer_answers_read_before_freeze": 0,
+    "scoring_release": "Read consumer answers only after all three original answers are sealed and root explicitly releases scoring.",
+    "private_material_delivery_to_consumer": false
+  },
+  "decision_rule": {
+    "per_case_required_gates": 9,
+    "per_case_acceptance": "All nine applicable gates pass. A high aggregate score cannot compensate for a failed gate.",
+    "batch_denominator": 3,
+    "batch_acceptance": "S1, S2 and S3 each accepted, with observed execution and delivery status recorded separately.",
+    "gate_verdicts": [
+      "pass",
+      "fail",
+      "unrun"
+    ],
+    "failure_classes": [
+      "distance_or_unit_error",
+      "measurement_source_or_witness_error",
+      "measurement_scope_error",
+      "display_scope_or_status_error",
+      "selected_pixel_count_error",
+      "sample_or_unseen_scope_error",
+      "unknown_or_missing_information_error",
+      "surface_or_solid_inference_error",
+      "citation_or_binding_error",
+      "unsupported_assertion",
+      "execution_or_image_delivery_failure"
+    ],
+    "review_record": "For each gate save verdict, exact answer quotation or missing-claim description, expected source JSON pointer(s), resolution of cited references, and reason. Preserve all failures and unrun cases."
+  },
+  "numeric_policy": {
+    "distance_m_decimal": "0.37011719389236364",
+    "distance_mm_decimal": "370.11719389236364",
+    "conversion": "1 m = 1000 mm",
+    "absolute_error_limit_m": 0.0005,
+    "absolute_error_limit_mm": 0.5,
+    "minimum_significant_digits": 2,
+    "rounding": "Accept the original value or faithful normal rounding to the answer's stated precision, with at least two significant digits and absolute error at most 0.0005 m after conversion. Scientific notation and equivalent written units are accepted. Binary64/decimal representation differences at 1e-12 m are ignored.",
+    "consistency": "If both metres and millimetres are reported, each must faithfully round the original value at its stated precision and the two reports must describe the same measurement within their declared rounding intervals.",
+    "accepted_examples": [
+      "0.37 m and 370 mm",
+      "0.370 m and 370 mm",
+      "0.3701 m and 370.1 mm",
+      "0.37011719389236364 m and 370.11719389236364 mm"
+    ],
+    "rejected_examples": [
+      "0.4 m",
+      "0.370117 mm",
+      "370 m",
+      "0 m"
+    ],
+    "witness_coordinate_policy": "Copying endpoint coordinates is optional when the original nearest-witness field or source mapping is uniquely cited. If coordinates are given, accept faithful rounding preserving endpoint identity. Wrong endpoints, swapped object membership, or a contradictory direction fail the relevant source or inference gate."
+  },
+  "citation_policy": {
+    "accepted_forms": [
+      "Complete original region_ref or image_ref",
+      "A uniquely resolving abbreviation of the current case's original region_id, image_ref, frame_identity or binding identifier, with its role clear",
+      "An exact field reference to the current bound observation, such as region_ref, task_result.region_ref, task_result.source_mapping.nearest_witness, visibility.image_ref or images[0]",
+      "A locally defined short label mapped once to one of those original sources, then reused for the associated conclusions"
+    ],
+    "major_claim_binding": "Distance, witness and complete-selection claims resolve to the current case's region and measurement sources. Pixel, display, sample and unknown claims resolve to the current case's visibility/image sources. Grouped citations may support several nearby claims when their scope is unambiguous.",
+    "case_integrity": "The capture generation, object identity and image identity must belong to the same original case. Shared geometry and identical distances do not license substituting another case's region or image binding.",
+    "object_reference": "Cube plus its measurement reference field is sufficient. Full object hashes and instance identifiers need not be recopied.",
+    "witness_reference": "A unique pointer to the original nearest witness/source mapping is sufficient. Alternatively identify A on selected source triangles 48160/48161 or source vertex 24331 and B on Cube source triangle 0. Listing both A triangles is optional when a correct original witness pointer already supplies exact membership."
+  },
+  "language_and_format_policy": {
+    "semantic_equivalence": "Accept synonymous expressions, natural-language paraphrases and any readable answer layout that convey the required claims and preserve their scope.",
+    "identifiers": "Literal status and reason strings may be paraphrased faithfully. Full hashes, complete triangle lists, endpoint coordinates and algorithm names are optional.",
+    "derivation": "No derivation of the producer's distance algorithm, independent remeasurement or prescribed output format is required.",
+    "set_identification": "Counts, explicit sets or exact references to the current case's visible/unseen source-triangle collections can identify observed and unobserved parts. An explicit reference to all selected triangles is sufficient for S2 and S3.",
+    "contradictions": "A correct claim elsewhere in the answer does not erase a conflicting major claim. Clearly conditional possibilities and clearly labelled hypotheses are evaluated as such."
+  },
+  "gates": [
+    {
+      "id": "G1",
+      "name": "distance_and_units",
+      "all_cases": "Report 0.37011719389236364 m and the millimetre equivalent under the frozen numeric policy. Identify this as the selected region's nearest distance to Cube's reference surface.",
+      "sources": [
+        "/task_result/facts/surface_proximity/value/distance_m",
+        "/task_result/reference"
+      ]
+    },
+    {
+      "id": "G2",
+      "name": "region_and_original_witness",
+      "all_cases": "Bind the measurement to this case's region_ref and original measured nearest witness, with A belonging to the selected source region and B to Cube. Accept the citation alternatives in citation_policy.",
+      "sources": [
+        "/region_ref",
+        "/task_result/region_ref",
+        "/task_result/facts/surface_proximity/value/nearest_witness",
+        "/task_result/source_mapping/nearest_witness",
+        "/task_result/reference"
+      ]
+    },
+    {
+      "id": "G3",
+      "name": "complete_measurement_scope",
+      "all_cases": "State that the measured distance covers the union of the complete selected source-triangle set to the reference triangle surface in the captured world-metre geometry. The value must not be restricted to visible pixels or used as a whole-target-object measurement. A natural-language equivalent of the published measurement_scope is sufficient.",
+      "sources": [
+        "/measurement_scope",
+        "/task_result/measurement_scope",
+        "/task_result/facts/surface_proximity/semantics",
+        "/region_ref/source_triangle_indices"
+      ]
+    },
+    {
+      "id": "G4",
+      "name": "case_display_scope_and_status",
+      "all_cases": "Apply the captured active-view-layer effective-viewport participation facts, together with the current case's image-evidence status. Preserve the measured geometry fact even when image evidence is insufficient.",
+      "S1": "The selected object participates in the image. Cube does not participate in the image, while remaining the explicit geometric measurement reference. The observation supplies local observed samples.",
+      "S2": "The selected object and Cube both participate in the captured display. The selected region has no visible pixel samples. Use the partial/evidence_insufficient state and selected_region_displayed_without_pixels reason, or faithful equivalents.",
+      "S3": "The selected object does not participate in the captured display. Use selected_region_not_displayed and partial/evidence_insufficient, or faithful equivalents. Its current captured geometry and source mapping still supply the measured selection distance.",
+      "sources": [
+        "/status",
+        "/observation_status",
+        "/binding/image_scope",
+        "/visibility/selected_object_participates",
+        "/visibility/reason",
+        "/task_result/status"
+      ]
+    },
+    {
+      "id": "G5",
+      "name": "selected_pixel_count",
+      "S1": "Report exactly 35452 selected-surface pixels for this SCENE image.",
+      "S2": "Report exactly 0 selected-surface pixels for this SCENE image.",
+      "S3": "Report exactly 0 selected-surface pixels for this SCENE image.",
+      "sources": [
+        "/visibility/selected_surface_pixels",
+        "/visibility/image_ref"
+      ]
+    },
+    {
+      "id": "G6",
+      "name": "observed_samples_and_unseen_parts",
+      "all_cases": "Identify the actual image-sample evidence and the unobserved selected-triangle collection using the set_identification rule. Sampled triangles establish visible samples within this actual frame, without certifying each triangle's complete surface.",
+      "S1": "385 selected source triangles have visible pixel samples, and 363 selected source triangles have no visible pixel samples. Their exact collections are visibility.visible_source_triangle_indices and visibility.unseen_source_triangle_indices. The image supports the sampled part of the selection.",
+      "S2": "No selected source triangle has a visible pixel sample. All 748 selected triangles remain unobserved by this image.",
+      "S3": "No selected source triangle has a visible pixel sample. All 748 selected triangles remain unobserved by this image because the selection is absent from display.",
+      "sources": [
+        "/visibility/visible_source_triangle_indices",
+        "/visibility/unseen_source_triangle_indices",
+        "/visibility/visibility_scope",
+        "/unknowns"
+      ]
+    },
+    {
+      "id": "G7",
+      "name": "complete_visibility_unknown_and_missing_information",
+      "all_cases": "Keep complete_surface_visibility unknown. Explain the actual missing image/visibility evidence sufficiently to answer the prompt. Where solid classification is withheld, identify a corresponding missing source, such as reference closed-solid geometry or an inside/outside classification with an appropriate binding.",
+      "S1": "The finite samples and unobserved collection do not establish complete surface visibility. Further bound visibility evidence or a valid completeness witness is missing.",
+      "S2": "The current image gives no selected-region pixel evidence. A bound observation exposing selected samples or equivalent visibility evidence is missing. Display participation alone does not establish actual visibility.",
+      "S3": "The current image excludes the selected object. A display/observation containing the selection with actual selected samples or equivalent visibility evidence is missing.",
+      "sources": [
+        "/visibility/status",
+        "/visibility/complete_witness",
+        "/visibility/unknown",
+        "/unknowns",
+        "/visibility/image_ref"
+      ]
+    },
+    {
+      "id": "G8",
+      "name": "surface_relation_and_solid_inference",
+      "all_cases": "The strictly positive complete-selected-surface-to-reference-surface minimum supports separation and no contact/intersection between those two measured surface sets. It supplies an unsigned surface distance. An entity-inside/outside conclusion requires an appropriate independent source. Public-information insufficiency for solid classification passes. Inferring outside from positive distance fails. An unsupported confident inside claim also fails. Limit no-contact claims to the selected surface set and Cube reference surface.",
+      "private_ground_truth": "The selected region is strictly inside the actual Cube closed box, established in CASE_ANSWERS.json from existing sealed geometry. This private fact is a scoring check on unsupported outside reasoning and is not a required consumer conclusion.",
+      "sources": [
+        "/task_result/measurement_scope",
+        "/task_result/facts/surface_proximity",
+        "/task_result/reference"
+      ]
+    },
+    {
+      "id": "G9",
+      "name": "major_citations_binding_and_supported_claims",
+      "all_cases": "Every major conclusion has a uniquely resolving current-case region/measurement or visibility/image source under citation_policy. Conclusions stay within this sealed capture. Evaluate any additional geometric, visibility, causal or repair conclusion against the supplied evidence. A confidently asserted unsupported conclusion fails this gate. A cause or remedy stated only as an unverified possibility is permitted.",
+      "sources": [
+        "/region_ref",
+        "/task_result/reference",
+        "/binding/capture_state",
+        "/binding/image_scope",
+        "/visibility/image_ref",
+        "/images/0"
+      ]
+    }
+  ]
+}
