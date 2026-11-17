@@ -1,0 +1,31 @@
+{
+  "schema": "m4-m5-source-region-state-expectations-v1",
+  "frozen_before_actual_state_slot": true,
+  "source_region_index_domain": "zero_based_object_local_current_evaluated_capture_triangle_rows",
+  "rows": [
+    {"call": 1, "task": "legacy_default_active", "include_image": true, "expected_new_raster": 6},
+    {"call": 2, "task": "initial_selected_B", "selection": [0, 1, 2, 3], "reference": "Ref_B", "expected_distance_squared_m2": "25/16", "expected_new_raster": 1},
+    {"call": 3, "task": "repeat_returned_ref_B", "same_region_as_call": 2, "same_frame_as_call": 2, "expected_distance_squared_m2": "25/16", "expected_new_raster": 0},
+    {"call": 4, "task": "switch_returned_ref_C", "same_region_as_call": 2, "same_frame_as_call": 2, "expected_distance_squared_m2": "137/16", "expected_new_raster": 0},
+    {"call": 5, "task": "changed_region_B", "selection": [0, 1, 2], "different_region_from_call": 2, "expected_distance_squared_m2": "25/16", "expected_new_raster": 1},
+    {"call": 6, "task": "moved_old_ref_B", "fixture_Obj_07_translation_x_m": "1/4", "expected_public_error_contains": "source_region_ref_capture_generation_changed", "expected_new_raster": 0},
+    {"call": 7, "task": "moved_current_selection_B", "selection": [0, 1, 2, 3], "fixture_Obj_07_translation_x_m": "1/4", "expected_distance_squared_m2": "5/4", "different_region_from_call": 2, "expected_new_raster": 1},
+    {"call": 8, "task": "restored_old_ref_B", "fixture_Obj_07_translation_x_m": "0", "expected_public_error_contains": "source_region_ref_capture_generation_changed", "expected_new_raster": 0},
+    {"call": 9, "task": "restored_current_selection_B", "selection": [0, 1, 2, 3], "fixture_Obj_07_translation_x_m": "0", "expected_distance_squared_m2": "25/16", "different_region_from_call": 2, "expected_new_raster": 1},
+    {"call": 10, "task": "legacy_whole_objects_B", "expected_distance_squared_m2": "1/1024", "expected_new_raster": 0},
+    {"call": 11, "task": "legacy_whole_objects_C", "expected_distance_squared_m2": "2305/1024", "expected_new_raster": 0}
+  ],
+  "expected_state_new_raster": 10,
+  "reference_parameter_switch_reuses_same_frame": true,
+  "complete_scene_actual_geometry_change_invalidates_old_ref": true,
+  "restored_geometry_uses_current_generation": true,
+  "rejection_alone_suffices_for_state_acceptance": false,
+  "whole_object_coordinate_bound_controls": {"Ref_B_squared_m2": "1/1024", "Ref_C_squared_m2": "2305/1024"},
+  "selected_image_visibility_scope": "actual_visible_source_triangle_pixel_samples",
+  "measurement_scope": "all_selected_source_triangles_including_unseen_parts",
+  "geometric_full_surface_visible_claim": false,
+  "authorship": "Fixture and product-independent oracle share an author. Root reviews the frozen sources separately.",
+  "new_live_Blender": 0,
+  "new_raster": 0,
+  "new_model": 0
+}

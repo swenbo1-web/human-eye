@@ -42,6 +42,27 @@ _NO_RPC_ID = object()
 
 
 _ID_SCHEMA = {"type": "string", "minLength": 1}
+_SOURCE_TRIANGLE_ROWS_SCHEMA = {"type": "array", "minItems": 1, "maxItems": 4096,
+    "uniqueItems": True, "items": {"type": "integer", "minimum": 0}}
+_SOURCE_REGION_REF_SCHEMA = {
+    "type": "object", "required": ["schema", "region_id", "document_epoch", "host_id", "instance_id",
+        "capture_generation", "ordered_geometry_sha256", "source_triangle_indices"],
+    "properties": {
+        "schema": {"const": "human-eye-source-region-ref-v1"},
+        "region_id": {"type": "string", "pattern": "^source-region:[a-f0-9]{64}$"},
+        "document_epoch": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "host_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "instance_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "capture_generation": {"oneOf": [{"type": "null"}, {"type": "object",
+            "required": ["instance_id", "epoch", "revision"],
+            "properties": {"instance_id": {"type": "string", "minLength": 1},
+                "epoch": {"type": "integer", "minimum": 0}, "revision": {"type": "integer", "minimum": 0}},
+            "additionalProperties": False}]},
+        "ordered_geometry_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "source_triangle_indices": copy.deepcopy(_SOURCE_TRIANGLE_ROWS_SCHEMA),
+    }, "additionalProperties": False,
+    "description": "Self-contained current region binding. Geometry and capture generation are validated on each reuse.",
+}
 _VECTOR_SCHEMA = {
     "type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3,
 }
@@ -70,7 +91,14 @@ _QUERY_SCHEMA = {
     "type": "object",
     "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
-        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation"]},
+        "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation", "source_region"]},
+        "region": {"type": "object", "required": ["object", "source_triangle_indices"],
+            "properties": {"object": copy.deepcopy(SELECTOR_SCHEMA),
+                "source_triangle_indices": copy.deepcopy(_SOURCE_TRIANGLE_ROWS_SCHEMA)},
+            "additionalProperties": False,
+            "description": "Current evaluated object-local triangle rows. The full selected set participates in measurement."},
+        "region_ref": copy.deepcopy(_SOURCE_REGION_REF_SCHEMA),
+        "reference": copy.deepcopy(SELECTOR_SCHEMA),
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
             "description": "active_observation: one visual target. Legacy task: aabb 1..4 selectors; pair facts two ordered A to B."},
         "task_query": {"type": "object", "required": ["mode", "objects", "requested_facts"],
@@ -109,7 +137,14 @@ _QUERY_SCHEMA = {
         "visual_diagnostic": {"type": "string", "enum": ["contact_section"],
             "description": "Analytical full-mesh contact section beside natural views; not visibility evidence or action permission."},
     },
-    "allOf": [{"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
+    "allOf": [{"if": {"properties": {"mode": {"const": "source_region"}}, "required": ["mode"]},
+               "then": {"required": ["reference", "requested_facts"],
+                        "properties": {"mode": {}, "region": {}, "region_ref": {}, "reference": {},
+                            "requested_facts": {"const": ["surface_proximity"]}},
+                        "oneOf": [{"required": ["region"], "not": {"required": ["region_ref"]}},
+                                  {"required": ["region_ref"], "not": {"required": ["region"]}}],
+                        "additionalProperties": False}},
+              {"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}, 'region_task': {}},
                         'not': {'required': ['objects', 'region_task']}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
@@ -188,6 +223,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "evidence with witnesses. Combine observations using their scene/source binding."
             " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one legacy task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
             " Optional query.region_task={area_min_m2,area_max_m2,normal_z_min} discovers whole-scene rectangular regions with inclusive area and directed unit-normal z limits, then obtains needed local evidence. It combines with task_query. Its region rows and image references identify each scope and actual frame, including repeated view names."
+            " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. A returned top-level region_ref replaces region on later requests. All scene meshes participate in depth. Measurements cover every selected triangle, including unseen portions. Brief and full return the source scope, distance, witness and native image references."
         ),
         "inputSchema": {
             "type": "object",
@@ -202,7 +238,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
                     "description": "False returns text evidence without rendering. surface_scan defaults to false and accepts only false. mesh_structure diagnose requires false and reads only the registered target raw mesh; patch may explicitly request images. Other observation modes retain default true."},
             },
             "allOf": [{"if": {"required": ["query"], "properties": {"query": {
-                    "required": ["mode"], "properties": {"mode": {"const": "active_observation"}}}}},
+                    "required": ["mode"], "properties": {"mode": {"enum": ["active_observation", "source_region"]}}}}},
                 "then": {"properties": {"task_instruction": {"const": ""}},
                          "not": {"anyOf": [{"required": [field]} for field in
                              ("focal_id", "reference_id", "goal", "scene_delta")]}}},
@@ -227,7 +263,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
                          "not": {"anyOf": [{"required": [field]} for field in
                              ("focal_id", "reference_id", "goal", "scene_delta")]}}},
             {"if": {"required": ["query"], "properties": {"query": {
-                    "required": ["mode"], "properties": {"mode": {"enum": ["surface_scan", "active_observation"]}}}}},
+                    "required": ["mode"], "properties": {"mode": {"enum": ["surface_scan", "active_observation", "source_region"]}}}}},
                 "then": {"properties": {"response_detail": {"default": "brief"}}},
                 "else": {"properties": {"response_detail": {"default": "full"}}}},
             {"if": {"required": ["query"], "properties": {"query": {
@@ -321,6 +357,7 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
                 'Its object table covers matched endpoints. Full requests a new current observation with detailed '
                 'witnesses; combine observations by scene/source binding. active_observation also defaults to brief, '
                 'with all objects, region unknowns, actual pixel facts and native image references; full retains diagnostics. '
+                'source_region defaults to brief with its complete selected-triangle measurement scope, witnesses and visibility. '
                 'Other modes default to full; their brief '
                 'omits named camera/raster diagnostics while preserving measurements and native images. '
                 'Errors and unsupported projections retain the detailed response.'),
@@ -458,6 +495,10 @@ def _validate_arguments(name: str, arguments: Any) -> None:
             if (arguments.get('task_instruction', '')
                     or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
                 raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
+        if selected_query['mode'] == 'source_region':
+            if (arguments.get('task_instruction', '')
+                    or any(field in arguments for field in ('focal_id', 'reference_id', 'goal', 'scene_delta'))):
+                raise ValueError('source_region accepts region and reference selectors only in query')
         if selected_query['mode'] == 'surface_nearest':
             if 'objects' in selected_query and 'focal_id' in arguments:
                 raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
@@ -1510,23 +1551,65 @@ def project_active_observation_brief(value):
         return None
 
 
+def project_source_region_brief(value):
+    """Expose curved-source visibility and the complete measurement selection."""
+    from .query_policy import validate_source_region_query
+
+    task = value['task_result']
+    reference = value['region_ref']
+    validate_source_region_query({'mode': 'source_region', 'region_ref': reference,
+        'reference': {'id': task['reference']['object_id']}, 'requested_facts': ['surface_proximity']})
+    if (value['result_kind'] != 'source_region' or task['region_ref'] != reference
+            or value['facts']['region']['source_triangle_indices'] != reference['source_triangle_indices']):
+        raise ValueError('source_region_result_scope_mismatch')
+    images = []
+    for index, frame in enumerate(value['frames'], 1):
+        if frame['host_binding_sha256'] != value['binding']['binding_sha256']:
+            raise ValueError('source_region_frame_binding_mismatch')
+        images.append({key: copy.deepcopy(frame[key]) for key in (
+            'image_ref', 'view_name', 'frame_identity', 'image_sha256', 'camera_identity',
+            'host_binding_sha256') if key in frame})
+        images[-1]['image_block_index'] = index
+    brief = {key: copy.deepcopy(value[key]) for key in (
+        'status', 'result_kind', 'observation_status', 'session_id', 'region_ref',
+        'task_result', 'read_only', 'execution_authority', 'image_delivery') if key in value}
+    brief.update(schema='source-region-brief-v1', binding={key: copy.deepcopy(item)
+        for key, item in value['binding'].items() if key != 'camera_specification'},
+        region=copy.deepcopy(value['facts']['region']),
+        visibility=copy.deepcopy(value['facts']['visibility']), images=images,
+        measurement_scope=copy.deepcopy(task['measurement_scope']))
+    unseen = brief['visibility']['unseen_source_triangle_indices']
+    unknowns = []
+    unknowns.extend({'scope': 'actual_frame_visibility', 'reason': reason}
+                    for reason in brief['visibility'].get('unknown', []))
+    if unseen:
+        unknowns.append({'scope': 'actual_frame_visibility', 'source_triangle_indices': unseen,
+                         'reason': 'selected_triangles_have_no_visible_pixel_samples'})
+    fact = task['facts']['surface_proximity']
+    if fact.get('status') == 'unknown':
+        unknowns.append({'scope': 'surface_proximity', 'reason': fact.get('reason')})
+    brief['unknowns'] = unknowns
+    return brief
+
+
 def _active_observation_content(value, *, is_error, audit, response_detail=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
         consumer_read_status='unconfirmed')
-    metadata = {key: copy.deepcopy(value[key]) for key in (
+    source_region = value.get('result_kind') == 'source_region'
+    metadata = copy.deepcopy(value) if source_region else {key: copy.deepcopy(value[key]) for key in (
         'status', 'result_kind', 'observation_status', 'session_id', 'facts',
         'work', 'generation_work', 'stages', 'generation_stages',
         'read_only', 'execution_authority', 'target_view_classifications', 'task_result',
     ) if key in value}
-    if 'binding' in value:
+    if 'binding' in value and not source_region:
         metadata['binding'] = {key: copy.deepcopy(item) for key, item in value['binding'].items()
             if key != 'camera_specification'}
     frames = value.get('frames')
     content = []
     try:
-        if type(frames) is not list or len(frames) > 6:
+        if type(frames) is not list or len(frames) > (1 if source_region else 6):
             raise ValueError('Active observation requires at most six frame references')
         metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
             'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
@@ -1539,6 +1622,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             'owner_capabilities', 'frame_identity', 'triangle_owner_array_bytes', 'owner_metadata_array_bytes',
             'scope_id', 'camera_identity',
         ) if key in frame} for frame in frames]
+        if source_region:
+            metadata['frames'] = copy.deepcopy(frames)
         region_task = 'region_task' in value.get('facts', {})
         if region_task:
             metadata['scopes'] = copy.deepcopy(value['scopes'])
@@ -1576,9 +1661,11 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
             projected = _project_region_task_brief(metadata)
+        if source_region:
+            projected = project_source_region_brief(metadata)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
-            brief = projected if region_task else project_active_observation_brief(metadata)
+            brief = projected if source_region or region_task else project_active_observation_brief(metadata)
             if brief is not None:
                 metadata = brief
                 audit['projection_status'] = 'brief'
@@ -1603,7 +1690,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
                  active_delivery_audit=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
-    if value.get('result_kind') == 'active_observation':
+    if value.get('result_kind') in ('active_observation', 'source_region'):
         return _active_observation_content(value, is_error=is_error,
             audit={} if active_delivery_audit is None else active_delivery_audit,
             response_detail=response_detail)
@@ -1825,7 +1912,7 @@ class LiveSpatialMCPServer:
                 is_error = value.get('status') not in {'complete', 'partial'}
             if value.get('result_kind') == 'surface_scan':
                 is_error = value.get('status') not in {'complete', 'partial', 'unknown'}
-            if value.get('result_kind') == 'active_observation':
+            if value.get('result_kind') in ('active_observation', 'source_region'):
                 is_error = value.get('status') not in {'complete', 'partial', 'unknown', 'predicted'}
             if value.get('result_kind') in ('structure_task','surface_task') and value.get('status')=='receipt':is_error=False
         elif name == 'human_eye_arm_twist_observe':
@@ -1844,7 +1931,7 @@ class LiveSpatialMCPServer:
         with span('mcp.content_encode', kind='encoding'):
             if spatial_relations:
                 value = _project_spatial_relations(value)
-            delivery_audit = {} if value.get('result_kind') == 'active_observation' else None
+            delivery_audit = {} if value.get('result_kind') in ('active_observation', 'source_region') else None
             try:
                 result = _tool_result(value, is_error=is_error,
                     response_detail=args.get('response_detail'),
@@ -1855,9 +1942,10 @@ class LiveSpatialMCPServer:
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):
-                    recorder('active_observation_mcp_content', session_id=session_id,
+                    recorder('source_region_mcp_content' if value.get('result_kind') == 'source_region'
+                        else 'active_observation_mcp_content', session_id=session_id,
                         image_delivery=delivery_audit)
-        if value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory', 'active_observation'):
+        if value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory', 'active_observation', 'source_region'):
             self.service._check_request_budget('before_task_publication')
         return result
 

@@ -69,6 +69,66 @@ def _native_visual(value):
     return {'mode': mode, 'view': view}
 
 
+def validate_source_region_query(value):
+    """Select evaluated object-local triangle rows and one reference object."""
+    from .task_query import validate_object_selector
+
+    fields = {'mode', 'region', 'region_ref', 'reference', 'requested_facts'}
+    if type(value) is not dict or value.get('mode') != 'source_region' or set(value) - fields:
+        raise ValueError('source_region query contains unsupported fields')
+    if ('region' in value) == ('region_ref' in value):
+        raise ValueError('source_region requires exactly one of region or region_ref')
+    if value.get('requested_facts') != ['surface_proximity']:
+        raise ValueError('source_region requested_facts must be [surface_proximity]')
+    result = {'mode': 'source_region', 'reference': validate_object_selector(value.get('reference')),
+              'requested_facts': ['surface_proximity']}
+    if 'region' in value:
+        region = value['region']
+        if type(region) is not dict or set(region) != {'object', 'source_triangle_indices'}:
+            raise ValueError('source_region region requires object and source_triangle_indices')
+        result['region'] = {'object': validate_object_selector(region['object']),
+                            'source_triangle_indices': _source_triangle_indices(region['source_triangle_indices'])}
+        return result
+    reference = value['region_ref']
+    keys = {'schema', 'region_id', 'document_epoch', 'host_id', 'instance_id',
+            'capture_generation', 'ordered_geometry_sha256', 'source_triangle_indices'}
+    if (type(reference) is not dict or set(reference) != keys
+            or reference.get('schema') != 'human-eye-source-region-ref-v1'):
+        raise ValueError('source_region region_ref structure is invalid')
+    identity = reference['region_id']
+    if (type(identity) is not str or not identity.startswith('source-region:')
+            or len(identity) != len('source-region:') + 64
+            or any(c not in '0123456789abcdef' for c in identity[len('source-region:'):])):
+        raise ValueError('source_region region_ref region_id is invalid')
+    for key in ('document_epoch', 'ordered_geometry_sha256'):
+        digest = reference[key]
+        if type(digest) is not str or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
+            raise ValueError('source_region region_ref ' + key + ' is invalid')
+    for key in ('host_id', 'instance_id'):
+        if type(reference[key]) is not str or not reference[key] or len(reference[key].encode('utf8')) > 256:
+            raise ValueError('source_region region_ref ' + key + ' is invalid')
+    generation = reference['capture_generation']
+    if generation is not None and (type(generation) is not dict
+            or set(generation) != {'instance_id', 'epoch', 'revision'}
+            or type(generation['instance_id']) is not str or not generation['instance_id']
+            or any(type(generation[key]) is not int or generation[key] < 0 for key in ('epoch', 'revision'))):
+        raise ValueError('source_region region_ref capture_generation is invalid')
+    import copy
+    result['region_ref'] = copy.deepcopy(reference)
+    indices = _source_triangle_indices(reference['source_triangle_indices'])
+    if indices != reference['source_triangle_indices']:
+        raise ValueError('source_region region_ref requires canonical triangle row order')
+    return result
+
+
+def _source_triangle_indices(value):
+    if (type(value) is not list or not value or len(value) > 4096
+            or any(type(index) is not int or index < 0 for index in value)
+            or len(set(value)) != len(value)):
+        raise ValueError('source_triangle_indices requires 1..4096 unique nonnegative integer rows')
+    return sorted(value)
+
+
 def validate_query(query, *, object_ids=None, focal_id=None):
     """Normalize structure, optionally checking the fresh scene's object IDs.
 
@@ -78,6 +138,8 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode') == 'source_region':
+        return validate_source_region_query(query)
     if type(query) is dict and query.get('mode') == 'active_observation':
         if set(query) == {'mode'}:
             return {'mode': 'active_observation'}

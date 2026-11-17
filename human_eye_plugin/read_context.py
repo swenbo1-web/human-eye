@@ -48,7 +48,7 @@ class ReadContext:
         key = (entry, token, query_key(selection)) if token is not None else object()
         state = self._selections.get(key)
         if state is None:
-            state = {'normalized': None, 'results': OrderedDict()}
+            state = {'normalized': None, 'results': OrderedDict(), 'prepared': {}}
             self._selections[key] = state
         self._selections.move_to_end(key)
         if len(self._selections) > 8:
@@ -67,6 +67,15 @@ class ReadContext:
             if self._versioned:
                 self.scene_cache._bind_read_meshes(self._capture, self._normalized[1])
         return self._normalized
+
+    def prepared(self, key, prepare):
+        """Retain private read-only resources under the active capture selection."""
+        resources = self._selections[self._capture]['prepared']
+        if key in resources:
+            return resources[key], True
+        value = prepare()
+        resources[key] = value
+        return value, False
 
     def surface_scan_progress(self, key):
         """Resume one current scan with summaries under the same private capture."""

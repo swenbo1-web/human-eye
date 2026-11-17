@@ -267,68 +267,38 @@ def _pixel_rows(meshes, pose, buffers, regions, *, _localization_stages=None):
     return rows
 
 
-class ActiveObservationImages:
-    """Own full meshes and current-source frames for one observation session.
+class SceneObservationImages:
+    """Build and validate source-owner frames for complete world geometry.
 
-    ``render_view`` and ``render_next`` return frame dictionaries containing
-    PNG/NPZ paths, source identities, an image reference and in-process buffers.
-    ``observe_frame`` also accepts saved frames with ``arrays_path`` and
-    ``arrays_sha256`` in place of buffers. Owner indices follow the session's
-    complete object order. Application serialization can omit ``buffers`` and
-    retain the saved array reference.
+    Rectangular regions optionally add patch ownership. Empty regions retain
+    the same full-scene RGB, depth, object and source-triangle buffers.
     """
 
-    def __init__(self, session, output_directory, *, _prepared_meshes=None, _measure_stages=False):
-        if not isinstance(session, ActiveObservationSession):
-            raise TypeError('active_observation_session_required')
-        self.session = session
+    def __init__(self, objects, cameras, output_directory, *, scene_identity,
+                 candidate_identity, regions=(), _prepared_meshes=None,
+                 _measure_stages=False):
         self.output_directory = Path(output_directory).resolve()
-        self._objects = None
-        self._cameras = None
-        self._binding = None
+        self._objects = objects
+        self._cameras = cameras
+        self._binding = (scene_identity, candidate_identity)
         self._frames = {}
         self._sequence = 0
-        self._prepared_meshes = _prepared_meshes
         self._measure_stages = _measure_stages
-        self._synchronize()
+        self.meshes = _meshes_from_objects(objects) if _prepared_meshes is None else _prepared_meshes
+        if (type(self.meshes) is not tuple or len(self.meshes) != len(objects)
+                or any(len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
+                       for mesh, source in zip(self.meshes, objects))):
+            raise ValueError('prepared_mesh_geometry_binding_required')
+        self._poses = {pose['name']: pose for pose in cameras['views']}
+        if len(self._poses) != len(cameras['views']):
+            raise ValueError('unique_view_names_required')
+        self._mesh_order_identity = fingerprint(tuple(item[2] for item in objects))
+        self._patch_mapping = _patch_mapping(objects, regions)
+        self._patch_mapping_identity = self._patch_mapping['identity']
 
     def _synchronize(self):
-        binding = (self.session.scene_identity, self.session.candidate_identity)
-        if (binding == self._binding and self.session.objects is self._objects
-                and self.session.cameras is self._cameras):
-            return
-        mesh_order_identity = fingerprint(tuple(item[2] for item in self.session.objects))
-        mapping = _patch_mapping(self.session.objects, self.session.regions)
-        reuse_frames = (binding == self._binding
-                        and mesh_order_identity == getattr(self, '_mesh_order_identity', None)
-                        and mapping['identity'] == getattr(self, '_patch_mapping_identity', None)
-                        and self.session.cameras == self._cameras)
-        if self._prepared_meshes is None:
-            self.meshes = _meshes_from_objects(self.session.objects)
-        else:
-            objects, meshes = self._prepared_meshes
-            if (objects is not self.session.objects or type(meshes) is not tuple
-                    or len(meshes) != len(objects) or any(
-                        len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
-                        for mesh, source in zip(meshes, objects))):
-                raise ValueError('prepared_mesh_geometry_binding_required')
-            self.meshes = meshes
-            self._prepared_meshes = None
-        self._poses = {pose['name']: pose for pose in self.session.cameras['views']}
-        self._mesh_order_identity = mesh_order_identity
-        self._patch_mapping = mapping
-        self._patch_mapping_identity = mapping['identity']
-        self._objects = self.session.objects
-        self._cameras = self.session.cameras
-        self._binding = binding
-        self.session.state.bind_patch_mapping(self._patch_mapping_identity)
-        if not reuse_frames:
-            self._frames.clear()
-
-    def render_next(self):
-        self._synchronize()
-        name = self.session.next_view()
-        return None if name is None else self.render_view(name)
+        # This standalone adapter owns a single immutable source/camera binding.
+        pass
 
     def render_view(self, view_name):
         self._synchronize()
@@ -423,12 +393,8 @@ class ActiveObservationImages:
         self._frames[view_name] = frame
         return frame
 
-    def observe_frame(self, frame, *, include_buffers=False):
-        if type(include_buffers) is not bool:
-            raise ValueError('include_buffers_must_be_boolean')
-        stages = {}
-        if self._measure_stages:
-            started = time.perf_counter_ns()
+    def validate_frame(self, frame):
+        """Check persisted PNG, arrays, camera and source mappings together."""
         self._synchronize()
         if (frame.get('scene_identity'), frame.get('candidate_identity')) != self._binding:
             raise ValueError('current_scene_camera_frame_required')
@@ -504,6 +470,83 @@ class ActiveObservationImages:
                     or image.size != (_size(pose), _size(pose))
                     or not np.array_equal(np.asarray(image), buffers['color'])):
                 raise ValueError('PNG_RGB_frame_array_binding_required')
+        return buffers
+
+
+class ActiveObservationImages(SceneObservationImages):
+    """Own full meshes and current-source frames for one observation session.
+
+    ``render_view`` and ``render_next`` return frame dictionaries containing
+    PNG/NPZ paths, source identities, an image reference and in-process buffers.
+    ``observe_frame`` also accepts saved frames with ``arrays_path`` and
+    ``arrays_sha256`` in place of buffers. Owner indices follow the session's
+    complete object order. Application serialization can omit ``buffers`` and
+    retain the saved array reference.
+    """
+
+    def __init__(self, session, output_directory, *, _prepared_meshes=None, _measure_stages=False):
+        if not isinstance(session, ActiveObservationSession):
+            raise TypeError('active_observation_session_required')
+        self.session = session
+        self.output_directory = Path(output_directory).resolve()
+        self._objects = None
+        self._cameras = None
+        self._binding = None
+        self._frames = {}
+        self._sequence = 0
+        self._prepared_meshes = _prepared_meshes
+        self._measure_stages = _measure_stages
+        self._synchronize()
+
+    def _synchronize(self):
+        binding = (self.session.scene_identity, self.session.candidate_identity)
+        if (binding == self._binding and self.session.objects is self._objects
+                and self.session.cameras is self._cameras):
+            return
+        mesh_order_identity = fingerprint(tuple(item[2] for item in self.session.objects))
+        mapping = _patch_mapping(self.session.objects, self.session.regions)
+        reuse_frames = (binding == self._binding
+                        and mesh_order_identity == getattr(self, '_mesh_order_identity', None)
+                        and mapping['identity'] == getattr(self, '_patch_mapping_identity', None)
+                        and self.session.cameras == self._cameras)
+        if self._prepared_meshes is None:
+            self.meshes = _meshes_from_objects(self.session.objects)
+        else:
+            objects, meshes = self._prepared_meshes
+            if (objects is not self.session.objects or type(meshes) is not tuple
+                    or len(meshes) != len(objects) or any(
+                        len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
+                        for mesh, source in zip(meshes, objects))):
+                raise ValueError('prepared_mesh_geometry_binding_required')
+            self.meshes = meshes
+            self._prepared_meshes = None
+        self._poses = {pose['name']: pose for pose in self.session.cameras['views']}
+        self._mesh_order_identity = mesh_order_identity
+        self._patch_mapping = mapping
+        self._patch_mapping_identity = mapping['identity']
+        self._objects = self.session.objects
+        self._cameras = self.session.cameras
+        self._binding = binding
+        self.session.state.bind_patch_mapping(self._patch_mapping_identity)
+        if not reuse_frames:
+            self._frames.clear()
+
+    def render_next(self):
+        self._synchronize()
+        name = self.session.next_view()
+        return None if name is None else self.render_view(name)
+
+    def observe_frame(self, frame, *, include_buffers=False):
+        if type(include_buffers) is not bool:
+            raise ValueError('include_buffers_must_be_boolean')
+        stages = {}
+        if self._measure_stages:
+            started = time.perf_counter_ns()
+        buffers = self.validate_frame(frame)
+        name = frame['view_name']
+        pose = self._poses[name]
+        has_raw = 'triangle_ids' in buffers
+        capabilities = {'triangle_ids': has_raw, 'patch_owners': True}
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['load_validate'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
@@ -549,4 +592,4 @@ class ActiveObservationImages:
         return result
 
 
-__all__ = ['ActiveObservationImages']
+__all__ = ['ActiveObservationImages', 'SceneObservationImages']

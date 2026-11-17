@@ -719,7 +719,7 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
     if _prepared_holder is not None:
-        for key in ('pair', 'work', 'coordinates', 'trees'):
+        for key in ('pair', 'work', 'coordinates', 'trees', 'witness_points'):
             _prepared_holder.pop(key, None)
         _prepared_holder['work'] = budget
     result = dict(measurement_valid=False, distance_m=None, point_a_world=None,
@@ -772,6 +772,8 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
             result.update(direction_status='not_applicable', direction_reason='undefined_zero_distance')
         try:
             points = _witness(descriptor)
+            if _prepared_holder is not None:
+                _prepared_holder['witness_points'] = points
             if numerator > 0:
                 delta = _sub(points[1], points[0])
                 direction = [float(Decimal(value.numerator) / Decimal(value.denominator) / local_distance)

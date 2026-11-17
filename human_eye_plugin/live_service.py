@@ -212,13 +212,13 @@ def _request(operation):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
                     self._remember_execution_result(result)
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory','active_observation'):
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory','active_observation','source_region'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
                     record_image_artifact('service_result', image_present=(route.get('image') is not None
                         or bool(route.get('images'))
-                        or result.get('result_kind') == 'active_observation' and bool(result.get('frames'))))
+                        or result.get('result_kind') in ('active_observation', 'source_region') and bool(result.get('frames'))))
                     for key in ('observation_id', 'scene_revision', 'cache_hit',
                                 'measurement_cache_hit', 'engine_invoked', 'requires_reobserve'):
                         if key in route:
@@ -1046,6 +1046,11 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'source_region':
+            if (task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('source_region accepts region and reference selectors only in query')
+            return self._observe_source_region(session_id, query, include_image=include_image)
         if query['mode'] == 'active_observation':
             if (task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1488,6 +1493,118 @@ class LiveSpatialService:
             view['capture_state']['selection_key'] = selection_key
         view['revision'] = 'observation-task:' + selection_key
         return view
+
+    def _observe_source_region(self, session_id, query, *, include_image):
+        from .active_observation_host import source_binding
+        from .read_context import query_key
+        from .source_region import (prepare_region, validate_region_ref, observe_region,
+                                    measure_region, ordered_geometry_identity)
+
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        started = time.perf_counter_ns()
+        construction = {'attempts': 0}
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_source_region_capture')
+            capture_started = time.perf_counter_ns()
+            with span('host.capture', kind='host'):
+                captured = self.host.capture_scene()
+            capture_closed = time.perf_counter_ns()
+            self._check_request_budget('after_source_region_capture')
+            binding = source_binding(captured)
+            if binding['capture_scope'] != 'complete_scene_meshes':
+                raise ValueError('source_region_complete_scene_required')
+            validation_started = time.perf_counter_ns()
+            ordered_geometry_sha256 = ordered_geometry_identity(captured, binding)
+            self._check_request_budget('after_source_region_geometry_identity')
+            if 'region_ref' in query:
+                validate_region_ref(captured, query['region_ref'], self._check_request_budget, _binding=binding,
+                    _ordered_geometry_sha256=ordered_geometry_sha256)
+            validation_closed = time.perf_counter_ns()
+            # All scene objects identify this selection because every object
+            # participates in depth. The measurement reference is independent.
+            context.activate(captured, 'source_region',
+                {'binding': binding, 'ordered_geometry_sha256': ordered_geometry_sha256})
+            registry, _ = context.prepared('source_regions', lambda: {'aliases': {}, 'regions': {}})
+            selection = query.get('region')
+            alias = query_key(selection) if selection is not None else None
+            region_id = (registry['aliases'].get(alias) if selection is not None
+                         else query['region_ref']['region_id'])
+            prepared = registry['regions'].get(region_id)
+            prepare_hit = prepared is not None
+            prepare_started = time.perf_counter_ns()
+            if prepared is None:
+                prepared = prepare_region(captured, query, self._check_request_budget, _binding=binding,
+                    _validated_region_ref='region_ref' in query, _ordered_geometry_sha256=ordered_geometry_sha256)
+                region_id = prepared.region_ref['region_id']
+                registry['regions'][region_id] = prepared
+                if alias is not None:
+                    registry['aliases'][alias] = region_id
+                if len(registry['regions']) > 8:
+                    oldest = next(iter(registry['regions']))
+                    del registry['regions'][oldest]
+                    registry['aliases'] = {key: value for key, value in registry['aliases'].items() if value != oldest}
+            prepare_closed = time.perf_counter_ns()
+
+            def before_construction(view_name):
+                self._check_request_budget('before_source_region_raster')
+                construction['attempts'] += 1
+                self.record_event('source_region_render_attempt', session_id=session_id,
+                    view_name=view_name, attempt=construction['attempts'], region_id=region_id,
+                    binding_digest=binding['source_binding_sha256'])
+
+            try:
+                directory = self.state_path.parent / (self.state_path.name + '.source_region') / uuid.uuid4().hex
+                result = observe_region(prepared, directory, include_image=include_image,
+                    construction_callback=before_construction, check_budget=self._check_request_budget)
+                measurement_work = {}
+                measurement_started = time.perf_counter_ns()
+                measurement_key = query_key({'mode': 'source_region', 'region_id': region_id,
+                    'reference': query['reference'], 'requested_facts': query['requested_facts']})
+                task, task_hit = context.result(measurement_key, lambda: measure_region(
+                    prepared, query['reference'], context.scene_cache,
+                    self._check_request_budget, measurement_work))
+                measurement_closed = time.perf_counter_ns()
+            except Exception as error:
+                self.record_event('source_region_failed', session_id=session_id,
+                    task_work=getattr(error, 'source_region_work', {'raster_attempts': construction['attempts']}),
+                    error_type=type(error).__name__)
+                raise
+            result['session_id'] = session_id
+            result['task_result'] = task
+            self._bind_read_result(result, source_check)
+            self._bind_read_result(task, source_check)
+            result.setdefault('work', {}).update(capture_calls=1, prepare_cache_hit=prepare_hit,
+                prepare_calls=0 if prepare_hit else 1, ordered_geometry_identity_calls=1,
+                capture_source_validation_calls=1, region_ref_validation_calls=int('region_ref' in query),
+                geometry_normalization_calls=int(not prepare_hit),
+                region_array_preparation_calls=int(not prepare_hit), camera_preparation_calls=int(not prepare_hit))
+            if task_hit:
+                measurement_work = {key: 0 for key in measurement_work}
+            measurement_work['result_cache_hit'] = task_hit
+            result['work']['task_query'] = measurement_work
+            result.setdefault('stages', {}).update(
+                host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
+                              'elapsed_ns': capture_closed - capture_started},
+                region_ref_validation={'started_ns': validation_started, 'closed_ns': validation_closed,
+                                       'elapsed_ns': validation_closed - validation_started},
+                region_prepare_lookup={'started_ns': prepare_started, 'closed_ns': prepare_closed,
+                                       'elapsed_ns': prepare_closed - prepare_started},
+                task_measurement={'started_ns': measurement_started, 'closed_ns': measurement_closed,
+                                  'elapsed_ns': measurement_closed - measurement_started})
+            if not prepare_hit:
+                result['stages']['region_preparation'] = copy.deepcopy(prepared.preparation_stages)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            observation_mode='source_region', task_work=result['work'])
+        self._check_request_budget('before_source_region_result')
+        closed = time.perf_counter_ns()
+        result['stages']['service_total'] = {'started_ns': started, 'closed_ns': closed,
+                                             'elapsed_ns': closed - started}
+        return result
 
     def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
         from .active_observation_host import source_binding, observe_capture
