@@ -1,0 +1,57 @@
+{
+  "cycle_id": "M6-CALIBRATION-TRANSFER-007",
+  "subtask": "actual_asset_preparation_and_hidden_reachability",
+  "status": "pass",
+  "new_Pro_consumers": 0,
+  "new_Blender_processes": 8,
+  "completed_Blender_jobs": [
+    "a00_build",
+    "a00_read",
+    "a01_build",
+    "a01_read",
+    "a00_render",
+    "a01_render",
+    "a02_control_write",
+    "a02_control_read"
+  ],
+  "first_attempt": {
+    "record": "private/measured/asset_preparation.json",
+    "status": "failed_after_four_successful_owned_Blender_jobs",
+    "wall_s": 6.131176100000175,
+    "tree_CPU_s": 3.09375,
+    "peak_tree_RSS_bytes": 281587712,
+    "cause": "spec.world_preservation_tol evaluated as NumPy float32 and was not JSON serializable",
+    "correction": "Explicit Python float conversion"
+  },
+  "retry": {
+    "record": "private/measured/asset_preparation_retry.json",
+    "status": "completed",
+    "wall_s": 7.3680074000003515,
+    "tree_CPU_s": 4.90625,
+    "peak_tree_RSS_bytes": 474320896,
+    "reused_completed_Blender_jobs": 4,
+    "new_Blender_jobs": 4
+  },
+  "fixed_source_ell": 0.002567906610453878,
+  "actual_saved_current_ell": 0.0025679066101832048,
+  "ell_preservation": "Contract fixes source reconstruction ell. Actual saved float32 ell is observed separately.",
+  "unit": "source_native_physical_length_unlabelled",
+  "source_to_saved_maximum_coordinate_quantization": 1.4890670751999124e-08,
+  "visual_inspection": {
+    "images": [
+      "private/input/p1_images/whole_front.png",
+      "private/input/p1_images/forearm_front.png"
+    ],
+    "actual_mesh_visible": true,
+    "semantic_body_part_not_assigned_to_consumer": true
+  },
+  "shell_read_errors": [
+    "One reconnaissance rg path used a PowerShell wildcard in a literal native argument and failed; subsequent direct path reads succeeded",
+    "One reconnaissance Get-Content read guessed absent prepare_cases.py; direct existing prepare_geometry.py and frozen workers were read before implementation"
+  ],
+  "whole_development_CPU_s": null,
+  "whole_development_peak_RSS_bytes": null,
+  "model_usage": null,
+  "model_fees": null,
+  "accounting": "Two monitored preparation roots include their Blender descendants. Every actual Blender job is counted once. Four completed first-attempt jobs are identity-validated reused by retry."
+}

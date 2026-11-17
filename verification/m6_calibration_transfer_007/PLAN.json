@@ -1,0 +1,68 @@
+{
+  "cycle_id": "M6-CALIBRATION-TRANSFER-007",
+  "baseline_commit": "d7cbbac89389ee6f7bfbac8fb45de3ff348abbe0",
+  "contract_commit": "b4694efa2805ce43751d3ae5a65f01110208f46c",
+  "task_registration_epoch": 1794875546.4374871,
+  "source_pair": "cat_reference_roi0_c0_r0_a0_pair",
+  "source_lineage": "cat_transfer",
+  "unit": "source_native_physical_length_unlabelled",
+  "fixed_algorithms": {
+    "correspondence": "005 final",
+    "calibration": "006 V2",
+    "alphas": [
+      0,
+      0.5,
+      1
+    ],
+    "image_metric": "Three 640x640 local views, all 3686400 RGB samples, pooled integer absolute sum, minimum eligible technical pass, exact tie smaller alpha",
+    "alpha_zero_error_ratio": null
+  },
+  "consumer": {
+    "maximum_started_Pro_sessions": 1,
+    "model": "gpt-6.1-sol",
+    "reasoning": "medium",
+    "maximum_tools": 12,
+    "timeout_s": 600,
+    "prompt": "按给定正常参考修复指定区域的局部凹陷，提交一份可校准提案",
+    "private_input_exclusions": [
+      "normal 3D",
+      "support mask",
+      "generation parameters",
+      "private scores",
+      "old compact normal mesh or reconstruction reader"
+    ]
+  },
+  "geometry": {
+    "F": 384,
+    "I": 274,
+    "support": 43,
+    "normal_editable": 231,
+    "normal_region": 341,
+    "ell": 0.002567906610453878,
+    "operation_and_cumulative_budget": 0.002567906610453878,
+    "support_RMSE_decrease_minimum": 0.3,
+    "region_RMSE": "strict decrease",
+    "normal_editable_RMS_limit_over_ell": 0.014506080599458708,
+    "normal_editable_RMS_limit": 3.725026026312677e-05
+  },
+  "order": [
+    "Bind source and reconstruct/save/re-read normal/current",
+    "Freeze current-only camera and actual matched PNGs/current geometry/facts",
+    "Private correct-target reachability control",
+    "Freeze adapted algorithm sources before one Pro consumer",
+    "Freeze final raw payload, actual raw saved readback and preview",
+    "Run fixed V2 three-alpha actual calibration and freeze image selection",
+    "Independent private geometric scoring",
+    "Complete cost/report/manifest, one fixed commit, postcommit HANDOFF, one authorized planning callback, AL delivered"
+  ],
+  "comparison": "Same final proposal raw alpha1 versus selected. Pro generation/raw submission/preview form shared prefix. Calibration measured as incremental.",
+  "limits": {
+    "new_training": 0,
+    "new_paid_API": 0,
+    "formal_deployment": 0,
+    "additional_optimization": 0,
+    "second_model": 0,
+    "replacement_pair": 0
+  },
+  "scope": "One external lineage development case from previously used validation material. Audit natural decimal lattice clue use; general perception or average transfer benefit unmeasured."
+}

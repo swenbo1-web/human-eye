@@ -1,0 +1,609 @@
+{
+  "cycle_id": "M6-CALIBRATION-TRANSFER-007",
+  "status": "pass",
+  "technical_status": "pass",
+  "actual_control_equals_saved_normal_native": true,
+  "input_binding": {
+    "path": "SOURCE_INPUT_BINDING.json",
+    "bytes": 31511,
+    "sha256": "6f1a2f16eddfcb9771b635563844ec5f90b7c4e537c06f0de7356f13eed61768"
+  },
+  "actual_control": {
+    "path": "private/control/model.blend",
+    "bytes": 408471,
+    "sha256": "137139ea5ae16629ce86d63ef178e421879706ae082b3605c3bb6341237bd47e"
+  },
+  "payload": {
+    "path": "private/control/target_payload.npz",
+    "bytes": 1065,
+    "sha256": "d3e8f9b82f1211e7a4c5b7cb0165a81852f5c82600030d34fba5a3c6531fd173"
+  },
+  "readback": {
+    "path": "private/control/readback.npz",
+    "bytes": 428626,
+    "sha256": "5a0d6bf48c8e7d9dc65dc02f226c32e27cdb4d93b6397f2bd946945646e18814"
+  },
+  "quality": {
+    "path": "private/control/QUALITY.json",
+    "bytes": 657866,
+    "sha256": "747d147938295ff4147aaee21411980841d1a54678e5f110534d3a1133b815bb"
+  },
+  "technical_checks": {
+    "outside_I_local_float32_bitwise": true,
+    "outside_I_world_save_precision": true,
+    "source_vertex_ids": true,
+    "native_polygon_offsets": true,
+    "native_polygon_vertices": true,
+    "target_matrix": true,
+    "cumulative_displacement_budget": true,
+    "initial_source_index_mapping": true,
+    "current_source_index_mapping": true,
+    "initial_world_from_saved_native": true,
+    "current_world_from_saved_native": true,
+    "no_new_template_degenerate": true,
+    "no_template_reversal": true,
+    "no_new_actual_degenerate": true,
+    "no_actual_stable_key_reversal": true,
+    "explicit_protected_native_bitwise": true,
+    "no_new_extra_intersections": true,
+    "other_objects_sha256": true,
+    "target_materials_sha256": true,
+    "scene_structure_sha256": true,
+    "target_topology_sha256": true,
+    "operation_displacement_budget": true
+  },
+  "unit": "source_native_physical_length_unlabelled",
+  "ell": 0.002567906610453878,
+  "correct_target_maximum_displacement": 0.00039800950783226165,
+  "budget": 0.002567906610453878,
+  "new_Blender_processes": 8,
+  "new_Pro": 0,
+  "new_training": 0,
+  "jobs": [
+    {
+      "label": "a00_build",
+      "source": {
+        "path": "blender_build.py",
+        "bytes": 2901,
+        "sha256": "66f4cecee21c8f28037e2eeeec712e7c860f2f2f97da0bd24c08693e26eb5681"
+      },
+      "job": {
+        "path": "private/jobs/a00_build/job.json",
+        "bytes": 923,
+        "sha256": "e69896b13888c161f141357809462a729d4866383bcfcbf36addea53873a1b02"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_build\\receipt.json",
+      "wall_s": 1.2941722000000482,
+      "process": {
+        "label": "b_a00_build",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_build.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_build\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_build.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_build.stderr.log",
+        "pid": 6796,
+        "returncode": 0,
+        "full_process_cpu_s": 0.671875,
+        "full_process_wall_s": 1.2922905999998875,
+        "peak_working_set_bytes": 198987776,
+        "memory_samples": 22,
+        "final_memory_query": {
+          "cpu_s": 0.671875,
+          "peak_working_set_bytes": 198987776,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 6796,
+            "cpu_s": 0.671875,
+            "peak_working_set_bytes": 198987776,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 198987776
+          },
+          {
+            "pid": 3692,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8523776,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8089600
+          }
+        ],
+        "tree_cpu_s": 0.6875,
+        "tree_sampled_peak_working_set_bytes": 205172736,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a00_read",
+      "source": {
+        "path": "blender_read.py",
+        "bytes": 4395,
+        "sha256": "7581a2fe3ffbfe209a37ca7f29843770ad49e469d44bd66e5b6f32a586348aae"
+      },
+      "job": {
+        "path": "private/jobs/a00_read/job.json",
+        "bytes": 1165,
+        "sha256": "19e31333e2da17b46d17c38f4d9181d7def8ddfca815b558e0d4a0969ff1d9b7"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_read\\receipt.json",
+      "wall_s": 1.7523904999998194,
+      "process": {
+        "label": "b_a00_read",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\construction\\p0\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_read.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_read\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_read.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_read.stderr.log",
+        "pid": 20372,
+        "returncode": 0,
+        "full_process_cpu_s": 0.546875,
+        "full_process_wall_s": 1.7507903999999144,
+        "peak_working_set_bytes": 192544768,
+        "memory_samples": 12,
+        "final_memory_query": {
+          "cpu_s": 0.546875,
+          "peak_working_set_bytes": 192544768,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 20372,
+            "cpu_s": 0.546875,
+            "peak_working_set_bytes": 192544768,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 192544768
+          },
+          {
+            "pid": 15732,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8519680,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8085504
+          }
+        ],
+        "tree_cpu_s": 0.5625,
+        "tree_sampled_peak_working_set_bytes": 197742592,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a01_build",
+      "source": {
+        "path": "blender_build.py",
+        "bytes": 2901,
+        "sha256": "66f4cecee21c8f28037e2eeeec712e7c860f2f2f97da0bd24c08693e26eb5681"
+      },
+      "job": {
+        "path": "private/jobs/a01_build/job.json",
+        "bytes": 923,
+        "sha256": "bc03c2f837edae5ccaccb407f60adbeddac8cc0b0082c7d9aa1b89d54e5b3bff"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_build\\receipt.json",
+      "wall_s": 0.7503661999999167,
+      "process": {
+        "label": "b_a01_build",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_build.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_build\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_build.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_build.stderr.log",
+        "pid": 20656,
+        "returncode": 0,
+        "full_process_cpu_s": 0.53125,
+        "full_process_wall_s": 0.7487337000002299,
+        "peak_working_set_bytes": 197869568,
+        "memory_samples": 12,
+        "final_memory_query": {
+          "cpu_s": 0.53125,
+          "peak_working_set_bytes": 197869568,
+          "working_set_bytes": 28672
+        },
+        "process_tree": [
+          {
+            "pid": 20656,
+            "cpu_s": 0.53125,
+            "peak_working_set_bytes": 197869568,
+            "working_set_bytes": 28672,
+            "observed_lifetime_peak_bytes": 197869568
+          },
+          {
+            "pid": 23628,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8515584,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 8081408
+          }
+        ],
+        "tree_cpu_s": 0.546875,
+        "tree_sampled_peak_working_set_bytes": 204038144,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a01_read",
+      "source": {
+        "path": "blender_read.py",
+        "bytes": 4395,
+        "sha256": "7581a2fe3ffbfe209a37ca7f29843770ad49e469d44bd66e5b6f32a586348aae"
+      },
+      "job": {
+        "path": "private/jobs/a01_read/job.json",
+        "bytes": 1165,
+        "sha256": "06f53c6c2aed12bd008f0a25ab49463c0d62ee3d84de43a39a85a4979abada56"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_read\\receipt.json",
+      "wall_s": 1.7530507000001307,
+      "process": {
+        "label": "b_a01_read",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\construction\\p1\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_read.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_read\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_read.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_read.stderr.log",
+        "pid": 3204,
+        "returncode": 0,
+        "full_process_cpu_s": 0.546875,
+        "full_process_wall_s": 1.7516619999996692,
+        "peak_working_set_bytes": 192344064,
+        "memory_samples": 12,
+        "final_memory_query": {
+          "cpu_s": 0.546875,
+          "peak_working_set_bytes": 192344064,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 3204,
+            "cpu_s": 0.546875,
+            "peak_working_set_bytes": 192344064,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 192344064
+          },
+          {
+            "pid": 23848,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8523776,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8089600
+          }
+        ],
+        "tree_cpu_s": 0.5625,
+        "tree_sampled_peak_working_set_bytes": 198815744,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a00_render",
+      "source": {
+        "path": "blender_render.py",
+        "bytes": 5002,
+        "sha256": "e65b0add65f0ffa287b97c23fe5406c57271d3e96bc94ac2bf5fa106ce98eecb"
+      },
+      "job": {
+        "path": "private/jobs/a00_render/job.json",
+        "bytes": 2202,
+        "sha256": "2e3112dfac4fa80582ec1ee42b28fd35c54d68bd84bc43ff024979e3bf565a6c"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_render\\receipt.json",
+      "wall_s": 1.4244495999996616,
+      "process": {
+        "label": "b_a00_render",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\construction\\p0\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_render.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a00_render\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_render.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a00_render.stderr.log",
+        "pid": 25352,
+        "returncode": 0,
+        "full_process_cpu_s": 1.15625,
+        "full_process_wall_s": 1.4228852000001098,
+        "peak_working_set_bytes": 383426560,
+        "memory_samples": 24,
+        "final_memory_query": {
+          "cpu_s": 1.15625,
+          "peak_working_set_bytes": 383426560,
+          "working_set_bytes": 36864
+        },
+        "process_tree": [
+          {
+            "pid": 25352,
+            "cpu_s": 1.15625,
+            "peak_working_set_bytes": 383426560,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 383426560
+          },
+          {
+            "pid": 16368,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8519680,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8085504
+          }
+        ],
+        "tree_cpu_s": 1.171875,
+        "tree_sampled_peak_working_set_bytes": 386252800,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a01_render",
+      "source": {
+        "path": "blender_render.py",
+        "bytes": 5002,
+        "sha256": "e65b0add65f0ffa287b97c23fe5406c57271d3e96bc94ac2bf5fa106ce98eecb"
+      },
+      "job": {
+        "path": "private/jobs/a01_render/job.json",
+        "bytes": 2202,
+        "sha256": "cbf8ec49517c427808fa86150737d76427f7fae62cea13b220c6006eabbcc1d1"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_render\\receipt.json",
+      "wall_s": 2.2657892000001993,
+      "process": {
+        "label": "b_a01_render",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\construction\\p1\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_render.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a01_render\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_render.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a01_render.stderr.log",
+        "pid": 5764,
+        "returncode": 0,
+        "full_process_cpu_s": 1.140625,
+        "full_process_wall_s": 2.2644078999996964,
+        "peak_working_set_bytes": 384663552,
+        "memory_samples": 21,
+        "final_memory_query": {
+          "cpu_s": 1.140625,
+          "peak_working_set_bytes": 384663552,
+          "working_set_bytes": 36864
+        },
+        "process_tree": [
+          {
+            "pid": 5764,
+            "cpu_s": 1.140625,
+            "peak_working_set_bytes": 384663552,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 384663552
+          },
+          {
+            "pid": 24844,
+            "cpu_s": 0.015625,
+            "peak_working_set_bytes": 8519680,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8519680
+          }
+        ],
+        "tree_cpu_s": 1.15625,
+        "tree_sampled_peak_working_set_bytes": 392744960,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a02_control_write",
+      "source": {
+        "path": "blender_edit.py",
+        "bytes": 7313,
+        "sha256": "e4c1cba26ed76a315e5c577a551fde89fdfd7f80c56ef97504fbd92d03e4b2f9"
+      },
+      "job": {
+        "path": "private/jobs/a02_control_write/job.json",
+        "bytes": 1388,
+        "sha256": "3b482126af39c058c70ca0049ed2d30b238417ce7a4c7145bc0f38e6e9167636"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a02_control_write\\receipt.json",
+      "wall_s": 1.7590161000002809,
+      "process": {
+        "label": "b_a02_control_write",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\construction\\p1\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_edit.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a02_control_write\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a02_control_write.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a02_control_write.stderr.log",
+        "pid": 19792,
+        "returncode": 0,
+        "full_process_cpu_s": 0.59375,
+        "full_process_wall_s": 1.757593799999995,
+        "peak_working_set_bytes": 198533120,
+        "memory_samples": 13,
+        "final_memory_query": {
+          "cpu_s": 0.59375,
+          "peak_working_set_bytes": 198533120,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 19792,
+            "cpu_s": 0.59375,
+            "peak_working_set_bytes": 198533120,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 198533120
+          },
+          {
+            "pid": 4828,
+            "cpu_s": 0.03125,
+            "peak_working_set_bytes": 8523776,
+            "working_set_bytes": 36864,
+            "observed_lifetime_peak_bytes": 8523776
+          }
+        ],
+        "tree_cpu_s": 0.625,
+        "tree_sampled_peak_working_set_bytes": 206225408,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    },
+    {
+      "label": "a02_control_read",
+      "source": {
+        "path": "blender_read.py",
+        "bytes": 4395,
+        "sha256": "7581a2fe3ffbfe209a37ca7f29843770ad49e469d44bd66e5b6f32a586348aae"
+      },
+      "job": {
+        "path": "private/jobs/a02_control_read/job.json",
+        "bytes": 1138,
+        "sha256": "9a4356c6a8cdacdad78edbd2f349082a737cc7be009cc3e3f9e9526720877e4f"
+      },
+      "receipt_path": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a02_control_read\\receipt.json",
+      "wall_s": 0.7551830000002155,
+      "process": {
+        "label": "b_a02_control_read",
+        "command": [
+          "D:\\Tools\\blender5.2\\blender.exe",
+          "--factory-startup",
+          "--disable-autoexec",
+          "--background",
+          "--threads",
+          "1",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\control\\model.blend",
+          "--python-exit-code",
+          "23",
+          "--python",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\blender_read.py",
+          "--",
+          "--job",
+          "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\jobs\\a02_control_read\\job.json"
+        ],
+        "status": "completed",
+        "stdout": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a02_control_read.stdout.log",
+        "stderr": "C:\\Users\\Administrator\\.codex\\worktrees\\m6-model-selection\\hefe\\verification\\m6_calibration_transfer_007\\private\\processes\\b_a02_control_read.stderr.log",
+        "pid": 19260,
+        "returncode": 0,
+        "full_process_cpu_s": 0.546875,
+        "full_process_wall_s": 0.7532685999999558,
+        "peak_working_set_bytes": 191172608,
+        "memory_samples": 12,
+        "final_memory_query": {
+          "cpu_s": 0.546875,
+          "peak_working_set_bytes": 191172608,
+          "working_set_bytes": 32768
+        },
+        "process_tree": [
+          {
+            "pid": 19260,
+            "cpu_s": 0.546875,
+            "peak_working_set_bytes": 191172608,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 191172608
+          },
+          {
+            "pid": 8184,
+            "cpu_s": 0.0,
+            "peak_working_set_bytes": 8519680,
+            "working_set_bytes": 32768,
+            "observed_lifetime_peak_bytes": 8519680
+          }
+        ],
+        "tree_cpu_s": 0.546875,
+        "tree_sampled_peak_working_set_bytes": 199172096,
+        "memory_scope": "max Windows process-lifetime PeakWorkingSetSize sampled every50ms and after exit; child process only",
+        "tree_scope": "Windows venv launcher descendants discovered by Toolhelp every50ms, handles retained for final CPU; brief undiscovered descendants remain unmeasured"
+      }
+    }
+  ],
+  "scope": "Private correct-target reachability control precedes the sole new consumer and remains excluded from consumer inputs.",
+  "wall_s": 6.986393399999997,
+  "CPU_s": 1.125
+}
