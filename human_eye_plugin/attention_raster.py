@@ -84,7 +84,7 @@ def _raster_triangle(triangle, rgb, color, depth, sample_count, owners=None, obj
 
 
 def rasterize_attention(meshes, view, projection, size, *, return_owner=False,
-                        return_patch_owner=False, face_patch_ids=None):
+                        return_patch_owner=False, face_patch_ids=None, object_mask=None):
     """Return RGB uint8 color and float64 positive camera depth in metres.
 
     Only finite rigid-view/orthographic matrices are accepted. Geometry outside
@@ -105,6 +105,10 @@ def rasterize_attention(meshes, view, projection, size, *, return_owner=False,
         raise ValueError('Attention raster requires 1..256 meshes')
     if any(not isinstance(mesh, MeshEntity3D) for mesh in meshes):
         raise TypeError('Attention raster requires MeshEntity3D instances')
+    if object_mask is not None and (
+            not isinstance(object_mask, (list, tuple)) or len(object_mask) != len(meshes)
+            or any(type(value) is not bool for value in object_mask)):
+        raise ValueError('Object participation requires one boolean per source mesh')
     if return_patch_owner:
         if not isinstance(face_patch_ids, (list, tuple)) or len(face_patch_ids) != len(meshes):
             raise ValueError('Patch ownership requires one face mapping per mesh')
@@ -135,6 +139,8 @@ def rasterize_attention(meshes, view, projection, size, *, return_owner=False,
     try:
         with np.errstate(over='raise', divide='raise', invalid='raise'):
             for object_index, mesh in enumerate(meshes):
+                if object_mask is not None and not object_mask[object_index]:
+                    continue
                 camera = mesh.vertices @ view[:3, :3].T + view[:3, 3]
                 ndc = camera @ projection[:3, :3].T + projection[:3, 3]
                 if not np.isfinite(ndc).all() or not np.isfinite(camera).all():

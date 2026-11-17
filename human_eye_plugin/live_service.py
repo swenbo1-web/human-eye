@@ -1498,7 +1498,7 @@ class LiveSpatialService:
         from .active_observation_host import source_binding
         from .read_context import query_key
         from .source_region import (prepare_region, validate_region_ref, observe_region,
-                                    measure_region, ordered_geometry_identity)
+                                    measure_region, ordered_geometry_identity, display_state)
 
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
@@ -1525,10 +1525,13 @@ class LiveSpatialService:
                 validate_region_ref(captured, query['region_ref'], self._check_request_budget, _binding=binding,
                     _ordered_geometry_sha256=ordered_geometry_sha256)
             validation_closed = time.perf_counter_ns()
-            # All scene objects identify this selection because every object
-            # participates in depth. The measurement reference is independent.
+            display_started = time.perf_counter_ns()
+            display = display_state(captured, binding)
+            self._check_request_budget('after_source_region_display_validation')
+            display_closed = time.perf_counter_ns()
             context.activate(captured, 'source_region',
-                {'binding': binding, 'ordered_geometry_sha256': ordered_geometry_sha256})
+                {'binding': binding, 'ordered_geometry_sha256': ordered_geometry_sha256,
+                 'display_identity': display['identity'], 'display_status': display['status']})
             registry, _ = context.prepared('source_regions', lambda: {'aliases': {}, 'regions': {}})
             selection = query.get('region')
             alias = query_key(selection) if selection is not None else None
@@ -1580,6 +1583,7 @@ class LiveSpatialService:
             self._bind_read_result(task, source_check)
             result.setdefault('work', {}).update(capture_calls=1, prepare_cache_hit=prepare_hit,
                 prepare_calls=0 if prepare_hit else 1, ordered_geometry_identity_calls=1,
+                display_source_validation_calls=1 + int(not prepare_hit),
                 capture_source_validation_calls=1, region_ref_validation_calls=int('region_ref' in query),
                 geometry_normalization_calls=int(not prepare_hit),
                 region_array_preparation_calls=int(not prepare_hit), camera_preparation_calls=int(not prepare_hit))
@@ -1592,6 +1596,8 @@ class LiveSpatialService:
                               'elapsed_ns': capture_closed - capture_started},
                 region_ref_validation={'started_ns': validation_started, 'closed_ns': validation_closed,
                                        'elapsed_ns': validation_closed - validation_started},
+                display_validation={'started_ns': display_started, 'closed_ns': display_closed,
+                                    'elapsed_ns': display_closed - display_started},
                 region_prepare_lookup={'started_ns': prepare_started, 'closed_ns': prepare_closed,
                                        'elapsed_ns': prepare_closed - prepare_started},
                 task_measurement={'started_ns': measurement_started, 'closed_ns': measurement_closed,

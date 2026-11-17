@@ -223,7 +223,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "evidence with witnesses. Combine observations using their scene/source binding."
             " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one legacy task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
             " Optional query.region_task={area_min_m2,area_max_m2,normal_z_min} discovers whole-scene rectangular regions with inclusive area and directed unit-normal z limits, then obtains needed local evidence. It combines with task_query. Its region rows and image references identify each scope and actual frame, including repeated view names."
-            " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. A returned top-level region_ref replaces region on later requests. All scene meshes participate in depth. Measurements cover every selected triangle, including unseen portions. Brief and full return the source scope, distance, witness and native image references."
+            " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. A returned top-level region_ref replaces region on later requests. Image depth uses the captured active view layer's effective visible meshes, retaining complete source indices. Measurements cover every selected triangle, including unseen portions and an explicitly selected hidden reference. Missing current display evidence or zero selected image pixels returns partial/evidence_insufficient with the measured task_result preserved. Brief and full return the source scope, display participation, distance, witness and native image references."
         ),
         "inputSchema": {
             "type": "object",
@@ -1568,7 +1568,7 @@ def project_source_region_brief(value):
             raise ValueError('source_region_frame_binding_mismatch')
         images.append({key: copy.deepcopy(frame[key]) for key in (
             'image_ref', 'view_name', 'frame_identity', 'image_sha256', 'camera_identity',
-            'host_binding_sha256') if key in frame})
+            'host_binding_sha256', 'display_identity', 'image_scope_identity') if key in frame})
         images[-1]['image_block_index'] = index
     brief = {key: copy.deepcopy(value[key]) for key in (
         'status', 'result_kind', 'observation_status', 'session_id', 'region_ref',
@@ -1582,6 +1582,9 @@ def project_source_region_brief(value):
     unknowns = []
     unknowns.extend({'scope': 'actual_frame_visibility', 'reason': reason}
                     for reason in brief['visibility'].get('unknown', []))
+    reason = brief['visibility'].get('reason')
+    if reason is not None and reason != 'image_not_requested':
+        unknowns.append({'scope': 'image_evidence', 'reason': reason})
     if unseen:
         unknowns.append({'scope': 'actual_frame_visibility', 'source_triangle_indices': unseen,
                          'reason': 'selected_triangles_have_no_visible_pixel_samples'})

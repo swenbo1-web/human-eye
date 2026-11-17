@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
+import hashlib
+import json
 import time
 
 import numpy as np
@@ -18,6 +20,83 @@ from .task_query import _surface_proximity_fact
 
 REGION_REF_SCHEMA = 'human-eye-source-region-ref-v1'
 SOURCE_INDEX_DOMAIN = 'zero_based_object_local_current_evaluated_capture_triangle_rows'
+
+
+def display_state(capture, binding=None):
+    """Validate current host visibility without inferring it from hide flags."""
+    binding = source_binding(capture) if binding is None else binding
+    snapshot = capture.get('display_snapshot')
+    reason = None
+    actual_sha = None
+    rows = {}
+    view_layer = snapshot.get('view_layer') if type(snapshot) is dict else None
+    if type(snapshot) is not dict:
+        reason = 'current_display_snapshot_missing'
+    else:
+        try:
+            unsigned = {key: value for key, value in snapshot.items() if key != 'sha256'}
+            actual_sha = hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(',', ':'),
+                ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
+        except (TypeError, ValueError, OverflowError):
+            actual_sha = None
+        if (snapshot.get('schema') != 'blender-viewport-display-v1'
+                or snapshot.get('scope') != 'active_view_layer'
+                or actual_sha is None or snapshot.get('sha256') != actual_sha):
+            reason = 'current_display_snapshot_invalid'
+        elif (type(view_layer) is not dict or type(view_layer.get('name')) is not str
+                or type(view_layer.get('instance_id')) is not str or not view_layer['instance_id']):
+            reason = 'current_display_view_layer_unknown'
+        elif type(snapshot.get('objects')) is not list:
+            reason = 'current_display_object_mapping_invalid'
+        else:
+            source_rows = snapshot['objects']
+            if (any(type(row) is not dict or type(row.get('host_id')) is not str for row in source_rows)
+                    or len({row['host_id'] for row in source_rows}) != len(source_rows)):
+                reason = 'current_display_object_mapping_invalid'
+            else:
+                rows = {row['host_id']: row for row in source_rows}
+                if (set(rows) != {row['host_id'] for row in binding['objects']}
+                        or any(rows[row['host_id']].get('instance_id') != row['instance_id']
+                               for row in binding['objects'])):
+                    reason = 'current_display_object_mapping_invalid'
+                elif any(type(row.get('visible_get')) is not bool for row in source_rows):
+                    reason = 'current_display_visibility_unknown'
+                elif any(row.get(key) is not None and type(row[key]) is not bool
+                         for row in source_rows for key in ('hide_get', 'hide_viewport', 'hide_render')):
+                    reason = 'current_display_flags_invalid'
+                elif snapshot.get('status') != 'captured':
+                    reason = 'current_display_visibility_unknown'
+    captured = reason is None
+    identity = snapshot['sha256'] if captured else fingerprint({
+        'schema': 'source-region-unknown-display-v1', 'reason': reason,
+        'snapshot_sha256': actual_sha,
+        'objects': [(row['host_id'], row['instance_id']) for row in binding['objects']]})
+    objects = []
+    for row in binding['objects']:
+        current = rows.get(row['host_id'], {})
+        participates = current['visible_get'] if captured else None
+        objects.append({**copy.deepcopy(row), 'participates': participates,
+            'reason': ('host_visible_get_true' if participates else 'host_visible_get_false') if captured else reason,
+            **{key: current.get(key) if type(current.get(key)) is bool else None
+               for key in ('visible_get', 'hide_get', 'hide_viewport', 'hide_render')}})
+    result = {'schema': 'human-eye-source-region-display-v1',
+        'status': 'captured' if captured else 'unknown', 'identity': identity,
+        'scope': 'active_view_layer_effective_viewport',
+        'view_layer': ({key: view_layer.get(key) if type(view_layer.get(key)) is str else None
+                        for key in ('name', 'instance_id')} if type(view_layer) is dict else None),
+        'participation_source': 'blender.visible_get(view_layer=captured_active_view_layer)',
+        'hide_flag_scope': {'hide_get': 'captured_view_layer', 'hide_viewport': 'object_viewport',
+                            'hide_render': 'object_render'},
+        'participation_mask': [row['participates'] for row in objects], 'objects': objects,
+        'participating_object_indices': [row['object_index'] for row in objects if row['participates'] is True],
+        'excluded_object_indices': [row['object_index'] for row in objects if row['participates'] is False],
+        'snapshot_sha256': snapshot['sha256'] if captured else None}
+    if reason is not None:
+        result['reason'] = reason
+        if type(snapshot) is dict:
+            result['host_status'] = snapshot.get('status') if type(snapshot.get('status')) is str else None
+            result['host_reason'] = snapshot.get('reason') if type(snapshot.get('reason')) is str else None
+    return result
 
 
 def _checkpoint(stage):
@@ -189,8 +268,11 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
                    scope='source_region_fitted_XY_whole_scene_conservative_depth')
     cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
     binding = copy.deepcopy(binding)
+    current_display = display_state(capture, binding)
+    binding.update(display_identity=current_display['identity'], image_scope=current_display)
     binding['camera_policy'].update(scope='region_fitted_viewport_full_scene_depth',
-                                    region_id=region_ref['region_id'])
+                                    region_id=region_ref['region_id'],
+                                    display_scope=current_display['scope'])
     binding.pop('source_binding_sha256')
     binding['source_binding_sha256'] = fingerprint(binding)
     binding.update(ordered_geometry_sha256=ordered_sha, geometry_identity=scene_identity,
@@ -206,7 +288,7 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
 
 def observe_region(prepared, directory, *, include_image, construction_callback=None,
                    check_budget=_checkpoint):
-    """Observe actual selected-face samples using every scene mesh as an occluder."""
+    """Observe source samples using the captured view layer's displayed meshes."""
     if type(include_image) is not bool:
         raise ValueError('include_image_must_be_boolean')
     work = {'raster_attempts': 0, 'raster_completed': 0, 'frame_reuses': 0,
@@ -224,12 +306,20 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
                   'unseen_source_triangle_indices': list(prepared.source_triangle_indices),
                   'selected_surface_pixels': 0, 'complete_witness': None,
                   'visibility_scope': 'actual_frame_source_triangle_samples'}
-    if include_image:
+    image_scope = prepared.binding['image_scope']
+    visibility.update(selected_source_triangle_count=len(prepared.source_triangle_indices),
+                      selected_object_participates=image_scope['participation_mask'][prepared.object_index])
+    if include_image and image_scope['status'] != 'captured':
+        visibility.update(reason=image_scope['reason'], image_scope=copy.deepcopy(image_scope),
+                          unknown=['current_viewport_image', 'complete_surface_visibility'])
+    if include_image and image_scope['status'] == 'captured':
         check_budget('source_region_before_frame')
         started = time.perf_counter_ns()
         prepared.images = SceneObservationImages(prepared.objects, prepared.cameras, directory,
             scene_identity=prepared.binding['geometry_identity'],
             candidate_identity=prepared.binding['camera_identity'],
+            display_identity=prepared.binding['display_identity'],
+            object_mask=tuple(image_scope['participation_mask']), image_scope=image_scope,
             _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
         if construction_callback is not None:
             construction_callback('SCENE')
@@ -258,15 +348,24 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
             'visible_pixel_bounds': [int(x.min()), int(y.min()), int(x.max()), int(y.max())] if len(x) else None,
             'complete_witness': None, 'visibility_scope': 'actual_frame_source_triangle_samples',
             'unknown': ['complete_surface_visibility'], 'image_ref': frame['image_ref'],
-            'frame_identity': frame['frame_identity']}
+            'frame_identity': frame['frame_identity'], 'image_scope': copy.deepcopy(image_scope)}
+        visibility.update(selected_source_triangle_count=len(prepared.source_triangle_indices),
+                          selected_object_participates=image_scope['participation_mask'][prepared.object_index])
+        if not len(x):
+            visibility.update(status='unknown', reason=(
+                'selected_region_not_displayed' if not image_scope['participation_mask'][prepared.object_index]
+                else 'selected_region_displayed_without_pixels'))
         stages['frame_validation_and_selected_pixels'] = _interval(started)
         frames.append({key: value for key, value in frame.items() if key != 'buffers'})
         work.update(PNG_bytes=frame['PNG_bytes'], NPZ_bytes=frame['compressed_array_file_bytes'],
                     array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1,
                     temporary_encoded_archive_bytes=frame.get('temporary_encoded_archive_bytes', 0))
     check_budget('source_region_before_observation_result')
+    insufficient = include_image and visibility['status'] == 'unknown'
     result = {'schema': 'human-eye-source-region-observation-v1', 'result_kind': 'source_region',
-              'status': 'complete', 'observation_status': 'locally_observed' if include_image else 'image_not_requested',
+              'status': 'partial' if insufficient else 'complete',
+              'observation_status': ('evidence_insufficient' if insufficient else
+                                     'locally_observed' if include_image else 'image_not_requested'),
               'binding': copy.deepcopy(prepared.binding), 'region_ref': copy.deepcopy(prepared.region_ref),
               'facts': {'region': copy.deepcopy(prepared.region_facts), 'visibility': visibility},
               'source_mapping': copy.deepcopy(prepared.source_mapping),
@@ -373,5 +472,5 @@ def measure_region(prepared, reference, cache, check_budget=_checkpoint, diagnos
 
 
 __all__ = ['REGION_REF_SCHEMA', 'SOURCE_INDEX_DOMAIN', 'PreparedSourceRegion',
-           'ordered_geometry_identity', 'prepare_region', 'validate_region_ref',
+           'display_state', 'ordered_geometry_identity', 'prepare_region', 'validate_region_ref',
            'observe_region', 'measure_region']

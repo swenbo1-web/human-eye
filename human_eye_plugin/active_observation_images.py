@@ -1,7 +1,8 @@
 """Actual full-scene image feedback for finite active observation.
 
-Mesh arrays come from the session's already normalized world geometry. Every
-object participates in the same RGB, depth and owner raster. Frame feedback
+Mesh arrays come from the session's already normalized world geometry. Objects
+participate in the same RGB, depth and owner raster, with an optional captured
+display mask that retains the complete source index space. Frame feedback
 uses the current canonical rectangular regions and commits through the
 session's coverage state.
 """
@@ -31,6 +32,7 @@ TRIANGLE_ID_SCOPE = 'zero-based-global-source-triangles-in-mesh-order'
 _PATCH_METADATA_KEYS = ('patch_mapping_version', 'patch_mapping_identity', 'patch_roi_ids',
                         'face_patch_ids', 'face_patch_offsets')
 _OWNER_METADATA_KEYS = ('owner_schema', 'owner_mapping_identity', 'triangle_id_scope')
+_DISPLAY_METADATA_KEYS = ('display_identity', 'display_object_mask', 'image_scope_identity')
 
 
 def _meshes_from_objects(objects):
@@ -132,9 +134,11 @@ def _patch_mapping(objects, regions):
             'arrays': arrays}
 
 
-def _validated_patch_buffers(buffers, size, object_count, mapping):
+def _validated_patch_buffers(buffers, size, object_count, mapping, object_mask=None):
     validated = _validate_buffers(buffers, size, object_count)
     owners = validated['owners']
+    if object_mask is not None and np.any(~np.asarray(object_mask)[owners[owners >= 0]]):
+        raise ValueError('current_display_object_participation_required')
     raw = buffers.get('triangle_ids')
     foreground = owners >= 0
     expected_patches = None
@@ -281,7 +285,8 @@ class SceneObservationImages:
 
     def __init__(self, objects, cameras, output_directory, *, scene_identity,
                  candidate_identity, regions=(), _prepared_meshes=None,
-                 _measure_stages=False, _reuse_published_payload=False):
+                 _measure_stages=False, _reuse_published_payload=False,
+                 display_identity=None, object_mask=None, image_scope=None):
         self.output_directory = Path(output_directory).resolve()
         self._objects = objects
         self._cameras = cameras
@@ -290,6 +295,24 @@ class SceneObservationImages:
         self._sequence = 0
         self._measure_stages = _measure_stages
         self._published_payloads = {} if _reuse_published_payload else None
+        self._display_identity = display_identity
+        self._object_mask = None
+        self._image_scope = None
+        self._display_arrays = {}
+        if display_identity is not None or object_mask is not None or image_scope is not None:
+            if (type(display_identity) is not str or not display_identity
+                    or type(object_mask) not in (list, tuple) or len(object_mask) != len(objects)
+                    or any(type(value) is not bool for value in object_mask)
+                    or type(image_scope) is not dict or image_scope.get('identity') != display_identity
+                    or image_scope.get('participation_mask') != list(object_mask)):
+                raise ValueError('current_display_image_scope_required')
+            self._object_mask = tuple(object_mask)
+            self._image_scope = copy.deepcopy(image_scope)
+            self._display_arrays = {'display_identity': np.asarray(display_identity),
+                'display_object_mask': np.asarray(object_mask, dtype=np.bool_),
+                'image_scope_identity': np.asarray(fingerprint(self._image_scope))}
+            for values in self._display_arrays.values():
+                values.setflags(write=False)
         self.meshes = _meshes_from_objects(objects) if _prepared_meshes is None else _prepared_meshes
         if (type(self.meshes) is not tuple or len(self.meshes) != len(objects)
                 or any(len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
@@ -318,6 +341,10 @@ class SceneObservationImages:
         stages = {}
         if self._measure_stages:
             started = time.perf_counter_ns()
+        display_identity = getattr(self, '_display_identity', None)
+        object_mask = getattr(self, '_object_mask', None)
+        display_arrays = getattr(self, '_display_arrays', {})
+        raster_options = {} if object_mask is None else {'object_mask': object_mask}
         raster = rasterize_attention(
             self.meshes,
             np.asarray(pose['view_matrix'], dtype=np.float64),
@@ -326,6 +353,7 @@ class SceneObservationImages:
             return_owner=True,
             return_patch_owner=True,
             face_patch_ids=self._patch_mapping['raw_face_ids'],
+            **raster_options,
         )
         if self._measure_stages:
             closed = time.perf_counter_ns()
@@ -333,17 +361,19 @@ class SceneObservationImages:
         if len(raster) not in (3, 4):
             raise ValueError('common_depth_owner_raster_result_required')
         buffers = dict(zip(('color', 'depth', 'owners', 'triangle_ids'), raster))
-        buffers = _validated_patch_buffers(buffers, size, len(self.meshes), self._patch_mapping)
+        buffers = _validated_patch_buffers(buffers, size, len(self.meshes), self._patch_mapping, object_mask)
         has_raw = 'triangle_ids' in buffers
         owner_arrays = self._patch_mapping['owner_arrays'] if has_raw else {}
         owner_schema = OWNER_SCHEMA if has_raw else PATCH_MAPPING_VERSION
         owner_identity = (self._patch_mapping['owner_identity'] if has_raw
                           else fingerprint((PATCH_MAPPING_VERSION, self._patch_mapping_identity)))
+        frame_binding = self._binding if display_identity is None else (
+            *self._binding, display_identity, fingerprint(self._image_scope), object_mask)
         color = buffers['color']
         for values in buffers.values():
             values.setflags(write=False)
         self.output_directory.mkdir(parents=True, exist_ok=True)
-        stem = str(self._sequence).zfill(3) + '-' + fingerprint((self._binding, owner_identity, view_name))[:24]
+        stem = str(self._sequence).zfill(3) + '-' + fingerprint((frame_binding, owner_identity, view_name))[:24]
         png = self.output_directory / (stem + '.png')
         arrays = self.output_directory / (stem + '.npz')
         if self._measure_stages:
@@ -354,11 +384,11 @@ class SceneObservationImages:
         encoded_payload_bytes = 0
         if getattr(self, '_published_payloads', None) is None:
             with arrays.open('xb') as stream:
-                np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
+                np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays, **display_arrays)
         else:
             payload_started = time.perf_counter_ns()
             with BytesIO() as archive:
-                np.savez_compressed(archive, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
+                np.savez_compressed(archive, **buffers, **self._patch_mapping['arrays'], **owner_arrays, **display_arrays)
                 encoded = archive.getvalue()
             encoded_payload_bytes = len(encoded)
             expected_arrays_sha = hashlib.sha256(encoded).hexdigest()
@@ -382,7 +412,7 @@ class SceneObservationImages:
         arrays_sha = hashlib.sha256(arrays.read_bytes()).hexdigest()
         if expected_arrays_sha is not None and arrays_sha != expected_arrays_sha:
             raise ValueError('actual_frame_array_bytes_required')
-        frame_identity = fingerprint((self._binding, owner_schema, owner_identity, view_name, self._sequence, image_sha))
+        frame_identity = fingerprint((frame_binding, owner_schema, owner_identity, view_name, self._sequence, image_sha))
         frame = {
             'scene_identity': self._binding[0],
             'candidate_identity': self._binding[1],
@@ -405,10 +435,11 @@ class SceneObservationImages:
             'arrays_sha256': arrays_sha,
             'compressed_array_file_bytes': arrays.stat().st_size,
             'arrays': {name: _array_metadata(values) for name, values in
-                       {**buffers, **self._patch_mapping['arrays'], **owner_arrays}.items()},
+                       {**buffers, **self._patch_mapping['arrays'], **owner_arrays, **display_arrays}.items()},
             'array_payload_bytes': sum(values.nbytes for values in buffers.values())
                                    + sum(values.nbytes for values in self._patch_mapping['arrays'].values())
-                                   + sum(values.nbytes for values in owner_arrays.values()),
+                                   + sum(values.nbytes for values in owner_arrays.values())
+                                   + sum(values.nbytes for values in display_arrays.values()),
             'patch_owner_array_bytes': buffers['patch_owners'].nbytes,
             'triangle_owner_array_bytes': buffers['triangle_ids'].nbytes if has_raw else 0,
             'owner_metadata_array_bytes': sum(values.nbytes for values in owner_arrays.values()),
@@ -417,6 +448,10 @@ class SceneObservationImages:
             'all_object_count': len(self.meshes),
             'all_triangle_count': sum(len(mesh.faces) for mesh in self.meshes),
         }
+        if display_identity is not None:
+            frame.update(display_identity=display_identity, image_scope=copy.deepcopy(self._image_scope),
+                image_scope_identity=fingerprint(self._image_scope),
+                display_metadata_array_bytes=sum(values.nbytes for values in display_arrays.values()))
         if expected_arrays_sha is not None:
             frame['temporary_encoded_archive_bytes'] = encoded_payload_bytes
         if self._measure_stages:
@@ -445,7 +480,8 @@ class SceneObservationImages:
                 return None
             buffers = frame['buffers']
             owner_arrays = self._patch_mapping['owner_arrays'] if 'triangle_ids' in buffers else {}
-            current = {**buffers, **self._patch_mapping['arrays'], **owner_arrays}
+            current = {**buffers, **self._patch_mapping['arrays'], **owner_arrays,
+                       **getattr(self, '_display_arrays', {})}
             metadata = {name: _array_metadata(np.asarray(values)) for name, values in current.items()}
             if _immutable_array_metadata(metadata) != original_arrays:
                 return None
@@ -461,6 +497,15 @@ class SceneObservationImages:
             _diagnostics.setdefault('fresh_payload_reuses', 0)
         if (frame.get('scene_identity'), frame.get('candidate_identity')) != self._binding:
             raise ValueError('current_scene_camera_frame_required')
+        display_identity = getattr(self, '_display_identity', None)
+        display_arrays = getattr(self, '_display_arrays', {})
+        if display_identity is not None:
+            if (frame.get('display_identity') != display_identity
+                    or frame.get('image_scope') != self._image_scope
+                    or frame.get('image_scope_identity') != fingerprint(self._image_scope)):
+                raise ValueError('current_display_frame_binding_required')
+        elif any(key in frame for key in ('display_identity', 'image_scope', 'image_scope_identity')):
+            raise ValueError('current_display_frame_binding_required')
         name = frame['view_name']
         if name not in self._poses:
             raise ValueError('unknown_observation_view')
@@ -481,6 +526,12 @@ class SceneObservationImages:
                 if _diagnostics is not None:
                     _diagnostics['frame_array_decodes'] += 1
                 with np.load(BytesIO(arrays_raw), allow_pickle=False) as arrays:
+                    if display_identity is not None:
+                        for key, expected in display_arrays.items():
+                            if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
+                                raise ValueError('saved_display_mapping_mismatch')
+                    elif any(key in arrays for key in _DISPLAY_METADATA_KEYS):
+                        raise ValueError('saved_display_mapping_mismatch')
                     stored = {key: arrays[key] for key in ('color', 'depth', 'owners')}
                     if 'patch_owners' in arrays:
                         stored['patch_owners'] = arrays['patch_owners']
@@ -529,7 +580,8 @@ class SceneObservationImages:
                 or frame.get('triangle_id_scope') is not None
                 or frame.get('owner_capabilities', capabilities) != capabilities):
             raise ValueError('declared_triangle_owner_frame_required')
-        buffers = _validated_patch_buffers(buffers, _size(pose), len(self.meshes), self._patch_mapping)
+        buffers = _validated_patch_buffers(buffers, _size(pose), len(self.meshes), self._patch_mapping,
+                                           getattr(self, '_object_mask', None))
         for values in buffers.values():
             values.setflags(write=False)
         raw = Path(frame['image_path']).read_bytes()

@@ -196,6 +196,10 @@ def _bounds_midpoint(low, high):
 
 
 def _digest(value):
+    # The viewport sidecar has its own digest. Existing scene approvals and
+    # native evidence continue to use the normalized geometry scene contract.
+    if type(value) is dict and 'meshes' in value and 'display_snapshot' in value:
+        value = {key: item for key, item in value.items() if key != 'display_snapshot'}
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
                                      ensure_ascii=False, allow_nan=False).encode()).hexdigest()
 
@@ -736,7 +740,8 @@ class BlenderSceneHost:
             scan_cache_hits=0, source_qualification_vertices=0,
             source_qualification_faces=0, source_qualification_cache_hits=0,
             resource_vertices_read=0, resource_faces_read=0, world_vertices_transformed=0,
-            scan_directory_objects=0, scan_bound_tests=0)
+            scan_directory_objects=0, scan_bound_tests=0,
+            display_snapshots=0, display_objects=0, display_read_ns=0)
 
     @staticmethod
     def _main_thread():
@@ -787,13 +792,15 @@ class BlenderSceneHost:
         return dict(self._residency_stats, enabled=self._residency is not None and self._residency.enabled,
                     resident_resources=len(self._residency.resources) if self._residency is not None else 0)
 
-    def _sync_residency(self, graph, scale, *, _surface_scan=False):
+    def _sync_residency(self, graph, scale, *, _surface_scan=False, _display_snapshot=None):
         if self._residency is None:
             self._residency_module=_scene_residency_module()
             self._residency=self._residency_module.SceneResidency(self.bpy)
         state=self._residency
         if not state.enabled:return False
         rows=[];live=set();by_id={}
+        display_objects = ({row['host_id']: row for row in _display_snapshot['objects']}
+                           if _display_snapshot is not None else {})
         ident=self._residency_module.identity
         for obj in self.scene.objects:
             key=ident(obj);data=getattr(obj,'data',None)
@@ -806,9 +813,12 @@ class BlenderSceneHost:
                 if not _surface_scan:
                     raise
                 matrix = 'invalid_world_matrix'
+            display = display_objects.get(self.object_id(obj))
+            hide_viewport = display['hide_viewport'] if display is not None else getattr(obj, 'hide_viewport', None)
+            hide_render = display['hide_render'] if display is not None else getattr(obj, 'hide_render', None)
             row = (key,ident(data),str(obj.name),str(getattr(obj,'name_full',obj.name)),
                 getattr(obj,'type',None),matrix,self._guard_description(obj),
-                list(getattr(obj,'color',())),getattr(obj,'hide_viewport',None),getattr(obj,'hide_render',None),
+                list(getattr(obj,'color',())),hide_viewport,hide_render,
                 len(getattr(data,'vertices',())),len(getattr(data,'polygons',())))
             if _surface_scan:
                 row += (getattr(obj, 'instance_type', 'NONE'), bool(getattr(obj, 'is_instancer', False)))
@@ -845,7 +855,7 @@ class BlenderSceneHost:
                 float(getattr(self.scene, 'frame_subframe', 0)) if dynamic else None)
 
     def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition,
-                          acquisition_scope, prepared_local):
+                          acquisition_scope, prepared_local, display_snapshot):
         state=self._residency
         selection_key=_digest([acquisition_scope if acquisition is not None else
             'task' if task_selection is not None else 'scene',
@@ -853,7 +863,11 @@ class BlenderSceneHost:
         cached=state.captures.get(selection_key)
         if cached is not None:
             self._residency_stats['capture_cache_hits']+=1
-            return cached
+            current = dict(cached)
+            current.pop('display_snapshot', None)
+            if display_snapshot is not None:
+                current['display_snapshot'] = display_snapshot
+            return current
         meshes=[];vertex_count=face_count=0
         active=getattr(getattr(self.view_layer,'objects',None),'active',None)
         ident=self._residency_module.identity
@@ -942,6 +956,10 @@ class BlenderSceneHost:
             scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale,
                 frame=int(getattr(self.scene,'frame_current',0)),guards=[[self.object_id(o),self._guard_description(o)] for o in objects]))
         else:scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale))
+        # Display reads belong to this request and have an independent identity.
+        # Keep the established geometry revision and refresh even on cache hits.
+        if display_snapshot is not None:
+            scene['display_snapshot'] = display_snapshot
         if len(state.captures)>=8:state.captures.clear()
         state.captures[selection_key]=scene
         return scene
@@ -1060,6 +1078,72 @@ class BlenderSceneHost:
                 'object_instances': {self.object_id(obj): str(value) for obj, value in zip(objects, values)},
                 'capture_scope': capture_scope}
 
+    def _display_snapshot(self, objects):
+        """Read the capture layer's effective viewport state without mesh work."""
+        started = time.perf_counter_ns()
+        layer = self.view_layer
+        pointer = getattr(layer, 'as_pointer', None)
+        layer_id = 'rna:' + str(int(pointer())) if callable(pointer) else 'python:' + str(id(layer))
+        rows = []
+        unavailable = False
+        supported = False
+        for obj in objects:
+            row = dict(host_id=self.object_id(obj))
+            uid = getattr(obj, 'session_uid', None)
+            row['instance_id'] = str(uid) if type(uid) is int and uid != 0 else None
+            missing = []
+            for field in ('visible_get', 'hide_get', 'hide_viewport', 'hide_render'):
+                try:
+                    value = getattr(obj, field)
+                    if field in ('visible_get', 'hide_get'):
+                        supported = supported or callable(value)
+                        value = value(view_layer=layer)
+                    if type(value) is not bool:
+                        value = None
+                except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+                    value = None
+                row[field] = value
+                if value is None:
+                    missing.append(field)
+            if row['instance_id'] is None:
+                missing.append('instance_id')
+            if missing:
+                row['unavailable_fields'] = missing
+            unavailable = unavailable or row['visible_get'] is None or row['instance_id'] is None
+            rows.append(row)
+        snapshot = dict(schema='blender-viewport-display-v1', scope='active_view_layer',
+                        status='unknown' if unavailable else 'captured',
+                        view_layer=dict(name=str(getattr(layer, 'name', '')),
+                                        instance_id=layer_id),
+                        objects=sorted(rows, key=lambda row: row['host_id']))
+        if unavailable:
+            snapshot['reason'] = 'current_viewport_display_source_unavailable'
+        snapshot['sha256'] = _digest(snapshot)
+        self._residency_stats['display_snapshots'] += 1
+        self._residency_stats['display_objects'] += len(rows)
+        self._residency_stats['display_read_ns'] += time.perf_counter_ns() - started
+        # Hosts predating the optional viewport read contract keep their
+        # capture shape. Consumers treat its absence as unavailable evidence.
+        return snapshot if supported else None
+
+    def _refresh_cached_display(self, scene, objects):
+        """Replace small display metadata and return its exact JSON size delta."""
+        included = {mesh['object_id'] for mesh in scene['meshes']}
+        current = self._display_snapshot([obj for obj in objects if self.object_id(obj) in included])
+        previous = scene.pop('display_snapshot', None)
+        if current is not None:
+            scene['display_snapshot'] = current
+
+        def wire_bytes(snapshot):
+            if snapshot is None:
+                return 0
+            # A nonempty scene contributes the separating comma. Strip one
+            # of the standalone metadata object's two braces to account for it.
+            return len(json.dumps(dict(display_snapshot=snapshot), ensure_ascii=True,
+                                  allow_nan=False, separators=(',', ':')).encode('utf8')) - 1
+
+        return wire_bytes(current) - wire_bytes(previous)
+
     def _task_objects(self, selectors):
         """Bind finite selectors before expanding any selected geometry."""
         candidates = [obj for obj in self.scene.objects if getattr(obj, 'type', None) == 'MESH']
@@ -1125,9 +1209,11 @@ class BlenderSceneHost:
             if native_identity is None:
                 raise BlenderHostError("Native original-pose evidence requires complete host identity")
         active = getattr(getattr(self.view_layer, "objects", None), "active", None)
-        if _resident and self._sync_residency(graph,scale,_surface_scan=_acquisition_scope=='surface_scan_candidates'):
+        display_snapshot = None if _native_evidence else self._display_snapshot(objects)
+        if _resident and self._sync_residency(graph,scale,_surface_scan=_acquisition_scope=='surface_scan_candidates',
+                                             _display_snapshot=display_snapshot):
             return self._resident_capture(graph,scale,objects,task_selection,task_identity,
-                                          _acquisition_context,_acquisition_scope,_prepared_local)
+                                          _acquisition_context,_acquisition_scope,_prepared_local,display_snapshot)
         meshes, vertex_count, face_count = [], 0, 0
         for ordinal, obj in enumerate(objects, 1):
             if _acquisition_context is not None:
@@ -1250,6 +1336,8 @@ class BlenderSceneHost:
                     "guards": [[self.object_id(obj), self._guard_description(obj)] for obj in objects]})
         else:
             scene['revision'] = 'blender:' + _digest({'scene': scene, 'scale_length': scale})
+        if display_snapshot is not None:
+            scene['display_snapshot'] = display_snapshot
         if _native_evidence:
             current_objects = self._objects(graph)
             if (len(current_objects) != len(objects)
@@ -1802,8 +1890,11 @@ class BlenderSceneHost:
             cached=self._residency.nearest.get(nearest_key) if resident else None
             if cached is not None:
                 checkpoint()
-                if cached[1]>max_response_bytes:raise BlenderHostError('acquisition_document_budget_exceeded')
                 result=copy.deepcopy(cached[0]);checkpoint()
+                display_bytes = self._refresh_cached_display(result['capture'], objects)
+                if cached[1] + display_bytes > max_response_bytes:
+                    raise BlenderHostError('acquisition_document_budget_exceeded')
+                checkpoint()
                 self._residency_stats['nearest_cache_hits']+=1
                 return result
             identity = self._identity_metadata(objects)
@@ -1983,13 +2074,14 @@ class BlenderSceneHost:
             if cached is not None:
                 checkpoint()
                 result = copy.deepcopy(cached[0])
+                display_bytes = self._refresh_cached_display(result['capture'], objects)
                 self._residency_stats['scan_cache_hits'] += 1
                 result['work'] = current_work(result['work'], True)
-                # Only current-request counters changed. Reuse the established
-                # full-document size without serializing all cached geometry.
+                # Reuse the full-document size and account for the small current
+                # display metadata and counters without serializing geometry.
                 def work_bytes(value):
                     return len(json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
-                packet_bytes = cached[1] - work_bytes(cached[0]['work']) + work_bytes(result['work'])
+                packet_bytes = cached[1] + display_bytes - work_bytes(cached[0]['work']) + work_bytes(result['work'])
                 if packet_bytes > max_response_bytes:
                     raise BlenderHostError('acquisition_document_budget_exceeded')
                 checkpoint()
