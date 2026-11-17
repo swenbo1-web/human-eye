@@ -1,0 +1,107 @@
+--- initial/active_observation_images.py
++++ corrected/active_observation_images.py
+@@ -350,13 +350,38 @@
+             started = time.perf_counter_ns()
+         with png.open('xb') as stream:
+             Image.fromarray(color, mode='RGB').save(stream, format='PNG')
+-        with arrays.open('xb') as stream:
+-            np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
++        expected_arrays_sha = None
++        encoded_payload_bytes = 0
++        if getattr(self, '_published_payloads', None) is None:
++            with arrays.open('xb') as stream:
++                np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
++        else:
++            payload_started = time.perf_counter_ns()
++            with BytesIO() as archive:
++                np.savez_compressed(archive, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
++                encoded = archive.getvalue()
++            encoded_payload_bytes = len(encoded)
++            expected_arrays_sha = hashlib.sha256(encoded).hexdigest()
++            with arrays.open('xb') as stream:
++                stream.write(encoded)
++            del encoded
++            payload_closed = time.perf_counter_ns()
++            stages['private_encoded_archive'] = {
++                'started_ns': payload_started, 'closed_ns': payload_closed,
++                'elapsed_ns': payload_closed - payload_started,
++                'temporary_encoded_payload_bytes': encoded_payload_bytes,
++                'retained_encoded_payload_bytes': 0,
++                'byte_scope': 'Immutable compressed payload length. BytesIO allocator overhead and peak process RSS are unmeasured.',
++                'lifetime': 'Private NPZ encoding through file write, released before disk readback.',
++            }
+         if self._measure_stages:
+             closed = time.perf_counter_ns()
+             stages['PNG_NPZ_publication'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+             started = closed
+         image_sha = hashlib.sha256(png.read_bytes()).hexdigest()
++        arrays_sha = hashlib.sha256(arrays.read_bytes()).hexdigest()
++        if expected_arrays_sha is not None and arrays_sha != expected_arrays_sha:
++            raise ValueError('actual_frame_array_bytes_required')
+         frame_identity = fingerprint((self._binding, owner_schema, owner_identity, view_name, self._sequence, image_sha))
+         frame = {
+             'scene_identity': self._binding[0],
+@@ -377,7 +402,7 @@
+             'image_ref': 'active-image:' + frame_identity,
+             'PNG_bytes': png.stat().st_size,
+             'arrays_path': str(arrays),
+-            'arrays_sha256': hashlib.sha256(arrays.read_bytes()).hexdigest(),
++            'arrays_sha256': arrays_sha,
+             'compressed_array_file_bytes': arrays.stat().st_size,
+             'arrays': {name: _array_metadata(values) for name, values in
+                        {**buffers, **self._patch_mapping['arrays'], **owner_arrays}.items()},
+@@ -392,6 +417,8 @@
+             'all_object_count': len(self.meshes),
+             'all_triangle_count': sum(len(mesh.faces) for mesh in self.meshes),
+         }
++        if expected_arrays_sha is not None:
++            frame['temporary_encoded_archive_bytes'] = encoded_payload_bytes
+         if self._measure_stages:
+             closed = time.perf_counter_ns()
+             stages['frame_metadata'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+@@ -413,13 +440,16 @@
+         if proof is None or proof[0] is not frame or type(frame.get('buffers')) is not dict:
+             return None
+         _, keys, signature, original_arrays = proof
+-        if fingerprint({key: frame.get(key) for key in keys}) != signature:
+-            return None
+-        buffers = frame['buffers']
+-        owner_arrays = self._patch_mapping['owner_arrays'] if 'triangle_ids' in buffers else {}
+-        current = {**buffers, **self._patch_mapping['arrays'], **owner_arrays}
+-        metadata = {name: _array_metadata(np.asarray(values)) for name, values in current.items()}
+-        if _immutable_array_metadata(metadata) != original_arrays:
++        try:
++            if fingerprint({key: frame.get(key) for key in keys}) != signature:
++                return None
++            buffers = frame['buffers']
++            owner_arrays = self._patch_mapping['owner_arrays'] if 'triangle_ids' in buffers else {}
++            current = {**buffers, **self._patch_mapping['arrays'], **owner_arrays}
++            metadata = {name: _array_metadata(np.asarray(values)) for name, values in current.items()}
++            if _immutable_array_metadata(metadata) != original_arrays:
++                return None
++        except (TypeError, ValueError, OverflowError):
+             return None
+         return buffers
+ 
+--- initial/source_region.py
++++ corrected/source_region.py
+@@ -211,7 +211,8 @@
+         raise ValueError('include_image_must_be_boolean')
+     work = {'raster_attempts': 0, 'raster_completed': 0, 'frame_reuses': 0,
+             'PNG_bytes': 0, 'NPZ_bytes': 0, 'array_payload_bytes': 0,
+-            'local_verified_images': 0, 'frame_array_decodes': 0, 'fresh_payload_reuses': 0}
++            'local_verified_images': 0, 'frame_array_decodes': 0, 'fresh_payload_reuses': 0,
++            'temporary_encoded_archive_bytes': 0}
+     if include_image and prepared.observation is not None:
+         result = copy.deepcopy(prepared.observation)
+         work['frame_reuses'] = len(result['frames'])
+@@ -261,7 +262,8 @@
+         stages['frame_validation_and_selected_pixels'] = _interval(started)
+         frames.append({key: value for key, value in frame.items() if key != 'buffers'})
+         work.update(PNG_bytes=frame['PNG_bytes'], NPZ_bytes=frame['compressed_array_file_bytes'],
+-                    array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1)
++                    array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1,
++                    temporary_encoded_archive_bytes=frame.get('temporary_encoded_archive_bytes', 0))
+     check_budget('source_region_before_observation_result')
+     result = {'schema': 'human-eye-source-region-observation-v1', 'result_kind': 'source_region',
+               'status': 'complete', 'observation_status': 'locally_observed' if include_image else 'image_not_requested',

@@ -74,6 +74,11 @@ def _array_metadata(values):
     }
 
 
+def _immutable_array_metadata(metadata):
+    return tuple((name, row['dtype'], tuple(row['shape']), row['nbytes'], row['sha256'])
+                 for name, row in sorted(metadata.items()))
+
+
 def _validate_buffers(buffers, size, object_count):
     color, depth, owners = (np.asarray(buffers[key]) for key in ('color', 'depth', 'owners'))
     if (color.shape != (size, size, 3) or color.dtype != np.uint8
@@ -276,7 +281,7 @@ class SceneObservationImages:
 
     def __init__(self, objects, cameras, output_directory, *, scene_identity,
                  candidate_identity, regions=(), _prepared_meshes=None,
-                 _measure_stages=False):
+                 _measure_stages=False, _reuse_published_payload=False):
         self.output_directory = Path(output_directory).resolve()
         self._objects = objects
         self._cameras = cameras
@@ -284,6 +289,7 @@ class SceneObservationImages:
         self._frames = {}
         self._sequence = 0
         self._measure_stages = _measure_stages
+        self._published_payloads = {} if _reuse_published_payload else None
         self.meshes = _meshes_from_objects(objects) if _prepared_meshes is None else _prepared_meshes
         if (type(self.meshes) is not tuple or len(self.meshes) != len(objects)
                 or any(len(mesh.vertices) != len(source[0]) or len(mesh.faces) != len(source[1])
@@ -344,13 +350,38 @@ class SceneObservationImages:
             started = time.perf_counter_ns()
         with png.open('xb') as stream:
             Image.fromarray(color, mode='RGB').save(stream, format='PNG')
-        with arrays.open('xb') as stream:
-            np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
+        expected_arrays_sha = None
+        encoded_payload_bytes = 0
+        if getattr(self, '_published_payloads', None) is None:
+            with arrays.open('xb') as stream:
+                np.savez_compressed(stream, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
+        else:
+            payload_started = time.perf_counter_ns()
+            with BytesIO() as archive:
+                np.savez_compressed(archive, **buffers, **self._patch_mapping['arrays'], **owner_arrays)
+                encoded = archive.getvalue()
+            encoded_payload_bytes = len(encoded)
+            expected_arrays_sha = hashlib.sha256(encoded).hexdigest()
+            with arrays.open('xb') as stream:
+                stream.write(encoded)
+            del encoded
+            payload_closed = time.perf_counter_ns()
+            stages['private_encoded_archive'] = {
+                'started_ns': payload_started, 'closed_ns': payload_closed,
+                'elapsed_ns': payload_closed - payload_started,
+                'temporary_encoded_payload_bytes': encoded_payload_bytes,
+                'retained_encoded_payload_bytes': 0,
+                'byte_scope': 'Immutable compressed payload length. BytesIO allocator overhead and peak process RSS are unmeasured.',
+                'lifetime': 'Private NPZ encoding through file write, released before disk readback.',
+            }
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['PNG_NPZ_publication'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
             started = closed
         image_sha = hashlib.sha256(png.read_bytes()).hexdigest()
+        arrays_sha = hashlib.sha256(arrays.read_bytes()).hexdigest()
+        if expected_arrays_sha is not None and arrays_sha != expected_arrays_sha:
+            raise ValueError('actual_frame_array_bytes_required')
         frame_identity = fingerprint((self._binding, owner_schema, owner_identity, view_name, self._sequence, image_sha))
         frame = {
             'scene_identity': self._binding[0],
@@ -371,7 +402,7 @@ class SceneObservationImages:
             'image_ref': 'active-image:' + frame_identity,
             'PNG_bytes': png.stat().st_size,
             'arrays_path': str(arrays),
-            'arrays_sha256': hashlib.sha256(arrays.read_bytes()).hexdigest(),
+            'arrays_sha256': arrays_sha,
             'compressed_array_file_bytes': arrays.stat().st_size,
             'arrays': {name: _array_metadata(values) for name, values in
                        {**buffers, **self._patch_mapping['arrays'], **owner_arrays}.items()},
@@ -386,16 +417,48 @@ class SceneObservationImages:
             'all_object_count': len(self.meshes),
             'all_triangle_count': sum(len(mesh.faces) for mesh in self.meshes),
         }
+        if expected_arrays_sha is not None:
+            frame['temporary_encoded_archive_bytes'] = encoded_payload_bytes
         if self._measure_stages:
             closed = time.perf_counter_ns()
             stages['frame_metadata'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
             frame['stages'] = stages
         self._frames[view_name] = frame
+        proofs = getattr(self, '_published_payloads', None)
+        if proofs is not None:
+            # The source adapter replaces image_ref and adds host annotations.
+            # Neither participates in persisted array validation. All original
+            # payload/source/camera/path metadata is independently snapshotted.
+            keys = tuple(key for key in frame if key not in ('buffers', 'stages', 'image_ref'))
+            signature = fingerprint({key: frame[key] for key in keys})
+            proofs[id(frame)] = (frame, keys, signature, _immutable_array_metadata(frame['arrays']))
         return frame
 
-    def validate_frame(self, frame):
+    def _fresh_published_buffers(self, frame):
+        proofs = getattr(self, '_published_payloads', None)
+        proof = proofs.get(id(frame)) if proofs is not None else None
+        if proof is None or proof[0] is not frame or type(frame.get('buffers')) is not dict:
+            return None
+        _, keys, signature, original_arrays = proof
+        try:
+            if fingerprint({key: frame.get(key) for key in keys}) != signature:
+                return None
+            buffers = frame['buffers']
+            owner_arrays = self._patch_mapping['owner_arrays'] if 'triangle_ids' in buffers else {}
+            current = {**buffers, **self._patch_mapping['arrays'], **owner_arrays}
+            metadata = {name: _array_metadata(np.asarray(values)) for name, values in current.items()}
+            if _immutable_array_metadata(metadata) != original_arrays:
+                return None
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return buffers
+
+    def validate_frame(self, frame, *, _diagnostics=None):
         """Check persisted PNG, arrays, camera and source mappings together."""
         self._synchronize()
+        if _diagnostics is not None:
+            _diagnostics.setdefault('frame_array_decodes', 0)
+            _diagnostics.setdefault('fresh_payload_reuses', 0)
         if (frame.get('scene_identity'), frame.get('candidate_identity')) != self._binding:
             raise ValueError('current_scene_camera_frame_required')
         name = frame['view_name']
@@ -410,27 +473,34 @@ class SceneObservationImages:
             arrays_raw = Path(frame['arrays_path']).read_bytes()
             if hashlib.sha256(arrays_raw).hexdigest() != frame['arrays_sha256']:
                 raise ValueError('actual_frame_array_bytes_required')
-            with np.load(BytesIO(arrays_raw), allow_pickle=False) as arrays:
-                stored = {key: arrays[key] for key in ('color', 'depth', 'owners')}
-                if 'patch_owners' in arrays:
-                    stored['patch_owners'] = arrays['patch_owners']
-                    for key in _PATCH_METADATA_KEYS:
-                        expected = self._patch_mapping['arrays'][key]
-                        if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
-                            raise ValueError('saved_patch_mapping_mismatch')
-                elif any(key in arrays for key in _PATCH_METADATA_KEYS):
-                    raise ValueError('saved_patch_owner_missing')
-                if 'triangle_ids' in arrays:
-                    if 'patch_owners' not in arrays:
+            stored = self._fresh_published_buffers(frame)
+            if stored is not None:
+                if _diagnostics is not None:
+                    _diagnostics['fresh_payload_reuses'] += 1
+            else:
+                if _diagnostics is not None:
+                    _diagnostics['frame_array_decodes'] += 1
+                with np.load(BytesIO(arrays_raw), allow_pickle=False) as arrays:
+                    stored = {key: arrays[key] for key in ('color', 'depth', 'owners')}
+                    if 'patch_owners' in arrays:
+                        stored['patch_owners'] = arrays['patch_owners']
+                        for key in _PATCH_METADATA_KEYS:
+                            expected = self._patch_mapping['arrays'][key]
+                            if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
+                                raise ValueError('saved_patch_mapping_mismatch')
+                    elif any(key in arrays for key in _PATCH_METADATA_KEYS):
                         raise ValueError('saved_patch_owner_missing')
-                    stored['triangle_ids'] = arrays['triangle_ids']
-                    for key in _OWNER_METADATA_KEYS:
-                        expected = self._patch_mapping['owner_arrays'][key]
-                        if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
-                            raise ValueError('saved_owner_mapping_mismatch')
-                elif any(key in arrays for key in _OWNER_METADATA_KEYS):
-                    raise ValueError('saved_triangle_owner_missing')
-            if buffers is not None:
+                    if 'triangle_ids' in arrays:
+                        if 'patch_owners' not in arrays:
+                            raise ValueError('saved_patch_owner_missing')
+                        stored['triangle_ids'] = arrays['triangle_ids']
+                        for key in _OWNER_METADATA_KEYS:
+                            expected = self._patch_mapping['owner_arrays'][key]
+                            if key not in arrays or arrays[key].dtype != expected.dtype or not np.array_equal(arrays[key], expected):
+                                raise ValueError('saved_owner_mapping_mismatch')
+                    elif any(key in arrays for key in _OWNER_METADATA_KEYS):
+                        raise ValueError('saved_triangle_owner_missing')
+            if buffers is not None and stored is not buffers:
                 if ('triangle_ids' in buffers) != ('triangle_ids' in stored):
                     raise ValueError('frame_array_payload_mismatch')
                 for key, values in stored.items():

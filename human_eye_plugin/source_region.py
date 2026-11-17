@@ -211,7 +211,8 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
         raise ValueError('include_image_must_be_boolean')
     work = {'raster_attempts': 0, 'raster_completed': 0, 'frame_reuses': 0,
             'PNG_bytes': 0, 'NPZ_bytes': 0, 'array_payload_bytes': 0,
-            'local_verified_images': 0}
+            'local_verified_images': 0, 'frame_array_decodes': 0, 'fresh_payload_reuses': 0,
+            'temporary_encoded_archive_bytes': 0}
     if include_image and prepared.observation is not None:
         result = copy.deepcopy(prepared.observation)
         work['frame_reuses'] = len(result['frames'])
@@ -229,7 +230,7 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
         prepared.images = SceneObservationImages(prepared.objects, prepared.cameras, directory,
             scene_identity=prepared.binding['geometry_identity'],
             candidate_identity=prepared.binding['camera_identity'],
-            _prepared_meshes=prepared.meshes, _measure_stages=True)
+            _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
         if construction_callback is not None:
             construction_callback('SCENE')
         work['raster_attempts'] += 1
@@ -242,7 +243,7 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
         stages['render_and_publish_SCENE'] = _interval(started)
         check_budget('source_region_after_frame')
         started = time.perf_counter_ns()
-        buffers = prepared.images.validate_frame(frame)
+        buffers = prepared.images.validate_frame(frame, _diagnostics=work)
         if 'triangle_ids' not in buffers:
             raise ValueError('source_region_actual_triangle_owner_required')
         offset = int(prepared.images._patch_mapping['arrays']['face_patch_offsets'][prepared.object_index])
@@ -261,7 +262,8 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
         stages['frame_validation_and_selected_pixels'] = _interval(started)
         frames.append({key: value for key, value in frame.items() if key != 'buffers'})
         work.update(PNG_bytes=frame['PNG_bytes'], NPZ_bytes=frame['compressed_array_file_bytes'],
-                    array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1)
+                    array_payload_bytes=frame['array_payload_bytes'], local_verified_images=1,
+                    temporary_encoded_archive_bytes=frame.get('temporary_encoded_archive_bytes', 0))
     check_budget('source_region_before_observation_result')
     result = {'schema': 'human-eye-source-region-observation-v1', 'result_kind': 'source_region',
               'status': 'complete', 'observation_status': 'locally_observed' if include_image else 'image_not_requested',

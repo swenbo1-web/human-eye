@@ -173,6 +173,8 @@ class SourceRegionCoreTests(unittest.TestCase):
             with patch('human_eye_plugin.active_observation_images.rasterize_attention',
                        return_value=buffers(prepared, 512)) as raster:
                 first = core.observe_region(prepared, directory, include_image=True)
+                self.assertEqual(first['work']['frame_array_decodes'], 0)
+                self.assertEqual(first['work']['fresh_payload_reuses'], 1)
                 core.measure_region(prepared, {'name': 'Ref_C'}, None)
                 first['facts']['region']['source_triangle_indices'].append(99)
                 second = core.observe_region(prepared, directory, include_image=True)

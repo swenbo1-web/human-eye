@@ -21,7 +21,7 @@ def main():
     run_id = sys.argv[1] if len(sys.argv) > 1 else 'R0_01'
     destination = HERE / 'runs' / run_id
     destination.mkdir(parents=True, exist_ok=False)
-    files = [HERE / 'test_source_region_core.py'] + [ROOT / 'verification' / name for name in (
+    files = [HERE / 'test_source_region_core.py', HERE / 'test_fresh_payload.py'] + [ROOT / 'verification' / name for name in (
         'test_active_observation_host.py', 'test_active_observation_images.py',
         'test_active_observation_patches.py', 'test_active_observation_patch_images.py',
         'test_active_observation_patch_numerics.py', 'test_active_observation_region_world.py')]
