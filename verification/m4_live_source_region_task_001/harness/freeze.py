@@ -57,6 +57,8 @@ def freeze():
     prepared = read(NS / 'PREPARED.json')
     tracked = [p for p in NS.rglob('*') if p.is_file() and p.suffix != '.pyc']
     external = [ASSET, BLENDER, CLI, Path(sys.executable), ORIGINAL_POSE_SOURCE, Path(prepared['selection_origin']),
+                *[NS.parents[1] / 'verification/m4_target_task_consumption_001' / name
+                  for name in ('native_consumer_audit.py', 'native_tools.py')],
                 *[DISPLAY / 'harness' / name for name in ('state_owned_native.py', 'reused/process_proof.py',
                     'reused/stdio_checks.py', 'reused/wire_meter.py')]]
     roles = ('inputs/PROMPT.txt', 'inputs/REGION.json', 'inputs/CAMERA.json', 'inputs/PRODUCT_SCHEMA.json')
@@ -74,8 +76,22 @@ def freeze():
             raise ValueError('installed_product_source_mismatch/' + row['path'])
         external.append(path)
     dependency = Path(binding['dependency_root'])
+    shared_manifest = NS.parents[1] / 'verification/m5_harness_recovery_001/SHARED_DEPENDENCY.json'
+    shared = read(shared_manifest)
+    for name, expected in shared['files_sha256'].items():
+        path = Path(name)
+        if sha(path) != expected:
+            raise ValueError('shared_dependency_changed/' + str(path))
+        external.append(path)
+    sys.path.insert(0, shared['dependency_root'])
     sys.path.insert(0, str(dependency))
     sys.path.insert(0, str(NS))
+    import numpy
+    import PIL
+    import shapely
+    from shapely.geometry import box
+    if not Path(shapely.__file__).resolve().is_relative_to(Path(shared['dependency_root']).resolve()) or box(0, 0, 1, 1).area != 1:
+        raise ValueError('shared_geometry_dependency_smoke_failed')
     from consumer_adapter import consumer_adapter
     _, adapter = consumer_adapter()
     for row in adapter['execution_sources']:
@@ -96,14 +112,18 @@ def freeze():
         raise ValueError('fixed_cli_version_and_ChatGPT_login_required')
     pins = [{'path': str(path), 'sha256': sha(path), 'bytes': path.stat().st_size}
             for path in sorted({path.resolve() for path in tracked + external})]
-    save(NS / 'FROZEN.json', {'schema': 'live-source-region-experiment-freeze-v1',
+    save(NS / 'FROZEN_R1.json', {'schema': 'live-source-region-experiment-freeze-v1',
          'started_ns': started, 'closed_ns': time.perf_counter_ns(), 'direct_inputs': pins,
          'slots': ['N1', 'P1'], 'limits': {'real_consumers': 2, 'owned_Blender': 2, 'tools_per_slot': 12,
                                            'raster_per_slot': 4, 'task_seconds': 450, 'owned_seconds': 600},
-         'blender_started': 0, 'inference_started': 0, 'profile': ['0.152.1', 'gpt-6.1-sol', 'medium', 'default'],
+         'original_freeze_sha256': sha(NS / 'FROZEN.json'), 'applies_to': ['P1'],
+         'existing_owned_Blender_starts': 1, 'inference_started': 0,
+         'shared_dependency_root': shared['dependency_root'],
+         'libraries': {s.__name__: s.__version__ for s in (numpy, PIL, shapely)},
+         'profile': ['0.152.1', 'gpt-6.1-sol', 'medium', 'default'],
          'CLI_version_stdout_sha256': hashlib.sha256(version.stdout).hexdigest(),
          'login_status_chatgpt': True, 'consumer_execution_sources': adapter['execution_sources']})
-    print(json.dumps({'pins': len(pins), 'freeze_sha256': sha(NS / 'FROZEN.json'), 'inference_started': 0}))
+    print(json.dumps({'pins': len(pins), 'freeze_sha256': sha(NS / 'FROZEN_R1.json'), 'inference_started': 0}))
 
 
 if __name__ == '__main__':

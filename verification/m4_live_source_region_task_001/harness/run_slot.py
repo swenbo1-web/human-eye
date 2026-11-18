@@ -42,7 +42,7 @@ def run(label):
     save(folder / 'SLOT_STARTED.json', result)
     runtime = owner = None
     try:
-        frozen_path = NS / 'FROZEN.json'
+        frozen_path = NS / ('FROZEN_R1.json' if label == 'P1' else 'FROZEN.json')
         frozen = read(frozen_path)
         result['freeze_sha256'] = sha(frozen_path)
         for row in frozen['direct_inputs']:
@@ -50,6 +50,8 @@ def run(label):
             if path.stat().st_size != row['bytes'] or sha(path) != row['sha256']:
                 raise ValueError('frozen_input_changed/' + str(path))
         binding = read(NS / 'PRODUCT_RUN_BINDING.json')
+        if 'shared_dependency_root' in frozen:
+            sys.path.insert(0, frozen['shared_dependency_root'])
         sys.path.insert(0, binding['dependency_root'])
         sys.path.insert(0, str(NS))
         from bridge import Owner

@@ -8,7 +8,7 @@ import sys
 import time
 
 from budget import Budget
-from common import (ASSET, ASSET_SHA256, BLENDER, DISPLAY, EXTERNAL, HERE, NS,
+from common import (ASSET, ASSET_SHA256, BLENDER, DISPLAY, EXTERNAL, HERE, NS, ROOT,
                     SOURCE_SHA, append, load, read, save, sha)
 
 
@@ -34,6 +34,10 @@ class Runtime:
         if len(binding['source_manifest']) != 143 or binding['source_sha256'] != SOURCE_SHA:
             raise ValueError('fixed_B_source_required')
         sys.path.insert(0, binding['dependency_root'])
+        self.product_root = binding['install_root']
+        self.native_audit = load('_live_native_python_audit', ROOT /
+            'verification/m4_target_task_consumption_001/native_consumer_audit.py')
+        self.native_audit_installed = False
         bootstrap = load('_live_device_bootstrap', HERE / 'reused/verified_bootstrap.py')
         self.guard = bootstrap.bootstrap(binding)
         from frame_device import FrameDevice
@@ -133,7 +137,15 @@ class Runtime:
             append(self.folder / 'NATIVE_CALLS.jsonl', row)
 
     def native_run(self, code, timeout_s=30):
-        return self._native_call(code, trusted=False, timeout_s=timeout_s)
+        if not self.native_audit_installed:
+            scratch = self.native.workspace / 'consumer_scratch'
+            scratch.mkdir(exist_ok=True)
+            setup = self.native_audit.installation_script(scratch, self.native.workspace / 'input.blend', self.product_root)
+            initialized = self._native_call(setup, timeout_s=timeout_s)
+            if initialized['error'] is not None:
+                raise RuntimeError('owned_native_Python_audit_setup_failed')
+            self.native_audit_installed = True
+        return self._native_call(self.native_audit.wrap(code), trusted=False, timeout_s=timeout_s)
 
     def public_request(self, arguments):
         self.check()
@@ -150,7 +162,7 @@ class Runtime:
         index_file = self.folder / 'product_full/INDEX.jsonl'
         before = index_file.read_bytes() if index_file.exists() else b''
         try:
-            self.client.deadline = min(self.task_deadline, row['started_ns'] + 35_000_000_000)
+            self.client.deadline = self.task_deadline
             response = self.client.call(request)
             row['response'] = response
             row['receipt'] = dict(self.client.records[-1])
@@ -170,8 +182,9 @@ class Runtime:
                         row['started_ns'] <= producer['started_ns'] <= producer['producer_returned_ns'] <= time.perf_counter_ns()):
                     raise RuntimeError('fresh_producer_binding_mismatch')
                 row['producer_archive'] = producer
-                if not error:
-                    self.device.adopt_product_result(read(source), producer)
+                produced = read(source)
+                if produced.get('frames'):
+                    self.device.adopt_product_result(produced, producer)
             self.check()
             return response
         except Exception as error:
