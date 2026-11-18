@@ -2,7 +2,7 @@
 
 2026-11-16。按用户要求读取M6管理聊天local/01a1d986-24a4-73f1-9689-6845d1f01ef3，并核对实际源码、005报告与006合同。M1–M5继续由本线管理，M6保留其独立实施和复核工作流。
 
-2026-11-18更新。已读M6管理聊天及进度索引a30533c8、实现9047f179和007复核。006–007阶段已收口，末次核对时008尚未派发。本线显示修复、事实优先v2和当前宿主首批插件质量均已独立复核，下一步补齐同版本原生对照。
+2026-11-18更新。M6最近核对为索引a30533c8、实现9047f179和007复核，006–007阶段已收口。本线当前宿主002两组同帧、两答各10/10、插件实交默认v2。原生首条大文本被CLI裁剪且原归档失败，继续一个紧凑原生配对收口。
 
 ## 当前衔接决定
 
@@ -60,7 +60,7 @@ source_region图片现已按捕获active view layer的visible_get快照确定参
 2. [M4-GLOBAL-LOCAL-QUALIFICATION-001](M4_GLOBAL_LOCAL_QUALIFICATION_001_INDEPENDENT_REVIEW.md)现已通过，3资格owned/8raster、模型0，全场像素不足、开放局部可恢复及真实遮挡均有实际原件。对象/帧/三角引用及不同scope来源已核对。
 3. [M4-CROSS-SCALE-DISCOVERY-001](M4_CROSS_SCALE_DISCOVERY_001_INDEPENDENT_REVIEW.md)已通过。一次捕获发现三个任务区域、两个局部完整见证及具体遮挡unknown，首版后一次优化使同任务构造8→3，完整owned中位改善19.1038%。
 4. [真实来源资格](M4_REAL_ASSET_REGION_QUALIFICATION_001_INDEPENDENT_REVIEW.md)及[显示修复](M4_SOURCE_REGION_DISPLAY_001_INDEPENDENT_REVIEW.md)已分项通过。完整曲面可见性unknown、worker既有一项失败和实际partial full wire未运行各自保留。
-5. [封存观测消费](M4_SOURCE_REGION_CONSUMPTION_001_INDEPENDENT_REVIEW.md)原批0/3保留。[M1事实优先复核](M1_SOURCE_REGION_FACTS_FIRST_001_INDEPENDENT_REVIEW.md)接受08a5f3b2/143源0d75c8f7，三个原案按实际题面3/3，原严格0/3为额外毫米格式。[当前宿主试验001](M4_LIVE_SOURCE_REGION_TASK_001_INDEPENDENT_REVIEW.md)插件10/10，原生未运行。[试验002](M4_LIVE_SOURCE_REGION_TASK_002_PLAN.md)用同一依赖预检和插件默认首调获得完整配对。
+5. [封存观测消费](M4_SOURCE_REGION_CONSUMPTION_001_INDEPENDENT_REVIEW.md)原批0/3保留。[M1事实优先复核](M1_SOURCE_REGION_FACTS_FIRST_001_INDEPENDENT_REVIEW.md)接受08a5f3b2/143源0d75c8f7，三个原案按实际题面3/3，原严格0/3为额外毫米格式。[当前宿主试验001](M4_LIVE_SOURCE_REGION_TASK_001_INDEPENDENT_REVIEW.md)插件10/10，原生未运行。[试验002复核](M4_LIVE_SOURCE_REGION_TASK_002_INDEPENDENT_REVIEW.md)两答及同帧通过，原生保留归档失败。[试验003](M4_LIVE_SOURCE_REGION_TASK_003_PLAN.md)验证CLI裁剪投影并核紧凑原生配对。
 6. M6形成具体可评价的三维提案时，在同一静态真实区域验证共享当前几何到专家输入、专家提案到M5实际回读。分别比较复用前后的取数、映射、投影、解码和完整任务，并要求同质量。提案生成、训练路线及形状求解由其管理线选定。
 
 M1–M5与M6后续批沿各自进程与副本推进，正式性能比较使用现有独占窗口。矩形跨尺度、一般选区原语、真实静态来源、有效图像证据和三份封存模型实际消费已有分项验收。当前宿主完整任务、跨资产修复及正式部署按各自实际任务推进。
