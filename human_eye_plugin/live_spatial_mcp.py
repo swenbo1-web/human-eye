@@ -358,6 +358,8 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
                 'witnesses; combine observations by scene/source binding. active_observation also defaults to brief, '
                 'with all objects, region unknowns, actual pixel facts and native image references; full retains diagnostics. '
                 'source_region defaults to brief with its complete selected-triangle measurement scope, witnesses and visibility. '
+                'Explicit brief for a closed-solid task set adds same-capture object counts and support vertex indices '
+                'for certified transverse crossings. Reuse the bound local world triangle coordinates to verify the crossing. '
                 'Other modes default to full; their brief '
                 'omits named camera/raster diagnostics while preserving measurements and native images. '
                 'Errors and unsupported projections retain the detailed response.'),
@@ -1935,6 +1937,11 @@ class LiveSpatialMCPServer:
         if name == "human_eye_scene_observe":
             if isinstance(args.get('query'), dict) and args['query'].get('mode') == 'surface_scan':
                 args.setdefault('include_image', False)
+            query = args.get('query')
+            capture_evidence = (args.get('response_detail') == 'brief' and isinstance(query, dict)
+                and query.get('mode') == 'task' and 'geometry' not in query
+                and ('target' in query or query.get('scope') == 'explicit_target_candidates')
+                and 'closed_solid_relation' in query.get('requested_facts', ()))
             value = self.service.observe(
                 session_id,
                 task_instruction=args.get("task_instruction", ""),
@@ -1944,6 +1951,7 @@ class LiveSpatialMCPServer:
                 **query_kwargs,
                 **context_kwargs,
                 **delta_kwargs,
+                **({'include_capture_evidence': True} if capture_evidence else {}),
             )
             is_error = value.get("status") not in {"observed", "overview", "partial"}
             if value.get('result_kind') in ('surface_nearest', 'scene_directory'):

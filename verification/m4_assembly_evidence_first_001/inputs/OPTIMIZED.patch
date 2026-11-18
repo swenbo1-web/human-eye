@@ -1,0 +1,173 @@
+diff --git a/human_eye_plugin/live_service.py b/human_eye_plugin/live_service.py
+index 82197c2f..c23207cf 100644
+--- a/human_eye_plugin/live_service.py
++++ b/human_eye_plugin/live_service.py
+@@ -1038,7 +1038,7 @@ class LiveSpatialService:
+ 
+     @_request('observe')
+     def observe(self, session_id, task_instruction="", focal_id=None, reference_id=None, *, include_image=True,
+-                goal=None, query=None, task_context=None, scene_delta=None):
++                goal=None, query=None, task_context=None, scene_delta=None, include_capture_evidence=False):
+         if not isinstance(session_id, str) or not session_id:
+             raise ValueError("session_id required")
+         if not isinstance(task_instruction, str):
+@@ -1081,7 +1081,7 @@ class LiveSpatialService:
+             if (include_image or focal_id is not None or reference_id is not None
+                     or goal is not None or scene_delta is not None):
+                 raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
+-            return self._observe_task(session_id, query)
++            return self._observe_task(session_id, query, include_capture_evidence=include_capture_evidence)
+         if query['mode']=='mesh_surface':
+             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
+             from .surface_task_service import observe
+@@ -1888,7 +1888,7 @@ class LiveSpatialService:
+         self._check_request_budget('before_surface_nearest_result')
+         return result
+ 
+-    def _observe_task(self, session_id, query):
++    def _observe_task(self, session_id, query, *, include_capture_evidence=False):
+         """Finite current-capture query, independent of action persistence."""
+         from .task_query import task_result
+         if not self.config.get('enabled', True):
+@@ -1924,6 +1924,11 @@ class LiveSpatialService:
+                 result['geometry'] = project_task_geometry(
+                     result, meshes, geometry, self._check_request_budget)
+             self._bind_read_result(result, source_check)
++            if include_capture_evidence and geometry is None and result.get('schema_version') == 'task-query-set-v1':
++                from .task_query import project_task_capture_evidence
++                with span('observation.task_capture_evidence'):
++                    result = project_task_capture_evidence(
++                        result, meshes, fingerprint, self._check_request_budget)
+         self.record_event('observe', session_id=session_id, status=result['status'],
+             scene_revision=scene['revision'],
+             engine_invoked=(work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0
+diff --git a/human_eye_plugin/live_spatial_mcp.py b/human_eye_plugin/live_spatial_mcp.py
+index a2ffa432..c48c3d45 100644
+--- a/human_eye_plugin/live_spatial_mcp.py
++++ b/human_eye_plugin/live_spatial_mcp.py
+@@ -358,6 +358,8 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
+                 'witnesses; combine observations by scene/source binding. active_observation also defaults to brief, '
+                 'with all objects, region unknowns, actual pixel facts and native image references; full retains diagnostics. '
+                 'source_region defaults to brief with its complete selected-triangle measurement scope, witnesses and visibility. '
++                'Explicit brief for a closed-solid task set adds same-capture object counts and support vertex indices '
++                'for certified transverse crossings. Reuse the bound local world triangle coordinates to verify the crossing. '
+                 'Other modes default to full; their brief '
+                 'omits named camera/raster diagnostics while preserving measurements and native images. '
+                 'Errors and unsupported projections retain the detailed response.'),
+@@ -1935,6 +1937,11 @@ class LiveSpatialMCPServer:
+         if name == "human_eye_scene_observe":
+             if isinstance(args.get('query'), dict) and args['query'].get('mode') == 'surface_scan':
+                 args.setdefault('include_image', False)
++            query = args.get('query')
++            capture_evidence = (args.get('response_detail') == 'brief' and isinstance(query, dict)
++                and query.get('mode') == 'task' and 'geometry' not in query
++                and ('target' in query or query.get('scope') == 'explicit_target_candidates')
++                and 'closed_solid_relation' in query.get('requested_facts', ()))
+             value = self.service.observe(
+                 session_id,
+                 task_instruction=args.get("task_instruction", ""),
+@@ -1944,6 +1951,7 @@ class LiveSpatialMCPServer:
+                 **query_kwargs,
+                 **context_kwargs,
+                 **delta_kwargs,
++                **({'include_capture_evidence': True} if capture_evidence else {}),
+             )
+             is_error = value.get("status") not in {"observed", "overview", "partial"}
+             if value.get('result_kind') in ('surface_nearest', 'scene_directory'):
+diff --git a/human_eye_plugin/task_query.py b/human_eye_plugin/task_query.py
+index 59e38833..2ea59e1e 100644
+--- a/human_eye_plugin/task_query.py
++++ b/human_eye_plugin/task_query.py
+@@ -13,6 +13,7 @@ from .measurement_presentation import finite_metric, valid_unrounded_measurement
+ from .query_policy import measurement_contract
+ from .surface_proximity import MAX_FACES, measure_surface_proximity, measure_spatial_relation, _rank_surface_results
+ from .surface_geometry import classify_closed_solids
++from .telemetry import span
+ 
+ 
+ FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
+@@ -250,6 +251,84 @@ def project_task_geometry(result, meshes, request, checkpoint):
+     return {'objects': rows, 'contract': contract}
+ 
+ 
++_TRANSVERSE_CHECKS = ('nonparallel_planes', 'positive_intersection_segment',
++                      'midpoint_strictly_inside_both_triangles')
++
++
++def _crossing_vertex_indices(evidence, support_meshes):
++    """Check just the support rows against the same normalized capture."""
++    if (type(evidence) is not dict or evidence.get('type') != 'transverse_triangle_crossing'
++            or evidence.get('triangle_scope') !=
++            'current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids'):
++        return None
++    indices = evidence.get('triangle_indices')
++    coordinates = evidence.get('triangle_vertices_world_m')
++    if (type(indices) is not list or len(indices) != 2
++            or type(coordinates) is not list or len(coordinates) != 2):
++        return None
++    vertices = []
++    for mesh, triangle_index, support in zip(support_meshes, indices, coordinates):
++        if mesh is None or type(triangle_index) is not int or not 0 <= triangle_index < len(mesh.faces):
++            return None
++        row = mesh.faces[triangle_index].tolist()
++        if mesh.vertices[row].tolist() != support:
++            return None
++        vertices.append(row)
++    return vertices
++
++
++def _task_capture_evidence(result, meshes, fingerprint, checkpoint):
++    """Project capture indices; local_evidence already owns the six coordinates."""
++    binding = result['binding']
++    review = {'schema_version': 'task-closed-crossing-review-v1',
++              'source_scope': 'same_normalized_capture_as_binding',
++              'index_scope': 'zero_based_capture_rows',
++              'source_limit': 'native_polygon_ids_and_independent_source_not_supplied',
++              'object_counts': {}, 'crossings': []}
++    if binding['scene_fingerprint'] != fingerprint:
++        review.update(status='unknown', reason='capture_binding_mismatch')
++        return review
++    objects = binding['objects']
++    by_id = {mesh.object_id: mesh for mesh in meshes}
++    for row in objects:
++        mesh = by_id.get(row.get('object_id'))
++        if mesh is not None:
++            review['object_counts'][mesh.object_id] = {
++                'vertices': len(mesh.vertices), 'triangles': len(mesh.faces)}
++    target = by_id.get(objects[0].get('object_id'))
++    for pair in result['pairs']:
++        checkpoint('task_capture_evidence_candidate')
++        relation = pair['facts']['closed_solid_relation']
++        if (relation['status'] != 'measured' or relation['value'] != 'penetrating'
++                or relation.get('certificate') != 'transverse_boundary_interiors'):
++            continue
++        index = pair['candidate_index']
++        candidate_id = objects[index + 1].get('object_id')
++        candidate = by_id.get(candidate_id) if candidate_id == pair['object_id'] else None
++        vertices = _crossing_vertex_indices(relation.get('local_evidence'), (target, candidate))
++        if vertices is None:
++            row = {'candidate_index': index, 'status': 'unknown',
++                   'reason': 'crossing_support_does_not_match_capture'}
++        else:
++            # Verified refers to the support rows. The exact predicates came
++            # from the solver certificate, and the point's status stays separate.
++            row = {'candidate_index': index, 'status': 'verified', 'triangle_vertex_indices': vertices,
++                   'exact_checks': list(_TRANSVERSE_CHECKS)}
++        review['crossings'].append(row)
++    return review
++
++
++def project_task_capture_evidence(result, meshes, fingerprint, checkpoint):
++    """Attach a same-capture audit to the caller's detached task result."""
++    if result.get('schema_version') != 'task-query-set-v1':
++        return result
++    with span('observation.task_capture_evidence.validate'):
++        evidence = _task_capture_evidence(result, meshes, fingerprint, checkpoint)
++    with span('observation.task_capture_evidence.construct'):
++        result['capture_evidence'] = evidence
++    return result
++
++
+ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
+                               diagnostics, retain_exact_rank=False, prepared_pair=None,
+                               boundary_contact=None, prepared_trees=None, before_compute=None,

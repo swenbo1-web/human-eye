@@ -1038,7 +1038,7 @@ class LiveSpatialService:
 
     @_request('observe')
     def observe(self, session_id, task_instruction="", focal_id=None, reference_id=None, *, include_image=True,
-                goal=None, query=None, task_context=None, scene_delta=None):
+                goal=None, query=None, task_context=None, scene_delta=None, include_capture_evidence=False):
         if not isinstance(session_id, str) or not session_id:
             raise ValueError("session_id required")
         if not isinstance(task_instruction, str):
@@ -1081,7 +1081,7 @@ class LiveSpatialService:
             if (include_image or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
                 raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
-            return self._observe_task(session_id, query)
+            return self._observe_task(session_id, query, include_capture_evidence=include_capture_evidence)
         if query['mode']=='mesh_surface':
             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
             from .surface_task_service import observe
@@ -1888,7 +1888,7 @@ class LiveSpatialService:
         self._check_request_budget('before_surface_nearest_result')
         return result
 
-    def _observe_task(self, session_id, query):
+    def _observe_task(self, session_id, query, *, include_capture_evidence=False):
         """Finite current-capture query, independent of action persistence."""
         from .task_query import task_result
         if not self.config.get('enabled', True):
@@ -1924,6 +1924,11 @@ class LiveSpatialService:
                 result['geometry'] = project_task_geometry(
                     result, meshes, geometry, self._check_request_budget)
             self._bind_read_result(result, source_check)
+            if include_capture_evidence and geometry is None and result.get('schema_version') == 'task-query-set-v1':
+                from .task_query import project_task_capture_evidence
+                with span('observation.task_capture_evidence'):
+                    result = project_task_capture_evidence(
+                        result, meshes, fingerprint, self._check_request_budget)
         self.record_event('observe', session_id=session_id, status=result['status'],
             scene_revision=scene['revision'],
             engine_invoked=(work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0

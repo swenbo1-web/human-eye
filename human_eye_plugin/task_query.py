@@ -13,6 +13,7 @@ from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
 from .surface_proximity import MAX_FACES, measure_surface_proximity, measure_spatial_relation, _rank_surface_results
 from .surface_geometry import classify_closed_solids
+from .telemetry import span
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
@@ -248,6 +249,84 @@ def project_task_geometry(result, meshes, request, checkpoint):
     if request['include_triangles']:
         contract['triangles'] = 'zero_based_triplets_index_vertices_world_in_captured_order'
     return {'objects': rows, 'contract': contract}
+
+
+_TRANSVERSE_CHECKS = ('nonparallel_planes', 'positive_intersection_segment',
+                      'midpoint_strictly_inside_both_triangles')
+
+
+def _crossing_vertex_indices(evidence, support_meshes):
+    """Check just the support rows against the same normalized capture."""
+    if (type(evidence) is not dict or evidence.get('type') != 'transverse_triangle_crossing'
+            or evidence.get('triangle_scope') !=
+            'current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids'):
+        return None
+    indices = evidence.get('triangle_indices')
+    coordinates = evidence.get('triangle_vertices_world_m')
+    if (type(indices) is not list or len(indices) != 2
+            or type(coordinates) is not list or len(coordinates) != 2):
+        return None
+    vertices = []
+    for mesh, triangle_index, support in zip(support_meshes, indices, coordinates):
+        if mesh is None or type(triangle_index) is not int or not 0 <= triangle_index < len(mesh.faces):
+            return None
+        row = mesh.faces[triangle_index].tolist()
+        if mesh.vertices[row].tolist() != support:
+            return None
+        vertices.append(row)
+    return vertices
+
+
+def _task_capture_evidence(result, meshes, fingerprint, checkpoint):
+    """Project capture indices; local_evidence already owns the six coordinates."""
+    binding = result['binding']
+    review = {'schema_version': 'task-closed-crossing-review-v1',
+              'source_scope': 'same_normalized_capture_as_binding',
+              'index_scope': 'zero_based_capture_rows',
+              'source_limit': 'native_polygon_ids_and_independent_source_not_supplied',
+              'object_counts': {}, 'crossings': []}
+    if binding['scene_fingerprint'] != fingerprint:
+        review.update(status='unknown', reason='capture_binding_mismatch')
+        return review
+    objects = binding['objects']
+    by_id = {mesh.object_id: mesh for mesh in meshes}
+    for row in objects:
+        mesh = by_id.get(row.get('object_id'))
+        if mesh is not None:
+            review['object_counts'][mesh.object_id] = {
+                'vertices': len(mesh.vertices), 'triangles': len(mesh.faces)}
+    target = by_id.get(objects[0].get('object_id'))
+    for pair in result['pairs']:
+        checkpoint('task_capture_evidence_candidate')
+        relation = pair['facts']['closed_solid_relation']
+        if (relation['status'] != 'measured' or relation['value'] != 'penetrating'
+                or relation.get('certificate') != 'transverse_boundary_interiors'):
+            continue
+        index = pair['candidate_index']
+        candidate_id = objects[index + 1].get('object_id')
+        candidate = by_id.get(candidate_id) if candidate_id == pair['object_id'] else None
+        vertices = _crossing_vertex_indices(relation.get('local_evidence'), (target, candidate))
+        if vertices is None:
+            row = {'candidate_index': index, 'status': 'unknown',
+                   'reason': 'crossing_support_does_not_match_capture'}
+        else:
+            # Verified refers to the support rows. The exact predicates came
+            # from the solver certificate, and the point's status stays separate.
+            row = {'candidate_index': index, 'status': 'verified', 'triangle_vertex_indices': vertices,
+                   'exact_checks': list(_TRANSVERSE_CHECKS)}
+        review['crossings'].append(row)
+    return review
+
+
+def project_task_capture_evidence(result, meshes, fingerprint, checkpoint):
+    """Attach a same-capture audit to the caller's detached task result."""
+    if result.get('schema_version') != 'task-query-set-v1':
+        return result
+    with span('observation.task_capture_evidence.validate'):
+        evidence = _task_capture_evidence(result, meshes, fingerprint, checkpoint)
+    with span('observation.task_capture_evidence.construct'):
+        result['capture_evidence'] = evidence
+    return result
 
 
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
