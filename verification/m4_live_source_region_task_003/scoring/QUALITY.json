@@ -1,0 +1,578 @@
+{
+  "schema": "m4-live-source-region-answer-quality-v1",
+  "scoring_after_paired_seal": true,
+  "scoring_method_sha256": "815f4701023480cf8a8543b0620126d1513290c2484c5201390a017dca669270",
+  "seal_sha256": "91da08e844c323ce715e77001f3e4531ccdadfc5670cd2a2e0ea0cd66b5f7f55",
+  "evidence_verdict_sha256": "aace342a027f6eb45a4f921aa10f122ae0e82993173753069cbbaebf70b01176",
+  "same_device_source_geometry_frame_eligible": true,
+  "original_formal_execution_pair_completed": true,
+  "slot_denominator": 2,
+  "requirement_denominator": 20,
+  "total": {
+    "pass": 19,
+    "fail": 1,
+    "unverified": 0,
+    "unrun": 0
+  },
+  "slots": {
+    "N1": {
+      "answer_sha256": "a86c5b6f034aa2276e2dcb5b9a279f6ed0ccbb8e37c51bea6be15dba8c9015d2",
+      "candidate_pass": false,
+      "status": "content_requirement_failed",
+      "counts": {
+        "pass": 9,
+        "fail": 1
+      },
+      "gates": {
+        "D1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 3,
+              "text": "0.370117193892 m"
+            },
+            {
+              "line": 3,
+              "text": "0.370117 m"
+            }
+          ],
+          "reason": "两种米制精度均正确舍入，并与本槽对完整曲面的独立几何验算相符。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/distance_m",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "D2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 5,
+              "text": "坐标均为世界坐标，单位为米"
+            },
+            {
+              "line": 9,
+              "text": "`(-0.016845703125, 0.146240261908, 0.629882806108)`"
+            },
+            {
+              "line": 10,
+              "text": "`(-0.016845703125, 0.146240261908, 1.000000000000)`"
+            }
+          ],
+          "reason": "两点分别标记为选区对象和 Cube 上的最近点。各分量按答复精度与独立世界坐标见证一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/source_point_world_m",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/reference_point_world_m",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/3"
+          ]
+        },
+        "D3": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 9,
+              "text": "源三角 ID `48161`"
+            },
+            {
+              "line": 9,
+              "text": "P 是其中的顶点 `24331`"
+            },
+            {
+              "line": 10,
+              "text": "源三角 ID `0`"
+            },
+            {
+              "line": 12,
+              "text": "对象局部、从零开始"
+            }
+          ],
+          "reason": "选区点为面 48161 上的源顶点 24331。Cube 局部源面 0 支持另一点，答复的重心坐标也与本槽核查一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/source_vertex_id",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/source_triangle_ids",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/reference_triangle_ids",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/3"
+          ]
+        },
+        "D4": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 15,
+              "text": "全部 **748 个源三角的完整曲面**，包含没有像素样本的三角"
+            },
+            {
+              "line": 16,
+              "text": "全部 **12 个三角**，共检查 **8,976 对三角**"
+            }
+          ],
+          "reason": "本槽已核对 748 × 12 对完整三角面。选中而无像素样本的面在量测域内。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/source_triangle_count",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/reference_triangle_count",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "I1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 27,
+              "text": "| 选区拥有的像素 | **35,452** |"
+            },
+            {
+              "line": 31,
+              "text": "像素所有者是选区所属对象"
+            }
+          ],
+          "reason": "35,452 等于本槽实际 SCENE 缓冲按对象和源三角映射得到的独立统计。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/counts/selected_pixels",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/1",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "I2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 28,
+              "text": "| 至少有一个像素样本的选中源三角 | **385** |"
+            },
+            {
+              "line": 29,
+              "text": "| 没有像素样本的选中源三角 | **363** |"
+            }
+          ],
+          "reason": "385 个源面至少赢得一个样本，余下 363 个源面没有胜出样本，两者覆盖全部 748 个选中源面。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/counts/sampled_source_triangles",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/counts/unsampled_source_triangles",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/1",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "I3": {
+          "verdict": "fail",
+          "quotes": [
+            {
+              "line": 33,
+              "text": "Cube 没有参与该帧的可见表面栅格化。"
+            },
+            {
+              "line": 35,
+              "text": "没有获得最终像素所有权"
+            },
+            {
+              "line": 35,
+              "text": "现有统计没有逐面区分原因"
+            }
+          ],
+          "reason": "答复正确限定了零样本的含义、逐面原因的证据缺口和 Cube 显示排除。冻结评分规则 还要求说明离散样本无法证明连续曲面的整体可见性，答复没有说明这一点。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/display_object_mask",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/pixel_convention",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/counts",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/1",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "R1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 39,
+              "text": "两片被量测的表面严格分离，没有接触或相交，间隙为上述正距离。"
+            }
+          ],
+          "reason": "以完整量测域上的有限正最短距离判定两个三角曲面无接触、无相交。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/distance_m",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/face_clearances_m_xyz_min_then_max",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "R2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 41,
+              "text": "完整选区曲面严格位于 Cube 所围成的实体内部。"
+            },
+            {
+              "line": 44,
+              "text": "12 个三角组成封闭立方体，每条无向边均恰有两个三角关联"
+            },
+            {
+              "line": 49,
+              "text": "立方体内部是凸集，所以三角内部也全部在内。"
+            },
+            {
+              "line": 51,
+              "text": "前者缺少对该对象其余三角的包含检验"
+            }
+          ],
+          "reason": "Cube 的实际三角与闭盒相符。全部选区顶点坐标严格落入开盒，凸性将结论推广到选区每个连续三角面。整宿主包含关系仍未验证。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/closed_axis_aligned_cube_surface_verified",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/region_bounds_m",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/complete_selected_surface_strictly_inside_cube",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/3"
+          ]
+        },
+        "S1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 55,
+              "text": "live-source-001"
+            },
+            {
+              "line": 56,
+              "text": "D:\\he_m4_live_source_region_task_003\\slots\\N1\\native\\input.blend"
+            },
+            {
+              "line": 57,
+              "text": "source_triangle_ids"
+            },
+            {
+              "line": 57,
+              "text": "48161"
+            },
+            {
+              "line": 58,
+              "text": "blender:63719c1bb99e99c7e58aa2c7fd048fc8e6d092896589562257de566f08448f3b"
+            },
+            {
+              "line": 59,
+              "text": "blender:8e0bf5793801677261ee519cc72c5f36495d55d73893f9918e31d273a404f1f4"
+            },
+            {
+              "line": 60,
+              "text": "native-image:da384f3a2c2724fc0cc5b2d69a681a4fde80967bb90e81584cdb71e4f4cf92e1"
+            }
+          ],
+          "reason": "答复的本槽场景副本、当前捕获、目标与参考对象、所选源面及实际 SCENE 图像均可回查。CLI 交付的 PNG 与所引帧一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/source",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/geometry/object_ids",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/capture",
+            "scoring/EVIDENCE_VERDICT.json#/slots/N1/frame/frame_ref",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/1",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/2",
+            "D:/he_m4_live_source_region_task_003/slots/N1/consumer/CONSUMER.json#/tool_calls/3"
+          ]
+        }
+      },
+      "execution": {
+        "formal_slot_status": "completed",
+        "raw_answer_sealed": true,
+        "CLI_exit_code": 0,
+        "execution_gate_pass": true
+      },
+      "frame_and_source_evidence_verified": true,
+      "actual_PNG_deliveries": [
+        {
+          "i": 4,
+          "bytes": 24734,
+          "sha256": "9186e596688a024f30c4f2e87bc9bea80d80f26efc24a2336a4acbd234d355f9",
+          "frame_ref": "native-image:da384f3a2c2724fc0cc5b2d69a681a4fde80967bb90e81584cdb71e4f4cf92e1"
+        }
+      ],
+      "solid_inference_detail": {
+        "cube_inside": "proved_from_delivered_geometry",
+        "conclusion_scope": "complete_selected_surface",
+        "whole_host_containment_established": false,
+        "independent_full_geometry_proves_strictly_inside": true,
+        "proof": "verified_closed_box_and_complete_selected_coordinate_bounds",
+        "closed_cube_edges_degree_two": 18
+      }
+    },
+    "P1": {
+      "answer_sha256": "3bda917d5d35372aa7c66067632708c7c392be48329bf07fb7f8d0578f32c2b2",
+      "candidate_pass": true,
+      "status": "accepted_content",
+      "counts": {
+        "pass": 10
+      },
+      "gates": {
+        "D1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 3,
+              "text": "0.370117193892364 米"
+            }
+          ],
+          "reason": "米制数字与本槽完整曲面间距的独立几何结果正确舍入一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/distance_m",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "D2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 5,
+              "text": "世界坐标（米）"
+            },
+            {
+              "line": 7,
+              "text": "`(-0.016845703125, 0.1462402619080522, 0.6298828061076364)`"
+            },
+            {
+              "line": 8,
+              "text": "`(-0.016845703125, 0.1462402619080522, 1.0000000000000000)`"
+            }
+          ],
+          "reason": "表格分别将两个米制世界点归于选区对象和 Cube，坐标与本槽独立验证一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source_point_world_m",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/reference_point_world_m",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "D3": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 7,
+              "text": "源顶点 `24331`；同时属于源三角 `48160`、`48161`"
+            },
+            {
+              "line": 8,
+              "text": "源三角 `0`"
+            },
+            {
+              "line": 50,
+              "text": "从零开始、对象局部、当前求值捕获的源三角行号"
+            }
+          ],
+          "reason": "目标顶点和两个关联源三角、Cube 支持源三角和局部索引域均与本槽读取及独立映射一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source_vertex_id",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source_triangle_ids",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/reference_triangle_ids",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "D4": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 15,
+              "text": "**748 个源三角、410 个不同源顶点**所构成的曲面并集"
+            },
+            {
+              "line": 15,
+              "text": "**全部 12 个三角表面**"
+            },
+            {
+              "line": 15,
+              "text": "不是仅对画面中可见的部分"
+            }
+          ],
+          "reason": "覆盖选区的 748 个完整源曲面三角和 Cube 的 12 个完整参考曲面三角，包括无像素样本的选区部分。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source_triangle_count",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source_vertex_count",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/reference_triangle_count",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/1"
+          ]
+        },
+        "I1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 25,
+              "text": "| 选区拥有的像素样本 | **35,452** |"
+            }
+          ],
+          "reason": "35,452 与本槽引用的实际 SCENE 缓冲的独立选区像素统计一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/counts/selected_pixels",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "I2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 26,
+              "text": "| 有像素样本的选中源三角 | **385** |"
+            },
+            {
+              "line": 27,
+              "text": "| 没有像素样本的选中源三角 | **363** |"
+            }
+          ],
+          "reason": "385 和 363 与本槽实际 SCENE 的源三角胜出样本计数相符，二者覆盖 748 个选中源面。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/counts/sampled_source_triangles",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/counts/unsampled_source_triangles",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "I3": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 31,
+              "text": "该帧明确将它排除"
+            },
+            {
+              "line": 33,
+              "text": "没有在该帧留下归属于自己的栅格像素"
+            },
+            {
+              "line": 33,
+              "text": "现有证据未逐个区分这些原因"
+            },
+            {
+              "line": 35,
+              "text": "它不能证明这 385 个三角的整个面积都可见，也不能证明完整选区全部可见"
+            }
+          ],
+          "reason": "明确 Cube 排除、零胜出样本的含义、遮挡归因的局限，以及离散样本无法证明整个三角或完整选区的连续可见性。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/display_object_mask",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/pixel_convention",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/counts",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "R1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 39,
+              "text": "严格分离、不接触、不相交。"
+            },
+            {
+              "line": 39,
+              "text": "完整选区与 Cube 表面的最短距离为正。"
+            }
+          ],
+          "reason": "完整两侧三角曲面的有限正最短距离支持所报告的分离结论。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/distance_m",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/face_clearances_m_xyz_min_then_max",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0"
+          ]
+        },
+        "R2": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 41,
+              "text": "完整选区曲面严格位于 Cube 所围实体内部。"
+            },
+            {
+              "line": 42,
+              "text": "12 个三角构成其六个面"
+            },
+            {
+              "line": 43,
+              "text": "最大有符号值为 **−0.370117193892364 米**"
+            },
+            {
+              "line": 44,
+              "text": "每个选中三角是其三个顶点的凸组合"
+            },
+            {
+              "line": 46,
+              "text": "整个宿主的包含关系还缺少对其余未选中曲面的检查"
+            }
+          ],
+          "reason": "首条简报提供局部与 Cube 的拓扑计数，补核提供完整的 Cube 闭盒三角及全部选区顶点的外向半空间最大值。严格负值与凸性覆盖选区的连续三角面。整宿主包含关系仍未验证。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/closed_axis_aligned_cube_surface_verified",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/face_clearances_m_xyz_min_then_max",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/complete_selected_surface_strictly_inside_cube",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        },
+        "S1": {
+          "verdict": "pass",
+          "quotes": [
+            {
+              "line": 17,
+              "text": "live-source-001"
+            },
+            {
+              "line": 17,
+              "text": "a3a473fbd44248db8cd54d701ed237e1"
+            },
+            {
+              "line": 18,
+              "text": "385950ee84660e95cabe431c1a5c42d0b935997e8673a7a160a101812030a1cf"
+            },
+            {
+              "line": 52,
+              "text": "blender:63719c1bb99e99c7e58aa2c7fd048fc8e6d092896589562257de566f08448f3b"
+            },
+            {
+              "line": 53,
+              "text": "blender:8e0bf5793801677261ee519cc72c5f36495d55d73893f9918e31d273a404f1f4"
+            },
+            {
+              "line": 54,
+              "text": "source-region:4b0d8155fc15d2a67f9b75819dc056f3098ed4c1084be94f464371853856b541"
+            },
+            {
+              "line": 55,
+              "text": "eb369bbb829aa545dcfc84154a35883f7aae83cfe9a08bcdc0ec87ab657c342d"
+            },
+            {
+              "line": 56,
+              "text": "source-region-image:9b5ef1ffca7c5d26d84833b7e0dbae090121b75c2ca5526207eb51f412b1234a"
+            }
+          ],
+          "reason": "本槽原生读取和首条产品结果分别核对当前源、代次、来源绑定摘要、两对象、完整区域及实际 SCENE 帧标识。CLI 直接交付的 PNG 与所引帧一致。",
+          "evidence": [
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/source",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/geometry/object_ids",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/capture",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/frame_ref",
+            "scoring/EVIDENCE_VERDICT.json#/slots/P1/frame/frame_identity",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/0",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/1",
+            "D:/he_m4_live_source_region_task_003/slots/P1/consumer/CONSUMER.json#/tool_calls/2"
+          ]
+        }
+      },
+      "execution": {
+        "formal_slot_status": "completed",
+        "raw_answer_sealed": true,
+        "CLI_exit_code": 0,
+        "execution_gate_pass": true
+      },
+      "frame_and_source_evidence_verified": true,
+      "actual_PNG_deliveries": [
+        {
+          "i": 1,
+          "bytes": 24734,
+          "sha256": "9186e596688a024f30c4f2e87bc9bea80d80f26efc24a2336a4acbd234d355f9",
+          "frame_ref": "source-region-image:9b5ef1ffca7c5d26d84833b7e0dbae090121b75c2ca5526207eb51f412b1234a"
+        }
+      ],
+      "solid_inference_detail": {
+        "cube_inside": "proved_from_delivered_geometry",
+        "conclusion_scope": "complete_selected_surface",
+        "whole_host_containment_established": false,
+        "independent_full_geometry_proves_strictly_inside": true,
+        "proof": "verified_closed_box_and_complete_selected_vertex_outward_halfspaces",
+        "maximum_outward_signed_distance_m": -0.37011719389236364,
+        "selection_boundary_edges": 72
+      }
+    }
+  }
+}

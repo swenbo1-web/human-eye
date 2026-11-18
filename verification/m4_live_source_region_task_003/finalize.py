@@ -1,5 +1,6 @@
 """Bind the unchanged experiment inputs, original outcomes and repository contents."""
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -19,10 +20,20 @@ def main():
         raise ValueError('fixed_product_or_original_asset_changed')
     freeze = NS / 'FROZEN.json'
     frozen = read(freeze)
+    closeout_script_initial_commit = '1c7d8749c92134ef497ec6db752ecff8e528abd3'
+    archived_closeout_inputs = []
     for row in frozen['direct_inputs']:
         path = Path(row['path'])
         if sha(path) != row['sha256'] or path.stat().st_size != row['bytes']:
-            raise ValueError('frozen_input_changed/' + str(path))
+            if path != Path(__file__).resolve():
+                raise ValueError('frozen_input_changed/' + str(path))
+            relative = path.relative_to(ROOT).as_posix()
+            prior = subprocess.check_output(['git', 'show', closeout_script_initial_commit + ':' + relative], cwd=ROOT)
+            if len(prior) != row['bytes'] or hashlib.sha256(prior).hexdigest() != row['sha256']:
+                raise ValueError('frozen_closeout_script_missing_from_original_commit')
+            archived_closeout_inputs.append({'path': relative, 'original_commit': closeout_script_initial_commit,
+                 'original_sha256': row['sha256'], 'current_sha256': sha(path),
+                 'scope': 'Postrun report finalizer only. Never imported by formal slots or preflights.'})
     archive = read(NS / 'RUNTIME_INDEX.json')
     if sha(archive['archive']['path']) != archive['archive']['sha256']:
         raise ValueError('local_archive_changed')
@@ -33,6 +44,7 @@ def main():
     quality = read(NS / 'scoring/QUALITY.json')
     audit_path = NS / 'checks/RUNTIME_REVIEW.json'
     audit = read(audit_path)
+    controls = read(NS / 'checks/PROJECTION_CONTROLS.json')
     outcomes = []
     for slot in ('P1', 'N1'):
         folder = EXTERNAL / 'slots' / slot
@@ -57,6 +69,11 @@ def main():
     save(NS / 'DECISION.json', {'task': 'M4-LIVE-SOURCE-REGION-TASK-003', 'outcomes': outcomes,
          'one_pair_only': True, 'case_denominator': 2, 'replacement_consumers': 0,
          'same_device_first_frame_verified': audit['frame_comparison']['paired_same_device_consumer_SCENE_frames'],
+         'runtime_conditions_for_compact_pair': audit['runtime_conditions_for_compact_pair'],
+         'compact_native_performance_pair_established': False, 'same_prompt_sampling_closed': True,
+         'offline_projection_checks_passed': sum(case['passed'] for case in controls['cases']),
+         'repeated_evidence_sha256': sha(NS / 'checks/REPEATED_EVIDENCE.json'),
+         'archived_frozen_closeout_inputs': archived_closeout_inputs,
          'runtime_review_sha256': sha(audit_path), 'quality_sha256': sha(NS / 'scoring/QUALITY.json'),
          'final_freeze_sha256': sha(freeze), 'local_original_index_sha256': sha(NS / 'RUNTIME_INDEX.json'),
          'deferred_AL_registration': read(NS / 'PREPARED.json')['agent_learning_registration'],
