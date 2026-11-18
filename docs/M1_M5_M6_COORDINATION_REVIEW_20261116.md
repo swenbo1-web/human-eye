@@ -2,7 +2,7 @@
 
 2026-11-16。按用户要求读取M6管理聊天local/01a1d986-24a4-73f1-9689-6845d1f01ef3，并核对实际源码、005报告与006合同。M1–M5继续由本线管理，M6保留其独立实施和复核工作流。
 
-2026-11-18更新。M6最近核对为索引a30533c8、实现9047f179和007复核，006–007阶段已收口。本线装配首包离线复核通过，现有捕获的几何与局部见证可以共同交付，独立源读回仍按任务取证。下一步用同一装配比较添加证据前后的实际消费者行为。
+2026-11-18更新。M6最近核对为索引a30533c8、实现9047f179和007复核，006–007阶段已收口。本线完成[装配首包实际消费复核](M4_ASSEMBLY_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md)。候选首包的证据被采用，两边独立读回和补查次数相同，结束该装配题。下一步验证[全场扫视消费者入口](M4_CROSS_SCALE_LIVE_QUALIFICATION_001_PLAN.md)。
 
 ## 当前衔接决定
 
@@ -60,7 +60,7 @@ source_region图片现已按捕获active view layer的visible_get快照确定参
 2. [M4-GLOBAL-LOCAL-QUALIFICATION-001](M4_GLOBAL_LOCAL_QUALIFICATION_001_INDEPENDENT_REVIEW.md)现已通过，3资格owned/8raster、模型0，全场像素不足、开放局部可恢复及真实遮挡均有实际原件。对象/帧/三角引用及不同scope来源已核对。
 3. [M4-CROSS-SCALE-DISCOVERY-001](M4_CROSS_SCALE_DISCOVERY_001_INDEPENDENT_REVIEW.md)已通过。一次捕获发现三个任务区域、两个局部完整见证及具体遮挡unknown，首版后一次优化使同任务构造8→3，完整owned中位改善19.1038%。
 4. [真实来源资格](M4_REAL_ASSET_REGION_QUALIFICATION_001_INDEPENDENT_REVIEW.md)及[显示修复](M4_SOURCE_REGION_DISPLAY_001_INDEPENDENT_REVIEW.md)已分项通过。完整曲面可见性unknown、worker既有一项失败和实际partial full wire未运行各自保留。
-5. [M1事实优先复核](M1_SOURCE_REGION_FACTS_FIRST_001_INDEPENDENT_REVIEW.md)接受08a5f3b2/143源0d75c8f7。当前宿主[试验001](M4_LIVE_SOURCE_REGION_TASK_001_INDEPENDENT_REVIEW.md)保留原生依赖未运行，[试验002](M4_LIVE_SOURCE_REGION_TASK_002_INDEPENDENT_REVIEW.md)保留原生归档失败，[试验003](M4_LIVE_SOURCE_REGION_TASK_003_INDEPENDENT_REVIEW.md)两组运行完成，原生未达紧凑等质量对照。[装配实体对照](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10，确认了追加核查的具体内容。[下一离线候选](M4_ASSEMBLY_EVIDENCE_FIRST_001_PLAN.md)复用现有证书和同代来源。
+5. [M1事实优先复核](M1_SOURCE_REGION_FACTS_FIRST_001_INDEPENDENT_REVIEW.md)接受08a5f3b2/143源0d75c8f7。曲面当前宿主三批保留原生依赖、归档和紧凑对照各自的缺口。[装配实体对照](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10，后续补证A/B的两组补查相同。同一固定产品进入全场扫视入口资格，通过后做更复杂的全场完整任务。
 6. M6形成具体可评价的三维提案时，在同一静态真实区域验证共享当前几何到专家输入、专家提案到M5实际回读。分别比较复用前后的取数、映射、投影、解码和完整任务，并要求同质量。提案生成、训练路线及形状求解由其管理线选定。
 
 M1–M5与M6后续批沿各自进程与副本推进，正式性能比较使用现有独占窗口。矩形跨尺度、一般选区原语、真实静态来源、有效图像证据和三份封存模型实际消费已有分项验收。当前宿主完整任务、跨资产修复及正式部署按各自实际任务推进。
