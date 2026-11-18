@@ -102,7 +102,8 @@ def exercise_bridge(owner, runtime, folder, region, budget):
             and all(reply['jsonrpc'] == '2.0' and 'result' in reply for reply in responses),
             'stdio JSON-RPC response identity or shape changed')
     initialized, listed, resources, templates, ping, *calls = [row['result'] for row in responses]
-    require(initialized['protocolVersion'] == '2025-03-26' and 'tools' in initialized['capabilities'],
+    require(initialized['protocolVersion'] == '2025-03-26' and 'tools' in initialized['capabilities']
+            and initialized['serverInfo']['name'] == 'm4-live-source-region-task-002',
             'tool initialization failed')
     require(resources == {'resources': []} and templates == {'resourceTemplates': []} and ping == {},
             'empty discovery replies changed')
@@ -110,6 +111,10 @@ def exercise_bridge(owner, runtime, folder, region, budget):
     require(len(tool_names) == len(set(tool_names)) and set(tool_names) == bridge.TOOL_NAMES[owner.group],
             'unexpected slot tool inventory')
     if owner.group == 'P':
+        product_tool = next(tool for tool in listed['tools'] if tool['name'] == bridge.PRODUCT_TOOL)
+        require('omit the top-level response_detail field' in initialized['instructions']
+                and initialized['instructions'] in product_tool['description'],
+                'P did not advertise the default source_region request')
         downstream = copy.deepcopy(args)
         downstream['query']['region']['source_triangle_indices'] = region['source_triangle_ids']
         retained = json.loads((owner.output / 'tool_01/REQUEST.json').read_bytes())
@@ -123,6 +128,9 @@ def exercise_bridge(owner, runtime, folder, region, budget):
                 and json.loads(calls[0]['content'][0]['text'])['schema'] == 'source-region-brief-v2'
                 and calls[0]['content'][1] == runtime.image,
                 'P omitted-detail request, marker expansion, or fixture v2 delivery changed')
+        detail = json.loads((owner.output / 'tool_01/PRODUCT_DETAIL.json').read_bytes())
+        require(detail['default_brief_v2_returned'] and detail['bound_marker_expanded']
+                and detail['returned_images'] == 1, 'P default detail receipt did not match the fixture wire')
     else:
         require(not runtime.public_requests and 'instructions' not in initialized, 'N acquired a P entry')
     calculation, invalid = calls[-2:]
