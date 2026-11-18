@@ -1,0 +1,696 @@
+{
+  "schema": "independent-facts-first-quality-and-prompt-alignment-v1",
+  "phase": "independent_before_author_comparison",
+  "author_scores_read": false,
+  "author_commit": "544cf4f123c35fbca24b8f425acc30fd3308b178",
+  "actual_prompt": "请分析这份已封存的Blender局部观测。报告选区到参考对象表面的最近距离、单位及见证来源，说明当前图片实际提供了哪些选区证据、选区可见像素数量以及仍有哪些部分未观察到。判断这个距离能支持哪些表面关系和实体内外结论。每项主要结论引用对应的区域或图像来源，信息不足时指出还缺什么。仅分析这份观测。",
+  "original_frozen_rubric_unchanged": true,
+  "strict_preregistered_result": {
+    "cases": 3,
+    "accepted": 0,
+    "gate_pass": 24,
+    "gate_fail": 3,
+    "gate_unrun": 0,
+    "failure_reason": "All original G1 failures are the missing millimetre expression required by the private rubric."
+  },
+  "actual_prompt_alignment": {
+    "cases": 3,
+    "satisfied": 3,
+    "explicit_unit_requirement": "report the distance and unit",
+    "millimetre_requirement_present_in_actual_prompt": false,
+    "millimetre_requirement_present_in_tool_description": false,
+    "correct_metres_alone_satisfies_prompt": true,
+    "metres_plus_faithful_centimetres_satisfies_prompt": true,
+    "extra_private_requirement": "Report metres and the millimetre equivalent.",
+    "remaining_actual_task_omissions": [],
+    "interpretation": "Descriptive alignment audit of sealed answers against the original public task. Preserve the original strict 0/3 record."
+  },
+  "cases": [
+    {
+      "case_id": "S1",
+      "strict_original_accepted": false,
+      "strict_gate_counts": {
+        "fail": 1,
+        "pass": 8
+      },
+      "strict_gates": {
+        "G1": {
+          "verdict": "fail",
+          "answer_quote": "0.37011719389236364 m",
+          "answer_line": 3,
+          "expected_sources": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reason": "米原值完整正确，约37.0117cm为忠实换算。原私有G1同时要求毫米，回答缺少mm，故严格fail。"
+        },
+        "G2": {
+          "verdict": "pass",
+          "answer_quote": "task_result.source_mapping.nearest_witness",
+          "answer_line": 15,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        "G3": {
+          "verdict": "pass",
+          "answer_quote": "测量范围覆盖全部选中源三角形",
+          "answer_line": 3,
+          "expected_sources": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reason": "明确当前求值世界几何的完整选区到Cube参考三角形表面，不限可见子集且不外推整体对象。"
+        },
+        "G4": {
+          "verdict": "pass",
+          "answer_quote": "`Cube` 的 `participates: false`、`visible_get: false`",
+          "answer_line": 24,
+          "expected_sources": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。"
+        },
+        "G5": {
+          "verdict": "pass",
+          "answer_quote": "35,452",
+          "answer_line": 22,
+          "expected_sources": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reason": "选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        "G6": {
+          "verdict": "pass",
+          "answer_quote": "363 个选中三角形没有当前帧可见采样",
+          "answer_line": 23,
+          "expected_sources": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。"
+        },
+        "G7": {
+          "verdict": "pass",
+          "answer_quote": "complete_surface_visibility",
+          "answer_line": 23,
+          "expected_sources": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reason": "完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        "G8": {
+          "verdict": "pass",
+          "answer_quote": "选区表面与参考表面分离、不接触、不相交",
+          "answer_line": 30,
+          "expected_sources": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        "G9": {
+          "verdict": "pass",
+          "answer_quote": "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722",
+          "answer_line": 19,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      },
+      "actual_prompt_obligations": [
+        {
+          "id": "O1",
+          "obligation": "最近距离与正确单位",
+          "verdict": "pass",
+          "reason": "完整m原值满足题面，附加cm换算正确。题面没有指定mm或双单位。"
+        },
+        {
+          "id": "O2",
+          "obligation": "原见证与来源",
+          "verdict": "pass",
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        {
+          "id": "O3",
+          "obligation": "本图选区证据与可见像素",
+          "verdict": "pass",
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。 选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        {
+          "id": "O4",
+          "obligation": "未观察部分与缺失信息",
+          "verdict": "pass",
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。 完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        {
+          "id": "O5",
+          "obligation": "表面关系及实体内外的有据判断",
+          "verdict": "pass",
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        {
+          "id": "O6",
+          "obligation": "当前区域/图像引用与封存范围",
+          "verdict": "pass",
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      ],
+      "actual_prompt_satisfied": true,
+      "remaining_actual_task_omissions": [],
+      "current_refs": {
+        "region_id": "source-region:5465d50b1c1b3c8057f9c2356903e1a0df7996e81c9ee7210ddda2788e806722",
+        "image_ref": "source-region-image:719cf0fa6a48fc37b4ef33e3a322c7743464a03602a22c025c0c9fe6170f4578"
+      },
+      "published_measurement_witness": {
+        "a": [
+          -0.016845703125,
+          0.1462402619080522,
+          0.6298828061076364
+        ],
+        "b": [
+          -0.016845703125,
+          0.1462402619080522,
+          1.0
+        ],
+        "direction_a_to_b": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "exact_distance_m": "0.37011719389236364",
+      "exact_distance_cm": "37.01171938923636400",
+      "reported_cm": "37.0117",
+      "reported_cm_converted_m": "0.370117",
+      "cm_rounding_absolute_error_m": "1.9389236364E-7",
+      "visibility": {
+        "pixels": 35452,
+        "sampled_triangles": 385,
+        "unseen_triangles": 363,
+        "complete_visibility_unknown": true,
+        "status": "complete",
+        "observation_status": "locally_observed"
+      }
+    },
+    {
+      "case_id": "S2",
+      "strict_original_accepted": false,
+      "strict_gate_counts": {
+        "fail": 1,
+        "pass": 8
+      },
+      "strict_gates": {
+        "G1": {
+          "verdict": "fail",
+          "answer_quote": "0.37011719389236364 m",
+          "answer_line": 3,
+          "expected_sources": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reason": "米原值完整正确，约37.0117cm为忠实换算。原私有G1同时要求毫米，回答缺少mm，故严格fail。"
+        },
+        "G2": {
+          "verdict": "pass",
+          "answer_quote": "task_result.source_mapping.nearest_witness",
+          "answer_line": 14,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        "G3": {
+          "verdict": "pass",
+          "answer_quote": "完整选区的三角形并集",
+          "answer_line": 3,
+          "expected_sources": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reason": "明确当前求值世界几何的完整选区到Cube参考三角形表面，不限可见子集且不外推整体对象。"
+        },
+        "G4": {
+          "verdict": "pass",
+          "answer_quote": "选区所属对象与 `Cube` 都被记录为参与当前视口显示",
+          "answer_line": 36,
+          "expected_sources": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。"
+        },
+        "G5": {
+          "verdict": "pass",
+          "answer_quote": "选区表面可见像素数",
+          "answer_line": 27,
+          "expected_sources": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reason": "选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        "G6": {
+          "verdict": "pass",
+          "answer_quote": "全部 748 个选区三角形都没有获得本帧的可见表面像素证据",
+          "answer_line": 33,
+          "expected_sources": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。"
+        },
+        "G7": {
+          "verdict": "pass",
+          "answer_quote": "完整可见性见证",
+          "answer_line": 31,
+          "expected_sources": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reason": "完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        "G8": {
+          "verdict": "pass",
+          "answer_quote": "完整选区与 `Cube` 的当前求值三角形表面严格分离",
+          "answer_line": 41,
+          "expected_sources": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        "G9": {
+          "verdict": "pass",
+          "answer_quote": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873",
+          "answer_line": 19,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      },
+      "actual_prompt_obligations": [
+        {
+          "id": "O1",
+          "obligation": "最近距离与正确单位",
+          "verdict": "pass",
+          "reason": "完整m原值满足题面，附加cm换算正确。题面没有指定mm或双单位。"
+        },
+        {
+          "id": "O2",
+          "obligation": "原见证与来源",
+          "verdict": "pass",
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        {
+          "id": "O3",
+          "obligation": "本图选区证据与可见像素",
+          "verdict": "pass",
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。 选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        {
+          "id": "O4",
+          "obligation": "未观察部分与缺失信息",
+          "verdict": "pass",
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。 完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        {
+          "id": "O5",
+          "obligation": "表面关系及实体内外的有据判断",
+          "verdict": "pass",
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        {
+          "id": "O6",
+          "obligation": "当前区域/图像引用与封存范围",
+          "verdict": "pass",
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      ],
+      "actual_prompt_satisfied": true,
+      "remaining_actual_task_omissions": [],
+      "current_refs": {
+        "region_id": "source-region:67406db56fa00e9b715175753e4906dd87c159ab0d5238ca95c46f1ede9de873",
+        "image_ref": "source-region-image:87950933087b5b958c0d73e641fbe179425398b5f33d9aae302ffe0377250e32"
+      },
+      "published_measurement_witness": {
+        "a": [
+          -0.016845703125,
+          0.1462402619080522,
+          0.6298828061076364
+        ],
+        "b": [
+          -0.016845703125,
+          0.1462402619080522,
+          1.0
+        ],
+        "direction_a_to_b": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "exact_distance_m": "0.37011719389236364",
+      "exact_distance_cm": "37.01171938923636400",
+      "reported_cm": "37.0117",
+      "reported_cm_converted_m": "0.370117",
+      "cm_rounding_absolute_error_m": "1.9389236364E-7",
+      "visibility": {
+        "pixels": 0,
+        "sampled_triangles": 0,
+        "unseen_triangles": 748,
+        "complete_visibility_unknown": true,
+        "status": "partial",
+        "observation_status": "evidence_insufficient"
+      }
+    },
+    {
+      "case_id": "S3",
+      "strict_original_accepted": false,
+      "strict_gate_counts": {
+        "fail": 1,
+        "pass": 8
+      },
+      "strict_gates": {
+        "G1": {
+          "verdict": "fail",
+          "answer_quote": "0.37011719389236364 m",
+          "answer_line": 3,
+          "expected_sources": [
+            "/task_result/facts/surface_proximity/value/distance_m",
+            "/task_result/reference"
+          ],
+          "reason": "米原值完整正确，约37.0117cm为忠实换算。原私有G1同时要求毫米，回答缺少mm，故严格fail。"
+        },
+        "G2": {
+          "verdict": "pass",
+          "answer_quote": "task_result.source_mapping",
+          "answer_line": 11,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/region_ref",
+            "/task_result/facts/surface_proximity/value/nearest_witness",
+            "/task_result/source_mapping/nearest_witness",
+            "/task_result/reference"
+          ],
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        "G3": {
+          "verdict": "pass",
+          "answer_quote": "complete_selected_source_triangle_union_to_reference_triangle_surface",
+          "answer_line": 11,
+          "expected_sources": [
+            "/measurement_scope",
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity/semantics",
+            "/region_ref/source_triangle_indices"
+          ],
+          "reason": "明确当前求值世界几何的完整选区到Cube参考三角形表面，不限可见子集且不外推整体对象。"
+        },
+        "G4": {
+          "verdict": "pass",
+          "answer_quote": "选区宿主和 `Cube` 均未参与当前视图显示",
+          "answer_line": 25,
+          "expected_sources": [
+            "/status",
+            "/observation_status",
+            "/binding/image_scope",
+            "/visibility/selected_object_participates",
+            "/visibility/reason",
+            "/task_result/status"
+          ],
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。"
+        },
+        "G5": {
+          "verdict": "pass",
+          "answer_quote": "选区可见表面像素",
+          "answer_line": 19,
+          "expected_sources": [
+            "/visibility/selected_surface_pixels",
+            "/visibility/image_ref"
+          ],
+          "reason": "选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        "G6": {
+          "verdict": "pass",
+          "answer_quote": "未见选区三角形",
+          "answer_line": 21,
+          "expected_sources": [
+            "/visibility/visible_source_triangle_indices",
+            "/visibility/unseen_source_triangle_indices",
+            "/visibility/visibility_scope",
+            "/unknowns"
+          ],
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。"
+        },
+        "G7": {
+          "verdict": "pass",
+          "answer_quote": "完整表面可见性仍为 `unknown`",
+          "answer_line": 27,
+          "expected_sources": [
+            "/visibility/status",
+            "/visibility/complete_witness",
+            "/visibility/unknown",
+            "/unknowns",
+            "/visibility/image_ref"
+          ],
+          "reason": "完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        "G8": {
+          "verdict": "pass",
+          "answer_quote": "所测完整选区与参考三角形表面分离，不相交、不接触",
+          "answer_line": 31,
+          "expected_sources": [
+            "/task_result/measurement_scope",
+            "/task_result/facts/surface_proximity",
+            "/task_result/reference"
+          ],
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        "G9": {
+          "verdict": "pass",
+          "answer_quote": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb",
+          "answer_line": 5,
+          "expected_sources": [
+            "/region_ref",
+            "/task_result/reference",
+            "/binding/capture_state",
+            "/binding/image_scope",
+            "/visibility/image_ref",
+            "/images/0"
+          ],
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      },
+      "actual_prompt_obligations": [
+        {
+          "id": "O1",
+          "obligation": "最近距离与正确单位",
+          "verdict": "pass",
+          "reason": "完整m原值满足题面，附加cm换算正确。题面没有指定mm或双单位。"
+        },
+        {
+          "id": "O2",
+          "obligation": "原见证与来源",
+          "verdict": "pass",
+          "reason": "本例region及原最近见证正确，A源面48160/48161、源顶点24331，B属Cube面0，坐标及+Z方向匹配公开输入。"
+        },
+        {
+          "id": "O3",
+          "obligation": "本图选区证据与可见像素",
+          "verdict": "pass",
+          "reason": "采用本例显示参与和图像状态，保留独立已测几何事实。S1目标有样本且Cube排除，S2双方参与且零样本，S3双方排除且视觉证据不足。 选区像素准确。S1为35452，S2/S3均为0，引用本例图像及visibility。"
+        },
+        {
+          "id": "O4",
+          "obligation": "未观察部分与缺失信息",
+          "verdict": "pass",
+          "reason": "S1准确识别385有样本和363无样本，并限制为实际像素采样。S2/S3明确全部748无样本，来源和原因保持本例范围。 完整曲面可见性保持unknown，说明未观察部分、视觉证据和实体内外分类所缺来源。"
+        },
+        {
+          "id": "O5",
+          "obligation": "表面关系及实体内外的有据判断",
+          "verdict": "pass",
+          "reason": "实际采用正距离支持完整选区与参考表面分离/无接触，保持无符号距离的实体内外限制，无+Z外法线或整对象外推。"
+        },
+        {
+          "id": "O6",
+          "obligation": "当前区域/图像引用与封存范围",
+          "verdict": "pass",
+          "reason": "区域/图像/见证均解析当前封存case。未观察原因保持未测或条件表述，额外拓扑与显示结论有公开字段支持。"
+        }
+      ],
+      "actual_prompt_satisfied": true,
+      "remaining_actual_task_omissions": [],
+      "current_refs": {
+        "region_id": "source-region:9dac0581531ea07b6555cf45b7a2d57b9fd426bed863947cf7d0cc17bea5a6bb",
+        "image_ref": "source-region-image:ead4683c30c3bc348b8494946c44538daa0648a0ea5fa297cf37da2e14129326"
+      },
+      "published_measurement_witness": {
+        "a": [
+          -0.016845703125,
+          0.1462402619080522,
+          0.6298828061076364
+        ],
+        "b": [
+          -0.016845703125,
+          0.1462402619080522,
+          1.0
+        ],
+        "direction_a_to_b": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "exact_distance_m": "0.37011719389236364",
+      "exact_distance_cm": "37.01171938923636400",
+      "reported_cm": "37.0117",
+      "reported_cm_converted_m": "0.370117",
+      "cm_rounding_absolute_error_m": "1.9389236364E-7",
+      "visibility": {
+        "pixels": 0,
+        "sampled_triangles": 0,
+        "unseen_triangles": 748,
+        "complete_visibility_unknown": true,
+        "status": "partial",
+        "observation_status": "evidence_insufficient"
+      }
+    }
+  ],
+  "input_pins": {
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\PROMPT.txt": {
+      "bytes": 427,
+      "sha256": "661e950eb1d9b27fab91611a4e764ab76d8c0a0ecbbc54e31be1d5b5cc6c4303"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\M1_SOURCE_REGION_FACTS_FIRST_001_PLAN.md": {
+      "bytes": 6819,
+      "sha256": "986554c4406ac65af36779015779d6ed349c7e491ff06d3b3de4133b80373a98"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\scoring\\SCORE_METHOD.md": {
+      "bytes": 3422,
+      "sha256": "1cc06b56c4670b1e4aca8c851d86bba03c231bb0b631ea548425dcffe78f687e"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\scoring\\RUBRIC.json": {
+      "bytes": 14204,
+      "sha256": "1f5deb4b12e083dd5de952e617ee5629f04b68152759dc29bcaed6708d73f9af"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\TOOL_SCHEMA.json": {
+      "bytes": 274,
+      "sha256": "3905a7a110f5541f35ebc148d67efb0bddc834e21ebd162dd7259ec611521fdb"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\ANSWERS_SEALED.json": {
+      "bytes": 1819,
+      "sha256": "f32ca87d38d5f29f5a6a893abd9fe2500ef8c7af75913121009da7f25f18791d"
+    },
+    "D:\\hefe\\verification\\fixes\\20261117_source_region_consumption_review\\quality\\BLIND_SCORES.json": {
+      "bytes": 27760,
+      "sha256": "49e04a7cf4c292c565ea35bcb49bb13b8ef5abe18058cdd0612ef9607ad400e0"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S1.txt": {
+      "bytes": 4675,
+      "sha256": "e5743f65e1e5ddb4bc20a9f96c3a549975d08bd4431301564d1b6b923f694a38"
+    },
+    "D:\\he_m1_source_region_facts_first_001\\slots\\S1\\consumer\\PUBLIC_FINAL.txt": {
+      "bytes": 4675,
+      "sha256": "e5743f65e1e5ddb4bc20a9f96c3a549975d08bd4431301564d1b6b923f694a38"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S1\\ORIGINAL_BRIEF.json": {
+      "bytes": 9964,
+      "sha256": "c5c1533f40fa4fc38b574be1eddea04126fd92fbfcdc11ee4d9b9e5c60ba30ab"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S1\\TOOL_RESULT.json": {
+      "bytes": 43552,
+      "sha256": "32a7bf3e2cc196c8a9890bf8effa3166a3bc066fef364b99f32ebec3de11b19d"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S2.txt": {
+      "bytes": 4518,
+      "sha256": "a02b6d7bb0cc5153dae53cec5503823ad24bbc453c0819799b0adf5ae8375b53"
+    },
+    "D:\\he_m1_source_region_facts_first_001\\slots\\S2\\consumer\\PUBLIC_FINAL.txt": {
+      "bytes": 4518,
+      "sha256": "a02b6d7bb0cc5153dae53cec5503823ad24bbc453c0819799b0adf5ae8375b53"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S2\\ORIGINAL_BRIEF.json": {
+      "bytes": 9991,
+      "sha256": "d64dd699a689fb27ed8f6d32b4f50d0ace2a163d67164541f118929d6b82970a"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S2\\TOOL_RESULT.json": {
+      "bytes": 13131,
+      "sha256": "88cb26807b2bd14124901d612124430e450ee893475507618a9defbaa270471f"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\answers\\S3.txt": {
+      "bytes": 4230,
+      "sha256": "9a76af61b58bbd7830e0986b21841812c712fd8a7349125a26f6cd3827c7705f"
+    },
+    "D:\\he_m1_source_region_facts_first_001\\slots\\S3\\consumer\\PUBLIC_FINAL.txt": {
+      "bytes": 4230,
+      "sha256": "9a76af61b58bbd7830e0986b21841812c712fd8a7349125a26f6cd3827c7705f"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S3\\ORIGINAL_BRIEF.json": {
+      "bytes": 9987,
+      "sha256": "5a29afc6c0b17ed7d4a45754a7120d522b2fd1ea95f4f629a44a4163a1640ada"
+    },
+    "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_source_region_facts_first_001\\inputs\\S3\\TOOL_RESULT.json": {
+      "bytes": 13107,
+      "sha256": "90c06e442264287949193b526e5c1fcd3d76ed100844e1069f908ca8c23a1547"
+    }
+  },
+  "new_calls": {
+    "live": 0,
+    "MCP": 0,
+    "raster": 0,
+    "PNG_encoding": 0,
+    "model": 0,
+    "paid": 0
+  },
+  "private_reasoning_bodies_read": 0
+}
