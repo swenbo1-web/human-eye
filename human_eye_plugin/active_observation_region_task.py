@@ -262,12 +262,20 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
             started = time.perf_counter_ns()
             pose = next(item for item in session.cameras['views'] if item['name'] == name)
             covered = set(session.summary()['covered_roi_ids'])
-            bounds = [pixel_center_upper_bound(region, session.objects, pose) for region in session.regions
-                      if region.roi_id in relevant and region.roi_id not in covered
-                      and session.index.classifications[name][region.roi_id]['complete']]
-            work['pixel_bound_region_calls'] += len(bounds)
+            bounds = []
+            for region in session.regions:
+                if (region.roi_id not in relevant or region.roi_id in covered
+                        or not session.index.classifications[name][region.roi_id]['complete']):
+                    continue
+                bound = pixel_center_upper_bound(region, session.objects, pose)
+                work['pixel_bound_region_calls'] += 1
+                if bound['status'] == 'bounded' and bound['upper_bound'] < 16:
+                    bounds.append(bound)
+                    continue
+                bounds.clear()
+                break
             stages['pixel_bounds_' + name] = _interval(started)
-            if bounds and all(row['status'] == 'bounded' and row['upper_bound'] < 16 for row in bounds):
+            if bounds:
                 skipped.append(dict(view_name=name, reason='pixel_upper_bound_below_readability',
                     regions=bounds, actual_observation=False,
                     geometric_non_candidates=[dict(roi_id=region.roi_id,
