@@ -482,6 +482,7 @@ class CoverageState:
     updates: int = 0
     patch_mapping_identity: str | None = None
     patch_mapping_required: bool = False
+    first_view: str = field(default='SCENE', kw_only=True)
 
     def bind_patch_mapping(self, identity):
         if not isinstance(identity, str) or not identity:
@@ -502,7 +503,7 @@ class CoverageState:
 
     def next_view(self):
         if not self.observed_views:
-            return 'SCENE'
+            return self.first_view
         candidates = [(name, (self.index.view_masks[name] & ~self.covered_mask).bit_count())
                       for name in self.index.view_order if name not in self.observed_views]
         candidates = [row for row in candidates if row[1] > 0]
@@ -522,8 +523,9 @@ class CoverageState:
             raise ValueError('current_patch_mapping_receipt_required')
         if name not in self.index.view_masks:
             raise ValueError('unknown_delivered_view')
-        if not self.observed_views and name != 'SCENE':
-            raise ValueError('common_SCENE_observation_required')
+        if not self.observed_views and name != self.first_view:
+            raise ValueError('common_SCENE_observation_required' if self.first_view == 'SCENE'
+                             else 'planned_first_observation_required')
         raw = Path(receipt['image_path']).read_bytes()
         if raw[:8] != b'\x89PNG\r\n\x1a\n' or hashlib.sha256(raw).hexdigest() != receipt['image_sha256']:
             raise ValueError('actual_PNG_bytes_required')
@@ -557,6 +559,7 @@ class CoverageState:
         changed = (index.scene_identity, index.candidate_identity) != (self.index.scene_identity, self.index.candidate_identity)
         self.index = index
         if changed:
+            self.first_view = 'SCENE'
             self.observed_views.clear()
             self.covered_mask = 0
             self.updates = 0

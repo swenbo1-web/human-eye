@@ -201,12 +201,20 @@ def pixel_center_upper_bound(region, objects, pose):
 
 def _task_next_view(session, relevant, skipped=()):
     if not session.state.observed_views:
-        return 'SCENE' if relevant else None
+        return session.state.first_view if relevant else None
     mask = sum(1 << index for index, region in enumerate(session.regions) if region.roi_id in relevant)
     unresolved = mask & ~session.state.covered_mask
     candidates = [(name, (bits & unresolved).bit_count()) for name, bits in session.index.view_masks.items()
                   if name not in session.state.observed_views and name not in skipped and bits & unresolved]
     return max(candidates, key=lambda row: row[1])[0] if candidates else None
+
+
+def _local_first_view(index, region_id):
+    if index.classifications['SCENE'][region_id]['status'] == 'positive_area_occlusion':
+        # This private index has only the target region. Its existing mask
+        # identifies the directions that can complete the geometric witness.
+        return next((name for name in index.view_order if index.view_masks[name]), 'SCENE')
+    return 'SCENE'
 
 
 def _facts(session, binding, scope_id, frames):
@@ -385,8 +393,9 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 started = time.perf_counter_ns()
                 local_index = build_index_from_parsed(objects, triangles, scene_identity, (region,), local_cameras)
                 work['index_calls'] += 1
+                state = CoverageState(local_index, first_view=_local_first_view(local_index, region.roi_id))
                 local_session = ActiveObservationSession(objects, triangles, local_cameras, local_index,
-                                                         CoverageState(local_index))
+                                                         state)
                 stages['index_' + scope_id] = _interval(started)
                 local_binding = _local_binding(binding, sources[region.roi_id], local_cameras, scene_identity)
                 scope, frames = _render_scope(local_session, meshes, local_binding, scope_id, {region.roi_id},
