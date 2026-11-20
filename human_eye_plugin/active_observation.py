@@ -369,6 +369,14 @@ def inside_frustum(polygon, planes):
     return all(min(plane_distances(polygon, plane)) >= 0 for plane in planes)
 
 
+def _box_inside_frustum(world_bounds, planes):
+    # An affine plane reaches its minimum over this box at the corner
+    # selected by the signs of its three spatial coefficients.
+    return all(plane[3] + sum(coefficient * (lower if coefficient >= 0 else upper)
+                            for coefficient, (lower, upper) in zip(plane, world_bounds)) >= 0
+               for plane in planes)
+
+
 def triangle_shadow(triangle, region, basis, planes, cached_screen=None):
     polygon = triangle.vertices
     for plane in planes:
@@ -406,7 +414,8 @@ class CoverageIndex:
         return [identity for i, identity in enumerate(self.region_ids) if mask & (1 << i)]
 
 
-def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras, *, patch_scope=()):
+def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras, *, patch_scope=(),
+                            prove_frustum_containment=False, frustum_work=None):
     """Build exact finite-view coverage from the existing normalized geometry."""
     poses = tuple(cameras['views'])
     view_names = {pose['name'] for pose in poses}
@@ -419,13 +428,34 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
         for pose in poses])
     masks, classifications = {}, {}
     region_triangles = {region.roi_id: frozenset(region.triangle_indices) for region in regions}
+    shared_points = world_bounds = None
+    if prove_frustum_containment:
+        shared_points = sorted({point for triangle in triangles for point in triangle.vertices})
+        started = time.perf_counter_ns()
+        if shared_points:
+            world_bounds = tuple((min(point[axis] for point in shared_points),
+                                  max(point[axis] for point in shared_points)) for axis in range(3))
+        proof_ns = time.perf_counter_ns() - started
+    else:
+        proof_ns = 0
+    if frustum_work is not None:
+        frustum_work.update(frustum_certified_views=0, frustum_fallback_views=0,
+                            frustum_shadow_bypassed=0, frustum_shadow_legacy=0, frustum_proof_ns=proof_ns)
     for pose in poses:
         direction = vector(pose['direction_rational'])
         if not dot(direction, direction):
             raise ValueError('nonzero_camera_direction_required')
         basis, planes = screen_basis(direction), camera_planes(pose)
+        shadow_planes = planes
+        if world_bounds is not None:
+            started = time.perf_counter_ns()
+            if _box_inside_frustum(world_bounds, planes):
+                shadow_planes = ()
+            if frustum_work is not None:
+                frustum_work['frustum_proof_ns'] += time.perf_counter_ns() - started
         projected, boxes = {}, {}
-        points = sorted({point for triangle in triangles for point in triangle.vertices})
+        points = shared_points if shared_points is not None else sorted(
+            {point for triangle in triangles for point in triangle.vertices})
         values = project(tuple(points), basis)
         by_vertex = dict(zip(points, values))
         for triangle in triangles:
@@ -433,6 +463,9 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
             projected[triangle.key] = screen
             boxes[triangle.key] = bounds(screen)
         mask, rows = 0, {}
+        if frustum_work is not None:
+            frustum_work['frustum_fallback_views' if shadow_planes else 'frustum_certified_views'] += 1
+        shadow_counter = 'frustum_shadow_legacy' if shadow_planes else 'frustum_shadow_bypassed'
         for index, region in enumerate(regions):
             status = 'complete'
             facing = dot(region.normal, direction)
@@ -453,7 +486,9 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                     continue
                 if not bounds_overlap(region_bounds, boxes[triangle.key]):
                     continue
-                shadow = triangle_shadow(triangle, region, basis, planes, projected.get(triangle.key))
+                if frustum_work is not None:
+                    frustum_work[shadow_counter] += 1
+                shadow = triangle_shadow(triangle, region, basis, shadow_planes, projected.get(triangle.key))
                 if len(shadow) < 3 or not signed_area(shadow):
                     continue
                 overlap = clip_convex(shadow, region_screen)
@@ -738,7 +773,7 @@ def prepare_scene(scene, cameras, diagnostics=False):
 
 
 def prepare_coverage_index(objects, triangles, scene_identity, cameras, *, diagnostics=False,
-                           target_object_index=None):
+                           target_object_index=None, prove_frustum_containment=False, frustum_work=None):
     """Build a coverage index and partition without retaining session state or meshes."""
     stages = {} if diagnostics else None
     if diagnostics:
@@ -749,7 +784,8 @@ def prepare_coverage_index(objects, triangles, scene_identity, cameras, *, diagn
         stages['discovery'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
         started = closed
     index = build_index_from_parsed(objects, triangles, scene_identity, regions, cameras,
-                                    patch_scope=patch_scope)
+                                    patch_scope=patch_scope, prove_frustum_containment=prove_frustum_containment,
+                                    frustum_work=frustum_work)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['coverage'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}

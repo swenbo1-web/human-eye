@@ -322,7 +322,9 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 camera_calls=0, local_camera_calls=0, prepare_calls=0, index_calls=0,
                 patch_mapping_calls=0, raster_attempts=0, raster_completed=0,
                 local_verified_images=0, PNG_bytes=0, NPZ_bytes=0, array_payload_bytes=0,
-                pixel_bound_region_calls=0, global_views_skipped=0, global_index_cache_hit=False)
+                pixel_bound_region_calls=0, global_views_skipped=0, global_index_cache_hit=False,
+                frustum_certified_views=0, frustum_fallback_views=0,
+                frustum_shadow_bypassed=0, frustum_shadow_legacy=0, frustum_proof_ns=0)
     stages = {}
     try:
         if check_budget is not None:
@@ -357,7 +359,8 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
             work['prepare_calls'] += 1
             work['partition_calls'] += 1
             work['index_calls'] += 1
-            index, timing = prepare_coverage_index(objects, triangles, scene_identity, cameras, diagnostics=True)
+            index, timing = prepare_coverage_index(objects, triangles, scene_identity, cameras, diagnostics=True,
+                                                    prove_frustum_containment=True, frustum_work=work)
             stages.update(partition=timing['discovery'], index_global=timing['coverage'])
             if check_budget is not None:
                 check_budget('active_observation_after_global_index')
