@@ -172,7 +172,15 @@ def rasterize_attention(meshes, view, projection, size, *, return_owner=False,
                     # Normalise edges before cross product to avoid overflow
                     # and preserve shading when world geometry is very large.
                     scale = max(float(np.max(np.abs(first))), float(np.max(np.abs(second))))
-                    normal = np.cross(first / scale, second / scale) if scale else np.zeros(3)
+                    if scale:
+                        ux, uy, uz = first / scale
+                        vx, vy, vz = second / scale
+                        # Keep NumPy's three-dimensional cross-product operation order.
+                        normal = np.array((uy * vz - uz * vy,
+                                           uz * vx - ux * vz,
+                                           ux * vy - uy * vx))
+                    else:
+                        normal = np.zeros(3)
                     length = float(np.linalg.norm(normal))
                     shade = .45 + .55 * abs(float(normal @ light) / length) if length else .45
                     rgb = np.clip(np.asarray(mesh.color_rgb, dtype=np.float64) * shade, 0, 255).astype(np.uint8)
