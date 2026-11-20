@@ -1,0 +1,62 @@
+{
+  "quoted_final_anchors": [
+    "87 个分量",
+    "84 个整体为矩形",
+    "√10/256 ≈ 0.0123526471100327",
+    "active-host-image:c303d39bc9fa9f594555db528bb66c89e20203cf445883d7e62f7407a6f345cd",
+    "active-host-image:d9623094da18921100f990eb429ad39e113c2d37de4224dedf1302c82d871017",
+    "具体遮挡物为 M03 的盒体部分",
+    "最大的水平位移也仅为 `1/6` 米"
+  ],
+  "increments": [
+    {
+      "attempt": 1,
+      "labels": ["primary_observation"],
+      "response_anchors": [
+        "active-observation-region-task-brief-v1",
+        "positive_area_occlusion_all_front_views",
+        "active-host-image:c303d39bc9fa9f594555db528bb66c89e20203cf445883d7e62f7407a6f345cd",
+        "active-host-image:d9623094da18921100f990eb429ad39e113c2d37de4224dedf1302c82d871017"
+      ],
+      "detail": "Explicit fresh brief supplied the complete three-region roster and sources, two local original PNGs actually cited, one global PNG and a six-view M06 geometric unknown. It supplied area and oriented unit normal inputs as world half-edge vectors and a rational facing vector, without directly reporting the scalar area or unit-normal output. It did not identify M03 as the obstruction."
+    },
+    {
+      "attempt": 2,
+      "labels": ["repeated_observation"],
+      "response_anchors": ["prediction_only", "unobserved_geometric_candidates", "positive_area_occlusion_all_front_views"],
+      "detail": "Same region scope with full and images disabled. It repeated the source rows, centers, half-edges, facing directions and M06 unknown, with no PNG or named blocker. The diagnostics additionally exposed that M09 had four predicted occluded views and two candidate views, LEFT and BACK. The answer did not cite this alternative-view diagnostic, and its LEFT witness had already arrived in attempt 1."
+    },
+    {
+      "attempt": 3,
+      "labels": ["source_or_buffer_inspection"],
+      "response_anchors": ["source_face_offsets", "1.9375", "2.0625"],
+      "detail": "Loaded independent current Blender-native arrays and inspected their schema, object count and M06 source. This was preparation for the attempted geometry and obstruction checks in 4 and 5."
+    },
+    {
+      "attempt": 4,
+      "labels": ["independent_geometry_confirmation", "derived_required_numeric_fact"],
+      "response_anchors": ["maximal_components 87 triangles 184", "0.012352647110032733", "nonrectangular [('M05'"],
+      "detail": "Independently reconstructed all maximal oriented coplanar components from native source triangles and adjacency. It gave the three required scalar areas and oriented unit normals in answer-ready form, confirmed the roster independently, and identified the three nonrectangular maximal components excluded in the final explanation."
+    },
+    {
+      "attempt": 5,
+      "labels": ["additional_occluder_evidence", "derived_required_numeric_fact"],
+      "response_anchors": ["M03 vertices [[1.5, 1.5, 1.125]", "M03 triangles", "rectangular_components 84", "M09 exact area sqrt(10)/256 = 0.012352647110032733"],
+      "detail": "Read the named M03 blocker vertices and triangles, used in the final answer's six-direction analytic coverage proof. It also counted 84 rectangular components and repeated M09's already computed decimal area with its exact symbolic form. It captured no new raster and did not re-fetch either cited image.",
+      "independent_exact_footprint": {
+        "source_tool_attempts": [3, 5],
+        "method": "Read M06 vertices and M03 bottom face vertices and triangles from the two original ordinary tool replies. Shift each M06 corner in x and y by 1/8 times the direction's x/z and y/z ratios to obtain the intercept with the M03 bottom plane at z=9/8. The two source triangles [0,2,3] and [0,1,2] make the full M03 bottom square. Every footprint is strictly inside that square.",
+        "M03_bottom_square_xy": [["3/2", "5/2"], ["3/2", "5/2"]],
+        "M06_intercepts_xy": {
+          "SCENE": [["101/48", "107/48"], ["85/48", "91/48"]],
+          "TOP": [["31/16", "33/16"], ["31/16", "33/16"]],
+          "LEFT": [["29/16", "31/16"], ["31/16", "33/16"]],
+          "RIGHT": [["33/16", "35/16"], ["31/16", "33/16"]],
+          "FRONT": [["31/16", "33/16"], ["29/16", "31/16"]],
+          "BACK": [["31/16", "33/16"], ["33/16", "35/16"]]
+        },
+        "precision_note": "The quoted 1/6 m bound applies to each horizontal coordinate. The largest Euclidean horizontal shift is sqrt(2)/6 m in SCENE. The exact footprints establish full coverage."
+      }
+    }
+  ]
+}
