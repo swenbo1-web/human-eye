@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-20，[复杂全场正式原生／插件对照](M4_CROSS_SCALE_LIVE_TASK_FORMAL_001_INDEPENDENT_REVIEW.md)已完成。原生 8/9、107.020 秒，插件补齐 M09 完整局部见证，9/9、142.982 秒。本对插件补查更多，首调选择大回包；下一[紧凑首调验证](M4_CROSS_SCALE_BRIEF_ENTRY_001_PLAN.md)只改实际推荐调用，确认首包采用与补查成本。
+2026-11-20，[复杂全场简报首调实测](M4_CROSS_SCALE_BRIEF_ENTRY_001_INDEPENDENT_REVIEW.md)通过，插件保持 9/9，耗时 142.982→81.852 秒、调用 11→5。仍有一次大回包和面积/单位法向复算。下一[区域数值直出](M4_CROSS_SCALE_REGION_GEOMETRY_FACTS_001_PLAN.md)补任务所需的两个几何量，独立验收是否少做对应计算。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
@@ -156,7 +156,7 @@ M5-TASK-CONSUMPTION-001已[异常收口](M5_TASK_CONSUMPTION_001_INDEPENDENT_REV
 
 ## 7. 并行与集成顺序
 
-1. [装配实体关系001复核](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10、原生6次和插件3次工具尝试，完整窗差54.436秒。[首包真实消费A/B](M4_ASSEMBLY_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md)两组补查相同，已封存该候选。复杂全场的正式单对有质量增量及时间成本，先验证[紧凑首调](M4_CROSS_SCALE_BRIEF_ENTRY_001_PLAN.md)，保留全场索引和局部强制构图的账本。Yanyite曲面题已收口。
+1. [装配实体关系001复核](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10、原生6次和插件3次工具尝试，完整窗差54.436秒。[首包真实消费A/B](M4_ASSEMBLY_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md)两组补查相同，已封存该候选。复杂全场简报首调保持质量并减少补查的单槽已封存。下一项[区域数值直出](M4_CROSS_SCALE_REGION_GEOMETRY_FACTS_001_PLAN.md)，索引和局部强制构图保留分项账本。Yanyite曲面题已收口。
 2. 可并行准备：M1 只读分析消费轨迹；M2 确认重复采集序列；M3 独立真值与算法资格；M5 固定一种观察后测量任务。这些准备已形成路线，本轮没有额外启动产品实现或模型作业。
 3. 可以并行实现的边界：M2 负责 blender_host/scene_residency 资源复用，M3 负责 surface_proximity/surface_geometry 内核；M4 的独立观察算法可在 active_observation 内推进。M4 前置取数也会涉及 blender_host/live_service，必须等 M2 宿主候选固定后由同一集成者接入；M1/M5 共用的 live_service/task_query 接线同样串行修改。跨模块请求只用现有状态/结果，避免新增抽象层。
 4. 所有候选在独立工作区完成；当前M1/M4固定安装不变。不同工作区也不同时改同一接口。真实Blender QA、模型性能槽和同版本集成验收串行，防止资源竞争把成绩弄乱。竞争分支不接收本线提交。
