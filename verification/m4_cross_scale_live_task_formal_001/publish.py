@@ -1,0 +1,120 @@
+"""Seal original public answers, archive unchanged runtime bytes, and bind the result."""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+import zipfile
+
+
+NS = Path(__file__).resolve().parent
+sys.path.insert(0, str(NS / 'harness'))
+from common import EXTERNAL, ROOT, read, save, sha
+
+
+BASE = 'aac886f4e86ce1ac3de4cc4567a0ff79644df4b0'
+
+
+def answers():
+    outcomes = []
+    for label in ('N1', 'P1'):
+        slot = EXTERNAL / 'slots' / label
+        original = slot / 'SLOT_RESULT.json'
+        result = read(original)
+        pub = read(slot / 'SLOT_PUBLICATION.json')
+        if pub['result_sha256'] != sha(original) or result['label'] != label:
+            raise ValueError('original slot result and publication differ')
+        row = {'slot': label, 'status': result['status'], 'slot_result_sha256': sha(original),
+               'published_ns': pub['published_ns'], 'path': None, 'original_path': None, 'sha256': None, 'bytes': None}
+        if result.get('answer') is not None:
+            target = slot / 'consumer/PUBLIC_FINAL.txt'
+            raw = target.read_bytes()
+            if sha(target) != result['answer']['sha256'] or len(raw) != result['answer']['bytes']:
+                raise ValueError('original public answer bytes changed')
+            out = NS / 'answers' / (label + '.txt')
+            out.parent.mkdir(exist_ok=True)
+            with out.open('xb') as stream:
+                stream.write(raw)
+            row.update(path=str(out), original_path=str(target), sha256=sha(out), bytes=len(raw))
+        outcomes.append(row)
+    save(NS / 'ANSWERS_SEALED.json', {'answers': outcomes, 'sealed_ns': time.perf_counter_ns(), 'replacement_consumers': 0})
+
+
+def archive():
+    paths = []
+    for section in ('slots', 'budget', 'preflight'):
+        root = EXTERNAL / section
+        for path in root.rglob('*'):
+            if path.is_symlink() or path.is_junction() or not path.resolve().is_relative_to(root.resolve()):
+                raise ValueError('runtime reparse point ' + str(path))
+            if path.is_file():
+                paths.append(path)
+    paths.sort()
+    rows = [{'path': p.relative_to(EXTERNAL).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p)} for p in paths]
+    output = EXTERNAL / 'ORIGINAL_RUNTIME.zip'
+    with zipfile.ZipFile(output, 'x', compression=zipfile.ZIP_DEFLATED, compresslevel=4) as bundle:
+        for p, row in zip(paths, rows, strict=True):
+            bundle.write(p, row['path'])
+    with zipfile.ZipFile(output) as bundle:
+        if bundle.namelist() != [row['path'] for row in rows]:
+            raise ValueError('runtime archive membership changed')
+        for p, row in zip(paths, rows, strict=True):
+            with bundle.open(row['path']) as entry:
+                digest = hashlib.file_digest(entry, 'sha256').hexdigest()
+            if digest != row['sha256'] or sha(p) != digest:
+                raise ValueError('runtime or original bytes changed ' + row['path'])
+    save(NS / 'RUNTIME_INDEX.json', {'count': len(rows), 'files': rows,
+          'original_bytes': sum(row['bytes'] for row in rows),
+          'archive': {'path': str(output), 'bytes': output.stat().st_size, 'sha256': sha(output)}})
+    print(len(rows), sha(output))
+
+
+def finalize():
+    namespace = NS.relative_to(ROOT).as_posix() + '/'
+    changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT).decode().splitlines()
+    if any(not path.startswith(namespace) for path in changed):
+        raise ValueError('project outside recovery evidence changed')
+    freeze = NS / 'FROZEN.json'
+    for row in read(freeze)['direct_inputs']:
+        path = Path(row['path'])
+        if sha(path) != row['sha256'] or path.stat().st_size != row['bytes']:
+            raise ValueError('frozen source or historical original changed ' + str(path))
+    gate = read(NS / 'ADMISSION.json')
+    frozen_sha = sha(freeze)
+    admission_path = NS / 'ADMISSION.json'
+    if gate['freeze_sha256'] != frozen_sha:
+        raise ValueError('new admission lost its frozen input binding')
+    admission_sha = sha(admission_path)
+    evidence = gate['evidence']
+    if sha(evidence['path']) != evidence['sha256'] or Path(evidence['path']).stat().st_size != evidence['bytes']:
+        raise ValueError('new admission evidence changed')
+    for row in ('N1', 'P1'):
+        slot = EXTERNAL / 'slots' / row
+        if (slot / 'SLOT_RESULT.json').exists():
+            original = read(slot / 'SLOT_RESULT.json')
+            if not gate['passed'] or original['admission_sha256'] != admission_sha or original['freeze_sha256'] != frozen_sha:
+                raise ValueError('formal result admission differs/' + row)
+    cost = read(NS / 'RUNTIME_REVIEW.json')
+    save(NS / 'DECISION.json', {'task': 'M4-CROSS-SCALE-LIVE-TASK-FORMAL-001', 'admission_passed': gate['passed'],
+         'frozen_sha256': frozen_sha, 'admission_sha256': admission_sha, 'product_diff_files': 0,
+         'new_asset_builds': 0, 'additional_qualification_owned': 0, 'replacements': 0,
+         'slots': [{'label': row['label'], 'status': row['status'], 'model_consumers': row['model_consumers']}
+                   for row in cost['slots']],
+         'evidence_sha256': {name: sha(NS / name) for name in ('ADMISSION.json', 'RUNTIME_REVIEW.json',
+                                                       'RUNTIME_INDEX.json', 'scoring/QUALITY.json', 'REPORT.md')}})
+    path = NS / 'CONTENT_MANIFEST.json'
+    files = [p for p in sorted(NS.rglob('*')) if p.is_file() and p != path]
+    if any(p.suffix == '.pyc' for p in files):
+        raise ValueError('unexpected generated bytecode in evidence folder')
+    rows = [{'path': p.relative_to(NS).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p)} for p in files]
+    save(path, {'files': rows, 'count': len(rows), 'self_excluded': True})
+    print(len(rows) + 1, sha(path))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=('answers', 'archive', 'finalize'))
+    globals()[parser.parse_args().action]()
