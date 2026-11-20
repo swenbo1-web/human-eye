@@ -360,7 +360,7 @@ def _location_conventions(cameras):
 
 def observe_capture(capture, output_directory, construction_callback=None,
                     check_budget=None, include_image=True, _geometry_ids_callback=None,
-                    region_task=None):
+                    region_task=None, _prepare_global_index=None):
     """Compute serializable facts and current-host-bound local image references.
 
     The caller supplies one complete capture and retains this result in its
@@ -372,7 +372,8 @@ def observe_capture(capture, output_directory, construction_callback=None,
         from .active_observation_region_task import observe_region_task
         return observe_region_task(capture, output_directory, region_task,
             construction_callback=construction_callback, check_budget=check_budget,
-            include_image=include_image, geometry_ids_callback=_geometry_ids_callback)
+            include_image=include_image, geometry_ids_callback=_geometry_ids_callback,
+            prepare_global_index=_prepare_global_index)
     if type(include_image) is not bool:
         raise ValueError('active_observation_include_image_boolean_required')
     stages, frames, steps = {}, [], []

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .active_observation import (
     ActiveObservationSession, CoverageState, build_index_from_parsed, cross, dot,
-    fingerprint, geometry, subtract,
+    fingerprint, geometry, prepare_coverage_index, subtract,
 )
 from .active_observation_images import ActiveObservationImages, _meshes_from_objects
 from .blender_host import _observation_affine_interval, _observation_target_cameras
@@ -308,13 +308,13 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
 
 
 def observe_region_task(capture, output_directory, conditions, *, construction_callback=None,
-                        check_budget=None, include_image=True, geometry_ids_callback=None):
+                        check_budget=None, include_image=True, geometry_ids_callback=None,
+                        prepare_global_index=None):
     """Run finite global and region-fitted views over one immutable capture."""
     from .active_observation_host import (
         _interval, _location_conventions, _patch_scope_facts, freeze_cameras,
         scene_from_capture, source_binding,
     )
-    from .active_observation import prepare_scene_from_parsed
     if type(include_image) is not bool:
         raise ValueError('active_observation_include_image_boolean_required')
     conditions = validate_region_task(conditions)
@@ -322,7 +322,7 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 camera_calls=0, local_camera_calls=0, prepare_calls=0, index_calls=0,
                 patch_mapping_calls=0, raster_attempts=0, raster_completed=0,
                 local_verified_images=0, PNG_bytes=0, NPZ_bytes=0, array_payload_bytes=0,
-                pixel_bound_region_calls=0, global_views_skipped=0)
+                pixel_bound_region_calls=0, global_views_skipped=0, global_index_cache_hit=False)
     stages = {}
     try:
         if check_budget is not None:
@@ -352,14 +352,27 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
         work['camera_calls'] += 1
         stages['cameras'] = _interval(started)
         started = time.perf_counter_ns()
-        session = prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=True)
-        work['prepare_calls'] += 1
-        work['partition_calls'] += 1
-        work['index_calls'] += 1
+
+        def build_global():
+            work['prepare_calls'] += 1
+            work['partition_calls'] += 1
+            work['index_calls'] += 1
+            index, timing = prepare_coverage_index(objects, triangles, scene_identity, cameras, diagnostics=True)
+            stages.update(partition=timing['discovery'], index_global=timing['coverage'])
+            if check_budget is not None:
+                check_budget('active_observation_after_global_index')
+            return index
+
+        if prepare_global_index is None:
+            index, reused = build_global(), False
+        else:
+            index, reused = prepare_global_index(build_global)
+        work['global_index_cache_hit'] = reused
+        session = ActiveObservationSession(objects, triangles, cameras, index, CoverageState(index))
         stages['prepare'] = _interval(started)
-        stages['partition'] = copy.deepcopy(session.diagnostics['stages']['discovery'])
-        stages['index_global'] = copy.deepcopy(session.diagnostics['stages']['coverage'])
         binding = source_binding(capture, cameras, geometry_identity=scene_identity)
+        if reused and (index.scene_identity, index.candidate_identity) != (scene_identity, binding['camera_identity']):
+            raise ValueError('active_observation_prepared_index_binding_mismatch')
         started = time.perf_counter_ns()
         eligible = [region for region in session.regions if region_matches(region, conditions)]
         eligible.sort(key=lambda region: (binding['objects'][region.object_index]['host_id'],

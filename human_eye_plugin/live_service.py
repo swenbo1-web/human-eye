@@ -1614,7 +1614,7 @@ class LiveSpatialService:
 
     def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
         from .active_observation_host import source_binding, observe_capture
-        from .read_context import query_key
+        from .read_context import capture_key, query_key
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
         context = self._read_context
@@ -1663,6 +1663,8 @@ class LiveSpatialService:
                 directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
                 geometry_ids = []
                 region_options = {} if region_task is None else {'region_task': region_task}
+                if region_task is not None and capture_key(captured) is not None:
+                    region_options['_prepare_global_index'] = partial(context.prepared, 'region_task_global_index')
                 observed = observe_capture(captured, directory, include_image=include_image,
                     construction_callback=before_construction, check_budget=self._check_request_budget,
                     _geometry_ids_callback=geometry_ids.append, **region_options)

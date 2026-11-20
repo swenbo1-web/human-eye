@@ -737,30 +737,33 @@ def prepare_scene(scene, cameras, diagnostics=False):
     return session
 
 
-def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=False,
-                              *, target_object_index=None):
-    """Prepare from the exact objects/triangles/identity returned by geometry.
-
-    Camera fitting and image conversion can share this normalized geometry
-    before entering discovery and coverage. The caller retains its full mesh
-    ordering in the returned session.
-    """
+def prepare_coverage_index(objects, triangles, scene_identity, cameras, *, diagnostics=False,
+                           target_object_index=None):
+    """Build a coverage index and partition without retaining session state or meshes."""
     stages = {} if diagnostics else None
     if diagnostics:
         started = time.perf_counter_ns()
-    owned_cameras = copy.deepcopy(cameras)
     regions, patch_scope = partition_regions(objects, target_object_index=target_object_index)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['discovery'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
         started = closed
-    index = build_index_from_parsed(objects, triangles, scene_identity, regions, owned_cameras,
+    index = build_index_from_parsed(objects, triangles, scene_identity, regions, cameras,
                                     patch_scope=patch_scope)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['coverage'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+    return index, stages
+
+
+def prepare_scene_from_parsed(objects, triangles, scene_identity, cameras, diagnostics=False,
+                              *, target_object_index=None):
+    """Start a session from the exact geometry and retain the caller's mesh order."""
+    owned_cameras = copy.deepcopy(cameras)
+    index, stages = prepare_coverage_index(objects, triangles, scene_identity, owned_cameras,
+        diagnostics=diagnostics, target_object_index=target_object_index)
     details = None
     if diagnostics:
         details = {'stages': stages, 'objects': len(objects), 'triangles': len(triangles),
-                   'regions': len(regions), 'views': len(index.view_order)}
+                   'regions': len(index.regions), 'views': len(index.view_order)}
     return ActiveObservationSession(objects, triangles, owned_cameras, index, CoverageState(index), details)
