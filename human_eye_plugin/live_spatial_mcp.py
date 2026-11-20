@@ -952,18 +952,68 @@ def _project_active_patch_support(patch_support, objects, regions):
     return result, region_counts, region_ranges
 
 
-def _valid_region_location_vector(values):
+def _read_region_location_vector(values, *, exact=False):
     if type(values) is not list or len(values) != 3:
-        return False
+        return None
+    vector = []
     for value in values:
         if type(value) not in (int, float, str) or type(value) is float and not math.isfinite(value):
-            return False
-        if type(value) is str:
+            return None
+        if exact or type(value) is str:
             try:
-                Fraction(value)
+                value = Fraction(value)
             except (ValueError, ZeroDivisionError):
-                return False
-    return True
+                return None
+        vector.append(value)
+    return tuple(vector)
+
+
+def _valid_region_location_vector(values):
+    return _read_region_location_vector(values) is not None
+
+
+def _region_rectangle_area(dominant_area, direction, length):
+    """Round the area after scaling, without first narrowing its dominant component."""
+    try:
+        area = float(dominant_area * Fraction(length))
+    except OverflowError:
+        area = math.inf
+
+    smallest = math.ulp(0.0)
+    largest = sys.float_info.max
+    if area <= smallest or area >= math.nextafter(largest, 0.0):
+        # Use exact bounds near the ties to zero and infinity, where the
+        # rounded direction length could otherwise alter availability.
+        area_squared = dominant_area ** 2 * sum(component ** 2 for component in direction)
+        half_smallest = Fraction(smallest) / 2
+        overflow_tie = Fraction(largest) + Fraction(math.ulp(largest)) / 2
+        if area_squared <= half_smallest ** 2 or area_squared >= overflow_tie ** 2:
+            return None
+        area = max(smallest, min(area, largest))
+    return area
+
+
+def _region_geometry_facts(half_u, half_v, front):
+    """Use the oriented dominant component and one norm of the lossless direction."""
+    axis = max(range(3), key=lambda index: abs(front[index]))
+    scale = abs(front[axis])
+    if not scale:
+        return {'geometry_fact_unknowns': {
+            'area_m2': 'unresolved_front_direction', 'unit_normal_world': 'unresolved_front_direction'}}
+    direction = front if scale == 1 else tuple(value / scale for value in front)
+    components = tuple(map(float, direction))
+    length = math.hypot(*components)
+    # U × V is parallel to front. Its dominant component determines the
+    # magnitude, so the other two exact determinants are unnecessary.
+    j, k = (axis + 1) % 3, (axis + 2) % 3
+    dominant_area = 4 * abs(half_u[j] * half_v[k] - half_u[k] * half_v[j])
+    facts = {'unit_normal_world': [component / length for component in components]}
+    area = _region_rectangle_area(dominant_area, direction, length)
+    if area is None:
+        facts['geometry_fact_unknowns'] = {'area_m2': 'outside_positive_binary64_range'}
+    else:
+        facts['area_m2'] = area
+    return facts
 
 
 def _valid_visible_pixel_location(pixel, size):
@@ -1082,7 +1132,7 @@ def _project_active_inspection(facts, regions, pixel_references):
     return compact, {'columns': ['reason', 'view_indices'], 'rows': groups}
 
 
-def _project_region_task_brief(value):
+def _project_region_task_brief(value, *, include_geometry_facts=True):
     """Project current cross-scale facts using scope and frame identities."""
     from .query_policy import validate_region_task
 
@@ -1161,7 +1211,12 @@ def _project_region_task_brief(value):
         require(type(index) is int and 0 <= index < len(objects), 'task_object_index')
         host = objects[index]
         require(all(row[key] == host[key] for key in ('host_id', 'instance_id', 'object_name')), 'task_host_identity')
-        require(all(_valid_region_location_vector(row[key]) for key in world_fields), 'task_world_location')
+        if include_geometry_facts:
+            require(_valid_region_location_vector(row[world_fields[0]]), 'task_world_location')
+            exact_vectors = tuple(_read_region_location_vector(row[key], exact=True) for key in world_fields[1:])
+            require(all(vector is not None for vector in exact_vectors), 'task_world_location')
+        else:
+            require(all(_valid_region_location_vector(row[key]) for key in world_fields), 'task_world_location')
         require(row['source_triangle_indices'] == source_triangles[(index, row['roi_id'])], 'task_source_triangles')
         source = row['source']
         require(source['document_epoch'] == binding['document_epoch']
@@ -1205,6 +1260,8 @@ def _project_region_task_brief(value):
                 selected_indices[frame['frame_identity']] + 1 if witness['selected_for_delivery'] else None)
         else:
             require(row['status'] != 'covered', 'covered_requires_witness')
+        if include_geometry_facts:
+            compact.update(_region_geometry_facts(*exact_vectors))
         compact_rows.append(compact)
     result = {key: copy.deepcopy(value[key]) for key in
               ('status', 'result_kind', 'observation_status', 'session_id', 'read_only', 'execution_authority')}
@@ -1702,7 +1759,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             metadata['image_delivery'] = image_delivery
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
-            projected = _project_region_task_brief(metadata)
+            projected = _project_region_task_brief(metadata,
+                include_geometry_facts=response_detail != 'full' and not is_error)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
