@@ -854,6 +854,16 @@ def project_surface_scan_brief(value):
     return result
 
 
+def _contiguous_index_ranges(ordered_indices):
+    ranges = []
+    for index in ordered_indices:
+        if ranges and index == ranges[-1][1] + 1:
+            ranges[-1][1] = index
+        else:
+            ranges.append([index, index])
+    return ranges
+
+
 def _project_active_patch_support(patch_support, objects, regions):
     """Keep complete source-face denominators while displaying component ranges."""
     if set(patch_support) != {'schema', 'triangle_index_scope', 'all_triangles_participate_in_occlusion',
@@ -877,13 +887,7 @@ def _project_active_patch_support(patch_support, objects, regions):
             raise ValueError('active_patch_region_triangle_overlap')
         owned.update(indices)
         region_counts.append(len(indices))
-        ranges = []
-        for triangle_index in sorted(indices):
-            if ranges and triangle_index == ranges[-1][1] + 1:
-                ranges[-1][1] = triangle_index
-            else:
-                ranges.append([triangle_index, triangle_index])
-        region_ranges.append(ranges)
+        region_ranges.append(_contiguous_index_ranges(sorted(indices)))
     support_rows, component_rows = [], []
     sources = patch_support['objects']
     object_fields = {'object_index', 'host_id', 'instance_id', 'object_name'}
@@ -914,14 +918,8 @@ def _project_active_patch_support(patch_support, objects, regions):
                     or any(type(face) is not int for face in faces)):
                 raise ValueError('active_patch_component_mismatch')
             rejected.update(indices)
-            ranges = []
-            for triangle_index in sorted(indices):
-                if ranges and triangle_index == ranges[-1][1] + 1:
-                    ranges[-1][1] = triangle_index
-                else:
-                    ranges.append([triangle_index, triangle_index])
             component_rows.append([index, component_index, len(indices), component['reason'],
-                                   component['status'], ranges])
+                                   component['status'], _contiguous_index_ranges(sorted(indices))])
         expected_status = ('occluder_only' if occluder else 'unsupported' if not supported else
                            'partially_supported' if rejected else 'fully_supported')
         expected_faces = set() if occluder else set(range(total))
@@ -1115,10 +1113,10 @@ def _shortfall_pixel_matches(pixel, task_row, observation):
     return surface <= (xmax - xmin + 1) * (ymax - ymin + 1)
 
 
-def _add_region_task_shortfalls(scope, compact_rows, observations, selected_indices):
+def _region_task_shortfalls(scope, regions, observations, frame_indices):
     by_roi = _unique_rows_by_roi(scope['facts'].get('region_evidence', ()))
     pending = {}
-    for roi, row in compact_rows.items():
+    for roi, (index, row) in regions.items():
         evidence = by_roi.get(roi)
         reasons = row.get('view_reasons')
         if (evidence is not None and evidence.get('unobserved_reason') == 'pixel_evidence_insufficient'
@@ -1126,7 +1124,8 @@ def _add_region_task_shortfalls(scope, compact_rows, observations, selected_indi
                 and evidence.get('view_reasons') == reasons):
             views = reasons.get('pixel_evidence_insufficient')
             if type(views) is list:
-                pending[roi] = views
+                pending[roi] = (index, row, views)
+    shortfalls = []
     for identity in scope['frame_refs']:
         if not pending:
             break
@@ -1134,23 +1133,19 @@ def _add_region_task_shortfalls(scope, compact_rows, observations, selected_indi
         view = observation['view_name']
         pixels = _unique_rows_by_roi(observation.get('pixel_rows', ()))
         for roi, pixel in pixels.items():
-            if roi not in pending or view not in pending[roi]:
+            if roi not in pending:
                 continue
-            row = compact_rows[roi]
-            if not _shortfall_pixel_matches(pixel, row, observation):
+            index, row, views = pending[roi]
+            if view not in views or not _shortfall_pixel_matches(pixel, row, observation):
                 continue
-            selected = selected_indices.get(identity)
-            row['pixel_shortfall'] = {key: pixel[key] for key in (
-                'visible_surface_pixels', 'contrasting_boundary_pixels',
-                'minimum_surface_pixels', 'minimum_boundary_pixels', 'minimum_rgb_boundary_contrast')}
-            row['pixel_shortfall'].update(scope_id=scope['scope_id'], view_name=view,
-                image_delivered=selected is not None,
-                native_content_block_index=selected + 1 if selected is not None else None)
+            shortfalls.append([index, frame_indices[identity], pixel['visible_surface_pixels'],
+                               pixel['contrasting_boundary_pixels']])
             pending.pop(roi)
+    return shortfalls
 
 
-def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
-    """Project current cross-scale facts using scope and frame identities."""
+def _project_region_task_brief(value, *, validate_only=False):
+    """Validate current evidence and project the versioned region task tables."""
     from .query_policy import validate_region_task
 
     def require(condition, reason):
@@ -1159,7 +1154,7 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
 
     binding, facts = value['binding'], value['facts']
     task = facts['region_task']
-    include_pixel_shortfalls = include_pixel_shortfalls and value['observation_status'] == 'region_task_observed'
+    include_pixel_shortfalls = not validate_only and value['observation_status'] == 'region_task_observed'
     require(task['schema'] == 'active-region-task-v1', 'schema')
     require(validate_region_task(task['conditions']) == task['conditions'], 'conditions')
     require(binding['capture_scope'] == 'complete_scene_meshes', 'whole_scene_source')
@@ -1172,6 +1167,7 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
     by_frame = {frame['frame_identity']: frame for frame in constructed}
     by_image = {frame['image_ref']: frame for frame in constructed}
     require(len(by_frame) == len(constructed) == len(by_image), 'unique_constructed_frames')
+    frame_indices = {identity: index for index, identity in enumerate(by_frame)}
     selected_indices = {frame['frame_identity']: index for index, frame in enumerate(selected)}
     require(len(selected_indices) == len(selected) <= 6, 'selected_frame_count')
     for frame in selected:
@@ -1229,15 +1225,16 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
     region_rows = task['rows']
     require(len({row['roi_id'] for row in region_rows}) == len(region_rows), 'unique_task_regions')
     world_fields = ('center_world_m', 'half_edge_u_world_m', 'half_edge_v_world_m', 'front_direction_world')
-    compact_rows, pixel_rows = [], []
+    compact_rows, witness_rows = [], []
     shortfall_rows = {}
-    for row in region_rows:
+    for region_index, row in enumerate(region_rows):
         index = row['object_index']
         require(type(index) is int and 0 <= index < len(objects), 'task_object_index')
         host = objects[index]
         require(all(row[key] == host[key] for key in ('host_id', 'instance_id', 'object_name')), 'task_host_identity')
         require(all(_valid_region_location_vector(row[key]) for key in world_fields), 'task_world_location')
-        require(row['source_triangle_indices'] == source_triangles[(index, row['roi_id'])], 'task_source_triangles')
+        faces = row['source_triangle_indices']
+        require(faces == source_triangles[(index, row['roi_id'])], 'task_source_triangles')
         source = row['source']
         require(source['document_epoch'] == binding['document_epoch']
                 and source['scene_revision'] == binding['scene_revision']
@@ -1251,8 +1248,6 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
         require(type(digest) is str and len(digest) == 64 and all(char in '0123456789abcdef' for char in digest),
                 'ordered_geometry_digest')
         witness = row['complete_witness']
-        compact = copy.deepcopy(row)
-        compact.pop('pixel_shortfall', None)
         if witness is not None:
             frame = by_frame[witness['frame_identity']]
             scope = by_scope[witness['scope_id']]
@@ -1263,7 +1258,11 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
             if scope['scope_id'] != 'global':
                 require(scope['binding']['region_source'] == source, 'witness_source')
             observation = observations[frame['frame_identity']]
-            pixel = observation['pixel_rows'][witness['pixel_row_index']]
+            pixel_index = witness['pixel_row_index']
+            if not validate_only:
+                require(type(pixel_index) is int and 0 <= pixel_index < len(observation['pixel_rows']),
+                        'witness_pixel_row_index')
+            pixel = observation['pixel_rows'][pixel_index]
             evidence = next(item for item in scope['facts']['region_evidence'] if item['roi_id'] == row['roi_id'])
             require(row['status'] == 'covered' and pixel['roi_id'] == row['roi_id']
                     and pixel['readable'] is True and row['roi_id'] in observation['readable_roi_ids']
@@ -1274,11 +1273,10 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
                     and pixel['minimum_rgb_boundary_contrast'] == 24
                     and pixel['front_facing'] is True
                     and _valid_visible_pixel_location(pixel, [512, 512]), 'witness_pixel_gates')
-            pixel_rows.append([witness['scope_id'], frame['frame_identity'], row['roi_id'],
-                pixel['visible_surface_pixels'], pixel['contrasting_boundary_pixels'],
-                pixel['visible_pixel_bounds'], pixel['visible_pixel_anchor']])
-            compact['complete_witness']['native_content_block_index'] = (
-                selected_indices[frame['frame_identity']] + 1 if witness['selected_for_delivery'] else None)
+            if not validate_only:
+                witness_rows.append([region_index, frame_indices[frame['frame_identity']], pixel_index,
+                    pixel['visible_surface_pixels'], pixel['contrasting_boundary_pixels'],
+                    copy.deepcopy(pixel['visible_pixel_bounds']), copy.deepcopy(pixel['visible_pixel_anchor'])])
         else:
             require(row['status'] != 'covered', 'covered_requires_witness')
             if (include_pixel_shortfalls and row['status'] == 'unknown'
@@ -1288,30 +1286,13 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
                 if scope_id == 'global' or (scope_id is not None
                         and by_scope[scope_id]['binding'].get('region_source') == source
                         and by_scope[scope_id]['facts']['scope'].get('source') == source):
-                    shortfall_rows.setdefault(scope_id, {})[roi] = compact
-        compact_rows.append(compact)
-    for scope_id, rows in shortfall_rows.items():
-        _add_region_task_shortfalls(by_scope[scope_id], rows, observations, selected_indices)
-    result = {key: copy.deepcopy(value[key]) for key in
-              ('status', 'result_kind', 'observation_status', 'session_id', 'read_only', 'execution_authority')}
-    compact_binding = {key: copy.deepcopy(item) for key, item in binding.items()
-                       if key not in ('schema', 'objects', 'camera_policy', 'camera_specification')}
-    result.update(schema='active-observation-region-task-brief-v1', index_base=0,
-        binding=compact_binding,
-        objects={'columns': object_columns, 'rows': [[obj[key] for key in object_columns] for obj in objects]},
-        region_task=dict(schema=task['schema'], conditions=copy.deepcopy(task['conditions']),
-                         summary=copy.deepcopy(task['summary']), rows=compact_rows),
-        scopes={'columns': ['scope_id', 'camera_identity', 'binding_sha256', 'constructed_frame_count',
-                            'locally_covered_region_count'], 'rows': scope_rows},
-        images={'columns': ['scope_id', 'camera_identity', 'view_name', 'frame_identity', 'image_ref',
-                             'image_sha256', 'native_content_block_index'],
-                'rows': [[frame['scope_id'], frame['camera_identity'], frame['view_name'], frame['frame_identity'],
-                          frame['image_ref'], frame['image_sha256'], index + 1] for index, frame in enumerate(selected)]},
-        witness_pixels={'columns': ['scope_id', 'frame_identity', 'roi_id', 'visible_surface_pixels',
-                                    'contrasting_boundary_pixels', 'visible_pixel_bounds', 'visible_pixel_anchor'],
-                        'rows': pixel_rows},
-        image_delivery=copy.deepcopy(value['image_delivery']),
-        source_triangle_index_semantics='zero_based_object_local; current_capture_order; source_binding_per_scope')
+                    shortfall_rows.setdefault(scope_id, {})[roi] = (region_index, row)
+        if not validate_only:
+            require(bool(faces) and all(type(face) is int and face >= 0 for face in faces)
+                    and all(left < right for left, right in zip(faces, faces[1:])), 'task_source_triangle_order')
+            compact_rows.append([index, row['roi_id'], *(copy.deepcopy(row[key]) for key in world_fields),
+                                 _contiguous_index_ranges(faces), digest, row['status'], row['reason'],
+                                 copy.deepcopy(row['view_reasons'])])
     if 'task_result' in value:
         task_result = value['task_result']
         task_source = task_result['binding']['observation_source']
@@ -1319,7 +1300,45 @@ def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
                 and task_source['parent_binding_sha256'] == binding['binding_sha256']
                 and task_source['parent_source_binding_sha256'] == binding['source_binding_sha256']
                 and task_source['parent_capture_scope'] == binding['capture_scope'], 'whole_object_task_binding')
-        result['task_result'] = copy.deepcopy(task_result)
+    if validate_only:
+        return None
+    shortfalls = []
+    for scope_id, rows in shortfall_rows.items():
+        shortfalls.extend(_region_task_shortfalls(by_scope[scope_id], rows, observations, frame_indices))
+    shortfalls.sort(key=lambda item: item[0])
+    scope_indices = {scope_id: index for index, scope_id in enumerate(by_scope)}
+    frame_rows = []
+    for frame in constructed:
+        block = selected_indices.get(frame['frame_identity'])
+        frame_rows.append([scope_indices[frame['scope_id']], frame['view_name'], frame['frame_identity'],
+                           frame['image_ref'], frame['image_sha256'], None if block is None else block + 1])
+    result = {key: copy.deepcopy(value[key]) for key in
+              ('status', 'result_kind', 'observation_status', 'session_id', 'read_only', 'execution_authority')}
+    compact_binding = {key: copy.deepcopy(item) for key, item in binding.items()
+                       if key not in ('schema', 'objects', 'camera_policy', 'camera_specification')}
+    result.update(schema='active-observation-region-task-brief-v2', index_base=0,
+        binding=compact_binding,
+        objects={'columns': object_columns, 'rows': [[obj[key] for key in object_columns] for obj in objects]},
+        region_task=dict(schema=task['schema'], conditions=copy.deepcopy(task['conditions']),
+            summary=copy.deepcopy(task['summary']),
+            columns=['object_index', 'roi_id', *world_fields, 'source_triangle_index_ranges',
+                     'ordered_geometry_sha256', 'status', 'reason', 'view_reasons'], rows=compact_rows),
+        scopes={'columns': ['scope_id', 'camera_identity', 'binding_sha256', 'constructed_frame_count',
+                            'locally_covered_region_count'], 'rows': scope_rows},
+        frames={'columns': ['scope_index', 'view_name', 'frame_identity', 'image_ref', 'image_sha256',
+                            'native_content_block_index'], 'rows': frame_rows},
+        witnesses={'columns': ['region_index', 'frame_index', 'pixel_row_index', 'visible_surface_pixels',
+                               'contrasting_boundary_pixels', 'visible_pixel_bounds', 'visible_pixel_anchor'],
+                   'rows': witness_rows},
+        pixel_shortfalls={'columns': ['region_index', 'frame_index', 'visible_surface_pixels',
+                                      'contrasting_boundary_pixels'], 'rows': shortfalls},
+        pixel_requirements={'minimum_surface_pixels': 16, 'minimum_boundary_pixels': 4,
+                            'minimum_rgb_boundary_contrast': 24},
+        image_delivery=copy.deepcopy(value['image_delivery']),
+        source_triangle_index_ranges_semantics='Zero-based inclusive ranges in current object-local triangle order.',
+        frame_index_semantics='Zero-based indices in the frame table. A null MCP content index means no image was delivered.')
+    if 'task_result' in value:
+        result['task_result'] = copy.deepcopy(value['task_result'])
     return result
 
 
@@ -1789,7 +1808,7 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
             projected = _project_region_task_brief(metadata,
-                include_pixel_shortfalls=response_detail != 'full' and not is_error)
+                validate_only=response_detail == 'full' or is_error)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
