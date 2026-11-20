@@ -439,7 +439,7 @@ class CoverageIndex:
 
 
 def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras, *, patch_scope=(),
-                            prove_frustum_containment=False, frustum_work=None):
+                            prove_frustum_containment=False, frustum_work=None, bind_blocker_sources=False):
     """Build exact finite-view coverage from the existing normalized geometry."""
     poses = tuple(cameras['views'])
     view_names = {pose['name'] for pose in poses}
@@ -535,6 +535,9 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                         'triangle_geometry_id': fingerprint(triangle.key),
                         'overlap_area_screen_exact': str(abs(signed_area(overlap))),
                     }
+                    if bind_blocker_sources:
+                        blocker.update(source_object_index=triangle.object_index,
+                                       source_triangle_index=triangle.triangle_index)
                     break
             complete = status == 'complete'
             rows[region.roi_id] = {'status': status, 'complete': complete, 'first_blocker': blocker}
@@ -811,7 +814,8 @@ def prepare_scene(scene, cameras, diagnostics=False):
 
 
 def prepare_coverage_index(objects, triangles, scene_identity, cameras, *, diagnostics=False,
-                           target_object_index=None, prove_frustum_containment=False, frustum_work=None):
+                           target_object_index=None, prove_frustum_containment=False, frustum_work=None,
+                           bind_blocker_sources=False):
     """Build a coverage index and partition without retaining session state or meshes."""
     stages = {} if diagnostics else None
     if diagnostics:
@@ -823,7 +827,7 @@ def prepare_coverage_index(objects, triangles, scene_identity, cameras, *, diagn
         started = closed
     index = build_index_from_parsed(objects, triangles, scene_identity, regions, cameras,
                                     patch_scope=patch_scope, prove_frustum_containment=prove_frustum_containment,
-                                    frustum_work=frustum_work)
+                                    frustum_work=frustum_work, bind_blocker_sources=bind_blocker_sources)
     if diagnostics:
         closed = time.perf_counter_ns()
         stages['coverage'] = {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}

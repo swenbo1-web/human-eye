@@ -307,6 +307,35 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
                 frame_refs=[frame['frame_identity'] for frame in frames], steps=steps), frames
 
 
+def _bound_blocker_evidence(index, binding, rows):
+    """Keep one exact hit per blocked front-facing global direction."""
+    sources = []
+    for row in rows:
+        if (row['status'] != 'unknown' or row['reason'] != 'positive_area_occlusion_all_front_views'
+                or row['complete_witness'] is not None):
+            continue
+        for view in row['view_reasons']['positive_area_occlusion']:
+            classification = index.classifications[view][row['roi_id']]
+            if classification['status'] != 'positive_area_occlusion' or classification['complete']:
+                raise ValueError('active_region_task_blocker_classification')
+            hit = classification['first_blocker']
+            object_index = hit['source_object_index']
+            host = binding['objects'][object_index]
+            sources.append(dict(
+                roi_id=row['roi_id'], view_name=view, blocker_object_index=object_index,
+                source_triangle_index=hit['source_triangle_index'], blocker_host_id=host['host_id'],
+                blocker_instance_id=host['instance_id'], triangle_geometry_id=hit['triangle_geometry_id'],
+                overlap_area_screen_exact=hit['overlap_area_screen_exact']))
+    if not sources:
+        return None
+    if (index.scene_identity != binding['geometry_identity']
+            or index.candidate_identity != binding['camera_identity']):
+        raise ValueError('active_region_task_blocker_index_binding')
+    return dict(scope_id='global', binding_sha256=binding['binding_sha256'],
+                source_binding_sha256=binding['source_binding_sha256'],
+                camera_identity=binding['camera_identity'], rows=sources)
+
+
 def observe_region_task(capture, output_directory, conditions, *, construction_callback=None,
                         check_budget=None, include_image=True, geometry_ids_callback=None,
                         prepare_global_index=None):
@@ -360,7 +389,8 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
             work['partition_calls'] += 1
             work['index_calls'] += 1
             index, timing = prepare_coverage_index(objects, triangles, scene_identity, cameras, diagnostics=True,
-                                                    prove_frustum_containment=True, frustum_work=work)
+                                                    prove_frustum_containment=True, frustum_work=work,
+                                                    bind_blocker_sources=True)
             stages.update(partition=timing['discovery'], index_global=timing['coverage'])
             if check_budget is not None:
                 check_budget('active_observation_after_global_index')
@@ -392,7 +422,7 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
         by_identity = {frame['frame_identity']: frame for frame in constructed}
         global_regions = {row['roi_id']: row for row in global_scope['facts']['regions']}
         world_bounds = [[mesh.vertices.min(axis=0).tolist(), mesh.vertices.max(axis=0).tolist()] for mesh in meshes]
-        rows = []
+        rows, blocked_rows = [], []
         for region in eligible:
             witness = _witness(global_scope, region.roi_id, by_identity)
             scope = global_scope
@@ -434,6 +464,8 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
             row.update(source_triangle_indices=list(region.triangle_indices), source=sources[region.roi_id],
                        complete_witness=witness, view_reasons=copy.deepcopy(evidence['view_reasons']))
             rows.append(row)
+            if scope is global_scope and row['reason'] == 'positive_area_occlusion_all_front_views':
+                blocked_rows.append(row)
         selected = constructed[:1]
         selected_ids = {frame['frame_identity'] for frame in selected}
         for row in rows:
@@ -453,6 +485,9 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 unsupported_triangle_count=unsupported, source_triangle_count=len(triangles),
                 selected_image_count=len(selected), constructed_image_count=len(constructed),
                 external_consumer_verified=False))
+        blockers = _bound_blocker_evidence(index, binding, blocked_rows)
+        if blockers is not None:
+            task['blocker_evidence'] = blockers
         facts = copy.deepcopy(global_scope['facts'])
         facts['region_task'] = task
         if check_budget is not None:

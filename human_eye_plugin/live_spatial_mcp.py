@@ -1144,6 +1144,71 @@ def _region_task_shortfalls(scope, regions, observations, frame_indices):
     return shortfalls
 
 
+def _project_region_task_blockers(packet, binding, support, global_facts, region_rows):
+    """Bind sparse geometric witnesses to the current whole-scene task."""
+    if (type(packet) is not dict or set(packet) != {
+            'scope_id', 'binding_sha256', 'source_binding_sha256', 'camera_identity', 'rows'}
+            or packet['scope_id'] != 'global'
+            or any(packet[key] != binding[key] for key in
+                   ('binding_sha256', 'source_binding_sha256', 'camera_identity'))
+            or type(packet['rows']) is not list or not packet['rows']):
+        raise ValueError('active_region_task_blocker_binding')
+    evidence_by_roi = _unique_rows_by_roi(global_facts['region_evidence'])
+    camera_order = binding['camera_policy']['order']
+    expected = []
+    for region_index, region in enumerate(region_rows):
+        if region['reason'] != 'positive_area_occlusion_all_front_views':
+            continue
+        roi = region['roi_id']
+        global_evidence = evidence_by_roi.get(roi)
+        if (global_evidence is None
+                or global_evidence['unobserved_reason'] != 'positive_area_occlusion_all_front_views'):
+            continue
+        reasons = region['view_reasons']
+        if (region['status'] != 'unknown' or region['complete_witness'] is not None
+                or global_evidence['complete_witness'] is not None or reasons != global_evidence['view_reasons']
+                or not set(reasons) <= {'back_facing', 'edge_on', 'positive_area_occlusion'}
+                or any(type(views) is not list for views in reasons.values())):
+            raise ValueError('active_region_task_blocker_classification')
+        views = [view for group in reasons.values() for view in group]
+        occluded = reasons.get('positive_area_occlusion')
+        if (not occluded or len(views) != len(camera_order) or set(views) != set(camera_order)
+                or occluded != [view for view in camera_order if view in occluded]):
+            raise ValueError('active_region_task_blocker_directions')
+        expected.extend((region_index, region, view) for view in occluded)
+    if len(packet['rows']) != len(expected):
+        raise ValueError('active_region_task_blocker_denominator')
+    compact = []
+    objects = binding['objects']
+    for witness, (region_index, region, view) in zip(packet['rows'], expected):
+        if (type(witness) is not dict or set(witness) != {
+                'roi_id', 'view_name', 'blocker_object_index', 'source_triangle_index', 'blocker_host_id',
+                'blocker_instance_id', 'triangle_geometry_id', 'overlap_area_screen_exact'}
+                or (witness['roi_id'], witness['view_name']) != (region['roi_id'], view)):
+            raise ValueError('active_region_task_blocker_region_view')
+        index, face = witness['blocker_object_index'], witness['source_triangle_index']
+        if type(index) is not int or not 0 <= index < len(objects) or index >= len(support['objects']):
+            raise ValueError('active_region_task_blocker_object')
+        host, source = objects[index], support['objects'][index]
+        if (source['object_index'] != index or source['host_id'] != host['host_id']
+                or source['instance_id'] != host['instance_id']
+                or witness['blocker_host_id'] != host['host_id']
+                or witness['blocker_instance_id'] != host['instance_id']
+                or type(face) is not int or not 0 <= face < source['source_triangle_count']
+                or index == region['object_index'] and face in region['source_triangle_indices']):
+            raise ValueError('active_region_task_blocker_source')
+        digest, area = witness['triangle_geometry_id'], witness['overlap_area_screen_exact']
+        try:
+            positive = type(area) is str and Fraction(area) > 0
+        except (ValueError, ZeroDivisionError):
+            positive = False
+        if not positive or type(digest) is not str or len(digest) != 64 or any(
+                char not in '0123456789abcdef' for char in digest):
+            raise ValueError('active_region_task_blocker_positive_area')
+        compact.append([region_index, view, index, face])
+    return compact
+
+
 def _project_region_task_brief(value, *, validate_only=False):
     """Validate current evidence and project the versioned region task tables."""
     from .query_policy import validate_region_task
@@ -1300,6 +1365,10 @@ def _project_region_task_brief(value, *, validate_only=False):
                 and task_source['parent_binding_sha256'] == binding['binding_sha256']
                 and task_source['parent_source_binding_sha256'] == binding['source_binding_sha256']
                 and task_source['parent_capture_scope'] == binding['capture_scope'], 'whole_object_task_binding')
+    blocker_rows = None
+    if 'blocker_evidence' in task:
+        blocker_rows = _project_region_task_blockers(task['blocker_evidence'], binding, support,
+                                                    by_scope['global']['facts'], region_rows)
     if validate_only:
         return None
     shortfalls = []
@@ -1337,6 +1406,14 @@ def _project_region_task_brief(value, *, validate_only=False):
         image_delivery=copy.deepcopy(value['image_delivery']),
         source_triangle_index_ranges_semantics='Zero-based inclusive ranges in current object-local triangle order.',
         frame_index_semantics='Zero-based indices in the frame table. A null MCP content index means no image was delivered.')
+    if blocker_rows is not None:
+        result['blocker_evidence'] = {
+            'scope_index': scope_indices['global'],
+            'columns': ['region_index', 'view_name', 'blocker_object_index', 'source_triangle_index'],
+            'rows': blocker_rows,
+            'meaning': ('One current object-local evaluated triangle with positive-area occlusion per listed view. '
+                        'Nearest depth, other blockers, and total occlusion are unspecified.'),
+        }
     if 'task_result' in value:
         result['task_result'] = copy.deepcopy(value['task_result'])
     return result
