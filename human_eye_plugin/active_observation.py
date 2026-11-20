@@ -6,6 +6,7 @@ camera pool. Image feedback is supplied by the companion image adapter.
 
 from __future__ import annotations
 
+from bisect import bisect_left, bisect_right
 import copy
 from dataclasses import dataclass, field
 from fractions import Fraction
@@ -350,6 +351,29 @@ def bounds_overlap(a, b):
     return all(min(x[1], y[1]) > max(x[0], y[0]) for x, y in zip(a, b))
 
 
+def _rank_projected_boxes(boxes):
+    """Encode positive-width boxes in original triangle order for one view."""
+    valid = [(x0, x1, y0, y1) if x0 < x1 and y0 < y1 else None
+             for (x0, x1), (y0, y1) in boxes]
+    x_ends = sorted({value for box in valid if box is not None for value in box[:2]})
+    y_ends = sorted({value for box in valid if box is not None for value in box[2:]})
+    x_ranks = {value: rank for rank, value in enumerate(x_ends)}
+    y_ranks = {value: rank for rank, value in enumerate(y_ends)}
+    ranked = [None if box is None else
+              (x_ranks[box[0]], x_ranks[box[1]], y_ranks[box[2]], y_ranks[box[3]]) for box in valid]
+    return x_ends, y_ends, ranked
+
+
+def _rank_region_bounds(box, x_ends, y_ends):
+    (x0, x1), (y0, y1) = box
+    if x0 >= x1 or y0 >= y1:
+        return None
+    # A triangle's lower end must be strictly below the region's upper end.
+    # Its upper end must be strictly above the region's lower end.
+    return (bisect_right(x_ends, x0), bisect_left(x_ends, x1),
+            bisect_right(y_ends, y0), bisect_left(y_ends, y1))
+
+
 def camera_planes(pose):
     view = tuple(tuple(Fraction(value) for value in row) for row in pose['view_matrix'])
     projection = tuple(tuple(Fraction(value) for value in row) for row in pose['projection_matrix'])
@@ -453,7 +477,7 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                 shadow_planes = ()
             if frustum_work is not None:
                 frustum_work['frustum_proof_ns'] += time.perf_counter_ns() - started
-        projected, boxes = {}, {}
+        projected, boxes, screen_boxes = {}, {}, []
         points = shared_points if shared_points is not None else sorted(
             {point for triangle in triangles for point in triangle.vertices})
         values = project(tuple(points), basis)
@@ -461,7 +485,12 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
         for triangle in triangles:
             screen = tuple(by_vertex[point] for point in triangle.vertices)
             projected[triangle.key] = screen
-            boxes[triangle.key] = bounds(screen)
+            if shadow_planes:
+                boxes[triangle.key] = bounds(screen)
+            else:
+                screen_boxes.append(bounds(screen))
+        ranked = None if shadow_planes else _rank_projected_boxes(screen_boxes)
+        screen_boxes.clear()
         mask, rows = 0, {}
         if frustum_work is not None:
             frustum_work['frustum_fallback_views' if shadow_planes else 'frustum_certified_views'] += 1
@@ -479,13 +508,21 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
             if signed_area(region_screen) < 0:
                 region_screen = tuple(reversed(region_screen))
             region_bounds = bounds(region_screen)
+            if ranked is not None:
+                edges = _rank_region_bounds(region_bounds, ranked[0], ranked[1])
             blocker = None
-            for triangle in triangles:
+            for position, triangle in enumerate(triangles):
                 if (triangle.object_index == region.object_index
                         and triangle.triangle_index in region_triangles[region.roi_id]):
                     continue
-                if not bounds_overlap(region_bounds, boxes[triangle.key]):
-                    continue
+                if ranked is None:
+                    if not bounds_overlap(region_bounds, boxes[triangle.key]):
+                        continue
+                else:
+                    box = ranked[2][position]
+                    if (edges is None or box is None or box[0] >= edges[1] or box[1] < edges[0]
+                            or box[2] >= edges[3] or box[3] < edges[2]):
+                        continue
                 if frustum_work is not None:
                     frustum_work[shadow_counter] += 1
                 shadow = triangle_shadow(triangle, region, basis, shadow_planes, projected.get(triangle.key))
@@ -504,6 +541,7 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
             if complete:
                 mask |= 1 << index
         masks[pose['name']], classifications[pose['name']] = mask, rows
+        del ranked
     return CoverageIndex(scene_identity, candidate_identity, regions,
                          tuple(pose['name'] for pose in poses), masks, classifications,
                          patch_scope=patch_scope)
