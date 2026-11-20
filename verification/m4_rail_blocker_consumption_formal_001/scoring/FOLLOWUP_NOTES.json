@@ -1,0 +1,477 @@
+{
+  "A1": {
+    "answer_sha256": "9102a90e21a54d71a93cdb69fee76169d6f3874eb12c969ffc388f76fe78c183",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "from_attempts": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "共同首调，compact 直接交付两个局部见证及两处 LEFT 受阻类别。",
+        "request_anchor": "region_task",
+        "request_sha256": "5ea4008059ccf30ce3981a34d83f55b15e5acab50f758c812c57724f071e384c",
+        "response_anchor": "region_task_observed",
+        "response_sha256": "d2926fc32feb496afe27f35871f0d7aa84d31f0a4682963c0d59abab9eee17e8"
+      },
+      {
+        "aim": "partition_or_geometry",
+        "attempt": 2,
+        "blocker_targets": [],
+        "from_attempts": [
+          1
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "同一面积条件的无图 full 只返回预测及已在首包明确的区域、遮挡与方向，未见挡片来源。定位阶段的公开说明发生在第 3 条之后。",
+        "request_anchor": "response_detail",
+        "request_sha256": "154d2e7267df41c5d38d40b19ec8787dd902eeb684a18cdff0a24180eb8a92a2",
+        "response_anchor": "prediction_only",
+        "response_sha256": "918bcee000444f67291e10389e5344f0c37559fe6101d873f48f1beb035c483a"
+      },
+      {
+        "aim": "witness",
+        "attempt": 3,
+        "blocker_targets": [],
+        "from_attempts": [
+          1,
+          2
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "请求有图 full，重复首包条件和见证；原包没有挡片字段，原答采用首包图，未见此调用用于挡片求解。",
+        "request_anchor": "response_detail",
+        "request_sha256": "7035535539b990ec0487970fa80eb5d0dddb67a3e453a44af4812a52c1fd2df1",
+        "response_anchor": "region_task_observed",
+        "response_sha256": "1f61eebb1fb2516db7ba0dbc0d17ee04ea0f59c7e8e1a6b63749113beae7e377"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 4,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          1,
+          3
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "公开说明已找到两组端面并开始定位挡物后，读取当前全场网格并存入 data，供第 5、6 条证明与展开源三角。",
+        "request_anchor": "data=scene_data()",
+        "request_sha256": "8809bb5a05ab93be20d0ad4934d68a6af8139eeba7837853210eee540b1e3610",
+        "response_anchor": "display_object_mask",
+        "response_sha256": "55126989798e2427a1859d91a9b40c1dc3d06ad9eb863e6d33fb367ca50a3697"
+      },
+      {
+        "aim": "blocker_proof",
+        "attempt": 5,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          4
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "reason": "逐源三角做 LEFT 中心射线与正深度的严格内部命中，得到 M12[7]、[10]，两端答案采用有效的 [7]。",
+        "request_anchor": "direction=np.array([-1.,0,1])",
+        "request_sha256": "eed68e00f07f6b0334d993483a6197d9fc843c5e989ffcf6ae3a550466146570",
+        "response_anchor": "M17 [(np.float64(0.5)",
+        "response_sha256": "4bf389e133efe01285617ff2a7d6683b974549a7b994989e0a1fee7ab7a99e65"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 6,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          4,
+          5
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "展开已经命中的挡片 7 的三个当前世界顶点并列入原答，同时重复核四端中心、面积和法向。",
+        "request_anchor": "obj['name']=='M12'",
+        "request_sha256": "a4aa3fe52545ab83d5246acbe584e60839bb59c085d2a979192c45f99417ca05",
+        "response_anchor": "M12 source triangle 7 world vertices",
+        "response_sha256": "c190c8140494c76290da98a506e1bfa56441ba4c38ef509db9735cab22a4cee1"
+      }
+    ]
+  },
+  "A2": {
+    "answer_sha256": "56319d7e54aa4d04a86be3aadb489c0aa25c4ce000e50fad2b837271879321ec",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "按冻结要求取候选端面、两条几何未知及实际原图。",
+        "request_anchor": "brief",
+        "request_sha256": "e53703998d940092bb71829084d288d94d81d1fad7251f11dbd599621b43d454",
+        "response_sha256": "9af64d56b25731e6e9599cc008485029f910327e4297708b47b6c4c143572a4f"
+      },
+      {
+        "aim": "format_or_schema",
+        "attempt": 2,
+        "blocker_targets": [],
+        "from_attempts": [
+          1
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "同一过滤条件改取无图 full，只得全量预测结构，未给出具名挡物。后续实际挡物来源走独立的 LEFT 原生取景及缓冲读取。",
+        "request_anchor": "full",
+        "request_sha256": "a26119b4b49556db4aa561f96f7ef7b81781a56173fd25e070a0a1e5bf8b666a",
+        "response_anchor": "\"observation_status\":\"prediction_only\"",
+        "response_sha256": "e1db1f1e2a4268c19c3f65a28a29a0f93b545d119956eabc5ceb3b21792a8b52"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 3,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "普通场景源读取，后续第 5 调根据缓冲区所属 mesh 和三角号用此数组精确取挡片世界顶点。",
+        "request_anchor": "data=scene_data()",
+        "request_sha256": "d5cc7cf62361750c7732d57c53a97f1ca99b8fbe0d567b98a4434f666ab8e1bc",
+        "response_anchor": "source_face_offsets",
+        "response_sha256": "8e9b9c6131ca756d457ebdcc5d7c57c24e8cf0089610782cda833b07dfb0b8c8"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 4,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "针对两个 −X 端构建各自 LEFT 局部帧及源面归属缓冲，第 5 调才读取和交付对应图。",
+        "request_anchor": "render_local('LEFT'",
+        "request_sha256": "6e395e6d8aa87bbb3ef6d72b0b46194670bdee4d6f55231ebaddeea1060add7b",
+        "response_anchor": "native-image:14f5068113b6ff4cf521c4d85253493422d934090ed9ca596319e2936f71cda9",
+        "response_sha256": "458f8597f2b8b3e6a9979c409f319fdd626d1f175276ea59da0aa24482054607"
+      },
+      {
+        "aim": "blocker_proof",
+        "attempt": 5,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          3,
+          4
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "reason": "从两个实际 LEFT 帧的中心像素归属取得 M12 三角 10，回读当前三角顶点并交付两张图。",
+        "request_anchor": "buf['triangle_ids'][row,col]",
+        "request_sha256": "e29ad52dbe5c80be3f70f82b5e0700276ae71a89905048ebd19590c795431178",
+        "response_anchor": "pixel 256 256 blocker M12 local_triangle 10",
+        "response_sha256": "5f30389e4026827976af21620c7d7d3351d4d1f59d4e34dceb80a46baa376456"
+      }
+    ]
+  },
+  "A3": {
+    "answer_sha256": "3856ef01e57c19d5b73405fc1d68bc0cd6f54424146882e4e33144d8da9a93a7",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "共同起手简报返回四端面、两个实际局部原图和两处 LEFT 受阻类别。",
+        "request_anchor": "brief",
+        "request_sha256": "31f8935faeb6ec764733b6fbda30775b9d3d41cd8f333ec4ce088e78b31ad71a",
+        "response_sha256": "0152d602fe2a5e2a9d55004d8d24930f22c413c13a7d4be09543f8712ab52363"
+      },
+      {
+        "aim": "partition_or_geometry",
+        "attempt": 2,
+        "blocker_targets": [],
+        "from_attempts": [
+          1
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "同区无图 full 复查现成区域信息，固定呈现会截短，回包无具名挡片。调用先于定位挡物的公开说明。",
+        "request_anchor": "full",
+        "request_sha256": "6382000e770689399e62bc2a042523096af4b1144be6db88ed98411629f05590",
+        "response_sha256": "8c2b068fda241a38f757c803bcf623cce225d64e5c470dbaf3147d3f26950f49"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 3,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "快照把源三角及其顶点存入 data，第 6 次实际复用以定位 M12[10] 的当前世界顶点。",
+        "request_anchor": "data=scene_data()",
+        "request_sha256": "ee69cdafa7daaad7d5377dc6795361bfd43e2223ccf665790dbbb63c2c441ace",
+        "response_sha256": "b4eb21c477789f0158ffec38e59000cd6b8e310d847a1a53e172bf26e5b8bd1a"
+      },
+      {
+        "aim": "format_or_schema",
+        "attempt": 4,
+        "blocker_targets": [],
+        "from_attempts": [
+          2
+        ],
+        "increment": "failed_attempt",
+        "independent_reproof_targets": [],
+        "reason": "试图限定 M17/M18 后继续请求全场发现，工具明确拒绝带 objects 的区域任务。请求无受阻方向或挡物取数，公开说明尚未宣布开始定位挡物。",
+        "request_anchor": "objects",
+        "request_sha256": "1b76f795a423bd6a6d36f56c2b5270a45b7a53045cb2d54d02fcb18d8f8cb55f",
+        "response_anchor": "active_observation region_task requires whole-scene discovery without objects",
+        "response_sha256": "3853f0ccc2a68d26faf3ee386a47557fe154f63797286f6fcd4d5c6950169aad"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 5,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "按两个 −X 端中心生成真实 LEFT 局部缓冲，两处目标和帧都在实际回包。两帧供第 6 次读挡物归属。",
+        "request_anchor": "render_local('LEFT'",
+        "request_sha256": "4a3b0ae290e41cf02bc3f344014f0ef1ffb2f69bbe4612664a2f408c9b271229",
+        "response_anchor": "native-image:d77f5cfdffb09732925dab14e720e2b9a5847c1e558890461d55f7ec317638e1",
+        "response_sha256": "725cfd5c13a5021a9c5136c09f7cb10f7b8437879b02ad070f335e11acf72abc"
+      },
+      {
+        "aim": "blocker_proof",
+        "attempt": 6,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          3,
+          5
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "reason": "用两张真实 LEFT 帧目标中心附近像素的实际获胜三角，映射到对象内源三角 10，并从当前源网格核顶点。独立几何确认同一在前挡片对两个端面都有正面积重叠。",
+        "request_anchor": "local_triangle=triangle-frame['source_face_offsets'][owner]",
+        "request_sha256": "7a97619c5553264b11368e8dcd88c99748362ac7a2fc189c9c6442266af78b75",
+        "response_anchor": "blocker M12 10",
+        "response_sha256": "b929c5e1b65211e2c97a924414c199486faf9031414c17085421f4b53584a46d"
+      },
+      {
+        "aim": "witness",
+        "attempt": 7,
+        "blocker_targets": [],
+        "from_attempts": [
+          1,
+          5,
+          6
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "确认四个原图引用可回查，首次输出两张遮挡原 PNG，另两张 SCENE 原图重复。回包仅有图和引用，未追加挡物身份或几何求证。",
+        "request_anchor": "read_images",
+        "request_sha256": "e52a3be54fd2b00d06b4c240279149552ef6763ca1a4f759486234e1c0a538f8",
+        "response_anchor": "native-image:d77f5cfdffb09732925dab14e720e2b9a5847c1e558890461d55f7ec317638e1",
+        "response_sha256": "4175dc9648feb357d8b021034c40b345ef5c7ff197aabb8fe255a9e21b97c1ad"
+      }
+    ]
+  },
+  "B1": {
+    "answer_sha256": "f16e078c918881ef3014bbbeb01bcc4de70a60d94559d03f7ee04d939b133406",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "from_attempts": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "共同首调，简报交付两个局部可读端和两条 M12 第 10 号源三角证据。",
+        "request_anchor": "region_task",
+        "request_sha256": "5dbc019b8496810c1123d130a2b4351b7955fc9f95bd8cccd00eadd95f19dc94",
+        "response_anchor": "blocker_evidence",
+        "response_sha256": "26ae1c86f6c8e84143734cf2237cffce4ddb55d92cb32d065a033f050b49c83a"
+      },
+      {
+        "aim": "source_capture",
+        "attempt": 2,
+        "blocker_targets": [],
+        "from_attempts": [
+          1
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "缓存当前网格并探查源格式。后续只将其用于完整连通分量复核，未用于挡片身份或重算遮挡。",
+        "request_anchor": "data = scene_data()",
+        "request_sha256": "bf3a4f7f25683e45b2004c3246a426ea343ce5e9eae47b9e88fb7de85b8a151a",
+        "response_anchor": "display_object_mask",
+        "response_sha256": "5ca94180b307cd80ad07ceb342ae98cc6908a9ff9291e5bbdb1aa37007b338d2"
+      },
+      {
+        "aim": "format_or_schema",
+        "attempt": 3,
+        "blocker_targets": [],
+        "from_attempts": [
+          2
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "只检查普通数据的首对象 M06 字段结构，为连通分量筛选准备输入格式。",
+        "request_anchor": "data['objects'][0]",
+        "request_sha256": "c2a87d688481b97dc92f2b9b150ef85099758daf3518201669f979fd239660fb",
+        "response_anchor": "polygon_count",
+        "response_sha256": "790857af1eed3f74f8bfdae8eef964aaa144047e9f2e1157b0dfb3eb6cf6d8af"
+      },
+      {
+        "aim": "partition_or_geometry",
+        "attempt": 4,
+        "blocker_targets": [],
+        "from_attempts": [
+          2,
+          3
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "连通性、方向、面积和矩形性重算，补充 M05/M07/M21 的十六个非矩形源三角证据，未向 LEFT 发射或投影、未定位挡片。",
+        "request_anchor": "Exact-area rectangular maximal components",
+        "request_sha256": "ca517fd76536aa95aa7d0fc570c815fe45cf28353c060d4c154e8ea83eddd1ea",
+        "response_anchor": "Nonrectangular components",
+        "response_sha256": "809ff891080b77b0583e258b419b473d8f3958e3e4c14e6b44c9d49d871283c0"
+      }
+    ]
+  },
+  "B2": {
+    "answer_sha256": "53f9249408099a25ac0d92ccc3f6085f78cb75df421582952d45c90f9fae8a4d",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "按冻结请求读取区域简报、三张实际原图与 B 版的两个当前 LEFT 源三角。",
+        "request_anchor": "brief",
+        "request_sha256": "e5f87eb7c99333018bd71cbe9cf49d82ded823456aee49429d1f3c8a842f8a59",
+        "response_anchor": "\"blocker_evidence\"",
+        "response_sha256": "f9f19b061e6e5d26baafb2b678c3d7e5bf3db042539e012ed321e33ef41a561a"
+      },
+      {
+        "aim": "source_capture",
+        "attempt": 2,
+        "blocker_targets": [],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "普通全场源取数，实际后续只有连通分量和面积复核使用这些数组。",
+        "request_anchor": "data=scene_data()",
+        "request_sha256": "6c4e37d38bd33a8da2e82fe7d6850eca2480d7f96d1d55b36c8731116cab5eee",
+        "response_anchor": "source_face_offsets",
+        "response_sha256": "e732cc71de589207f440e0800582b1b6cb46188cdcd523dcd8b8e63f97ea75d0"
+      },
+      {
+        "aim": "partition_or_geometry",
+        "attempt": 3,
+        "blocker_targets": [],
+        "from_attempts": [
+          2
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "使用上一步全场数组复核相邻同向同面分量、面积和法向。未作 LEFT 投影、深度或源三角遮挡求证。",
+        "request_anchor": "adjacency[first].add(second)",
+        "request_sha256": "72fcd5fca2f649d079a8cc85a23a54aa2fa2fef991fb608ea59911daf299f226",
+        "response_anchor": "([6, 7], 0.25, [1.0, 0.0, 0.0])",
+        "response_sha256": "32566ea44fc0da2f23cd468d8923d7914a3a4e5a94039fc9188bd79c763a57df"
+      }
+    ]
+  },
+  "B3": {
+    "answer_sha256": "d5edb03700b18a6692801eadb8569c34f021a42fbc88c216fe2bf87315f1dd66",
+    "attempts": [
+      {
+        "aim": "initial",
+        "attempt": 1,
+        "blocker_targets": [],
+        "increment": "initial",
+        "independent_reproof_targets": [],
+        "reason": "共同起手简报交付四端面、两张局部见证，以及两条现有 M12 第 10 号源三角。",
+        "request_anchor": "brief",
+        "request_sha256": "eb0f54d321b48a6867055d790d4de41d8fd59179206fc2918b42cdcf695f1e22",
+        "response_sha256": "433a15eb27c0c93e4bb7d31a0c4efaf2b31614178fb79906ebb354bf4d382e02"
+      },
+      {
+        "aim": "partition_or_geometry",
+        "attempt": 2,
+        "blocker_targets": [],
+        "from_attempts": [
+          1
+        ],
+        "increment": "recheck",
+        "independent_reproof_targets": [],
+        "reason": "同区无图 full 复查首包已有面的发现条件和数据；固定上下文会截断。无与本次专门查挡物相关的调用参数或可追溯的新挡片事实。",
+        "request_anchor": "full",
+        "request_sha256": "7d4ca3ec66d153095666d9392bcbfc0ad4443b66516268f2c32fed14b63a827e",
+        "response_sha256": "57274d80be98ce6a434d51bd888dbc5da6c8b3fe9d27acac948f292ed432c840"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 3,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "全场求值数组留在普通会话的 data，第 4 次确实复用这些数据读取首包点名的 M12 第 10 号三角和其世界顶点，同时复核端面分组。",
+        "request_anchor": "data=scene_data()",
+        "request_sha256": "979b8725d9900e221aa89e3da53756ef7da570d6bc892afd1c9bd4732ed8146a",
+        "response_sha256": "a023e05647cabd04d9c9e092050a18da5ee87e2931f1f6f3d3b0c62d5497adf7"
+      },
+      {
+        "aim": "blocker_identity",
+        "attempt": 4,
+        "blocker_targets": [
+          "M17[10–11]",
+          "M18[10–11]"
+        ],
+        "from_attempts": [
+          1,
+          3
+        ],
+        "increment": "new_evidence",
+        "independent_reproof_targets": [],
+        "reason": "在复查分量时显式回读首包已指名的当前挡片和三点坐标，坐标后来进入原答。它没有另做 LEFT 投影、深度或正面积求证。",
+        "request_anchor": "M12 triangle 10:",
+        "request_sha256": "f24a9e79017d13a9c942d8aae2a508599cbbd890890cacec36d53d28c951c52b",
+        "response_anchor": "M12 triangle 10:",
+        "response_sha256": "273759aa00c8783d22926bae754e259633506a3628aa90f2d05fe7af78acef34"
+      }
+    ]
+  }
+}
