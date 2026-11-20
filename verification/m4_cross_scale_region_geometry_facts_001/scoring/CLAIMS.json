@@ -1,0 +1,67 @@
+{
+  "P1": {
+    "answer_sha256": "0a9c05ac2037c2283ecbb6800eaed5c885d7138ffee6a811dab068dce05d8d06",
+    "gates": {
+      "finite_pool_unknown_M06": {
+        "blocker": "M03",
+        "quote": "**M06 `[0,1]`：固定六方向全部存在正面积遮挡，无法获得完整前向无遮挡帧。**",
+        "status": "pass",
+        "support": "The installed result retained the finite-pool positive-area obstruction. Tool attempt 5 identifies M03 as the first hit on every center ray. The answer explicitly limits that supplementary check to center rays, and the independent exact geometry confirms positive-area M03 occlusion in all six directions."
+      },
+      "geometry_M02": {
+        "area_m2": "0.015625",
+        "center_world_m": ["0", "0", "1"],
+        "quote": "| M02 | `[0, 1]` | `(0, 0, 1)` | 0.015625 | `(0, 0, 1)` |",
+        "status": "pass",
+        "triangles": [0, 1],
+        "unit_normal": ["0", "0", "1"]
+      },
+      "geometry_M06": {
+        "area_m2": "0.015625",
+        "center_world_m": ["2", "2", "1"],
+        "quote": "| M06 | `[0, 1]` | `(2, 2, 1)` | 0.015625 | `(0, 0, 1)` |",
+        "status": "pass",
+        "triangles": [0, 1],
+        "unit_normal": ["0", "0", "1"]
+      },
+      "geometry_M09": {
+        "area_m2": "0.012352647110032733",
+        "center_world_m": ["-2", "0", "1"],
+        "quote": "| M09 | `[0, 1]` | `(-2, 0, 1)` | 0.012352647110032733 | `(0, -0.3162277660168379, 0.9486832980505138)` |",
+        "status": "pass",
+        "triangles": [0, 1],
+        "unit_normal": ["0", "-0.3162277660168379", "0.9486832980505138"]
+      },
+      "no_contradictory_claim": {
+        "quote": "另核对了自动矩形发现未覆盖的 16 个三角：它们组成 M05、M07、M21 的三个非矩形最大连通分量，均不应作为矩形区域入选；其中 M07 虽面积及法向达标，但整体非矩形，不能拆取子矩形充数。",
+        "status": "pass",
+        "support": "The exact current fixture and independent tool recomputation agree on the 87 components, 84 rectangles, and 16 triangles in the three non-rectangular components. The answer makes no claim that the six center rays establish full-area coverage."
+      },
+      "read_only_current_identity": {
+        "quote": "全程未移动对象、未修改场景、未保存源文件。",
+        "status": "pass"
+      },
+      "roster": {
+        "objects": ["M02", "M06", "M09"],
+        "quote": "| M02 | `[0, 1]` | `(0, 0, 1)` | 0.015625 | `(0, 0, 1)` |\n| M06 | `[0, 1]` | `(2, 2, 1)` | 0.015625 | `(0, 0, 1)` |\n| M09 | `[0, 1]` | `(-2, 0, 1)` | 0.012352647110032733 | `(0, -0.3162277660168379, 0.9486832980505138)` |",
+        "status": "pass"
+      },
+      "witness_M02": {
+        "contrasting_boundary_pixels": 926,
+        "direction": "SCENE",
+        "quote": "`active-host-image:74064661ea150704b470790ff507f476b1076499c1bd6887f5983fad11fd5903`",
+        "resolved_delivered_ref": "active-host-image:74064661ea150704b470790ff507f476b1076499c1bd6887f5983fad11fd5903",
+        "status": "pass",
+        "surface_pixels": 50557
+      },
+      "witness_M09": {
+        "contrasting_boundary_pixels": 1530,
+        "direction": "LEFT",
+        "quote": "`active-host-image:0faae57a9b4ca023e4345a04206aee76dbeddcb310940bed03f167e65234d5a6`",
+        "resolved_delivered_ref": "active-host-image:0faae57a9b4ca023e4345a04206aee76dbeddcb310940bed03f167e65234d5a6",
+        "status": "pass",
+        "surface_pixels": 146797
+      }
+    }
+  }
+}
