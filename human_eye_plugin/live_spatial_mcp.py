@@ -1209,7 +1209,113 @@ def _project_region_task_blockers(packet, binding, support, global_facts, region
     return compact
 
 
-def _project_region_task_brief(value, *, validate_only=False):
+def _project_region_task_measurement(task, parent, support, regions, query):
+    """Share a whole-object measurement's proven parent; otherwise keep its legacy result."""
+    from .active_observation import fingerprint
+    from .task_query import validate_task_query
+
+    def digest(value):
+        return type(value) is str and len(value) == 64 and all(c in '0123456789abcdef' for c in value)
+
+    try:
+        if (query is None or task['schema_version'] != 'task-query-v3' or task['result_kind'] != 'task_query'
+                or task['status'] != 'observed' or task['pair_order'] != 'A_to_B'
+                or task['unit'] != parent['unit'] or task['coordinate_frame'] != parent['coordinate_frame']
+                or task['execution_authority'] is not False or set(task['facts']) != {'surface_proximity'}
+                or task['facts']['surface_proximity']['status'] != 'measured'):
+            return None
+        query = validate_task_query(query)
+        if query['mode'] != 'task' or query['requested_facts'] != ['surface_proximity']:
+            return None
+
+        binding = task['binding']
+        shared = {key: parent[key] for key in ('source', 'runtime_source_sha256', 'source_check_scope',
+                                               'disk_status', 'source_status') if key in parent}
+        if (set(binding) != set(shared) | {'candidate_count', 'selected_count', 'capture_scope',
+                'scene_revision', 'scene_fingerprint', 'objects', 'observation_source'}
+                or any(binding[key] != item for key, item in shared.items())
+                or not digest(binding['scene_fingerprint'])):
+            return None
+        source = binding['observation_source']
+        capture = source['capture_state']
+        parent_capture = parent['capture_state']
+        generation_keys = {'instance_id', 'epoch', 'revision'}
+        if (set(source) != {'schema', 'measurement_scope', 'capture_scope', 'capture_state', 'objects',
+                'parent_binding_sha256', 'parent_source_binding_sha256', 'parent_capture_scope'}
+                or source['schema'] != 'active-observation-task-source-v1'
+                or source['measurement_scope'] != 'whole_objects'
+                or source['capture_scope'] != binding['capture_scope']
+                or binding['capture_scope'] != 'observation_task_objects'
+                or source['parent_binding_sha256'] != parent['binding_sha256']
+                or source['parent_source_binding_sha256'] != parent['source_binding_sha256']
+                or source['parent_capture_scope'] != parent['capture_scope']
+                or set(capture) != generation_keys | {'selection_key'} or set(capture) != set(parent_capture)
+                or type(capture['instance_id']) is not str or not capture['instance_id']
+                or any(type(capture[key]) is not int or capture[key] < 0 for key in ('epoch', 'revision'))
+                or any(type(capture[key]) is not type(parent_capture[key]) or capture[key] != parent_capture[key]
+                       for key in generation_keys)):
+            return None
+        selection_key = capture['selection_key']
+        if not digest(selection_key) or binding['scene_revision'] != 'observation-task:' + selection_key:
+            return None
+
+        directory = parent['objects']
+        by_id = {row['host_id']: row for row in directory}
+        selected, sources = binding['objects'], source['objects']
+        if (len(by_id) != len(directory) or type(binding['candidate_count']) is not int
+                or binding['candidate_count'] != len(directory) or type(binding['selected_count']) is not int
+                or binding['selected_count'] != 2 or len(selected) != 2 or len(sources) != 2
+                or len(query['objects']) != 2):
+            return None
+        ordered = []
+        for bound, selector in zip(selected, query['objects'], strict=True):
+            obj = by_id[bound['object_id']]
+            if bound != {'object_id': obj['host_id'], 'name': obj['object_name']}:
+                return None
+            if 'id' in selector:
+                if selector['id'] != obj['host_id']:
+                    return None
+            elif (selector['name'] != obj['object_name']
+                    or sum(item['object_name'] == selector['name'] for item in directory) != 1):
+                return None
+            ordered.append(obj['object_index'])
+
+        columns = ('object_index', 'geometry_id', 'source_triangle_count',
+                   'source_triangle_index_ranges', 'ordered_geometry_sha256')
+        rows = []
+        for item in sources:
+            idx, alias, count = item['observation_object_index'], item['geometry_id'], item['source_triangle_count']
+            if (set(item) != (set(columns) - {'object_index'}) | {'observation_object_index', 'object_id', 'instance_id'}
+                    or type(idx) is not int or not 0 <= idx < len(directory)
+                    or type(count) is not int or count <= 0 or type(alias) is not str
+                    or not alias.startswith('geometry:') or not digest(alias[len('geometry:'):])
+                    or not digest(item['ordered_geometry_sha256'])
+                    or item['source_triangle_index_ranges'] != [[0, count - 1]]):
+                return None
+            obj, complete = directory[idx], support['objects'][idx]
+            if (item['object_id'] != obj['host_id'] or item['instance_id'] != obj['instance_id']
+                    or complete['source_triangle_count'] != count
+                    or any(complete[key] != obj[key] for key in ('object_index', 'host_id', 'instance_id'))
+                    or any(row['source']['ordered_geometry_sha256'] != item['ordered_geometry_sha256']
+                           for row in regions if row['object_index'] == idx)):
+                return None
+            rows.append([idx, *(item[key] for key in columns[1:])])
+        # The producer's selection key binds the actual ordered selectors and source rows,
+        # including geometry aliases and ordered mesh digests for objects without a region.
+        if (len(set(ordered)) != 2 or set(ordered) != {row[0] for row in rows}
+                or fingerprint(['observation_task', parent['source_binding_sha256'], query, sources]) != selection_key):
+            return None
+
+        compact = dict(capture_scope=binding['capture_scope'], measurement_scope=source['measurement_scope'],
+                       selection_key=selection_key, scene_fingerprint=binding['scene_fingerprint'],
+                       object_indices=ordered, sources={'columns': list(columns), 'rows': rows})
+        return copy.deepcopy({**task, 'schema_version': 'active-observation-region-task-result-v1',
+                              'binding': compact})
+    except (KeyError, TypeError, ValueError, IndexError, AttributeError):
+        return None
+
+
+def _project_region_task_brief(value, *, validate_only=False, observation_task_query=None):
     """Validate current evidence and project the versioned region task tables."""
     from .query_policy import validate_region_task
 
@@ -1415,7 +1521,10 @@ def _project_region_task_brief(value, *, validate_only=False):
                         'Nearest depth, other blockers, and total occlusion are unspecified.'),
         }
     if 'task_result' in value:
-        result['task_result'] = copy.deepcopy(value['task_result'])
+        original = value['task_result']
+        compact_task = _project_region_task_measurement(
+            original, binding, support, region_rows, observation_task_query)
+        result['task_result'] = compact_task if compact_task is not None else copy.deepcopy(original)
     return result
 
 
@@ -1806,7 +1915,7 @@ def project_source_region_brief(value):
     return _project_source_region_brief(value)
 
 
-def _active_observation_content(value, *, is_error, audit, response_detail=None):
+def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -1885,7 +1994,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
             projected = _project_region_task_brief(metadata,
-                validate_only=response_detail == 'full' or is_error)
+                validate_only=response_detail == 'full' or is_error,
+                observation_task_query=observation_task_query)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
@@ -1910,13 +2020,13 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
 
 def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
                  compact_support_planes: bool = False, segment_brief: bool = False,
-                 active_delivery_audit=None) -> dict:
+                 active_delivery_audit=None, observation_task_query=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
         return _active_observation_content(value, is_error=is_error,
             audit={} if active_delivery_audit is None else active_delivery_audit,
-            response_detail=response_detail)
+            response_detail=response_detail, observation_task_query=observation_task_query)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2161,7 +2271,9 @@ class LiveSpatialMCPServer:
                     segment_brief=(name == 'human_eye_clearance_segment'),
                     compact_support_planes=(name == 'human_eye_scene_observe'
                         and 'support_plane_discovery' in args.get('query', {})),
-                    active_delivery_audit=delivery_audit)
+                    active_delivery_audit=delivery_audit,
+                    observation_task_query=(args['query'].get('task_query')
+                        if isinstance(args.get('query'), dict) else None))
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):
