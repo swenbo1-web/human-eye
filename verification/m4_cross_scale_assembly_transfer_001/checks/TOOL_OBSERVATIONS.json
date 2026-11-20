@@ -1,0 +1,91 @@
+{
+  "N1": [
+    {
+      "attempt": 1,
+      "label": "independent_current_geometry",
+      "response_anchors": ["source_face_offsets", "display_object_mask"],
+      "detail": "Obtained the actual full-scene mesh source and inspected its original source-row mapping."
+    },
+    {
+      "attempt": 2,
+      "label": "independent_current_geometry",
+      "response_anchors": ["components 264 candidates 3", "N11 [10, 11]", "N22 [10, 11]", "N10 [10, 11]"],
+      "answer_anchors": ["264 个分量"],
+      "detail": "Computed the eligible roster, maximal connected geometry and each region's original row indices, area, center and orientation."
+    },
+    {
+      "attempt": 3,
+      "label": "additional_obstruction_evidence",
+      "response_anchors": ["N11 {'SCENE':", "0.0016499999355525064"],
+      "answer_anchors": ["0.001650000", "部分遮挡"],
+      "detail": "Computed finite-direction positive-area blocker unions on actual current geometry, identifying full versus partial obstruction. This evidence supports N11 without a raster of that region."
+    },
+    {
+      "attempt": 4,
+      "label": "primary_observation",
+      "response_anchors": ["N22 {'ref':", "N10 {'ref':"],
+      "detail": "Built two TOP local frames at a 0.44 m full span. Both were narrower than the associated region and later excluded as complete evidence."
+    },
+    {
+      "attempt": 5,
+      "label": "unresolved",
+      "response_anchors": ["dtype('int32')", "triangle_ids"],
+      "detail": "Inspected actual owner, triangle, color and depth buffer shapes before measuring."
+    },
+    {
+      "attempt": 6,
+      "label": "unresolved",
+      "response_anchors": ["surface 14819 contrast boundary 29", "surface 20951 contrast boundary 41"],
+      "detail": "Measured and delivered the two previously built cropped originals. The pixel counts pass the thresholds but do not establish complete framing. Neither image is used in the final answer."
+    },
+    {
+      "attempt": 7,
+      "label": "error_recovery",
+      "response_anchors": ["N22 bounds 0 510", "N10 bounds 0 510"],
+      "answer_anchors": ["0.44 米局部帧裁掉了区域两端"],
+      "detail": "Compared actual pixel bounds and source vertices, identifying why the first frames cannot serve as full-region witnesses. The tool call itself succeeded."
+    },
+    {
+      "attempt": 8,
+      "label": "additional_witness",
+      "response_anchors": ["span 1.3 surface 4041 boundary 18", "span 1.05 surface 7293 boundary 0"],
+      "answer_anchors": ["native-image:7ed4f537430d0e56bdf271a30c5b04eb6e7e09bd29918d87db686b42a4da55ee", "native-image:2800a54ea82e3f36621faaf68a03b8a7c6462994ecbcf001dddde5d63d55a517"],
+      "detail": "Corrected the framing and delivered both adopted TOP originals. N22 qualifies. N10's fully framed picture supplies the specific zero-contrast negative, rather than a second readable witness."
+    }
+  ],
+  "P1": [
+    {
+      "attempt": 1,
+      "label": "primary_observation",
+      "response_anchors": ["active-observation-region-task-brief-v1", "pixel_evidence_insufficient", "positive_area_occlusion_all_front_views", "active-host-image:d7e7539f4dd4af04e7124cc4249a60b9b3c25a00c1a88ff7e4780c4051466a40"],
+      "answer_anchors": ["active-host-image:d7e7539f4dd4af04e7124cc4249a60b9b3c25a00c1a88ff7e4780c4051466a40", "1,489 个表面像素", "546 个对比边界像素"],
+      "detail": "Explicit brief delivered the complete N22 SCENE original and placed the two other cases in different statuses, N10 as TOP contrast insufficiency and N11 as six-view geometric obstruction."
+    },
+    {
+      "attempt": 2,
+      "label": "repeated_observation",
+      "response_anchors": ["prediction_only", "unobserved_geometric_candidates"],
+      "detail": "Voluntarily requested a no-image full reply. It reused the current global index with zero new indexes and rasters, but returned 393,750 bytes of diagnostic text. The frozen fallback presentation replay kept 11,988 body bytes and neither complete binding nor complete task section. The original public CLI envelope and supplier input remain different observations."
+    },
+    {
+      "attempt": 3,
+      "label": "additional_witness",
+      "response_anchors": ["native-image:1acfea13b9e4a15daa8a1805371ff7f68b093080ca6610773b2fe2b3853e03b1"],
+      "answer_anchors": ["native-image:1acfea13b9e4a15daa8a1805371ff7f68b093080ca6610773b2fe2b3853e03b1"],
+      "detail": "Delivered a current ordinary 1.0 m TOP local frame for N10, independently chosen and inspectable in the common tool. It was adopted as the image supporting the contrast failure."
+    },
+    {
+      "attempt": 4,
+      "label": "independent_current_geometry",
+      "response_anchors": ["buffer keys dict_keys", "source_face_offsets"],
+      "detail": "Read the actual current evaluated source and the ordinary frame buffers to ground further measurements in current source rows."
+    },
+    {
+      "attempt": 5,
+      "label": "independent_current_geometry",
+      "response_anchors": ["maximal_components 264", "surface_pixels 7633", "boundary_pixels 928 contrast_pixels_threshold24 0", "boundary_max_rgb_distance 0.0"],
+      "answer_anchors": ["7,633 个表面像素", "928 个边界像素", "边界最大 RGB 距离为 **0**"],
+      "detail": "Independently recomputed the eligible components and exact geometric quantities, then established what the named N10 image actually shows, including a zero maximum RGB distance on its measured boundary."
+    }
+  ]
+}
