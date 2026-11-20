@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-20，[6,148 三角正式对照](M4_DENSE_PANEL_SWEEP_FORMAL_001_INDEPENDENT_REVIEW.md)原生与插件各 2/3 完整通过，唯一同质量配对 167.085→85.726 秒（少 48.69%），整批门限未通过。三个插件原答均采用[简报 v2](M4_DENSE_REGION_BRIEF_001_INDEPENDENT_REVIEW.md)实际首包。下一批只补[具名遮挡见证](M4_BOUND_BLOCKER_EVIDENCE_001_PLAN.md)，复用现有正面积判断。
+2026-11-20，[6,148 三角正式对照](M4_DENSE_PANEL_SWEEP_FORMAL_001_INDEPENDENT_REVIEW.md)原生与插件各 2/3 完整通过，唯一同质量配对 167.085→85.726 秒（少 48.69%），整批门限未通过。[具名遮挡见证](M4_BOUND_BLOCKER_EVIDENCE_001_INDEPENDENT_REVIEW.md)工程验收通过，同样两张原图、首包新增 336 B。下一批用[导轨端面任务](M4_RAIL_BLOCKER_CONSUMPTION_001_PLAN.md)测实际减少的补查。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
@@ -13,7 +13,7 @@
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | source_region事实优先v2及原full/ref兼容验收通过 |
 | M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 基础复用已实现；目录追加优化未发现合格任务命中，收口并供M4复用 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
-| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | `278fd300` 密集装配首包通过实际消费，正式比较整体门限未过。补现有几何的具名遮挡来源 |
+| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 隔离候选 `e03ee486` 取得具名遮挡证据，接续新任务的前后版本独立对照 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 同捕获观察→整对象/明确源区域量测工程已验收；完整模型收益仍待新任务 |
 
 最新接受交付544cf4f123c35fbca24b8f425acc30fd3308b178，产品08a5f3b29283270c97b6d9d6e217bbee6ca7bfc1、143源0d75c8f7f3522c4c7f2a5807f51f86fc4f2bec49efa9a215bf090775787ab91b，安装D:/he_m1_source_region_facts_first_001/B/product。显示修复aa45f033/29f35/af7c、明确源区域de884a2a/2292/8d8d和真实资格828d1265保留为增量基线。历史跨尺度和M5产品按各自原验收引用。
@@ -156,7 +156,7 @@ M5-TASK-CONSUMPTION-001已[异常收口](M5_TASK_CONSUMPTION_001_INDEPENDENT_REV
 
 ## 7. 并行与集成顺序
 
-1. [装配实体关系001复核](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10、原生6次和插件3次工具尝试，完整窗差54.436秒。[首包真实消费A/B](M4_ASSEMBLY_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md)两组补查相同，已封存该候选。`278fd300` 集成局部首视角、同代复用、视锥优化、像素不足事实、投影盒筛选和密集区域简报。[密集正式对照](M4_DENSE_PANEL_SWEEP_FORMAL_001_INDEPENDENT_REVIEW.md)收口，补一项可复用的[遮挡原因定位](M4_BOUND_BLOCKER_EVIDENCE_001_PLAN.md)；现有明确 `full` 语义沿用。Yanyite 曲面题沿原验收收口。
+1. [装配实体关系001复核](M4_LIVE_ASSEMBLY_RELATION_TASK_001_INDEPENDENT_REVIEW.md)两组各10/10、原生6次和插件3次工具尝试，完整窗差54.436秒。[首包真实消费A/B](M4_ASSEMBLY_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md)两组补查相同，已封存该候选。`e03ee486` 在 `278fd300` 现有跨尺度、同代复用、视锥及投影筛选、像素不足和密集区域简报之上添加具名遮挡见证。[密集正式对照](M4_DENSE_PANEL_SWEEP_FORMAL_001_INDEPENDENT_REVIEW.md)沿原判定收口。当前做[新导轨任务](M4_RAIL_BLOCKER_CONSUMPTION_001_PLAN.md)验证该证据的净收益。Yanyite 曲面题沿原验收收口。
 2. 可并行准备：M1 只读分析消费轨迹；M2 确认重复采集序列；M3 独立真值与算法资格；M5 固定一种观察后测量任务。这些准备已形成路线，本轮没有额外启动产品实现或模型作业。
 3. 可以并行实现的边界：M2 负责 blender_host/scene_residency 资源复用，M3 负责 surface_proximity/surface_geometry 内核；M4 的独立观察算法可在 active_observation 内推进。M4 前置取数也会涉及 blender_host/live_service，必须等 M2 宿主候选固定后由同一集成者接入；M1/M5 共用的 live_service/task_query 接线同样串行修改。跨模块请求只用现有状态/结果，避免新增抽象层。
 4. 所有候选在独立工作区完成；当前M1/M4固定安装不变。不同工作区也不同时改同一接口。真实Blender QA、模型性能槽和同版本集成验收串行，防止资源竞争把成绩弄乱。竞争分支不接收本线提交。
