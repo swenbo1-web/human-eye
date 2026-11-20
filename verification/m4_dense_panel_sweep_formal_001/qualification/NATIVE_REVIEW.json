@@ -1,0 +1,1281 @@
+{
+  "CLI": [
+    {
+      "limits": {
+        "MCP_bytes": 12000,
+        "MCP_serialization_multiplier": 1.2,
+        "approximate_bytes_per_token": 4,
+        "fallback_bytes": 10000,
+        "history_approximate_tokens": 3000
+      },
+      "live_model_or_provider_input_observed": false,
+      "passed": true,
+      "stages": [
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 33,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        },
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 34,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        },
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 35,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        }
+      ]
+    },
+    {
+      "limits": {
+        "MCP_bytes": 12000,
+        "MCP_serialization_multiplier": 1.2,
+        "approximate_bytes_per_token": 4,
+        "fallback_bytes": 10000,
+        "history_approximate_tokens": 3000
+      },
+      "live_model_or_provider_input_observed": false,
+      "passed": true,
+      "stages": [
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 33,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        },
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 34,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        },
+        {
+          "MCP": {
+            "image": true,
+            "text": true
+          },
+          "header_bytes": 35,
+          "history": {
+            "image": true,
+            "text": true
+          }
+        }
+      ]
+    }
+  ],
+  "actual_tool_catalogue": [
+    {
+      "description": "Run persistent ordinary Python. scene_data(selectors=None) returns source_ref, source and current objects with identity, visibility, vertices in world metres, and object-local triangles. np, Fraction, shapely, PIL and Image are available. cameras gives six target-to-eye directions. render_views(names,include_images=False,fresh=False) returns globally fitted frames. render_local(direction,target_world_m,view_span_m,include_image=False,fresh=False) returns one 512px orthographic frame using the chosen direction, finite world target and full square width in metres. View directions are SCENE=(4,-4,3), TOP=(0,0,1), LEFT=(-1,0,1), RIGHT=(1,0,1), FRONT=(0,-1,1), BACK=(0,1,1). buffers[frame_ref] gives color, depth, owners and triangle_ids. Frame object_names and source_face_offsets map the zero-based owners and global triangle IDs. Pixel row/column origin is top-left with centres at integer index +0.5; background owner and triangle are -1. read_images([frame_ref,...]) attaches original cached PNGs. blender(code,timeout=30) reads current Blender. Keep arrays local and print compact facts and frame references. Variables persist between calls.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "name": "execute_python"
+    },
+    {
+      "description": "Run persistent read-only ordinary Python in the current Blender with bpy, mathutils and NumPy. Returns stdout, stderr and errors.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "name": "execute_blender_code"
+    },
+    {
+      "description": "Fit any chosen registered directions to the whole current scene. Returns frame metadata, with original PNGs if include_images is true.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fresh": {
+            "default": false,
+            "type": "boolean"
+          },
+          "include_images": {
+            "default": false,
+            "type": "boolean"
+          },
+          "names": {
+            "items": {
+              "enum": [
+                "SCENE",
+                "TOP",
+                "LEFT",
+                "RIGHT",
+                "FRONT",
+                "BACK"
+              ]
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "type": "object"
+      },
+      "name": "render_views"
+    },
+    {
+      "description": "Frame a model-chosen world target in a registered direction with a full square width in metres. All display-participating scene triangles remain in the depth test. Returns one frame with an optional PNG. A matching frame can be read by ref without a fresh raster.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "direction": {
+            "enum": [
+              "SCENE",
+              "TOP",
+              "LEFT",
+              "RIGHT",
+              "FRONT",
+              "BACK"
+            ]
+          },
+          "fresh": {
+            "default": false,
+            "type": "boolean"
+          },
+          "include_image": {
+            "default": false,
+            "type": "boolean"
+          },
+          "target_world_m": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 3,
+            "minItems": 3,
+            "type": "array"
+          },
+          "view_span_m": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "direction",
+          "target_world_m",
+          "view_span_m"
+        ],
+        "type": "object"
+      },
+      "name": "render_local"
+    },
+    {
+      "description": "Attach a cached current-slot PNG by frame ref.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "refs"
+        ],
+        "type": "object"
+      },
+      "name": "read_images"
+    }
+  ],
+  "assessment_ms": 564.6638,
+  "asset_sha256": "2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164",
+  "current_ordinary_source_sha256": "6ed1438ccbe7cc6d271d9d41631874ab1c360a54dbdd117fd3df740059d61396",
+  "current_source": {
+    "current_geometry_sha256": "a48ef1b1634e1bbe66fbb49d47899581432d6bf4aebae5577ea5abdebf4b774d",
+    "initial_sha256": "65136d45219d22c645acd15ea4bbcd45c775c26858919e8338dfff57149f4d30",
+    "owned_copy_sha256": "2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164",
+    "terminal_sha256": "05fb23a7a0e8711ba958d31ec94fca3f301d77d9b52ebe944481034d1a8894f2",
+    "unchanged_fingerprint": "1fccdc18b2fc3013aeaeb2e844dad2e8feaa8b9b6d1614692e089af27298ba49",
+    "visible_objects": 14
+  },
+  "denominator": {
+    "Blender_spawned_confirmed": 1,
+    "Blender_spawned_unknown": 0,
+    "Blender_start_attempts": 1,
+    "all_raster_actual": 2,
+    "all_raster_upper": 2,
+    "business_admissions": 2,
+    "consumer_admissions": 0,
+    "formal_raster_actual": 0,
+    "formal_raster_upper": 0,
+    "pending_raster_reservations": 0,
+    "qualification_raster_actual": 2,
+    "qualification_raster_upper": 2
+  },
+  "frames": [
+    {
+      "NPZ_bytes": 46479,
+      "NPZ_sha256": "a28ca2c7e617fe198e12ee2554dd7fe9d1126add64c5450ac24e570998f2b02e",
+      "PNG_bytes": 2077,
+      "PNG_sha256": "55221b42c7c0594935158b39231fa4cc99bc6d41d6878f569dc911a5de236ca8",
+      "caption_index": 1,
+      "frame_identity": "200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "native_content_block_index": 2,
+      "pixels": [
+        {
+          "contrasting_boundary_pixels": 0,
+          "object_name": "M4_Far_02",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 0,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_09",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 68,
+          "object_name": "M4_Far_05",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1598,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_10",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 111,
+          "object_name": "M4_Far_03",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_06",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 113,
+          "object_name": "M4_Far_11",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1598,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_04",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_08",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 66,
+          "object_name": "M4_Far_07",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 111,
+          "object_name": "M4_Far_01",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 112,
+          "object_name": "M4_Far_00",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1598,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 156,
+          "object_name": "M4_Far_00",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              512,
+              513
+            ]
+          ],
+          "surface_pixels": 1551,
+          "wholly_in_frame": true
+        }
+      ],
+      "ref": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "scope_id": "global",
+      "stages": {
+        "NPZ_encoding": {
+          "closed_ns": 42337375138500,
+          "elapsed_ns": 17519200,
+          "started_ns": 42337357619300
+        },
+        "PNG_encoding": {
+          "closed_ns": 42337357592300,
+          "elapsed_ns": 11020600,
+          "started_ns": 42337346571700
+        },
+        "actual_raster": {
+          "closed_ns": 42337336567100,
+          "elapsed_ns": 359306300,
+          "started_ns": 42336977260800
+        }
+      },
+      "view": "LEFT"
+    },
+    {
+      "NPZ_bytes": 192537,
+      "NPZ_sha256": "b739fe479c00ef3b584dfc10ab2376560914196f78f3649c31b61a8ebdbced17",
+      "PNG_bytes": 3456,
+      "PNG_sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47",
+      "caption_index": 3,
+      "frame_identity": "92063e80cd5a30a23a0bd8a5a818261baa9983c1209a7d5257466ef25ebc361f",
+      "native_content_block_index": 4,
+      "pixels": [
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_02",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 134,
+          "object_name": "M4_Far_09",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1563,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 134,
+          "object_name": "M4_Far_05",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1563,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_10",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1608,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_03",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_06",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 146,
+          "object_name": "M4_Far_11",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_04",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1608,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_08",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 136,
+          "object_name": "M4_Far_07",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 134,
+          "object_name": "M4_Far_01",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1562,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 146,
+          "object_name": "M4_Far_00",
+          "qualifies": false,
+          "source_triangle_ranges": [
+            [
+              0,
+              511
+            ]
+          ],
+          "surface_pixels": 1607,
+          "wholly_in_frame": true
+        },
+        {
+          "contrasting_boundary_pixels": 138,
+          "object_name": "M4_Far_00",
+          "qualifies": true,
+          "source_triangle_ranges": [
+            [
+              512,
+              513
+            ]
+          ],
+          "surface_pixels": 1197,
+          "wholly_in_frame": true
+        }
+      ],
+      "ref": "native-image:92063e80cd5a30a23a0bd8a5a818261baa9983c1209a7d5257466ef25ebc361f",
+      "scope_id": "global",
+      "stages": {
+        "NPZ_encoding": {
+          "closed_ns": 42337786260500,
+          "elapsed_ns": 18226100,
+          "started_ns": 42337768034400
+        },
+        "PNG_encoding": {
+          "closed_ns": 42337768007100,
+          "elapsed_ns": 2456600,
+          "started_ns": 42337765550500
+        },
+        "actual_raster": {
+          "closed_ns": 42337753097100,
+          "elapsed_ns": 360671000,
+          "started_ns": 42337392426100
+        }
+      },
+      "view": "SCENE"
+    }
+  ],
+  "freeze_sha256": "777ff348d9282e7b9f7c402d7f97a34f46b4116b5b8f20decbaa773d57d4d97e",
+  "independent_actual_positive_axes": [
+    "side",
+    "top"
+  ],
+  "independent_truth_sha256": "d4d05b3ffb713331c4348852335b9d17ebfe9690c7013062d39b82bb8087700a",
+  "label": "QN",
+  "ordinary_modules": {
+    "PIL": {
+      "path": "D:\\he_anchor_001\\venv\\Lib\\site-packages\\PIL\\__init__.py",
+      "version": "12.3.0"
+    },
+    "numpy": {
+      "path": "D:\\he_anchor_001\\venv\\Lib\\site-packages\\numpy\\__init__.py",
+      "version": "2.3.5"
+    },
+    "shapely": {
+      "path": "D:\\he_occluded_transfer_001\\shared_dependencies\\shapely\\__init__.py",
+      "version": "2.1.2"
+    }
+  },
+  "original_errors": [],
+  "original_regions": [
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        3.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": null,
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "positive_area_occlusion",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_02",
+      "pixel_counts": [
+        [
+          0,
+          0
+        ],
+        [
+          1607,
+          136
+        ]
+      ],
+      "reason": "positive_area_occlusion_all_front_views",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": null
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        10.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_09",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1563,
+          134
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        6.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_05",
+      "pixel_counts": [
+        [
+          1598,
+          68
+        ],
+        [
+          1563,
+          134
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        11.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_10",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1608,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_03",
+      "pixel_counts": [
+        [
+          1551,
+          111
+        ],
+        [
+          1607,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        7.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_06",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1607,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        12.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_11",
+      "pixel_counts": [
+        [
+          1598,
+          113
+        ],
+        [
+          1607,
+          146
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        5.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_04",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1608,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        9.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_08",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1607,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        8.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_07",
+      "pixel_counts": [
+        [
+          1551,
+          66
+        ],
+        [
+          1607,
+          136
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        2.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "complete",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_01",
+      "pixel_counts": [
+        [
+          1551,
+          111
+        ],
+        [
+          1562,
+          134
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": 0
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        1.0,
+        0.5,
+        0.5
+      ],
+      "complete_witness": null,
+      "directions": [
+        "back_facing",
+        "edge_on",
+        "positive_area_occlusion",
+        "back_facing",
+        "edge_on",
+        "edge_on"
+      ],
+      "object_name": "M4_Far_00",
+      "pixel_counts": [
+        [
+          1598,
+          112
+        ],
+        [
+          1607,
+          146
+        ]
+      ],
+      "reason": "positive_area_occlusion_all_front_views",
+      "source_triangle_ranges": [
+        [
+          0,
+          511
+        ]
+      ],
+      "unit_normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "witness_frame": null
+    },
+    {
+      "area_m2": 1.0,
+      "center_world_m": [
+        1.5,
+        0.5,
+        2.0
+      ],
+      "complete_witness": "native-image:200d914e01ac5aee0ee7df7ac0ea17c572f8c5e873876d638226e5fdff626215",
+      "directions": [
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "object_name": "M4_Far_00",
+      "pixel_counts": [
+        [
+          1551,
+          156
+        ],
+        [
+          1197,
+          138
+        ]
+      ],
+      "reason": "observed_readable",
+      "source_triangle_ranges": [
+        [
+          512,
+          513
+        ]
+      ],
+      "unit_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "witness_frame": 0
+    }
+  ],
+  "owned_slot_status": "completed",
+  "passed": true,
+  "proven_geometric_unknowns": 2,
+  "publication_sha256": "9a412f650f3643e94dd33fee73717d6fc77d57e7980f86239735edddc07c57fc",
+  "reason": "qualified",
+  "schema": "m4-dense-panel-sweep-formal-QN-review-v1",
+  "slot_result_sha256": "9f82d210d4ab5be8a4290bbefdb0877792c8d3665052c5f7fd59b9cdc85bda12",
+  "timing": {
+    "calls": [
+      {
+        "PNG_bytes": 5533,
+        "RX_bytes": 11789,
+        "RX_sha256": "98c14e4b6480275a939e8afb06f18316b0730630393dde7118d54ff2b772feea",
+        "TX_bytes": 13881,
+        "TX_sha256": "46e6aa7488e3531dcaafe02aea5f1e653562a71ab6962ac52af8700100a64feb",
+        "ordinal": 1,
+        "owner_business_ms": 2217.035,
+        "owner_response_prefix_and_work_ms": 2216.5702,
+        "text_UTF8_bytes": 3571,
+        "wire_elapsed_ms": 2221.4989
+      },
+      {
+        "PNG_bytes": 0,
+        "RX_bytes": 316,
+        "RX_sha256": "b2e933f64e8bb22ef164e0a25139303f3520f3919493ae662eb807a47e2a0857",
+        "TX_bytes": 527,
+        "TX_sha256": "69879d0a3b830c2aa2c3ebacbde23cfd3023cf975da5a3ac459a128cce508c98",
+        "ordinal": 2,
+        "owner_business_ms": 52.4769,
+        "owner_response_prefix_and_work_ms": 51.9207,
+        "text_UTF8_bytes": 174,
+        "wire_elapsed_ms": 56.6025
+      }
+    ],
+    "diagnostic_call_sequence_ms": 2308.5966,
+    "frame_camera_fit": [
+      {
+        "at_ns": 42336968777800,
+        "closed_ns": 42336968776800,
+        "elapsed_ns": 6691900,
+        "event": "native_camera_fit",
+        "scope_id": "global",
+        "started_ns": 42336962084900,
+        "view": "LEFT"
+      },
+      {
+        "at_ns": 42337383398800,
+        "closed_ns": 42337383397200,
+        "elapsed_ns": 439600,
+        "event": "native_camera_fit",
+        "scope_id": "global",
+        "started_ns": 42337382957600,
+        "view": "SCENE"
+      }
+    ],
+    "last_call_to_publication_ms": 369.4703,
+    "ordinary_source_parent_read": {
+      "closed_ns": 42336014005100,
+      "elapsed_ns": 94293400,
+      "started_ns": 42335919711700
+    },
+    "owned_window_ms": 4540.3478,
+    "ready_to_client_ready_ms": 112.2513,
+    "startup_to_ready_ms": 1742.0847
+  }
+}
