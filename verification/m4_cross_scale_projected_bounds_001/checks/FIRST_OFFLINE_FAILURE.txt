@@ -1,0 +1,19 @@
+First verifier exit code 1. Raw standard error follows.
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.codex\worktrees\m4-target-002\hefe\verification\m4_cross_scale_projected_bounds_001\checks\projected_bounds_controls.py", line 493, in <module>
+    main()
+  File "C:\Users\Administrator\.codex\worktrees\m4-target-002\hefe\verification\m4_cross_scale_projected_bounds_001\checks\projected_bounds_controls.py", line 470, in main
+    space = larger_rank_tables(apis['B'])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\.codex\worktrees\m4-target-002\hefe\verification\m4_cross_scale_projected_bounds_001\checks\projected_bounds_controls.py", line 390, in larger_rank_tables
+    require(max(ratios) <= 2.35, 'rank_temporary_allocation_growth_exceeds_linear_envelope')
+  File "C:\Users\Administrator\.codex\worktrees\m4-target-002\hefe\verification\m4_cross_scale_projected_bounds_001\checks\projected_bounds_controls.py", line 43, in require
+    raise ValueError(detail)
+ValueError: rank_temporary_allocation_growth_exceeds_linear_envelope
+
+The verifier had added a 2.35 adjacent measured-byte ratio assertion. The frozen
+plan requires linear working space and expanded measurements. It has no adjacent
+ratio limit. The published control records exact linear container denominators
+and measured bytes with both warm and cleared CPython Fraction hash caches. The
+product commit and offline scenarios remained identical.
