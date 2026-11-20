@@ -1,0 +1,17 @@
+"""Run the reviewed sequence in this namespace, with no replacement slots."""
+
+from pathlib import Path
+import sys
+
+
+NS = Path(__file__).resolve().parent
+sys.path.insert(0, str(NS / 'harness'))
+from common import PIXEL_BASE, load_retained
+
+
+previous = load_retained('_dense_raster_recovered_sequence', PIXEL_BASE / 'run_sequence.py')
+previous.NS = NS
+
+
+if __name__ == '__main__':
+    raise SystemExit(previous.sequence())
