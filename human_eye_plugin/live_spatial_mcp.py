@@ -1080,7 +1080,76 @@ def _project_active_inspection(facts, regions, pixel_references):
     return compact, {'columns': ['reason', 'view_indices'], 'rows': groups}
 
 
-def _project_region_task_brief(value):
+def _unique_rows_by_roi(rows):
+    by_roi = {}
+    if not isinstance(rows, (list, tuple)):
+        return by_roi
+    for row in rows:
+        roi = row.get('roi_id') if isinstance(row, dict) else None
+        if isinstance(roi, str):
+            by_roi[roi] = None if roi in by_roi else row
+    return by_roi
+
+
+def _shortfall_pixel_matches(pixel, task_row, observation):
+    if pixel is None or pixel.get('readable') is not False or pixel.get('front_facing') is not True:
+        return False
+    readable = observation.get('readable_roi_ids')
+    if (pixel.get('view') != observation['view_name']
+            or not isinstance(readable, list) or pixel['roi_id'] in readable
+            or type(pixel.get('object_index')) is not int
+            or any(pixel.get(key) != task_row[key] for key in ('object_index', 'object_name', 'host_id'))):
+        return False
+    surface = pixel.get('visible_surface_pixels')
+    boundary = pixel.get('contrasting_boundary_pixels')
+    valid = (type(surface) is int and type(boundary) is int and 0 <= boundary <= surface <= 512 * 512
+            and (surface < 16 or boundary < 4)
+            and all(type(pixel.get(key)) is int and pixel[key] == limit for key, limit in
+                    (('minimum_surface_pixels', 16), ('minimum_boundary_pixels', 4),
+                     ('minimum_rgb_boundary_contrast', 24)))
+            and {'visible_pixel_bounds', 'visible_pixel_anchor'} <= pixel.keys()
+            and _valid_visible_pixel_location(pixel, [512, 512]))
+    if not valid or surface == 0:
+        return valid
+    xmin, ymin, xmax, ymax = pixel['visible_pixel_bounds']
+    return surface <= (xmax - xmin + 1) * (ymax - ymin + 1)
+
+
+def _add_region_task_shortfalls(scope, compact_rows, observations, selected_indices):
+    by_roi = _unique_rows_by_roi(scope['facts'].get('region_evidence', ()))
+    pending = {}
+    for roi, row in compact_rows.items():
+        evidence = by_roi.get(roi)
+        reasons = row.get('view_reasons')
+        if (evidence is not None and evidence.get('unobserved_reason') == 'pixel_evidence_insufficient'
+                and evidence.get('complete_witness') is None and isinstance(reasons, dict)
+                and evidence.get('view_reasons') == reasons):
+            views = reasons.get('pixel_evidence_insufficient')
+            if type(views) is list:
+                pending[roi] = views
+    for identity in scope['frame_refs']:
+        if not pending:
+            break
+        observation = observations[identity]
+        view = observation['view_name']
+        pixels = _unique_rows_by_roi(observation.get('pixel_rows', ()))
+        for roi, pixel in pixels.items():
+            if roi not in pending or view not in pending[roi]:
+                continue
+            row = compact_rows[roi]
+            if not _shortfall_pixel_matches(pixel, row, observation):
+                continue
+            selected = selected_indices.get(identity)
+            row['pixel_shortfall'] = {key: pixel[key] for key in (
+                'visible_surface_pixels', 'contrasting_boundary_pixels',
+                'minimum_surface_pixels', 'minimum_boundary_pixels', 'minimum_rgb_boundary_contrast')}
+            row['pixel_shortfall'].update(scope_id=scope['scope_id'], view_name=view,
+                image_delivered=selected is not None,
+                native_content_block_index=selected + 1 if selected is not None else None)
+            pending.pop(roi)
+
+
+def _project_region_task_brief(value, *, include_pixel_shortfalls=True):
     """Project current cross-scale facts using scope and frame identities."""
     from .query_policy import validate_region_task
 
@@ -1090,6 +1159,7 @@ def _project_region_task_brief(value):
 
     binding, facts = value['binding'], value['facts']
     task = facts['region_task']
+    include_pixel_shortfalls = include_pixel_shortfalls and value['observation_status'] == 'region_task_observed'
     require(task['schema'] == 'active-region-task-v1', 'schema')
     require(validate_region_task(task['conditions']) == task['conditions'], 'conditions')
     require(binding['capture_scope'] == 'complete_scene_meshes', 'whole_scene_source')
@@ -1111,6 +1181,7 @@ def _project_region_task_brief(value):
     require(type(objects) is list and all(obj['object_index'] == index for index, obj in enumerate(objects)),
             'parent_object_order')
     observations = {}
+    local_scope_by_roi = {}
     scope_rows = []
     for scope in scopes:
         scope_id, source = scope['scope_id'], scope['binding']
@@ -1130,6 +1201,11 @@ def _project_region_task_brief(value):
         require(scope['frame_refs'] == [frame['frame_identity'] for frame in scope_frames], 'scope_frame_order')
         require(len({frame['view_name'] for frame in scope_frames}) == len(scope_frames), 'scope_view_unique')
         scope_facts = scope['facts']
+        if include_pixel_shortfalls and scope_id != 'global':
+            location = scope_facts.get('scope')
+            roi = location.get('roi_id') if isinstance(location, dict) else None
+            if isinstance(roi, str):
+                local_scope_by_roi[roi] = None if roi in local_scope_by_roi else scope_id
         require(scope_facts['scene_identity'] == source['geometry_identity']
                 and scope_facts['candidate_identity'] == source['camera_identity'], 'scope_fact_identity')
         require(len(scope_facts['observations']) == len(scope_frames), 'scope_actual_observations')
@@ -1154,6 +1230,7 @@ def _project_region_task_brief(value):
     require(len({row['roi_id'] for row in region_rows}) == len(region_rows), 'unique_task_regions')
     world_fields = ('center_world_m', 'half_edge_u_world_m', 'half_edge_v_world_m', 'front_direction_world')
     compact_rows, pixel_rows = [], []
+    shortfall_rows = {}
     for row in region_rows:
         index = row['object_index']
         require(type(index) is int and 0 <= index < len(objects), 'task_object_index')
@@ -1175,6 +1252,7 @@ def _project_region_task_brief(value):
                 'ordered_geometry_digest')
         witness = row['complete_witness']
         compact = copy.deepcopy(row)
+        compact.pop('pixel_shortfall', None)
         if witness is not None:
             frame = by_frame[witness['frame_identity']]
             scope = by_scope[witness['scope_id']]
@@ -1203,7 +1281,17 @@ def _project_region_task_brief(value):
                 selected_indices[frame['frame_identity']] + 1 if witness['selected_for_delivery'] else None)
         else:
             require(row['status'] != 'covered', 'covered_requires_witness')
+            if (include_pixel_shortfalls and row['status'] == 'unknown'
+                    and row['reason'] == 'pixel_evidence_insufficient'):
+                roi = row['roi_id']
+                scope_id = local_scope_by_roi.get(roi, 'global')
+                if scope_id == 'global' or (scope_id is not None
+                        and by_scope[scope_id]['binding'].get('region_source') == source
+                        and by_scope[scope_id]['facts']['scope'].get('source') == source):
+                    shortfall_rows.setdefault(scope_id, {})[roi] = compact
         compact_rows.append(compact)
+    for scope_id, rows in shortfall_rows.items():
+        _add_region_task_shortfalls(by_scope[scope_id], rows, observations, selected_indices)
     result = {key: copy.deepcopy(value[key]) for key in
               ('status', 'result_kind', 'observation_status', 'session_id', 'read_only', 'execution_authority')}
     compact_binding = {key: copy.deepcopy(item) for key, item in binding.items()
@@ -1700,7 +1788,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None)
             metadata['image_delivery'] = image_delivery
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
-            projected = _project_region_task_brief(metadata)
+            projected = _project_region_task_brief(metadata,
+                include_pixel_shortfalls=response_detail != 'full' and not is_error)
         audit['projection_status'] = 'full_requested' if response_detail == 'full' else 'unsupported_full'
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
