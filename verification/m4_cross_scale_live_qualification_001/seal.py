@@ -1,0 +1,121 @@
+"""Verify the isolated qualification and index exact local runtime originals."""
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import time
+import zipfile
+
+
+NS = Path(__file__).resolve().parent
+ROOT = NS.parents[1]
+RUN = Path('D:/he_m4_cross_scale_live_qualification_001')
+ASSET = Path('D:/he_m4_global_local_001/fixture/main.blend')
+ASSET_SHA = 'a2d55e9212a84d27489aa72a680092b4e91d94d9df27d29c5de40d8a4ca3d0c6'
+BASE = '86c926475496ccdd33b4afa9eb9e803427eda1d5'
+
+
+def sha(path):
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def read(path):
+    return json.loads(Path(path).read_bytes())
+
+
+def write(path, value):
+    with path.open('x', encoding='utf8', newline='\n') as stream:
+        json.dump(value, stream, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False)
+        stream.write('\n')
+
+
+def inventory():
+    rows = []
+    for section in ('slots', 'budget', 'preflight'):
+        root = RUN / section
+        for path in root.rglob('*'):
+            if path.is_symlink() or path.is_junction() or not path.resolve().is_relative_to(root.resolve()):
+                raise ValueError('runtime artifact reparse point ' + str(path))
+            if path.is_file():
+                rows.append(path)
+    return sorted(rows)
+
+
+def archive():
+    started = time.perf_counter_ns()
+    slot = RUN / 'slots/Q1'
+    result = slot / 'SLOT_RESULT.json'
+    publication = read(slot / 'SLOT_PUBLICATION.json')
+    if publication['result_sha256'] != sha(result) or sha(ASSET) != ASSET_SHA:
+        raise ValueError('slot publication or original asset identity differs')
+    paths = inventory()
+    rows = [{'path': p.relative_to(RUN).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p)} for p in paths]
+    target = RUN / 'ORIGINAL_RUNTIME.zip'
+    with zipfile.ZipFile(target, 'x', compression=zipfile.ZIP_DEFLATED, compresslevel=4) as bundle:
+        for p, row in zip(paths, rows, strict=True):
+            bundle.write(p, row['path'])
+    with zipfile.ZipFile(target) as bundle:
+        if bundle.namelist() != [row['path'] for row in rows]:
+            raise ValueError('zip membership differs')
+        for p, row in zip(paths, rows, strict=True):
+            with bundle.open(row['path']) as stream:
+                digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+            if digest != row['sha256'] or sha(p) != digest:
+                raise ValueError('original or archive hash differs ' + row['path'])
+    if paths != inventory():
+        raise ValueError('runtime evidence changed during sealing')
+    index = {'started_ns': started, 'closed_ns': time.perf_counter_ns(), 'file_count': len(rows),
+             'original_bytes': sum(row['bytes'] for row in rows), 'files': rows,
+             'archive': {'path': str(target), 'bytes': target.stat().st_size, 'sha256': sha(target)}}
+    write(NS / 'RUNTIME_INDEX.json', index)
+    print(index['file_count'], index['archive'])
+
+
+def finalize(artifacts, decision):
+    changed = subprocess.check_output(['git', 'diff', '--name-only', BASE], cwd=ROOT).decode().splitlines()
+    scope = NS.relative_to(ROOT).as_posix() + '/'
+    if any(not name.startswith(scope) for name in changed) or sha(ASSET) != ASSET_SHA:
+        raise ValueError('product or original asset differs')
+    frozen = NS / 'FROZEN.json'
+    for row in read(frozen)['direct_inputs']:
+        path = Path(row['path'])
+        if sha(path) != row['sha256'] or path.stat().st_size != row['bytes']:
+            raise ValueError('frozen input changed ' + str(path))
+    runtime = read(NS / 'RUNTIME_INDEX.json')
+    if sha(runtime['archive']['path']) != runtime['archive']['sha256']:
+        raise ValueError('exact runtime archive changed')
+    paths = ['REPORT.md', 'RUNTIME_INDEX.json', 'checks/COSTS.json', *artifacts]
+    for path in paths:
+        if not (NS / path).resolve().is_relative_to(NS):
+            raise ValueError('artifact is outside scope')
+    costs = read(NS / 'checks/COSTS.json')
+    write(NS / 'DECISION.json', {'task': 'M4-CROSS-SCALE-LIVE-QUALIFICATION-001', 'decision': decision,
+          'slot_status': costs['slot_status'], 'freeze_sha256': sha(frozen), 'product_diff_files': 0,
+          'original_asset_sha256': ASSET_SHA, 'artifact_sha256': {path: sha(NS / path) for path in paths},
+          'product_requests': costs['actual_business_calls_to_product'], 'raster_attempts': costs['actual_raster_attempts'],
+          'model_runs': 0, 'substitute_runs': 0, 'paid_API_calls': 0,
+          'agent_learning_registration': read(NS / 'PREPARED.json')['agent_learning_registration']})
+    self_path = NS / 'CONTENT_MANIFEST.json'
+    paths = [path for path in sorted(NS.rglob('*')) if path.is_file() and path != self_path]
+    if any(path.suffix == '.pyc' for path in paths):
+        raise ValueError('unexpected generated bytecode in deliverable')
+    rows = [{'path': p.relative_to(NS).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p)} for p in paths]
+    write(self_path, {'files': rows, 'count': len(rows), 'self_excluded': True})
+    print(len(rows) + 1, sha(self_path))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=('archive', 'finalize'))
+    parser.add_argument('--artifact', action='append', default=[])
+    parser.add_argument('--decision', choices=('qualified', 'blocked'))
+    args = parser.parse_args()
+    if args.action == 'archive':
+        archive()
+    else:
+        if not args.decision:
+            parser.error('finalize requires an explicit qualification decision')
+        finalize(args.artifact, args.decision)
