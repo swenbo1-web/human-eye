@@ -2165,7 +2165,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
               and metadata.get('binding', {}).get('capture_scope') == 'target_observation_meshes'):
             task = metadata.get('task_result')
             if (isinstance(task, dict) and task.get('result_kind') == 'task_query'
-                    and task.get('schema_version') == 'task-query-v3' and task.get('pair_order') == 'A_to_B'):
+                    and task.get('schema_version') == 'task-query-v3' and task.get('pair_order') == 'A_to_B'
+                    and isinstance(task.get('facts'), dict) and task['facts'].keys() == {'surface_proximity'}):
                 task_binding = task.get('binding')
                 source = task_binding.get('observation_source') if isinstance(task_binding, dict) else None
                 parent = metadata['binding']
