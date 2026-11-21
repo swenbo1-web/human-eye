@@ -1877,6 +1877,83 @@ def _validate_source_region_projection(value):
             raise ValueError('source_region_complete_witness_frame_mismatch')
 
 
+def _project_source_region_blockers(value):
+    """Project geometric blockers from the current selection's view attempts."""
+    attempts = value.get('view_attempts')
+    if not attempts:
+        return []
+    from .active_observation import fingerprint
+
+    try:
+        binding, reference = value['binding'], value['region_ref']
+        visibility, region = value['facts']['visibility'], value['facts']['region']
+        policy, scope = binding['camera_policy'], binding['image_scope']
+        order = policy['order']
+        frame, = value['frames']
+        if (binding['capture_scope'] != 'complete_scene_meshes'
+                or value['task_result']['binding'] != binding or scope['status'] != 'captured'
+                or scope['identity'] != binding['display_identity']
+                or visibility['image_scope'] != scope or frame['image_scope'] != scope
+                or frame['display_identity'] != scope['identity']
+                or frame['source_revision'] != binding['scene_revision']
+                or frame['scene_identity'] != binding['geometry_identity']
+                or frame['candidate_identity'] != binding['camera_identity']
+                or reference['document_epoch'] != binding['document_epoch']
+                or reference['ordered_geometry_sha256'] != binding['ordered_geometry_sha256']
+                or any(reference['capture_generation'][key] != binding['capture_state'][key]
+                       for key in ('instance_id', 'epoch', 'revision'))
+                or policy['region_id'] != reference['region_id']
+                or not 1 <= len(order) <= 6 or len(set(order)) != len(order)
+                or order != [view['name'] for view in binding['camera_specification']['views']]
+                or order != [attempt['view_name'] for attempt in attempts]
+                or any(visibility[key] != frame[key] for key in ('view_name', 'frame_identity', 'image_ref'))
+                or frame['image_ref'] != 'source-region-image:' + fingerprint((
+                    reference['region_id'], frame['frame_identity'], frame['image_sha256']))
+                or sum(item == frame for item in value['constructed_frames']) != 1):
+            return []
+        sampled = attempts[order.index(frame['view_name'])]
+        if (sampled['constructed'] is not True or sampled['status'] != visibility['geometry_status']
+                or sampled['frame_identity'] != frame['frame_identity']
+                or visibility['selected_object_participates'] is not True
+                or any(region[key] != reference[key] for key in ('host_id', 'instance_id'))):
+            return []
+
+        objects = binding['objects']
+        identities = ('host_id', 'instance_id', 'object_name')
+
+        def displayed(index):
+            host, shown = objects[index], scope['objects'][index]
+            return (host['object_index'] == shown['object_index'] == index
+                    and scope['participation_mask'][index] is True
+                    and shown['participates'] is True and shown['visible_get'] is True
+                    and all(host[key] == shown[key] for key in identities))
+
+        selected = [index for index, item in enumerate(objects)
+                    if all(item[key] == region[key] for key in identities)]
+        if len(selected) != 1 or not displayed(selected[0]):
+            return []
+        rows = []
+        for attempt in attempts:
+            blocker = attempt.get('first_blocker')
+            if attempt['status'] != 'positive_area_occlusion' or 'first_tie' in attempt or not isinstance(blocker, dict):
+                continue
+            index, face = blocker.get('object_index'), blocker.get('source_triangle_index')
+            area = blocker.get('overlap_area_screen_exact')
+            if (type(index) is not int or not 0 <= index < len(objects)
+                    or type(face) is not int or not 0 <= face < frame['all_triangle_count']
+                    or index == selected[0] and face in reference['source_triangle_indices']
+                    or not displayed(index) or type(area) is not str):
+                continue
+            try:
+                if Fraction(area) > 0:
+                    rows.append([attempt['view_name'], index, face])
+            except (ValueError, ZeroDivisionError):
+                continue
+        return rows
+    except (KeyError, IndexError, TypeError, ValueError):
+        return []
+
+
 def _project_source_region_brief(value):
     task = value['task_result']
     reference = value['region_ref']
@@ -1912,8 +1989,7 @@ def _project_source_region_brief(value):
             'source_binding_sha256', 'binding_sha256', 'runtime_source_sha256', 'source_status', 'disk_status')
             if key in binding},
     }
-    # Keep the pre-existing unknown and no-image transports unchanged. On
-    # success the witnessed PNG and its full reference must fit one CLI reply.
+    # The witnessed PNG and its full reference must fit one CLI reply.
     if visibility.get('complete_witness') is not None:
         scope = brief['image_scope']
         objects = scope['objects']
@@ -1923,6 +1999,16 @@ def _project_source_region_brief(value):
         brief['image_scope'] = {**scope, 'objects': {
             'columns': columns, 'rows': [[row[key] for key in columns] for row in objects]}}
         brief['schema'] = 'source-region-brief-v3'
+    else:
+        blockers = _project_source_region_blockers(value)
+        if blockers:
+            brief['blocker_evidence'] = {
+                'columns': ['view_name', 'blocker_object_index', 'source_triangle_index'],
+                'rows': blockers,
+                'meaning': 'Object indices refer to image_scope.objects. One current object-local evaluated '
+                           'triangle with positive-area occlusion per listed view. '
+                           'Nearest depth, other blockers, and total occlusion are unspecified.',
+            }
     brief['visibility'].update(
         visible_source_triangle_count=len(visibility['visible_source_triangle_indices']),
         unseen_source_triangle_count=len(visibility['unseen_source_triangle_indices']))
