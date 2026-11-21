@@ -1,0 +1,775 @@
+{
+  "schema": "perf050-dense-pair-transfer-structural-review-v1",
+  "slot": "N1",
+  "execution_status": "completed",
+  "closure": true,
+  "installed_source_sha256": "0e85052a0a4dec4ee42f8f9f62729a416b57445783224b303723b515ada0a147",
+  "asset_sha256": "2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164",
+  "geometric_truth": {
+    "region_source_triangles": [
+      512,
+      513
+    ],
+    "minimum_distance_m": 1,
+    "direction_world": [
+      -1,
+      0,
+      0
+    ],
+    "top_board_only_distance_m": "sqrt(2)"
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "tool": "execute_python",
+      "cli_id": "item_3",
+      "cli_received_ns": 11281423003700,
+      "args": {
+        "code": "data=scene_data(); print(type(data)); print(data.keys() if isinstance(data,dict) else str(data)[:1000])"
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\004\\RX.bin",
+        "bytes": 360,
+        "sha256": "6644611cf26be4f5337a1ee14ccef586ac33331d4a01749f13cc4369fd310d7b"
+      },
+      "error": false
+    },
+    {
+      "attempt": 2,
+      "tool": "execute_python",
+      "cli_id": "item_4",
+      "cli_received_ns": 11289384878400,
+      "args": {
+        "code": "print('source',data['source']); print(type(data['objects'])); print(str(data['objects'])[:2500])"
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\005\\RX.bin",
+        "bytes": 3239,
+        "sha256": "d29354b3ade5d9900c49df659b7be776f6510e4fbbd324b40a703ca6cffc154e"
+      },
+      "error": false
+    },
+    {
+      "attempt": 3,
+      "tool": "execute_python",
+      "cli_id": "item_5",
+      "cli_received_ns": 11297734479600,
+      "args": {
+        "code": "objs={o['name']:o for o in data['objects']}; print('count',len(objs));\nfor name in ['M4_Far_00','M4_Focal']:\n o=objs[name]; print(name,o.keys()); print({k:v for k,v in o.items() if k not in ['triangles','vertices']});\n"
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\006\\RX.bin",
+        "bytes": 7243,
+        "sha256": "1a05c913d20662b0a53be46f54db93476828b303f4fbf726db3afd2e9f2b5f51"
+      },
+      "error": false
+    },
+    {
+      "attempt": 4,
+      "tool": "execute_python",
+      "cli_id": "item_6",
+      "cli_received_ns": 11306491458800,
+      "args": {
+        "code": "for o in data['objects']:\n v=np.array(o['vertices']);print(o['name'],len(v),len(o['triangles']),v.min(0).tolist(),v.max(0).tolist())\na=objs['M4_Far_00']; b=objs['M4_Focal']; print('last triangles A',a['triangles'][-5:]); print('B',b['vertices'],b['triangles'])\nframes=render_views(['TOP','SCENE'],include_images=True); print(frames)"
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\007\\RX.bin",
+        "bytes": 15258,
+        "sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+      },
+      "error": false
+    },
+    {
+      "attempt": 5,
+      "tool": "render_local",
+      "cli_id": "item_7",
+      "cli_received_ns": 11314785840100,
+      "args": {
+        "direction": "TOP",
+        "target_world_m": [
+          1.5,
+          0.5,
+          2
+        ],
+        "view_span_m": 1.4,
+        "include_image": true
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\008\\RX.bin",
+        "bytes": 6146,
+        "sha256": "5e7b60ee951e8744a906550ca0cb440ed27f4289260717c33bed4a6cdd76889c"
+      },
+      "error": false
+    },
+    {
+      "attempt": 6,
+      "tool": "execute_python",
+      "cli_id": "item_9",
+      "cli_received_ns": 11329463487100,
+      "args": {
+        "code": "ref='native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513'; buf=buffers[ref]; print('buffer keys',buf.keys());\nfor key in ['owners','triangle_ids']:\n vals,cnts=np.unique(buf[key],return_counts=True);print(key,list(zip(vals.tolist(),cnts.tolist())))\nva=np.array(a['vertices']); vb=np.array(b['vertices']); ta=np.array(a['triangles']); tb=np.array(b['triangles']);\npa=np.array([1.,.25,.25]);pb=np.array([0.,.25,.25]);\ndef bary(point,tri):\n coeff=np.linalg.lstsq(np.column_stack((tri[1]-tri[0],tri[2]-tri[0])),point-tri[0],rcond=None)[0]; weights=np.array([1-coeff.sum(),*coeff]);return weights,float(np.linalg.norm(weights@tri-point))\nfor name,point,verts,tris in [('M4_Far_00',pa,va,ta),('M4_Focal',pb,vb,tb)]:\n hits=[]\n for idx,indices in enumerate(tris):\n  weights,res=bary(point,verts[indices]);\n  if res<1e-12 and weights.min()>=-1e-12: hits.append((idx,weights.tolist(),res))\n print(name,'point',point.tolist(),'surface witnesses',hits[:4])\nprint('global lower bound from x separation',va[:,0].min()-vb[:,0].max());print('distance',np.linalg.norm(pb-pa),'direction',((pb-pa)/np.linalg.norm(pb-pa)).tolist());\nprint('upward patch normals',np.cross(va[ta[-2:,1]]-va[ta[-2:,0]],va[ta[-2:,2]]-va[ta[-2:,0]]).tolist())"
+      },
+      "rx": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\009\\RX.bin",
+        "bytes": 940,
+        "sha256": "84ca1d6c49cd142a76183e2d6708aafa43a80b4170bffc1d8a1ab3197265da19"
+      },
+      "error": false
+    }
+  ],
+  "frames": [
+    {
+      "ref": "native-image:3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2",
+      "frame_identity": "3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2",
+      "origin": "common_native",
+      "view": "TOP",
+      "scope_id": "global",
+      "qualifies": true,
+      "deliveries": [
+        {
+          "attempt": 4,
+          "MCP_content_block": 2,
+          "CLI_received_ns": 11306491458800,
+          "PNG_bytes": 1911,
+          "PNG_sha256": "999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d",
+          "frame_identity": null,
+          "stdio_response_sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+        }
+      ],
+      "PNG": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\001\\SCENE.png",
+        "bytes": 1911,
+        "sha256": "999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d"
+      },
+      "NPZ": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\001\\SCENE.npz",
+        "bytes": 8613,
+        "sha256": "8abbb07aefec81e23e7087cf7b5695250ce4494891d51e58e0cf062ded2a6cb8"
+      },
+      "capture_scope": "complete_bounded_native_geometry",
+      "in_frame": true,
+      "whole_geometry_clear": true,
+      "surface_pixels": 1521,
+      "contrasting_boundary_pixels": 152,
+      "both_target_triangles": [
+        512,
+        513
+      ],
+      "scope": "global",
+      "PNG_sha256": "999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d",
+      "image_bytes": 1911,
+      "carried_objects": 14,
+      "full_geometry_verified": true,
+      "missing_positive_area_blockers": [],
+      "exact_visibility": {
+        "direction": [
+          "0",
+          "0",
+          "1"
+        ],
+        "normal_dot_direction": "1",
+        "tested_other_triangles": 6146,
+        "whole_region_clear": true,
+        "positive_area_occluders": [],
+        "positive_depth_triangles": 0,
+        "status": "complete"
+      }
+    },
+    {
+      "ref": "native-image:3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79",
+      "frame_identity": "3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79",
+      "origin": "common_native",
+      "view": "SCENE",
+      "scope_id": "global",
+      "qualifies": true,
+      "deliveries": [
+        {
+          "attempt": 4,
+          "MCP_content_block": 4,
+          "CLI_received_ns": 11306491458800,
+          "PNG_bytes": 3456,
+          "PNG_sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47",
+          "frame_identity": null,
+          "stdio_response_sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+        }
+      ],
+      "PNG": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\002\\SCENE.png",
+        "bytes": 3456,
+        "sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47"
+      },
+      "NPZ": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\002\\SCENE.npz",
+        "bytes": 192537,
+        "sha256": "b739fe479c00ef3b584dfc10ab2376560914196f78f3649c31b61a8ebdbced17"
+      },
+      "capture_scope": "complete_bounded_native_geometry",
+      "in_frame": true,
+      "whole_geometry_clear": true,
+      "surface_pixels": 1197,
+      "contrasting_boundary_pixels": 138,
+      "both_target_triangles": [
+        512,
+        513
+      ],
+      "scope": "global",
+      "PNG_sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47",
+      "image_bytes": 3456,
+      "carried_objects": 14,
+      "full_geometry_verified": true,
+      "missing_positive_area_blockers": [],
+      "exact_visibility": {
+        "direction": [
+          "4",
+          "-4",
+          "3"
+        ],
+        "normal_dot_direction": "3",
+        "tested_other_triangles": 6146,
+        "whole_region_clear": true,
+        "positive_area_occluders": [],
+        "positive_depth_triangles": 0,
+        "status": "complete"
+      }
+    },
+    {
+      "ref": "native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513",
+      "frame_identity": "cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513",
+      "origin": "common_native",
+      "view": "TOP",
+      "scope_id": "local:12dcca2e1fb92a10653b52aa793e0aadfe8cd3f9438fd1da92c544b9330f9711",
+      "qualifies": true,
+      "deliveries": [
+        {
+          "attempt": 5,
+          "MCP_content_block": 2,
+          "CLI_received_ns": 11314785840100,
+          "PNG_bytes": 1908,
+          "PNG_sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66",
+          "frame_identity": null,
+          "stdio_response_sha256": "5e7b60ee951e8744a906550ca0cb440ed27f4289260717c33bed4a6cdd76889c"
+        }
+      ],
+      "PNG": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\003\\SCENE.png",
+        "bytes": 1908,
+        "sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66"
+      },
+      "NPZ": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\003\\SCENE.npz",
+        "bytes": 35038,
+        "sha256": "9c145f9d19624d4645ebec8b4faaee0738454ceea21e00382cb06fba92eb27ec"
+      },
+      "capture_scope": "complete_bounded_native_geometry",
+      "in_frame": true,
+      "whole_geometry_clear": true,
+      "surface_pixels": 133225,
+      "contrasting_boundary_pixels": 1456,
+      "both_target_triangles": [
+        512,
+        513
+      ],
+      "scope": "local:12dcca2e1fb92a10653b52aa793e0aadfe8cd3f9438fd1da92c544b9330f9711",
+      "PNG_sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66",
+      "image_bytes": 1908,
+      "carried_objects": 14,
+      "full_geometry_verified": true,
+      "missing_positive_area_blockers": [],
+      "exact_visibility": {
+        "direction": [
+          "0",
+          "0",
+          "1"
+        ],
+        "normal_dot_direction": "1",
+        "tested_other_triangles": 6146,
+        "whole_region_clear": true,
+        "positive_area_occluders": [],
+        "positive_depth_triangles": 0,
+        "status": "complete"
+      }
+    }
+  ],
+  "first_actual_target_brief_attempt": null,
+  "first_target_brief_has_verified_path": false,
+  "offered_paths": [
+    {
+      "attempt": 4,
+      "ref": "native-image:3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2",
+      "path": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/001/SCENE.png",
+      "PNG_sha256": "999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d",
+      "route": "ordinary_image_path",
+      "block": null,
+      "same_witness_received": true,
+      "CLI_received_ns": 11306491458800
+    },
+    {
+      "attempt": 4,
+      "ref": "native-image:3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79",
+      "path": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/002/SCENE.png",
+      "PNG_sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47",
+      "route": "ordinary_image_path",
+      "block": null,
+      "same_witness_received": true,
+      "CLI_received_ns": 11306491458800
+    },
+    {
+      "attempt": 5,
+      "ref": "native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513",
+      "path": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/003/SCENE.png",
+      "PNG_sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66",
+      "route": "ordinary_image_path",
+      "block": null,
+      "same_witness_received": true,
+      "CLI_received_ns": 11314785840100
+    }
+  ],
+  "repeated_qualifying_png_deliveries": [],
+  "whole_measurements": [],
+  "ordinary_computation": [
+    {
+      "attempt": 1,
+      "tool": "execute_python",
+      "wire": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\004\\RX.bin",
+        "bytes": 360,
+        "sha256": "6644611cf26be4f5337a1ee14ccef586ac33331d4a01749f13cc4369fd310d7b"
+      },
+      "args": {
+        "code": "data=scene_data(); print(type(data)); print(data.keys() if isinstance(data,dict) else str(data)[:1000])"
+      },
+      "returned": [
+        {
+          "stdout": "<class 'dict'>\ndict_keys(['display_object_mask', 'display_read', 'display_read_closed_ns', 'display_scope', 'geometry_read_closed_ns', 'objects', 'schema', 'source', 'source_face_offsets', 'started_ns', 'source_ref'])\n",
+          "stderr": "",
+          "error": null
+        }
+      ],
+      "isError": false
+    },
+    {
+      "attempt": 2,
+      "tool": "execute_python",
+      "wire": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\005\\RX.bin",
+        "bytes": 3239,
+        "sha256": "d29354b3ade5d9900c49df659b7be776f6510e4fbbd324b40a703ca6cffc154e"
+      },
+      "args": {
+        "code": "print('source',data['source']); print(type(data['objects'])); print(str(data['objects'])[:2500])"
+      },
+      "returned": [
+        {
+          "stdout": "source {'asset_copy': 'D:\\\\he_perf050_dense_pair_transfer_001\\\\slots\\\\N1\\\\native\\\\input.blend', 'asset_sha256': '2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164', 'frame': 1, 'kind': 'actual_owned_Blender_evaluated_mesh', 'pid': 20848, 'scale_length': 1.0, 'scene': 'Scene', 'source_index_domain': 'zero_based_object_local_current_evaluated_capture_triangle_rows', 'subframe': 0.0, 'unit_settings': {'length_unit': 'METERS', 'scale_length': 1.0, 'system': 'METRIC'}, 'view_layer': 'ViewLayer', 'view_layer_id': 'rna:2292399197856'}\n<class 'list'>\n[{'instance_id': '162', 'matrix_world': [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], 'name': 'M4_Far_02', 'object_id': 'blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e', 'polygon_count': 512, 'triangles': [[0, 1, 18], [0, 18, 17], [1, 2, 19], [1, 19, 18], [2, 3, 20], [2, 20, 19], [3, 4, 21], [3, 21, 20], [4, 5, 22], [4, 22, 21], [5, 6, 23], [5, 23, 22], [6, 7, 24], [6, 24, 23], [7, 8, 25], [7, 25, 24], [8, 9, 26], [8, 26, 25], [9, 10, 27], [9, 27, 26], [10, 11, 28], [10, 28, 27], [11, 12, 29], [11, 29, 28], [12, 13, 30], [12, 30, 29], [13, 14, 31], [13, 31, 30], [14, 15, 32], [14, 32, 31], [15, 16, 33], [15, 33, 32], [17, 18, 35], [17, 35, 34], [18, 19, 36], [18, 36, 35], [19, 20, 37], [19, 37, 36], [20, 21, 38], [20, 38, 37], [21, 22, 39], [21, 39, 38], [22, 23, 40], [22, 40, 39], [23, 24, 41], [23, 41, 40], [24, 25, 42], [24, 42, 41], [25, 26, 43], [25, 43, 42], [26, 27, 44], [26, 44, 43], [27, 28, 45], [27, 45, 44], [28, 29, 46], [28, 46, 45], [29, 30, 47], [29, 47, 46], [30, 31, 48], [30, 48, 47], [31, 32, 49], [31, 49, 48], [32, 33, 50], [32, 50, 49], [34, 35, 52], [34, 52, 51], [35, 36, 53], [35, 53, 52], [36, 37, 54], [36, 54, 53], [37, 38, 55], [37, 55, 54], [38, 39, 56], [38, 56, 55], [39, 40, 57], [39, 57, 56], [40, 41, 58], [40, 58, 57], [41, 42, 59], [41, 59, 58], [42, 43, 60], [42, 60, 59], [43, 44, 61], [43, 61, 60], [44, 45, 62], [44, 62, 61], [45, 46, 63], [45, 63, 62], [46, 47, 64], [46, 64, 63], [47, 48, 65], [47, 65, 64], [48, 49, 66], [48, 66, 65], [49, 50, 67], [49, 67, 66], [51, 52, 69], [51, 69, 68], [52, 53, 70], [52, 70, 69], [53, 54, 71], [53, 71, 70], [54, 55, 72], [54, 72, 71], [55, 56, 73], [55, 73, 72], [56, 57, 74], [56, 74, 73], [57, 58, 75], [57, 75, 74], [58, 59, 76], [58, 76, 75], [59, 60, 77], [59, 77, 76], [60, 61, 78], [60, 78, 77], [61, 62, 79], [61, 79, 78], [62, 63, 80], [62, 80, 79], [63, 64, 81], [63, 81, 80], [64, 65, 82], [64, 82, 81], [65, 66, 83], [65, 83, 82], [66, 67, 84], [66, 84, 83], [68, 69, 86], [68, 86, 85], [69, 70, 87], [69, 87, 86], [70, 71, 88], [70, 88, 87], [71, 72, 89], [71, 89, 88], [72, 73, 90], [72, 90, 89], [73, 74, 91], [73, 91, 90], [74, 75, 92], [74, 92, 91], [75, 76, 93], [75, 93, 92], [76, 77, 94], [76, 94, 93], [77, 78, 95], [77, 95, 94], [78, 79, 96], [78, 96, 95], [79, 80, 97], [79, 97, 96], [80, 81, 98], [80, 98, 97], [81, 82, 99], [81, 99, 98], [82, 83, 100], [82, 100, 99], [83, 84, 101], [83, 101, 100], [85, 86,\n",
+          "stderr": "",
+          "error": null
+        }
+      ],
+      "isError": false
+    },
+    {
+      "attempt": 3,
+      "tool": "execute_python",
+      "wire": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\006\\RX.bin",
+        "bytes": 7243,
+        "sha256": "1a05c913d20662b0a53be46f54db93476828b303f4fbf726db3afd2e9f2b5f51"
+      },
+      "args": {
+        "code": "objs={o['name']:o for o in data['objects']}; print('count',len(objs));\nfor name in ['M4_Far_00','M4_Focal']:\n o=objs[name]; print(name,o.keys()); print({k:v for k,v in o.items() if k not in ['triangles','vertices']});\n"
+      },
+      "returned": [
+        {
+          "stdout": "count 14\nM4_Far_00 dict_keys(['instance_id', 'matrix_world', 'name', 'object_id', 'polygon_count', 'triangles', 'vertices', 'vertices_local', 'visible_get'])\n{'instance_id': '160', 'matrix_world': [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], 'name': 'M4_Far_00', 'object_id': 'blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d', 'polygon_count': 514, 'vertices_local': [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0625], [1.0, 0.0, 0.125], [1.0, 0.0, 0.1875], [1.0, 0.0, 0.25], [1.0, 0.0, 0.3125], [1.0, 0.0, 0.375], [1.0, 0.0, 0.4375], [1.0, 0.0, 0.5], [1.0, 0.0, 0.5625], [1.0, 0.0, 0.625], [1.0, 0.0, 0.6875], [1.0, 0.0, 0.75], [1.0, 0.0, 0.8125], [1.0, 0.0, 0.875], [1.0, 0.0, 0.9375], [1.0, 0.0, 1.0], [1.0, 0.0625, 0.0], [1.0, 0.0625, 0.0625], [1.0, 0.0625, 0.125], [1.0, 0.0625, 0.1875], [1.0, 0.0625, 0.25], [1.0, 0.0625, 0.3125], [1.0, 0.0625, 0.375], [1.0, 0.0625, 0.4375], [1.0, 0.0625, 0.5], [1.0, 0.0625, 0.5625], [1.0, 0.0625, 0.625], [1.0, 0.0625, 0.6875], [1.0, 0.0625, 0.75], [1.0, 0.0625, 0.8125], [1.0, 0.0625, 0.875], [1.0, 0.0625, 0.9375], [1.0, 0.0625, 1.0], [1.0, 0.125, 0.0], [1.0, 0.125, 0.0625], [1.0, 0.125, 0.125], [1.0, 0.125, 0.1875], [1.0, 0.125, 0.25], [1.0, 0.125, 0.3125], [1.0, 0.125, 0.375], [1.0, 0.125, 0.4375], [1.0, 0.125, 0.5], [1.0, 0.125, 0.5625], [1.0, 0.125, 0.625], [1.0, 0.125, 0.6875], [1.0, 0.125, 0.75], [1.0, 0.125, 0.8125], [1.0, 0.125, 0.875], [1.0, 0.125, 0.9375], [1.0, 0.125, 1.0], [1.0, 0.1875, 0.0], [1.0, 0.1875, 0.0625], [1.0, 0.1875, 0.125], [1.0, 0.1875, 0.1875], [1.0, 0.1875, 0.25], [1.0, 0.1875, 0.3125], [1.0, 0.1875, 0.375], [1.0, 0.1875, 0.4375], [1.0, 0.1875, 0.5], [1.0, 0.1875, 0.5625], [1.0, 0.1875, 0.625], [1.0, 0.1875, 0.6875], [1.0, 0.1875, 0.75], [1.0, 0.1875, 0.8125], [1.0, 0.1875, 0.875], [1.0, 0.1875, 0.9375], [1.0, 0.1875, 1.0], [1.0, 0.25, 0.0], [1.0, 0.25, 0.0625], [1.0, 0.25, 0.125], [1.0, 0.25, 0.1875], [1.0, 0.25, 0.25], [1.0, 0.25, 0.3125], [1.0, 0.25, 0.375], [1.0, 0.25, 0.4375], [1.0, 0.25, 0.5], [1.0, 0.25, 0.5625], [1.0, 0.25, 0.625], [1.0, 0.25, 0.6875], [1.0, 0.25, 0.75], [1.0, 0.25, 0.8125], [1.0, 0.25, 0.875], [1.0, 0.25, 0.9375], [1.0, 0.25, 1.0], [1.0, 0.3125, 0.0], [1.0, 0.3125, 0.0625], [1.0, 0.3125, 0.125], [1.0, 0.3125, 0.1875], [1.0, 0.3125, 0.25], [1.0, 0.3125, 0.3125], [1.0, 0.3125, 0.375], [1.0, 0.3125, 0.4375], [1.0, 0.3125, 0.5], [1.0, 0.3125, 0.5625], [1.0, 0.3125, 0.625], [1.0, 0.3125, 0.6875], [1.0, 0.3125, 0.75], [1.0, 0.3125, 0.8125], [1.0, 0.3125, 0.875], [1.0, 0.3125, 0.9375], [1.0, 0.3125, 1.0], [1.0, 0.375, 0.0], [1.0, 0.375, 0.0625], [1.0, 0.375, 0.125], [1.0, 0.375, 0.1875], [1.0, 0.375, 0.25], [1.0, 0.375, 0.3125], [1.0, 0.375, 0.375], [1.0, 0.375, 0.4375], [1.0, 0.375, 0.5], [1.0, 0.375, 0.5625], [1.0, 0.375, 0.625], [1.0, 0.375, 0.6875], [1.0, 0.375, 0.75], [1.0, 0.375, 0.8125], [1.0, 0.375, 0.875], [1.0, 0.375, 0.9375], [1.0, 0.375, 1.0], [1.0, 0.4375, 0.0], [1.0, 0.4375, 0.0625], [1.0, 0.4375, 0.125], [1.0, 0.4375, 0.1875], [1.0, 0.4375, 0.25], [1.0, 0.4375, 0.3125], [1.0, 0.4375, 0.375], [1.0, 0.4375, 0.4375], [1.0, 0.4375, 0.5], [1.0, 0.4375, 0.5625], [1.0, 0.4375, 0.625], [1.0, 0.4375, 0.6875], [1.0, 0.4375, 0.75], [1.0, 0.4375, 0.8125], [1.0, 0.4375, 0.875], [1.0, 0.4375, 0.9375], [1.0, 0.4375, 1.0], [1.0, 0.5, 0.0], [1.0, 0.5, 0.0625], [1.0, 0.5, 0.125], [1.0, 0.5, 0.1875], [1.0, 0.5, 0.25], [1.0, 0.5, 0.3125], [1.0, 0.5, 0.375], [1.0, 0.5, 0.4375], [1.0, 0.5, 0.5], [1.0, 0.5, 0.5625], [1.0, 0.5, 0.625], [1.0, 0.5, 0.6875], [1.0, 0.5, 0.75], [1.0, 0.5, 0.8125], [1.0, 0.5, 0.875], [1.0, 0.5, 0.9375], [1.0, 0.5, 1.0], [1.0, 0.5625, 0.0], [1.0, 0.5625, 0.0625], [1.0, 0.5625, 0.125], [1.0, 0.5625, 0.1875], [1.0, 0.5625, 0.25], [1.0, 0.5625, 0.3125], [1.0, 0.5625, 0.375], [1.0, 0.5625, 0.4375], [1.0, 0.5625, 0.5], [1.0, 0.5625, 0.5625], [1.0, 0.5625, 0.625], [1.0, 0.5625, 0.6875], [1.0, 0.5625, 0.75], [1.0, 0.5625, 0.8125], [1.0, 0.5625, 0.875], [1.0, 0.5625, 0.9375], [1.0, 0.5625, 1.0], [1.0, 0.625, 0.0], [1.0, 0.625, 0.0625], [1.0, 0.625, 0.125], [1.0, 0.625, 0.1875], [1.0, 0.625, 0.25], [1.0, 0.625, 0.3125], [1.0, 0.625, 0.375], [1.0, 0.625, 0.4375], [1.0, 0.625, 0.5], [1.0, 0.625, 0.5625], [1.0, 0.625, 0.625], [1.0, 0.625, 0.6875], [1.0, 0.625, 0.75], [1.0, 0.625, 0.8125], [1.0, 0.625, 0.875], [1.0, 0.625, 0.9375], [1.0, 0.625, 1.0], [1.0, 0.6875, 0.0], [1.0, 0.6875, 0.0625], [1.0, 0.6875, 0.125], [1.0, 0.6875, 0.1875], [1.0, 0.6875, 0.25], [1.0, 0.6875, 0.3125], [1.0, 0.6875, 0.375], [1.0, 0.6875, 0.4375], [1.0, 0.6875, 0.5], [1.0, 0.6875, 0.5625], [1.0, 0.6875, 0.625], [1.0, 0.6875, 0.6875], [1.0, 0.6875, 0.75], [1.0, 0.6875, 0.8125], [1.0, 0.6875, 0.875], [1.0, 0.6875, 0.9375], [1.0, 0.6875, 1.0], [1.0, 0.75, 0.0], [1.0, 0.75, 0.0625], [1.0, 0.75, 0.125], [1.0, 0.75, 0.1875], [1.0, 0.75, 0.25], [1.0, 0.75, 0.3125], [1.0, 0.75, 0.375], [1.0, 0.75, 0.4375], [1.0, 0.75, 0.5], [1.0, 0.75, 0.5625], [1.0, 0.75, 0.625], [1.0, 0.75, 0.6875], [1.0, 0.75, 0.75], [1.0, 0.75, 0.8125], [1.0, 0.75, 0.875], [1.0, 0.75, 0.9375], [1.0, 0.75, 1.0], [1.0, 0.8125, 0.0], [1.0, 0.8125, 0.0625], [1.0, 0.8125, 0.125], [1.0, 0.8125, 0.1875], [1.0, 0.8125, 0.25], [1.0, 0.8125, 0.3125], [1.0, 0.8125, 0.375], [1.0, 0.8125, 0.4375], [1.0, 0.8125, 0.5], [1.0, 0.8125, 0.5625], [1.0, 0.8125, 0.625], [1.0, 0.8125, 0.6875], [1.0, 0.8125, 0.75], [1.0, 0.8125, 0.8125], [1.0, 0.8125, 0.875], [1.0, 0.8125, 0.9375], [1.0, 0.8125, 1.0], [1.0, 0.875, 0.0], [1.0, 0.875, 0.0625], [1.0, 0.875, 0.125], [1.0, 0.875, 0.1875], [1.0, 0.875, 0.25], [1.0, 0.875, 0.3125], [1.0, 0.875, 0.375], [1.0, 0.875, 0.4375], [1.0, 0.875, 0.5], [1.0, 0.875, 0.5625], [1.0, 0.875, 0.625], [1.0, 0.875, 0.6875], [1.0, 0.875, 0.75], [1.0, 0.875, 0.8125], [1.0, 0.875, 0.875], [1.0, 0.875, 0.9375], [1.0, 0.875, 1.0], [1.0, 0.9375, 0.0], [1.0, 0.9375, 0.0625], [1.0, 0.9375, 0.125], [1.0, 0.9375, 0.1875], [1.0, 0.9375, 0.25], [1.0, 0.9375, 0.3125], [1.0, 0.9375, 0.375], [1.0, 0.9375, 0.4375], [1.0, 0.9375, 0.5], [1.0, 0.9375, 0.5625], [1.0, 0.9375, 0.625], [1.0, 0.9375, 0.6875], [1.0, 0.9375, 0.75], [1.0, 0.9375, 0.8125], [1.0, 0.9375, 0.875], [1.0, 0.9375, 0.9375], [1.0, 0.9375, 1.0], [1.0, 1.0, 0.0], [1.0, 1.0, 0.0625], [1.0, 1.0, 0.125], [1.0, 1.0, 0.1875], [1.0, 1.0, 0.25], [1.0, 1.0, 0.3125], [1.0, 1.0, 0.375], [1.0, 1.0, 0.4375], [1.0, 1.0, 0.5], [1.0, 1.0, 0.5625], [1.0, 1.0, 0.625], [1.0, 1.0, 0.6875], [1.0, 1.0, 0.75], [1.0, 1.0, 0.8125], [1.0, 1.0, 0.875], [1.0, 1.0, 0.9375], [1.0, 1.0, 1.0], [1.0, 0.0, 2.0], [2.0, 0.0, 2.0], [2.0, 1.0, 2.0], [1.0, 1.0, 2.0]], 'visible_get': True}\nM4_Focal dict_keys(['instance_id', 'matrix_world', 'name', 'object_id', 'polygon_count', 'triangles', 'vertices', 'vertices_local', 'visible_get'])\n{'instance_id': '172', 'matrix_world': [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], 'name': 'M4_Focal', 'object_id': 'blender:e6734ab318ec55bba83f2b582c44f2469b8634c63aa4d4fa7ec74ea7dcaad75d', 'polygon_count': 1, 'vertices_local': [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], 'visible_get': True}\n",
+          "stderr": "",
+          "error": null
+        }
+      ],
+      "isError": false
+    },
+    {
+      "attempt": 4,
+      "tool": "execute_python",
+      "wire": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\007\\RX.bin",
+        "bytes": 15258,
+        "sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+      },
+      "args": {
+        "code": "for o in data['objects']:\n v=np.array(o['vertices']);print(o['name'],len(v),len(o['triangles']),v.min(0).tolist(),v.max(0).tolist())\na=objs['M4_Far_00']; b=objs['M4_Focal']; print('last triangles A',a['triangles'][-5:]); print('B',b['vertices'],b['triangles'])\nframes=render_views(['TOP','SCENE'],include_images=True); print(frames)"
+      },
+      "returned": [
+        {
+          "stdout": "M4_Far_02 289 512 [3.0, 0.0, 0.0] [3.0, 1.0, 1.0]\nM4_Far_09 289 512 [10.0, 0.0, 0.0] [10.0, 1.0, 1.0]\nM4_Far_05 289 512 [6.0, 0.0, 0.0] [6.0, 1.0, 1.0]\nM4_Far_10 289 512 [11.0, 0.0, 0.0] [11.0, 1.0, 1.0]\nM4_Far_03 289 512 [4.0, 0.0, 0.0] [4.0, 1.0, 1.0]\nM4_Far_06 289 512 [7.0, 0.0, 0.0] [7.0, 1.0, 1.0]\nM4_Far_11 289 512 [12.0, 0.0, 0.0] [12.0, 1.0, 1.0]\nM4_Far_04 289 512 [5.0, 0.0, 0.0] [5.0, 1.0, 1.0]\nM4_Near 3 1 [0.004000000189989805, 0.0, 0.0] [0.004000000189989805, 1.0, 1.0]\nM4_Far_08 289 512 [9.0, 0.0, 0.0] [9.0, 1.0, 1.0]\nM4_Focal 3 1 [0.0, 0.0, 0.0] [0.0, 1.0, 1.0]\nM4_Far_07 289 512 [8.0, 0.0, 0.0] [8.0, 1.0, 1.0]\nM4_Far_01 289 512 [2.0, 0.0, 0.0] [2.0, 1.0, 1.0]\nM4_Far_00 293 514 [1.0, 0.0, 0.0] [2.0, 1.0, 2.0]\nlast triangles A [[269, 287, 286], [270, 271, 288], [270, 288, 287], [289, 290, 291], [289, 291, 292]]\nB [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] [[0, 1, 2]]\n[{'ref': 'native-image:3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2', 'frame_identity': '3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2', 'view': 'TOP', 'view_name': 'TOP', 'scope_id': 'global', 'direction_rational': [0, 0, 1], 'pose': {'name': 'TOP', 'size_px': [512, 512], 'direction_rational': [0, 0, 1], 'projection': 'orthographic', 'target_world_m': [6.0, 0.5, 1.0], 'camera_eye_world_m': [6.0, 0.5, 14.200000000000001], 'view_span_m': 13.200000000000001, 'near_m': 0.08, 'far_m': 27.400000000000002, 'view_matrix': [[1.0, -0.0, 0.0, -6.0], [0.0, 1.0, 0.0, -0.5], [-0.0, -0.0, 1.0, -14.200000000000001], [0.0, 0.0, 0.0, 1.0]], 'projection_matrix': [[0.1515151515151515, 0.0, 0.0, 0.0], [0.0, 0.1515151515151515, 0.0, 0.0], [0.0, 0.0, -0.07320644216691068, -1.0058565153733527], [0.0, 0.0, 0.0, 1.0]], 'scope_id': 'global'}, 'size_px': [512, 512], 'camera_sha256': 'b6087e94c9b1717442af8ace7b4730cdb31fda791751d03a63f28a63256ff8bf', 'PNG_sha256': '999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d', 'NPZ_sha256': '8abbb07aefec81e23e7087cf7b5695250ce4494891d51e58e0cf062ded2a6cb8', 'source_ref': 'live-source-001', 'origin': 'common_native', 'object_names': ['M4_Far_02', 'M4_Far_09', 'M4_Far_05', 'M4_Far_10', 'M4_Far_03', 'M4_Far_06', 'M4_Far_11', 'M4_Far_04', 'M4_Near', 'M4_Far_08', 'M4_Focal', 'M4_Far_07', 'M4_Far_01', 'M4_Far_00'], 'object_ids': ['blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e', 'blender:222bb397189838c43d3f4217eebc81a5006331eb9928b729e10dc3bb98fe3689', 'blender:3337d62e496f4d88e550a4a87863051976cf7afc7df2ec618dfa9b6788e7048a', 'blender:3ebacd2557ff8b46d158a0df064f2759956b67b8f197a236ba81181630033b1a', 'blender:40d63428caf5a67b9ec6e537c3383059bf132f90abb4d8340d63c891b634cc2f', 'blender:82cd98a5bd163934dab585d8611148156c81c1b828dd2f26bd01eb53cf4996de', 'blender:893488af968f62f762ca1c42477172e88a2ed870f2e0ce2e960a3727d0270d8c', 'blender:97ff89b5ac490b9125a0c2d794ed164f66dd6522bdac1077f39afa79112da524', 'blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f', 'blender:d1dbc17577656e45e4f857d3c8f7d0482fb86886e549ec0e2239d6b07d880e76', 'blender:e6734ab318ec55bba83f2b582c44f2469b8634c63aa4d4fa7ec74ea7dcaad75d', 'blender:e69a45befa6b0b1bc8cb3052ef13e1018c862e523963d82c33593dda006395aa', 'blender:e8d2cab0f334e3015e84ecc1a26ff2e6951be98148e783c2ef2aa51a5b0218b2', 'blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d'], 'object_instance_ids': ['162', '169', '165', '170', '163', '166', '171', '164', '173', '168', '172', '167', '161', '160'], 'source_face_offsets': [0, 512, 1024, 1536, 2048, 2560, 3072, 3584, 4096, 4097, 4609, 4610, 5122, 5634, 6148], 'display_object_mask': [True, True, True, True, True, True, True, True, True, True, True, True, True, True], 'triangle_id_scope': 'zero-based-global-source-triangles-in-mesh-order', 'buffer_handle': 'native-image:3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2', 'status': 'completed', 'cached': False, 'new_raster_attempts': 1}, {'ref': 'native-image:3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79', 'frame_identity': '3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79', 'view': 'SCENE', 'view_name': 'SCENE', 'scope_id': 'global', 'direction_rational': [4, -4, 3], 'pose': {'name': 'SCENE', 'size_px': [512, 512], 'direction_rational': [4, -4, 3], 'projection': 'orthographic', 'target_world_m': [6.0, 0.5, 1.0], 'camera_eye_world_m': [12.316683291481224, -5.816683291481224, 5.737512468610918], 'view_span_m': 10.111626970967633, 'near_m': 0.08, 'far_m': 24.75229303670484, 'view_matrix': [[0.7071067811865476, 0.7071067811865476, -0.0, -4.59619407771256], [-0.3312945782245396, 0.3312945782245396, 0.8834522085987725, 0.9386679716361952], [0.6246950475544243, -0.6246950475544243, 0.46852128566581813, -14.015971018182784], [0.0, 0.0, 0.0, 1.0]], 'projection_matrix': [[0.19779210662560764, 0.0, 0.0, 0.0], [0.0, 0.19779210662560764, 0.0, 0.0], [0.0, 0.0, -0.0810625910216213, -1.0064850072817295], [0.0, 0.0, 0.0, 1.0]], 'scope_id': 'global'}, 'size_px': [512, 512], 'camera_sha256': 'df47fb4fc080d13fbdaf784bbbc260793b00c37321f1a5207d22f13f0d6a0733', 'PNG_sha256': '21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47', 'NPZ_sha256': 'b739fe479c00ef3b584dfc10ab2376560914196f78f3649c31b61a8ebdbced17', 'source_ref': 'live-source-001', 'origin': 'common_native', 'object_names': ['M4_Far_02', 'M4_Far_09', 'M4_Far_05', 'M4_Far_10', 'M4_Far_03', 'M4_Far_06', 'M4_Far_11', 'M4_Far_04', 'M4_Near', 'M4_Far_08', 'M4_Focal', 'M4_Far_07', 'M4_Far_01', 'M4_Far_00'], 'object_ids': ['blender:03b6f3db077aae59d663f7492f213430f7a3fc519e2e465d01291b71a27eed7e', 'blender:222bb397189838c43d3f4217eebc81a5006331eb9928b729e10dc3bb98fe3689', 'blender:3337d62e496f4d88e550a4a87863051976cf7afc7df2ec618dfa9b6788e7048a', 'blender:3ebacd2557ff8b46d158a0df064f2759956b67b8f197a236ba81181630033b1a', 'blender:40d63428caf5a67b9ec6e537c3383059bf132f90abb4d8340d63c891b634cc2f', 'blender:82cd98a5bd163934dab585d8611148156c81c1b828dd2f26bd01eb53cf4996de', 'blender:893488af968f62f762ca1c42477172e88a2ed870f2e0ce2e960a3727d0270d8c', 'blender:97ff89b5ac490b9125a0c2d794ed164f66dd6522bdac1077f39afa79112da524', 'blender:bafdfd9bab43d545920239a6495aeb86db36fd21cafd36b1ef27332d6c42912f', 'blender:d1dbc17577656e45e4f857d3c8f7d0482fb86886e549ec0e2239d6b07d880e76', 'blender:e6734ab318ec55bba83f2b582c44f2469b8634c63aa4d4fa7ec74ea7dcaad75d', 'blender:e69a45befa6b0b1bc8cb3052ef13e1018c862e523963d82c33593dda006395aa', 'blender:e8d2cab0f334e3015e84ecc1a26ff2e6951be98148e783c2ef2aa51a5b0218b2', 'blender:ead1bf8d23b37a769b413b7b6c1a61ae96f90a30a64cf56ec160aaa76dedf15d'], 'object_instance_ids': ['162', '169', '165', '170', '163', '166', '171', '164', '173', '168', '172', '167', '161', '160'], 'source_face_offsets': [0, 512, 1024, 1536, 2048, 2560, 3072, 3584, 4096, 4097, 4609, 4610, 5122, 5634, 6148], 'display_object_mask': [True, True, True, True, True, True, True, True, True, True, True, True, True, True], 'triangle_id_scope': 'zero-based-global-source-triangles-in-mesh-order', 'buffer_handle': 'native-image:3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79', 'status': 'completed', 'cached': False, 'new_raster_attempts': 1}]\n",
+          "stderr": "",
+          "error": null
+        },
+        "native-image:3c8088f5b949e15a54f9c4d9ede5908b17cf28d766eac635a561c790c9b839d2 (512x512, image/png)\n{\"local_image_path\": \"D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/001/SCENE.png\", \"image_sha256\": \"999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d\"}",
+        "native-image:3405eafb8591ce2ea83bfc9d01ae7a2a1231ceb00aaedc7e70c3c27027069f79 (512x512, image/png)\n{\"local_image_path\": \"D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/002/SCENE.png\", \"image_sha256\": \"21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47\"}"
+      ],
+      "isError": false
+    },
+    {
+      "attempt": 6,
+      "tool": "execute_python",
+      "wire": {
+        "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\009\\RX.bin",
+        "bytes": 940,
+        "sha256": "84ca1d6c49cd142a76183e2d6708aafa43a80b4170bffc1d8a1ab3197265da19"
+      },
+      "args": {
+        "code": "ref='native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513'; buf=buffers[ref]; print('buffer keys',buf.keys());\nfor key in ['owners','triangle_ids']:\n vals,cnts=np.unique(buf[key],return_counts=True);print(key,list(zip(vals.tolist(),cnts.tolist())))\nva=np.array(a['vertices']); vb=np.array(b['vertices']); ta=np.array(a['triangles']); tb=np.array(b['triangles']);\npa=np.array([1.,.25,.25]);pb=np.array([0.,.25,.25]);\ndef bary(point,tri):\n coeff=np.linalg.lstsq(np.column_stack((tri[1]-tri[0],tri[2]-tri[0])),point-tri[0],rcond=None)[0]; weights=np.array([1-coeff.sum(),*coeff]);return weights,float(np.linalg.norm(weights@tri-point))\nfor name,point,verts,tris in [('M4_Far_00',pa,va,ta),('M4_Focal',pb,vb,tb)]:\n hits=[]\n for idx,indices in enumerate(tris):\n  weights,res=bary(point,verts[indices]);\n  if res<1e-12 and weights.min()>=-1e-12: hits.append((idx,weights.tolist(),res))\n print(name,'point',point.tolist(),'surface witnesses',hits[:4])\nprint('global lower bound from x separation',va[:,0].min()-vb[:,0].max());print('distance',np.linalg.norm(pb-pa),'direction',((pb-pa)/np.linalg.norm(pb-pa)).tolist());\nprint('upward patch normals',np.cross(va[ta[-2:,1]]-va[ta[-2:,0]],va[ta[-2:,2]]-va[ta[-2:,0]]).tolist())"
+      },
+      "returned": [
+        {
+          "stdout": "buffer keys dict_keys(['color', 'depth', 'owners', 'triangle_ids'])\nowners [(-1, 128919), (13, 133225)]\ntriangle_ids [(-1, 128919), (6146, 66772), (6147, 66453)]\nM4_Far_00 point [1.0, 0.25, 0.25] surface witnesses [(102, [2.220446049250313e-16, -1.425873428781742e-16, 0.9999999999999999], 2.7755575615628914e-17), (103, [3.3306690738754696e-16, 0.9999999999999998, -1.3453105935209177e-16], 1.1775693440128312e-16), (105, [0.0, -1.2715471122676203e-16, 1.0000000000000002], 0.0), (134, [1.1102230246251565e-16, 1.0, -1.2029279712572748e-16], 1.1775693440128312e-16)]\nM4_Focal point [0.0, 0.25, 0.25] surface witnesses [(0, [0.5, 0.25, 0.25], 0.0)]\nglobal lower bound from x separation 1.0\ndistance 1.0 direction [-1.0, 0.0, 0.0]\nupward patch normals [[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]\n",
+          "stderr": "",
+          "error": null
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "final": {
+    "answer": {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\PUBLIC_FINAL.txt",
+      "bytes": 1047,
+      "sha256": "7d38307e7a2a977292fc4b024a8904e9c886b333131d26fce2598dd8365a3d22"
+    },
+    "raw_stdout": {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\stdout.raw.bin",
+      "bytes": 41666,
+      "sha256": "f584af43e8c20618b44fb8f6ef49135978b55b32ccb594bef97e939bd03029a5"
+    },
+    "timed_events": {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\events.jsonl",
+      "bytes": 42844,
+      "sha256": "90e369c9f6d77e5b9b524ef335ee5b16215aaf8664ed6cd5ca45765423b33627"
+    },
+    "id": "item_10",
+    "fields": [
+      "id",
+      "type",
+      "text"
+    ]
+  },
+  "authored_references": [
+    {
+      "kind": "markdown_link",
+      "destination": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/003/SCENE.png",
+      "local_markdown": true
+    }
+  ],
+  "reopen_candidates": [
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\003\\SCENE.png",
+      "bytes": 1908,
+      "sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66",
+      "reference_kind": "markdown_link",
+      "frame_ref": "native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513",
+      "view": "TOP",
+      "origin": "common_native",
+      "authored_destination": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/003/SCENE.png",
+      "post_close_bytes_verified": true,
+      "actual_path_offers": [
+        {
+          "attempt": 5,
+          "ref": "native-image:cf722fa122f9a905874cdae15a5f1fe133fe2494245b181f6ebe54156f0db513",
+          "path": "D:/he_perf050_dense_pair_transfer_001/slots/N1/native_frames/003/SCENE.png",
+          "PNG_sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66",
+          "route": "ordinary_image_path",
+          "block": null,
+          "same_witness_received": true,
+          "CLI_received_ns": 11314785840100
+        }
+      ],
+      "first_known_path_route": "ordinary_image_path"
+    }
+  ],
+  "structural_errors": [],
+  "human_click": "unobserved",
+  "semantic_rubric": "Parent independently grades wording, complete claims and final path opening with the unchanged five-item rubric.",
+  "source_pins": [
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m1_pair_distance_entry_001\\install\\PRODUCT_RUN_BINDING.json",
+      "bytes": 22721,
+      "sha256": "d1476a6eba5d81c650bfe7e4a5c95949f2984ce6710951b4c49e503eebe3c1cc"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\perf050_dense_pair_transfer_001\\truth\\TRUTH.json",
+      "bytes": 50600,
+      "sha256": "f22312dcf47fdcb32089b8b96945cc7c1a65aff9727469c6f8eaa1325d8c4d90"
+    },
+    {
+      "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\perf050_readonly_product_transfer_001\\truth\\TRUTH.json",
+      "bytes": 9487,
+      "sha256": "fcf80322ec023ac65e42e82b5dd8a57ead189351d528dd1e6a72523abbf43078"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\001\\RECEIPT.json",
+      "bytes": 240,
+      "sha256": "65c81b2b86b4d849d338e30c0a38abd7930fbfa88af16e72cc11f38e1fb4b507"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\003\\RECEIPT.json",
+      "bytes": 240,
+      "sha256": "75b1da7f66f14abccbf122aded50c31523be4831b173e31dea7536b080d34b04"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\004\\RECEIPT.json",
+      "bytes": 237,
+      "sha256": "4d37a8249d8fe97e660fb88c3c1c9d9a40a0242d064d5134757ecd00805f99ab"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\004\\RX.bin",
+      "bytes": 360,
+      "sha256": "6644611cf26be4f5337a1ee14ccef586ac33331d4a01749f13cc4369fd310d7b"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\004\\TX.bin",
+      "bytes": 830,
+      "sha256": "1e21ed4275934d2b8c01f9e5290efb7dbd5ffb122821f207ebb91163ce8a5f3a"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\005\\RECEIPT.json",
+      "bytes": 238,
+      "sha256": "7260c1b8128548231497a96306eb51691be59a5e6a401dcbd07b9ab896d588e5"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\005\\RX.bin",
+      "bytes": 3239,
+      "sha256": "d29354b3ade5d9900c49df659b7be776f6510e4fbbd324b40a703ca6cffc154e"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\005\\TX.bin",
+      "bytes": 823,
+      "sha256": "a6ccd7777010e38d2bddd688d5bfac52b0b69896d61e17dafa61cc415f097330"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\006\\RECEIPT.json",
+      "bytes": 238,
+      "sha256": "7e1a981463cbabc30b5024a2b1b64611cff1627711e7fd2e7e6be34c5bebf9f9"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\006\\RX.bin",
+      "bytes": 7243,
+      "sha256": "1a05c913d20662b0a53be46f54db93476828b303f4fbf726db3afd2e9f2b5f51"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\006\\TX.bin",
+      "bytes": 948,
+      "sha256": "6e5ee44e57cb6bfe322fe5cc7a99942dc82bde626f5b5f626a2290672b8fd08d"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\007\\RECEIPT.json",
+      "bytes": 240,
+      "sha256": "ca27cfc273921df7eb3bb7361b5e76473399b7b7c6e572355f4624b99ab2e7e1"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\007\\RX.bin",
+      "bytes": 15258,
+      "sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\007\\TX.bin",
+      "bytes": 1062,
+      "sha256": "8ede5c8caed7a3f6b32f3cabb8b5ac7d53bce12803f25c49e38b5c880a34652a"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\008\\RECEIPT.json",
+      "bytes": 238,
+      "sha256": "e1acf73229b35e69c9f3ddc2212089e6d9a517cf2ba39c9374ef32c2167a9a50"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\008\\RX.bin",
+      "bytes": 6146,
+      "sha256": "5e7b60ee951e8744a906550ca0cb440ed27f4289260717c33bed4a6cdd76889c"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\008\\TX.bin",
+      "bytes": 801,
+      "sha256": "f39fe213a1c235552bd7c89440b14d208acf5249cc199a8561d29020bd11c012"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\009\\RECEIPT.json",
+      "bytes": 238,
+      "sha256": "30ede18a7d6be9c90de42f10f413df3b9840b24abe67f41424ccc3b89362d0e9"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\009\\RX.bin",
+      "bytes": 940,
+      "sha256": "84ca1d6c49cd142a76183e2d6708aafa43a80b4170bffc1d8a1ab3197265da19"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\attachments\\bridge_5df366d94b2b43f0b5d565e880840a9e\\009\\TX.bin",
+      "bytes": 1983,
+      "sha256": "be516e5d3f04eadf5c4a2405acbeedf6763ae9c75e6dd8b64d29fcd7e7185a10"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\BUSINESS_SOURCE_BINDING.json",
+      "bytes": 17030,
+      "sha256": "1d34d361dea513f7b2c5b0f35b0c318bfb50b4f943f4aea8c4368170840e1ca2"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\consumer\\stdout.raw.bin",
+      "bytes": 41666,
+      "sha256": "f584af43e8c20618b44fb8f6ef49135978b55b32ccb594bef97e939bd03029a5"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\DEVICE_EVIDENCE.json",
+      "bytes": 19398,
+      "sha256": "3e208b7e846f5651e2eecf14e2d07f7238e0a00fecabb2a5679b8608ad403002"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\initial_capture\\TERMINAL_SOURCE.json",
+      "bytes": 630448,
+      "sha256": "3c2f112fda59e3deea066449e5593174fb9d03d3e1f71f7123aea181eb61722c"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native\\input.blend",
+      "bytes": 100873,
+      "sha256": "2d7c48f01665588bd7cfc93280ea50b559f4dc08196738c504ea56c88c75a164"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\001\\SCENE.npz",
+      "bytes": 8613,
+      "sha256": "8abbb07aefec81e23e7087cf7b5695250ce4494891d51e58e0cf062ded2a6cb8"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\001\\SCENE.png",
+      "bytes": 1911,
+      "sha256": "999cef092eb9e6f49735804bc65739784396776d7d1cd304e78b4c84bc89cf7d"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\002\\SCENE.npz",
+      "bytes": 192537,
+      "sha256": "b739fe479c00ef3b584dfc10ab2376560914196f78f3649c31b61a8ebdbced17"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\002\\SCENE.png",
+      "bytes": 3456,
+      "sha256": "21ed0afc6e7a78b49364f5b888f1f0e03800616b4567f839411efaf5c820fa47"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\003\\SCENE.npz",
+      "bytes": 35038,
+      "sha256": "9c145f9d19624d4645ebec8b4faaee0738454ceea21e00382cb06fba92eb27ec"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\native_frames\\003\\SCENE.png",
+      "bytes": 1908,
+      "sha256": "78c445dc656e1ba9e95168d47e64caf4042f1dd55ca35b8f300401f090ce5d66"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_01\\RECEIPT.json",
+      "bytes": 305,
+      "sha256": "82f725306cb68695a30ad348ba0a0756b07e877c53d49a6bbc7c56aef2776a4b"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_01\\REQUEST.json",
+      "bytes": 830,
+      "sha256": "1e21ed4275934d2b8c01f9e5290efb7dbd5ffb122821f207ebb91163ce8a5f3a"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_01\\RESPONSE.json",
+      "bytes": 360,
+      "sha256": "6644611cf26be4f5337a1ee14ccef586ac33331d4a01749f13cc4369fd310d7b"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_02\\RECEIPT.json",
+      "bytes": 307,
+      "sha256": "badea89cff22e056377ae839c8c0bf1587dfe81364863c982720e114bff3fa31"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_02\\REQUEST.json",
+      "bytes": 823,
+      "sha256": "a6ccd7777010e38d2bddd688d5bfac52b0b69896d61e17dafa61cc415f097330"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_02\\RESPONSE.json",
+      "bytes": 3239,
+      "sha256": "d29354b3ade5d9900c49df659b7be776f6510e4fbbd324b40a703ca6cffc154e"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_03\\RECEIPT.json",
+      "bytes": 307,
+      "sha256": "7e60011d4b259fd05959c98f415dd39723abb7b0ea4bb8e3ca9ff0f8e79d0b44"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_03\\REQUEST.json",
+      "bytes": 948,
+      "sha256": "6e5ee44e57cb6bfe322fe5cc7a99942dc82bde626f5b5f626a2290672b8fd08d"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_03\\RESPONSE.json",
+      "bytes": 7243,
+      "sha256": "1a05c913d20662b0a53be46f54db93476828b303f4fbf726db3afd2e9f2b5f51"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_04\\RECEIPT.json",
+      "bytes": 2858,
+      "sha256": "093b6b1bae7f67e68927812a726a627b04a7823a8291acc8f69a9f2a0511b820"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_04\\REQUEST.json",
+      "bytes": 1062,
+      "sha256": "8ede5c8caed7a3f6b32f3cabb8b5ac7d53bce12803f25c49e38b5c880a34652a"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_04\\RESPONSE.json",
+      "bytes": 15258,
+      "sha256": "14306f4baa0887f5fa72e9e49271b3a5daa4bd6a4bb7a661e6b88a21783069e8"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_05\\RECEIPT.json",
+      "bytes": 1592,
+      "sha256": "2388b98cffb2676e48409897b1efa6ce05bda20b9b8867fe5511f4f09cee081b"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_05\\REQUEST.json",
+      "bytes": 801,
+      "sha256": "f39fe213a1c235552bd7c89440b14d208acf5249cc199a8561d29020bd11c012"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_05\\RESPONSE.json",
+      "bytes": 6146,
+      "sha256": "5e7b60ee951e8744a906550ca0cb440ed27f4289260717c33bed4a6cdd76889c"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_06\\RECEIPT.json",
+      "bytes": 305,
+      "sha256": "024b22e384bf5fe09bdfe17dbbd6ba55809ec49e8f89ef338c1e16ec781a3b1d"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_06\\REQUEST.json",
+      "bytes": 1983,
+      "sha256": "be516e5d3f04eadf5c4a2405acbeedf6763ae9c75e6dd8b64d29fcd7e7185a10"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\owner\\tool_06\\RESPONSE.json",
+      "bytes": 940,
+      "sha256": "84ca1d6c49cd142a76183e2d6708aafa43a80b4170bffc1d8a1ab3197265da19"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\raw_sources\\live-source-001.json",
+      "bytes": 211672,
+      "sha256": "54f922b1e3d6d3f1611bd35cfa2d8416f13e29cf3a503cc7bfc9cd55ee3d815b"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\SLOT_PUBLICATION.json",
+      "bytes": 280,
+      "sha256": "d3eae61db2554f11c36c3d3bf78583a86bf4e4b85c11d67f0d91fb686ddd99e6"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\SLOT_RESULT.json",
+      "bytes": 12614,
+      "sha256": "5f49205ecc088ff11163761ec1638fbd65047a474d93b543e98528c2e75fb819"
+    },
+    {
+      "path": "D:\\he_perf050_dense_pair_transfer_001\\slots\\N1\\TERMINAL_SOURCE.json",
+      "bytes": 630448,
+      "sha256": "f24036ab3d65997c70d8f5b0189baacc4e568865b4d07da95760512e67406584"
+    }
+  ],
+  "structured_distance_requests": []
+}
