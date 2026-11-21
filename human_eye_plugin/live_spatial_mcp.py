@@ -1858,6 +1858,22 @@ def _validate_source_region_projection(value):
     for frame in value['frames']:
         if frame['host_binding_sha256'] != value['binding']['binding_sha256']:
             raise ValueError('source_region_frame_binding_mismatch')
+    visibility = value['facts']['visibility']
+    witness = visibility.get('complete_witness')
+    if witness is not None:
+        fields = ('view_name', 'image_ref', 'frame_identity')
+        frames = value['frames']
+        if (not isinstance(witness, dict) or len(frames) != 1
+                or any(witness.get(field) != frames[0][field] or visibility.get(field) != frames[0][field]
+                       for field in fields)
+                or witness.get('geometry_status') != 'complete' or visibility.get('geometry_status') != 'complete'
+                or any(type(witness.get(field)) is not int or witness[field] < minimum
+                       or visibility.get(field) != witness[field] for field, minimum in (
+                           ('selected_surface_pixels', 16), ('contrasting_boundary_pixels', 4)))
+                or any(witness.get(field) != minimum for field, minimum in (
+                    ('minimum_surface_pixels', 16), ('minimum_boundary_pixels', 4),
+                    ('minimum_rgb_boundary_contrast', 24)))):
+            raise ValueError('source_region_complete_witness_frame_mismatch')
 
 
 def _project_source_region_brief(value):
@@ -1895,6 +1911,17 @@ def _project_source_region_brief(value):
             'source_binding_sha256', 'binding_sha256', 'runtime_source_sha256', 'source_status', 'disk_status')
             if key in binding},
     }
+    # Keep the pre-existing unknown and no-image transports unchanged. On
+    # success the witnessed PNG and its full reference must fit one CLI reply.
+    if visibility.get('complete_witness') is not None:
+        scope = brief['image_scope']
+        objects = scope['objects']
+        columns = list(objects[0])
+        if any(row.keys() != objects[0].keys() for row in objects):
+            raise ValueError('source_region_uniform_display_directory_required')
+        brief['image_scope'] = {**scope, 'objects': {
+            'columns': columns, 'rows': [[row[key] for key in columns] for row in objects]}}
+        brief['schema'] = 'source-region-brief-v3'
     brief['visibility'].update(
         visible_source_triangle_count=len(visibility['visible_source_triangle_indices']),
         unseen_source_triangle_count=len(visibility['unseen_source_triangle_indices']))
