@@ -2159,6 +2159,24 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
                     _project_target_observation_image_paths(brief, value, content, target_observation_image_root)
                 metadata = brief
                 audit['projection_status'] = 'brief'
+        elif (response_detail == 'full' and not is_error and not source_region and not region_task
+              and content and metadata.get('status') == 'complete'
+              and metadata.get('observation_status') == 'locally_observed'
+              and metadata.get('binding', {}).get('capture_scope') == 'target_observation_meshes'):
+            task = metadata.get('task_result')
+            if (isinstance(task, dict) and task.get('result_kind') == 'task_query'
+                    and task.get('schema_version') == 'task-query-v3' and task.get('pair_order') == 'A_to_B'):
+                task_binding = task.get('binding')
+                source = task_binding.get('observation_source') if isinstance(task_binding, dict) else None
+                parent = metadata['binding']
+                if (isinstance(source, dict) and source.get('schema') == 'active-observation-task-source-v1'
+                        and source.get('measurement_scope') == 'whole_objects'
+                        and source.get('capture_scope') == 'observation_task_objects'
+                        and source.get('parent_capture_scope') == parent['capture_scope']
+                        and all(key in parent and source.get('parent_' + key) == parent[key]
+                                for key in ('binding_sha256', 'source_binding_sha256'))):
+                    # Keep the bound measurement together at the end of the full reply.
+                    metadata['task_result'] = metadata.pop('task_result')
         text = json.dumps(metadata, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
         audit.update(status='constructed', mcp_content_ready=True,
             public_text_bytes=len(text.encode('utf8')),
