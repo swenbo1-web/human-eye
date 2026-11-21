@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[M09 P2](PERF050_TARGET_OBSERVATION_FIRST_IMAGE_P2_INDEPENDENT_REVIEW.md)实际最终原图与整件量测 5/5，原题收口。模型自然选择 full，新增 brief 字段未触发。[Windows 工程候选](M1_TARGET_OBSERVATION_FIRST_IMAGE_PATH_WINDOWS_001_INDEPENDENT_REVIEW.md) `95fd44bb` 的独立回放证据照留。下一批仅 [M1 整件距离入口说明](M1_PAIR_DISTANCE_ENTRY_001_PLAN.md)，核三个历史拒绝共因及当前合法的直接距离形式。[原异装配对照](PERF050_READONLY_PRODUCT_TRANSFER_001_INDEPENDENT_REVIEW.md)原生 5/5、插件 4/5 和 [N15 P3](PERF050_SOURCE_REGION_FINAL_IMAGE_P3_INDEPENDENT_REVIEW.md)的 5/5 均按原分母封存。
+2026-11-21，[M1 整件距离入口](M1_PAIR_DISTANCE_ENTRY_001_INDEPENDENT_REVIEW.md) `c8f87c54` 通过独立工程复核，三个历史拒绝和两版各 12 项合法回包核对通过。模型自然采用未测。下一批为 [密集装配只读迁移](PERF050_DENSE_PAIR_TRANSFER_001_PLAN.md)，验收顶板原图、整件距离范围和两路同质量成本。[M09 P2](PERF050_TARGET_OBSERVATION_FIRST_IMAGE_P2_INDEPENDENT_REVIEW.md) 5/5 后收口，实测首调 full，新增 brief 字段未触发。[原异装配对照](PERF050_READONLY_PRODUCT_TRANSFER_001_INDEPENDENT_REVIEW.md)原生 5/5、插件 4/5 和 [N15 P3](PERF050_SOURCE_REGION_FINAL_IMAGE_P3_INDEPENDENT_REVIEW.md)的 5/5 均按原分母封存。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
