@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[非共面选区简报原图路径](M1_SOURCE_REGION_SAMPLED_IMAGE_PATH_001_INDEPENDENT_REVIEW.md) `9b43eceb` 通过独立工程复核。冷、热只增加同槽原图路径，正文 +183 B，连续可见性保持未知；热序列化约增 0.24 ms。下一批验证 [复用现存生产帧简化投影](M1_SAMPLED_IMAGE_PATH_PRODUCER_REUSE_001_PLAN.md)。[排序反转单对](PERF050_SOURCE_SCOPE_RANK_TRANSFER_RECOVERY_001_INDEPENDENT_REVIEW.md)各 9/9，完整耗时 −38.17%、CLI 用量 +11.82%，无图 full 成本和旧接线失败保留。
+2026-11-21，[采样原图路径简化](M1_SAMPLED_IMAGE_PATH_PRODUCER_REUSE_001_INDEPENDENT_REVIEW.md) `8e3129c0` 通过独立复核，净删 28 行，热完整管道 1.871→1.839 ms，原图路径方向收口。下一批只核 [选区量测默认简报入口](M1_SOURCE_REGION_DEFAULT_MEASUREMENT_ENTRY_001_PLAN.md)，历史无图 full 39,717 B、同请求默认简报实装回放 7,042 B。[排序反转单对](PERF050_SOURCE_SCOPE_RANK_TRANSFER_RECOVERY_001_INDEPENDENT_REVIEW.md)各 9/9，完整耗时 −38.17%、CLI 用量 +11.82%，旧接线失败保留。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
