@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[PERF-050 自然任务首对](PERF050_READONLY_PRODUCT_PILOT_001_INDEPENDENT_REVIEW.md)原生 5/5、插件 3/5。两路各十次调用，插件直接采用正确整件量测，但指定源面后只构造不可读的默认图。下一批只做 [M4 指定源面主动取景](M4_SOURCE_REGION_ACTIVE_VIEW_001_PLAN.md)。[M5 联合首包现场恢复](M5_JOINT_BRIEF_SOURCE_PROJECTION_RECOVERY_001_INDEPENDENT_REVIEW.md)保持 1/1 通过，现场外层正文由 11,738 降至 10,343 B，与合理分开批量的 10,344 B 相当。M4 已接受的密集光栅单项纯栅格少 16.07%，冷 RPC 中位省 111.818 ms。
+2026-11-21，[M4 指定源面主动取景](M4_SOURCE_REGION_ACTIVE_VIEW_001_INDEPENDENT_REVIEW.md)现场 A/B 按原线包独立复核 2/2，候选 `30c9cfc1` 实交完整 RIGHT 原图，公开正文 12,900→9,748 B，冷外层多 122.5 ms。原 [PERF-050 首对](PERF050_READONLY_PRODUCT_PILOT_001_INDEPENDENT_REVIEW.md)原生 5/5、插件 3/5 原样保留。下一批 [P2](PERF050_SOURCE_REGION_ACTIVE_VIEW_P2_PLAN.md)仅补一次模型自然使用，验证候选取景能否进入正确回答。[M5 联合首包工程](M5_JOINT_BRIEF_SOURCE_PROJECTION_RECOVERY_001_INDEPENDENT_REVIEW.md)和 M4 密集光栅各自保留已验工程范围。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
