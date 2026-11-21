@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[PERF-050 P3](PERF050_SOURCE_REGION_FINAL_IMAGE_P3_INDEPENDENT_REVIEW.md)固定候选 `470a36f1`，自然选用实际原图，原始最终 Markdown 经闭槽复读，完整质量 5/5。旧 N1 5/5、P1 3/5、P2 4/5 保留，N15 原题收口。下一批 [异装配对照](PERF050_READONLY_PRODUCT_TRANSFER_001_PLAN.md)沿同一候选换 M09 装配问题，资格过后原生和插件最多各一槽。[M4 取景](M4_SOURCE_REGION_ACTIVE_VIEW_001_INDEPENDENT_REVIEW.md)和 [M5 联合首包](M5_JOINT_BRIEF_SOURCE_PROJECTION_RECOVERY_001_INDEPENDENT_REVIEW.md)保留已验工程范围。
+2026-11-21，[PERF-050 异装配对照](PERF050_READONLY_PRODUCT_TRANSFER_001_INDEPENDENT_REVIEW.md)两路整件距离、方向与可读取证正确，原生 5/5、插件 4/5。插件自然走目标范围的普通 `active_observation`，有完整 LEFT 局部原图，首包缺本机路径，下一调补发后最终仍漏图。下一批仅 [M1 首包原图路径](M1_TARGET_OBSERVATION_FIRST_IMAGE_PATH_001_PLAN.md)，用同一原件零模型验证。[N15 的 P3](PERF050_SOURCE_REGION_FINAL_IMAGE_P3_INDEPENDENT_REVIEW.md)原图和量测 5/5，原题已收口。[M4 取景](M4_SOURCE_REGION_ACTIVE_VIEW_001_INDEPENDENT_REVIEW.md)和 [M5 联合首包](M5_JOINT_BRIEF_SOURCE_PROJECTION_RECOVERY_001_INDEPENDENT_REVIEW.md)保留已验工程范围。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
