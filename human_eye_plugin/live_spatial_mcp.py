@@ -39,6 +39,9 @@ from .task_brief import project_task_brief, project_segment_brief, project_struc
 
 span = partial(_trace_span, source_name='mcp_transport')
 _NO_RPC_ID = object()
+_SOURCE_REGION_MEASURE = 'human_eye_source_region_measure'
+_SOURCE_REGION_SELECTORS = ('region', 'region_ref', 'reference')
+_SOURCE_REGION_CONTEXT = ('include_image', 'session_id', 'task_context')
 
 
 _ID_SCHEMA = {"type": "string", "minLength": 1}
@@ -373,6 +376,22 @@ for _tool in LIVE_MCP_TOOLS_SCHEMA:
                 'retain full. This display option grants no execution authority.'),
         }
 
+LIVE_MCP_TOOLS_SCHEMA.append({
+    'name': _SOURCE_REGION_MEASURE,
+    'description': ('Measure the shortest surface distance in metres from selected current evaluated Blender '
+        'triangle rows to a whole object. Returns closest world points with their source faces and the '
+        'world A-to-B direction at positive distance. Optional native PNG evidence includes an openable '
+        'local path when available. Supply an explicit region or reuse its returned region_ref. Read-only.'),
+    'annotations': {'readOnlyHint': True, 'destructiveHint': False, 'openWorldHint': False},
+    'inputSchema': {'type': 'object', 'additionalProperties': False,
+        'properties': {**{key: copy.deepcopy(_QUERY_SCHEMA['properties'][key]) for key in _SOURCE_REGION_SELECTORS},
+            'include_image': {'type': 'boolean', 'default': True,
+                'description': 'False measures without rendering a PNG.'},
+            'session_id': copy.deepcopy(_ID_SCHEMA), 'task_context': copy.deepcopy(TASK_CONTEXT_SCHEMA)},
+        'required': ['reference'],
+        'oneOf': [{'required': ['region']}, {'required': ['region_ref']}]},
+})
+
 
 SPATIAL_TASK_TOOLS_SCHEMA = [{
     'name': 'human_eye_spatial_relations',
@@ -412,6 +431,17 @@ def _spatial_task_query(arguments):
 
 def _surface_nearest_task_query(arguments):
     return {'mode': 'surface_nearest', 'objects': [arguments.get('target')]}
+
+
+def _source_region_measure_arguments(arguments):
+    if not isinstance(arguments, dict):
+        raise ValueError('arguments must be an object')
+    if set(arguments) - set(_SOURCE_REGION_SELECTORS + _SOURCE_REGION_CONTEXT):
+        raise ValueError('Unexpected tool arguments')
+    query = {'mode': 'source_region', 'requested_facts': ['surface_proximity'],
+             **{key: arguments[key] for key in _SOURCE_REGION_SELECTORS if key in arguments}}
+    return {'query': query, 'response_detail': 'brief',
+            **{key: arguments[key] for key in _SOURCE_REGION_CONTEXT if key in arguments}}
 
 
 def _rpc_error(request_id: Any, code: int, message: str) -> dict:
@@ -2371,6 +2401,7 @@ class LiveSpatialMCPServer:
             yield None
             return
         operations = {'human_eye_scene_observe': 'mcp.observe',
+                      _SOURCE_REGION_MEASURE: 'mcp.observe',
                       'human_eye_spatial_relations': 'mcp.observe',
                       'human_eye_surface_nearest': 'mcp.observe',
                       'human_eye_arm_twist_observe': 'mcp.arm_twist_observe',
@@ -2385,7 +2416,7 @@ class LiveSpatialMCPServer:
                      session_id=args.get('session_id', self.default_session_id)) as trace:
             set_image_request(False if name in {'human_eye_spatial_relations', 'human_eye_surface_nearest', 'human_eye_arm_twist_observe'} else
                               args.get('include_image', False) if name == 'human_eye_clearance_segment' else
-                              args.get('include_image', not scan) if name == 'human_eye_scene_observe' else
+                              args.get('include_image', not scan) if name in ('human_eye_scene_observe', _SOURCE_REGION_MEASURE) else
                               True if name == 'human_eye_transform' else None,
                               source_name='mcp_transport')
             if mcp_request_id is not _NO_RPC_ID:
@@ -2437,6 +2468,9 @@ class LiveSpatialMCPServer:
         spatial_task = name in {tool['name'] for tool in SPATIAL_TASK_TOOLS_SCHEMA}
         if spatial_task != self.spatial_task_only:
             raise ValueError('Tool not exposed by this server mode: ' + name)
+        if name == _SOURCE_REGION_MEASURE:
+            arguments = _source_region_measure_arguments(arguments)
+            name = 'human_eye_scene_observe'
         _validate_arguments(name, arguments)
         spatial_relations = name == 'human_eye_spatial_relations'
         if spatial_relations:
