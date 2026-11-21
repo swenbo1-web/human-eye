@@ -1942,6 +1942,25 @@ def project_source_region_brief(value):
     return _project_source_region_brief(value)
 
 
+def _observation_image_path(path, image_root, binding_digest=None):
+    if not path.is_absolute() or path.as_posix().startswith('//') or path.suffix != '.png':
+        return None
+    try:
+        relative = path.relative_to(image_root)
+        if len(relative.parts) != (2 if binding_digest is None else 3):
+            return None
+        generation = relative.parts[0]
+        if len(generation) != 32 or any(char not in '0123456789abcdef' for char in generation):
+            return None
+        if binding_digest is not None and relative.parts[1] != binding_digest:
+            return None
+        if path.resolve(strict=True) != path or not path.is_file():
+            return None
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return path.as_posix()
+
+
 def _source_region_local_image_path(value, frame, image_root):
     """Expose only the witness file belonging to this service's image output."""
     if image_root is None:
@@ -1959,25 +1978,90 @@ def _source_region_local_image_path(value, frame, image_root):
         value['region_ref']['region_id'], frame['frame_identity'], frame['image_sha256']))
     if candidates != [frame] or frame['image_ref'] != expected_ref:
         return None
+    return _observation_image_path(Path(frame['image_path']), image_root)
+
+
+def _target_observation_local_image_path(frame, sequence, binding_digest, image_root):
+    from .active_observation import fingerprint
+
+    view, image_sha = frame['view_name'], frame['image_sha256']
+    owner_schema, owner_identity = frame.get('owner_schema'), frame.get('owner_mapping_identity')
+    frame_identity = frame.get('frame_identity')
+    if not all(isinstance(item, str) and item for item in (owner_schema, owner_identity, frame_identity)):
+        return None
+    scene_camera = (frame['scene_identity'], frame['candidate_identity'])
+    if frame_identity != fingerprint((scene_camera, owner_schema, owner_identity, view, sequence, image_sha)):
+        return None
+    reference = (binding_digest, view, image_sha, frame['patch_mapping_identity'],
+                 owner_schema, owner_identity, frame_identity)
+    if frame['image_ref'] != 'active-host-image:' + fingerprint(reference):
+        return None
     path = Path(frame['image_path'])
-    if not path.is_absolute() or path.as_posix().startswith('//') or path.suffix != '.png':
+    stem = f'{sequence:03d}-' + fingerprint((scene_camera, owner_identity, view))[:24]
+    if (frame['image_path'] != str(path) or path.name != stem + '.png'
+            or frame.get('arrays_path') != str(path.with_suffix('.npz'))):
         return None
-    try:
-        relative = path.relative_to(image_root)
-        if len(relative.parts) != 2:
-            return None
-        generation = relative.parts[0]
-        if len(generation) != 32 or any(char not in '0123456789abcdef' for char in generation):
-            return None
-        if path.resolve(strict=True) != path or not path.is_file():
-            return None
-    except (OSError, RuntimeError, ValueError):
-        return None
-    return path.as_posix()
+    return _observation_image_path(path, image_root, binding_digest)
+
+
+def _project_target_observation_image_paths(brief, value, blocks, image_root):
+    """Add paths only for complete witnesses in the already encoded native blocks."""
+    if (image_root is None or brief['status'] != 'complete'
+            or brief['observation_status'] != 'locally_observed'
+            or brief['binding']['capture_scope'] != 'target_observation_meshes'
+            or brief['schema'] != 'active-observation-brief-v5'):
+        return
+    regions, pixels, images = (brief.get(table) for table in ('regions', 'pixels', 'images'))
+    if not all((regions, pixels, images)) or not blocks:
+        return
+    witness_column = regions['columns'].index('complete_witness_pixel_index')
+    roi_column = regions['columns'].index('roi_id')
+    image_column = pixels['columns'].index('image_index')
+    region_column = pixels['columns'].index('region_index')
+    frames = value['frames']
+    classifications = value.get('target_view_classifications')
+    if type(classifications) is not dict:
+        return
+    witnessed = set()
+    for region_index, region in enumerate(regions['rows']):
+        witness = region[witness_column]
+        if type(witness) is not int or not 0 <= witness < len(pixels['rows']):
+            continue
+        pixel = pixels['rows'][witness]
+        image_index = pixel[image_column]
+        if (pixel[region_column] != region_index or type(image_index) is not int
+                or not 0 <= image_index < len(frames)):
+            continue
+        view = classifications.get(frames[image_index]['view_name'])
+        if type(view) is dict and view.get(region[roi_column]) == {
+                'status': 'complete', 'complete': True, 'first_blocker': None}:
+            witnessed.add(image_index)
+    if not witnessed or len(images['rows']) != len(frames) or len(blocks) != len(frames):
+        return
+    from .active_observation import fingerprint
+
+    binding = value['binding']
+    digest = binding['binding_sha256']
+    if digest != fingerprint({key: field for key, field in binding.items() if key not in {
+            'binding_sha256', 'runtime_source_sha256', 'source_status', 'disk_status', 'source_check_scope'}}):
+        return
+    # The service constructs every ordinary frame under the same generation.
+    if len({Path(frame['image_path']).parent for frame in frames}) != 1:
+        return
+    paths = [None] * len(frames)
+    for index in witnessed:
+        frame, row = frames[index], images['rows'][index]
+        if row == [frame[key] for key in ('view_name', 'image_ref', 'image_sha256')] + [
+                index + 1, frame['patch_mapping_identity']]:
+            paths[index] = _target_observation_local_image_path(frame, index + 1, digest, image_root)
+    if any(paths):
+        images['columns'].append('local_image_path')
+        for row, path in zip(images['rows'], paths):
+            row.append(path)
 
 
 def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None,
-                                source_region_image_root=None):
+                                source_region_image_root=None, target_observation_image_root=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -2067,6 +2151,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
             if brief is not None:
+                if not source_region and not region_task:
+                    _project_target_observation_image_paths(brief, value, content, target_observation_image_root)
                 metadata = brief
                 audit['projection_status'] = 'brief'
         text = json.dumps(metadata, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
@@ -2087,14 +2173,16 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
 
 def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
                  compact_support_planes: bool = False, segment_brief: bool = False,
-                 active_delivery_audit=None, observation_task_query=None, source_region_image_root=None) -> dict:
+                 active_delivery_audit=None, observation_task_query=None, source_region_image_root=None,
+                 target_observation_image_root=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
         return _active_observation_content(value, is_error=is_error,
             audit={} if active_delivery_audit is None else active_delivery_audit,
             response_detail=response_detail, observation_task_query=observation_task_query,
-            source_region_image_root=source_region_image_root)
+            source_region_image_root=source_region_image_root,
+            target_observation_image_root=target_observation_image_root)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2332,12 +2420,17 @@ class LiveSpatialMCPServer:
         with span('mcp.content_encode', kind='encoding'):
             if spatial_relations:
                 value = _project_spatial_relations(value)
-            delivery_audit = {} if value.get('result_kind') in ('active_observation', 'source_region') else None
-            image_root = None
-            if value.get('result_kind') == 'source_region':
+            kind = value.get('result_kind')
+            delivery_audit = {} if kind in ('active_observation', 'source_region') else None
+            image_root, target_image_root = None, None
+            if delivery_audit is not None:
                 state_path = getattr(self.service, 'state_path', None)
                 if isinstance(state_path, Path) and state_path.is_absolute():
-                    image_root = state_path.with_name(state_path.name + '.source_region')
+                    if kind == 'source_region':
+                        image_root = state_path.with_name(state_path.name + '.source_region')
+                    elif isinstance(value.get('binding'), dict) and value['binding'].get(
+                            'capture_scope') == 'target_observation_meshes':
+                        target_image_root = state_path.with_name(state_path.name + '.active_observation')
             try:
                 result = _tool_result(value, is_error=is_error,
                     response_detail=args.get('response_detail'),
@@ -2347,7 +2440,8 @@ class LiveSpatialMCPServer:
                     active_delivery_audit=delivery_audit,
                     observation_task_query=(args['query'].get('task_query')
                         if isinstance(args.get('query'), dict) else None),
-                    source_region_image_root=image_root)
+                    source_region_image_root=image_root,
+                    target_observation_image_root=target_image_root)
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):
