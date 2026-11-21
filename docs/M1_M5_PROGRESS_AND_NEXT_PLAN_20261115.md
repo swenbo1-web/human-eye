@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-22，[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md)两臂 6/6，插件完成时间 −14.01%、CLI 用量 +57.96%，自然首调仍显式 full。下一批只补 [源选区简报已有逐视角挡片](M4_SOURCE_REGION_BLOCKER_BRIEF_001_PLAN.md)，保留实际六次补证与首调 62,318 B 成本。[选区量测默认简报说明](M1_SOURCE_REGION_DEFAULT_MEASUREMENT_ENTRY_001_INDEPENDENT_REVIEW.md)通过工程回放，[排序反转单对](PERF050_SOURCE_SCOPE_RANK_TRANSFER_RECOVERY_001_INDEPENDENT_REVIEW.md)各 9/9。
+2026-11-22，[源选区逐视角挡片](M4_SOURCE_REGION_BLOCKER_BRIEF_001_INDEPENDENT_REVIEW.md)真实回放 12/12，独立扩展发现全场上界误用于对象内片号。下一批仅做 [复用当前生产记录修正边界](M4_SOURCE_REGION_BLOCKER_PRODUCER_REUSE_001_PLAN.md)。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md)两臂 6/6，插件完成时间 −14.01%、CLI 用量 +57.96%，首调显式 full 的 62,318 B 和实际六次补构图照录。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
