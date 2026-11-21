@@ -1877,84 +1877,7 @@ def _validate_source_region_projection(value):
             raise ValueError('source_region_complete_witness_frame_mismatch')
 
 
-def _project_source_region_blockers(value):
-    """Project geometric blockers from the current selection's view attempts."""
-    attempts = value.get('view_attempts')
-    if not attempts:
-        return []
-    from .active_observation import fingerprint
-
-    try:
-        binding, reference = value['binding'], value['region_ref']
-        visibility, region = value['facts']['visibility'], value['facts']['region']
-        policy, scope = binding['camera_policy'], binding['image_scope']
-        order = policy['order']
-        frame, = value['frames']
-        if (binding['capture_scope'] != 'complete_scene_meshes'
-                or value['task_result']['binding'] != binding or scope['status'] != 'captured'
-                or scope['identity'] != binding['display_identity']
-                or visibility['image_scope'] != scope or frame['image_scope'] != scope
-                or frame['display_identity'] != scope['identity']
-                or frame['source_revision'] != binding['scene_revision']
-                or frame['scene_identity'] != binding['geometry_identity']
-                or frame['candidate_identity'] != binding['camera_identity']
-                or reference['document_epoch'] != binding['document_epoch']
-                or reference['ordered_geometry_sha256'] != binding['ordered_geometry_sha256']
-                or any(reference['capture_generation'][key] != binding['capture_state'][key]
-                       for key in ('instance_id', 'epoch', 'revision'))
-                or policy['region_id'] != reference['region_id']
-                or not 1 <= len(order) <= 6 or len(set(order)) != len(order)
-                or order != [view['name'] for view in binding['camera_specification']['views']]
-                or order != [attempt['view_name'] for attempt in attempts]
-                or any(visibility[key] != frame[key] for key in ('view_name', 'frame_identity', 'image_ref'))
-                or frame['image_ref'] != 'source-region-image:' + fingerprint((
-                    reference['region_id'], frame['frame_identity'], frame['image_sha256']))
-                or sum(item == frame for item in value['constructed_frames']) != 1):
-            return []
-        sampled = attempts[order.index(frame['view_name'])]
-        if (sampled['constructed'] is not True or sampled['status'] != visibility['geometry_status']
-                or sampled['frame_identity'] != frame['frame_identity']
-                or visibility['selected_object_participates'] is not True
-                or any(region[key] != reference[key] for key in ('host_id', 'instance_id'))):
-            return []
-
-        objects = binding['objects']
-        identities = ('host_id', 'instance_id', 'object_name')
-
-        def displayed(index):
-            host, shown = objects[index], scope['objects'][index]
-            return (host['object_index'] == shown['object_index'] == index
-                    and scope['participation_mask'][index] is True
-                    and shown['participates'] is True and shown['visible_get'] is True
-                    and all(host[key] == shown[key] for key in identities))
-
-        selected = [index for index, item in enumerate(objects)
-                    if all(item[key] == region[key] for key in identities)]
-        if len(selected) != 1 or not displayed(selected[0]):
-            return []
-        rows = []
-        for attempt in attempts:
-            blocker = attempt.get('first_blocker')
-            if attempt['status'] != 'positive_area_occlusion' or 'first_tie' in attempt or not isinstance(blocker, dict):
-                continue
-            index, face = blocker.get('object_index'), blocker.get('source_triangle_index')
-            area = blocker.get('overlap_area_screen_exact')
-            if (type(index) is not int or not 0 <= index < len(objects)
-                    or type(face) is not int or not 0 <= face < frame['all_triangle_count']
-                    or index == selected[0] and face in reference['source_triangle_indices']
-                    or not displayed(index) or type(area) is not str):
-                continue
-            try:
-                if Fraction(area) > 0:
-                    rows.append([attempt['view_name'], index, face])
-            except (ValueError, ZeroDivisionError):
-                continue
-        return rows
-    except (KeyError, IndexError, TypeError, ValueError):
-        return []
-
-
-def _project_source_region_brief(value):
+def _project_source_region_brief(value, blocker_rows=()):
     task = value['task_result']
     reference = value['region_ref']
     images = []
@@ -1999,16 +1922,14 @@ def _project_source_region_brief(value):
         brief['image_scope'] = {**scope, 'objects': {
             'columns': columns, 'rows': [[row[key] for key in columns] for row in objects]}}
         brief['schema'] = 'source-region-brief-v3'
-    else:
-        blockers = _project_source_region_blockers(value)
-        if blockers:
-            brief['blocker_evidence'] = {
-                'columns': ['view_name', 'blocker_object_index', 'source_triangle_index'],
-                'rows': blockers,
-                'meaning': 'Object indices refer to image_scope.objects. One current object-local evaluated '
-                           'triangle with positive-area occlusion per listed view. '
-                           'Nearest depth, other blockers, and total occlusion are unspecified.',
-            }
+    elif blocker_rows:
+        brief['blocker_evidence'] = {
+            'columns': ['view_name', 'blocker_object_index', 'source_triangle_index'],
+            'rows': blocker_rows,
+            'meaning': 'Object indices refer to image_scope.objects. One current object-local evaluated '
+                       'triangle with positive-area occlusion per listed view. '
+                       'Nearest depth, other blockers, and total occlusion are unspecified.',
+        }
     brief['visibility'].update(
         visible_source_triangle_count=len(visibility['visible_source_triangle_indices']),
         unseen_source_triangle_count=len(visibility['unseen_source_triangle_indices']))
@@ -2181,7 +2102,7 @@ def _project_target_observation_image_paths(brief, value, blocks, image_root):
 
 def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None,
                                 source_region_image_root=None, target_observation_image_root=None,
-                                source_region_sample_path=None):
+                                source_region_sample_path=None, source_region_blocker_rows=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -2253,9 +2174,14 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
             'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
         }
         if source_region_brief:
-            metadata = _project_source_region_brief({**value, 'image_delivery': image_delivery})
+            witness = value['facts']['visibility'].get('complete_witness')
+            blockers = ()
+            if (len(content) == 1 and witness is None and value.get('view_attempts')
+                    and callable(source_region_blocker_rows)):
+                blockers = source_region_blocker_rows(value, frames[0])
+            metadata = _project_source_region_brief({**value, 'image_delivery': image_delivery}, blockers)
             if len(content) == 1 and value['status'] == 'complete':
-                if value['facts']['visibility'].get('complete_witness') is not None:
+                if witness is not None:
                     local_path = _source_region_local_image_path(value, frames[0], source_region_image_root)
                 else:
                     local_path = _source_region_sample_image_path(value, frames[0], source_region_image_root,
@@ -2316,7 +2242,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
 def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
                  compact_support_planes: bool = False, segment_brief: bool = False,
                  active_delivery_audit=None, observation_task_query=None, source_region_image_root=None,
-                 target_observation_image_root=None, source_region_sample_path=None) -> dict:
+                 target_observation_image_root=None, source_region_sample_path=None,
+                 source_region_blocker_rows=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
@@ -2325,7 +2252,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
             response_detail=response_detail, observation_task_query=observation_task_query,
             source_region_image_root=source_region_image_root,
             target_observation_image_root=target_observation_image_root,
-            source_region_sample_path=source_region_sample_path)
+            source_region_sample_path=source_region_sample_path, source_region_blocker_rows=source_region_blocker_rows)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2586,7 +2513,9 @@ class LiveSpatialMCPServer:
                     source_region_image_root=image_root,
                     target_observation_image_root=target_image_root,
                     source_region_sample_path=(getattr(self.service, '_source_region_sample_path', None)
-                        if image_root is not None and args.get('response_detail') != 'full' else None))
+                          if image_root is not None and args.get('response_detail') != 'full' else None),
+                    source_region_blocker_rows=(getattr(self.service, '_source_region_blocker_rows', None)
+                          if kind == 'source_region' and args.get('response_detail') != 'full' else None))
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):

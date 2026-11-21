@@ -5,6 +5,7 @@ import base64
 from contextlib import contextmanager, ExitStack
 from contextvars import ContextVar
 import copy
+from fractions import Fraction
 from functools import wraps, partial
 import hashlib
 import io
@@ -1494,32 +1495,75 @@ class LiveSpatialService:
         view['revision'] = 'observation-task:' + selection_key
         return view
 
+    def _matching_source_region_producer(self, value, frame):
+        """Find the current producer while the read lock is held."""
+        region_ref = value['region_ref']
+        registry = self._read_context.current_prepared('source_regions')
+        if registry is None:
+            return None
+        prepared = registry['regions'].get(region_ref['region_id'])
+        if prepared is None or prepared.region_ref != region_ref or prepared.observation is None:
+            return None
+        original = prepared.observation
+        if (original['region_ref'] != region_ref or original['frames'] != [frame]
+                or original['facts']['visibility'] != value['facts']['visibility']):
+            return None
+        # The service adds runtime source status to the producer's binding.
+        binding = value['binding']
+        if any(binding.get(key) != original_value for key, original_value in prepared.binding.items()):
+            return None
+        region, original_region = value['facts']['region'], original['facts']['region']
+        if any(region[key] != original_region[key] for key in ('host_id', 'instance_id', 'object_name')):
+            return None
+        return prepared
+
     def _source_region_sample_path(self, value, frame):
         """Confirm a sampled reply against its retained producer while it is current."""
-        region_ref = value['region_ref']
         context = self._read_context
         if not context.lock.acquire(blocking=False):
             return None
         try:
-            registry = context.current_prepared('source_regions')
-            if registry is None:
-                return None
-            prepared = registry['regions'].get(region_ref['region_id'])
-            if prepared is None or prepared.observation is None:
-                return None
-            original = prepared.observation
-            original_frames = original['frames']
-            if (original['region_ref'] != region_ref or len(original_frames) != 1 or original_frames[0] != frame
-                    or original['facts']['visibility'] != value['facts']['visibility']):
-                return None
-            # The service adds runtime source status to the producer's binding.
-            binding = value['binding']
-            if any(binding.get(key) != original_value for key, original_value in original['binding'].items()):
-                return None
-            region, original_region = value['facts']['region'], original['facts']['region']
-            if any(region[key] != original_region[key] for key in ('host_id', 'instance_id', 'object_name')):
-                return None
-            return original_frames[0]['image_path']
+            prepared = self._matching_source_region_producer(value, frame)
+            return None if prepared is None else prepared.observation['frames'][0]['image_path']
+        finally:
+            context.lock.release()
+
+    def _source_region_blocker_rows(self, value, frame):
+        """Use retained classifications and bound each address by its own mesh."""
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return []
+        try:
+            prepared = self._matching_source_region_producer(value, frame)
+            if (prepared is None or prepared.region_ref['capture_generation'] is None
+                    or value['task_result']['binding'] != value['binding']):
+                return []
+            attempts = prepared.observation['view_attempts']
+            if (attempts != value['view_attempts']
+                    or [attempt['view_name'] for attempt in attempts] != prepared.binding['camera_policy']['order']):
+                return []
+            mask = prepared.binding['image_scope']['participation_mask']
+            rows = []
+            for attempt in attempts:
+                blocker = attempt.get('first_blocker')
+                if (attempt['status'] != 'positive_area_occlusion' or 'first_tie' in attempt
+                        or not isinstance(blocker, dict)):
+                    continue
+                index, face = blocker.get('object_index'), blocker.get('source_triangle_index')
+                area = blocker.get('overlap_area_screen_exact')
+                if (type(index) is not int or not 0 <= index < len(prepared.meshes) or mask[index] is not True
+                        or type(face) is not int or not 0 <= face < len(prepared.meshes[index].faces)
+                        or index == prepared.object_index and face in prepared.source_triangle_indices
+                        or type(area) is not str):
+                    continue
+                try:
+                    if Fraction(area) > 0:
+                        rows.append([attempt['view_name'], index, face])
+                except (ValueError, ZeroDivisionError):
+                    continue
+            return rows
+        except (KeyError, IndexError, TypeError, ValueError):
+            return []
         finally:
             context.lock.release()
 
