@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[排序反转对照](PERF050_SOURCE_SCOPE_RANK_TRANSFER_001_STOPPED_REVIEW.md)首次资格在真实业务前因测试接线失败，正式 0/2。下一批只修 [资格接线并续跑同题](PERF050_SOURCE_SCOPE_RANK_TRANSFER_RECOVERY_001_PLAN.md)。固定 [单项距离尾置](M1_JOINT_FULL_TASK_TAIL_SCOPE_001_INDEPENDENT_REVIEW.md) `4e4c653a`，其合法十项帧来源 6/6、单项距离与图像证据 12/12。[密集装配对照](PERF050_DENSE_PAIR_TRANSFER_001_INDEPENDENT_REVIEW.md)原生与插件各 6/6，完整窗口 85.282→47.172 s，CLI 输入＋输出 89,732→31,010，单对实测。
+2026-11-21，[排序反转恢复对照](PERF050_SOURCE_SCOPE_RANK_TRANSFER_RECOVERY_001_INDEPENDENT_REVIEW.md)资格 2/2、正式 2/2，原生与插件均 9/9。同质量单对窗口 118.743→73.423 s，CLI 输入＋输出 62,978→70,422。下一批只补 [非共面选区简报原图路径](M1_SOURCE_REGION_SAMPLED_IMAGE_PATH_001_PLAN.md)，不改变可见性结论或量测。原首批接线失败、显式无图 full 成本和 [密集装配单对](PERF050_DENSE_PAIR_TRANSFER_001_INDEPENDENT_REVIEW.md) 各自留档。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
