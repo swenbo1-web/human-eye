@@ -1530,15 +1530,26 @@ class LiveSpatialService:
 
     def _source_region_blocker_rows(self, value, frame):
         """Use retained classifications and bound each address by its own mesh."""
+        from .read_context import capture_key
+
         context = self._read_context
         if not context.lock.acquire(blocking=False):
             return []
         try:
             prepared = self._matching_source_region_producer(value, frame)
-            if (prepared is None or prepared.region_ref['capture_generation'] is None
-                    or value['task_result']['binding'] != value['binding']):
+            if prepared is None or value['task_result']['binding'] != value['binding']:
                 return []
-            attempts = prepared.observation['view_attempts']
+            original = prepared.observation
+            capture = capture_key(prepared.binding)
+            generation = prepared.region_ref['capture_generation']
+            if (capture is None or capture != capture_key(original['binding']) or generation is None
+                    or capture[:3] != (generation['instance_id'], generation['epoch'], generation['revision'])):
+                return []
+            constructed = original.get('constructed_frames')
+            if (type(constructed) is not list or constructed != value.get('constructed_frames')
+                    or constructed.count(frame) != 1):
+                return []
+            attempts = original['view_attempts']
             if (attempts != value['view_attempts']
                     or [attempt['view_name'] for attempt in attempts] != prepared.binding['camera_policy']['order']):
                 return []
