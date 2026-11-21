@@ -1494,8 +1494,9 @@ class LiveSpatialService:
         view['revision'] = 'observation-task:' + selection_key
         return view
 
-    def _source_region_sample_directory(self, region_ref, binding_sha256):
-        """Return the image directory retained by the current region producer."""
+    def _source_region_sample_path(self, value, frame):
+        """Confirm a sampled reply against its retained producer while it is current."""
+        region_ref = value['region_ref']
         context = self._read_context
         if not context.lock.acquire(blocking=False):
             return None
@@ -1504,10 +1505,21 @@ class LiveSpatialService:
             if registry is None:
                 return None
             prepared = registry['regions'].get(region_ref['region_id'])
-            if (prepared is None or prepared.images is None or prepared.region_ref != region_ref
-                    or prepared.binding['binding_sha256'] != binding_sha256):
+            if prepared is None or prepared.observation is None:
                 return None
-            return prepared.images.output_directory
+            original = prepared.observation
+            original_frames = original['frames']
+            if (original['region_ref'] != region_ref or len(original_frames) != 1 or original_frames[0] != frame
+                    or original['facts']['visibility'] != value['facts']['visibility']):
+                return None
+            # The service adds runtime source status to the producer's binding.
+            binding = value['binding']
+            if any(binding.get(key) != original_value for key, original_value in original['binding'].items()):
+                return None
+            region, original_region = value['facts']['region'], original['facts']['region']
+            if any(region[key] != original_region[key] for key in ('host_id', 'instance_id', 'object_name')):
+                return None
+            return original_frames[0]['image_path']
         finally:
             context.lock.release()
 

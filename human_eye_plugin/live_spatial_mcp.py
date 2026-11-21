@@ -1986,67 +1986,27 @@ def _source_region_local_image_path(value, frame, image_root):
     return _observation_image_path(Path(frame['image_path']), image_root)
 
 
-def _source_region_sample_image_path(value, frame, image_root, sample_directory):
+def _source_region_sample_image_path(value, frame, image_root, lookup_sample_path):
     """Expose the authored path of the single-view source sample already encoded."""
-    if (image_root is None or not callable(sample_directory)
+    if (image_root is None or not callable(lookup_sample_path)
             or value['observation_status'] != 'locally_observed'
             or 'view_attempts' in value or 'constructed_frames' in value):
         return None
-    from .active_observation import fingerprint
-
     try:
-        binding, reference = value['binding'], value['region_ref']
-        region, visibility = (value['facts'][key] for key in ('region', 'visibility'))
-        scope = binding['image_scope']
-        if (binding['capture_scope'] != 'complete_scene_meshes' or scope['status'] != 'captured'
-                or visibility['status'] != 'observed_samples' or visibility['complete_witness'] is not None
+        visibility = value['facts']['visibility']
+        pixels = visibility['selected_surface_pixels']
+        if (visibility['status'] != 'observed_samples' or visibility['complete_witness'] is not None
                 or 'geometry_status' in visibility or 'reason' in visibility
                 or visibility['visibility_scope'] != 'actual_frame_source_triangle_samples'
                 or visibility['unknown'] != ['complete_surface_visibility']
                 or visibility['selected_object_participates'] is not True
-                or frame['view_name'] != 'SCENE' or frame['pose'] != binding['camera_specification']['views'][0]
-                or frame['owner_capabilities']['triangle_ids'] is not True
-                or frame['image_scope'] != scope or visibility['image_scope'] != scope
-                or frame['source_revision'] != binding['scene_revision']
-                or frame['scene_identity'] != binding['geometry_identity']
-                or frame['candidate_identity'] != binding['camera_identity']
-                or frame['display_identity'] != binding['display_identity'] or frame['display_identity'] != scope['identity']
-                or any(visibility[key] != frame[key] for key in ('view_name', 'image_ref', 'frame_identity'))
-                or (region['host_id'], region['instance_id']) != (reference['host_id'], reference['instance_id'])):
+                or frame['view_name'] != 'SCENE' or type(pixels) is not int or pixels <= 0):
             return None
-        mask = tuple(scope['participation_mask'])
-        if not any(row['host_id'] == reference['host_id'] and row['instance_id'] == reference['instance_id']
-                   and 0 <= row['object_index'] < len(mask) and mask[row['object_index']] is True
-                   for row in binding['objects']):
+        authored = lookup_sample_path(value, frame)
+        if authored is None:
             return None
-        selected = reference['source_triangle_indices']
-        visible = visibility['visible_source_triangle_indices']
-        unseen = visibility['unseen_source_triangle_indices']
-        pixels = visibility['selected_surface_pixels']
-        bounds = visibility['visible_pixel_bounds']
-        if (type(visible) is not list or not visible or type(unseen) is not list
-                or any(type(index) is not int for index in visible + unseen)
-                or sorted(visible + unseen) != selected
-                or visibility['selected_source_triangle_count'] != len(selected)
-                or type(pixels) is not int or pixels < len(visible)
-                or type(bounds) is not list or len(bounds) != 4 or any(type(axis) is not int for axis in bounds)):
-            return None
-        left, top, right, bottom = bounds
-        if not (0 <= left <= right < 512 and 0 <= top <= bottom < 512
-                and pixels <= (right - left + 1) * (bottom - top + 1)):
-            return None
-        frame_binding = (frame['scene_identity'], frame['candidate_identity'], frame['display_identity'],
-                         fingerprint(scope), mask)
-        owner, image_sha = frame['owner_mapping_identity'], frame['image_sha256']
-        if (frame['image_scope_identity'] != frame_binding[3]
-                or frame['frame_identity'] != fingerprint((frame_binding, frame['owner_schema'], owner, 'SCENE', 1, image_sha))
-                or frame['image_ref'] != 'source-region-image:' + fingerprint((reference['region_id'], frame['frame_identity'], image_sha))):
-            return None
-        path = Path(frame['image_path'])
-        stem = '001-' + fingerprint((frame_binding, owner, 'SCENE'))[:24]
-        directory = sample_directory(reference, binding['binding_sha256'])
-        if (directory is None or str(path.parent) != str(directory) or str(path) != frame['image_path']
-                or path.name != stem + '.png' or frame['arrays_path'] != str(path.with_suffix('.npz'))):
+        path = Path(authored)
+        if str(path) != authored:
             return None
         return _observation_image_path(path, image_root, strict_spelling=True)
     except (KeyError, IndexError, TypeError, ValueError):
@@ -2135,7 +2095,7 @@ def _project_target_observation_image_paths(brief, value, blocks, image_root):
 
 def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None,
                                 source_region_image_root=None, target_observation_image_root=None,
-                                source_region_sample_directory=None):
+                                source_region_sample_path=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -2213,7 +2173,7 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
                     local_path = _source_region_local_image_path(value, frames[0], source_region_image_root)
                 else:
                     local_path = _source_region_sample_image_path(value, frames[0], source_region_image_root,
-                                                                 source_region_sample_directory)
+                                                                 source_region_sample_path)
                 if local_path is not None:
                     metadata['images'][0]['local_image_path'] = local_path
             projected = metadata
@@ -2270,7 +2230,7 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
 def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = None,
                  compact_support_planes: bool = False, segment_brief: bool = False,
                  active_delivery_audit=None, observation_task_query=None, source_region_image_root=None,
-                 target_observation_image_root=None, source_region_sample_directory=None) -> dict:
+                 target_observation_image_root=None, source_region_sample_path=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
@@ -2279,7 +2239,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
             response_detail=response_detail, observation_task_query=observation_task_query,
             source_region_image_root=source_region_image_root,
             target_observation_image_root=target_observation_image_root,
-            source_region_sample_directory=source_region_sample_directory)
+            source_region_sample_path=source_region_sample_path)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2539,7 +2499,7 @@ class LiveSpatialMCPServer:
                         if isinstance(args.get('query'), dict) else None),
                     source_region_image_root=image_root,
                     target_observation_image_root=target_image_root,
-                    source_region_sample_directory=(getattr(self.service, '_source_region_sample_directory', None)
+                    source_region_sample_path=(getattr(self.service, '_source_region_sample_path', None)
                         if image_root is not None and args.get('response_detail') != 'full' else None))
             finally:
                 recorder = getattr(self.service, 'record_event', None)
