@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-21，[联合全量回包](M1_JOINT_FULL_TASK_TAIL_001_INDEPENDENT_REVIEW.md) `475ae93a` 两份固定原件 12/12 同保量测、可读性和原图。独立复核另发现合法多事实请求出现新增帧来源裁失，唯一下一批为 [限制尾置范围](M1_JOINT_FULL_TASK_TAIL_SCOPE_001_PLAN.md)。之后再考虑 [选区与整件排名反转对照](PERF050_SOURCE_SCOPE_RANK_TRANSFER_001_PLAN.md)。[密集装配对照](PERF050_DENSE_PAIR_TRANSFER_001_INDEPENDENT_REVIEW.md)原生与插件各 6/6，完整窗口 85.282→47.172 s，CLI 输入＋输出 89,732→31,010，单对实测。旧 M09、N15 与 Far00 任务均已收口。
+2026-11-21，[单项距离尾置](M1_JOINT_FULL_TASK_TAIL_SCOPE_001_INDEPENDENT_REVIEW.md) `4e4c653a` 通过独立复核。合法十项的帧来源恢复 6/6，单项距离与必要图像证据 12/12。下一批为 [选区与整件排名反转对照](PERF050_SOURCE_SCOPE_RANK_TRANSFER_001_PLAN.md)，固定窄修版本，在另一场景核可见性证据和范围选择。[密集装配对照](PERF050_DENSE_PAIR_TRANSFER_001_INDEPENDENT_REVIEW.md)原生与插件各 6/6，完整窗口 85.282→47.172 s，CLI 输入＋输出 89,732→31,010，单对实测。旧 M09、N15 与 Far00 任务均已收口。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
