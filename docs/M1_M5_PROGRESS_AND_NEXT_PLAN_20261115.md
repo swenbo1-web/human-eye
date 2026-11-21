@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-22，[完整诊断分层原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md) 两份同机原件可精确读回，先预写再追读的累计消费者字节比直接 full 多 5,185／3,073 B。原型保留给归档取证，普通观察继续使用现有简报。下一批做 [同版首包消费对照](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_PLAN.md)，新题核 full 与现有 brief 的最终质量、补查与整题成本。[挡片构图清单一致性](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_INDEPENDENT_REVIEW.md) `8cf3fabc` 工程收口。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md) 两臂 6/6、时间 −14.01%、CLI 用量 +57.96% 按原口径保留。
+2026-11-22，[同版首包消费对照](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md) 两臂各 5/5，首调都显式 full，试验组受控转 brief 后调用 3→1、构图 1→1、CLI 输入加输出 −66.36%、完整槽 −34.58%。只采用单对证据。下一批试 [源选区专用入口](M1_SOURCE_REGION_TASK_ENTRY_001_PLAN.md)，测模型能否自然采用，并在新题上比较质量、补查、目录增量与整题成本。[完整诊断分层原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md) 保留作同机归档取证。[挡片构图清单](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_INDEPENDENT_REVIEW.md) 工程收口。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
