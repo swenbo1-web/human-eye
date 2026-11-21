@@ -207,11 +207,12 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. Task set example: "
-            "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"target\":{\"name\":\"A\"},\"candidates\":[{\"name\":\"B\"}],\"requested_facts\":[\"closed_solid_relation\",\"surface_proximity\"]}}. "
-            "Opt in to spatial_relation and surface_proximity for support-certified separation with closed-classification fallback. "
-            "Unknown/duplicate rows remain. Complete penetration/nearest-separated sets require all relevant evidence; otherwise only known subsets are reported. "
-            "Legacy objects pair/aabb supported. Global surface_nearest instead uses one query.objects selector without focal_id, "
+            "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. For whole-object A-to-B distance use "
+            "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"surface_proximity\"]}}. "
+            "Includes world closest points and world A-to-B direction at positive distance. "
+            "A target/candidates set requires surface_proximity with spatial_relation (support proof, closed-shell fallback) or closed_solid_relation. "
+            "Optional aabb in either form. Sets retain unknown/duplicate rows. Complete sets require all evidence. "
+            "Global surface_nearest instead uses one query.objects selector without focal_id, "
             "or focal_id with query={\"mode\":\"surface_nearest\"}; session_id and include_image=false required. "
             "Complete means global nearest; partial means best-known. scene_revision/fingerprint bind this capture/source/revision; "
             "runtime_source_sha256 identifies code. Scene edits expire observations. Goals are caller criteria."
@@ -221,7 +222,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "For surface_scan, omitted response_detail or brief returns a versioned compact table with readable names, "
             "object-table references, original distance_m and derived distance_mm. Explicit full returns detailed current "
             "evidence with witnesses. Combine observations using their scene/source binding."
-            " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one legacy task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
+            " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one ordered task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
             " Optional query.region_task={area_min_m2,area_max_m2,normal_z_min} discovers whole-scene rectangular regions with inclusive area and directed unit-normal z limits, then obtains needed local evidence. It combines with task_query. Its region rows and image references identify each scope and actual frame, including repeated view names."
             " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. A returned top-level region_ref replaces region on later requests. Image depth uses the captured active view layer's effective visible meshes, retaining complete source indices. Measurements cover every selected triangle, including unseen portions and an explicitly selected hidden reference. Missing current display evidence or zero selected image pixels returns partial/evidence_insufficient with the measured task_result preserved. Brief and full return the source scope, display participation, distance, witness and native image references."
         ),
