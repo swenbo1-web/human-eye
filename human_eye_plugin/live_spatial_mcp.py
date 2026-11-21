@@ -1954,7 +1954,10 @@ def _observation_image_path(path, image_root, binding_digest=None):
             return None
         if binding_digest is not None and relative.parts[1] != binding_digest:
             return None
-        if path.resolve(strict=True) != path or not path.is_file():
+        resolved = path.resolve(strict=True)
+        # Windows Path equality folds case. Target paths must match the spelling on disk.
+        same_path = resolved == path if binding_digest is None else str(resolved) == str(path)
+        if not same_path or not path.is_file():
             return None
     except (OSError, RuntimeError, ValueError):
         return None
