@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-22，[挡片构图清单一致性](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_INDEPENDENT_REVIEW.md) `8cf3fabc` 独立正确性通过，81/81 控制及 12/12 真例预算保全，挡片交付工程收口。下一批仅做 [完整诊断分层原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_PLAN.md)，针对历史 39,717 B 无图和 62,318 B 有图 full；用同一次简报、精确引用和按需读回核真实成本。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md)实际两臂 6/6、时间 −14.01%、CLI 用量 +57.96% 依原口径保留。
+2026-11-22，[完整诊断分层原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md) 两份同机原件可精确读回，先预写再追读的累计消费者字节比直接 full 多 5,185／3,073 B。原型保留给归档取证，普通观察继续使用现有简报。下一批做 [同版首包消费对照](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_PLAN.md)，新题核 full 与现有 brief 的最终质量、补查与整题成本。[挡片构图清单一致性](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_INDEPENDENT_REVIEW.md) `8cf3fabc` 工程收口。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md) 两臂 6/6、时间 −14.01%、CLI 用量 +57.96% 按原口径保留。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
