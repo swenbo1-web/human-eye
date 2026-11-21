@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-22，[源选区逐视角挡片](M4_SOURCE_REGION_BLOCKER_BRIEF_001_INDEPENDENT_REVIEW.md)真实回放 12/12，独立扩展发现全场上界误用于对象内片号。下一批仅做 [复用当前生产记录修正边界](M4_SOURCE_REGION_BLOCKER_PRODUCER_REUSE_001_PLAN.md)。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md)两臂 6/6，插件完成时间 −14.01%、CLI 用量 +57.96%，首调显式 full 的 62,318 B 和实际六次补构图照录。
+2026-11-22，[挡片生产记录复用](M4_SOURCE_REGION_BLOCKER_PRODUCER_REUSE_001_INDEPENDENT_REVIEW.md)修复对象内片号，真实回放 12/12。扩展 62/63，返回构图清单重复时仍误附挡片表，候选暂不接受。下一批仅补 [构图清单一致性](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_PLAN.md)。[双选区遮挡对照](PERF050_DUAL_REGION_OCCLUSION_TRANSFER_001_INDEPENDENT_REVIEW.md)两臂 6/6，插件完成时间 −14.01%、CLI 用量 +57.96%，首调显式 full 的 62,318 B 与六次补构图照录。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
