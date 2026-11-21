@@ -39,8 +39,11 @@ def probe(entry,*args):
 
 
 def freeze():
+    namespace = NS.relative_to(ROOT).as_posix()+'/'
+    delta = git('diff','--name-only',HISTORY).decode().splitlines()
     require(not EXTERNAL.exists() and not (NS/'FROZEN.json').exists()
-            and git('rev-parse','HEAD').decode().strip()==HISTORY and not git('diff','--name-only',HISTORY),
+            and git('merge-base','HEAD',HISTORY).decode().strip()==HISTORY
+            and all(path.startswith(namespace) for path in delta),
             'fresh_isolated_evidence_tree_required')
     require((NS/'PLAN.md').read_bytes()==git('show',PLAN),'frozen_plan_changed')
     pins = {}
