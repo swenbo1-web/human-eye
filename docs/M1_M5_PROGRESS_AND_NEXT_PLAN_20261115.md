@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-2026-11-22，[同版首包消费对照](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md) 两臂各 5/5，首调都显式 full，试验组受控转 brief 后调用 3→1、构图 1→1、CLI 输入加输出 −66.36%、完整槽 −34.58%。只采用单对证据。下一批试 [源选区专用入口](M1_SOURCE_REGION_TASK_ENTRY_001_PLAN.md)，测模型能否自然采用，并在新题上比较质量、补查、目录增量与整题成本。[完整诊断分层原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md) 保留作同机归档取证。[挡片构图清单](M4_SOURCE_REGION_BLOCKER_FRAME_LIST_001_INDEPENDENT_REVIEW.md) 工程收口。
+2026-11-22，[源选区专用入口自然对照](M1_SOURCE_REGION_TASK_ENTRY_001_INDEPENDENT_REVIEW.md) 验收隔离候选 `e6e29f18`。B 自然采用 1/1，原答 6/7→7/7，唯一差异是原图链接格式。调用 4→2、构图 1→1、CLI 输入加输出 −58.17%、完整槽 −28.04% 为单对观察。下一批用[非共面选区独立留出题](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_PLAN.md)检验量测、可见边界和自然采用，产品零差分。[受控首包对照](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)和[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按各自原分母保留。
 
 前一批M1复核确认，v2文本减少91.46%，三份封存实际回答按题面3/3，额外毫米格式的原预登记0/3保留。一次构造优化使三例计时窗口减少约90%–91%。本次当前宿主复核只重算保存证据。M6由用户另线管理，接口围绕同代源映射、单位与尺度、图像对应和执行回读衔接。
 
