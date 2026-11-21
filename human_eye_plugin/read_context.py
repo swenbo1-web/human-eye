@@ -77,6 +77,11 @@ class ReadContext:
         resources[key] = value
         return value, False
 
+    def current_prepared(self, key):
+        """Inspect an existing resource while the caller holds the read lock."""
+        state = self._selections.get(self._capture)
+        return None if state is None else state['prepared'].get(key)
+
     def surface_scan_progress(self, key):
         """Resume one current scan with summaries under the same private capture."""
         binding = (self._capture, key)

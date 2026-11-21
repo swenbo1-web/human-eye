@@ -1494,6 +1494,23 @@ class LiveSpatialService:
         view['revision'] = 'observation-task:' + selection_key
         return view
 
+    def _source_region_sample_directory(self, region_ref, binding_sha256):
+        """Return the image directory retained by the current region producer."""
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return None
+        try:
+            registry = context.current_prepared('source_regions')
+            if registry is None:
+                return None
+            prepared = registry['regions'].get(region_ref['region_id'])
+            if (prepared is None or prepared.images is None or prepared.region_ref != region_ref
+                    or prepared.binding['binding_sha256'] != binding_sha256):
+                return None
+            return prepared.images.output_directory
+        finally:
+            context.lock.release()
+
     def _observe_source_region(self, session_id, query, *, include_image):
         from .active_observation_host import source_binding
         from .read_context import query_key
