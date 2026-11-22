@@ -1,0 +1,39 @@
+{
+  "A1": {
+    "ordinary": [
+      {
+        "attempt": 4,
+        "classification": "setup_only",
+        "pairs": [
+          "N04",
+          "N05"
+        ],
+        "reason": "One ordinary live selected scene read loads evaluated geometry for the three objects into the persistent workspace. It reveals the roster and source array access for both pairs without deciding either endpoint membership.",
+        "result_excerpt": "source_triangle_ranges dict ['N02', 'N05', 'N04']"
+      },
+      {
+        "attempt": 5,
+        "classification": "setup_only",
+        "pairs": [
+          "N04",
+          "N05"
+        ],
+        "reason": "Inspects the already acquired mesh object field names, IDs and matrices. It performs no second capture and computes no distance or face membership.",
+        "result_excerpt": "dict_keys(['instance_id', 'matrix_world', 'name', 'object_id', 'polygon_count', 'triangles', 'vertices', 'vertices_local', 'visible_get'])"
+      },
+      {
+        "attempt": 6,
+        "classification": "standalone_new_source_membership",
+        "pairs": [
+          "N04",
+          "N05"
+        ],
+        "reason": "One shared calculation uses the exact binary64 input coordinates from calls 1 and 2 and the evaluated geometry from call 4. The least-squares barycentric and residual tests add the previously absent endpoint memberships for both pairs. Distance is taken from calls 1 and 2. This numerical check is independent corroboration; exact geometric membership is separately verified in the final scorer.",
+        "result_excerpt": "N02/N04 N02 [{'triangle_index': 21, 'vertex_indices': [0, 13, 12]"
+      }
+    ]
+  },
+  "B1": {
+    "ordinary": []
+  }
+}
