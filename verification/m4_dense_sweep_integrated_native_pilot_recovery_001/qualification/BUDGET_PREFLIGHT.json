@@ -1,0 +1,623 @@
+{
+  "passed": true,
+  "real_originals": {
+    "QN": {
+      "business_admissions": 6,
+      "raster_actual": 2,
+      "raster_upper": 2,
+      "cumulative_raster_actual": 2,
+      "evidence": [
+        {
+          "ordinal": 1,
+          "claim_token": "f3581560ca904b2389660d667cd7b990",
+          "frame_ref": "native-image:272876b1b4d0159904edcf36fdd5b75e8f94b73d6fa71d87e166fa18158a693a",
+          "public_reply_sha256": "20618c4c15b355fc3b9afb94a53292b13060a6d4813fb756f8d03ffee6a921b6",
+          "png_sha256": "ebfc9e00c5347e6d3913ad0d3f2820a8538070f5a8ee8adacc601998d03af8bf"
+        },
+        {
+          "ordinal": 2,
+          "claim_token": "6eca31e1093d46e9b1987c37e0cafcd7",
+          "frame_ref": "native-image:149991a35eccff4dbed3a66321407c097776741aa3deed633056946d71579a3d",
+          "public_reply_sha256": "3e3f86be8e63b353e44c700654623e7b3b01c1f69d3d48dc4b30aa35eaf5290c",
+          "png_sha256": "62d102d6275290ba3bad8c6bc9da7eefb0e4f5e5c95597f2b33273a3b8383d3e"
+        }
+      ]
+    },
+    "QP": {
+      "business_admissions": 4,
+      "raster_actual": 3,
+      "raster_upper": 3,
+      "cumulative_raster_actual": 5,
+      "evidence": [
+        {
+          "ordinal": 1,
+          "claim_token": "441bc91cb4aa4b39bb444ceadb57866e",
+          "scope_id": "global",
+          "frame_identity": "7e82609760b4cac2775a4ab789ffdddbdad34494563df3dd277e323ae99a82c5",
+          "audit_offset": 3984,
+          "audit_sha256": "1692ce8b8d2de765a03307f16ddaebb6f640e9d23c711e2d4ada8da8efc175a0",
+          "producer_request_id": "59da2b372ae44af7a4813c33e8ef891b",
+          "wire_request_id": "observe-1"
+        },
+        {
+          "ordinal": 2,
+          "claim_token": "9978c78d8be14735859858ea382b6e22",
+          "scope_id": "local_fc4d33eceffb646b71ae6ccb",
+          "frame_identity": "98700424b22f995f1d1b7a41339e68dcfa039b6d57b4d279856096b58527a84f",
+          "audit_offset": 5162,
+          "audit_sha256": "60f4fb810268c3d912ece81154e70e16a10df490a918e65d205646e31748b81c",
+          "producer_request_id": "59da2b372ae44af7a4813c33e8ef891b",
+          "wire_request_id": "observe-1"
+        },
+        {
+          "ordinal": 3,
+          "claim_token": "8f8bc7e3c8e04758b3eba5397102e4c3",
+          "scope_id": "local_4c6617d43d2f8bbd2ae2ee43",
+          "frame_identity": "df69be8469f297ce504fc38f5e8679bc9965432d7b91f89562e1d9b9e776abef",
+          "audit_offset": 6341,
+          "audit_sha256": "b8f3c11a16156926649e5dc59488299eae79b6531cee5459b0a3221ce69abe38",
+          "producer_request_id": "59da2b372ae44af7a4813c33e8ef891b",
+          "wire_request_id": "observe-1"
+        }
+      ]
+    }
+  },
+  "historical_total": {
+    "blender": 2,
+    "rasters": 5,
+    "business": 10,
+    "models": 0
+  },
+  "negative_controls": [
+    {
+      "case": "missing_claim",
+      "rejected_for": "FileNotFoundError"
+    },
+    {
+      "case": "missing_settlement",
+      "rejected_for": "FileNotFoundError"
+    },
+    {
+      "case": "duplicate_claim_token",
+      "rejected_for": "original_claim_token_duplicate_or_detached"
+    },
+    {
+      "case": "wrong_settlement_token",
+      "rejected_for": "original_settlement_token_digest_or_clock_invalid"
+    },
+    {
+      "case": "wrong_claim_sha256",
+      "rejected_for": "original_settlement_token_digest_or_clock_invalid"
+    },
+    {
+      "case": "wrong_claim_owner_phase",
+      "rejected_for": "original_claim_cross_slot_phase_or_formal_escape"
+    },
+    {
+      "case": "cross_qualifier_charge",
+      "rejected_for": "original_claim_over_limit_or_outside_slot"
+    },
+    {
+      "case": "over_reservation",
+      "rejected_for": "original_claim_over_limit_or_outside_slot"
+    },
+    {
+      "case": "over_settlement",
+      "rejected_for": "original_raster_reservation_unsettled_over_cap_or_unconfirmed"
+    },
+    {
+      "case": "cross_slot_audit_reference",
+      "rejected_for": "product_raster_audit_slice_wrong_or_repeated"
+    },
+    {
+      "case": "reused_audit_slice",
+      "rejected_for": "product_raster_audit_slice_wrong_or_repeated"
+    },
+    {
+      "case": "duplicate_audit_event",
+      "rejected_for": "product_raster_producer_attempt_roster_invalid"
+    },
+    {
+      "case": "duplicate_native_ordinal",
+      "rejected_for": "native_raster_ordinal_or_owner_roster_invalid"
+    },
+    {
+      "case": "wrong_cumulative_count",
+      "rejected_for": "original_cumulative_budget_or_pending_count_disagrees"
+    },
+    {
+      "case": "unsettled_pending_raster",
+      "rejected_for": "original_cumulative_budget_or_pending_count_disagrees"
+    },
+    {
+      "case": "wrong_slot_count",
+      "rejected_for": "original_slot_budget_snapshot_and_raw_settlements_disagree"
+    },
+    {
+      "case": "late_publication",
+      "rejected_for": "original_close_or_published_timing_invalid"
+    },
+    {
+      "case": "unconfirmed_blender_handle",
+      "rejected_for": "original_close_or_published_timing_invalid"
+    },
+    {
+      "case": "wrong_product_eof",
+      "rejected_for": "original_production_mcp_close_eof_or_exit_invalid"
+    }
+  ],
+  "source_pins": [
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\1260ccd91180405cac78a3d9efae824c.json",
+      "sha256": "78759aee1f5ae08062208593646da31fc7fce9f0c96557a3a5ea57047a136265",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\17be51057d17460d83acab4ae9afd841.json",
+      "sha256": "e7d437c332454db0576ae99fcd1999d6540f5d655ba703a53e3933d0e5808133",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\1cd66d9c96d94f44a5e4273d3c1a85d5.json",
+      "sha256": "ff314401408cff7e05a0c160d6ef3bda73406c8b91f3ee611afd48922498fabf",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\3d7ddcbdfa354f13a5623b647ae4de41.json",
+      "sha256": "40a57c96160f7d906ca56b0381a5dbef8496d8fe72aca53fba304cb6760add80",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\441bc91cb4aa4b39bb444ceadb57866e.json",
+      "sha256": "250bf7316567b4c2de3b12338ba7627e1db24c101bac09b61639d9d5c6d43e06",
+      "bytes": 170
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\6eca31e1093d46e9b1987c37e0cafcd7.json",
+      "sha256": "b71df1ef904948b920f1607eb1ef1204f0899e14f17643f2299bfe27e991a1d7",
+      "bytes": 170
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\8326bcadb7b740c1b714bd45074c56f2.json",
+      "sha256": "7460103dc3d57fce3add9ab24d3728ae7e22d103ca614ff4b54c14c85d43a026",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\847b2800956642e9a4660a73bd3b513e.json",
+      "sha256": "1c01f4fad9e32c4c6444d3370547cb008af271acc98f2fdc122438598a614fc1",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\8f8bc7e3c8e04758b3eba5397102e4c3.json",
+      "sha256": "9c2b91247bc99e7cd3b1fa8844c6be703eca8196374ecc37b4accf668cd42fbc",
+      "bytes": 170
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\9978c78d8be14735859858ea382b6e22.json",
+      "sha256": "4ed9bcfdffe05cf2eb18a5a0880244e1919a5ddbd8c00ece910594f03e315989",
+      "bytes": 170
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\b3eb8204a10d49c1850029f0524b7447.json",
+      "sha256": "e0ce5bbfd5bbe30ffccea1d619bada2eb4819719c40d1c3e11fe8660695f56dd",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\b4ff0b9c64ff4c989ecc40aa71051443.json",
+      "sha256": "d5326714a43c06aca9e64308e909a2e9b24d3988395248ca276e0af96243af5a",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\bec5fa6615364b4a836cf5aa7e302b41.json",
+      "sha256": "6f525a145147a84307a54aeb254022433d4de33944f821038c989ae0025f1326",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\d30bdc8272724b7b9eed601f3a86caac.json",
+      "sha256": "6f857db93b64b22f6c3333808a92202b8492b186f95de464d73eaaeb1240b1b4",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\e5b6729726b14cb2b0f1b45680ac215f.json",
+      "sha256": "3e8ae5d1293c9746151ad3dfec254ea607c1d6339d11fb30e264a253f5b1f2cf",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\f3581560ca904b2389660d667cd7b990.json",
+      "sha256": "4ab7f71b886f6452f38bc006f7433cabe26c740bab796106abd0379b4aba70dd",
+      "bytes": 170
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\claims\\fd3e3cb9690948f69a2c1ea0a786d1ec.json",
+      "sha256": "a1faabfbd5ed19e25e473ddf56da27aab4b12777980aad7000ef7a2ace70e228",
+      "bytes": 169
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\LIMITS.json",
+      "sha256": "4df345ced75585a835ad2149b89c6d4b6571064655dc34bb3205d8f4daf2113a",
+      "bytes": 153
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\1260ccd91180405cac78a3d9efae824c.json",
+      "sha256": "f2492945e410d88b955b212ac89854126b7592372db0baf2cbfb7de2ff17d408",
+      "bytes": 225
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\441bc91cb4aa4b39bb444ceadb57866e.json",
+      "sha256": "dcbfe4f6c50d326eea56a088164b33cba314cb99ff17d9fbe0dad3ab71227919",
+      "bytes": 682
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\6eca31e1093d46e9b1987c37e0cafcd7.json",
+      "sha256": "9e1af8df9e95cb3b1f53440f1abf19080bc5ba308fb0b60f12ad023845a337b8",
+      "bytes": 526
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\8f8bc7e3c8e04758b3eba5397102e4c3.json",
+      "sha256": "d22a5dd77b0c988f6ec38540f1a8eb1ec6ea185e38c438245ff2694a2b04564d",
+      "bytes": 682
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\9978c78d8be14735859858ea382b6e22.json",
+      "sha256": "4a3d6ff2bde2905214cfba692a7de79d5101b992f82b171111dd9ceff47336ed",
+      "bytes": 682
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\b4ff0b9c64ff4c989ecc40aa71051443.json",
+      "sha256": "a470a370527b46ee720c3122a311e2eb6c5349bfaa0cda90cb1e11c65fbb844c",
+      "bytes": 224
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\budget\\settlements\\f3581560ca904b2389660d667cd7b990.json",
+      "sha256": "c840c7ec23d822c4201709615aac6e4264fcd09db19579238deb29c58667a5f0",
+      "bytes": 526
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_04\\RECEIPT.json",
+      "sha256": "f4714b7066894347db399e6fa071c9a7eab5d16008de5fbbeaed25f439c9d11b",
+      "bytes": 425
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_04\\REQUEST.json",
+      "sha256": "7437772b564d3353573728cd425c895cc3eae5d92025fc2eee47c1d49e96aa25",
+      "bytes": 326
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_04\\RESPONSE.json",
+      "sha256": "3e768cc593e1411e610ec2fb460378d52f230ca6e2b8007944e63c33deafb168",
+      "bytes": 7140
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_05\\RECEIPT.json",
+      "sha256": "d80916dfc6c2e1dde41f630c5a2d750ac338c2b41a461a561370760212fec9c6",
+      "bytes": 424
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_05\\REQUEST.json",
+      "sha256": "eabc7d3f1e777a87c70dcd7da46ec21038757b28e6c850fb2b1e3e6ed48f7e99",
+      "bytes": 316
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\call_05\\RESPONSE.json",
+      "sha256": "32cefa32ef2ce140c182c4e97391a68321332e06a1ef88bd2c370157954d4331",
+      "bytes": 8626
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_07\\RECEIPT.json",
+      "sha256": "24e09bde2eb7be49ffa93c6c022ccf9059ba71d21c55d619d797e3fdc0e12840",
+      "bytes": 372
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_07\\RX.bin",
+      "sha256": "20618c4c15b355fc3b9afb94a53292b13060a6d4813fb756f8d03ffee6a921b6",
+      "bytes": 6995
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_07\\TX.bin",
+      "sha256": "9ec52b08a8011bf43d69947032d13b76e6aa7a8b294fb4fbd5171a64aa2a105e",
+      "bytes": 223
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_08\\RECEIPT.json",
+      "sha256": "7373fda7d79267bb765eda8baa8a5b959448c52a5c894a6f5861da55f50bf36c",
+      "bytes": 371
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_08\\RX.bin",
+      "sha256": "3e3f86be8e63b353e44c700654623e7b3b01c1f69d3d48dc4b30aa35eaf5290c",
+      "bytes": 8481
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\client\\transport\\rpc_08\\TX.bin",
+      "sha256": "9d3f859a59e337f4bd3bdc82df08b99f667513277cb2dabcc620f6999e90d2b6",
+      "bytes": 213
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\DEVICE_EVIDENCE.json",
+      "sha256": "a235c22f5500a182e98e96e321038a997461e0e4a5ff0207098c81dc76216b63",
+      "bytes": 17144
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\native_frames\\001\\SCENE.png",
+      "sha256": "ebfc9e00c5347e6d3913ad0d3f2820a8538070f5a8ee8adacc601998d03af8bf",
+      "bytes": 1908
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\native_frames\\002\\SCENE.png",
+      "sha256": "62d102d6275290ba3bad8c6bc9da7eefb0e4f5e5c95597f2b33273a3b8383d3e",
+      "bytes": 2968
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_04\\RECEIPT.json",
+      "sha256": "e7e8e35900e20495174c1c516066193fee315b75f96cc35bc15e8f16c930eb3d",
+      "bytes": 1621
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_04\\REQUEST.json",
+      "sha256": "9ec52b08a8011bf43d69947032d13b76e6aa7a8b294fb4fbd5171a64aa2a105e",
+      "bytes": 223
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_04\\RESPONSE.json",
+      "sha256": "20618c4c15b355fc3b9afb94a53292b13060a6d4813fb756f8d03ffee6a921b6",
+      "bytes": 6995
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_05\\RECEIPT.json",
+      "sha256": "67c69f72759f9e7c1b2575633390813e63a13a8506edc9810d997a9ce4299446",
+      "bytes": 1621
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_05\\REQUEST.json",
+      "sha256": "9d3f859a59e337f4bd3bdc82df08b99f667513277cb2dabcc620f6999e90d2b6",
+      "bytes": 213
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\owner\\tool_05\\RESPONSE.json",
+      "sha256": "3e3f86be8e63b353e44c700654623e7b3b01c1f69d3d48dc4b30aa35eaf5290c",
+      "bytes": 8481
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\RUNTIME_CLOSE.json",
+      "sha256": "9154600fedff7ce5dca50822983db8c11a00e393643d0e08acc45de701a76bcd",
+      "bytes": 2582
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\SLOT_PUBLICATION.json",
+      "sha256": "62118e4c2099f3493f4cd65218f92d077697d77c6c00b1097ed57b827fc06e18",
+      "bytes": 279
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QN\\SLOT_RESULT.json",
+      "sha256": "e96c60a3117fcbcd8cb05a71f07d8be8a8fdaec7ce7aca8eede21615c89afbe2",
+      "bytes": 12560
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_02\\RECEIPT.json",
+      "sha256": "16750845720a826c3100439d4f2688aff1680d58caf2ac16c6621b4576d8250f",
+      "bytes": 427
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_02\\REQUEST.json",
+      "sha256": "3f8d6d4387ea502e6e4eaf925727d7c48c1fa3cdfa258c58fc482c2af02d7b6b",
+      "bytes": 432
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_02\\RESPONSE.json",
+      "sha256": "0ddf8db7663c9f7fa2a284f6dd813ce85f9d45814aac4903b08a335a3204112c",
+      "bytes": 19645
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_04\\RECEIPT.json",
+      "sha256": "6c1e846b859c7d589792b6686e10069079ee95543ca198c3c577c6e7d80b8a39",
+      "bytes": 426
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_04\\REQUEST.json",
+      "sha256": "abc8aef058c8ed2a6f1f9e66ea4ba216a3d452026692f9911602ffe5b652c4d0",
+      "bytes": 562
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\call_04\\RESPONSE.json",
+      "sha256": "b381930d840e031bba2666deaf6c15a409732badb5298c1316d1fdec9819014c",
+      "bytes": 10774
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_05\\RECEIPT.json",
+      "sha256": "9c4e806a1cb541faf974961502185ac635ac662e529b55c843666cb3d38361d8",
+      "bytes": 374
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_05\\RX.bin",
+      "sha256": "ddcbee3261f71cc4cf7d0a0064a6b38f51785d182f8b7399a702cd3b6621645a",
+      "bytes": 19446
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_05\\TX.bin",
+      "sha256": "4cabb8281c6b53d3a9a8a288a1744e9bce5c3dd221c179430c7b4712371ed5ed",
+      "bytes": 299
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_07\\RECEIPT.json",
+      "sha256": "db889db5556d4920812e06aabfe54d221fadc00296b4169e97c0e1e5dab972d3",
+      "bytes": 373
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_07\\RX.bin",
+      "sha256": "f529d765e5375c7730a9db4ffb90be568625339b5a2fcd23c422c4522672575c",
+      "bytes": 10707
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\client\\transport\\rpc_07\\TX.bin",
+      "sha256": "a291f6cb2e827f864fae07658a728b11f0700a10aa35a48434c0b9b117a8f9be",
+      "bytes": 326
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\HELD_CLOSE.json",
+      "sha256": "092e4fdd9fad778e491bbe756a935d349d0309c2924aaf84029fac0f33c39f42",
+      "bytes": 1051
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_04\\RECEIPT.json",
+      "sha256": "0a2390fe2842a56a9921938692cbf539251e99257c8a1257753b688fd54ce9cb",
+      "bytes": 368
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_04\\RX.bin",
+      "sha256": "efb94fdb11a319a00cfac35bb5c60f25571c261671394a789e6d5829ec9b15bc",
+      "bytes": 19470
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_04\\TX.bin",
+      "sha256": "3eda8e13d11a71c18c375ffc5a49b6a71bd51b6f6b50f4b54e61a86947c8eea9",
+      "bytes": 293
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_05\\RECEIPT.json",
+      "sha256": "1a17c9994c02fa78f9359e1b6e41ae2bd2fb7812275298273fa26c4afeb22a42",
+      "bytes": 367
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_05\\RX.bin",
+      "sha256": "ada655db867701f4e689c6c2c1d21e899eb21ee3e1ab51c98e87be2e86a3b670",
+      "bytes": 10713
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp\\rpc_05\\TX.bin",
+      "sha256": "490510285b2054535470247ae4f393a51e58392501cbc0038f46000bf3600525",
+      "bytes": 320
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp_io\\EOF.json",
+      "sha256": "87bb76778f6e88e9c7cb2f2a794ee09ec7041459673a2c89c0bf1326181d42d2",
+      "bytes": 281
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp_io\\MCP_IO.jsonl",
+      "sha256": "5d6830ac2e6daf4cc1dd7f764308daf1e4cd62ec02e88984eeb9fa88a8b41a2e",
+      "bytes": 2381
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\mcp_io\\WORKER_EXIT.json",
+      "sha256": "460adb4660ca5fb85f4a8e5f5eca0e5e63b75a2bf028ceff001a19aa53ea0b93",
+      "bytes": 278
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_02\\RECEIPT.json",
+      "sha256": "17f16f1cc7528f8ee69c25308b823a684570c869cfa756e94fa48eca91b45b6a",
+      "bytes": 731
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_02\\REQUEST.json",
+      "sha256": "4cabb8281c6b53d3a9a8a288a1744e9bce5c3dd221c179430c7b4712371ed5ed",
+      "bytes": 299
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_02\\RESPONSE.json",
+      "sha256": "ddcbee3261f71cc4cf7d0a0064a6b38f51785d182f8b7399a702cd3b6621645a",
+      "bytes": 19446
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_04\\RECEIPT.json",
+      "sha256": "e212817c67bdbcada39acb3f1e3f1f122b8c24641c478b4034c6b9940861e81c",
+      "bytes": 333
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_04\\REQUEST.json",
+      "sha256": "a291f6cb2e827f864fae07658a728b11f0700a10aa35a48434c0b9b117a8f9be",
+      "bytes": 326
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\owner\\tool_04\\RESPONSE.json",
+      "sha256": "f529d765e5375c7730a9db4ffb90be568625339b5a2fcd23c422c4522672575c",
+      "bytes": 10707
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_audit.jsonl",
+      "sha256": "d67a3589d6245ca7445ca59d5ef78ed3ce1519cf6f4c499da3a8acae74f0f8a0",
+      "bytes": 25792
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_001\\ARCHIVE_AFTER.bin",
+      "sha256": "0208a9b7c93203c1db6b55fe593f980148a2f07ef277671bc16bd183cb08ce65",
+      "bytes": 552
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_001\\ARCHIVE_BEFORE.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_001\\RECEIPT.json",
+      "sha256": "a6c38977829b74e395336cacd15d4dfa01052ad55e8bae5b49c3c9a01be802be",
+      "bytes": 421
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_001\\REQUEST.json",
+      "sha256": "35837ae76c3654dd68cb5c7a9d6660d327d7c17e66514d39f5979f78c08ea2ec",
+      "bytes": 426
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_001\\RESPONSE.json",
+      "sha256": "42d001923b642f51efc5470862622293a85c0790a64241fc92fc160d42c16312",
+      "bytes": 19639
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_002\\ARCHIVE_AFTER.bin",
+      "sha256": "096de944113d0b9b395d652826ebe8a9213ce27328c0d8dc54523d9857e95608",
+      "bytes": 1104
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_002\\ARCHIVE_BEFORE.bin",
+      "sha256": "0208a9b7c93203c1db6b55fe593f980148a2f07ef277671bc16bd183cb08ce65",
+      "bytes": 552
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_002\\RECEIPT.json",
+      "sha256": "14f70cd3503f4c9dd34f68365001f31574f712ee3ef6a8988c57aea798253a8f",
+      "bytes": 420
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_002\\REQUEST.json",
+      "sha256": "c45f74cd3d9f13ae3013139efd99bbcf3c905cb3cc0b54f634b9cfb7d65a58b9",
+      "bytes": 556
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_calls\\call_002\\RESPONSE.json",
+      "sha256": "c4a1dc634635ce5fca7d8e00c30c7604f01a40215a9381cea6d6f5daa7045360",
+      "bytes": 10768
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_full\\call_001\\SERVICE_RESULT.json",
+      "sha256": "5a85e35686db47882fe103803374cfe7b44068a4b6f79b67b4a0e8881b285593",
+      "bytes": 394146
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_full\\call_002\\SERVICE_RESULT.json",
+      "sha256": "b6d3dd748707e877e4fe280316aeb31de181197a6593000e89c0f9211f176d6c",
+      "bytes": 51361
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\product_full\\INDEX.jsonl",
+      "sha256": "096de944113d0b9b395d652826ebe8a9213ce27328c0d8dc54523d9857e95608",
+      "bytes": 1104
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\RUNTIME_CLOSE.json",
+      "sha256": "af129e115fce965b95858eee69b786d6d2490cdd91fb0823fd95b810716e918b",
+      "bytes": 3913
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\SLOT_PUBLICATION.json",
+      "sha256": "5ed1f58362c3b9a8dd32114e0aeff0d9a140bf8793ad69d74502f971747a3e75",
+      "bytes": 279
+    },
+    {
+      "path": "D:\\he_m4_dense_sweep_integrated_native_pilot_001\\slots\\QP\\SLOT_RESULT.json",
+      "sha256": "a378724999d59377a82a0c7c520e52c91a993df91f31c0036ed39248191e8fdd",
+      "bytes": 17313
+    }
+  ],
+  "actual_Blender_starts": 0,
+  "actual_model_starts": 0
+}
