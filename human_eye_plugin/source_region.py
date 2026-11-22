@@ -238,7 +238,7 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     source_stage = _interval(started)
     started = time.perf_counter_ns()
     _validate_scene(capture)
-    parsed, _, scene_identity = geometry(scene_from_capture(capture))
+    parsed, _, scene_identity = geometry(scene_from_capture(capture), include_triangles=False)
     # Host instances disambiguate geometrically identical scene objects.
     objects = tuple((item[0], item[1], (item[2], row['host_id'], row['instance_id']), item[3])
                     for item, row in zip(parsed, binding['objects']))

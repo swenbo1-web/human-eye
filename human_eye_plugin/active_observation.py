@@ -93,8 +93,8 @@ class Triangle:
     key: tuple
 
 
-def geometry(scene):
-    """Normalize complete meshes once and retain original object/face indices."""
+def geometry(scene, *, include_triangles=True):
+    """Normalize complete meshes, optionally omitting the sorted scene Triangle tuple."""
     objects, triangles = [], []
     for object_index, source in enumerate(scene['objects']):
         vertices = tuple(vector(value) for value in source['vertices'])
@@ -105,10 +105,12 @@ def geometry(scene):
         key = (tuple(sorted(vertices)),
                tuple(sorted(canonical_triangle(tuple(vertices[i] for i in face)) for face in faces)))
         objects.append((vertices, faces, key, str(source.get('name', ''))))
-        for triangle_index, face in enumerate(faces):
-            points = tuple(vertices[i] for i in face)
-            triangles.append(Triangle(object_index, triangle_index, points, canonical_triangle(points)))
-    triangles.sort(key=lambda triangle: triangle.key)
+        if include_triangles:
+            for triangle_index, face in enumerate(faces):
+                points = tuple(vertices[i] for i in face)
+                triangles.append(Triangle(object_index, triangle_index, points, canonical_triangle(points)))
+    if include_triangles:
+        triangles.sort(key=lambda triangle: triangle.key)
     identity = fingerprint(tuple(sorted(item[2] for item in objects)))
     return tuple(objects), tuple(triangles), identity
 
