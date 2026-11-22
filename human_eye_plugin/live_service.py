@@ -1626,9 +1626,13 @@ class LiveSpatialService:
             prepared = registry['regions'].get(region_id)
             prepare_hit = prepared is not None
             prepare_started = time.perf_counter_ns()
+            normalized_from = None
             if prepared is None:
+                # activate() already bound this registry to the current ordered geometry and display.
+                normalized_from = next(iter(registry['regions'].values()), None)
                 prepared = prepare_region(captured, query, self._check_request_budget, _binding=binding,
-                    _validated_region_ref='region_ref' in query, _ordered_geometry_sha256=ordered_geometry_sha256)
+                    _validated_region_ref='region_ref' in query, _ordered_geometry_sha256=ordered_geometry_sha256,
+                    _normalized_from=normalized_from)
                 region_id = prepared.region_ref['region_id']
                 registry['regions'][region_id] = prepared
                 if alias is not None:
@@ -1671,7 +1675,8 @@ class LiveSpatialService:
                 prepare_calls=0 if prepare_hit else 1, ordered_geometry_identity_calls=1,
                 display_source_validation_calls=1 + int(not prepare_hit),
                 capture_source_validation_calls=1, region_ref_validation_calls=int('region_ref' in query),
-                geometry_normalization_calls=int(not prepare_hit),
+                geometry_normalization_calls=int(not prepare_hit and normalized_from is None),
+                geometry_normalization_shared_hit=normalized_from is not None,
                 region_array_preparation_calls=int(not prepare_hit), camera_preparation_calls=int(not prepare_hit))
             if task_hit:
                 measurement_work = {key: 0 for key in measurement_work}

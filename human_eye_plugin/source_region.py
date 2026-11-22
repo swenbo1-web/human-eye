@@ -215,8 +215,8 @@ class PreparedSourceRegion:
 
 
 def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
-                   _validated_region_ref=False, _ordered_geometry_sha256=None):
-    """Prepare a complete capture once, retaining a compact selected submesh."""
+                   _validated_region_ref=False, _ordered_geometry_sha256=None, _normalized_from=None):
+    """Prepare the selected submesh. A borrowed source must be from the same locked read selection."""
     started = time.perf_counter_ns()
     check_budget('source_region_prepare_source')
     binding = source_binding(capture) if _binding is None else _binding
@@ -238,11 +238,17 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     source_stage = _interval(started)
     started = time.perf_counter_ns()
     _validate_scene(capture)
-    parsed, _, scene_identity = geometry(scene_from_capture(capture), include_triangles=False)
-    # Host instances disambiguate geometrically identical scene objects.
-    objects = tuple((item[0], item[1], (item[2], row['host_id'], row['instance_id']), item[3])
-                    for item, row in zip(parsed, binding['objects']))
-    meshes = _meshes_from_objects(objects)
+    scene_validation_stage = _interval(started)
+    if _normalized_from is None:
+        parsed, _, scene_identity = geometry(scene_from_capture(capture), include_triangles=False)
+        # Host instances disambiguate geometrically identical scene objects.
+        objects = tuple((item[0], item[1], (item[2], row['host_id'], row['instance_id']), item[3])
+                        for item, row in zip(parsed, binding['objects']))
+        meshes = _meshes_from_objects(objects)
+    else:
+        objects = _normalized_from.objects
+        meshes = _normalized_from.meshes
+        scene_identity = _normalized_from.binding['geometry_identity']
     normalization_stage = _interval(started)
     started = time.perf_counter_ns()
     mesh = meshes[object_index]
@@ -290,7 +296,8 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     check_budget('source_region_prepared')
     return PreparedSourceRegion(binding, region_ref, objects, meshes, object_index, faces,
         vertex_indices, region_mesh, region_facts, mapping, cameras,
-        {'source_validation': source_stage, 'geometry_normalization': normalization_stage,
+        {'source_validation': source_stage, 'scene_validation': scene_validation_stage,
+         'geometry_normalization': normalization_stage,
          'region_array_preparation': mapping_stage, 'camera_preparation': camera_stage})
 
 
