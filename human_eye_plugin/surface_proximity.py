@@ -418,10 +418,10 @@ def _nearest_pair(left, right, best, budget, plane_distances=None):
     return best
 
 
-def _nearest_linear(prepared, budget):
+def _nearest_linear(prepared, budget, witness_pair=None):
     best = None
-    for left in prepared[0]:
-        for right in prepared[1]:
+    for i, left in enumerate(prepared[0]):
+        for j, right in enumerate(prepared[1]):
             budget.checkpoint('surface_proximity_pair')
             budget.tick('leaf_pair_visits')
             budget.counts['triangle_pairs'] += 1
@@ -430,7 +430,10 @@ def _nearest_linear(prepared, budget):
                 if _aabb_exceeds_best(left[4], right[4], best):
                     budget.counts['aabb_pruned_pairs'] += 1
                     continue
-            best = _nearest_pair(left, right, best, budget)
+            candidate = _nearest_pair(left, right, best, budget)
+            if witness_pair is not None and candidate is not best:
+                witness_pair[:] = (i, j)
+            best = candidate
             if best[0] == 0:
                 return best
     return best
@@ -461,7 +464,7 @@ def _queue_distance(left, right, shift, budget):
     return _scratch(sum(gap*gap for gap in gaps))
 
 
-def _nearest_tree(prepared, roots, budget):
+def _nearest_tree(prepared, roots, budget, witness_pair=None):
     largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
         zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
     # One common priority scale protects extreme inputs. Safe pruning below
@@ -516,12 +519,14 @@ def _nearest_tree(prepared, roots, budget):
         else:
             push(left,right[4])
             push(left,right[5])
+    if witness_pair is not None and best_pair is not None:
+        witness_pair[:] = best_pair
     return best
 
 
-def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None):
+def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None):
     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
-        return _nearest_linear(prepared,budget)
+        return _nearest_linear(prepared, budget, witness_pair)
     if prepared_trees is None:
         roots = _distance_roots(prepared,budget,holder=prepared_holder)
     else:
@@ -529,7 +534,7 @@ def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None):
         budget.counts['shared_trees'] = True
         if prepared_holder is not None:
             prepared_holder['trees'] = prepared_trees
-    return _nearest_tree(prepared,roots,budget)
+    return _nearest_tree(prepared, roots, budget, witness_pair)
 
 
 def _witness(descriptor):
@@ -681,6 +686,35 @@ def _rank_surface_results(results_by_id, checkpoint):
                 scope='provided_kernel_results_only')
 
 
+def _point_on_prepared_triangle(point, triangle):
+    points, normal, squared, edges, _ = triangle
+    if not squared:
+        if not edges:
+            return point == points[0]
+        start, _, edge, edge_squared = edges[0]
+        offset = _sub(point, start)
+        return not any(_cross(offset, edge)) and 0 <= _dot(offset, edge) <= edge_squared
+    if _dot(normal, _sub(point, points[0])) != 0:
+        return False
+    drop = max(range(3), key=lambda axis: abs(normal[axis]))
+    axes = tuple(axis for axis in range(3) if axis != drop)
+    sign = 1 if _orient(*points, axes) > 0 else -1
+    return all(sign * _orient(points[i], points[(i + 1) % 3], point, axes) >= 0 for i in range(3))
+
+
+def _published_triangle_indices(world, indices, prepared, origin, factor, budget):
+    # Only these two original faces can support this already published point pair.
+    try:
+        for point, side, index in zip(world, prepared, indices):
+            budget.tick('witness_triangle_checks')
+            local = _mul(_sub(tuple(Fraction.from_float(value) for value in point), origin), factor)
+            if not _point_on_prepared_triangle(local, side[index]):
+                return None
+    except _DomainError:
+        return None
+    return indices
+
+
 def _boundary_witness(contact, pair, budget):
     """Check a same-query exact contact against its two original triangles."""
     if type(contact) is not dict or contact.get('pair') is not pair:
@@ -698,14 +732,8 @@ def _boundary_witness(contact, pair, budget):
         for side, index in zip(pair[4], indices):
             if not 0 <= index < len(side):
                 return None
-            points, normal, squared, _, _ = side[index]
-            if not squared or _dot(normal, _sub(point, points[0])) != 0:
-                return None
-            drop = max(range(3), key=lambda axis: abs(normal[axis]))
-            axes = tuple(axis for axis in range(3) if axis != drop)
-            sign = 1 if _orient(*points, axes) > 0 else -1
-            if any(sign * _orient(points[i], points[(i + 1) % 3], point, axes) < 0
-                   for i in range(3)):
+            triangle = side[index]
+            if not triangle[2] or not _point_on_prepared_triangle(point, triangle):
                 return None
     except _DomainError:
         return None
@@ -713,11 +741,15 @@ def _boundary_witness(contact, pair, budget):
 
 
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
-                              _prepared_pair=None, _boundary_contact=None, _prepared_trees=None,
+                              retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
+                              _prepared_trees=None,
                               _prepared_holder=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
+    witness_pair = [] if retain_witness_triangles else None
+    if witness_pair is not None:
+        budget.counts['witness_triangle_checks'] = 0
     if _prepared_holder is not None:
         for key in ('pair', 'work', 'coordinates', 'trees', 'witness_points'):
             _prepared_holder.pop(key, None)
@@ -748,10 +780,13 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                     and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
                 trees = _prepared_trees
             numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
-                                                         prepared_holder=_prepared_holder)
+                                                         prepared_holder=_prepared_holder,
+                                                         witness_pair=witness_pair)
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)
+            if witness_pair is not None:
+                witness_pair[:] = _boundary_contact['triangles']
     except _DomainError as exc:
         result['reason'] = str(exc)
         return result
@@ -790,6 +825,10 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
         result['witness_reason'] = 'original_surface_witness_precision_exceeded'
     else:
         result.update(point_a_world=world[0], point_b_world=world[1], witness_status='measured')
+        if witness_pair:
+            indices = _published_triangle_indices(world, witness_pair, prepared, origin, factor, budget)
+            if indices is not None:
+                result['witness_triangle_indices'] = indices
     checkpoint('surface_proximity_complete')
     return result
 

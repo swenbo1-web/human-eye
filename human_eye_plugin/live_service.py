@@ -1039,7 +1039,7 @@ class LiveSpatialService:
 
     @_request('observe')
     def observe(self, session_id, task_instruction="", focal_id=None, reference_id=None, *, include_image=True,
-                goal=None, query=None, task_context=None, scene_delta=None):
+                goal=None, query=None, task_context=None, scene_delta=None, _include_witness_triangles=False):
         if not isinstance(session_id, str) or not session_id:
             raise ValueError("session_id required")
         if not isinstance(task_instruction, str):
@@ -1082,6 +1082,8 @@ class LiveSpatialService:
             if (include_image or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
                 raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
+            if _include_witness_triangles:
+                return self._observe_task(session_id, query, include_witness_triangles=True)
             return self._observe_task(session_id, query)
         if query['mode']=='mesh_surface':
             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
@@ -1994,7 +1996,7 @@ class LiveSpatialService:
         self._check_request_budget('before_surface_nearest_result')
         return result
 
-    def _observe_task(self, session_id, query):
+    def _observe_task(self, session_id, query, *, include_witness_triangles=False):
         """Finite current-capture query, independent of action persistence."""
         from .task_query import task_result
         if not self.config.get('enabled', True):
@@ -2019,11 +2021,23 @@ class LiveSpatialService:
                 scene, meshes, fingerprint = context.normalized(
                     lambda: _validated_scene(captured, _task_capture=selected_capture))
             with span('observation.task_facts'):
-                from .read_context import query_key
+                from .read_context import capture_key, query_key
                 work = {'exact_pair_count': 0, 'surface_pair_count': 0, 'closed_solid_pair_count': 0}
-                result, hit = context.result(query_key(query), lambda: task_result(
+                key = query_key(query)
+                evidence = {}
+                if include_witness_triangles and selected_capture and geometry is None:
+                    token = capture_key(captured)
+                    identity = scene['host_identity']
+                    if (token is not None and all((token[0], token[3]))
+                            and scene['revision'] == captured['revision']
+                            and identity == captured['host_identity']):
+                        binding = {'document_epoch': identity['document_epoch'],
+                                   'capture_state': dict(zip(('instance_id', 'epoch', 'revision', 'selection_key'), token))}
+                        evidence['witness_capture'] = binding
+                        key = 'whole-object-witness-triangles:' + key
+                result, hit = context.result(key, lambda: task_result(
                     scene, meshes, fingerprint, query, context.scene_cache,
-                    self._check_request_budget, diagnostics=work))
+                    self._check_request_budget, diagnostics=work, **evidence))
                 work['result_cache_hit'] = hit
             if geometry is not None:
                 from .task_query import project_task_geometry

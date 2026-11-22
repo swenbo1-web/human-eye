@@ -2556,8 +2556,14 @@ class LiveSpatialMCPServer:
         context_kwargs = {'task_context': args['task_context']} if 'task_context' in args else {}
         delta_kwargs = {'scene_delta': args['scene_delta']} if 'scene_delta' in args else {}
         if name == "human_eye_scene_observe":
-            if isinstance(args.get('query'), dict) and args['query'].get('mode') == 'surface_scan':
+            query = args.get('query')
+            if isinstance(query, dict) and query.get('mode') == 'surface_scan':
                 args.setdefault('include_image', False)
+            witness_triangles = (
+                self.region_task_evidence and not self.spatial_task_only and args.get('include_image') is False
+                and isinstance(query, dict) and query.keys() == {'mode', 'objects', 'requested_facts'}
+                and query['mode'] == 'task' and isinstance(query['objects'], list) and len(query['objects']) == 2
+                and query['requested_facts'] == ['surface_proximity'])
             value = self.service.observe(
                 session_id,
                 task_instruction=args.get("task_instruction", ""),
@@ -2567,6 +2573,7 @@ class LiveSpatialMCPServer:
                 **query_kwargs,
                 **context_kwargs,
                 **delta_kwargs,
+                **({'_include_witness_triangles': True} if witness_triangles else {}),
             )
             is_error = value.get("status") not in {"observed", "overview", "partial"}
             if value.get('result_kind') in ('surface_nearest', 'scene_directory'):
@@ -2677,7 +2684,10 @@ class LiveSpatialMCPServer:
                     "evidence packet for omitted, brief, or full response_detail. Use full on the standard endpoint "
                     "for detailed diagnostics. A completed source_region measurement of only surface_proximity "
                     "with include_image=false also returns the same evidence packet for all response_detail values. "
-                    "Use the standard endpoint with full for the face mapping and diagnostic fields.")
+                    "Use the standard endpoint with full for the face mapping and diagnostic fields. "
+                    "An explicit no-image task for two whole objects with only surface_proximity may include "
+                    "source_triangles under nearest_witness: one current evaluated triangle per reported point, "
+                    "with A/B in request order.")
             result = {"tools": tools}
         elif method == "tools/call":
             if not isinstance(params.get("name"), str):

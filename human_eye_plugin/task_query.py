@@ -253,7 +253,7 @@ def project_task_geometry(result, meshes, request, checkpoint):
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
                               diagnostics, retain_exact_rank=False, prepared_pair=None,
                               boundary_contact=None, prepared_trees=None, before_compute=None,
-                              _surface_scan=False):
+                              _surface_scan=False, witness_capture=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -265,6 +265,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     def compute_surface():
         diagnostics['surface_pair_count'] += 1
         options = {'retain_exact_rank': True} if retain_exact_rank else {}
+        if witness_capture is not None:
+            options['retain_witness_triangles'] = True
         if prepared_pair is not None:
             options['_prepared_pair'] = prepared_pair
         if boundary_contact is not None:
@@ -285,6 +287,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
     if retain_exact_rank:
         parameters['retain_exact_rank'] = True
         version = 'task-surface-proximity-exact-world-rank-v3'
+    if witness_capture is not None:
+        parameters['witness_capture'] = witness_capture
     cache_options = {'_surface_scan': True, '_diagnostics': diagnostics} if _surface_scan else {}
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version,
@@ -375,7 +379,8 @@ def _spatial_relation_fact(measured):
     return _fact(reason=measured.get('reason') or 'spatial_relation_unavailable', **metadata)
 
 
-def _closed_surface_facts(left, right, requested, cache, checkpoint, source, diagnostics, *, rank=False):
+def _closed_surface_facts(left, right, requested, cache, checkpoint, source, diagnostics, *,
+                          rank=False, witness_capture=None):
     """The existing ordered-pair helpers, with preparation local to this pair."""
     facts, surface = {}, None
     if 'spatial_relation' in requested:
@@ -415,7 +420,8 @@ def _closed_surface_facts(left, right, requested, cache, checkpoint, source, dia
             source=source, diagnostics=diagnostics, retain_exact_rank=rank,
             prepared_pair=holder.get('pair') if holder is not None else None,
             prepared_trees=holder.get('trees') if holder is not None else None,
-            boundary_contact=holder.get('boundary_contact') if holder is not None else None)
+            boundary_contact=holder.get('boundary_contact') if holder is not None else None,
+            witness_capture=witness_capture)
         checkpoint('after_surface_pair_measurement')
         facts['surface_proximity'] = _surface_proximity_fact(surface)
     return facts, surface
@@ -657,7 +663,8 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _norm
         execution_authority=False)
 
 
-def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnostics=None):
+def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *,
+                diagnostics=None, witness_capture=None):
     """Build only selected fields; cache and solver are the existing instances."""
     bound, bindings, pair_reason = bind_objects(scene, query['objects'])
     by_id = {m.object_id: m for m in meshes}
@@ -737,8 +744,21 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *, diagnos
                 facts['nearest_witness'] = _nearest_witness(strict)
             if 'pair_relation' in requested_pair:
                 facts['pair_relation'] = _pair_relation(strict)
-            pair_facts, _ = _closed_surface_facts(left, right, requested_pair, cache,
-                checkpoint, scene['source'], metrics)
+            pair_facts, surface = _closed_surface_facts(left, right, requested_pair, cache,
+                checkpoint, scene['source'], metrics, witness_capture=witness_capture)
+            if witness_capture is not None and surface is not None:
+                indices = surface.get('witness_triangle_indices')
+                if indices is not None:
+                    instances = scene['host_identity']['object_instances']
+                    fact = pair_facts['surface_proximity']
+                    if fact['status'] == 'measured':
+                        fact['value']['nearest_witness']['source_triangles'] = {
+                            'scope': 'one_current_triangle_per_endpoint_non_exhaustive',
+                            'index_domain': 'zero_based_object_local_current_evaluated_capture_triangle_rows',
+                            **witness_capture,
+                            'a': {'instance_id': instances[left.object_id], 'source_triangle_index': indices[0]},
+                            'b': {'instance_id': instances[right.object_id], 'source_triangle_index': indices[1]},
+                        }
             facts.update(pair_facts)
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
