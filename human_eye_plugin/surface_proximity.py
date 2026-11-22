@@ -606,7 +606,7 @@ def _rounded_distance(numerator, denominator, factor):
         raise _DomainError('surface_distance_outside_float_range') from exc
 
 
-def _publish_points(points, origin, factor, distance):
+def _publish_points(points, origin, factor, distance, *, include_exact=False):
     exact = [_add(origin, tuple(_fraction(value, factor) for value in point)) for point in points]
     rounded = [tuple(float(value) for value in point) for point in exact]
     if any(not math.isfinite(value) for point in rounded for value in point):
@@ -624,7 +624,8 @@ def _publish_points(points, origin, factor, distance):
     reported = math.dist(*rounded)
     if not math.isfinite(reported) or abs(reported - distance) > 1e-9:
         return None
-    return [list(point) for point in rounded], exact
+    displayed = [list(point) for point in rounded]
+    return (displayed, exact) if include_exact else displayed
 
 
 def _exact_distance_key(numerator, denominator, factor):
@@ -829,7 +830,7 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                              if isinstance(value, Fraction) else float(Decimal(value) / local_distance)
                              for value in delta]
                 result.update(direction_a_to_b=direction, direction_status='measured')
-            publication = _publish_points(points, origin, factor, distance)
+            publication = _publish_points(points, origin, factor, distance, include_exact=True)
         except _DomainError:
             result['witness_reason'] = 'surface_witness_bit_budget'
             if result['direction_status'] == 'unknown':
