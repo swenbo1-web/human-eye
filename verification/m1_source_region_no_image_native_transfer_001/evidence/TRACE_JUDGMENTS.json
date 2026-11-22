@@ -1,0 +1,142 @@
+{
+  "N1": {
+    "ordinary": [
+      {
+        "attempt": 1,
+        "classification": "setup_only",
+        "result_excerpt": "dict_keys(['display_object_mask'",
+        "reason": "Identifies the current source shape and available fields. No distance or source faces are reported."
+      },
+      {
+        "attempt": 2,
+        "classification": "new_required_evidence",
+        "result_excerpt": "zero_based_object_local_current_evaluated_capture_triangle_rows",
+        "reason": "First delivery of evaluated world arrays and ordered source faces for both requested objects, bundled in a full-scene print."
+      },
+      {
+        "attempt": 3,
+        "classification": "repeat_same_evidence",
+        "result_excerpt": "M12 vertices [[17.0, -5.5, 0.0]",
+        "reason": "Narrows the output to two objects. Both complete arrays and all source face rows were already present in the previous recorded CLI result."
+      },
+      {
+        "attempt": 4,
+        "classification": "new_required_evidence",
+        "result_excerpt": "x_separation_lower_bound_m': 1.5",
+        "reason": "First measured points, supporting-axis global lower bounds, source membership and threshold for the two requested ranges."
+      }
+    ]
+  },
+  "P1": {
+    "ordinary": [
+      {
+        "attempt": 3,
+        "classification": "new_required_evidence",
+        "result_excerpt": "M12 current evaluated triangle count: 12",
+        "reason": "Obtains current extent of the complete evaluated triangle list needed to recover exact whole-surface source memberships."
+      }
+    ],
+    "answer_excerpt": "(17, -5.5, 1.25)",
+    "selected_source_attempts": [
+      1
+    ],
+    "product_supplements": [
+      {
+        "attempt": 4,
+        "earlier_attempt": 2,
+        "classification": "recomputation_with_new_evidence",
+        "reason": "Same complete object surface, same distance, direction, and point pair. Exact current source triangle memberships added."
+      }
+    ]
+  },
+  "P2": {
+    "ordinary": [
+      {
+        "attempt": 3,
+        "classification": "new_required_evidence",
+        "result_excerpt": "M19_current_evaluated_triangle_count': 12",
+        "reason": "The actual evaluated face count supports the complete evaluated triangle union. This is diagnostic evidence from the failed consumer."
+      }
+    ],
+    "product_supplements": [
+      {
+        "attempt": 4,
+        "earlier_attempt": 2,
+        "classification": "recomputation_with_new_evidence",
+        "reason": "Same whole-object measurement values, point pair and direction. The selector containing all 12 actual target faces adds exact source memberships. The failed P2 final remains diagnostic only."
+      }
+    ]
+  },
+  "N2": {
+    "ordinary": [
+      {
+        "attempt": 1,
+        "classification": "setup_only",
+        "result_excerpt": "dict_keys(['display_object_mask'",
+        "reason": "Examines the reusable scene container and current source schema."
+      },
+      {
+        "attempt": 2,
+        "classification": "new_required_evidence",
+        "result_excerpt": "zero_based_object_local_current_evaluated_capture_triangle_rows",
+        "reason": "First actual evaluated world vertices and ordered faces of the rotated target and reference, among the scene arrays."
+      },
+      {
+        "attempt": 3,
+        "classification": "new_required_evidence",
+        "result_excerpt": "selection distance 4.091244462263 squared 16.73828125",
+        "reason": "First independently executed triangle-pair active-set calculation of both source ranges, oriented distances, and attaining source-face pairs. Uses evaluated world triangles, not AABBs."
+      }
+    ]
+  },
+  "N3": {
+    "ordinary": [
+      {
+        "attempt": 1,
+        "classification": "setup_only",
+        "result_excerpt": "dict_keys(['display_object_mask'",
+        "reason": "Determines the current geometry result container and available fields."
+      },
+      {
+        "attempt": 2,
+        "classification": "new_required_evidence",
+        "result_excerpt": "zero_based_object_local_current_evaluated_capture_triangle_rows",
+        "reason": "First exact evaluated world vertices and ordered source faces for the target and planar reference in a complete scene dump."
+      },
+      {
+        "attempt": 3,
+        "classification": "repeat_same_evidence",
+        "result_excerpt": "M08 vertices [[3.0, -4.0, 0.0]",
+        "reason": "Focuses on the same already delivered complete M08/M02 world arrays and face list."
+      },
+      {
+        "attempt": 4,
+        "classification": "new_required_evidence",
+        "result_excerpt": "selection distance 4.912515903282146 M08 triangle 5 M02 triangle 0",
+        "reason": "First active-set closest triangle solution, two independent point pairs and threshold margins, with source face evidence."
+      }
+    ]
+  },
+  "P3": {
+    "ordinary": [
+      {
+        "attempt": 3,
+        "classification": "new_required_evidence",
+        "result_excerpt": "'current_evaluated_triangle_count': 12",
+        "reason": "First explicit current whole-object face count, enabling exact membership over all evaluated target triangles."
+      }
+    ],
+    "answer_excerpt": "(3, -4, 1)",
+    "selected_source_attempts": [
+      1
+    ],
+    "product_supplements": [
+      {
+        "attempt": 4,
+        "earlier_attempt": 2,
+        "classification": "recomputation_with_new_evidence",
+        "reason": "All current target faces cover the same whole object. Same directed distance and point pair as #2, but explicit memberships in target faces 6 and 11 and reference face 0 are new."
+      }
+    ]
+  }
+}
