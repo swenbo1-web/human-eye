@@ -11,8 +11,8 @@ import numpy as np
 
 from .active_observation import (
     Triangle, bounds, bounds_overlap, camera_planes, canonical_triangle, clip_convex,
-    dot, fingerprint, geometry, inside_frustum, partition_regions, plane_distances,
-    project, screen_basis, signed_area, triangle_shadow, vector,
+    cross, dot, fingerprint, geometry, inside_frustum, partition_regions, plane_distances,
+    project, screen_basis, signed_area, subtract, triangle_shadow, vector,
 )
 from .active_observation_host import scene_from_capture, source_binding
 from .active_observation_images import SceneObservationImages, _meshes_from_objects
@@ -296,6 +296,18 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
 
 def _selected_rectangle(prepared):
     """Require exactly one supported maximal directed rectangle in the source object."""
+    # A rectangle's selected vertices must all lie on the same exact plane.
+    vertices, faces, _, _ = prepared.objects[prepared.object_index]
+    for face_index in prepared.source_triangle_indices:
+        a, b, c = (vertices[index] for index in faces[face_index])
+        normal = cross(subtract(b, a), subtract(c, a))
+        if normal == (0, 0, 0):
+            continue
+        offset = dot(normal, a)
+        if any(dot(normal, vertices[index]) != offset for index in prepared.source_vertex_indices):
+            return None
+        break
+
     try:
         regions, _ = partition_regions(prepared.objects, target_object_index=prepared.object_index)
     except ValueError as error:
