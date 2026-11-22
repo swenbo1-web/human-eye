@@ -2355,11 +2355,15 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
 class LiveSpatialMCPServer:
     """One persistent MCP process, with a stable default spatial session."""
 
-    def __init__(self, service: Any, default_session_id: str | None = None, *, spatial_task_only=False):
+    def __init__(self, service: Any, default_session_id: str | None = None, *,
+                 spatial_task_only=False, region_task_evidence=False):
         if type(spatial_task_only) is not bool:
             raise ValueError('spatial_task_only must be boolean')
+        if type(region_task_evidence) is not bool:
+            raise ValueError('region_task_evidence must be boolean')
         self.service = service
         self.spatial_task_only = spatial_task_only
+        self.region_task_evidence = region_task_evidence
         self.default_session_id = f"mcp-{uuid.uuid4()}" if default_session_id is None else default_session_id
         if not isinstance(self.default_session_id, str) or not self.default_session_id.strip():
             raise ValueError("default_session_id must be a nonempty string")
@@ -2491,6 +2495,13 @@ class LiveSpatialMCPServer:
             if spatial_relations:
                 value = _project_spatial_relations(value)
             kind = value.get('result_kind')
+            response_detail = args.get('response_detail')
+            query = args.get('query')
+            if (self.region_task_evidence and response_detail == 'full' and not is_error
+                    and name == 'human_eye_scene_observe' and kind == 'active_observation'
+                    and isinstance(query, dict) and query.get('mode') == 'active_observation'
+                    and 'region_task' in query and 'region_task' in value.get('facts', {})):
+                response_detail = 'brief'
             delivery_audit = {} if kind in ('active_observation', 'source_region') else None
             image_root, target_image_root = None, None
             if delivery_audit is not None:
@@ -2503,7 +2514,7 @@ class LiveSpatialMCPServer:
                         target_image_root = state_path.with_name(state_path.name + '.active_observation')
             try:
                 result = _tool_result(value, is_error=is_error,
-                    response_detail=args.get('response_detail'),
+                    response_detail=response_detail,
                     segment_brief=(name == 'human_eye_clearance_segment'),
                     compact_support_planes=(name == 'human_eye_scene_observe'
                         and 'support_plane_discovery' in args.get('query', {})),
@@ -2551,7 +2562,14 @@ class LiveSpatialMCPServer:
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            result = {"tools": copy.deepcopy(SPATIAL_TASK_TOOLS_SCHEMA if self.spatial_task_only else LIVE_MCP_TOOLS_SCHEMA)}
+            tools = copy.deepcopy(SPATIAL_TASK_TOOLS_SCHEMA if self.spatial_task_only else LIVE_MCP_TOOLS_SCHEMA)
+            if self.region_task_evidence and not self.spatial_task_only:
+                observe = next(tool for tool in tools if tool['name'] == 'human_eye_scene_observe')
+                observe['description'] += (
+                    " In this endpoint, active_observation with query.region_task returns the same complete task "
+                    "evidence packet for omitted, brief, or full response_detail. Use full on the standard endpoint "
+                    "for detailed diagnostics.")
+            result = {"tools": tools}
         elif method == "tools/call":
             if not isinstance(params.get("name"), str):
                 return _rpc_error(request_id, -32602, "Tool name must be a string")
@@ -2575,11 +2593,13 @@ def handle_jsonrpc_message(req: Any, service: Any = None, *, server: LiveSpatial
 
 
 def run_stdio_mcp_server(service: Any, input_stream: TextIO | None = None,
-                         output_stream: TextIO | None = None, *, spatial_task_only=False) -> None:
+                         output_stream: TextIO | None = None, *, spatial_task_only=False,
+                         region_task_evidence=False) -> None:
     """Serve newline-delimited MCP JSON-RPC without writing logs to stdout."""
     incoming = sys.stdin if input_stream is None else input_stream
     outgoing = sys.stdout if output_stream is None else output_stream
-    server = LiveSpatialMCPServer(service, spatial_task_only=spatial_task_only)
+    server = LiveSpatialMCPServer(service, spatial_task_only=spatial_task_only,
+                                  region_task_evidence=region_task_evidence)
     try:
         for req,error in wire.requests(incoming):
             if error is not None:

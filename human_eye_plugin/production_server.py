@@ -100,9 +100,13 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
     mode.add_argument("--demo", action="store_true", help="Explicit legacy synthetic-scene demonstration")
     parser.add_argument('--spatial-task-only', action='store_true', default=spatial_task_only,
                         help='Expose only live read-only spatial relations and global surface-nearest tasks')
+    parser.add_argument('--region-task-evidence', action='store_true',
+                        help='Return the compact task evidence packet for live region-task observations')
     args = parser.parse_args(argv)
     if args.demo and args.spatial_task_only:
         parser.error('--spatial-task-only cannot be combined with --demo')
+    if args.demo and args.region_task_evidence:
+        parser.error('--region-task-evidence cannot be combined with --demo')
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
@@ -119,7 +123,10 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
         print("Unable to configure Human Eye production service: " + str(exc), file=sys.stderr)
         return 2
     from .live_spatial_mcp import run_stdio_mcp_server
-    run_stdio_mcp_server(service, **({'spatial_task_only': True} if args.spatial_task_only else {}))
+    options = {'spatial_task_only': True} if args.spatial_task_only else {}
+    if args.region_task_evidence:
+        options['region_task_evidence'] = True
+    run_stdio_mcp_server(service, **options)
     return 0
 
 
