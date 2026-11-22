@@ -249,17 +249,66 @@ def _witness(scope, region_id, frames_by_id):
                 image_ref=frame['image_ref'], pixel_row_index=raw['pixel_row_index'])
 
 
+def _view_pixel_bounds(session, pose, relevant, work, check_budget=None):
+    """Return small bounds, or None if any complete candidate is unproved."""
+    classifications = session.index.classifications[pose['name']]
+    bounds = []
+    for region in session.regions:
+        if region.roi_id not in relevant or not classifications[region.roi_id]['complete']:
+            continue
+        if check_budget is not None:
+            check_budget('active_observation_before_global_pixel_bound')
+        bound = pixel_center_upper_bound(region, session.objects, pose)
+        work['pixel_bound_region_calls'] += 1
+        upper = bound['upper_bound']
+        if bound['status'] != 'bounded' or type(upper) is not int or not 0 <= upper < 16:
+            return None
+        bounds.append(bound)
+    return bounds
+
+
+def _pixel_skip_receipt(session, name, relevant, bounds):
+    classifications = session.index.classifications[name]
+    return dict(view_name=name, reason='pixel_upper_bound_below_readability',
+                regions=bounds, actual_observation=False,
+                geometric_non_candidates=[dict(roi_id=region.roi_id,
+                    classification=classifications[region.roi_id]['status'])
+                    for region in session.regions if region.roi_id in relevant
+                    and not classifications[region.roi_id]['complete']])
+
+
+def _global_first_frame_skips(session, relevant, work, check_budget):
+    # A direction without a geometric candidate cannot complete a witness.
+    # Require a real pixel bound somewhere before shortcutting the global scope.
+    proven = []
+    for pose in session.cameras['views']:
+        bounds = _view_pixel_bounds(session, pose, relevant, work, check_budget)
+        if bounds is None:
+            return []
+        if bounds:
+            proven.append((pose['name'], bounds))
+    return [_pixel_skip_receipt(session, name, relevant, bounds) for name, bounds in proven]
+
+
 def _render_scope(session, meshes, binding, scope_id, relevant, output, work, stages,
                   check_budget, construction_callback, include_image):
     from .active_observation_host import _interval
     frames, steps, skipped = [], [], []
     images = None
     if include_image and relevant:
-        started = time.perf_counter_ns()
-        work['patch_mapping_calls'] += 1
-        images = ActiveObservationImages(session, output / binding['binding_sha256'],
-                                         _prepared_meshes=(session.objects, meshes), _measure_stages=True)
-        stages['patch_mapping_' + scope_id] = _interval(started)
+        if scope_id == 'global':
+            started = time.perf_counter_ns()
+            skipped = _global_first_frame_skips(session, relevant, work, check_budget)
+            stages['pixel_bounds_before_first_frame'] = _interval(started)
+            if skipped:
+                work['global_first_frame_skipped'] = True
+                work['global_views_skipped'] += len(skipped)
+        if not skipped:
+            started = time.perf_counter_ns()
+            work['patch_mapping_calls'] += 1
+            images = ActiveObservationImages(session, output / binding['binding_sha256'],
+                                             _prepared_meshes=(session.objects, meshes), _measure_stages=True)
+            stages['patch_mapping_' + scope_id] = _interval(started)
     while images is not None:
         name = _task_next_view(session, relevant, {row['view_name'] for row in skipped})
         if name is None:
@@ -267,27 +316,11 @@ def _render_scope(session, meshes, binding, scope_id, relevant, output, work, st
         if scope_id == 'global' and frames:
             started = time.perf_counter_ns()
             pose = next(item for item in session.cameras['views'] if item['name'] == name)
-            covered = set(session.summary()['covered_roi_ids'])
-            bounds = []
-            for region in session.regions:
-                if (region.roi_id not in relevant or region.roi_id in covered
-                        or not session.index.classifications[name][region.roi_id]['complete']):
-                    continue
-                bound = pixel_center_upper_bound(region, session.objects, pose)
-                work['pixel_bound_region_calls'] += 1
-                if bound['status'] == 'bounded' and bound['upper_bound'] < 16:
-                    bounds.append(bound)
-                    continue
-                bounds.clear()
-                break
+            unresolved = relevant.difference(session.summary()['covered_roi_ids'])
+            bounds = _view_pixel_bounds(session, pose, unresolved, work)
             stages['pixel_bounds_' + name] = _interval(started)
             if bounds:
-                skipped.append(dict(view_name=name, reason='pixel_upper_bound_below_readability',
-                    regions=bounds, actual_observation=False,
-                    geometric_non_candidates=[dict(roi_id=region.roi_id,
-                        classification=session.index.classifications[name][region.roi_id]['status'])
-                        for region in session.regions if region.roi_id in relevant and region.roi_id not in covered
-                        and not session.index.classifications[name][region.roi_id]['complete']]))
+                skipped.append(_pixel_skip_receipt(session, name, unresolved, bounds))
                 work['global_views_skipped'] += 1
                 continue
         if check_budget is not None:
@@ -488,7 +521,7 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
             rows.append(row)
             if scope is global_scope and row['reason'] == 'positive_area_occlusion_all_front_views':
                 blocked_rows.append(row)
-        selected = constructed[:1]
+        selected = [] if work.get('global_first_frame_skipped') else constructed[:1]
         selected_ids = {frame['frame_identity'] for frame in selected}
         for row in rows:
             witness = row['complete_witness']
@@ -499,6 +532,8 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 selected.append(by_identity[identity])
                 selected_ids.add(identity)
             witness['selected_for_delivery'] = identity in selected_ids
+        if not selected:
+            selected = constructed[:1]
         unsupported = sum(item['unsupported_triangle_count'] for item in session.index.patch_scope)
         task = dict(schema='active-region-task-v1', conditions=conditions, rows=rows,
             summary=dict(eligible_region_count=len(rows), observed_region_count=sum(row['status'] == 'covered' for row in rows),
