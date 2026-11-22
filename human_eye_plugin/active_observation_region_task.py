@@ -86,6 +86,12 @@ def _local_patch_scope(objects, region):
                       triangle_indices=list(region.triangle_indices))])
 
 
+def _object_world_bounds(objects):
+    """Bound the immutable normalized vertices once for all local views."""
+    return tuple(tuple((min(axis), max(axis)) for axis in zip(*vertices)) if vertices else None
+                 for vertices, _, _, _ in objects)
+
+
 def _outward(value, direction):
     return math.nextafter(value, direction)
 
@@ -430,6 +436,7 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
         by_identity = {frame['frame_identity']: frame for frame in constructed}
         global_regions = {row['roi_id']: row for row in global_scope['facts']['regions']}
         world_bounds = [[mesh.vertices.min(axis=0).tolist(), mesh.vertices.max(axis=0).tolist()] for mesh in meshes]
+        local_object_bounds = None
         rows, blocked_rows = [], []
         for region in eligible:
             witness = _witness(global_scope, region.roi_id, by_identity)
@@ -438,6 +445,11 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
             if include_image and witness is None and candidate:
                 if check_budget is not None:
                     check_budget('active_observation_before_local_prepare')
+                if local_object_bounds is None:
+                    started = time.perf_counter_ns()
+                    local_object_bounds = _object_world_bounds(objects)
+                    stages['local_object_bounds'] = _interval(started)
+                    work['local_coverage_projection'] = {}
                 started = time.perf_counter_ns()
                 local_cameras = _observation_target_cameras(
                     [[float(value) for value in point] for point in region.vertices], world_bounds)
@@ -445,7 +457,9 @@ def observe_region_task(capture, output_directory, conditions, *, construction_c
                 scope_id = 'local_' + fingerprint(sources[region.roi_id])[:24]
                 stages['cameras_' + scope_id] = _interval(started)
                 started = time.perf_counter_ns()
-                local_index = build_index_from_parsed(objects, triangles, scene_identity, (region,), local_cameras)
+                local_projection_work = work['local_coverage_projection'][scope_id] = {}
+                local_index = build_index_from_parsed(objects, triangles, scene_identity, (region,), local_cameras,
+                    local_object_bounds=local_object_bounds, local_projection_work=local_projection_work)
                 work['index_calls'] += 1
                 state = CoverageState(local_index, first_view=_local_first_view(local_index, region.roi_id))
                 local_session = ActiveObservationSession(objects, triangles, local_cameras, local_index,

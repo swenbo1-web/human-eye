@@ -351,6 +351,14 @@ def bounds_overlap(a, b):
     return all(min(x[1], y[1]) > max(x[0], y[0]) for x, y in zip(a, b))
 
 
+def _project_world_bounds(world_bounds, basis):
+    """Bound each exact screen coordinate by the signed endpoints of the world box."""
+    return tuple((
+        sum(scale * (low if scale >= 0 else high) for scale, (low, high) in zip(axis, world_bounds)),
+        sum(scale * (high if scale >= 0 else low) for scale, (low, high) in zip(axis, world_bounds)),
+    ) for axis in basis)
+
+
 def _rank_projected_boxes(boxes):
     """Encode positive-width boxes in original triangle order for one view."""
     valid = [(x0, x1, y0, y1) if x0 < x1 and y0 < y1 else None
@@ -439,7 +447,8 @@ class CoverageIndex:
 
 
 def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras, *, patch_scope=(),
-                            prove_frustum_containment=False, frustum_work=None, bind_blocker_sources=False):
+                            prove_frustum_containment=False, frustum_work=None, bind_blocker_sources=False,
+                            local_object_bounds=None, local_projection_work=None):
     """Build exact finite-view coverage from the existing normalized geometry."""
     poses = tuple(cameras['views'])
     view_names = {pose['name'] for pose in poses}
@@ -452,6 +461,9 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
         for pose in poses])
     masks, classifications = {}, {}
     region_triangles = {region.roi_id: frozenset(region.triangle_indices) for region in regions}
+    local_region = regions[0] if (local_object_bounds is not None and len(local_object_bounds) == len(objects)
+                                  and len(regions) == 1 and not prove_frustum_containment) else None
+    measure_local = local_region is not None and local_projection_work is not None
     shared_points = world_bounds = None
     if prove_frustum_containment:
         shared_points = sorted({point for triangle in triangles for point in triangle.vertices})
@@ -477,12 +489,26 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                 shadow_planes = ()
             if frustum_work is not None:
                 frustum_work['frustum_proof_ns'] += time.perf_counter_ns() - started
+        view_triangles = triangles
+        if local_region is not None:
+            if measure_local:
+                started = time.perf_counter_ns()
+            roi_bounds = bounds(project(local_region.vertices, basis))
+            possible_objects = {i for i, world_box in enumerate(local_object_bounds)
+                                if world_box is None
+                                or bounds_overlap(roi_bounds, _project_world_bounds(world_box, basis))}
+            # Plane clipping can only shrink a triangle's projected footprint.
+            # Keep the original order so the first positive-area blocker is unchanged.
+            view_triangles = tuple(triangle for triangle in triangles if triangle.object_index in possible_objects)
+            if measure_local:
+                projection_started = time.perf_counter_ns()
+                bounds_filter_ns = projection_started - started
         projected, boxes, screen_boxes = {}, {}, []
         points = shared_points if shared_points is not None else sorted(
-            {point for triangle in triangles for point in triangle.vertices})
+            {point for triangle in view_triangles for point in triangle.vertices})
         values = project(tuple(points), basis)
         by_vertex = dict(zip(points, values))
-        for triangle in triangles:
+        for triangle in view_triangles:
             screen = tuple(by_vertex[point] for point in triangle.vertices)
             projected[triangle.key] = screen
             if shadow_planes:
@@ -491,6 +517,11 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
                 screen_boxes.append(bounds(screen))
         ranked = None if shadow_planes else _rank_projected_boxes(screen_boxes)
         screen_boxes.clear()
+        if measure_local:
+            local_projection_work[pose['name']] = dict(
+                input_triangles=len(triangles), projected_triangles=len(view_triangles),
+                projected_vertices=len(points), object_bounds_filter_ns=bounds_filter_ns,
+                projection_prepare_ns=time.perf_counter_ns() - projection_started)
         mask, rows = 0, {}
         if frustum_work is not None:
             frustum_work['frustum_fallback_views' if shadow_planes else 'frustum_certified_views'] += 1
@@ -511,7 +542,7 @@ def build_index_from_parsed(objects, triangles, scene_identity, regions, cameras
             if ranked is not None:
                 edges = _rank_region_bounds(region_bounds, ranked[0], ranked[1])
             blocker = None
-            for position, triangle in enumerate(triangles):
+            for position, triangle in enumerate(view_triangles):
                 if (triangle.object_index == region.object_index
                         and triangle.triangle_index in region_triangles[region.roi_id]):
                     continue
