@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [PERF050 密集小面盲扫独立复核](PERF050_DENSE_MICRO_SURFACE_HOLDOUT_001_INDEPENDENT_REVIEW.md) 原生资格通过，插件首包已交付，但资格器在关闭前读取未刷出的 WIRE 而中止，六正式槽未运行。下一批按 [最小测试接线恢复](PERF050_DENSE_MICRO_SURFACE_HOLDOUT_RECOVERY_001_PLAN.md) 复用同一隔离产品和派生，只补一次插件资格，两路均有完整现场证据才执行原三对。
+当前 [PERF050 密集盲扫正式独立复核](PERF050_DENSE_MICRO_SURFACE_HOLDOUT_RECOVERY_001_INDEPENDENT_REVIEW.md) 六格完成，原生 2/3、插件 3/3，两个同质量对各快 30.62%／2.65%，三对累计 CLI 用量增加 19.96%，总门限未过。两条约 335 KB 发现 full 的既有简报回放为 7,521 B，原文图关键证据保全。下一批只做 [同一入口的任务简报消费者可行性](M1_REGION_TASK_BRIEF_CLIENT_PROFILE_001_PLAN.md)，完整诊断原合同与旧失败分母保留。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
