@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [Yanyite 双曲面实际对照](M4_YANYITE_DUAL_CURVED_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 资格 2/2，原生 13/13、插件模型容量失败，正式收益不可比较。已发现插件有图资格中 2.744 s 的整对象矩形判别开销，下一项只做[严格非共面选区前置](M4_SOURCE_REGION_NONPLANAR_SHORT_CIRCUIT_001_PLAN.md)。[全场首帧优化](M4_REGION_TASK_GLOBAL_FIRST_FRAME_001_INDEPENDENT_REVIEW.md) 主回放构图 3→2、冷 MCP 配对中位少 28.02%。[局部覆盖粗筛](M4_LOCAL_COVERAGE_OBJECT_BOUNDS_001_INDEPENDENT_REVIEW.md) 局部配对中位少 97.04%、完整 MCP 回放少 26.34%。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。M3 来源和旧试验失败按原结果封存。
+当前 [M4 非共面选区优化](M4_SOURCE_REGION_NONPLANAR_SHORT_CIRCUIT_001_INDEPENDENT_REVIEW.md) 独立通过，Yanyite 三对隔离冷服务配对中位少 43.81%，原图、像素和量测等价，候选 `cca20c174`。下一项做 [M2 选区准备省略未用全场三角序列](M2_SOURCE_REGION_NORMALIZATION_TRIANGLE_LIST_001_PLAN.md)，处理主候选约 1.668 s 的选区准备耗时。[Yanyite 双曲面实际对照](M4_YANYITE_DUAL_CURVED_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 资格 2/2，原生 13/13、插件模型容量失败，无正式同质速度对照。[全场首帧优化](M4_REGION_TASK_GLOBAL_FIRST_FRAME_001_INDEPENDENT_REVIEW.md) 主回放构图 3→2、冷 MCP 配对中位少 28.02%。[局部覆盖粗筛](M4_LOCAL_COVERAGE_OBJECT_BOUNDS_001_INDEPENDENT_REVIEW.md) 局部配对中位少 97.04%、完整 MCP 回放少 26.34%。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -13,9 +13,9 @@
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | source_region事实优先v2及原full/ref兼容验收通过 |
-| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 基础复用已实现；目录追加优化未发现合格任务命中，收口并供M4复用 |
+| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 基础驻留复用已实现，当前推进选区几何归一省略未用的全场三角序列 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
-| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 隔离候选 `9552d5c7` 收口本轮密集光栅优化，供同版本 M5 资格 |
+| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 隔离候选 `cca20c174` 通过真实曲面原件回放，冷服务中位降 43.81% |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
 
 最新接受交付544cf4f123c35fbca24b8f425acc30fd3308b178，产品08a5f3b29283270c97b6d9d6e217bbee6ca7bfc1、143源0d75c8f7f3522c4c7f2a5807f51f86fc4f2bec49efa9a215bf090775787ab91b，安装D:/he_m1_source_region_facts_first_001/B/product。显示修复aa45f033/29f35/af7c、明确源区域de884a2a/2292/8d8d和真实资格828d1265保留为增量基线。历史跨尺度和M5产品按各自原验收引用。
