@@ -11,6 +11,8 @@ import heapq
 import math
 from numbers import Integral
 
+from .telemetry import span
+
 
 MAX_FACES = 4096
 MAX_TRIANGLE_PAIRS = 16384
@@ -18,6 +20,7 @@ MAX_NARROW_PHASE_PAIRS = MAX_TRIANGLE_PAIRS
 MAX_WORK_UNITS = MAX_FACES * 32 + MAX_TRIANGLE_PAIRS * 64
 LINEAR_PAIR_LIMIT = 256
 MAX_BITS = 4096
+MAX_EXACT_SOURCE_BYTES = 1024
 _MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
 METHOD = 'exact_binary64_triangle_surface_hulls_v3'
 _PUBLICATION_TOLERANCE = Fraction.from_float(1e-9)
@@ -621,7 +624,7 @@ def _publish_points(points, origin, factor, distance):
     reported = math.dist(*rounded)
     if not math.isfinite(reported) or abs(reported - distance) > 1e-9:
         return None
-    return [list(point) for point in rounded]
+    return [list(point) for point in rounded], exact
 
 
 def _exact_distance_key(numerator, denominator, factor):
@@ -702,17 +705,28 @@ def _point_on_prepared_triangle(point, triangle):
     return all(sign * _orient(points[i], points[(i + 1) % 3], point, axes) >= 0 for i in range(3))
 
 
-def _published_triangle_indices(world, indices, prepared, origin, factor, budget):
-    # Only these two original faces can support this already published point pair.
+def _witness_triangle_provenance(world, exact_world, local_points, indices, prepared, origin, factor, budget):
+    # Validate the same winning triangles for the two encodings of these points.
     try:
-        for point, side, index in zip(world, prepared, indices):
-            budget.tick('witness_triangle_checks')
-            local = _mul(_sub(tuple(Fraction.from_float(value) for value in point), origin), factor)
-            if not _point_on_prepared_triangle(local, side[index]):
-                return None
+        with span('surface_proximity.rounded_source_membership'):
+            for point, side, index in zip(world, prepared, indices):
+                budget.tick('witness_triangle_checks')
+                local = _mul(_sub(tuple(Fraction.from_float(value) for value in point), origin), factor)
+                if not _point_on_prepared_triangle(local, side[index]):
+                    break
+            else:
+                return {'witness_triangle_indices': indices}
+        with span('surface_proximity.exact_source_membership'):
+            for local, side, index in zip(local_points, prepared, indices):
+                budget.tick('exact_witness_triangle_checks')
+                if not _point_on_prepared_triangle(local, side[index]):
+                    return {}
+            points_m = [[str(value) for value in point] for point in exact_world]
+            if sum(len(value) for point in points_m for value in point) <= MAX_EXACT_SOURCE_BYTES:
+                return {'exact_witness_triangles': {'indices': indices, 'points_m': points_m}}
     except _DomainError:
-        return None
-    return indices
+        pass  # Evidence is optional when the remaining exact-arithmetic budget is insufficient.
+    return {}
 
 
 def _boundary_witness(contact, pair, budget):
@@ -815,20 +829,20 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                              if isinstance(value, Fraction) else float(Decimal(value) / local_distance)
                              for value in delta]
                 result.update(direction_a_to_b=direction, direction_status='measured')
-            world = _publish_points(points, origin, factor, distance)
+            publication = _publish_points(points, origin, factor, distance)
         except _DomainError:
             result['witness_reason'] = 'surface_witness_bit_budget'
             if result['direction_status'] == 'unknown':
                 result['direction_reason'] = 'surface_witness_bit_budget'
             return result
-    if world is None:
+    if publication is None:
         result['witness_reason'] = 'original_surface_witness_precision_exceeded'
     else:
+        world, exact_world = publication
         result.update(point_a_world=world[0], point_b_world=world[1], witness_status='measured')
         if witness_pair:
-            indices = _published_triangle_indices(world, witness_pair, prepared, origin, factor, budget)
-            if indices is not None:
-                result['witness_triangle_indices'] = indices
+            result.update(_witness_triangle_provenance(
+                world, exact_world, points, witness_pair, prepared, origin, factor, budget))
     checkpoint('surface_proximity_complete')
     return result
 

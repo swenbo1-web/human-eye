@@ -2687,7 +2687,8 @@ class LiveSpatialMCPServer:
                     "Use the standard endpoint with full for the face mapping and diagnostic fields. "
                     "An explicit no-image task for two whole objects with only surface_proximity may include "
                     "source_triangles under nearest_witness: one current evaluated triangle per reported point, "
-                    "with A/B in request order.")
+                    "with A/B in request order. If rounded coordinates do not lie on those faces, "
+                    "exact_source_triangles gives their exact points as rational strings in metres.")
             result = {"tools": tools}
         elif method == "tools/call":
             if not isinstance(params.get("name"), str):

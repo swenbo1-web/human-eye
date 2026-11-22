@@ -5,14 +5,18 @@ Selectors bind only against this call's validated capture. Pair order is A to B.
 """
 from __future__ import annotations
 
+import json
 import math
 import sys
 
 from .geometry_safety import COLLISION_TOLERANCE_M, measure_pair_geometry
 from .measurement_presentation import finite_metric, valid_unrounded_measurement
 from .query_policy import measurement_contract
-from .surface_proximity import MAX_FACES, measure_surface_proximity, measure_spatial_relation, _rank_surface_results
+from .surface_proximity import (
+    MAX_EXACT_SOURCE_BYTES, MAX_FACES, measure_surface_proximity, measure_spatial_relation, _rank_surface_results,
+)
 from .surface_geometry import classify_closed_solids
+from .telemetry import span
 
 
 FACTS = ('aabb', 'center_delta', 'axis_gap', 'surface_clearance',
@@ -289,6 +293,7 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
         version = 'task-surface-proximity-exact-world-rank-v3'
     if witness_capture is not None:
         parameters['witness_capture'] = witness_capture
+        parameters['exact_source_encoding'] = 'rational_world_coordinates_v1'
     cache_options = {'_surface_scan': True, '_diagnostics': diagnostics} if _surface_scan else {}
     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
         left, right, compute_surface, parameters=parameters, algorithm_version=version,
@@ -747,18 +752,28 @@ def task_result(scene, meshes, fingerprint, query, cache, checkpoint, *,
             pair_facts, surface = _closed_surface_facts(left, right, requested_pair, cache,
                 checkpoint, scene['source'], metrics, witness_capture=witness_capture)
             if witness_capture is not None and surface is not None:
-                indices = surface.get('witness_triangle_indices')
-                if indices is not None:
+                exact = surface.get('exact_witness_triangles')
+                indices = exact['indices'] if exact is not None else surface.get('witness_triangle_indices')
+                fact = pair_facts['surface_proximity']
+                if indices is not None and fact['status'] == 'measured':
                     instances = scene['host_identity']['object_instances']
-                    fact = pair_facts['surface_proximity']
-                    if fact['status'] == 'measured':
-                        fact['value']['nearest_witness']['source_triangles'] = {
-                            'scope': 'one_current_triangle_per_endpoint_non_exhaustive',
-                            'index_domain': 'zero_based_object_local_current_evaluated_capture_triangle_rows',
-                            **witness_capture,
-                            'a': {'instance_id': instances[left.object_id], 'source_triangle_index': indices[0]},
-                            'b': {'instance_id': instances[right.object_id], 'source_triangle_index': indices[1]},
-                        }
+                    witness = fact['value']['nearest_witness']
+                    source = {
+                        'scope': 'one_current_triangle_per_endpoint_non_exhaustive',
+                        'index_domain': 'zero_based_object_local_current_evaluated_capture_triangle_rows',
+                        **witness_capture,
+                        'a': {'instance_id': instances[left.object_id], 'source_triangle_index': indices[0]},
+                        'b': {'instance_id': instances[right.object_id], 'source_triangle_index': indices[1]},
+                    }
+                    if exact is None:
+                        witness['source_triangles'] = source
+                    else:
+                        with span('task_query.exact_source_encode', kind='encoding'):
+                            source['a']['point_m'], source['b']['point_m'] = exact['points_m']
+                            extra = {'exact_source_triangles': source}
+                            size = len(json.dumps(extra, ensure_ascii=False, separators=(',', ':')).encode('utf8'))
+                            if size <= MAX_EXACT_SOURCE_BYTES:
+                                witness.update(extra)
             facts.update(pair_facts)
     # Numerical overflow must not turn the otherwise known fields into a JSON
     # failure or silently provide infinite world-space values.
