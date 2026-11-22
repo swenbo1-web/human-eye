@@ -1696,6 +1696,26 @@ class LiveSpatialService:
                                              'elapsed_ns': closed - started}
         return result
 
+    def _region_task_observation_producer(self, binding, conditions):
+        """Return the original retained observation while its capture is current."""
+        from .read_context import query_key
+
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return None
+        try:
+            key = query_key({'mode': 'active_observation', 'include_image': True, 'region_task': conditions})
+            retained = context.retained_result(binding, 'active_observation', key)
+            if retained is None or not self.state_path.is_absolute():
+                return None
+            original = retained[0]
+            if any(original['binding'][key] != binding[key] for key in
+                   ('binding_sha256', 'source_binding_sha256', 'document_epoch', 'scene_revision')):
+                return None
+            return original, self.state_path.with_name(self.state_path.name + '.active_observation')
+        finally:
+            context.lock.release()
+
     def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
         from .active_observation_host import source_binding, observe_capture
         from .read_context import capture_key, query_key

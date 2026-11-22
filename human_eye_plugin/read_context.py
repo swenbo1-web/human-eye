@@ -82,6 +82,16 @@ class ReadContext:
         state = self._selections.get(self._capture)
         return None if state is None else state['prepared'].get(key)
 
+    def retained_result(self, capture, entry, key):
+        """Find a unique versioned result without changing the active selection or LRU."""
+        token = capture_key(capture)
+        if token is None or token[:3] != self._generation:
+            return None
+        matches = [state['results'][key] for selection, state in self._selections.items()
+                   if isinstance(selection, tuple) and selection[:2] == (entry, token)
+                   and key in state['results']]
+        return matches[0] if len(matches) == 1 else None
+
     def surface_scan_progress(self, key):
         """Resume one current scan with summaries under the same private capture."""
         binding = (self._capture, key)

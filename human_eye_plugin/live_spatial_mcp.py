@@ -2100,9 +2100,59 @@ def _project_target_observation_image_paths(brief, value, blocks, image_root):
             row.append(path)
 
 
+def _project_region_task_witness_image_paths(brief, value, content, lookup_producer):
+    """Use the retained frame and its scope-local ordinal after native PNG encoding."""
+    if not content or len(content) != len(value['frames']) or not callable(lookup_producer):
+        return
+    try:
+        held = lookup_producer(value['binding'], brief['region_task']['conditions'])
+        if held is None:
+            return
+        original, image_root = held
+        original_regions = original['facts']['region_task']['rows']
+        regions = value['facts']['region_task']['rows']
+        paths = {}
+        for region_index, frame_index, pixel_index, surface, boundary, *_ in brief['witnesses']['rows']:
+            scope_index, view, identity, ref, image_sha, block = brief['frames']['rows'][frame_index]
+            if block is None or frame_index in paths:
+                continue
+            scope_id, _, digest, *_ = brief['scopes']['rows'][scope_index]
+            if scope_id == 'global':
+                continue
+            frame = value['frames'][block - 1]
+            scope = original['scopes'][scope_index]
+            refs = scope['frame_refs']
+            row = original_regions[region_index]
+            witness = row['complete_witness']
+            if (original['frames'][block - 1] != frame or original['constructed_frames'][frame_index] != frame
+                    or frame['image_sha256'] != image_sha or scope['scope_id'] != scope_id
+                    or scope['binding']['binding_sha256'] != digest or refs.count(identity) != 1
+                    or row['roi_id'] != regions[region_index]['roi_id'] or row['status'] != 'covered'
+                    or witness != {'scope_id': scope_id, 'view_name': view, 'frame_identity': identity,
+                                   'image_ref': ref, 'pixel_row_index': pixel_index, 'selected_for_delivery': True}):
+                continue
+            scope_position = refs.index(identity)
+            observation = scope['facts']['observations'][scope_position]
+            pixels = observation['pixel_rows'][pixel_index]
+            if (observation['frame_identity'] != identity or observation['image_ref'] != ref
+                    or observation['view_name'] != view or pixels['roi_id'] != row['roi_id']
+                    or (pixels['visible_surface_pixels'], pixels['contrasting_boundary_pixels']) != (surface, boundary)):
+                continue
+            path = _target_observation_local_image_path(frame, scope_position + 1, digest, image_root)
+            if path is not None:
+                paths[frame_index] = path
+        if paths:
+            brief['witness_image_paths'] = {'columns': ['frame_index', 'local_image_path'],
+                                            'rows': [[index, paths[index]] for index in sorted(paths)]}
+    except (IndexError, KeyError, TypeError, ValueError):
+        # Optional links require retained provenance; the verified native blocks still stand.
+        return
+
+
 def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None,
                                 source_region_image_root=None, target_observation_image_root=None,
-                                source_region_sample_path=None, source_region_blocker_rows=None):
+                                source_region_sample_path=None, source_region_blocker_rows=None,
+                                region_task_observation_producer=None):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
@@ -2200,6 +2250,9 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
         if response_detail != 'full' and not is_error:
             brief = projected if source_region or region_task else project_active_observation_brief(metadata)
             if brief is not None:
+                if region_task and region_task_observation_producer is not None:
+                    with span('mcp.region_task_witness_image_paths', kind='encoding'):
+                        _project_region_task_witness_image_paths(brief, value, content, region_task_observation_producer)
                 if not source_region and not region_task:
                     _project_target_observation_image_paths(brief, value, content, target_observation_image_root)
                 metadata = brief
@@ -2243,7 +2296,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
                  compact_support_planes: bool = False, segment_brief: bool = False,
                  active_delivery_audit=None, observation_task_query=None, source_region_image_root=None,
                  target_observation_image_root=None, source_region_sample_path=None,
-                 source_region_blocker_rows=None) -> dict:
+                 source_region_blocker_rows=None, region_task_observation_producer=None) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
@@ -2252,7 +2305,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
             response_detail=response_detail, observation_task_query=observation_task_query,
             source_region_image_root=source_region_image_root,
             target_observation_image_root=target_observation_image_root,
-            source_region_sample_path=source_region_sample_path, source_region_blocker_rows=source_region_blocker_rows)
+            source_region_sample_path=source_region_sample_path, source_region_blocker_rows=source_region_blocker_rows,
+            region_task_observation_producer=region_task_observation_producer)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2497,10 +2551,11 @@ class LiveSpatialMCPServer:
             kind = value.get('result_kind')
             response_detail = args.get('response_detail')
             query = args.get('query')
-            if (self.region_task_evidence and response_detail == 'full' and not is_error
-                    and name == 'human_eye_scene_observe' and kind == 'active_observation'
-                    and isinstance(query, dict) and query.get('mode') == 'active_observation'
-                    and 'region_task' in query and 'region_task' in value.get('facts', {})):
+            region_task_evidence = (self.region_task_evidence and not is_error
+                and name == 'human_eye_scene_observe' and kind == 'active_observation'
+                and isinstance(query, dict) and query.get('mode') == 'active_observation'
+                and 'region_task' in query and 'region_task' in value.get('facts', {}))
+            if region_task_evidence and response_detail == 'full':
                 response_detail = 'brief'
             delivery_audit = {} if kind in ('active_observation', 'source_region') else None
             image_root, target_image_root = None, None
@@ -2526,7 +2581,9 @@ class LiveSpatialMCPServer:
                     source_region_sample_path=(getattr(self.service, '_source_region_sample_path', None)
                           if image_root is not None and args.get('response_detail') != 'full' else None),
                     source_region_blocker_rows=(getattr(self.service, '_source_region_blocker_rows', None)
-                          if kind == 'source_region' and args.get('response_detail') != 'full' else None))
+                          if kind == 'source_region' and args.get('response_detail') != 'full' else None),
+                    region_task_observation_producer=(getattr(self.service, '_region_task_observation_producer', None)
+                          if region_task_evidence else None))
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):
