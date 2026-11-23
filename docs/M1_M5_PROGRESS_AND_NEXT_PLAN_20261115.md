@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [M1 双足自然首包](M1_YANYITE_FOOT_REGION_IMAGE_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md) 新版两次 full 实际触发、19/19，原图复查仍重传，旧版模型容量失败无同质成本。下一项 [真实相反方向双区现版与原生对照](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_PLAN.md) 使用新区域和不同世界最短方向。[M1 首包隔离工程](M1_SOURCE_REGION_IMAGE_EVIDENCE_001_INDEPENDENT_REVIEW.md) 等价正文少 91.92%。[Yanyite 低位真实对照](M4_YANYITE_LOW_BILATERAL_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17、插件零普通调用、整窗少 4.91%、原始 token 多 59.06%。[M4 选视角像素归属](M4_SOURCE_REGION_CURVED_VIEW_SAMPLE_001_INDEPENDENT_REVIEW.md) 已自然采用。[M2 直接增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场热 RPC 少 26.27%。
+当前 [Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17，P 两次调用首包全采用，零普通调用、重复测距和图像重传，整窗 99.477→57.084 s，CLI 原始输入加输出少 51.13%、扣缓存少 28.57%。下一项 [28 对象装配跨资产对照](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_PLAN.md)。[M1 首包隔离](M1_SOURCE_REGION_IMAGE_EVIDENCE_001_INDEPENDENT_REVIEW.md) 正文少 91.92%。[足部自然首包](M1_YANYITE_FOOT_REGION_IMAGE_EVIDENCE_CONSUMPTION_001_INDEPENDENT_REVIEW.md) 新版 19/19、旧版容量失败、仍重传留档。[M2 增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场热 RPC 少 26.27%。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -12,10 +12,10 @@
 
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
-| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 闭盒与有图首包已自然触发，模型仍有主动复查原图 |
+| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 相反方向新题首包采用 2/2，零重复，待跨资产验证 |
 | M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区复用和宿主直接增量已在真实 Blender 验证，本轮收口 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
-| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 新双区原图与源面已被自然采纳，普通调用 7→0 |
+| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 同质量双区原生对照调用 8→2，已转跨资产装配任务 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
 
 最新接受交付544cf4f123c35fbca24b8f425acc30fd3308b178，产品08a5f3b29283270c97b6d9d6e217bbee6ca7bfc1、143源0d75c8f7f3522c4c7f2a5807f51f86fc4f2bec49efa9a215bf090775787ab91b，安装D:/he_m1_source_region_facts_first_001/B/product。显示修复aa45f033/29f35/af7c、明确源区域de884a2a/2292/8d8d和真实资格828d1265保留为增量基线。历史跨尺度和M5产品按各自原验收引用。
