@@ -44,8 +44,9 @@ _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _SELECTIVE_SOURCE_REGION = 'capture_source_region_pair'
+_SCOPED_VISUAL = 'capture_source_region_visual'
 _SELECTIVE_CAPTURE_CACHE_BYTES = 2 * 1024 * 1024
-_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION})
+_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION,_SCOPED_VISUAL})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -339,6 +340,16 @@ class BlenderMCPHost:
         capture['stages'] = dict(stages, connector_materialization={
             'started_ns':started, 'closed_ns':closed, 'elapsed_ns':closed-started})
         return capture
+
+    def capture_source_region_visual(self, query, deadline_ns, max_response_bytes):
+        now = time.perf_counter_ns()
+        if type(deadline_ns) is not int or deadline_ns <= now:
+            raise ValueError('source_region_visual_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+            raise ValueError('source_region_visual_response_budget')
+        return self._request(_SCOPED_VISUAL, dict(query=query,
+            deadline_ns=min(deadline_ns, now + int(self.timeout_s * 1e9)),
+            max_response_bytes=max_response_bytes))
 
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
         now = time.perf_counter_ns()
@@ -655,6 +666,7 @@ class BlenderMCPHost:
     def _observation_code(self, command, params, request_id):
         required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
             _SELECTIVE_SOURCE_REGION: {'target', 'reference', 'world_box_m', 'deadline_ns', 'max_response_bytes'},
+            _SCOPED_VISUAL: {'query', 'deadline_ns', 'max_response_bytes'},
             'capture_directory': {'deadline_ns', 'max_response_bytes'},
             'capture_active_observation': {'selector', 'deadline_ns', 'max_response_bytes'},
             'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
@@ -707,7 +719,7 @@ class BlenderMCPHost:
             if len(payload) > request_limit:
                 raise ValueError("BlenderMCP request exceeds the transport size limit")
             try:
-                if command == _SELECTIVE_SOURCE_REGION:
+                if command in (_SELECTIVE_SOURCE_REGION, _SCOPED_VISUAL):
                     outer = self._exchange(payload, deadline_ns=params['deadline_ns'],
                                            max_response_bytes=params['max_response_bytes'])
                 else:
@@ -742,8 +754,9 @@ class BlenderMCPHost:
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
                 self._resident_ready = True
-                if command == _SELECTIVE_SOURCE_REGION and time.perf_counter_ns() >= params['deadline_ns']:
-                    raise ValueError('selective_source_region_deadline')
+                if command in (_SELECTIVE_SOURCE_REGION, _SCOPED_VISUAL) and time.perf_counter_ns() >= params['deadline_ns']:
+                    raise ValueError('source_region_visual_deadline' if command == _SCOPED_VISUAL
+                                     else 'selective_source_region_deadline')
                 if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
                     result = self._scene_decoder.apply(result)
                 if command == 'capture_directory':

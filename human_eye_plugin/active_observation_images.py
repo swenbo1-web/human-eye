@@ -96,7 +96,7 @@ def _validate_buffers(buffers, size, object_count):
     return {'color': color, 'depth': depth, 'owners': owners}
 
 
-def _patch_mapping(objects, regions):
+def _patch_mapping(objects, regions, *, triangle_id_scope=TRIANGLE_ID_SCOPE):
     roi_ids = tuple(region.roi_id for region in regions)
     if roi_ids != tuple(sorted(set(roi_ids))):
         raise ValueError('stable_unique_patch_order_required')
@@ -117,10 +117,10 @@ def _patch_mapping(objects, regions):
     raw_ids = np.arange(offsets[-1], dtype=np.int32)
     raw_ids.setflags(write=False)
     raw_face_ids = tuple(raw_ids[first:last] for first, last in zip(offsets[:-1], offsets[1:]))
-    owner_identity = fingerprint((OWNER_SCHEMA, TRIANGLE_ID_SCOPE, identity, offsets.tolist()))
+    owner_identity = fingerprint((OWNER_SCHEMA, triangle_id_scope, identity, offsets.tolist()))
     owner_arrays = {'owner_schema': np.asarray(OWNER_SCHEMA),
                     'owner_mapping_identity': np.asarray(owner_identity),
-                    'triangle_id_scope': np.asarray(TRIANGLE_ID_SCOPE)}
+                    'triangle_id_scope': np.asarray(triangle_id_scope)}
     arrays = {'patch_mapping_version': np.asarray(PATCH_MAPPING_VERSION),
               'patch_mapping_identity': np.asarray(identity),
               'patch_roi_ids': np.asarray(roi_ids, dtype=str),
@@ -286,7 +286,8 @@ class SceneObservationImages:
     def __init__(self, objects, cameras, output_directory, *, scene_identity,
                  candidate_identity, regions=(), _prepared_meshes=None,
                  _measure_stages=False, _reuse_published_payload=False,
-                 display_identity=None, object_mask=None, image_scope=None):
+                 display_identity=None, object_mask=None, image_scope=None,
+                 triangle_id_scope=TRIANGLE_ID_SCOPE):
         self.output_directory = Path(output_directory).resolve()
         self._objects = objects
         self._cameras = cameras
@@ -322,7 +323,7 @@ class SceneObservationImages:
         if len(self._poses) != len(cameras['views']):
             raise ValueError('unique_view_names_required')
         self._mesh_order_identity = fingerprint(tuple(item[2] for item in objects))
-        self._patch_mapping = _patch_mapping(objects, regions)
+        self._patch_mapping = _patch_mapping(objects, regions, triangle_id_scope=triangle_id_scope)
         self._patch_mapping_identity = self._patch_mapping['identity']
 
     def _synchronize(self):
@@ -419,7 +420,7 @@ class SceneObservationImages:
             'mesh_order_identity': self._mesh_order_identity,
             'owner_schema': owner_schema,
             'owner_mapping_identity': owner_identity,
-            'triangle_id_scope': TRIANGLE_ID_SCOPE if has_raw else None,
+            'triangle_id_scope': str(owner_arrays['triangle_id_scope']) if has_raw else None,
             'owner_capabilities': {'triangle_ids': has_raw, 'patch_owners': True},
             'frame_identity': frame_identity,
             'patch_mapping_version': PATCH_MAPPING_VERSION,
@@ -573,7 +574,7 @@ class SceneObservationImages:
         if has_raw:
             if (frame.get('owner_schema') != OWNER_SCHEMA
                     or frame.get('owner_mapping_identity') != self._patch_mapping['owner_identity']
-                    or frame.get('triangle_id_scope') != TRIANGLE_ID_SCOPE
+                    or frame.get('triangle_id_scope') != str(self._patch_mapping['owner_arrays']['triangle_id_scope'])
                     or frame.get('owner_capabilities') != capabilities):
                 raise ValueError('current_owner_mapping_frame_required')
         elif (frame.get('owner_schema') not in (None, PATCH_MAPPING_VERSION)

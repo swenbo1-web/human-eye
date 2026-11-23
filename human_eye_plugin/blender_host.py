@@ -319,7 +319,7 @@ def _acquisition_witness(data, matrix, scale):
         return None
 
 
-def _acquisition_validate_triangles(data, *, check_coordinates, checkpoint, object_id):
+def _acquisition_validate_triangles(data, *, check_coordinates, checkpoint, object_id, ordered_loops=False):
     """Validate references before exclusion or native triangle expansion.
 
     The directory already bounds scene counts. Excluded meshes also need
@@ -340,6 +340,8 @@ def _acquisition_validate_triangles(data, *, check_coordinates, checkpoint, obje
         if (type(start) is not int or type(total) is not int or total != 3
                 or start < 0 or start + total > loop_count):
             raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id)
+        if ordered_loops and start != ordinal * 3:
+            raise BlenderHostError('source_region_visual_irregular_loop_layout:' + object_id)
         for offset in range(3):
             try:
                 index = loops[start + offset].vertex_index
@@ -574,6 +576,91 @@ def _observation_outside_xy_viewports(bounds, cameras):
         return True, tested
     except (TypeError, ValueError, KeyError, IndexError, OverflowError):
         return False, tested
+
+
+def _source_region_visual_outside_xy_viewports(bounds, cameras):
+    """With all three projected axes finite, prove strict XY exclusion."""
+    try:
+        for pose in cameras['views']:
+            view, projection = pose['view_matrix'], pose['projection_matrix']
+            for axis in range(3):
+                p = projection[axis]
+                if any(p[other] != 0. for other in range(3) if other != axis):
+                    return False, 0
+                span = _observation_affine_interval(bounds, view[axis][:3], view[axis][3])
+                if span is None:
+                    return False, 0
+                for endpoint in span:
+                    product = endpoint * p[axis]
+                    eps = math.nextafter(abs(product), math.inf)
+                    projected = math.nextafter(eps + abs(p[3]), math.inf)
+                    if not math.isfinite(projected):
+                        return False, 0
+        return _observation_outside_xy_viewports(bounds, cameras)
+    except (TypeError, ValueError, KeyError, IndexError, OverflowError):
+        return False, 0
+
+
+def _source_region_visual_bounds(corners, matrix, scale, outward):
+    """Use the exact capture expression on finite, axis-separable endpoints."""
+    if outward is None or any(sum(value != 0. for value in row[:3]) > 1 for row in matrix[:3]):
+        return None, None
+    try:
+        points = [tuple(float(corner[k]) for k in range(3)) for corner in corners]
+        local = _source_region_visual_extrema(points)
+        end = [[(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale
+                for r in range(3)] for point in local]
+        tight = _source_region_visual_extrema(end)
+        for k, (a, b) in enumerate(zip(*end)):
+            lower, upper = tight[0][k], tight[1][k]
+            if (not outward[0][k] <= lower <= upper <= outward[1][k]
+                    or scale <= .5 and (lower == 0. or upper == 0.)
+                    or a == b == 0. and math.copysign(1., a) != math.copysign(1., b)):
+                # A rounded zero plateau can have both signs. Decline to
+                # replace the ordered world reduction in that case.
+                return None, None
+        return local, tight
+    except (AttributeError, TypeError, ValueError, IndexError, ReferenceError, OverflowError):
+        return None, None
+
+
+def _source_region_visual_extrema(points):
+    """Match the original binary64 reduction, including equal signed zeros."""
+    low = high = None
+    for point in points:
+        if not all(math.isfinite(value) for value in point):
+            raise BlenderHostError('source_region_visual_nonfinite_vertex')
+        if low is None:
+            low, high = list(point), list(point)
+            continue
+        for axis, value in enumerate(point):
+            if value <= low[axis]:
+                low[axis] = value
+            if value >= high[axis]:
+                high[axis] = value
+    if low is None:
+        raise BlenderHostError('source_region_visual_empty_vertex_source')
+    return [low, high]
+
+
+def _source_region_visual_omitted(data, obj, oid, local_bounds, matrix, scale, checkpoint):
+    """Validate omitted static source without materializing its world mesh."""
+    # Ordinary complete capture reads all vertices, even unreferenced ones.
+    # Scan the actual source, confirm the RNA promise and validate every loop.
+    _acquisition_validate_triangles(data, check_coordinates=False, checkpoint=checkpoint,
+                                    object_id=oid, ordered_loops=True)
+    points = (tuple(float(vertex.co[k]) for k in range(3))
+              for vertex in _acquisition_vertices(data.vertices, checkpoint))
+    if _digest(_source_region_visual_extrema(points)) != _digest(local_bounds):
+        raise BlenderHostError('source_region_visual_rna_bound_disagrees:' + oid)
+    axes, _, _, _ = _frame(matrix)
+    if (not all(math.isfinite(value) for row in axes for value in row)
+            or not all(math.isfinite(matrix[k][3] * scale) for k in range(3))):
+        raise BlenderHostError('source_region_visual_invalid_metadata:' + oid)
+    color = list(getattr(obj, 'color', (.5, .5, .5, 1.)))
+    if len(color) < 3 or any(not math.isfinite(float(value)) for value in color[:3]):
+        raise BlenderHostError('source_region_visual_invalid_color:' + oid)
+    checkpoint()
 
 
 def _observation_target_cameras(target_vertices, world_bounds):
@@ -1183,7 +1270,7 @@ class BlenderSceneHost:
 
     def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None,
                  _acquisition_context=None, _resident=False,
-                 _acquisition_scope='surface_nearest_candidates', _prepared_local=None):
+                 _acquisition_scope='surface_nearest_candidates', _prepared_local=None, _acquisition_work=None):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
@@ -1236,7 +1323,13 @@ class BlenderSceneHost:
                     temporary = evaluated.to_mesh()
                     if temporary is None:
                         raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
+                    if _acquisition_work is not None:
+                        _acquisition_work['to_mesh'] += 1
                     temporary.calc_loop_triangles()
+                    if _acquisition_work is not None:
+                        _acquisition_work['triangulations'] += 1
+                        _acquisition_work['expanded_vertices'] += len(temporary.vertices)
+                        _acquisition_work['expanded_triangles'] += len(temporary.loop_triangles)
                     if (vertex_count + len(temporary.vertices) > 500_000
                             or face_count + len(temporary.loop_triangles) > 1_000_000):
                         raise BlenderHostError("Scene geometry budget exceeded")
@@ -1319,6 +1412,8 @@ class BlenderSceneHost:
             finally:
                 if temporary is not None:
                     evaluated.to_mesh_clear()
+                    if _acquisition_work is not None:
+                        _acquisition_work['to_mesh_clear'] += 1
         scene = {"unit": "m", "coordinate_frame": "world", "source": "blender", "meshes": meshes}
         if task_selection is not None:
             scene['capture_scope'] = 'selected_objects'
@@ -1715,6 +1810,202 @@ class BlenderSceneHost:
                 raise BlenderHostError('active_observation_target_document_budget_exceeded')
             checkpoint()
             return scene
+
+    def capture_source_region_visual(self, query, deadline_ns, max_response_bytes):
+        """Read a private static selected-view scene without changing complete capture."""
+        self._main_thread()
+        if type(query) is not dict or set(query) != {'target', 'reference', 'world_box_m'}:
+            raise BlenderHostError('source_region_visual_query')
+        for selector in (query['target'], query['reference']):
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('source_region_visual_selector')
+        query = dict(query, world_box_m=self._source_region_pair_box(query['world_box_m']))
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('source_region_visual_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('source_region_visual_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('source_region_visual_deadline_exceeded')
+
+        def interval(started):
+            closed = time.perf_counter_ns()
+            return dict(started_ns=started, closed_ns=closed, elapsed_ns=closed - started)
+
+        def frame_record(display):
+            units = self.scene.unit_settings
+            return dict(frame=int(self.scene.frame_current), subframe=float(self.scene.frame_subframe),
+                        scale_length=self._scale(), view_layer=display['view_layer']['instance_id'],
+                        unit_settings={'system': str(units.system), 'length_unit': str(units.length_unit)})
+
+        def bound_object(selector):
+            field = 'object_id' if 'id' in selector else 'name'
+            matches = [row['ordinal'] for row in rows if row[field] == next(iter(selector.values()))]
+            if len(matches) != 1:
+                raise BlenderHostError('source_region_visual_object_resolution')
+            return matches[0]
+
+        checkpoint()
+        scope = 'source_region_visual_meshes'
+        with self._lock:
+            locked = time.perf_counter_ns()
+            resident_before = self.residency_work()['resident_resources']
+            graph = self._depsgraph()
+            stages = {'depsgraph_update_and_get': interval(locked)}
+            started = time.perf_counter_ns()
+            objects = self._objects(graph)
+            display = self._display_snapshot(objects)
+            if (display is None or display['status'] != 'captured'
+                    or any('unavailable_fields' in row for row in display['objects'])):
+                raise BlenderHostError('source_region_visual_display_unavailable')
+            identity = self._identity_metadata(objects, capture_scope=scope)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('source_region_visual_source_identity')
+            frame = frame_record(display)
+            if not math.isfinite(frame['subframe']):
+                raise BlenderHostError('source_region_visual_invalid_frame')
+            scale = frame['scale_length']
+            scene, layer = self.scene, self.view_layer
+            stages['source_and_display'] = interval(started)
+            started = time.perf_counter_ns()
+            rows, local_bounds, frozen = [], [], []
+            evaluated_by_id = {}
+            source_vertices = source_triangles = 0
+            for ordinal, obj in enumerate(objects):
+                checkpoint()
+                oid = self.object_id(obj)
+                try:
+                    evaluated, guards, matrix, outward, _ = self._acquisition_directory_source(obj, graph, scale)
+                except BlenderHostError as error:
+                    if str(error).startswith(('acquisition_static_triangle_source_required:',
+                                                'acquisition_triangle_data_required:', 'acquisition_evaluation_unavailable:')):
+                        raise BlenderHostError('source_region_visual_unsupported_static_source:' + oid) from error
+                    raise
+                data = evaluated.data
+                vertices, triangles = len(data.vertices), len(data.polygons)
+                source_vertices += vertices
+                if source_vertices > 500000 or source_triangles + triangles > 1000000:
+                    raise BlenderHostError('Scene geometry budget exceeded')
+                corners = evaluated.bound_box if outward is not None else ()
+                local, tight = _source_region_visual_bounds(corners, matrix, scale, outward)
+                if tight is None:
+                    raise BlenderHostError('source_region_visual_unsupported_tight_bounds:' + oid)
+                evaluated_by_id[oid] = evaluated
+                rows.append(dict(object_id=oid, name=str(obj.name), instance_id=identity['object_instances'][oid],
+                    ordinal=ordinal, matrix_world=matrix, world_bounds_m=tight, bounds_world_m=outward,
+                    vertex_count=vertices, triangle_count=triangles, triangle_offset=source_triangles))
+                source_triangles += triangles
+                local_bounds.append(local)
+                frozen.append((guards, data))
+            if len(evaluated_by_id) != len(rows):
+                raise BlenderHostError('source_region_visual_duplicate_object_id')
+            target, reference = bound_object(query['target']), bound_object(query['reference'])
+            if target == reference:
+                raise BlenderHostError('source_region_visual_objects_must_differ')
+            stages['static_directory_and_bounds'] = interval(started)
+
+            expansion = dict.fromkeys(('to_mesh', 'to_mesh_clear', 'triangulations',
+                                       'expanded_vertices', 'expanded_triangles'), 0)
+
+            def expand(ordinals):
+                context = (graph, scale, [objects[i] for i in ordinals], evaluated_by_id, checkpoint)
+                capture = self._capture(_acquisition_context=context, _acquisition_scope=scope,
+                                        _acquisition_work=expansion)
+                result = {}
+                for ordinal, mesh in zip(ordinals, capture['meshes'], strict=True):
+                    row = rows[ordinal]
+                    if (mesh['object_id'] != row['object_id'] or len(mesh['vertices']) != row['vertex_count']
+                            or len(mesh['faces']) != row['triangle_count']
+                            or _digest(_source_region_visual_extrema(mesh['vertices'])) != _digest(row['world_bounds_m'])):
+                        raise BlenderHostError('source_region_visual_expanded_source_disagrees:' + row['object_id'])
+                    result[ordinal] = dict(mesh, mark_label='#B%04d' % (ordinal + 1))
+                    checkpoint()
+                return result
+
+            started = time.perf_counter_ns()
+            meshes = expand([target])
+            region = self._compact_source_region_pair(meshes[target], query['world_box_m'], checkpoint)
+            cameras = _observation_target_cameras(region['vertices'], [row['world_bounds_m'] for row in rows])
+            cameras.update(schema='active-coverage-source-region-cameras-v1',
+                           scope='source_region_fitted_XY_whole_scene_conservative_depth')
+            cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
+            stages['target_expansion_selection_and_cameras'] = interval(started)
+            started = time.perf_counter_ns()
+            retained, omitted = [], []
+            viewport_tests = 0
+            for row in rows:
+                checkpoint()
+                ordinal = row['ordinal']
+                if ordinal in (target, reference):
+                    retained.append(ordinal)
+                    continue
+                outside, tested = _source_region_visual_outside_xy_viewports(row['bounds_world_m'], cameras)
+                viewport_tests += tested
+                (omitted if outside else retained).append(ordinal)
+            stages['viewport_selection'] = interval(started)
+            started = time.perf_counter_ns()
+            for ordinal in omitted:
+                row = rows[ordinal]
+                _source_region_visual_omitted(frozen[ordinal][1], objects[ordinal], row['object_id'],
+                    local_bounds[ordinal], row['matrix_world'], scale, checkpoint)
+            stages['omitted_source_structure_and_finiteness'] = interval(started)
+            started = time.perf_counter_ns()
+            meshes.update(expand([ordinal for ordinal in retained if ordinal != target]))
+            ordered_meshes = [meshes[ordinal] for ordinal in retained]
+            stages['retained_mesh_expansion'] = interval(started)
+
+            started = time.perf_counter_ns()
+            current = self._objects(graph)
+            if (not _same_rna(self.scene, scene) or not _same_rna(self.view_layer, layer)
+                    or not _same_rna(getattr(layer, 'depsgraph', graph), graph)
+                    or len(current) != len(objects) or any(not _same_rna(a, b) for a, b in zip(current, objects))
+                    or self._identity_metadata(objects, capture_scope=scope) != identity
+                    or _digest(frame_record(display)) != _digest(frame) or self._display_snapshot(objects) != display):
+                raise BlenderHostError('source_region_visual_source_changed')
+            for row, obj, (guards, data) in zip(rows, objects, frozen):
+                checkpoint()
+                oid = row['object_id']
+                evaluated = obj.evaluated_get(graph)
+                if (not _same_rna(evaluated, evaluated_by_id[oid]) or not _same_rna(evaluated.data, data)
+                        or getattr(evaluated, 'is_evaluated', False) is not True
+                        or self.object_id(obj) != oid or str(obj.name) != row['name']
+                        or _digest(_matrix(evaluated.matrix_world)) != _digest(row['matrix_world'])
+                        or self._guard_description(obj) != guards
+                        or (len(data.vertices), len(data.polygons), len(data.loops)) != (
+                            row['vertex_count'], row['triangle_count'], row['triangle_count'] * 3)):
+                    raise BlenderHostError('source_region_visual_source_changed:' + oid)
+            stages['same_window_source_recheck'] = interval(started)
+
+            packet = dict(schema='human-eye-source-region-visual-capture-v1', source='blender',
+                capture_scope=scope, execution_authority=False, unit='m', coordinate_frame='world',
+                document_epoch=identity['document_epoch'], capture_state=None,
+                host_source_sha256=source_sha, source_frame=frame, directory=rows, display_snapshot=display,
+                retained_ordinals=retained, meshes=ordered_meshes,
+                source_triangle_indices=region['source_triangle_indices'], camera_plan=cameras, query=query)
+            # List wrapper opts out of the legacy _digest scene-display exclusion.
+            packet['revision'] = 'source-region-visual:' + _digest([packet])
+            stages['one_locked_host_window'] = interval(locked)
+            expanded_vertices = sum(row['vertex_count'] for row in (rows[i] for i in retained))
+            expanded_triangles = sum(row['triangle_count'] for row in (rows[i] for i in retained))
+            omitted_vertices = source_vertices - expanded_vertices
+            omitted_triangles = source_triangles - expanded_triangles
+            packet['work'] = dict(resident_before=resident_before, resident_after=self.residency_work()['resident_resources'],
+                depsgraph_fetches=1, source_objects=len(rows), source_vertices=source_vertices, source_triangles=source_triangles,
+                retained_objects=len(retained), omitted_objects=len(omitted), viewport_tests=viewport_tests,
+                omitted_vertices_checked=omitted_vertices, omitted_polygons_checked=omitted_triangles,
+                omitted_loop_indices_checked=3 * omitted_triangles,
+                world_vertices_transformed=expansion['expanded_vertices'], sent_vertices=expanded_vertices,
+                sent_triangles=expanded_triangles, stages=stages, **expansion)
+            packet['sha256'] = _digest([packet])
+            checkpoint()
+            if len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
+                raise BlenderHostError('source_region_visual_document_budget_exceeded')
+            checkpoint()
+            return packet
 
     def capture_directory(self, deadline_ns, max_response_bytes):
         """Aggregate evaluated vertex bounds without creating a mesh capture."""

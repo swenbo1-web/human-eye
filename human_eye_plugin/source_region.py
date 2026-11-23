@@ -16,7 +16,7 @@ from .active_observation import (
     project, screen_basis, signed_area, subtract, triangle_shadow, vector,
 )
 from .active_observation_host import scene_from_capture, source_binding
-from .active_observation_images import SceneObservationImages, _meshes_from_objects
+from .active_observation_images import TRIANGLE_ID_SCOPE, SceneObservationImages, _meshes_from_objects
 from .attention_raster import select_sparse_attention_view
 from .attention_rendering import _contrasting_boundaries
 from .blender_host import _digest as _host_digest, _observation_target_cameras
@@ -247,6 +247,33 @@ class PreparedSourceRegion:
     preparation_stages: dict
     images: object = None
     observation: dict | None = None
+    scoped_visual: bool = False
+
+
+def _region_arrays(mesh, faces, selection_identity, host_id, instance_id):
+    """Compact selected rows while keeping their original source indices."""
+    source_faces = mesh.faces[list(faces)]
+    vertex_indices = tuple(int(index) for index in np.unique(source_faces))
+    reverse_vertices = np.full(len(mesh.vertices), -1, dtype=np.int32)
+    reverse_vertices[list(vertex_indices)] = np.arange(len(vertex_indices), dtype=np.int32)
+    compact_faces = reverse_vertices[source_faces]
+    compact_vertices = mesh.vertices[list(vertex_indices)]
+    selected_object = (tuple(map(tuple, compact_vertices)), tuple(map(tuple, compact_faces)),
+                       selection_identity, mesh.name)
+    region_mesh = _meshes_from_objects((selected_object,))[0]
+    mapping = {'index_domain': SOURCE_INDEX_DOMAIN,
+               'submesh_to_source_triangle_indices': list(faces),
+               'submesh_to_source_vertex_indices': list(vertex_indices),
+               'triangles_source_vertices': source_faces.tolist(),
+               'triangles_submesh_vertices': compact_faces.tolist()}
+    region_facts = {'host_id': host_id, 'instance_id': instance_id,
+                    'object_name': mesh.name, 'index_domain': SOURCE_INDEX_DOMAIN,
+                    'source_triangle_indices': list(faces), 'source_vertex_indices': list(vertex_indices),
+                    'triangles_source_vertices': source_faces.tolist(),
+                    'vertices_world_m': compact_vertices.tolist(),
+                    'bbox_min_world_m': compact_vertices.min(axis=0).tolist(),
+                    'bbox_max_world_m': compact_vertices.max(axis=0).tolist()}
+    return region_mesh, vertex_indices, mapping, region_facts
 
 
 def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
@@ -290,33 +317,14 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
         scene_identity = _normalized_from.binding['geometry_identity']
     normalization_stage = _interval(started)
     started = time.perf_counter_ns()
-    mesh = meshes[object_index]
-    source_faces = mesh.faces[list(faces)]
-    vertex_indices = tuple(int(index) for index in np.unique(source_faces))
-    reverse_vertices = np.full(len(mesh.vertices), -1, dtype=np.int32)
-    reverse_vertices[list(vertex_indices)] = np.arange(len(vertex_indices), dtype=np.int32)
-    compact_faces = reverse_vertices[source_faces]
-    compact_vertices = mesh.vertices[list(vertex_indices)]
-    selected_object = (tuple(map(tuple, compact_vertices)), tuple(map(tuple, compact_faces)),
-                       region_ref['region_id'], mesh.name)
-    region_mesh = _meshes_from_objects((selected_object,))[0]
-    mapping = {'index_domain': SOURCE_INDEX_DOMAIN,
-               'submesh_to_source_triangle_indices': list(faces),
-               'submesh_to_source_vertex_indices': list(vertex_indices),
-               'triangles_source_vertices': source_faces.tolist(),
-               'triangles_submesh_vertices': compact_faces.tolist()}
-    region_facts = {'host_id': region_ref['host_id'], 'instance_id': region_ref['instance_id'],
-                    'object_name': mesh.name, 'index_domain': SOURCE_INDEX_DOMAIN,
-                    'source_triangle_indices': list(faces), 'source_vertex_indices': list(vertex_indices),
-                    'triangles_source_vertices': source_faces.tolist(),
-                    'vertices_world_m': compact_vertices.tolist(),
-                    'bbox_min_world_m': compact_vertices.min(axis=0).tolist(),
-                    'bbox_max_world_m': compact_vertices.max(axis=0).tolist()}
+    region_mesh, vertex_indices, mapping, region_facts = _region_arrays(
+        meshes[object_index], faces, region_ref['region_id'], region_ref['host_id'],
+        region_ref['instance_id'])
     mapping_stage = _interval(started)
     started = time.perf_counter_ns()
     world_bounds = [[item.vertices.min(axis=0).tolist(), item.vertices.max(axis=0).tolist()]
                     for item in meshes]
-    cameras = _observation_target_cameras(compact_vertices.tolist(), world_bounds)
+    cameras = _observation_target_cameras(region_mesh.vertices.tolist(), world_bounds)
     cameras.update(schema='active-coverage-source-region-cameras-v1',
                    scope='source_region_fitted_XY_whole_scene_conservative_depth')
     cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
@@ -441,8 +449,10 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
     work['raster_completed'] += 1
     frame['host_binding_sha256'] = prepared.binding['binding_sha256']
     frame['source_revision'] = prepared.binding['scene_revision']
-    frame['image_ref'] = 'source-region-image:' + fingerprint((
-        prepared.region_ref['region_id'], frame['frame_identity'], frame['image_sha256']))
+    prefix = 'source-region-visual-image:' if prepared.scoped_visual else 'source-region-image:'
+    identity_key = 'selection_id' if prepared.scoped_visual else 'region_id'
+    frame['image_ref'] = prefix + fingerprint((
+        prepared.region_ref[identity_key], frame['frame_identity'], frame['image_sha256']))
     stages['render_and_publish_' + view] = _interval(started)
     check_budget('source_region_after_frame')
 
@@ -512,7 +522,8 @@ def _observe_displayed_region(prepared, directory, image_scope, work, stages,
         candidate_identity=prepared.binding['camera_identity'],
         display_identity=prepared.binding['display_identity'],
         object_mask=mask, image_scope=image_scope,
-        _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
+        _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True,
+        triangle_id_scope=prepared.binding.get('triangle_id_scope', TRIANGLE_ID_SCOPE))
     started = time.perf_counter_ns()
     region = _selected_rectangle(prepared) if mask[prepared.object_index] else None
     stages['source_region_rectangle_selection'] = _interval(started)
@@ -606,11 +617,15 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
         frames.append(frame)
     check_budget('source_region_before_observation_result')
     insufficient = include_image and visibility['status'] == 'unknown'
-    result = {'schema': 'human-eye-source-region-observation-v1', 'result_kind': 'source_region',
+    schema = ('human-eye-source-region-visual-observation-v1' if prepared.scoped_visual
+              else 'human-eye-source-region-observation-v1')
+    kind = 'source_region_visual' if prepared.scoped_visual else 'source_region'
+    reference_key = 'selection_ref' if prepared.scoped_visual else 'region_ref'
+    result = {'schema': schema, 'result_kind': kind,
               'status': 'partial' if insufficient else 'complete',
               'observation_status': ('evidence_insufficient' if insufficient else
                                      'locally_observed' if include_image else 'image_not_requested'),
-              'binding': copy.deepcopy(prepared.binding), 'region_ref': copy.deepcopy(prepared.region_ref),
+              'binding': copy.deepcopy(prepared.binding), reference_key: copy.deepcopy(prepared.region_ref),
               'facts': {'region': copy.deepcopy(prepared.region_facts), 'visibility': visibility},
               'source_mapping': copy.deepcopy(prepared.source_mapping),
               'frames': frames, 'work': work, 'stages': stages,
@@ -977,8 +992,11 @@ def measure_region(prepared, reference, cache, check_budget=_checkpoint, diagnos
             prepared.region_mesh, right, compute, parameters=parameters,
             algorithm_version='source-region-surface-proximity-v1')
     diagnostics['stages'] = {'surface_measurement_and_mapping': _interval(started)}
-    return {'schema': 'human-eye-source-region-measurement-v1', 'status': 'complete',
-            'region_ref': copy.deepcopy(prepared.region_ref), 'reference': reference_binding,
+    schema = ('human-eye-source-region-visual-measurement-v1' if prepared.scoped_visual
+              else 'human-eye-source-region-measurement-v1')
+    reference_key = 'selection_ref' if prepared.scoped_visual else 'region_ref'
+    return {'schema': schema, 'status': 'complete',
+            reference_key: copy.deepcopy(prepared.region_ref), 'reference': reference_binding,
             'measurement_scope': 'complete_selected_source_triangle_union_to_reference_triangle_surface',
             'facts': {'surface_proximity': _surface_proximity_fact(value['surface'])},
             'source_mapping': {'region': copy.deepcopy(prepared.source_mapping),

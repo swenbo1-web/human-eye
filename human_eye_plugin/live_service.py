@@ -1666,6 +1666,59 @@ class LiveSpatialService:
                                                  'elapsed_ns': closed - started}
             return result
 
+    def _observe_scoped_source_region(self, session_id, query):
+        """Acquire and render a private closed-box visual scope in one read request."""
+        from .source_region_visual import observe_scoped_visual_region
+
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        acquire = getattr(self.host, 'capture_source_region_visual', None)
+        if not callable(acquire):
+            raise ValueError('source_region_visual_host_unavailable')
+        selection = query['region']
+        request = {'target': selection['object'], 'reference': query['reference'],
+                   'world_box_m': selection['world_box_m']}
+        start = time.perf_counter_ns()
+        attempts = 0
+        with self._request_budget(), self._read_context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+
+            remaining = self._check_request_budget('before_source_region_visual_capture')
+            deadline_ns = time.perf_counter_ns() + int((30 if remaining is None else remaining) * 1e9)
+
+            def checkpoint(stage):
+                self._check_request_budget(stage)
+                if time.perf_counter_ns() >= deadline_ns:
+                    raise RequestBudgetError('expired', stage)
+
+            def before_construction(view_name):
+                nonlocal attempts
+                checkpoint('before_source_region_visual_raster')
+                attempts += 1
+                self.record_event('source_region_visual_render_attempt', session_id=session_id,
+                                  view_name=view_name, attempt=attempts)
+
+            capture_started = time.perf_counter_ns()
+            with span('host.capture_source_region_visual', kind='host'):
+                capture = acquire(request, deadline_ns, 64 * 1024 * 1024)
+            capture_closed = time.perf_counter_ns()
+            checkpoint('after_source_region_visual_capture')
+            directory = self.state_path.with_name(self.state_path.name + '.source_region_visual') / uuid.uuid4().hex
+            result = observe_scoped_visual_region(capture, request, directory,
+                host_sha=getattr(self.host, '_readonly_host_source_sha256', None),
+                check_budget=checkpoint, construction_callback=before_construction)
+            self._bind_read_result(result, source_check)
+            result['session_id'] = session_id
+            result['stages']['host_capture'] = {'started_ns': capture_started, 'closed_ns': capture_closed,
+                                               'elapsed_ns': capture_closed - capture_started}
+            checkpoint('before_source_region_visual_result')
+            finished = time.perf_counter_ns()
+            result['stages']['service_total'] = {'started_ns': start, 'closed_ns': finished,
+                                                'elapsed_ns': finished - start}
+            return result
+
     def _observe_source_region(self, session_id, query, *, include_image):
         from .active_observation_host import source_binding
         from .read_context import query_key
