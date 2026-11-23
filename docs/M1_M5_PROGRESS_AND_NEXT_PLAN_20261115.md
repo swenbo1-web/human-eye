@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [28 对象装配跨资产对照](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂闭槽复核 17/17，P 首包采用 2/2、调用 5→2、完整窗 88.211→49.242 s（−44.18%），CLI 原始输入加输出少 58.98%、扣缓存多 4.25%。[Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17，完整窗少 42.62%，扣缓存少 28.57%。两题均无插件重复测距或图像重传。下一项为 [双资产正式评分零模型预飞](M4_SOURCE_REGION_SCORE_ADMISSION_001_PLAN.md)。[M2 增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场热 RPC 少 26.27%。
+当前 [双资产正式评分预飞](M4_SOURCE_REGION_SCORE_ADMISSION_001_INDEPENDENT_REVIEW.md) 四槽经同一个评分入口均 17/17，旧装配原判保持，九个反例与五个冻结反例均拒绝。下一项 [21 对象夹具新域留出](M4_RAIL_SOURCE_REGION_PRODUCT_NATIVE_001_PLAN.md)。[28 对象装配](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 首包采用 2/2、调用 5→2、完整窗少 44.18%，CLI 原始输入加输出少 58.98%、扣缓存多 4.25%。[Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 完整窗少 42.62%，扣缓存少 28.57%。两组均无插件重复测距或图像重传。[M2 增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场热 RPC 少 26.27%。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -15,7 +15,7 @@
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 曲面与装配同版首包各采用 2/2，扣缓存用量结果有分化 |
 | M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区复用和宿主直接增量已在真实 Blender 验证，本轮收口 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
-| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 曲面和装配各一对正例，调用分别 8→2、5→2，先补正式评分预飞 |
+| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 曲面和装配各一对正例，双资产评分预飞通过，第三域待核 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
 
 最新接受交付544cf4f123c35fbca24b8f425acc30fd3308b178，产品08a5f3b29283270c97b6d9d6e217bbee6ca7bfc1、143源0d75c8f7f3522c4c7f2a5807f51f86fc4f2bec49efa9a215bf090775787ab91b，安装D:/he_m1_source_region_facts_first_001/B/product。显示修复aa45f033/29f35/af7c、明确源区域de884a2a/2292/8d8d和真实资格828d1265保留为增量基线。历史跨尺度和M5产品按各自原验收引用。
