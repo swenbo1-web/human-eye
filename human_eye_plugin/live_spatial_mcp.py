@@ -2156,10 +2156,9 @@ def _project_region_task_witness_image_paths(brief, value, content, lookup_produ
         return
 
 
-def _complete_no_image_source_measurement(value):
-    """Recognize the producer's completed single-fact, no-frame measurement."""
-    if (value.get('status') != 'complete' or value.get('observation_status') != 'image_not_requested'
-            or value.get('frames') != [] or value.get('constructed_frames', []) != []):
+def _complete_source_measurement(value):
+    """Recognize a completed single-fact measurement with exact source witnesses."""
+    if value.get('status') != 'complete':
         return False
     task = value.get('task_result')
     if (not isinstance(task, dict) or task.get('status') != 'complete'
@@ -2195,19 +2194,24 @@ def _complete_no_image_source_measurement(value):
             and all(map(finite_metric, direction)))
 
 
+def _complete_no_image_source_measurement(value):
+    return (value.get('observation_status') == 'image_not_requested'
+            and value.get('frames') == [] and value.get('constructed_frames', []) == []
+            and _complete_source_measurement(value))
+
+
 def _active_observation_content(value, *, is_error, audit, response_detail=None, observation_task_query=None,
                                 source_region_image_root=None, target_observation_image_root=None,
                                 source_region_sample_path=None, source_region_blocker_rows=None,
-                                region_task_observation_producer=None, source_region_measurement_evidence=False):
+                                region_task_observation_producer=None, source_region_measurement_evidence=False,
+                                source_region_image_evidence=False):
     started = time.perf_counter_ns()
     audit.update(status='encoding', started_ns=started, frames=[],
         native_blocks_constructed=0, mcp_content_ready=False,
         consumer_read_status='unconfirmed')
     source_region = value.get('result_kind') == 'source_region'
-    source_region_brief = source_region and response_detail != 'full' and not is_error
-    if source_region:
-        metadata = {} if source_region_brief else copy.deepcopy(value)
-    else:
+    metadata = {}
+    if not source_region:
         metadata = {key: copy.deepcopy(value[key]) for key in (
             'status', 'result_kind', 'observation_status', 'session_id', 'facts',
             'work', 'generation_work', 'stages', 'generation_stages',
@@ -2223,8 +2227,6 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
             raise ValueError('Active observation requires at most six frame references')
         if source_region:
             _validate_source_region_projection(value)
-            if not source_region_brief:
-                metadata['facts']['visibility'].pop('sampled_pixel', None)
         else:
             metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
                 'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
@@ -2271,27 +2273,38 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
             'frame_reuses': value.get('work', {}).get('frame_reuses', 0),
             'new_raster_attempts': value.get('work', {}).get('raster_attempts', 0),
         }
-        if source_region_brief:
+        sampled_path = None
+        if source_region_image_evidence and len(content) == 1 and 'sampled_pixel' in value['facts']['visibility']:
+            # The native block already passed the original PNG checks. Reuse
+            # the same retained sample proof for the decision and the reply.
+            sampled_path = _source_region_sample_image_path(value, frames[0], source_region_image_root,
+                                                           source_region_sample_path)
+            if sampled_path is not None:
+                response_detail = 'brief'
+        if source_region and response_detail != 'full' and not is_error:
             witness = value['facts']['visibility'].get('complete_witness')
             blockers = ()
             if (len(content) == 1 and witness is None and value.get('view_attempts')
                     and callable(source_region_blocker_rows)):
                 blockers = source_region_blocker_rows(value, frames[0])
             metadata = _project_source_region_brief({**value, 'image_delivery': image_delivery}, blockers)
-            if source_region_measurement_evidence:
+            if source_region_measurement_evidence or sampled_path is not None:
                 metadata['details'] = 'response_detail=full on the standard endpoint'
             if len(content) == 1 and value['status'] == 'complete':
                 if witness is not None:
                     local_path = _source_region_local_image_path(value, frames[0], source_region_image_root)
                 else:
-                    local_path = _source_region_sample_image_path(value, frames[0], source_region_image_root,
-                                                                 source_region_sample_path)
+                    local_path = sampled_path or _source_region_sample_image_path(
+                        value, frames[0], source_region_image_root, source_region_sample_path)
                 if local_path is not None:
                     metadata['images'][0]['local_image_path'] = local_path
                     if witness is None and 'sampled_pixel' in value['facts']['visibility']:
                         metadata['images'][0]['sampled_pixel'] = copy.deepcopy(value['facts']['visibility']['sampled_pixel'])
             projected = metadata
         else:
+            if source_region:
+                metadata = copy.deepcopy(value)
+                metadata['facts']['visibility'].pop('sampled_pixel', None)
             metadata['image_delivery'] = image_delivery
         if region_task:
             metadata['image_delivery']['selected_image_count'] = len(frames)
@@ -2349,7 +2362,7 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
                  active_delivery_audit=None, observation_task_query=None, source_region_image_root=None,
                  target_observation_image_root=None, source_region_sample_path=None,
                  source_region_blocker_rows=None, region_task_observation_producer=None,
-                 source_region_measurement_evidence=False) -> dict:
+                 source_region_measurement_evidence=False, source_region_image_evidence=False) -> dict:
     if not isinstance(value, dict):
         raise ValueError("Live service returned an invalid result")
     if value.get('result_kind') in ('active_observation', 'source_region'):
@@ -2360,7 +2373,8 @@ def _tool_result(value: Any, *, is_error: bool, response_detail: str | None = No
             target_observation_image_root=target_observation_image_root,
             source_region_sample_path=source_region_sample_path, source_region_blocker_rows=source_region_blocker_rows,
             region_task_observation_producer=region_task_observation_producer,
-            source_region_measurement_evidence=source_region_measurement_evidence)
+            source_region_measurement_evidence=source_region_measurement_evidence,
+            source_region_image_evidence=source_region_image_evidence)
     if response_detail is None:
         response_detail = 'brief' if value.get('result_kind') == 'surface_scan' else 'full'
     if (value.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory')
@@ -2616,11 +2630,14 @@ class LiveSpatialMCPServer:
                 and name == 'human_eye_scene_observe' and kind == 'active_observation'
                 and isinstance(query, dict) and query.get('mode') == 'active_observation'
                 and 'region_task' in query and 'region_task' in value.get('facts', {}))
-            source_region_measurement_evidence = (
+            source_region_evidence = (
                 self.region_task_evidence and not is_error and name == 'human_eye_scene_observe'
                 and kind == 'source_region' and isinstance(query, dict) and query.get('mode') == 'source_region'
-                and args.get('include_image') is False and query.get('requested_facts') == ['surface_proximity']
+                and query.get('requested_facts') == ['surface_proximity'])
+            source_region_measurement_evidence = (source_region_evidence and args.get('include_image') is False
                 and _complete_no_image_source_measurement(value))
+            source_region_image_evidence = (source_region_evidence and response_detail == 'full'
+                and args.get('include_image', True) is True and _complete_source_measurement(value))
             if (region_task_evidence or source_region_measurement_evidence) and response_detail == 'full':
                 response_detail = 'brief'
             delivery_audit = {} if kind in ('active_observation', 'source_region') else None
@@ -2645,12 +2662,13 @@ class LiveSpatialMCPServer:
                     source_region_image_root=image_root,
                     target_observation_image_root=target_image_root,
                     source_region_sample_path=(getattr(self.service, '_source_region_sample_path', None)
-                          if image_root is not None and args.get('response_detail') != 'full' else None),
+                          if image_root is not None and (response_detail != 'full' or source_region_image_evidence) else None),
                     source_region_blocker_rows=(getattr(self.service, '_source_region_blocker_rows', None)
                           if kind == 'source_region' and args.get('response_detail') != 'full' else None),
                     region_task_observation_producer=(getattr(self.service, '_region_task_observation_producer', None)
                           if region_task_evidence else None),
-                    source_region_measurement_evidence=source_region_measurement_evidence)
+                    source_region_measurement_evidence=source_region_measurement_evidence,
+                    source_region_image_evidence=source_region_image_evidence)
             finally:
                 recorder = getattr(self.service, 'record_event', None)
                 if delivery_audit is not None and callable(recorder):
@@ -2693,7 +2711,8 @@ class LiveSpatialMCPServer:
                     " In this endpoint, active_observation with query.region_task returns the same complete task "
                     "evidence packet for omitted, brief, or full response_detail. Use full on the standard endpoint "
                     "for detailed diagnostics. A completed source_region measurement of only surface_proximity "
-                    "with include_image=false also returns the same evidence packet for all response_detail values. "
+                    "returns a brief when include_image=false or when a single sampled image has a verified "
+                    "source pixel and local path, including for explicit full. "
                     "Use the standard endpoint with full for the face mapping and diagnostic fields. "
                     "An explicit no-image task for two whole objects with only surface_proximity may include "
                     "source_triangles under nearest_witness: one current evaluated triangle per reported point, "
