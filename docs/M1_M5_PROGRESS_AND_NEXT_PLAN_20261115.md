@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [M1 世界闭盒选面](M1_SOURCE_REGION_WORLD_BOX_001_INDEPENDENT_REVIEW.md) 隔离通过，候选 `e956eedc`，两次请求字节少 72.05%，左右源面与量测等价。下一项 [曲面选视角与同帧源面定位](M4_SOURCE_REGION_CURVED_VIEW_SAMPLE_001_PLAN.md) 补左 SCENE 无图证。[Yanyite 左右曲面对照](M4_YANYITE_BILATERAL_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17、完整窗 85.195→113.376 s，插件保留 6 普通调用并多两次量测。[M2 直接宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场 2/2，双无图服务少 17.95%、热 RPC 少 26.27%。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。
+当前 [M4 曲面选视角与同帧源面定位](M4_SOURCE_REGION_CURVED_VIEW_SAMPLE_001_INDEPENDENT_REVIEW.md) 隔离候选 `b1a2fa94`，左 SCENE 0→LEFT 93,841 像素／146 面，仅一图，已可同包交付量测、原图路径和像素归属。下一项 [真实低位新双曲面整题](M4_YANYITE_LOW_BILATERAL_PRODUCT_NATIVE_001_PLAN.md) 对照原生自然使用与完整成本。[M1 世界闭盒选面](M1_SOURCE_REGION_WORLD_BOX_001_INDEPENDENT_REVIEW.md) 两次请求字节少 72.05%。[原左右曲面对照](M4_YANYITE_BILATERAL_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17、完整窗 85.195→113.376 s。[M2 直接宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场 2/2，双无图服务少 17.95%、热 RPC 少 26.27%。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -15,7 +15,7 @@
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | source_region 闭盒直接选面隔离通过 |
 | M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区复用和宿主直接增量已在真实 Blender 验证，本轮收口 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
-| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 推进非矩形局部自动取景、原 PNG 和同帧像素源面 |
+| M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 非矩形自动取景和像素源面证据通过隔离验收，转整题自然采用 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
 
 最新接受交付544cf4f123c35fbca24b8f425acc30fd3308b178，产品08a5f3b29283270c97b6d9d6e217bbee6ca7bfc1、143源0d75c8f7f3522c4c7f2a5807f51f86fc4f2bec49efa9a215bf090775787ab91b，安装D:/he_m1_source_region_facts_first_001/B/product。显示修复aa45f033/29f35/af7c、明确源区域de884a2a/2292/8d8d和真实资格828d1265保留为增量基线。历史跨尺度和M5产品按各自原验收引用。
