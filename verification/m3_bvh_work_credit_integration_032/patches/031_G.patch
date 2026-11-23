@@ -1,0 +1,173 @@
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -663,6 +663,109 @@
+         return False
+ 
+ 
++def _wp_attempt_work_bound(projection, i, j, a, b):
++    """51 axis units; test base5; cold side1+7 per prepared hull point.
++
++    Cached False intervals are still cached: their failed construction has
++    already been paid, and a future lookup cannot repeat that construction.
++    """
++    cost = 51 if projection is None else 0
++    cost += 5
++    for side, row, triangle in ((0, i, a), (1, j, b)):
++        if projection is None or row not in projection.intervals[side]:
++            cost += 1 + 7 * len(triangle[0])
++    return cost
++
++
++def _wp_narrow_work_floor(a, b):
++    """Strict positive separation excludes contact early returns.
++
++    A completed original narrow call must pay narrow+intersection=2 and every
++    native point-face, point-edge and edge-edge feature entry counted here.
++    Normal triangles give35. No optional or old plane/AABB work is credited.
++    """
++    va, vb = len(a[0]), len(b[0])
++    ea, eb = len(a[3]), len(b[3])
++    return 2 + va * (int(bool(b[2])) + eb) + vb * (int(bool(a[2])) + ea) + ea * eb
++
++
++class _ProjectionCredit:
++    """Query-local, non-borrowing account of already saved original work.
++
++    Start0. A reused unshifted dequeue bound saves1 at the same checkpoint.
++    Only a proved strict leaf exclusion earns its original narrow work floor.
++    Each attempt must fit both settled credit and original remaining budget;
++    finally debit the actual original _Work delta, including every failure.
++    There is no refund, replay, increase of a limit or whole-query result cache.
++    """
++    def __init__(self, budget):
++        self.budget = budget
++        self.balance = 0
++        self.spent = 0
++        self.earned_bounds = 0
++        self.earned_narrow = 0
++        self.attempts = 0
++        self.pending_upper = None
++        self.pending_work_start = None
++        for name in ('balance', 'node_units', 'narrow_units', 'spent_units', 'attempts',
++                     'credit_deferrals', 'budget_deferrals', 'upper_units', 'last_upper', 'last_actual'):
++            budget.counts['witness_projection_credit_' + name] = 0
++
++    @property
++    def available_credit(self):
++        """True prefix margin also while an admitted attempt is in progress."""
++        pending = (0 if self.pending_work_start is None else
++                   self.budget.counts['work_units'] - self.pending_work_start)
++        return self.balance - pending
++
++    def saved_bound(self):
++        self.balance += 1
++        self.earned_bounds += 1
++        counts = self.budget.counts
++        counts['witness_projection_credit_node_units'] = self.earned_bounds
++        counts['witness_projection_credit_balance'] = self.balance
++
++    def attempt(self, projection, best, i, j, a, b):
++        budget = self.budget
++        counts = budget.counts
++        upper = _wp_attempt_work_bound(projection, i, j, a, b)
++        if upper > self.balance:
++            counts['witness_projection_credit_credit_deferrals'] += 1
++            return projection, False
++        if upper > MAX_WORK_UNITS - counts['work_units']:
++            counts['witness_projection_credit_budget_deferrals'] += 1
++            return projection, False
++        self.attempts += 1
++        counts['witness_projection_credit_attempts'] = self.attempts
++        counts['witness_projection_credit_upper_units'] += upper
++        counts['witness_projection_credit_last_upper'] = upper
++        self.pending_upper = upper
++        self.pending_work_start = counts['work_units']
++        pruned = False
++        try:
++            if projection is None:
++                projection = _WitnessProjection.from_best(best, budget)
++            if projection is not False:
++                pruned = projection.prunes(i, j, a, b, budget)
++        finally:
++            actual = counts['work_units'] - self.pending_work_start
++            self.balance -= actual
++            self.spent += actual
++            self.pending_upper = self.pending_work_start = None
++            counts['witness_projection_credit_spent_units'] = self.spent
++            counts['witness_projection_credit_last_actual'] = actual
++            counts['witness_projection_credit_balance'] = self.balance
++            if actual < 0 or actual > upper or self.balance < 0:
++                raise ArithmeticError('witness_projection_credit_invariant')
++        if pruned:
++            saved = _wp_narrow_work_floor(a, b)
++            self.balance += saved
++            self.earned_narrow += saved
++            counts['witness_projection_credit_narrow_units'] = self.earned_narrow
++            counts['witness_projection_credit_balance'] = self.balance
++        return projection, pruned
++
++
+ def _nearest_tree(prepared, roots, budget, witness_pair=None):
+     largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
+         zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
+@@ -679,14 +782,23 @@
+         serial += 1
+     push(*roots)
+     best = best_pair = None
++    best_floor = None
++    credit = _ProjectionCredit(budget)
+     completed_exact = 0
+     projection = None
+     while pending:
+         budget.tick('node_pair_visits')
+-        _, _, left, right = heapq.heappop(pending)
++        key, _, left, right = heapq.heappop(pending)
+         if best is not None:
+-            budget.tick('aabb_bound_tests')
+-            if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best):
++            if shift == 0:
++                budget.checkpoint('surface_proximity_aabb_bound_tests')
++                budget.counts['aabb_bound_tests'] += 1
++                credit.saved_bound()
++                node_excluded = key > best_floor
++            else:
++                budget.tick('aabb_bound_tests')
++                node_excluded = _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best)
++            if node_excluded:
+                 budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
+                 continue
+         if left[3] is not None and right[3] is not None:
+@@ -706,16 +818,9 @@
+                             budget.counts['plane_pruned_pairs'] += 1
+                             continue
+                     if (completed_exact >= WITNESS_PROJECTION_AFTER_COMPLETED
+-                            and best is not None and best[0] > 0):
+-                        if projection is None:
+-                            optional = _wp_optional_allowance(budget, WITNESS_PROJECTION_FIRST_ALLOWANCE)
+-                            if optional:
+-                                projection = _WitnessProjection.from_best(best, budget)
+-                        elif projection is False:
+-                            optional = False
+-                        else:
+-                            optional = _wp_optional_allowance(budget, WITNESS_PROJECTION_TEST_ALLOWANCE)
+-                        if optional and projection is not False and projection.prunes(i, j, a, b, budget):
++                            and best is not None and best[0] > 0 and projection is not False):
++                        projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
++                        if projection_pruned:
+                             continue
+                     pair = (i,j)
+                     candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
+@@ -724,11 +829,13 @@
+                     budget.counts['witness_projection_completed_exact'] = completed_exact
+                     if best is None:
+                         best,best_pair = candidate,pair
++                        best_floor = best[0] // best[1]
+                         projection = None
+                     else:
+                         comparison = candidate[0]*best[1]-best[0]*candidate[1]
+                         if comparison < 0 or comparison == 0 and pair < best_pair:
+                             best,best_pair = candidate,pair
++                            best_floor = best[0] // best[1]
+                             if projection is not None:
+                                 budget.counts['witness_projection_invalidations'] = budget.counts.get('witness_projection_invalidations', 0) + 1
+                             projection = None
