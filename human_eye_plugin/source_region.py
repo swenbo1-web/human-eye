@@ -5,6 +5,7 @@ import copy
 from dataclasses import dataclass
 import hashlib
 import json
+import math
 import time
 
 import numpy as np
@@ -18,8 +19,8 @@ from .active_observation_host import scene_from_capture, source_binding
 from .active_observation_images import SceneObservationImages, _meshes_from_objects
 from .attention_raster import select_sparse_attention_view
 from .attention_rendering import _contrasting_boundaries
-from .blender_host import _observation_target_cameras
-from .query_policy import MAX_SOURCE_REGION_TRIANGLES
+from .blender_host import _digest as _host_digest, _observation_target_cameras
+from .query_policy import MAX_SOURCE_REGION_TRIANGLES, _source_region_world_box
 from .scene_cache import _validate_scene
 from .surface_proximity import measure_surface_proximity
 from .task_query import _surface_proximity_fact
@@ -672,6 +673,180 @@ def _witness_sources(holder, side, triangle_indices, vertex_indices, check_budge
             'source_vertex_indices': vertices, 'index_domain': SOURCE_INDEX_DOMAIN}
 
 
+def _measure_region_surfaces(left, right, triangle_indices, vertex_indices, check_budget, diagnostics):
+    diagnostics['surface_pair_count'] += 1
+    holder, surface_work = {}, {}
+    measured = measure_surface_proximity(left, right, check_budget,
+        diagnostics=surface_work, _prepared_holder=holder)
+    diagnostics['surface_work'] = surface_work
+    witness = {
+        'a': _witness_sources(holder, 0, triangle_indices, vertex_indices, check_budget),
+        'b': _witness_sources(holder, 1, range(len(right.faces)), range(len(right.vertices)), check_budget)}
+    diagnostics['source_membership_triangle_tests'] = (
+        len(left.faces) + len(right.faces) if 'witness_points' in holder else 0)
+    return {'surface': measured, 'nearest_witness_source': witness}
+
+
+def _selective_digest(value):
+    return (type(value) is str and len(value) == 64
+            and all(char in '0123456789abcdef' for char in value))
+
+
+def _selective_string(value):
+    return type(value) is str and bool(value) and len(value.encode('utf8')) <= 256
+
+
+def _selective_number(value):
+    if type(value) not in (int, float):
+        return False
+    try:
+        return math.isfinite(value) and float(value) == value
+    except OverflowError:
+        return False
+
+
+def _selective_mesh_arrays(mesh, check_budget):
+    vertices, faces = mesh.get('vertices'), mesh.get('faces')
+    if type(vertices) is not list or not vertices or type(faces) is not list or not faces:
+        raise ValueError('selective_source_region_mesh_arrays_required')
+    for index, row in enumerate(vertices):
+        if index % 256 == 0:
+            check_budget('selective_source_region_mesh_vertices')
+        if type(row) is not list or len(row) != 3 or not all(map(_selective_number, row)):
+            raise ValueError('selective_source_region_mesh_vertex_invalid')
+    for index, row in enumerate(faces):
+        if index % 256 == 0:
+            check_budget('selective_source_region_mesh_faces')
+        if (type(row) is not list or len(row) != 3
+                or any(type(vertex) is not int or not 0 <= vertex < len(vertices) for vertex in row)):
+            raise ValueError('selective_source_region_mesh_face_invalid')
+    return vertices, faces
+
+
+def _validate_selective_capture(capture, target, reference, box, host_sha, check_budget):
+    if (type(capture) is not dict or set(capture) !=
+            {'schema', 'binding', 'region', 'reference', 'payload_sha256', 'work', 'stages'}
+            or capture['schema'] != 'human-eye-selective-source-region-capture-v1'):
+        raise ValueError('selective_source_region_capture_schema')
+    binding = capture['binding']
+    if (type(binding) is not dict or set(binding) != {
+            'capture_scope', 'document_epoch', 'host_source_sha256', 'target_selector', 'reference_selector',
+            'world_box_m', 'target', 'reference', 'unit', 'coordinate_frame', 'source_frame', 'world_matrices'}
+            or binding['capture_scope'] != 'selected_source_region_and_reference'
+            or not _selective_digest(binding['document_epoch'])
+            or not _selective_digest(host_sha) or binding['host_source_sha256'] != host_sha
+            or binding['unit'] != 'm' or binding['coordinate_frame'] != 'world'
+            or binding['target_selector'] != target or binding['reference_selector'] != reference):
+        raise ValueError('selective_source_region_capture_binding')
+    if _source_region_world_box(binding['world_box_m']) != box:
+        raise ValueError('selective_source_region_box_binding')
+    for key, selector in (('target', target), ('reference', reference)):
+        identity = binding[key]
+        field = 'object_id' if 'id' in selector else 'name'
+        if (type(identity) is not dict or set(identity) != {'object_id', 'name', 'instance_id'}
+                or not all(map(_selective_string, identity.values()))
+                or identity[field] != next(iter(selector.values()))):
+            raise ValueError('selective_source_region_object_binding')
+    if any(binding['target'][key] == binding['reference'][key] for key in ('object_id', 'instance_id')):
+        raise ValueError('selective_source_region_distinct_objects_required')
+    frame = binding['source_frame']
+    if (type(frame) is not dict or set(frame) != {'frame', 'subframe', 'scale_length', 'view_layer'}
+            or type(frame['frame']) is not int or not _selective_number(frame['subframe'])
+            or not _selective_number(frame['scale_length']) or frame['scale_length'] <= 0
+            or not _selective_string(frame['view_layer'])):
+        raise ValueError('selective_source_region_frame_binding')
+    matrices = binding['world_matrices']
+    if (type(matrices) is not dict or set(matrices) != {'target', 'reference'}
+            or any(type(matrix) is not list or len(matrix) != 4 or any(
+                type(row) is not list or len(row) != 4 or not all(map(_selective_number, row))
+                for row in matrix) for matrix in matrices.values())):
+        raise ValueError('selective_source_region_transform_binding')
+
+    region, whole = capture['region'], capture['reference']
+    if (type(region) is not dict or set(region) != {'vertices', 'faces', 'source_triangle_indices',
+            'source_vertex_indices', 'source_triangle_vertices', 'source_triangle_count', 'source_vertex_count'}
+            or type(whole) is not dict or set(whole) != {'vertices', 'faces'}):
+        raise ValueError('selective_source_region_mesh_schema')
+    vertices, faces = _selective_mesh_arrays(region, check_budget)
+    ref_vertices, ref_faces = _selective_mesh_arrays(whole, check_budget)
+    rows, vertex_rows = region['source_triangle_indices'], region['source_vertex_indices']
+    for mapping, total, length in ((rows, region['source_triangle_count'], len(faces)),
+                                   (vertex_rows, region['source_vertex_count'], len(vertices))):
+        if (type(total) is not int or type(mapping) is not list or len(mapping) != length
+                or any(type(row) is not int or not 0 <= row < total for row in mapping)
+                or any(left >= right for left, right in zip(mapping, mapping[1:]))):
+            raise ValueError('selective_source_region_source_order_or_range')
+    if (len(faces) > MAX_SOURCE_REGION_TRIANGLES
+            or len({index for face in faces for index in face}) != len(vertices)
+            or any(not low <= coordinate <= high for point in vertices
+                   for low, coordinate, high in zip(box['min'], point, box['max']))):
+        raise ValueError('selective_source_region_incomplete_compact_box')
+    original_faces = region['source_triangle_vertices']
+    if (type(original_faces) is not list or len(original_faces) != len(faces)
+            or any(type(row) is not list or len(row) != 3 or any(type(index) is not int for index in row)
+                   or row != [vertex_rows[index] for index in face]
+                   for row, face in zip(original_faces, faces))):
+        raise ValueError('selective_source_region_source_vertices_mismatch')
+    if (not _selective_digest(capture['payload_sha256']) or capture['payload_sha256'] != _host_digest(
+            {key: capture[key] for key in ('schema', 'binding', 'region', 'reference')})):
+        raise ValueError('selective_source_region_payload_digest_mismatch')
+    work = capture['work']
+    counts = {
+        'expanded_objects': 2,
+        'expanded_vertices': region['source_vertex_count'] + len(ref_vertices),
+        'expanded_triangles': region['source_triangle_count'] + len(ref_faces),
+        'transmitted_objects': 2,
+        'transmitted_vertices': len(vertices) + len(ref_vertices),
+        'transmitted_triangles': len(faces) + len(ref_faces),
+        'private_cache_retained_objects': 0,
+    }
+    if (type(work) is not dict or type(work.get('candidate_objects')) is not int
+            or work['candidate_objects'] < 2 or any(type(work.get(key)) is not int or work[key] != value
+                                                   for key, value in counts.items())
+            or type(capture['stages']) is not dict):
+        raise ValueError('selective_source_region_capture_accounting')
+    check_budget('selective_source_region_capture_validated')
+
+
+def measure_selective_region(capture, target, reference, box, host_sha, check_budget=_checkpoint):
+    """Measure two privately scoped meshes without issuing a full-scene reference."""
+    started = time.perf_counter_ns()
+    _validate_selective_capture(capture, target, reference, box, host_sha, check_budget)
+    validation = _interval(started)
+    binding, region, whole = (capture[key] for key in ('binding', 'region', 'reference'))
+    started = time.perf_counter_ns()
+    left, right = _meshes_from_objects(tuple(
+        (mesh['vertices'], mesh['faces'], (capture['payload_sha256'], key), binding[key]['name'])
+        for key, mesh in (('target', region), ('reference', whole))))
+    preparation = _interval(started)
+    rows, vertices = region['source_triangle_indices'], region['source_vertex_indices']
+    work = {'surface_pair_count': 0, 'surface_pair_cache_hit': False}
+    started = time.perf_counter_ns()
+    value = _measure_region_surfaces(left, right, rows, vertices, check_budget, work)
+    measurement = _interval(started)
+    return {
+        'schema': 'human-eye-selective-source-region-measurement-v1', 'status': 'complete',
+        'binding': copy.deepcopy(binding), 'payload_sha256': capture['payload_sha256'],
+        'reference': dict(binding['reference']),
+        'measurement_scope': 'complete_selected_source_triangle_union_to_reference_triangle_surface',
+        'facts': {'surface_proximity': _surface_proximity_fact(value['surface'])},
+        'source_mapping': {
+            'region': {
+                'index_domain': SOURCE_INDEX_DOMAIN,
+                'submesh_to_source_triangle_indices': rows,
+                'submesh_to_source_vertex_indices': vertices,
+                'triangles_source_vertices': region['source_triangle_vertices'],
+                'triangles_submesh_vertices': region['faces'],
+            },
+            'nearest_witness': value['nearest_witness_source'],
+        },
+        'frames': [], 'read_only': True, 'execution_authority': False,
+        'work': {'host_capture': dict(capture['work']), 'task_query': work, 'raster_attempts': 0},
+        'stages': {'host_capture': dict(capture['stages']), 'capture_validation': validation,
+                   'region_array_preparation': preparation, 'task_measurement': measurement},
+    }
+
+
 def measure_region(prepared, reference, cache, check_budget=_checkpoint, diagnostics=None):
     """Run the existing triangle-surface solver on the complete selected union."""
     diagnostics = {} if diagnostics is None else diagnostics
@@ -684,18 +859,8 @@ def measure_region(prepared, reference, cache, check_budget=_checkpoint, diagnos
     started = time.perf_counter_ns()
 
     def compute():
-        diagnostics['surface_pair_count'] += 1
-        holder, surface_work = {}, {}
-        measured = measure_surface_proximity(prepared.region_mesh, right, check_budget,
-            diagnostics=surface_work, _prepared_holder=holder)
-        diagnostics['surface_work'] = surface_work
-        witness = {
-            'a': _witness_sources(holder, 0, prepared.source_triangle_indices,
-                                   prepared.source_vertex_indices, check_budget),
-            'b': _witness_sources(holder, 1, range(len(right.faces)), range(len(right.vertices)), check_budget)}
-        diagnostics['source_membership_triangle_tests'] = (
-            len(prepared.region_mesh.faces) + len(right.faces) if 'witness_points' in holder else 0)
-        return {'surface': measured, 'nearest_witness_source': witness}
+        return _measure_region_surfaces(prepared.region_mesh, right, prepared.source_triangle_indices,
+                                        prepared.source_vertex_indices, check_budget, diagnostics)
 
     parameters = {'region_ref': prepared.region_ref, 'reference': reference_binding,
                   'source_binding_sha256': prepared.binding['source_binding_sha256'],

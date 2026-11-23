@@ -1617,6 +1617,55 @@ class LiveSpatialService:
         finally:
             context.lock.release()
 
+    def _measure_selective_source_region(self, session_id, query, *, include_image=False):
+        """Exercise the isolated no-image closed-box capture and exact measurement."""
+        from .query_policy import validate_source_region_query
+        from .source_region import measure_selective_region
+
+        if include_image is not False:
+            raise ValueError('selective_source_region_requires_no_image')
+        query = validate_source_region_query(query)
+        selection = query.get('region')
+        if selection is None or 'world_box_m' not in selection:
+            raise ValueError('selective_source_region_requires_world_box')
+        target, reference, box = selection['object'], query['reference'], selection['world_box_m']
+        if target == reference:
+            raise ValueError('selective_source_region_distinct_objects_required')
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        capture_pair = getattr(self.host, 'capture_source_region_pair', None)
+        if not callable(capture_pair):
+            raise ValueError('selective_source_region_host_unavailable')
+
+        started = time.perf_counter_ns()
+        with self._request_budget(), self._read_context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            remaining = self._check_request_budget('before_selective_source_region_capture')
+            deadline_ns = time.perf_counter_ns() + int((30 if remaining is None else remaining) * 1e9)
+            def checkpoint(stage):
+                self._check_request_budget(stage)
+                if time.perf_counter_ns() >= deadline_ns:
+                    raise RequestBudgetError('expired', stage)
+
+            capture_started = time.perf_counter_ns()
+            with span('host.capture_source_region_pair', kind='host'):
+                capture = capture_pair(target, reference, box, deadline_ns, 64 * 1024 * 1024)
+            capture_closed = time.perf_counter_ns()
+            checkpoint('after_selective_source_region_capture')
+            result = measure_selective_region(capture, target, reference, box,
+                getattr(self.host, '_readonly_host_source_sha256', None), checkpoint)
+            result['session_id'] = session_id
+            self._bind_read_result(result, source_check)
+            result['stages']['host_read'] = {'started_ns': capture_started, 'closed_ns': capture_closed,
+                                            'elapsed_ns': capture_closed - capture_started}
+            checkpoint('before_selective_source_region_result')
+            closed = time.perf_counter_ns()
+            result['stages']['service_total'] = {'started_ns': started, 'closed_ns': closed,
+                                                 'elapsed_ns': closed - started}
+            return result
+
     def _observe_source_region(self, session_id, query, *, include_image):
         from .active_observation_host import source_binding
         from .read_context import query_key

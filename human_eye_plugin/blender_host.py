@@ -2239,6 +2239,160 @@ class BlenderSceneHost:
                 state.nearest[selection_key] = (copy.deepcopy(packet), packet_bytes)
             return packet
 
+    @staticmethod
+    def _source_region_pair_box(world_box_m):
+        error = 'source_region_pair_invalid_world_box'
+        if (type(world_box_m) is not dict or set(world_box_m) != {'min', 'max'}
+                or any(type(row) is not list or len(row) != 3 for row in world_box_m.values())):
+            raise BlenderHostError(error)
+        bounds = {}
+        for key in ('min', 'max'):
+            values = []
+            for number in world_box_m[key]:
+                if type(number) not in (int, float):
+                    raise BlenderHostError(error)
+                try:
+                    value = float(number)
+                except OverflowError:
+                    raise BlenderHostError(error) from None
+                if not math.isfinite(value) or number != value:
+                    raise BlenderHostError(error)
+                values.append(value)
+            bounds[key] = values
+        if any(lo > hi for lo, hi in zip(bounds['min'], bounds['max'])):
+            raise BlenderHostError(error)
+        return bounds
+
+    @staticmethod
+    def _compact_source_region_pair(mesh, box, checkpoint):
+        minimum, maximum = box['min'], box['max']
+        vertices, faces = mesh['vertices'], mesh['faces']
+        # Retain the same closed binary64 inequalities as the public selector.
+        inside = [all(lo <= value <= hi for lo, value, hi in zip(minimum, point, maximum))
+                  for point in _acquisition_vertices(vertices, checkpoint)]
+        selected_indices, selected_faces = [], []
+        for index, face in enumerate(_acquisition_vertices(faces, checkpoint)):
+            if all(inside[vertex] for vertex in face):
+                selected_indices.append(index)
+                selected_faces.append(face)
+                if len(selected_indices) > 4096:
+                    raise BlenderHostError('source_region_pair_triangle_limit')
+        if not selected_indices:
+            raise BlenderHostError('source_region_pair_empty_world_box')
+        vertex_indices = sorted({vertex for face in selected_faces for vertex in face})
+        compact_index = {original: compact for compact, original in enumerate(vertex_indices)}
+        region = {'vertices': [vertices[index] for index in vertex_indices],
+                  'faces': [[compact_index[vertex] for vertex in face] for face in selected_faces],
+                  'source_triangle_indices': selected_indices, 'source_vertex_indices': vertex_indices,
+                  'source_triangle_vertices': selected_faces, 'source_triangle_count': len(faces),
+                  'source_vertex_count': len(vertices)}
+        checkpoint()
+        return region
+
+    def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes):
+        """Create an uncached private pair from one current evaluated host read."""
+        self._main_thread()
+        selectors = [target, reference]
+        for selector in selectors:
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('source_region_pair_selector')
+        box = self._source_region_pair_box(world_box_m)
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('source_region_pair_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('source_region_pair_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('source_region_pair_deadline_exceeded')
+
+        def interval(started):
+            closed = time.perf_counter_ns()
+            return {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+
+        def source_frame():
+            layer = self.view_layer
+            pointer = getattr(layer, 'as_pointer', None)
+            layer_id = 'rna:' + str(int(pointer())) if callable(pointer) else 'python:' + str(id(layer))
+            return {'frame': int(getattr(self.scene, 'frame_current', 0)),
+                    'subframe': float(getattr(self.scene, 'frame_subframe', 0.)),
+                    'scale_length': self._scale(), 'view_layer': layer_id}
+
+        checkpoint()
+        scope = 'selected_source_region_and_reference'
+        with self._lock:
+            checkpoint()
+            started = time.perf_counter_ns()
+            graph = self._depsgraph()
+            if self.object_names is not None:
+                raise BlenderHostError('source_region_pair_explicit_object_scope_unsupported')
+            frame = source_frame()
+            objects, selection = self._task_objects(selectors)
+            if any('object_id' not in row for row in selection['bindings']):
+                reason = next(row['reason'] for row in selection['bindings'] if 'object_id' not in row)
+                raise BlenderHostError('source_region_pair_' + reason)
+            if len(objects) != 2 or selection['pair_reason'] is not None:
+                raise BlenderHostError('source_region_pair_selectors_resolve_to_same_object')
+            identity = self._identity_metadata(objects, capture_scope=scope)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('source_region_pair_source_identity')
+            evaluated = {self.object_id(obj): obj.evaluated_get(graph) for obj in objects}
+            matrices = {oid: _matrix(obj.matrix_world) for oid, obj in evaluated.items()}
+            stages = {'directory_and_binding': interval(started)}
+
+            started = time.perf_counter_ns()
+            capture = self._capture(_acquisition_context=(graph, frame['scale_length'], objects,
+                                                         evaluated, checkpoint),
+                                    _acquisition_scope=scope, _resident=False)
+            checkpoint()
+            stages['mesh_expansion'] = interval(started)
+
+            started = time.perf_counter_ns()
+            meshes = {mesh['object_id']: mesh for mesh in capture['meshes']}
+            from_id, to_id = [row['object_id'] for row in selection['bindings']]
+            region = self._compact_source_region_pair(meshes[from_id], box, checkpoint)
+            reference_geometry = {key: meshes[to_id][key] for key in ('vertices', 'faces')}
+            stages['selection_and_compaction'] = interval(started)
+
+            started = time.perf_counter_ns()
+            current_objects, current_selection = self._task_objects(selectors)
+            if (current_selection != selection or len(current_objects) != 2
+                    or any(not _same_rna(a, b) for a, b in zip(objects, current_objects))
+                    or source_frame() != frame or self._identity_metadata(objects, capture_scope=scope) != identity
+                    or any(_matrix(obj.matrix_world) != matrices[oid] for oid, obj in evaluated.items())):
+                raise BlenderHostError('source_region_pair_source_changed')
+            stages['source_recheck'] = interval(started)
+
+            started = time.perf_counter_ns()
+            bound_objects = [dict(row, instance_id=identity['object_instances'][row['object_id']])
+                             for row in selection['bindings']]
+            binding = {'capture_scope': scope, 'document_epoch': identity['document_epoch'],
+                       'host_source_sha256': source_sha, 'target_selector': dict(target),
+                       'reference_selector': dict(reference), 'world_box_m': box,
+                       'target': bound_objects[0], 'reference': bound_objects[1], 'unit': 'm',
+                       'coordinate_frame': 'world', 'source_frame': frame,
+                       'world_matrices': {'target': matrices[from_id], 'reference': matrices[to_id]}}
+            packet = {'schema': 'human-eye-selective-source-region-capture-v1', 'binding': binding,
+                      'region': region, 'reference': reference_geometry}
+            packet['payload_sha256'] = _digest(packet)
+            packet['work'] = {'candidate_objects': selection['candidate_count'], 'expanded_objects': 2,
+                              'expanded_vertices': sum(len(mesh['vertices']) for mesh in meshes.values()),
+                              'expanded_triangles': sum(len(mesh['faces']) for mesh in meshes.values()),
+                              'transmitted_objects': 2, 'private_cache_retained_objects': 0,
+                              'transmitted_vertices': len(region['vertices']) + len(reference_geometry['vertices']),
+                              'transmitted_triangles': len(region['faces']) + len(reference_geometry['faces'])}
+            stages['binding'] = interval(started)
+            packet['stages'] = stages
+            checkpoint()
+            encoded = json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+            if len(encoded) > max_response_bytes:
+                raise BlenderHostError('source_region_pair_document_budget_exceeded')
+            checkpoint()
+            return packet
+
     def capture_task_scene(self, selectors):
         """Read only the uniquely bound targets in one synchronous observation."""
         self._main_thread()

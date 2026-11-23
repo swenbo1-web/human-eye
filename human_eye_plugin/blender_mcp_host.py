@@ -43,7 +43,8 @@ _MAX_REQUEST_BYTES = 32 * 1024
 _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
-_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit'})
+_SELECTIVE_SOURCE_REGION = 'capture_source_region_pair'
+_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
@@ -247,6 +248,19 @@ class BlenderMCPHost:
 
     def capture_task_scene(self, selectors) -> dict[str, Any]:
         return self._request('capture_task', {'selectors': selectors})
+
+    def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes):
+        """Fetch one private selection and whole reference without a scene delta."""
+        now = time.perf_counter_ns()
+        if type(deadline_ns) is not int or deadline_ns <= now:
+            raise ValueError('selective_source_region_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
+            raise ValueError('selective_source_region_response_budget')
+        deadline_ns = min(deadline_ns, now + int(self.timeout_s * 1e9))
+        return self._request(_SELECTIVE_SOURCE_REGION, {
+            'target': target, 'reference': reference, 'world_box_m': world_box_m,
+            'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes,
+        })
 
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
         now = time.perf_counter_ns()
@@ -562,6 +576,7 @@ class BlenderMCPHost:
 
     def _observation_code(self, command, params, request_id):
         required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
+            _SELECTIVE_SOURCE_REGION: {'target', 'reference', 'world_box_m', 'deadline_ns', 'max_response_bytes'},
             'capture_directory': {'deadline_ns', 'max_response_bytes'},
             'capture_active_observation': {'selector', 'deadline_ns', 'max_response_bytes'},
             'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
@@ -611,7 +626,11 @@ class BlenderMCPHost:
             if len(payload) > request_limit:
                 raise ValueError("BlenderMCP request exceeds the transport size limit")
             try:
-                outer = self._exchange(payload)
+                if command == _SELECTIVE_SOURCE_REGION:
+                    outer = self._exchange(payload, deadline_ns=params['deadline_ns'],
+                                           max_response_bytes=params['max_response_bytes'])
+                else:
+                    outer = self._exchange(payload)
                 if (not isinstance(outer, dict) or outer.get("status") != "success"
                         or set(outer) != {"status", "result"}):
                     raise ValueError("BlenderMCP returned an unsuccessful or unexpected response")
@@ -642,6 +661,14 @@ class BlenderMCPHost:
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
                 self._resident_ready = True
+                if command == _SELECTIVE_SOURCE_REGION:
+                    binding = result.get('binding')
+                    if (result.get('schema') != 'human-eye-selective-source-region-capture-v1'
+                            or type(binding) is not dict
+                            or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
+                        raise ValueError('selective_source_region_host_binding')
+                    if time.perf_counter_ns() >= params['deadline_ns']:
+                        raise ValueError('selective_source_region_deadline')
                 if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
                     result = self._scene_decoder.apply(result)
                 if command == 'capture_directory':
@@ -718,9 +745,13 @@ class BlenderMCPHost:
             connection.close()
             raise
 
-    def _exchange(self, payload):
+    def _exchange(self, payload, *, deadline_ns=None, max_response_bytes=None):
         # The addon keeps sockets open. Scan new bytes to find the outer endpoint.
-        deadline = time.monotonic() + self.timeout_s
+        if max_response_bytes is None:
+            max_response_bytes = _MAX_RESPONSE_BYTES
+        timeout_s = self.timeout_s if deadline_ns is None else min(
+            self.timeout_s, (deadline_ns - time.perf_counter_ns()) / 1e9)
+        deadline = time.monotonic() + timeout_s
         try:
             connection = self._connect(deadline)
         except (OSError, TimeoutError) as exc:
@@ -741,11 +772,11 @@ class BlenderMCPHost:
                 if remaining <= 0:
                     raise TimeoutError("BlenderMCP request timed out")
                 connection.settimeout(remaining)
-                chunk = connection.recv(min(65536, _MAX_RESPONSE_BYTES + 1 - len(buffer)))
+                chunk = connection.recv(min(65536, max_response_bytes + 1 - len(buffer)))
                 if not chunk:
                     raise ValueError("BlenderMCP disconnected before a complete response")
                 buffer.extend(chunk)
-                if len(buffer) > _MAX_RESPONSE_BYTES:
+                if len(buffer) > max_response_bytes:
                     raise ValueError("BlenderMCP response exceeds the size limit")
                 if boundary.feed(chunk):
                     return _loads(buffer.decode("utf-8"))
