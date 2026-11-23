@@ -467,6 +467,305 @@ def _queue_distance(left, right, shift, budget):
     return _scratch(sum(gap*gap for gap in gaps))
 
 
+WITNESS_PROJECTION_AFTER_COMPLETED = 64
+WITNESS_PROJECTION_BUILD_BITS = 256
+WITNESS_PROJECTION_AXIS_BITS = 128
+WITNESS_PROJECTION_SCRATCH_BITS = 512
+WITNESS_PROJECTION_FIRST_ALLOWANCE = 100
+WITNESS_PROJECTION_TEST_ALLOWANCE = 50
+
+
+class _ProjectionUnavailable(Exception):
+    """Only this optional local proof is unavailable; use original exact work."""
+
+
+def _wp_optional_allowance(budget, amount):
+    if MAX_WORK_UNITS - budget.counts['work_units'] >= amount:
+        return True
+    budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+    return False
+
+
+def _wp_scalar(value, cap):
+    if type(value) is not int or abs(value).bit_length() > min(cap, MAX_BITS):
+        raise _ProjectionUnavailable('local_bits')
+    return value
+
+
+def _wp_add(a, b, cap, budget):
+    budget.tick('witness_projection_arithmetic')
+    cap = min(cap, _MAX_SCRATCH_BITS)
+    _wp_scalar(a, cap)
+    _wp_scalar(b, cap)
+    if a == 0:
+        return b
+    if b == 0:
+        return a
+    if max(abs(a).bit_length(), abs(b).bit_length()) + 1 > cap:
+        raise _ProjectionUnavailable('local_bits')
+    return a + b
+
+
+def _wp_mul(a, b, cap, budget):
+    budget.tick('witness_projection_arithmetic')
+    cap = min(cap, _MAX_SCRATCH_BITS)
+    _wp_scalar(a, cap)
+    _wp_scalar(b, cap)
+    if a == 0 or b == 0:
+        return 0
+    if abs(a).bit_length() + abs(b).bit_length() > cap:
+        raise _ProjectionUnavailable('local_bits')
+    return a * b
+
+
+def _wp_vector(value, budget):
+    if type(value) not in (tuple, list) or len(value) != 3:
+        raise _ProjectionUnavailable('descriptor')
+    budget.tick('witness_projection_descriptor_components', 3)
+    return tuple(_wp_scalar(x, WITNESS_PROJECTION_BUILD_BITS) for x in value)
+
+
+def _wp_difference(a, b, budget):
+    return tuple(_wp_add(x, -y, WITNESS_PROJECTION_BUILD_BITS, budget) for x, y in zip(a, b))
+
+
+def _wp_descriptor_direction(descriptor, budget):
+    """Positive-denominator symbolic form of point_b minus point_a."""
+    if type(descriptor) not in (tuple, list) or not descriptor:
+        raise _ProjectionUnavailable('descriptor')
+    kind, *values = descriptor
+    cap = WITNESS_PROJECTION_BUILD_BITS
+    if kind == 'points' and len(values) == 2:
+        return _wp_difference(_wp_vector(values[1], budget), _wp_vector(values[0], budget), budget)
+    if kind == 'face' and len(values) == 5:
+        point, normal, height, squared, reverse = values
+        normal = _wp_vector(normal, budget)
+        budget.tick('witness_projection_descriptor_components', 2)
+        height, squared = _wp_scalar(height, cap), _wp_scalar(squared, cap)
+        if squared <= 0 or type(reverse) is not bool:
+            raise _ProjectionUnavailable('descriptor')
+        sign = (1 if reverse else -1) * ((height > 0) - (height < 0))
+        budget.tick('witness_projection_arithmetic', 3)
+        return tuple(sign * x for x in normal)
+    if kind == 'edge' and len(values) == 6:
+        point, start, delta, parameter, squared, reverse = values
+        point, start, delta = (_wp_vector(p, budget) for p in (point, start, delta))
+        budget.tick('witness_projection_descriptor_components', 2)
+        parameter, squared = _wp_scalar(parameter, cap), _wp_scalar(squared, cap)
+        if squared <= 0 or type(reverse) is not bool:
+            raise _ProjectionUnavailable('descriptor')
+        difference = _wp_difference(start, point, budget)
+        axis = tuple(_wp_add(_wp_mul(x, squared, cap, budget), _wp_mul(v, parameter, cap, budget), cap, budget)
+                     for x, v in zip(difference, delta))
+        if reverse:
+            budget.tick('witness_projection_arithmetic', 3)
+            axis = tuple(-x for x in axis)
+        return axis
+    if kind == 'edges' and len(values) == 7:
+        a, b, u, v, s, t, denominator = values
+        a, b, u, v = (_wp_vector(p, budget) for p in (a, b, u, v))
+        budget.tick('witness_projection_descriptor_components', 3)
+        s, t, denominator = (_wp_scalar(x, cap) for x in (s, t, denominator))
+        if denominator <= 0:
+            raise _ProjectionUnavailable('descriptor')
+        difference = _wp_difference(b, a, budget)
+        return tuple(_wp_add(_wp_add(_wp_mul(x, denominator, cap, budget),
+                         _wp_mul(y, t, cap, budget), cap, budget),
+                         -_wp_mul(z, s, cap, budget), cap, budget)
+                     for x, y, z in zip(difference, v, u))
+    raise _ProjectionUnavailable('descriptor')
+
+
+class _WitnessProjection:
+    """One actual-best epoch, one primitive axis, two lazy source-row maps."""
+    @classmethod
+    def from_best(cls, best, budget):
+        budget.tick('witness_projection_direction_builds')
+        try:
+            if (type(best) not in (tuple, list) or len(best) != 3
+                    or type(best[0]) is not int or type(best[1]) is not int
+                    or best[0] <= 0 or best[1] <= 0):
+                raise _ProjectionUnavailable('descriptor')
+            axis = _wp_descriptor_direction(best[2], budget)
+            budget.tick('witness_projection_arithmetic', 3)
+            divisor = math.gcd(*axis)
+            if not divisor:
+                raise _ProjectionUnavailable('zero_axis')
+            budget.tick('witness_projection_arithmetic', 3)
+            axis = tuple(x // divisor for x in axis)
+            if any(abs(x).bit_length() > WITNESS_PROJECTION_AXIS_BITS for x in axis):
+                raise _ProjectionUnavailable('local_bits')
+            cap = WITNESS_PROJECTION_SCRATCH_BITS
+            squared = 0
+            for x in axis:
+                squared = _wp_add(squared, _wp_mul(x, x, cap, budget), cap, budget)
+            numerator, denominator = (_wp_scalar(x, cap) for x in best[:2])
+            product = _wp_mul(squared, numerator, cap, budget)
+            budget.tick('witness_projection_arithmetic', 2)
+            cutoff = math.isqrt(product // denominator)
+        except _ProjectionUnavailable as exc:
+            label = {'descriptor': 'descriptor', 'zero_axis': 'zero_axis', 'local_bits': 'local_limit'}[str(exc)]
+            name = 'witness_projection_' + label + '_skips'
+            budget.counts[name] = budget.counts.get(name, 0) + 1
+            return False
+        budget.tick('witness_projection_directions')
+        # One real cache epoch will be released, either on best replacement or
+        # query return. Charge its release now rather than after exact work may
+        # have used the final original budget unit. There is no refund/reset.
+        budget.tick('witness_projection_epoch_release_units')
+        self = cls.__new__(cls)
+        self.best = best
+        self.axis = axis
+        self.norm_squared = squared
+        self.cutoff = cutoff
+        self.epoch = budget.counts['witness_projection_directions']
+        self.intervals = ({}, {})
+        return self
+
+    def interval(self, side, row, triangle, budget):
+        budget.tick('witness_projection_cache_lookups')
+        cache = self.intervals[side]
+        if row in cache:
+            budget.counts['witness_projection_cache_hits'] = budget.counts.get('witness_projection_cache_hits', 0) + 1
+            return cache[row]
+        cap = WITNESS_PROJECTION_SCRATCH_BITS
+        try:
+            values = []
+            for point in triangle[0]:
+                budget.tick('witness_projection_vertex_dots')
+                total = 0
+                for x, n in zip(point, self.axis):
+                    total = _wp_add(total, _wp_mul(x, n, cap, budget), cap, budget)
+                values.append(total)
+            interval = min(values), max(values)
+        except _ProjectionUnavailable:
+            budget.counts['witness_projection_local_limit_skips'] = budget.counts.get('witness_projection_local_limit_skips', 0) + 1
+            interval = False
+        budget.tick('witness_projection_intervals_built')
+        cache[row] = interval
+        return interval
+
+    def prunes(self, i, j, a, b, budget):
+        budget.tick('witness_projection_tests')
+        left = self.interval(0, i, a, budget)
+        right = self.interval(1, j, b, budget)
+        if left is False or right is False:
+            return False
+        try:
+            gap = max(_wp_add(left[0], -right[1], WITNESS_PROJECTION_SCRATCH_BITS, budget),
+                      _wp_add(right[0], -left[1], WITNESS_PROJECTION_SCRATCH_BITS, budget), 0)
+        except _ProjectionUnavailable:
+            budget.counts['witness_projection_local_limit_skips'] = budget.counts.get('witness_projection_local_limit_skips', 0) + 1
+            return False
+        if gap > self.cutoff:
+            budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
+            return True
+        return False
+
+
+def _wp_attempt_work_bound(projection, i, j, a, b):
+    """51 axis units; test base5; cold side1+7 per prepared hull point.
+
+    Cached False intervals are still cached: their failed construction has
+    already been paid, and a future lookup cannot repeat that construction.
+    """
+    cost = 51 if projection is None else 0
+    cost += 5
+    for side, row, triangle in ((0, i, a), (1, j, b)):
+        if projection is None or row not in projection.intervals[side]:
+            cost += 1 + 7 * len(triangle[0])
+    return cost
+
+
+def _wp_narrow_work_floor(a, b):
+    """Strict positive separation excludes contact early returns.
+
+    A completed original narrow call must pay narrow+intersection=2 and every
+    native point-face, point-edge and edge-edge feature entry counted here.
+    Normal triangles give35. No optional or old plane/AABB work is credited.
+    """
+    va, vb = len(a[0]), len(b[0])
+    ea, eb = len(a[3]), len(b[3])
+    return 2 + va * (int(bool(b[2])) + eb) + vb * (int(bool(a[2])) + ea) + ea * eb
+
+
+class _ProjectionCredit:
+    """Query-local, non-borrowing account of already saved original work.
+
+    Start0. A reused unshifted dequeue bound saves1 at the same checkpoint.
+    Only a proved strict leaf exclusion earns its original narrow work floor.
+    Each attempt must fit both settled credit and original remaining budget;
+    finally debit the actual original _Work delta, including every failure.
+    There is no refund, replay, increase of a limit or whole-query result cache.
+    """
+    def __init__(self, budget):
+        self.budget = budget
+        self.balance = 0
+        self.spent = 0
+        self.earned_bounds = 0
+        self.earned_narrow = 0
+        self.attempts = 0
+        self.pending_upper = None
+        self.pending_work_start = None
+        for name in ('balance', 'node_units', 'narrow_units', 'spent_units', 'attempts',
+                     'credit_deferrals', 'budget_deferrals', 'upper_units', 'last_upper', 'last_actual'):
+            budget.counts['witness_projection_credit_' + name] = 0
+
+    @property
+    def available_credit(self):
+        """True prefix margin also while an admitted attempt is in progress."""
+        pending = (0 if self.pending_work_start is None else
+                   self.budget.counts['work_units'] - self.pending_work_start)
+        return self.balance - pending
+
+    def saved_bound(self):
+        self.balance += 1
+        self.earned_bounds += 1
+        counts = self.budget.counts
+        counts['witness_projection_credit_node_units'] = self.earned_bounds
+        counts['witness_projection_credit_balance'] = self.balance
+
+    def attempt(self, projection, best, i, j, a, b):
+        budget = self.budget
+        counts = budget.counts
+        upper = _wp_attempt_work_bound(projection, i, j, a, b)
+        if upper > self.balance:
+            counts['witness_projection_credit_credit_deferrals'] += 1
+            return projection, False
+        if upper > MAX_WORK_UNITS - counts['work_units']:
+            counts['witness_projection_credit_budget_deferrals'] += 1
+            return projection, False
+        self.attempts += 1
+        counts['witness_projection_credit_attempts'] = self.attempts
+        counts['witness_projection_credit_upper_units'] += upper
+        counts['witness_projection_credit_last_upper'] = upper
+        self.pending_upper = upper
+        self.pending_work_start = counts['work_units']
+        pruned = False
+        try:
+            if projection is None:
+                projection = _WitnessProjection.from_best(best, budget)
+            if projection is not False:
+                pruned = projection.prunes(i, j, a, b, budget)
+        finally:
+            actual = counts['work_units'] - self.pending_work_start
+            self.balance -= actual
+            self.spent += actual
+            self.pending_upper = self.pending_work_start = None
+            counts['witness_projection_credit_spent_units'] = self.spent
+            counts['witness_projection_credit_last_actual'] = actual
+            counts['witness_projection_credit_balance'] = self.balance
+            if actual < 0 or actual > upper or self.balance < 0:
+                raise ArithmeticError('witness_projection_credit_invariant')
+        if pruned:
+            saved = _wp_narrow_work_floor(a, b)
+            self.balance += saved
+            self.earned_narrow += saved
+            counts['witness_projection_credit_narrow_units'] = self.earned_narrow
+            counts['witness_projection_credit_balance'] = self.balance
+        return projection, pruned
+
+
 def _nearest_tree(prepared, roots, budget, witness_pair=None):
     largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
         zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
@@ -483,12 +782,23 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
         serial += 1
     push(*roots)
     best = best_pair = None
+    best_floor = None
+    credit = _ProjectionCredit(budget)
+    completed_exact = 0
+    projection = None
     while pending:
         budget.tick('node_pair_visits')
-        _, _, left, right = heapq.heappop(pending)
+        key, _, left, right = heapq.heappop(pending)
         if best is not None:
-            budget.tick('aabb_bound_tests')
-            if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best):
+            if shift == 0:
+                budget.checkpoint('surface_proximity_aabb_bound_tests')
+                budget.counts['aabb_bound_tests'] += 1
+                credit.saved_bound()
+                node_excluded = key > best_floor
+            else:
+                budget.tick('aabb_bound_tests')
+                node_excluded = _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best)
+            if node_excluded:
                 budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
                 continue
         if left[3] is not None and right[3] is not None:
@@ -507,15 +817,28 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                         if pruned:
                             budget.counts['plane_pruned_pairs'] += 1
                             continue
+                    if (completed_exact >= WITNESS_PROJECTION_AFTER_COMPLETED
+                            and best is not None and best[0] > 0 and projection is not False):
+                        projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
+                        if projection_pruned:
+                            continue
                     pair = (i,j)
                     candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
                                               budget,planes)
+                    completed_exact += 1
+                    budget.counts['witness_projection_completed_exact'] = completed_exact
                     if best is None:
                         best,best_pair = candidate,pair
+                        best_floor = best[0] // best[1]
+                        projection = None
                     else:
                         comparison = candidate[0]*best[1]-best[0]*candidate[1]
                         if comparison < 0 or comparison == 0 and pair < best_pair:
                             best,best_pair = candidate,pair
+                            best_floor = best[0] // best[1]
+                            if projection is not None:
+                                budget.counts['witness_projection_invalidations'] = budget.counts.get('witness_projection_invalidations', 0) + 1
+                            projection = None
         elif right[3] is not None or left[3] is None and left[2] >= right[2]:
             push(left[4],right)
             push(left[5],right)
