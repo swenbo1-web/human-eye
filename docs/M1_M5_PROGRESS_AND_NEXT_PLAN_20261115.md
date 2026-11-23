@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [无图选区同代复用](M2_SOURCE_REGION_SELECTIVE_RESIDENCY_001_INDEPENDENT_REVIEW.md) 四槽、十二量测全过，Yanyite 同盒流量少 83.56%，业务少 41.35%，整窗几乎持平。下一项 [选区量测 MCP 可选入口](M1_M2_SOURCE_REGION_SCOPED_MEASUREMENT_001_PLAN.md)。[冷启动选区传输](M2_SOURCE_REGION_COLD_SELECTIVE_TRANSPORT_RECOVERY_001_INDEPENDENT_REVIEW.md) 装配冷双向少 37.12%，Yanyite 少 96.06%。[21 对象轨道留出](M4_RAIL_SOURCE_REGION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 插件 17/17、原生 15/17。[28 对象装配](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 与 [Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂各 17/17，完整窗分别少 44.18% 与 42.62%。
+当前 [选区量测 MCP 可选入口](M1_M2_SOURCE_REGION_SCOPED_MEASUREMENT_001_INDEPENDENT_REVIEW.md) 正式 4 槽、12 量测成功，端点正文约 0.95–1.02 KB，Yanyite 冷宿主双向少 95.93%、整窗多 5.30%。下一项 [显式无图入口自然采用留出](M1_M2_SOURCE_REGION_SCOPED_MEASUREMENT_CONSUMPTION_001_PLAN.md)。[无图选区同代复用](M2_SOURCE_REGION_SELECTIVE_RESIDENCY_001_INDEPENDENT_REVIEW.md) 已验证同盒零重展、重筛、重传。[21 对象轨道留出](M4_RAIL_SOURCE_REGION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 插件 17/17、原生 15/17。[28 对象装配](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 与 [Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂各 17/17，完整窗分别少 44.18% 与 42.62%。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -12,8 +12,8 @@
 
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
-| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 曲面与装配同版首包各采用 2/2，下一步验证显式无图选区端点 |
-| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 无图闭盒冷读与同代复用均现场通过，目前为隔离候选 |
+| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 无图选区模式真实端点已验，隔离显式启用，待自然采用 |
+| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 无图闭盒冷读与同代复用均现场通过，热端到端代价仍留账 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
 | M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 轨道第三域首包采用 2/2，插件取景通过，原生 M19 无像素 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
