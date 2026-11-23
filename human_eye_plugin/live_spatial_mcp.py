@@ -1908,7 +1908,8 @@ def _project_source_region_brief(value, blocker_rows=()):
             'source_mapping': {'nearest_witness': task['source_mapping']['nearest_witness']},
         },
         'visibility': {key: item for key, item in visibility.items()
-            if key not in ('visible_source_triangle_indices', 'unseen_source_triangle_indices', 'image_scope')},
+            if key not in ('visible_source_triangle_indices', 'unseen_source_triangle_indices',
+                           'image_scope', 'sampled_pixel')},
         'images': images,
         'region': {key: region[key] for key in (
             'host_id', 'instance_id', 'object_name', 'index_domain', 'bbox_min_world_m', 'bbox_max_world_m')},
@@ -2012,7 +2013,8 @@ def _source_region_sample_image_path(value, frame, image_root, lookup_sample_pat
                 or visibility['visibility_scope'] != 'actual_frame_source_triangle_samples'
                 or visibility['unknown'] != ['complete_surface_visibility']
                 or visibility['selected_object_participates'] is not True
-                or frame['view_name'] != 'SCENE' or type(pixels) is not int or pixels <= 0):
+                or frame['view_name'] != 'SCENE' and 'sampled_pixel' not in visibility
+                or type(pixels) is not int or pixels <= 0):
             return None
         authored = lookup_sample_path(value, frame)
         if authored is None:
@@ -2221,6 +2223,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
             raise ValueError('Active observation requires at most six frame references')
         if source_region:
             _validate_source_region_projection(value)
+            if not source_region_brief:
+                metadata['facts']['visibility'].pop('sampled_pixel', None)
         else:
             metadata['frames'] = [{key: copy.deepcopy(frame[key]) for key in (
                 'scene_identity', 'candidate_identity', 'view_name', 'image_ref',
@@ -2284,6 +2288,8 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
                                                                  source_region_sample_path)
                 if local_path is not None:
                     metadata['images'][0]['local_image_path'] = local_path
+                    if witness is None and 'sampled_pixel' in value['facts']['visibility']:
+                        metadata['images'][0]['sampled_pixel'] = copy.deepcopy(value['facts']['visibility']['sampled_pixel'])
             projected = metadata
         else:
             metadata['image_delivery'] = image_delivery

@@ -1520,13 +1520,50 @@ class LiveSpatialService:
         return prepared
 
     def _source_region_sample_path(self, value, frame):
-        """Confirm a sampled reply against its retained producer while it is current."""
+        """Confirm the published sample and PNG against the current producer."""
         context = self._read_context
         if not context.lock.acquire(blocking=False):
             return None
         try:
             prepared = self._matching_source_region_producer(value, frame)
-            return None if prepared is None else prepared.observation['frames'][0]['image_path']
+            if prepared is None:
+                return None
+            original = prepared.observation
+            visibility = original['facts']['visibility']
+            view = frame['view_name']
+            path = original['frames'][0]['image_path']
+            if 'sampled_pixel' not in visibility:
+                return path if view == 'SCENE' else None
+            pixel = visibility['sampled_pixel']
+            if type(pixel) is not dict or pixel.keys() != {'row', 'column', 'source_triangle_index'}:
+                return None
+            row, column, face = (pixel[key] for key in ('row', 'column', 'source_triangle_index'))
+            binding = prepared.binding
+            scope = binding['image_scope']
+            if (any(type(index) is not int or index < 0 for index in (row, column, face))
+                    or face not in prepared.source_triangle_indices
+                    or face not in visibility['visible_source_triangle_indices']
+                    or any(visibility[key] != frame[key] for key in ('view_name', 'image_ref', 'frame_identity'))
+                    or view not in binding['camera_policy']['order']
+                    or visibility['image_scope'] != frame['image_scope'] or frame['image_scope'] != scope
+                    or scope['participation_mask'][prepared.object_index] is not True
+                    or value['task_result']['binding'] != value['binding']):
+                return None
+            # The producer already validated these resident arrays with the
+            # original PNG. Check the cell without another NPZ read or decode.
+            stored = prepared.images._frames.get(view)
+            if stored is None or frame != {key: item for key, item in stored.items() if key != 'buffers'}:
+                return None
+            buffers = stored['buffers']
+            owners = buffers['owners']
+            offset = prepared.images._patch_mapping['arrays']['face_patch_offsets'][prepared.object_index]
+            if (row >= owners.shape[0] or column >= owners.shape[1]
+                    or owners[row, column] != prepared.object_index
+                    or buffers['triangle_ids'][row, column] != offset + face):
+                return None
+            return path
+        except (AttributeError, KeyError, IndexError, TypeError, ValueError):
+            return None
         finally:
             context.lock.release()
 

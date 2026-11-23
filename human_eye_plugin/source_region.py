@@ -16,6 +16,7 @@ from .active_observation import (
 )
 from .active_observation_host import scene_from_capture, source_binding
 from .active_observation_images import SceneObservationImages, _meshes_from_objects
+from .attention_raster import select_sparse_attention_view
 from .attention_rendering import _contrasting_boundaries
 from .blender_host import _observation_target_cameras
 from .query_policy import MAX_SOURCE_REGION_TRIANGLES
@@ -429,7 +430,7 @@ def _classify_view(region, triangles, pose, check_budget):
 
 
 def _capture_region_frame(prepared, view, geometry_status, image_scope, work, stages,
-                          construction_callback, check_budget):
+                          construction_callback, check_budget, *, sampled_pixel=False):
     check_budget('source_region_before_frame')
     started = time.perf_counter_ns()
     if construction_callback is not None:
@@ -451,6 +452,8 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
     offset = int(prepared.images._patch_mapping['arrays']['face_patch_offsets'][prepared.object_index])
     selected = np.asarray(prepared.source_triangle_indices, dtype=np.int32) + offset
     mask = np.isin(buffers['triangle_ids'], selected)
+    if sampled_pixel:
+        mask &= buffers['owners'] == prepared.object_index
     visible = sorted(int(index) - offset for index in np.unique(buffers['triangle_ids'][mask]))
     y, x = np.nonzero(mask)
     samples = len(x)
@@ -464,6 +467,10 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
         'frame_identity': frame['frame_identity'], 'image_scope': copy.deepcopy(image_scope),
         'selected_source_triangle_count': len(prepared.source_triangle_indices),
         'selected_object_participates': image_scope['participation_mask'][prepared.object_index]}
+    if sampled_pixel and samples:
+        row, column = int(y[0]), int(x[0])
+        visibility['sampled_pixel'] = {'row': row, 'column': column,
+            'source_triangle_index': int(buffers['triangle_ids'][row, column]) - offset}
     if not samples:
         visibility.update(status='unknown', reason=(
             'selected_region_not_displayed' if not visibility['selected_object_participates']
@@ -509,9 +516,20 @@ def _observe_displayed_region(prepared, directory, image_scope, work, stages,
     region = _selected_rectangle(prepared) if mask[prepared.object_index] else None
     stages['source_region_rectangle_selection'] = _interval(started)
     if region is None:
-        frame, visibility = _capture_region_frame(prepared, 'SCENE', None, image_scope, work, stages,
-                                                   construction_callback, check_budget)
-        stages['frame_validation_and_selected_pixels'] = stages.pop('frame_validation_and_selected_pixels_SCENE')
+        view = 'SCENE'
+        participates = mask[prepared.object_index]
+        if participates:
+            started = time.perf_counter_ns()
+            view, votes = select_sparse_attention_view(prepared.meshes, prepared.cameras['views'],
+                object_mask=mask, object_index=prepared.object_index,
+                source_triangle_indices=prepared.source_triangle_indices, check_budget=check_budget)
+            work['sparse_view_probe_views'] = len(votes)
+            stages['source_region_sparse_view_selection'] = {**_interval(started), 'votes': votes,
+                                                               'chosen_view': view}
+        frame, visibility = _capture_region_frame(prepared, view, None, image_scope, work, stages,
+                                                   construction_callback, check_budget,
+                                                   sampled_pixel=participates)
+        stages['frame_validation_and_selected_pixels'] = stages.pop('frame_validation_and_selected_pixels_' + view)
         return frame, visibility, [], []
 
     started = time.perf_counter_ns()
@@ -564,6 +582,8 @@ def observe_region(prepared, directory, *, include_image, construction_callback=
     if include_image and prepared.observation is not None:
         result = copy.deepcopy(prepared.observation)
         work['frame_reuses'] = len(result['frames'])
+        if 'sparse_view_probe_views' in result['work']:
+            work['sparse_view_probe_views'] = 0
         result.update(work=work, stages={})
         return result
     frames, stages = [], {}
