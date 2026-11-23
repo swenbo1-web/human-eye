@@ -1,0 +1,1565 @@
+{
+  "arms": {
+    "N1": {
+      "CLI_PNG_bytes": 58907,
+      "CLI_PNG_count": 2,
+      "PNG_retransmissions": 0,
+      "actual_requests": [
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 384,
+          "CLI_received_ns": 11502884592200,
+          "after_previous_result_ms": null,
+          "arguments": {
+            "code": "data=scene_data(); print(data.keys()); print([(ob.keys()) for ob in data['objects'][:1]])"
+          },
+          "attempt": 1,
+          "dispatch_to_CLI_result_ms": 896.6881,
+          "error": null,
+          "flush_completed_ns": 11502883935400,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 816,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_01\\REQUEST.json",
+            "sha256": "469e38ae3e5e66d70e376b8e9d090265a0b4ad6988a109ca63b0480db3dd8548"
+          },
+          "owner_response": {
+            "bytes": 486,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_01\\RESPONSE.json",
+            "sha256": "c58417b4e8e10d334ffb99631ab9efcc7d273b4a49520eaa57810b04d35d5d07"
+          },
+          "owner_window_ms": 880.5299,
+          "product": null,
+          "request_started_ns": 11501987904100,
+          "stdio_RX": {
+            "bytes": 486,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\004\\RX.bin",
+            "sha256": "c58417b4e8e10d334ffb99631ab9efcc7d273b4a49520eaa57810b04d35d5d07"
+          },
+          "stdio_TX": {
+            "bytes": 816,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\004\\TX.bin",
+            "sha256": "469e38ae3e5e66d70e376b8e9d090265a0b4ad6988a109ca63b0480db3dd8548"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 896.0313,
+          "wire_content": {
+            "PNG": [],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 384
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 314,
+          "CLI_received_ns": 11508861500300,
+          "after_previous_result_ms": 5938.1826,
+          "arguments": {
+            "code": "print(data['source_ref']); print([(ob['name'],ob['object_id'],ob['visible_get'],len(ob['vertices']),len(ob['triangles'])) for ob in data['objects']]); print(data['source_face_offsets'])"
+          },
+          "attempt": 2,
+          "dispatch_to_CLI_result_ms": 38.7255,
+          "error": null,
+          "flush_completed_ns": 11508861079200,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 912,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_02\\REQUEST.json",
+            "sha256": "18f522c7307dba3f167a0f7bd708667ba2d25953b6355b2be6e0d68019d2e6b0"
+          },
+          "owner_response": {
+            "bytes": 417,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_02\\RESPONSE.json",
+            "sha256": "acbfa39ad668f6261487bad0ed72d1ad5a51b15b80e93edbc61bb7aa53e933f5"
+          },
+          "owner_window_ms": 10.4627,
+          "product": null,
+          "request_started_ns": 11508822774800,
+          "stdio_RX": {
+            "bytes": 417,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\005\\RX.bin",
+            "sha256": "acbfa39ad668f6261487bad0ed72d1ad5a51b15b80e93edbc61bb7aa53e933f5"
+          },
+          "stdio_TX": {
+            "bytes": 912,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\005\\TX.bin",
+            "sha256": "18f522c7307dba3f167a0f7bd708667ba2d25953b6355b2be6e0d68019d2e6b0"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 38.3044,
+          "wire_content": {
+            "PNG": [],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 314
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 553,
+          "CLI_received_ns": 11518408449400,
+          "after_previous_result_ms": 9503.8699,
+          "arguments": {
+            "code": "character=data['objects'][0]; cube=data['objects'][1]; verts=np.array(character['vertices']); tris=np.array(character['triangles']); cv=np.array(cube['vertices']); ct=np.array(cube['triangles']); print(verts.shape,tris.shape); print('Cube vertices',cv.tolist()); boxes={'negative':(np.array([-.08,-.112,0]),np.array([.08,-.09,.05])),'positive':(np.array([-.08,.085,0]),np.array([.08,.105,.05]))}; selections={};\nfor name,(lo,hi) in boxes.items():\n mask=np.all((verts[tris]>=lo)&(verts[tris]<=hi),axis=(1,2)); indices=np.flatnonzero(mask); selections[name]=indices; print(name,'triangles',len(indices),'vertices',len(np.unique(tris[indices])),'bounds',verts[tris[indices]].min(axis=(0,1)).tolist(),verts[tris[indices]].max(axis=(0,1)).tolist())"
+          },
+          "attempt": 3,
+          "dispatch_to_CLI_result_ms": 43.0792,
+          "error": null,
+          "flush_completed_ns": 11518408047800,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1472,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_03\\REQUEST.json",
+            "sha256": "5240b143cad5b790a54c478bdb061cf86e5cd585b2d38d591585c7aeb79b3c2f"
+          },
+          "owner_response": {
+            "bytes": 657,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_03\\RESPONSE.json",
+            "sha256": "3620de4352d4252554170e6bd251168b6217340bbc933e1e122b594b5d4ed39d"
+          },
+          "owner_window_ms": 35.5408,
+          "product": null,
+          "request_started_ns": 11518365370200,
+          "stdio_RX": {
+            "bytes": 657,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\006\\RX.bin",
+            "sha256": "3620de4352d4252554170e6bd251168b6217340bbc933e1e122b594b5d4ed39d"
+          },
+          "stdio_TX": {
+            "bytes": 1472,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\006\\TX.bin",
+            "sha256": "5240b143cad5b790a54c478bdb061cf86e5cd585b2d38d591585c7aeb79b3c2f"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 42.6776,
+          "wire_content": {
+            "PNG": [],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 553
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 748,
+          "CLI_received_ns": 11528926750900,
+          "after_previous_result_ms": 10482.1674,
+          "arguments": {
+            "code": "for name,indices in selections.items():\n used=np.unique(tris[indices]); maxid=used[np.argmax(np.max(np.abs(verts[used]),axis=1))]; point=verts[maxid].copy(); axis=int(np.argmax(np.abs(point))); target=point.copy(); target[axis]=np.sign(point[axis]); distance=float(np.linalg.norm(target-point)); source_tri=int(indices[np.flatnonzero(np.any(tris[indices]==maxid,axis=1))[0]]); print(name,{'vertex':int(maxid),'source_triangle':source_tri,'character_point':point.tolist(),'cube_point':target.tolist(),'distance_m':distance,'direction':((target-point)/distance).tolist(),'margin_from_0.892':distance-.892})\nframes={}\nfor name,direction in [('negative','FRONT'),('positive','BACK')]:\n lo,hi=boxes[name]; frames[name]=render_local(direction,(lo+hi)/2,.22,include_image=False); print(name,frames[name])"
+          },
+          "attempt": 4,
+          "dispatch_to_CLI_result_ms": 36.1341,
+          "error": null,
+          "flush_completed_ns": 11528926320700,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1528,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_04\\REQUEST.json",
+            "sha256": "5978f8221fd3090077817dc69a8584c0a90bd0946b62782012374008ff5ca003"
+          },
+          "owner_response": {
+            "bytes": 857,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_04\\RESPONSE.json",
+            "sha256": "0f98502db3d44985cb98a2110c67840533ff81e58aba38012cfd958d1b519e0b"
+          },
+          "owner_window_ms": 11.9522,
+          "product": null,
+          "request_started_ns": 11528890616800,
+          "stdio_RX": {
+            "bytes": 857,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\007\\RX.bin",
+            "sha256": "0f98502db3d44985cb98a2110c67840533ff81e58aba38012cfd958d1b519e0b"
+          },
+          "stdio_TX": {
+            "bytes": 1528,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\007\\TX.bin",
+            "sha256": "5978f8221fd3090077817dc69a8584c0a90bd0946b62782012374008ff5ca003"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 35.7039,
+          "wire_content": {
+            "PNG": [],
+            "error": true,
+            "response_present": true,
+            "text_bytes": 748
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 1,
+          "CLI_delivered_text_bytes": 2195,
+          "CLI_received_ns": 11538284072200,
+          "after_previous_result_ms": 8802.6229,
+          "arguments": {
+            "direction": "FRONT",
+            "include_image": true,
+            "target_world_m": [
+              0,
+              -0.101,
+              0.025
+            ],
+            "view_span_m": 0.22
+          },
+          "attempt": 5,
+          "dispatch_to_CLI_result_ms": 554.6984,
+          "error": null,
+          "flush_completed_ns": 11538283347800,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 809,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_05\\REQUEST.json",
+            "sha256": "9060218ba36a19b070fd355de670de3c8b36558ecde7c229a2683817be80478c"
+          },
+          "owner_response": {
+            "bytes": 41694,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_05\\RESPONSE.json",
+            "sha256": "4c3d2ad7a8769d6ecea389085c899e42c2183415951b0e3feb0431ede77bef43"
+          },
+          "owner_window_ms": 526.7766,
+          "product": null,
+          "request_started_ns": 11537729373800,
+          "stdio_RX": {
+            "bytes": 41694,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\008\\RX.bin",
+            "sha256": "4c3d2ad7a8769d6ecea389085c899e42c2183415951b0e3feb0431ede77bef43"
+          },
+          "stdio_TX": {
+            "bytes": 809,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\008\\TX.bin",
+            "sha256": "9060218ba36a19b070fd355de670de3c8b36558ecde7c229a2683817be80478c"
+          },
+          "tool": "render_local",
+          "tool_wire_RTT_ms": 553.974,
+          "wire_content": {
+            "PNG": [
+              {
+                "bytes": 29406,
+                "sha256": "fc06d732f20982be53fcad4f3317e98f5bc921127d34dcf630effc57bae4739d"
+              }
+            ],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 2195
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 1,
+          "CLI_delivered_text_bytes": 2190,
+          "CLI_received_ns": 11538578339900,
+          "after_previous_result_ms": 0.4518,
+          "arguments": {
+            "direction": "BACK",
+            "include_image": true,
+            "target_world_m": [
+              0,
+              0.095,
+              0.025
+            ],
+            "view_span_m": 0.22
+          },
+          "attempt": 6,
+          "dispatch_to_CLI_result_ms": 293.8159,
+          "error": null,
+          "flush_completed_ns": 11538577645900,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 807,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_06\\REQUEST.json",
+            "sha256": "137fb5159fc4987da61c13c6b3b2658cfb9f82877eec61cd258acebfcdf149c0"
+          },
+          "owner_response": {
+            "bytes": 41817,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_06\\RESPONSE.json",
+            "sha256": "b7e4b4407f07017b91706b14e051ed078c600d4da0cffbf98f4ee2243af22af2"
+          },
+          "owner_window_ms": 269.2208,
+          "product": null,
+          "request_started_ns": 11538284524000,
+          "stdio_RX": {
+            "bytes": 41817,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\009\\RX.bin",
+            "sha256": "b7e4b4407f07017b91706b14e051ed078c600d4da0cffbf98f4ee2243af22af2"
+          },
+          "stdio_TX": {
+            "bytes": 807,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\009\\TX.bin",
+            "sha256": "137fb5159fc4987da61c13c6b3b2658cfb9f82877eec61cd258acebfcdf149c0"
+          },
+          "tool": "render_local",
+          "tool_wire_RTT_ms": 293.1219,
+          "wire_content": {
+            "PNG": [
+              {
+                "bytes": 29501,
+                "sha256": "e0ebfb128698ec721deca9de38eb0d8ca0e6915163b5bdb2cd2dcba98051b27e"
+              }
+            ],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 2190
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 813,
+          "CLI_received_ns": 11548612611100,
+          "after_previous_result_ms": 10014.2545,
+          "arguments": {
+            "code": "refs={'negative':'native-image:46f4e41dc3fc96ba059ed3dfeb5faf5dea15099fff43603327568c6eb59fd23c','positive':'native-image:6eb1e405de5ba88be231e2096364dc594768df6f2adc3a17e901fc1bb338f91f'}\nfor name,ref in refs.items():\n buf=buffers[ref]; print(name,'buffer keys',buf.keys()); ids=np.asarray(buf['triangle_ids']); owners=np.asarray(buf['owners']); mask=(owners==0)&np.isin(ids,selections[name]); pixels=np.argwhere(mask); shown=np.unique(ids[mask]); print('pixels',len(pixels),'visible selected triangles',len(shown),'pixel bounds', pixels.min(axis=0).tolist() if len(pixels) else None,pixels.max(axis=0).tolist() if len(pixels) else None)\n if len(pixels):\n  row,col=pixels[len(pixels)//2]; print('witness',int(row),int(col),'triangle',int(ids[row,col]),'triangle vertices',verts[tris[ids[row,col]]].tolist())"
+          },
+          "attempt": 7,
+          "dispatch_to_CLI_result_ms": 20.0167,
+          "error": null,
+          "flush_completed_ns": 11548612160700,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1539,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_07\\REQUEST.json",
+            "sha256": "168b459afb61d5ed0790c5c771b6a1bc887ed4076a4ea64180198f108b9abb8d"
+          },
+          "owner_response": {
+            "bytes": 919,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_07\\RESPONSE.json",
+            "sha256": "67524d5861b9498383061ab8989bc40c7b45b98b934aa5de140fdba63a0d7bfc"
+          },
+          "owner_window_ms": 15.3757,
+          "product": null,
+          "request_started_ns": 11548592594400,
+          "stdio_RX": {
+            "bytes": 919,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\010\\RX.bin",
+            "sha256": "67524d5861b9498383061ab8989bc40c7b45b98b934aa5de140fdba63a0d7bfc"
+          },
+          "stdio_TX": {
+            "bytes": 1539,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\010\\TX.bin",
+            "sha256": "168b459afb61d5ed0790c5c771b6a1bc887ed4076a4ea64180198f108b9abb8d"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 19.5663,
+          "wire_content": {
+            "PNG": [],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 813
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 0,
+          "CLI_delivered_text_bytes": 451,
+          "CLI_received_ns": 11559639616700,
+          "after_previous_result_ms": 10992.29,
+          "arguments": {
+            "code": "print('Cube evaluated triangles',ct.tolist()); print('Cube face planes',[(int(k),[(int(axis),float(cv[tri,axis][0])) for axis in range(3) if np.all(cv[tri,axis]==cv[tri,axis][0])]) for k,tri in enumerate(ct)]); print('selection finite', all(np.isfinite(verts[tris[idx]]).all() for idx in selections.values()))"
+          },
+          "attempt": 8,
+          "dispatch_to_CLI_result_ms": 34.7156,
+          "error": null,
+          "flush_completed_ns": 11559639309100,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1036,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_08\\REQUEST.json",
+            "sha256": "4ef04094492519f19c6dfc3df3c167e07c85e56d9352997752ddb6b1f0f1db8b"
+          },
+          "owner_response": {
+            "bytes": 554,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\owner\\tool_08\\RESPONSE.json",
+            "sha256": "37cfe4dd7b2cbdd252603095515eb5bb6833dac91c0d7fb195c773834bf6f936"
+          },
+          "owner_window_ms": 10.5847,
+          "product": null,
+          "request_started_ns": 11559604901100,
+          "stdio_RX": {
+            "bytes": 554,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\011\\RX.bin",
+            "sha256": "37cfe4dd7b2cbdd252603095515eb5bb6833dac91c0d7fb195c773834bf6f936"
+          },
+          "stdio_TX": {
+            "bytes": 1036,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\attachments\\bridge_a0521a2b29ce489aadc4a4cac6db6be1\\011\\TX.bin",
+            "sha256": "4ef04094492519f19c6dfc3df3c167e07c85e56d9352997752ddb6b1f0f1db8b"
+          },
+          "tool": "execute_python",
+          "tool_wire_RTT_ms": 34.408,
+          "wire_content": {
+            "PNG": [],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 451
+          }
+        }
+      ],
+      "calls": {
+        "execute_python": 6,
+        "render_local": 2
+      },
+      "clock_ms": {
+        "between_tool_wait": 55733.8391,
+        "cleanup_to_publish": 1358.0347,
+        "final_to_publish": 3983.3525,
+        "full_window": 99476.5563,
+        "last_tool_to_final": 24956.3001,
+        "owner_service_sum": 1760.4434,
+        "prompt_to_final": 93009.6072,
+        "prompt_to_first_call": 10401.5945,
+        "prompt_to_first_evidence": 11298.2826,
+        "prompt_to_first_original_image": 46697.7626,
+        "ready_to_prompt": 255.1824,
+        "startup_to_ready": 2228.4142,
+        "tool_wire_RTT_sum": 1913.7874
+      },
+      "closure_verified": true,
+      "criteria": {
+        "nearer": {
+          "quote": "**负 Y 区更近**，两区距离相差 **0.006835935899 米**，约 6.836 毫米。",
+          "status": "pass"
+        },
+        "negative_y.counts": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.888427734439 | `(0, -1, 0)` | 否，差 0.003572265561 米 |",
+          "status": "pass"
+        },
+        "negative_y.direction": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.888427734439 | `(0, -1, 0)` | 否，差 0.003572265561 米 |",
+          "status": "pass"
+        },
+        "negative_y.distance": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.888427734439 | `(0, -1, 0)` | 否，差 0.003572265561 米 |",
+          "status": "pass"
+        },
+        "negative_y.image": {
+          "quote": "| [负 Y 区原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/N1/native_frames/001/SCENE.png) | `(0,-1,1)` | `(234, 348)` | 121 | 41 / 301 个三角贡献像素，共 1135 像素 |",
+          "status": "pass"
+        },
+        "negative_y.nearest_pair": {
+          "quote": "  `(0.024658203125, -0.111572265560970, 0.001464848626979)`  \n  → `(0.024658203125, -1, 0.001464848626979)`  ",
+          "status": "pass"
+        },
+        "negative_y.pixel": {
+          "quote": "| [负 Y 区原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/N1/native_frames/001/SCENE.png) | `(0,-1,1)` | `(234, 348)` | 121 | 41 / 301 个三角贡献像素，共 1135 像素 |",
+          "status": "pass"
+        },
+        "negative_y.scope": {
+          "quote": "**图像只能证实上述视角下未被遮挡、且实际贡献像素的局部表面**，不能证明完整选区均可见，也不能直接证实隐藏 Cube 或数值最短距离；距离结论来自完整求值几何计算。",
+          "status": "pass"
+        },
+        "negative_y.threshold": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.888427734439 | `(0, -1, 0)` | 否，差 0.003572265561 米 |",
+          "status": "pass"
+        },
+        "positive_y.counts": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.895263670338 | `(0, 1, 0)` | 是，超出 0.003263670338 米 |",
+          "status": "pass"
+        },
+        "positive_y.direction": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.895263670338 | `(0, 1, 0)` | 是，超出 0.003263670338 米 |",
+          "status": "pass"
+        },
+        "positive_y.distance": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.895263670338 | `(0, 1, 0)` | 是，超出 0.003263670338 米 |",
+          "status": "pass"
+        },
+        "positive_y.image": {
+          "quote": "| [正 Y 区原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/N1/native_frames/002/SCENE.png) | `(0,1,1)` | `(236, 430)` | 43090 | 7 / 136 个三角贡献像素，共 487 像素 |",
+          "status": "pass"
+        },
+        "positive_y.nearest_pair": {
+          "quote": "  `(-0.075439453125, 0.104736329661729, 0.035156245421830)`  \n  → `(-0.075439453125, 1, 0.035156245421830)`  ",
+          "status": "pass"
+        },
+        "positive_y.pixel": {
+          "quote": "| [正 Y 区原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/N1/native_frames/002/SCENE.png) | `(0,1,1)` | `(236, 430)` | 43090 | 7 / 136 个三角贡献像素，共 487 像素 |",
+          "status": "pass"
+        },
+        "positive_y.scope": {
+          "quote": "**图像只能证实上述视角下未被遮挡、且实际贡献像素的局部表面**，不能证明完整选区均可见，也不能直接证实隐藏 Cube 或数值最短距离；距离结论来自完整求值几何计算。",
+          "status": "pass"
+        },
+        "positive_y.threshold": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.895263670338 | `(0, 1, 0)` | 是，超出 0.003263670338 米 |",
+          "status": "pass"
+        }
+      },
+      "exact_final": {
+        "archive_member": "slots/N1/consumer/PUBLIC_FINAL.txt",
+        "bytes": 2863,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\consumer\\PUBLIC_FINAL.txt",
+        "sha256": "1e8d77ac668bb127600eb4fca66d78ac731dfb661fcc1b52b280a40aa9eb8cc4"
+      },
+      "first_published_by_region": {
+        "negative_y": {
+          "PNG_retransmission_attempts": [],
+          "evidence_matching_final": [],
+          "final_frame_origin": "common_native",
+          "first_image_measurement_matches_final": false,
+          "first_image_request_attempt": null,
+          "first_image_request_failed": null,
+          "first_image_request_full_projection_triggered": false,
+          "first_image_request_had_verified_path_and_pixel": false,
+          "first_image_request_path_pixel_match_final": false,
+          "first_image_requested_detail": null,
+          "first_image_response_projection": null,
+          "first_verified_image_delivery_attempt": null,
+          "product_source_region_attempts": [],
+          "repeated_measurement_attempts": []
+        },
+        "positive_y": {
+          "PNG_retransmission_attempts": [],
+          "evidence_matching_final": [],
+          "final_frame_origin": "common_native",
+          "first_image_measurement_matches_final": false,
+          "first_image_request_attempt": null,
+          "first_image_request_failed": null,
+          "first_image_request_full_projection_triggered": false,
+          "first_image_request_had_verified_path_and_pixel": false,
+          "first_image_request_path_pixel_match_final": false,
+          "first_image_requested_detail": null,
+          "first_image_response_projection": null,
+          "first_verified_image_delivery_attempt": null,
+          "product_source_region_attempts": [],
+          "repeated_measurement_attempts": []
+        }
+      },
+      "full_score": {
+        "archive_member": "score/N1_SCORE.json",
+        "bytes": 56405,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\score\\N1_SCORE.json",
+        "sha256": "a10e5e2af0f7da5e0deeb3d20e982d095daf8ed219906684d3c420699549a270"
+      },
+      "images": {
+        "negative_y": {
+          "NPZ": {
+            "archive_member": "slots/N1/native_frames/001/SCENE.npz",
+            "bytes": 511879,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\native_frames\\001\\SCENE.npz",
+            "sha256": "2714107dd4496ccb0bff7dcce27f8a8dcf8815e6b963e97aa76feeb5b594f583"
+          },
+          "PNG": {
+            "archive_member": "slots/N1/native_frames/001/SCENE.png",
+            "bytes": 29406,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\native_frames\\001\\SCENE.png",
+            "sha256": "fc06d732f20982be53fcad4f3317e98f5bc921127d34dcf630effc57bae4739d"
+          },
+          "origin": "common_native",
+          "ref": "native-image:46f4e41dc3fc96ba059ed3dfeb5faf5dea15099fff43603327568c6eb59fd23c",
+          "sampled_triangles": 41,
+          "selected_pixels": 1135,
+          "view": "FRONT"
+        },
+        "positive_y": {
+          "NPZ": {
+            "archive_member": "slots/N1/native_frames/002/SCENE.npz",
+            "bytes": 524030,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\native_frames\\002\\SCENE.npz",
+            "sha256": "06271ed6b50848b5c37572854229feb434a9c0b67a24611c59fe9b12f0647701"
+          },
+          "PNG": {
+            "archive_member": "slots/N1/native_frames/002/SCENE.png",
+            "bytes": 29501,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\native_frames\\002\\SCENE.png",
+            "sha256": "e0ebfb128698ec721deca9de38eb0d8ca0e6915163b5bdb2cd2dcba98051b27e"
+          },
+          "origin": "common_native",
+          "ref": "native-image:6eb1e405de5ba88be231e2096364dc594768df6f2adc3a17e901fc1bb338f91f",
+          "sampled_triangles": 7,
+          "selected_pixels": 487,
+          "view": "BACK"
+        }
+      },
+      "literal_claims": {
+        "archive_member": "score/N1_CLAIMS.json",
+        "bytes": 4908,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\score\\N1_CLAIMS.json",
+        "sha256": "91300285acb95d530aefad3f03a29edeb95cef5ac73111b7f7d841edf3f091b7"
+      },
+      "product_native_transport": [],
+      "product_service": [],
+      "public_text_bytes": 7648,
+      "quality": 17,
+      "slot_publication": {
+        "archive_member": "slots/N1/SLOT_PUBLICATION.json",
+        "bytes": 280,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\N1\\SLOT_PUBLICATION.json",
+        "sha256": "b250dff49e9f290d6b2f2b60057ae71091a25769a57a22a011fb65a0278955a5"
+      },
+      "source_integrity": true,
+      "status": "completed",
+      "usage": {
+        "cached_input": 44928,
+        "input": 62776,
+        "input_minus_cache_plus_output": 20167,
+        "input_output": 65095,
+        "output": 2319
+      }
+    },
+    "P1": {
+      "CLI_PNG_bytes": 64121,
+      "CLI_PNG_count": 2,
+      "PNG_retransmissions": 0,
+      "actual_requests": [
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 1,
+          "CLI_delivered_text_bytes": 7375,
+          "CLI_received_ns": 11604152945200,
+          "after_previous_result_ms": null,
+          "arguments": {
+            "include_image": true,
+            "query": {
+              "mode": "source_region",
+              "reference": {
+                "name": "Cube"
+              },
+              "region": {
+                "object": {
+                  "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+                },
+                "world_box_m": {
+                  "max": [
+                    0.08,
+                    -0.09,
+                    0.05
+                  ],
+                  "min": [
+                    -0.08,
+                    -0.112,
+                    0
+                  ]
+                }
+              },
+              "requested_facts": [
+                "surface_proximity"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "attempt": 1,
+          "dispatch_to_CLI_result_ms": 2859.4819,
+          "error": null,
+          "flush_completed_ns": 11604151876400,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1004,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_01\\REQUEST.json",
+            "sha256": "90b3edf7b8e9d1d1e263d0d118693c871757c0697f6232a1f51e75a92da5ddf0"
+          },
+          "owner_response": {
+            "bytes": 48369,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_01\\RESPONSE.json",
+            "sha256": "67d900ba58d23bf35229fbdf6b2023b0394e464695f1758700dcc8aadc09fa82"
+          },
+          "owner_window_ms": 2845.6284,
+          "product": {
+            "arguments": {
+              "include_image": true,
+              "query": {
+                "mode": "source_region",
+                "reference": {
+                  "name": "Cube"
+                },
+                "region": {
+                  "object": {
+                    "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+                  },
+                  "world_box_m": {
+                    "max": [
+                      0.08,
+                      -0.09,
+                      0.05
+                    ],
+                    "min": [
+                      -0.08,
+                      -0.112,
+                      0
+                    ]
+                  }
+                },
+                "requested_facts": [
+                  "surface_proximity"
+                ]
+              },
+              "response_detail": "full"
+            },
+            "client_RPC_ms": 2801.0289,
+            "constructed_frame_ms": [],
+            "new_work": {
+              "NPZ_bytes": 681790,
+              "PNG_bytes": 30307,
+              "array_payload_bytes": 6243822,
+              "camera_preparation_calls": 1,
+              "capture_calls": 1,
+              "capture_source_validation_calls": 1,
+              "display_source_validation_calls": 2,
+              "frame_array_decodes": 0,
+              "frame_reuses": 0,
+              "fresh_payload_reuses": 1,
+              "geometry_normalization_calls": 1,
+              "geometry_normalization_shared_hit": false,
+              "local_verified_images": 1,
+              "ordered_geometry_identity_calls": 1,
+              "prepare_cache_hit": false,
+              "prepare_calls": 1,
+              "raster_attempts": 1,
+              "raster_completed": 1,
+              "region_array_preparation_calls": 1,
+              "region_ref_validation_calls": 0,
+              "sparse_view_probe_views": 6,
+              "task_query": {
+                "result_cache_hit": false,
+                "source_membership_triangle_tests": 313,
+                "stages": {
+                  "surface_measurement_and_mapping": {
+                    "closed_ns": 11604095695200,
+                    "elapsed_ns": 18684000,
+                    "started_ns": 11604077011200
+                  }
+                },
+                "surface_pair_cache_hit": false,
+                "surface_pair_count": 1,
+                "surface_work": {
+                  "aabb_bound_tests": 4226,
+                  "aabb_pruned_pairs": 3592,
+                  "edge_edge_tests": 180,
+                  "intersection_tests": 20,
+                  "leaf_pair_visits": 3612,
+                  "narrow_phase_pairs": 20,
+                  "node_pair_visits": 871,
+                  "plane_bound_tests": 38,
+                  "plane_projection_tests": 120,
+                  "plane_pruned_pairs": 0,
+                  "point_edge_tests": 360,
+                  "point_face_tests": 120,
+                  "predicate_steps": 0,
+                  "prepared_triangles": 313,
+                  "queue_bound_tests": 871,
+                  "queue_pushes": 871,
+                  "referenced_vertices": 233,
+                  "shared_trees": false,
+                  "subtree_pruned_pairs": 0,
+                  "support_direction_components": 0,
+                  "support_source_vertices": 0,
+                  "support_vertex_dots": 0,
+                  "tree_build_units": 2905,
+                  "tree_builds": 2,
+                  "triangle_pairs": 3612,
+                  "validated_faces": 313,
+                  "work_units": 15075
+                }
+              },
+              "temporary_encoded_archive_bytes": 681790,
+              "world_box_selection_calls": 1
+            },
+            "producer_archive": {
+              "index": 1,
+              "new_observations_for_archive": 0,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_full\\call_001\\SERVICE_RESULT.json",
+              "producer_returned_ns": 11604100236300,
+              "read_context": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_full\\call_001\\READ_CONTEXT.json",
+              "saved_ns": 11604106637200,
+              "scope": "same returned producer object before installed formatter; no second observe",
+              "sha256": "70700a8263a458e6da771fe29dc10530e2a044fb6efb06e29976df26d6103d5b",
+              "started_ns": 11601320974900
+            },
+            "raster_attempts": 1,
+            "request_file": {
+              "bytes": 393,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_01\\PRODUCT_REQUEST.json",
+              "sha256": "3e0e07ce61c75d16106e76eb6464fdce00e971184b2abd8dbd5e5016b88220c7"
+            },
+            "request_trace_duration_ms": {
+              "host.capture": 1067.1328,
+              "mcp.content_encode": 1.2564,
+              "mcp.stdio_write": 8.1027,
+              "mcp.wire_encode": 1.6222,
+              "service.observe": 2779.1585
+            },
+            "response_file": {
+              "bytes": 48379,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_01\\PRODUCT_RESPONSE.json",
+              "sha256": "27852628ab8e54b496309ef819dbc52bbd7fd03f4ca357898d0777aa90eebfa4"
+            },
+            "server_RPC_ms": 2799.6611,
+            "service_stage_ms": {
+              "display_validation": 0.0748,
+              "frame_validation_and_selected_pixels": 8.2329,
+              "host_capture": 1067.1513,
+              "region_prepare_lookup": 1075.4632,
+              "region_ref_validation": 30.2681,
+              "render_and_publish_RIGHT": 299.4858,
+              "service_total": 2753.3412,
+              "source_region_rectangle_selection": 0.0747,
+              "source_region_sparse_view_selection": 32.7018,
+              "task_measurement": 20.1021,
+              "world_box_scene_validation": 17.9382,
+              "world_box_selection": 10.3951
+            }
+          },
+          "request_started_ns": 11601293463300,
+          "stdio_RX": {
+            "bytes": 48369,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\consumer\\attachments\\bridge_dde14c3634df4e488ed73a829d9a1208\\004\\RX.bin",
+            "sha256": "67d900ba58d23bf35229fbdf6b2023b0394e464695f1758700dcc8aadc09fa82"
+          },
+          "stdio_TX": {
+            "bytes": 1004,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\consumer\\attachments\\bridge_dde14c3634df4e488ed73a829d9a1208\\004\\TX.bin",
+            "sha256": "90b3edf7b8e9d1d1e263d0d118693c871757c0697f6232a1f51e75a92da5ddf0"
+          },
+          "tool": "human_eye_scene_observe",
+          "tool_wire_RTT_ms": 2858.4131,
+          "wire_content": {
+            "PNG": [
+              {
+                "bytes": 30307,
+                "sha256": "31e842bd55040c60f6608c62b216983575e8f1185d415c7caaef75637a45f2b6"
+              }
+            ],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 7375
+          }
+        },
+        {
+          "CLI_binding": "content_and_envelope_match",
+          "CLI_delivered_images": 1,
+          "CLI_delivered_text_bytes": 6595,
+          "CLI_received_ns": 11612352172900,
+          "after_previous_result_ms": 7183.4307,
+          "arguments": {
+            "include_image": true,
+            "query": {
+              "mode": "source_region",
+              "reference": {
+                "name": "Cube"
+              },
+              "region": {
+                "object": {
+                  "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+                },
+                "world_box_m": {
+                  "max": [
+                    0.08,
+                    0.105,
+                    0.05
+                  ],
+                  "min": [
+                    -0.08,
+                    0.085,
+                    0
+                  ]
+                }
+              },
+              "requested_facts": [
+                "surface_proximity"
+              ]
+            },
+            "response_detail": "full"
+          },
+          "attempt": 2,
+          "dispatch_to_CLI_result_ms": 1015.797,
+          "error": null,
+          "flush_completed_ns": 11612351285200,
+          "origin": "owner",
+          "owner_request": {
+            "bytes": 1003,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_02\\REQUEST.json",
+            "sha256": "dc39f06b8ff517644f75a33eacd1d0f6d6dfe2d0f9d87dddf9cbdc29dd6c558a"
+          },
+          "owner_response": {
+            "bytes": 52265,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_02\\RESPONSE.json",
+            "sha256": "1f6c0bcd57da4afca6a8b16388b3f939a87fd3f089f5778561baad94013c5610"
+          },
+          "owner_window_ms": 1011.2125,
+          "product": {
+            "arguments": {
+              "include_image": true,
+              "query": {
+                "mode": "source_region",
+                "reference": {
+                  "name": "Cube"
+                },
+                "region": {
+                  "object": {
+                    "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+                  },
+                  "world_box_m": {
+                    "max": [
+                      0.08,
+                      0.105,
+                      0.05
+                    ],
+                    "min": [
+                      -0.08,
+                      0.085,
+                      0
+                    ]
+                  }
+                },
+                "requested_facts": [
+                  "surface_proximity"
+                ]
+              },
+              "response_detail": "full"
+            },
+            "client_RPC_ms": 967.7044,
+            "constructed_frame_ms": [],
+            "new_work": {
+              "NPZ_bytes": 946558,
+              "PNG_bytes": 33814,
+              "array_payload_bytes": 6243822,
+              "camera_preparation_calls": 1,
+              "capture_calls": 1,
+              "capture_source_validation_calls": 1,
+              "display_source_validation_calls": 2,
+              "frame_array_decodes": 0,
+              "frame_reuses": 0,
+              "fresh_payload_reuses": 1,
+              "geometry_normalization_calls": 0,
+              "geometry_normalization_shared_hit": true,
+              "local_verified_images": 1,
+              "ordered_geometry_identity_calls": 1,
+              "prepare_cache_hit": false,
+              "prepare_calls": 1,
+              "raster_attempts": 1,
+              "raster_completed": 1,
+              "region_array_preparation_calls": 1,
+              "region_ref_validation_calls": 0,
+              "sparse_view_probe_views": 1,
+              "task_query": {
+                "result_cache_hit": false,
+                "source_membership_triangle_tests": 148,
+                "stages": {
+                  "surface_measurement_and_mapping": {
+                    "closed_ns": 11612298209200,
+                    "elapsed_ns": 10285300,
+                    "started_ns": 11612287923900
+                  }
+                },
+                "surface_pair_cache_hit": false,
+                "surface_pair_count": 1,
+                "surface_work": {
+                  "aabb_bound_tests": 1822,
+                  "aabb_pruned_pairs": 1609,
+                  "edge_edge_tests": 207,
+                  "intersection_tests": 23,
+                  "leaf_pair_visits": 1632,
+                  "narrow_phase_pairs": 23,
+                  "node_pair_visits": 319,
+                  "plane_bound_tests": 44,
+                  "plane_projection_tests": 138,
+                  "plane_pruned_pairs": 0,
+                  "point_edge_tests": 414,
+                  "point_face_tests": 138,
+                  "predicate_steps": 0,
+                  "prepared_triangles": 148,
+                  "queue_bound_tests": 319,
+                  "queue_pushes": 319,
+                  "referenced_vertices": 115,
+                  "shared_trees": false,
+                  "subtree_pruned_pairs": 0,
+                  "support_direction_components": 0,
+                  "support_source_vertices": 0,
+                  "support_vertex_dots": 0,
+                  "tree_build_units": 1126,
+                  "tree_builds": 2,
+                  "triangle_pairs": 1632,
+                  "validated_faces": 148,
+                  "work_units": 6937
+                }
+              },
+              "temporary_encoded_archive_bytes": 946558,
+              "world_box_selection_calls": 1
+            },
+            "producer_archive": {
+              "index": 2,
+              "new_observations_for_archive": 0,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_full\\call_002\\SERVICE_RESULT.json",
+              "producer_returned_ns": 11612302385000,
+              "read_context": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_full\\call_002\\READ_CONTEXT.json",
+              "saved_ns": 11612308695600,
+              "scope": "same returned producer object before installed formatter; no second observe",
+              "sha256": "16d36d697ed204a4d11e2812212c4e94d5f3a68939ff939e2bd71487be7dc968",
+              "started_ns": 11611354793100
+            },
+            "raster_attempts": 1,
+            "request_file": {
+              "bytes": 392,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_02\\PRODUCT_REQUEST.json",
+              "sha256": "e80e30bb455be607b62c53c6b094d13dfb7c58af76cc740021f7f1ed8747bb20"
+            },
+            "request_trace_duration_ms": {
+              "host.capture": 378.6838,
+              "mcp.content_encode": 1.2912,
+              "mcp.stdio_write": 8.6389,
+              "mcp.wire_encode": 1.7633,
+              "service.observe": 947.5
+            },
+            "response_file": {
+              "bytes": 52275,
+              "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\owner\\tool_02\\PRODUCT_RESPONSE.json",
+              "sha256": "594abda82bbffceb46f9c1ab822190a4b7ee7ba4aa84f0a9b63e28bc07c10214"
+            },
+            "server_RPC_ms": 966.0013,
+            "service_stage_ms": {
+              "display_validation": 0.0958,
+              "frame_validation_and_selected_pixels": 9.5988,
+              "host_capture": 378.695,
+              "region_prepare_lookup": 22.8028,
+              "region_ref_validation": 30.1359,
+              "render_and_publish_SCENE": 257.3313,
+              "service_total": 944.7577,
+              "source_region_rectangle_selection": 0.0619,
+              "source_region_sparse_view_selection": 4.9399,
+              "task_measurement": 11.1882,
+              "world_box_scene_validation": 19.5204,
+              "world_box_selection": 0.8601
+            }
+          },
+          "request_started_ns": 11611336375900,
+          "stdio_RX": {
+            "bytes": 52265,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\consumer\\attachments\\bridge_dde14c3634df4e488ed73a829d9a1208\\005\\RX.bin",
+            "sha256": "1f6c0bcd57da4afca6a8b16388b3f939a87fd3f089f5778561baad94013c5610"
+          },
+          "stdio_TX": {
+            "bytes": 1003,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\consumer\\attachments\\bridge_dde14c3634df4e488ed73a829d9a1208\\005\\TX.bin",
+            "sha256": "dc39f06b8ff517644f75a33eacd1d0f6d6dfe2d0f9d87dddf9cbdc29dd6c558a"
+          },
+          "tool": "human_eye_scene_observe",
+          "tool_wire_RTT_ms": 1014.9093,
+          "wire_content": {
+            "PNG": [
+              {
+                "bytes": 33814,
+                "sha256": "57a3b904b567839bb70cbcbbb396bac86d799bf600abde443d3f362522a5d476"
+              }
+            ],
+            "error": false,
+            "response_present": true,
+            "text_bytes": 6595
+          }
+        }
+      ],
+      "calls": {
+        "human_eye_scene_observe": 2
+      },
+      "clock_ms": {
+        "between_tool_wait": 7183.4307,
+        "cleanup_to_publish": 1675.7682,
+        "final_to_publish": 9521.1777,
+        "full_window": 57083.8055,
+        "last_tool_to_final": 24110.0717,
+        "owner_service_sum": 3856.8409,
+        "prompt_to_final": 44261.8424,
+        "prompt_to_first_call": 9093.0611,
+        "prompt_to_first_evidence": 11952.543,
+        "prompt_to_first_original_image": 11952.543,
+        "ready_to_prompt": 253.0171,
+        "startup_to_ready": 3047.7683,
+        "tool_wire_RTT_sum": 3873.3224
+      },
+      "closure_verified": true,
+      "criteria": {
+        "nearer": {
+          "quote": "**负 Y 区更近**，比正 Y 区近约 **6.835936 mm**。",
+          "status": "pass"
+        },
+        "negative_y.counts": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.8884277344390303 | `(0, -1, 0)` | 否，差约 3.572266 mm |",
+          "status": "pass"
+        },
+        "negative_y.direction": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.8884277344390303 | `(0, -1, 0)` | 否，差约 3.572266 mm |",
+          "status": "pass"
+        },
+        "negative_y.distance": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.8884277344390303 | `(0, -1, 0)` | 否，差约 3.572266 mm |",
+          "status": "pass"
+        },
+        "negative_y.image": {
+          "quote": "**负 Y 区：[打开局部原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/P1/product_state.json.source_region/2c35e1e12bf44414b07df7c103047e57/001-3e9034fb31a8b3c98c10713c.png)**",
+          "status": "pass"
+        },
+        "negative_y.nearest_pair": {
+          "quote": "- A = `(0.024658203125, -0.11157226556096965, 0.0014648486269786248)`\n- B = `(0.024658203125, -1.0, 0.0014648486269786248)`",
+          "status": "pass"
+        },
+        "negative_y.pixel": {
+          "quote": "- 视图：`RIGHT`；归属像素：**行 249，列 257 → 源三角 6098**。",
+          "status": "pass"
+        },
+        "negative_y.scope": {
+          "quote": "两张图只能证实对应视角下经遮挡测试后实际采样可见的选区部分，**不能证明整个选区全部可见，也不能仅凭图像验证最短距离**。`Cube` 保持隐藏，未参与图像显示，但其完整表面参与了距离计算。",
+          "status": "pass"
+        },
+        "negative_y.threshold": {
+          "quote": "| 负 Y 区 | 301 | 225 | 0.8884277344390303 | `(0, -1, 0)` | 否，差约 3.572266 mm |",
+          "status": "pass"
+        },
+        "positive_y.counts": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.8952636703382715 | `(0, 1, 0)` | 是，超出约 3.263670 mm |",
+          "status": "pass"
+        },
+        "positive_y.direction": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.8952636703382715 | `(0, 1, 0)` | 是，超出约 3.263670 mm |",
+          "status": "pass"
+        },
+        "positive_y.distance": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.8952636703382715 | `(0, 1, 0)` | 是，超出约 3.263670 mm |",
+          "status": "pass"
+        },
+        "positive_y.image": {
+          "quote": "**正 Y 区：[打开局部原 PNG](D:/he_m4_yanyite_opposite_direction_product_native_001/slots/P1/product_state.json.source_region/327e23b1fa3a4ac4958b47d218dee457/001-83140933f021512e1383a088.png)**",
+          "status": "pass"
+        },
+        "positive_y.nearest_pair": {
+          "quote": "- A = `(-0.075439453125, 0.1047363296617285, 0.03515624542182969)`\n- B = `(-0.075439453125, 1.0, 0.03515624542182969)`",
+          "status": "pass"
+        },
+        "positive_y.pixel": {
+          "quote": "- 视图：`SCENE`；归属像素：**行 217，列 388 → 源三角 29762**。",
+          "status": "pass"
+        },
+        "positive_y.scope": {
+          "quote": "两张图只能证实对应视角下经遮挡测试后实际采样可见的选区部分，**不能证明整个选区全部可见，也不能仅凭图像验证最短距离**。`Cube` 保持隐藏，未参与图像显示，但其完整表面参与了距离计算。",
+          "status": "pass"
+        },
+        "positive_y.threshold": {
+          "quote": "| 正 Y 区 | 136 | 107 | 0.8952636703382715 | `(0, 1, 0)` | 是，超出约 3.263670 mm |",
+          "status": "pass"
+        }
+      },
+      "exact_final": {
+        "archive_member": "slots/P1/consumer/PUBLIC_FINAL.txt",
+        "bytes": 2667,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\consumer\\PUBLIC_FINAL.txt",
+        "sha256": "be2e7c68624ee7dc0331ccb9db6d54b657cf2ccf771618c49dce5400e67b4231"
+      },
+      "first_published_by_region": {
+        "negative_y": {
+          "PNG_retransmission_attempts": [],
+          "evidence_matching_final": [
+            {
+              "attempt": 1,
+              "final_frame_and_path_match": true,
+              "final_path_and_pixel_match": true
+            }
+          ],
+          "final_frame_origin": "product",
+          "first_image_measurement_matches_final": true,
+          "first_image_request_attempt": 1,
+          "first_image_request_failed": false,
+          "first_image_request_full_projection_triggered": true,
+          "first_image_request_had_verified_path_and_pixel": true,
+          "first_image_request_path_pixel_match_final": true,
+          "first_image_requested_detail": "full",
+          "first_image_response_projection": "brief",
+          "first_verified_image_delivery_attempt": 1,
+          "product_source_region_attempts": [
+            1
+          ],
+          "repeated_measurement_attempts": []
+        },
+        "positive_y": {
+          "PNG_retransmission_attempts": [],
+          "evidence_matching_final": [
+            {
+              "attempt": 2,
+              "final_frame_and_path_match": true,
+              "final_path_and_pixel_match": true
+            }
+          ],
+          "final_frame_origin": "product",
+          "first_image_measurement_matches_final": true,
+          "first_image_request_attempt": 2,
+          "first_image_request_failed": false,
+          "first_image_request_full_projection_triggered": true,
+          "first_image_request_had_verified_path_and_pixel": true,
+          "first_image_request_path_pixel_match_final": true,
+          "first_image_requested_detail": "full",
+          "first_image_response_projection": "brief",
+          "first_verified_image_delivery_attempt": 2,
+          "product_source_region_attempts": [
+            2
+          ],
+          "repeated_measurement_attempts": []
+        }
+      },
+      "full_score": {
+        "archive_member": "score/P1_SCORE.json",
+        "bytes": 70968,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\score\\P1_SCORE.json",
+        "sha256": "66cdf55eb76ea7742f0aa6df4c32e909dbd64c60843b81f1294e91f660b39393"
+      },
+      "images": {
+        "negative_y": {
+          "NPZ": {
+            "archive_member": "slots/P1/product_state.json.source_region/2c35e1e12bf44414b07df7c103047e57/001-3e9034fb31a8b3c98c10713c.npz",
+            "bytes": 681790,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_state.json.source_region\\2c35e1e12bf44414b07df7c103047e57\\001-3e9034fb31a8b3c98c10713c.npz",
+            "sha256": "e8a05551cd5574fd3e1881ddc7f55d81469e2a37b370fe0dd2a166a2040ed389"
+          },
+          "PNG": {
+            "archive_member": "slots/P1/product_state.json.source_region/2c35e1e12bf44414b07df7c103047e57/001-3e9034fb31a8b3c98c10713c.png",
+            "bytes": 30307,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_state.json.source_region\\2c35e1e12bf44414b07df7c103047e57\\001-3e9034fb31a8b3c98c10713c.png",
+            "sha256": "31e842bd55040c60f6608c62b216983575e8f1185d415c7caaef75637a45f2b6"
+          },
+          "origin": "product",
+          "ref": "source-region-image:2caa430d0a145afab72fa97e45de26ad53f135536d4384916ec418848af8e5f2",
+          "sampled_triangles": 72,
+          "selected_pixels": 9126,
+          "view": "RIGHT"
+        },
+        "positive_y": {
+          "NPZ": {
+            "archive_member": "slots/P1/product_state.json.source_region/327e23b1fa3a4ac4958b47d218dee457/001-83140933f021512e1383a088.npz",
+            "bytes": 946558,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_state.json.source_region\\327e23b1fa3a4ac4958b47d218dee457\\001-83140933f021512e1383a088.npz",
+            "sha256": "8a1c6e9fa25d0e10a93707a5db6c2a248ea9861bb2675dcf5b8db69924b5ffa0"
+          },
+          "PNG": {
+            "archive_member": "slots/P1/product_state.json.source_region/327e23b1fa3a4ac4958b47d218dee457/001-83140933f021512e1383a088.png",
+            "bytes": 33814,
+            "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\product_state.json.source_region\\327e23b1fa3a4ac4958b47d218dee457\\001-83140933f021512e1383a088.png",
+            "sha256": "57a3b904b567839bb70cbcbbb396bac86d799bf600abde443d3f362522a5d476"
+          },
+          "origin": "product",
+          "ref": "source-region-image:f9055aa5daac1f4c8248f69084550832f2da4d02ccbde85586225bbfe129b6cd",
+          "sampled_triangles": 54,
+          "selected_pixels": 20085,
+          "view": "SCENE"
+        }
+      },
+      "literal_claims": {
+        "archive_member": "score/P1_CLAIMS.json",
+        "bytes": 4901,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\score\\P1_CLAIMS.json",
+        "sha256": "0e655aa8e8bb39d15800c96e386470b34040ff77e6c673d472686900db38ee3e"
+      },
+      "product_native_transport": [
+        {
+          "display_present": true,
+          "embedded_capture_bytes": 3318600,
+          "outer_RX_bytes": 3318955,
+          "resource_encodings": "list",
+          "transferred_mesh_resources": 2,
+          "wire_folder": "002"
+        },
+        {
+          "display_present": true,
+          "embedded_capture_bytes": 2792,
+          "outer_RX_bytes": 3123,
+          "resource_encodings": "list",
+          "transferred_mesh_resources": 0,
+          "wire_folder": "003"
+        }
+      ],
+      "product_service": [
+        {
+          "call": "call_001",
+          "producer_bytes": 102062,
+          "request_trace": {
+            "delivery": "service_result_constructed",
+            "model_usage": "unknown",
+            "request_id": "45d558d268c14e6a8cb41c61342b4366",
+            "trace_id": "80cf062ac62043a7a54f1fe27a9e2816"
+          },
+          "stage_ns": {
+            "display_validation": 74800,
+            "frame_validation_and_selected_pixels": 8232900,
+            "host_capture": 1067151300,
+            "region_prepare_lookup": 1075463200,
+            "region_ref_validation": 30268100,
+            "render_and_publish_RIGHT": 299485800,
+            "service_total": 2753341200,
+            "source_region_rectangle_selection": 74700,
+            "source_region_sparse_view_selection": 32701800,
+            "task_measurement": 20102100,
+            "world_box_scene_validation": 17938200,
+            "world_box_selection": 10395100
+          },
+          "work": {
+            "NPZ_bytes": 681790,
+            "PNG_bytes": 30307,
+            "array_payload_bytes": 6243822,
+            "camera_preparation_calls": 1,
+            "capture_calls": 1,
+            "capture_source_validation_calls": 1,
+            "display_source_validation_calls": 2,
+            "frame_array_decodes": 0,
+            "frame_reuses": 0,
+            "fresh_payload_reuses": 1,
+            "geometry_normalization_calls": 1,
+            "geometry_normalization_shared_hit": false,
+            "local_verified_images": 1,
+            "ordered_geometry_identity_calls": 1,
+            "prepare_cache_hit": false,
+            "prepare_calls": 1,
+            "raster_attempts": 1,
+            "raster_completed": 1,
+            "region_array_preparation_calls": 1,
+            "region_ref_validation_calls": 0,
+            "sparse_view_probe_views": 6,
+            "task_query": {
+              "result_cache_hit": false,
+              "source_membership_triangle_tests": 313,
+              "stages": {
+                "surface_measurement_and_mapping": {
+                  "closed_ns": 11604095695200,
+                  "elapsed_ns": 18684000,
+                  "started_ns": 11604077011200
+                }
+              },
+              "surface_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_work": {
+                "aabb_bound_tests": 4226,
+                "aabb_pruned_pairs": 3592,
+                "edge_edge_tests": 180,
+                "intersection_tests": 20,
+                "leaf_pair_visits": 3612,
+                "narrow_phase_pairs": 20,
+                "node_pair_visits": 871,
+                "plane_bound_tests": 38,
+                "plane_projection_tests": 120,
+                "plane_pruned_pairs": 0,
+                "point_edge_tests": 360,
+                "point_face_tests": 120,
+                "predicate_steps": 0,
+                "prepared_triangles": 313,
+                "queue_bound_tests": 871,
+                "queue_pushes": 871,
+                "referenced_vertices": 233,
+                "shared_trees": false,
+                "subtree_pruned_pairs": 0,
+                "support_direction_components": 0,
+                "support_source_vertices": 0,
+                "support_vertex_dots": 0,
+                "tree_build_units": 2905,
+                "tree_builds": 2,
+                "triangle_pairs": 3612,
+                "validated_faces": 313,
+                "work_units": 15075
+              }
+            },
+            "temporary_encoded_archive_bytes": 681790,
+            "world_box_selection_calls": 1
+          }
+        },
+        {
+          "call": "call_002",
+          "producer_bytes": 75306,
+          "request_trace": {
+            "delivery": "service_result_constructed",
+            "model_usage": "unknown",
+            "request_id": "39677dcdac164786bba32eb90ae5dae3",
+            "trace_id": "03020a872a6e409b95e36fe6454d083f"
+          },
+          "stage_ns": {
+            "display_validation": 95800,
+            "frame_validation_and_selected_pixels": 9598800,
+            "host_capture": 378695000,
+            "region_prepare_lookup": 22802800,
+            "region_ref_validation": 30135900,
+            "render_and_publish_SCENE": 257331300,
+            "service_total": 944757700,
+            "source_region_rectangle_selection": 61900,
+            "source_region_sparse_view_selection": 4939900,
+            "task_measurement": 11188200,
+            "world_box_scene_validation": 19520400,
+            "world_box_selection": 860100
+          },
+          "work": {
+            "NPZ_bytes": 946558,
+            "PNG_bytes": 33814,
+            "array_payload_bytes": 6243822,
+            "camera_preparation_calls": 1,
+            "capture_calls": 1,
+            "capture_source_validation_calls": 1,
+            "display_source_validation_calls": 2,
+            "frame_array_decodes": 0,
+            "frame_reuses": 0,
+            "fresh_payload_reuses": 1,
+            "geometry_normalization_calls": 0,
+            "geometry_normalization_shared_hit": true,
+            "local_verified_images": 1,
+            "ordered_geometry_identity_calls": 1,
+            "prepare_cache_hit": false,
+            "prepare_calls": 1,
+            "raster_attempts": 1,
+            "raster_completed": 1,
+            "region_array_preparation_calls": 1,
+            "region_ref_validation_calls": 0,
+            "sparse_view_probe_views": 1,
+            "task_query": {
+              "result_cache_hit": false,
+              "source_membership_triangle_tests": 148,
+              "stages": {
+                "surface_measurement_and_mapping": {
+                  "closed_ns": 11612298209200,
+                  "elapsed_ns": 10285300,
+                  "started_ns": 11612287923900
+                }
+              },
+              "surface_pair_cache_hit": false,
+              "surface_pair_count": 1,
+              "surface_work": {
+                "aabb_bound_tests": 1822,
+                "aabb_pruned_pairs": 1609,
+                "edge_edge_tests": 207,
+                "intersection_tests": 23,
+                "leaf_pair_visits": 1632,
+                "narrow_phase_pairs": 23,
+                "node_pair_visits": 319,
+                "plane_bound_tests": 44,
+                "plane_projection_tests": 138,
+                "plane_pruned_pairs": 0,
+                "point_edge_tests": 414,
+                "point_face_tests": 138,
+                "predicate_steps": 0,
+                "prepared_triangles": 148,
+                "queue_bound_tests": 319,
+                "queue_pushes": 319,
+                "referenced_vertices": 115,
+                "shared_trees": false,
+                "subtree_pruned_pairs": 0,
+                "support_direction_components": 0,
+                "support_source_vertices": 0,
+                "support_vertex_dots": 0,
+                "tree_build_units": 1126,
+                "tree_builds": 2,
+                "triangle_pairs": 1632,
+                "validated_faces": 148,
+                "work_units": 6937
+              }
+            },
+            "temporary_encoded_archive_bytes": 946558,
+            "world_box_selection_calls": 1
+          }
+        }
+      ],
+      "public_text_bytes": 13970,
+      "quality": 17,
+      "slot_publication": {
+        "archive_member": "slots/P1/SLOT_PUBLICATION.json",
+        "bytes": 280,
+        "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\slots\\P1\\SLOT_PUBLICATION.json",
+        "sha256": "6b125590e02ae8e2ac18b661c704d48571d410c6253fe354f720b60ff82a71cd"
+      },
+      "source_integrity": true,
+      "status": "completed",
+      "usage": {
+        "cached_input": 17408,
+        "input": 30587,
+        "input_minus_cache_plus_output": 14405,
+        "input_output": 31813,
+        "output": 1226
+      }
+    }
+  },
+  "asset_sha256": "614684bb54bcbea6f2494fe704a0f77dd2a607fdba115a391686abdb362b8a7d",
+  "comparison": {
+    "CLI_net_input_plus_output_change_pct": -28.57142857142857,
+    "CLI_raw_input_plus_output_change_pct": -51.12835087180275,
+    "first_original_image_change_pct": -74.40446322368344,
+    "full_window_change_pct": -42.615820628282044,
+    "general_benefit_inferred": false,
+    "matched_complete_quality": true,
+    "matched_pairs": 1,
+    "one_natural_native_parameter_error_included": true,
+    "provider_billing": null,
+    "provider_internal_clock": null,
+    "tool_calls": [
+      8,
+      2
+    ]
+  },
+  "early_truth_receipt": {
+    "archive_member": "preflight/OPPOSITE_TRUTH_PRELIMINARY.json",
+    "bytes": 35597,
+    "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\preflight\\OPPOSITE_TRUTH_PRELIMINARY.json",
+    "sha256": "5b09db8541d349ed4770714cc6b66d68d7423aea58029966e82cef65d7078e59"
+  },
+  "exact_prompt": {
+    "bytes": 916,
+    "path": "C:\\Users\\Administrator\\.codex\\worktrees\\m4-target-002\\hefe\\verification\\m4_yanyite_opposite_direction_product_native_001\\inputs\\PROMPT.txt",
+    "sha256": "6bedc0d7e2b0194c05277ff1133379a281aea2c31586300bbd88d8e3c9004224"
+  },
+  "formal": {
+    "Blender": 2,
+    "Pro_consumers": 2,
+    "business_calls": 10,
+    "completed": 2,
+    "extra_API_calls": 0,
+    "failed": 0,
+    "product_builds": 0,
+    "product_installs": 0,
+    "rasters": 4,
+    "replacements": 0
+  },
+  "formal_sequence": {
+    "archive_member": "FORMAL_SEQUENCE.jsonl",
+    "bytes": 1032,
+    "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\FORMAL_SEQUENCE.jsonl",
+    "sha256": "7783f5e5229821b473f72633b32b640c93ab2d670055c96eae98e9d5c8b3cbd0"
+  },
+  "freeze_sha256": "778514ea519bcd5f31bdfa54dca28b08507e0d280aed38c0c7254c84078fc5ed",
+  "original_costs": {
+    "archive_member": "COSTS.json",
+    "bytes": 83980,
+    "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\COSTS.json",
+    "sha256": "e3651522621e0d52a76a8ce2d985fb8b0114932cde2c20c3384384a64138a4b1"
+  },
+  "passed": true,
+  "plan": "f555c10cd9a85dbeeeb9d635e2f29f5f26639863:docs/M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_PLAN.md",
+  "preflight": [
+    {
+      "archive_member": "preflight/RUNTIME_PREFLIGHT.json",
+      "bytes": 117350,
+      "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\preflight\\RUNTIME_PREFLIGHT.json",
+      "sha256": "2faadbe477676a395f5d752efaa6e354fedf8c4e0b4fe49b26159d782689d938"
+    },
+    {
+      "archive_member": "preflight/OPPOSITE_TRUTH.json",
+      "bytes": 35597,
+      "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\preflight\\OPPOSITE_TRUTH.json",
+      "sha256": "e8cb1a109c177b434bb65cb4784053504f64868b3145e32030bde5359f25083e"
+    },
+    {
+      "archive_member": "preflight/product/SUMMARY.json",
+      "bytes": 110974,
+      "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\preflight\\product\\SUMMARY.json",
+      "sha256": "e1be0fa6ca4367dd29042520773388686e16d4b23ff154b2e7f50ab078c457d1"
+    },
+    {
+      "archive_member": "preflight/ordinary/SUMMARY.json",
+      "bytes": 98509,
+      "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\preflight\\ordinary\\SUMMARY.json",
+      "sha256": "5c89b14982b78f347a0b1119c96f65941e08a65f4e6fc0f5735fe34c50dd2f2d"
+    }
+  ],
+  "product": {
+    "commit": "e800667077a6c390dbc1f49aa46ba9a01b153de5",
+    "source_sha256": "eb6590279920f3c9c4ca07330c0636d6d9bd99860bbed02abaa6e0976321381e",
+    "wheel_sha256": "a866444b62bd03d4588800d930436bd0aa88509aabadf54bc9a16f9777a987c8"
+  },
+  "raw_archive": {
+    "archive": {
+      "bytes": 41083603,
+      "path": "D:\\he_m4_yanyite_opposite_direction_product_native_001\\sealed\\ORIGINAL_RUNTIME.zip",
+      "sha256": "af9d521424f696d9a39e754b77a68cc991702055e7bcf50de19a4fb663a45747"
+    },
+    "member_count": 817
+  }
+}
