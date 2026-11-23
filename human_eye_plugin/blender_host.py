@@ -734,6 +734,7 @@ class BlenderSceneHost:
         self.identity_metadata = identity_metadata
         self._lock = threading.RLock()
         self._residency_module = self._residency = None
+        self._private_source_region_lease = None
         self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
             world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
             directory_builds=0, directory_vertices=0, directory_cache_hits=0,
@@ -786,6 +787,7 @@ class BlenderSceneHost:
         return graph
 
     def close_residency(self):
+        self._private_source_region_lease = None
         if self._residency is not None:self._residency.close()
 
     def residency_work(self):
@@ -855,12 +857,12 @@ class BlenderSceneHost:
                 float(getattr(self.scene, 'frame_subframe', 0)) if dynamic else None)
 
     def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition,
-                          acquisition_scope, prepared_local, display_snapshot):
+                          acquisition_scope, prepared_local, display_snapshot, *, _resources_only=False):
         state=self._residency
         selection_key=_digest([acquisition_scope if acquisition is not None else
             'task' if task_selection is not None else 'scene',
             task_selection['selectors'] if task_selection is not None else [self.object_id(o) for o in objects]])
-        cached=state.captures.get(selection_key)
+        cached=None if _resources_only else state.captures.get(selection_key)
         if cached is not None:
             self._residency_stats['capture_cache_hits']+=1
             current = dict(cached)
@@ -937,13 +939,16 @@ class BlenderSceneHost:
                     axes_source='host',axes_confidence=confidence,axes_reason=reason)
                 resource['pose']=copy.deepcopy(pose);self._residency_stats['world_transforms']+=1
                 self._residency_stats['world_vertices_transformed'] += len(resource['vertices_local'])
-            state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
+            if not _resources_only:
+                state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
             # Copy the small metadata dict; geometry remains private and is
             # detached once at the public capture boundary. Older selections
             # retain their own labels when another selection reuses a resource.
             meshes.append(dict(resource['mesh'],object_id=self.object_id(obj),
                 mark_label='#B%04d'%ordinal,name=str(obj.name),
                 is_focal_target=_same_rna(obj,active),color_rgb=color))
+        if _resources_only:
+            return {'meshes': meshes}
         scene=dict(unit='m',coordinate_frame='world',source='blender',meshes=meshes)
         if task_selection is not None:
             scene.update(capture_scope='selected_objects',task_selection=task_selection,host_identity=task_identity)
@@ -2289,8 +2294,46 @@ class BlenderSceneHost:
         checkpoint()
         return region
 
-    def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes):
-        """Create an uncached private pair from one current evaluated host read."""
+    def _source_region_pair_residency_reason(self, graph, scale, objects, evaluated, display):
+        if (display is None or display['status'] != 'captured'
+                or any('unavailable_fields' in row for row in display['objects'])):
+            return 'display_unavailable'
+        for obj in objects:
+            guards = self._guard_description(obj)
+            data = getattr(obj, 'data', None)
+            if (data is None or getattr(data, 'library', None) is not None
+                    or any(guards[key] for key in (
+                        'parent', 'children', 'constraints', 'modifiers', 'animation', 'data_animation',
+                        'rigid_body', 'rigid_body_constraint', 'shape_keys', 'linked', 'edit_mode'))
+                    or getattr(evaluated[self.object_id(obj)], 'is_evaluated', False) is not True):
+                return 'dynamic_or_unproven_source'
+        try:
+            if not self._sync_residency(graph, scale, _display_snapshot=display):
+                return 'residency_unavailable'
+        except (BlenderHostError, AttributeError, ReferenceError, RuntimeError):
+            return 'residency_unavailable'
+        handlers = getattr(self.bpy.app, 'handlers', None)
+        active = {id(target) for target, callback in self._residency.callbacks if callback in target}
+        if any(id(getattr(handlers, name, None)) not in active
+               for name in ('depsgraph_update_post', 'undo_post', 'redo_post', 'load_post')):
+            return 'residency_invalidation_unavailable'
+        return None
+
+    def _source_region_pair_resources(self, objects, matrices, scale):
+        """Read current resource revisions without visiting a vertex or face."""
+        resources = []
+        for obj in objects:
+            key = self._residency_module.identity(obj)
+            resource = self._residency.resources.get(key)
+            if (resource is None or resource['stamp'] != self._resource_stamp(obj)
+                    or resource['mesh'] is None
+                    or _digest(resource['pose']) != _digest((matrices[self.object_id(obj)], scale))):
+                return None
+            resources.append((resource['resource_id'], resource['revision']))
+        return resources
+
+    def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes, known=None):
+        """Read a private pair, reusing only whole resources with current dependency proof."""
         self._main_thread()
         selectors = [target, reference]
         for selector in selectors:
@@ -2299,6 +2342,12 @@ class BlenderSceneHost:
                            for value in selector.values())):
                 raise BlenderHostError('source_region_pair_selector')
         box = self._source_region_pair_box(world_box_m)
+        if known is not None and (type(known) is not dict or set(known) != {
+                'document_epoch', 'instance_id', 'epoch', 'revision', 'selection_sha256', 'payload_sha256'}
+                or not _hex_string(known['document_epoch'], 64) or not _hex_string(known['instance_id'], 32)
+                or not _hex_string(known['selection_sha256'], 64) or not _hex_string(known['payload_sha256'], 64)
+                or any(type(known[key]) is not int or known[key] < 0 for key in ('epoch', 'revision'))):
+            raise BlenderHostError('source_region_pair_invalid_lease')
         if type(deadline_ns) is not int or deadline_ns <= 0:
             raise BlenderHostError('source_region_pair_deadline')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
@@ -2344,29 +2393,7 @@ class BlenderSceneHost:
             stages = {'directory_and_binding': interval(started)}
 
             started = time.perf_counter_ns()
-            capture = self._capture(_acquisition_context=(graph, frame['scale_length'], objects,
-                                                         evaluated, checkpoint),
-                                    _acquisition_scope=scope, _resident=False)
-            checkpoint()
-            stages['mesh_expansion'] = interval(started)
-
-            started = time.perf_counter_ns()
-            meshes = {mesh['object_id']: mesh for mesh in capture['meshes']}
             from_id, to_id = [row['object_id'] for row in selection['bindings']]
-            region = self._compact_source_region_pair(meshes[from_id], box, checkpoint)
-            reference_geometry = {key: meshes[to_id][key] for key in ('vertices', 'faces')}
-            stages['selection_and_compaction'] = interval(started)
-
-            started = time.perf_counter_ns()
-            current_objects, current_selection = self._task_objects(selectors)
-            if (current_selection != selection or len(current_objects) != 2
-                    or any(not _same_rna(a, b) for a, b in zip(objects, current_objects))
-                    or source_frame() != frame or self._identity_metadata(objects, capture_scope=scope) != identity
-                    or any(_matrix(obj.matrix_world) != matrices[oid] for oid, obj in evaluated.items())):
-                raise BlenderHostError('source_region_pair_source_changed')
-            stages['source_recheck'] = interval(started)
-
-            started = time.perf_counter_ns()
             bound_objects = [dict(row, instance_id=identity['object_instances'][row['object_id']])
                              for row in selection['bindings']]
             binding = {'capture_scope': scope, 'document_epoch': identity['document_epoch'],
@@ -2375,23 +2402,117 @@ class BlenderSceneHost:
                        'target': bound_objects[0], 'reference': bound_objects[1], 'unit': 'm',
                        'coordinate_frame': 'world', 'source_frame': frame,
                        'world_matrices': {'target': matrices[from_id], 'reference': matrices[to_id]}}
-            packet = {'schema': 'human-eye-selective-source-region-capture-v1', 'binding': binding,
-                      'region': region, 'reference': reference_geometry}
-            packet['payload_sha256'] = _digest(packet)
-            packet['work'] = {'candidate_objects': selection['candidate_count'], 'expanded_objects': 2,
-                              'expanded_vertices': sum(len(mesh['vertices']) for mesh in meshes.values()),
-                              'expanded_triangles': sum(len(mesh['faces']) for mesh in meshes.values()),
-                              'transmitted_objects': 2, 'private_cache_retained_objects': 0,
-                              'transmitted_vertices': len(region['vertices']) + len(reference_geometry['vertices']),
-                              'transmitted_triangles': len(region['faces']) + len(reference_geometry['faces'])}
+            scale = frame['scale_length']
+            display = self._display_snapshot(objects)
+            fallback = self._source_region_pair_residency_reason(graph, scale, objects, evaluated, display)
+            state = self._residency
+            prior = self._private_source_region_lease
+            stamps = None
+            if fallback is None:
+                stamps = self._source_region_pair_resources(objects, matrices, scale)
+                if known is not None and known == prior and stamps is None:
+                    fallback = 'retained_resource_unavailable'
+                # The older whole-resource cache's pose equality merges signed zeros.
+                # Keep that behavior for public callers and use the uncached private
+                # path when numeric equality cannot prove the same forward map.
+                for obj in objects:
+                    resource = state.resources.get(self._residency_module.identity(obj))
+                    pose = (matrices[self.object_id(obj)], scale)
+                    if resource is not None and resource['pose'] == pose and _digest(resource['pose']) != _digest(pose):
+                        fallback = 'signed_pose_mismatch'
+                        break
+
+            def lease_record(resource_stamps, payload_sha):
+                return {'document_epoch': identity['document_epoch'], 'instance_id': state.instance_id,
+                        'epoch': state.epoch, 'revision': state.revision,
+                        'selection_sha256': _digest([binding, display['sha256'], resource_stamps]),
+                        'payload_sha256': payload_sha}
+
+            resident = fallback is None
+            token = (state.instance_id, state.epoch, state.revision, state.serial) if resident else None
+            hit = (resident and known is not None and known == prior and stamps is not None
+                   and known == lease_record(stamps, known['payload_sha256']))
+            stages['residency_check'] = interval(started)
+            counters = dict.fromkeys(('to_mesh', 'triangulations', 'world_transforms', 'world_vertices_transformed',
+                                      'resource_vertices_read', 'resource_faces_read'), 0)
+            scanned_vertices = scanned_triangles = carried_vertices = carried_triangles = 0
+            packet = None
+            lease = known if hit else None
+            if not hit:
+                started = time.perf_counter_ns()
+                acquisition = (graph, scale, objects, evaluated, checkpoint)
+                if resident:
+                    before = {stat: self._residency_stats[stat] for stat in counters}
+                    capture = self._resident_capture(graph, scale, objects, None, None, acquisition,
+                                                     scope, None, display, _resources_only=True)
+                    counters = {stat: self._residency_stats[stat] - value for stat, value in before.items()}
+                    stamps = self._source_region_pair_resources(objects, matrices, scale)
+                    if stamps is None or (state.instance_id, state.epoch, state.revision, state.serial) != token:
+                        raise BlenderHostError('source_region_pair_source_changed')
+                else:
+                    capture = self._capture(_acquisition_context=acquisition, _acquisition_scope=scope, _resident=False)
+                    counts = {name: sum(len(mesh[name]) for mesh in capture['meshes']) for name in ('vertices', 'faces')}
+                    counters = {'to_mesh': 2, 'triangulations': 2, 'world_transforms': 2,
+                                'world_vertices_transformed': counts['vertices'],
+                                'resource_vertices_read': counts['vertices'], 'resource_faces_read': counts['faces']}
+                checkpoint()
+                stages['mesh_expansion'] = interval(started)
+
+                started = time.perf_counter_ns()
+                meshes = {mesh['object_id']: mesh for mesh in capture['meshes']}
+                target_mesh = meshes[from_id]
+                scanned_vertices, scanned_triangles = len(target_mesh['vertices']), len(target_mesh['faces'])
+                region = self._compact_source_region_pair(target_mesh, box, checkpoint)
+                reference_geometry = {key: meshes[to_id][key] for key in ('vertices', 'faces')}
+                carried_vertices = len(region['vertices']) + len(reference_geometry['vertices'])
+                carried_triangles = len(region['faces']) + len(reference_geometry['faces'])
+                stages['selection_and_compaction'] = interval(started)
+
+                started = time.perf_counter_ns()
+                packet = {'schema': 'human-eye-selective-source-region-capture-v1', 'binding': binding,
+                          'region': region, 'reference': reference_geometry}
+                packet['payload_sha256'] = _digest(packet)
+                if resident:
+                    lease = lease_record(stamps, packet['payload_sha256'])
+                stages['payload_binding'] = interval(started)
+
+            started = time.perf_counter_ns()
+            current_objects, current_selection = self._task_objects(selectors)
+            if (current_selection != selection or len(current_objects) != 2
+                    or any(not _same_rna(a, b) for a, b in zip(objects, current_objects))
+                    or _digest(source_frame()) != _digest(frame)
+                    or self._identity_metadata(objects, capture_scope=scope) != identity
+                    or any(_digest(_matrix(obj.matrix_world)) != _digest(matrices[oid]) for oid, obj in evaluated.items())
+                    or resident and (self._display_snapshot(objects) != display
+                        or (state.instance_id, state.epoch, state.revision, state.serial) != token
+                        or self._source_region_pair_resources(objects, matrices, scale) != stamps)):
+                raise BlenderHostError('source_region_pair_source_changed')
+            stages['source_recheck'] = interval(started)
+
+            started = time.perf_counter_ns()
+            retained = state.resources.values() if state is not None else ()
+            work = {key: counters[key] for key in ('to_mesh', 'triangulations', 'world_transforms',
+                                                   'world_vertices_transformed')}
+            work.update(candidate_objects=selection['candidate_count'], expanded_objects=counters['to_mesh'],
+                        expanded_vertices=counters['resource_vertices_read'], expanded_triangles=counters['resource_faces_read'],
+                        transmitted_objects=0 if hit else 2, transmitted_vertices=carried_vertices,
+                        transmitted_triangles=carried_triangles, private_cache_retained_objects=0,
+                        box_vertices_scanned=scanned_vertices, box_triangles_scanned=scanned_triangles,
+                        retained_resources=len(retained), retained_vertices=sum(len(row['vertices_local']) for row in retained),
+                        retained_triangles=sum(len(row['faces']) for row in retained), retained_compact_leases=int(lease is not None),
+                        mode='lease_hit' if hit else 'resident_capture' if resident else 'uncached_capture', fallback_reason=fallback)
             stages['binding'] = interval(started)
-            packet['stages'] = stages
+            if packet is not None:
+                packet.update(work=work, stages=stages)
+            envelope = {'schema': 'human-eye-private-source-region-residency-v1', 'host_source_sha256': source_sha,
+                        'lease': lease, 'capture': packet, 'work': work, 'stages': stages}
             checkpoint()
-            encoded = json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+            encoded = json.dumps(envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
             if len(encoded) > max_response_bytes:
                 raise BlenderHostError('source_region_pair_document_budget_exceeded')
             checkpoint()
-            return packet
+            self._private_source_region_lease = dict(lease) if lease is not None else None
+            return envelope
 
     def capture_task_scene(self, selectors):
         """Read only the uniquely bound targets in one synchronous observation."""

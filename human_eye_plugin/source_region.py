@@ -738,7 +738,10 @@ def _validate_selective_capture(capture, target, reference, box, host_sha, check
             or binding['unit'] != 'm' or binding['coordinate_frame'] != 'world'
             or binding['target_selector'] != target or binding['reference_selector'] != reference):
         raise ValueError('selective_source_region_capture_binding')
-    if _source_region_world_box(binding['world_box_m']) != box:
+    captured_box = _source_region_world_box(binding['world_box_m'])
+    expected_box = _source_region_world_box(box)
+    if any(a.hex() != b.hex() for key in ('min','max')
+           for a,b in zip(captured_box[key],expected_box[key],strict=True)):
         raise ValueError('selective_source_region_box_binding')
     for key, selector in (('target', target), ('reference', reference)):
         identity = binding[key]
@@ -790,22 +793,42 @@ def _validate_selective_capture(capture, target, reference, box, host_sha, check
     if (not _selective_digest(capture['payload_sha256']) or capture['payload_sha256'] != _host_digest(
             {key: capture[key] for key in ('schema', 'binding', 'region', 'reference')})):
         raise ValueError('selective_source_region_payload_digest_mismatch')
+    _validate_selective_capture_work(capture, region, vertices, faces, ref_vertices, ref_faces)
+    check_budget('selective_source_region_capture_validated')
+
+
+def _validate_selective_capture_work(capture, region, vertices, faces, ref_vertices, ref_faces):
     work = capture['work']
+    reason = 'selective_source_region_capture_accounting'
+    if (type(work) is not dict or type(work.get('candidate_objects')) is not int
+            or work['candidate_objects'] < 2 or type(capture['stages']) is not dict):
+        raise ValueError(reason)
+    reused = work.get('connector_reused_payload', False)
+    mode = work.get('mode', 'uncached_capture')
+    if (type(reused) is not bool or mode not in ('resident_capture','uncached_capture','lease_hit')
+            or reused != (mode == 'lease_hit')):
+        raise ValueError(reason)
+
+    source_counts = (region['source_vertex_count'],region['source_triangle_count'])
+    ref_counts = (len(ref_vertices),len(ref_faces))
+    expanded = [work.get(name) for name in ('expanded_objects','expanded_vertices','expanded_triangles')]
+    total = (source_counts[0] + ref_counts[0],source_counts[1] + ref_counts[1])
+    valid_expansions = ((0,0,0),) if reused else (
+        ((2,*total),) if mode == 'uncached_capture' else ((0,0,0),(1,*source_counts),(1,*ref_counts),(2,*total)))
     counts = {
-        'expanded_objects': 2,
-        'expanded_vertices': region['source_vertex_count'] + len(ref_vertices),
-        'expanded_triangles': region['source_triangle_count'] + len(ref_faces),
-        'transmitted_objects': 2,
-        'transmitted_vertices': len(vertices) + len(ref_vertices),
-        'transmitted_triangles': len(faces) + len(ref_faces),
+        'transmitted_objects': 0 if reused else 2,
+        'transmitted_vertices': 0 if reused else len(vertices) + len(ref_vertices),
+        'transmitted_triangles': 0 if reused else len(faces) + len(ref_faces),
         'private_cache_retained_objects': 0,
     }
-    if (type(work) is not dict or type(work.get('candidate_objects')) is not int
-            or work['candidate_objects'] < 2 or any(type(work.get(key)) is not int or work[key] != value
-                                                   for key, value in counts.items())
-            or type(capture['stages']) is not dict):
-        raise ValueError('selective_source_region_capture_accounting')
-    check_budget('selective_source_region_capture_validated')
+    if 'mode' in work:
+        counts.update(box_vertices_scanned=0 if reused else source_counts[0],
+                      box_triangles_scanned=0 if reused else source_counts[1])
+    if reused:
+        counts.update(to_mesh=0,triangulations=0,world_transforms=0,world_vertices_transformed=0)
+    if (any(type(value) is not int for value in expanded) or tuple(expanded) not in valid_expansions
+            or any(type(work.get(key)) is not int or work[key] != value for key,value in counts.items())):
+        raise ValueError(reason)
 
 
 def measure_selective_region(capture, target, reference, box, host_sha, check_budget=_checkpoint):

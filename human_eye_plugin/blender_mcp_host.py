@@ -44,6 +44,7 @@ _MAX_RESIDENT_INIT_BYTES = 1024 * 1024
 _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _SELECTIVE_SOURCE_REGION = 'capture_source_region_pair'
+_SELECTIVE_CAPTURE_CACHE_BYTES = 2 * 1024 * 1024
 _OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
@@ -187,6 +188,7 @@ class BlenderMCPHost:
         self._resident_slot = '_human_eye_mcp_resident_' + hashlib.sha256(str(root).encode('utf8')).hexdigest()[:20]
         self._resident_ready = False
         self._scene_decoder = SceneDeltaDecoder()
+        self._selective_capture = None
         self.host, self.port, self.timeout_s = str(address), port, float(timeout_s)
         self._lock = threading.RLock()
         self._closed = False
@@ -203,6 +205,7 @@ class BlenderMCPHost:
     def close(self) -> None:
         with self._lock:
             self._closed = True
+            self._selective_capture = None
 
     def _ensure_live(self):
         if not self.is_alive:
@@ -250,17 +253,92 @@ class BlenderMCPHost:
         return self._request('capture_task', {'selectors': selectors})
 
     def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes):
-        """Fetch one private selection and whole reference without a scene delta."""
+        """Request fresh host confirmation before using one bounded private capture."""
         now = time.perf_counter_ns()
         if type(deadline_ns) is not int or deadline_ns <= now:
             raise ValueError('selective_source_region_deadline')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
             raise ValueError('selective_source_region_response_budget')
         deadline_ns = min(deadline_ns, now + int(self.timeout_s * 1e9))
-        return self._request(_SELECTIVE_SOURCE_REGION, {
-            'target': target, 'reference': reference, 'world_box_m': world_box_m,
-            'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes,
-        })
+        params = {'target': target, 'reference': reference, 'world_box_m': world_box_m,
+                  'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes}
+        # JSON distinguishes the signed-zero endpoints which ordinary equality merges.
+        key = json.dumps([target, reference, world_box_m], sort_keys=True, ensure_ascii=False,
+                         allow_nan=False, separators=(',', ':'))
+        with self._lock:
+            previous = self._selective_capture
+            self._selective_capture = None
+            known = (previous if previous is not None and previous[0] == key
+                     and len(previous[2]) <= max_response_bytes else None)
+            if known is not None:
+                params['known'] = dict(known[1])
+            reply = self._request(_SELECTIVE_SOURCE_REGION, params)
+            try:
+                return self._materialize_selective_capture(reply, key, known, params)
+            except (ValueError, TypeError, KeyError, UnicodeError, RecursionError) as error:
+                self._fail('Invalid private source-region residency response: ' + str(error))
+
+    def _materialize_selective_capture(self, reply, key, known, params):
+        from .source_region import _validate_selective_capture
+
+        def check_deadline(_stage):
+            if time.perf_counter_ns() >= params['deadline_ns']:
+                raise ValueError('selective_source_region_deadline')
+
+        started = time.perf_counter_ns()
+        if (set(reply) != {'schema','host_source_sha256','lease','capture','work','stages'}
+                or reply['schema'] != 'human-eye-private-source-region-residency-v1'
+                or reply['host_source_sha256'] != self._readonly_host_source_sha256
+                or type(reply['work']) is not dict or type(reply['stages']) is not dict
+                or any(name in reply['work'] for name in
+                       ('connector_reused_payload','connector_retained_bytes','connector_cache_limit_bytes'))
+                or 'connector_materialization' in reply['stages']):
+            raise ValueError('selective_source_region_residency_envelope')
+        lease, capture, work, stages = (reply[name] for name in ('lease','capture','work','stages'))
+        if lease is not None and (type(lease) is not dict or set(lease) != {
+                'document_epoch','instance_id','epoch','revision','selection_sha256','payload_sha256'}
+                or any(type(lease[field]) is not str or re.fullmatch('[0-9a-f]{64}',lease[field]) is None
+                       for field in ('document_epoch','selection_sha256','payload_sha256'))
+                or type(lease['instance_id']) is not str or re.fullmatch('[0-9a-f]{32}',lease['instance_id']) is None
+                or any(type(lease[field]) is not int or lease[field] < 0 for field in ('epoch','revision'))):
+            raise ValueError('selective_source_region_lease_shape')
+        reused = capture is None
+        if reused:
+            if known is None or lease != known[1] or work.get('mode') != 'lease_hit':
+                raise ValueError('selective_source_region_ack_without_exact_capture')
+            materialization = known[2]
+            capture = _loads(materialization)
+            capture.update(work=work,stages=stages)
+        else:
+            if (type(capture) is not dict or capture.get('work') != work or capture.get('stages') != stages
+                    or work.get('mode') not in ('resident_capture','uncached_capture')
+                    or work['mode'] == 'uncached_capture' and lease is not None):
+                raise ValueError('selective_source_region_full_envelope_mismatch')
+            materialization = None
+
+        # Validate current accounting even when the geometry came from the private lease.
+        capture['work'] = dict(work,connector_reused_payload=reused)
+        _validate_selective_capture(capture, params['target'], params['reference'], params['world_box_m'],
+                                    self._readonly_host_source_sha256, check_deadline)
+        if lease is not None:
+            if (lease['document_epoch'] != capture['binding']['document_epoch']
+                    or lease['payload_sha256'] != capture['payload_sha256']):
+                raise ValueError('selective_source_region_lease_payload_binding')
+            if materialization is None:
+                geometry = {field: value for field,value in capture.items() if field not in ('work','stages')}
+                materialization = json.dumps(geometry, ensure_ascii=False, allow_nan=False,
+                                             separators=(',', ':')).encode('utf8')
+            if len(materialization) <= min(_SELECTIVE_CAPTURE_CACHE_BYTES,params['max_response_bytes']):
+                check_deadline('before_selective_capture_cache')
+                self._selective_capture = key,dict(lease),materialization
+        retained = len(self._selective_capture[2]) if self._selective_capture is not None else 0
+        capture['work'].update(connector_retained_bytes=retained,
+                               connector_cache_limit_bytes=_SELECTIVE_CAPTURE_CACHE_BYTES)
+        closed = time.perf_counter_ns()
+        check_deadline('before_selective_capture_return')
+        capture['stages'] = dict(stages, connector_materialization={
+            'started_ns':started, 'closed_ns':closed, 'elapsed_ns':closed-started})
+        return capture
 
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
         now = time.perf_counter_ns()
@@ -586,6 +664,8 @@ class BlenderMCPHost:
             'last_readonly_native_audit': {'request_id'}}
         if command == 'capture_nearest_candidates' and type(params) is dict and 'selector' in params:
             required[command] = required[command] | {'selector'}
+        if command == _SELECTIVE_SOURCE_REGION and type(params) is dict and 'known' in params:
+            required[command] = required[command] | {'known'}
         if command not in required or type(params) is not dict or set(params) != required[command]:
             raise ValueError('Invalid fixed native observation command')
         return self._resident_code(command, params, request_id, 8192 if command == 'capture_task' else 4096)
@@ -608,6 +688,7 @@ class BlenderMCPHost:
 
     def _fail(self, message):
         self._poisoned = True
+        self._selective_capture = None
         raise HostTransportError(message)
 
     def _request(self, command, params):
@@ -661,14 +742,8 @@ class BlenderMCPHost:
                 if not isinstance(result, dict):
                     raise ValueError("BlenderMCP host result must be an object")
                 self._resident_ready = True
-                if command == _SELECTIVE_SOURCE_REGION:
-                    binding = result.get('binding')
-                    if (result.get('schema') != 'human-eye-selective-source-region-capture-v1'
-                            or type(binding) is not dict
-                            or binding.get('host_source_sha256') != self._readonly_host_source_sha256):
-                        raise ValueError('selective_source_region_host_binding')
-                    if time.perf_counter_ns() >= params['deadline_ns']:
-                        raise ValueError('selective_source_region_deadline')
+                if command == _SELECTIVE_SOURCE_REGION and time.perf_counter_ns() >= params['deadline_ns']:
+                    raise ValueError('selective_source_region_deadline')
                 if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
                     result = self._scene_decoder.apply(result)
                 if command == 'capture_directory':
@@ -685,6 +760,7 @@ class BlenderMCPHost:
             except HostRemoteError:
                 raise
             except _ReadonlyPreconnectUnavailable:
+                self._selective_capture = None
                 if self._observation_depth and command in _READONLY_COMMANDS:
                     self._native_observation_caps = _OBSERVATION_UNPROBED
                 else:
@@ -692,6 +768,7 @@ class BlenderMCPHost:
                 raise
             except HostTransportError:
                 self._poisoned = True
+                self._selective_capture = None
                 raise
             except (OSError, ValueError, TypeError, KeyError, IndexError, UnicodeError, RecursionError) as exc:
                 self._fail("BlenderMCP response unavailable or invalid; execution outcome unknown: " + str(exc))
