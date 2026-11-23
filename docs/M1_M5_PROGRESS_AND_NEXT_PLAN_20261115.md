@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [M2 跨选区现场复核](M2_SOURCE_REGION_SHARED_NORMALIZATION_LIVE_001_INDEPENDENT_REVIEW.md) 两真实槽业务和关闭完成，冻结评分 1/2 保留。原件确认归一 2→1，双无图服务 4.163→3.065 s，热 RPC 0.556→0.603 s。下一步 [直接生成宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_PLAN.md)，去掉编码前未使用的整场深拷贝。[M2 隔离复核](M2_SOURCE_REGION_SHARED_NORMALIZATION_001_INDEPENDENT_REVIEW.md) 双请求服务少 37.15%。[M4 非共面选区优化](M4_SOURCE_REGION_NONPLANAR_SHORT_CIRCUIT_001_INDEPENDENT_REVIEW.md) 隔离冷服务少 43.81%。[Yanyite 原正式对照](M4_YANYITE_DUAL_CURVED_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 原生 13/13、插件模型容量失败，无正式同质速度对照。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。
+当前 [M2 直接生成宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 正式现场 2/2，候选 `4104add4`，双无图服务少 17.95%、热 RPC 少 26.27%、完整 MCP 少 11.93%。本轮 M2 收口，转向 [Yanyite 左右曲面整题对照](M4_YANYITE_BILATERAL_REGION_NATIVE_001_PLAN.md)。[M2 跨选区现场独立复核](M2_SOURCE_REGION_SHARED_NORMALIZATION_LIVE_001_INDEPENDENT_REVIEW.md) 原冻结 1/2 保留，原件证实归一 2→1、双无图服务少 26.37%。[M4 非共面选区优化](M4_SOURCE_REGION_NONPLANAR_SHORT_CIRCUIT_001_INDEPENDENT_REVIEW.md) 隔离冷服务少 43.81%。[Yanyite 原正式对照](M4_YANYITE_DUAL_CURVED_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 原生 13/13、插件模型容量失败，无正式同质速度对照。[密集正式原生对照](M4_DENSE_SWEEP_INTEGRATED_NATIVE_STARTUP_001_INDEPENDENT_REVIEW.md) 各 7/7、整窗 180.840→90.546 s。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -13,7 +13,7 @@
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | source_region事实优先v2及原full/ref兼容验收通过 |
-| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区归一已见真实宿主复用，推进去掉增量前的宿主整场复制 |
+| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区复用和宿主直接增量已在真实 Blender 验证，本轮收口 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
 | M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 隔离候选 `cca20c174` 通过真实曲面原件回放，冷服务中位降 43.81% |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
