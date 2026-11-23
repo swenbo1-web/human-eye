@@ -45,6 +45,8 @@ _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 _OBSERVATION_UNPROBED = object()
 _SELECTIVE_SOURCE_REGION = 'capture_source_region_pair'
 _SCOPED_VISUAL = 'capture_source_region_visual'
+_VISUAL_WIRE_SCHEMA = 'human-eye-source-region-visual-wire-v1'
+_VISUAL_METADATA_FIELDS = ('directory', 'display_snapshot', 'source_frame')
 _SELECTIVE_CAPTURE_CACHE_BYTES = 2 * 1024 * 1024
 _OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION,_SCOPED_VISUAL})
 _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
@@ -190,6 +192,7 @@ class BlenderMCPHost:
         self._resident_ready = False
         self._scene_decoder = SceneDeltaDecoder()
         self._selective_capture = None
+        self._clear_visual_wire()
         self.host, self.port, self.timeout_s = str(address), port, float(timeout_s)
         self._lock = threading.RLock()
         self._closed = False
@@ -207,6 +210,7 @@ class BlenderMCPHost:
         with self._lock:
             self._closed = True
             self._selective_capture = None
+            self._clear_visual_wire()
 
     def _ensure_live(self):
         if not self.is_alive:
@@ -347,9 +351,137 @@ class BlenderMCPHost:
             raise ValueError('source_region_visual_deadline')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
             raise ValueError('source_region_visual_response_budget')
-        return self._request(_SCOPED_VISUAL, dict(query=query,
-            deadline_ns=min(deadline_ns, now + int(self.timeout_s * 1e9)),
-            max_response_bytes=max_response_bytes))
+        from .blender_host import _digest
+
+        deadline_ns = min(deadline_ns, now + int(self.timeout_s * 1e9))
+        with self._lock:
+            previous = self._visual_wire_cache
+            self._clear_visual_wire()
+            known = {} if previous is None else {
+                'generation': previous[0]['generation'], 'receipt_sha256': _digest([previous[0]])}
+            reply = self._request(_SCOPED_VISUAL, dict(query=query, deadline_ns=deadline_ns,
+                max_response_bytes=max_response_bytes, known=known))
+            try:
+                capture, cache, work = self._materialize_visual_capture(
+                    reply, query, deadline_ns, max_response_bytes, previous)
+            except (ValueError, TypeError, KeyError, IndexError, OverflowError, UnicodeError, RecursionError) as error:
+                self._fail('Invalid private visual-region capture response: ' + str(error))
+            self._visual_wire_cache, self._last_visual_wire_work = cache, work
+            return capture
+
+    def _clear_visual_wire(self):
+        self._visual_wire_cache = None
+        self._last_visual_wire_work = None
+
+    def _materialize_visual_capture(self, reply, query, deadline_ns, max_response_bytes, previous):
+        """Rebuild a signed private capture from one verified predecessor."""
+        from .blender_host import BlenderSceneHost, _digest, _observation_target_cameras
+        from .source_region_visual import _validate_source
+
+        def checkpoint(_stage=None):
+            if time.perf_counter_ns() >= deadline_ns:
+                raise ValueError('source_region_visual_deadline')
+
+        def digest_value(value):
+            return type(value) is str and re.fullmatch('[0-9a-f]{64}', value) is not None
+
+        def encode(value):
+            return json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+
+        started = time.perf_counter_ns()
+        checkpoint()
+        if (set(reply) != {'schema', 'proof', 'camera_sha256', 'capture'}
+                or reply['schema'] != _VISUAL_WIRE_SCHEMA or type(reply['capture']) is not dict
+                or not digest_value(reply['camera_sha256'])):
+            raise ValueError('source_region_visual_wire_envelope')
+        proof, capture = reply['proof'], dict(reply['capture'])
+        if (type(proof) is not dict or set(proof) != {'generation', 'metadata_sha256', 'mesh_sha256'}
+                or (proof['generation'] is not None and not digest_value(proof['generation']))
+                or not digest_value(proof['metadata_sha256'])
+                or type(proof['mesh_sha256']) is not list or not 1 <= len(proof['mesh_sha256']) <= 256
+                or not all(digest_value(digest) for digest in proof['mesh_sha256'])
+                or 'camera_plan' in capture):
+            raise ValueError('source_region_visual_wire_proof')
+        entries, ordinals = capture['meshes'], capture['retained_ordinals']
+        if (type(entries) is not list or type(ordinals) is not list
+                or len(entries) != len(ordinals) or len(entries) != len(proof['mesh_sha256'])
+                or any(type(n) is not int or not 0 <= n < 256 for n in ordinals)
+                or sorted(set(ordinals)) != ordinals):
+            raise ValueError('source_region_visual_wire_mesh_order')
+        metadata = {key: capture[key] for key in _VISUAL_METADATA_FIELDS if key in capture}
+        if metadata and len(metadata) != len(_VISUAL_METADATA_FIELDS):
+            raise ValueError('source_region_visual_wire_partial_metadata')
+        metadata_reused = not metadata
+        referenced = sum(type(entry) is str for entry in entries)
+        if referenced and not metadata_reused:
+            raise ValueError('source_region_visual_wire_mesh_bypasses_metadata_receipt')
+        if metadata_reused:
+            if (previous is None or proof['generation'] is None
+                    or proof['generation'] != previous[0]['generation']):
+                raise ValueError('source_region_visual_wire_unconfirmed_generation')
+            if proof['metadata_sha256'] != previous[0]['metadata_sha256']:
+                raise ValueError('source_region_visual_wire_unconfirmed_metadata')
+            metadata, cached_rows = _loads(previous[1])
+            cached_meshes = {ordinal: (digest, mesh) for ordinal, digest, mesh in cached_rows}
+        elif _digest([metadata]) != proof['metadata_sha256']:
+            raise ValueError('source_region_visual_wire_metadata_digest')
+        directory = metadata['directory']
+        if type(directory) is not list or not 1 <= len(directory) <= 256 or ordinals[-1] >= len(directory):
+            raise ValueError('source_region_visual_wire_directory')
+        capture.update(metadata)
+
+        meshes = []
+        for ordinal, entry, expected in zip(ordinals, entries, proof['mesh_sha256'], strict=True):
+            checkpoint()
+            if type(entry) is str:
+                saved = cached_meshes.get(ordinal)
+                if saved is None or saved[0] != entry or entry != expected:
+                    raise ValueError('source_region_visual_wire_unconfirmed_mesh')
+                meshes.append(saved[1])
+            elif type(entry) is dict and _digest([entry]) == expected:
+                meshes.append(entry)
+            else:
+                raise ValueError('source_region_visual_wire_mesh_digest')
+        capture['meshes'] = meshes
+
+        camera_started = time.perf_counter_ns()
+        selector_key, selector_value = next(iter(query['target'].items()))
+        key = 'object_id' if selector_key == 'id' else 'name'
+        target_meshes = [mesh for mesh, ordinal in zip(meshes, ordinals, strict=True)
+                         if directory[ordinal][key] == selector_value]
+        if len(target_meshes) != 1:
+            raise ValueError('source_region_visual_wire_camera_target')
+        box = BlenderSceneHost._source_region_pair_box(query['world_box_m'])
+        region = BlenderSceneHost._compact_source_region_pair(target_meshes[0], box, checkpoint)
+        if region['source_triangle_indices'] != capture['source_triangle_indices']:
+            raise ValueError('source_region_visual_wire_camera_selection')
+        cameras = _observation_target_cameras(region['vertices'], [row['world_bounds_m'] for row in directory])
+        cameras.update(schema='active-coverage-source-region-cameras-v1',
+                       scope='source_region_fitted_XY_whole_scene_conservative_depth')
+        cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
+        if _digest([cameras]) != reply['camera_sha256']:
+            raise ValueError('source_region_visual_wire_camera_digest')
+        capture['camera_plan'] = cameras
+        camera_closed = time.perf_counter_ns()
+
+        materialized_bytes = len(encode(capture))
+        if materialized_bytes > max_response_bytes:
+            raise ValueError('source_region_visual_wire_materialized_budget')
+        # The original scope and full-capture digests bind the predecessor.
+        # The observation consumer still independently validates the sources.
+        _validate_source(capture, query, self._readonly_host_source_sha256, checkpoint)
+        cache, retained_bytes = None, 0
+        if proof['generation'] is not None and materialized_bytes <= _SELECTIVE_CAPTURE_CACHE_BYTES:
+            retained = encode([metadata, list(zip(ordinals, proof['mesh_sha256'], meshes, strict=True))])
+            if len(retained) <= _SELECTIVE_CAPTURE_CACHE_BYTES:
+                cache, retained_bytes = (proof, retained), len(retained)
+        checkpoint()
+        return capture, cache, {
+            'ack_sent': previous is not None, 'metadata_reused': metadata_reused,
+            'mesh_references': referenced, 'materialized_bytes': materialized_bytes,
+            'connector_cache_bytes': retained_bytes, 'camera_reconstruction_ns': camera_closed - camera_started,
+            'connector_materialization_ns': time.perf_counter_ns() - started,
+        }
 
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
         now = time.perf_counter_ns()
@@ -676,7 +808,7 @@ class BlenderMCPHost:
             'last_readonly_native_audit': {'request_id'}}
         if command == 'capture_nearest_candidates' and type(params) is dict and 'selector' in params:
             required[command] = required[command] | {'selector'}
-        if command == _SELECTIVE_SOURCE_REGION and type(params) is dict and 'known' in params:
+        if command in (_SELECTIVE_SOURCE_REGION, _SCOPED_VISUAL) and type(params) is dict and 'known' in params:
             required[command] = required[command] | {'known'}
         if command not in required or type(params) is not dict or set(params) != required[command]:
             raise ValueError('Invalid fixed native observation command')
@@ -701,6 +833,7 @@ class BlenderMCPHost:
     def _fail(self, message):
         self._poisoned = True
         self._selective_capture = None
+        self._clear_visual_wire()
         raise HostTransportError(message)
 
     def _request(self, command, params):
@@ -774,6 +907,7 @@ class BlenderMCPHost:
                 raise
             except _ReadonlyPreconnectUnavailable:
                 self._selective_capture = None
+                self._clear_visual_wire()
                 if self._observation_depth and command in _READONLY_COMMANDS:
                     self._native_observation_caps = _OBSERVATION_UNPROBED
                 else:
@@ -782,6 +916,7 @@ class BlenderMCPHost:
             except HostTransportError:
                 self._poisoned = True
                 self._selective_capture = None
+                self._clear_visual_wire()
                 raise
             except (OSError, ValueError, TypeError, KeyError, IndexError, UnicodeError, RecursionError) as exc:
                 self._fail("BlenderMCP response unavailable or invalid; execution outcome unknown: " + str(exc))

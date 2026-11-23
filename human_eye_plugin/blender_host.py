@@ -822,6 +822,7 @@ class BlenderSceneHost:
         self._lock = threading.RLock()
         self._residency_module = self._residency = None
         self._private_source_region_lease = None
+        self._private_source_region_visual_proof = None
         self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
             world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
             directory_builds=0, directory_vertices=0, directory_cache_hits=0,
@@ -875,6 +876,7 @@ class BlenderSceneHost:
 
     def close_residency(self):
         self._private_source_region_lease = None
+        self._private_source_region_visual_proof = None
         if self._residency is not None:self._residency.close()
 
     def residency_work(self):
@@ -1811,7 +1813,7 @@ class BlenderSceneHost:
             checkpoint()
             return scene
 
-    def capture_source_region_visual(self, query, deadline_ns, max_response_bytes):
+    def capture_source_region_visual(self, query, deadline_ns, max_response_bytes, *, known=None):
         """Read a private static selected-view scene without changing complete capture."""
         self._main_thread()
         if type(query) is not dict or set(query) != {'target', 'reference', 'world_box_m'}:
@@ -1822,6 +1824,10 @@ class BlenderSceneHost:
                            for value in selector.values())):
                 raise BlenderHostError('source_region_visual_selector')
         query = dict(query, world_box_m=self._source_region_pair_box(query['world_box_m']))
+        if known is not None and (type(known) is not dict or known and (
+                set(known) != {'generation', 'receipt_sha256'}
+                or any(not _hex_string(value, 64) for value in known.values()))):
+            raise BlenderHostError('source_region_visual_invalid_ack')
         if type(deadline_ns) is not int or deadline_ns <= 0:
             raise BlenderHostError('source_region_visual_deadline')
         if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
@@ -1908,21 +1914,93 @@ class BlenderSceneHost:
                 raise BlenderHostError('source_region_visual_objects_must_differ')
             stages['static_directory_and_bounds'] = interval(started)
 
+            started = time.perf_counter_ns()
+            prior = self._private_source_region_visual_proof
+            matrices = {row['object_id']: row['matrix_world'] for row in rows}
+            fallback = ('hydrated_capture' if known is None else
+                        self._source_region_pair_residency_reason(graph, scale, objects, evaluated_by_id, display))
+            state = self._residency
+            if state is not None and fallback in ('residency_unavailable', 'residency_invalidation_unavailable'):
+                # A period without a valid invalidation path makes old arrays
+                # unusable even if the callbacks are attached again later.
+                state.reset()
+            if fallback is None:
+                for row, obj in zip(rows, objects, strict=True):
+                    resource = state.resources.get(self._residency_module.identity(obj))
+                    pose = (row['matrix_world'], scale)
+                    if resource is not None and resource['pose'] == pose and _digest(resource['pose']) != _digest(pose):
+                        fallback = 'signed_pose_mismatch'
+                        break
+
+            def residency_token():
+                return state.instance_id, state.epoch, state.revision, state.serial
+
+            resident = fallback is None
+            token = residency_token() if resident else None
+            generation = _digest([identity['document_epoch'], source_sha, token]) if resident else None
+            previous = prior if prior is not None and prior['proof']['generation'] == generation else None
+            acknowledged = False
+            if known and generation is not None and known['generation'] == generation:
+                if previous is None or known['receipt_sha256'] != _digest([previous['proof']]):
+                    raise BlenderHostError('source_region_visual_ack_mismatch')
+                acknowledged = True
+            stages['residency_binding'] = interval(started)
+            mesh_stamps, verified = {}, {}
+            prior_meshes = previous['meshes'] if previous is not None else {}
+            world_vertices_transformed = 0
             expansion = dict.fromkeys(('to_mesh', 'to_mesh_clear', 'triangulations',
                                        'expanded_vertices', 'expanded_triangles'), 0)
 
             def expand(ordinals):
-                context = (graph, scale, [objects[i] for i in ordinals], evaluated_by_id, checkpoint)
-                capture = self._capture(_acquisition_context=context, _acquisition_scope=scope,
-                                        _acquisition_work=expansion)
+                nonlocal world_vertices_transformed
+                selected = [objects[i] for i in ordinals]
+                context = (graph, scale, selected, evaluated_by_id, checkpoint)
+                resources = [None] * len(selected)
+                if resident:
+                    names = {'to_mesh': 'to_mesh', 'triangulations': 'triangulations',
+                             'expanded_vertices': 'resource_vertices_read', 'expanded_triangles': 'resource_faces_read'}
+                    stats = self._residency_stats
+                    before = {name: stats[name] for name in (*names.values(), 'world_vertices_transformed')}
+                    capture = self._resident_capture(graph, scale, selected, None, None, context,
+                                                     scope, None, display, _resources_only=True)
+                    for name, source in names.items():
+                        expansion[name] += stats[source] - before[source]
+                    # Each successful resident to_mesh call is cleared in _resident_capture.
+                    expansion['to_mesh_clear'] += stats['to_mesh'] - before['to_mesh']
+                    world_vertices_transformed += stats['world_vertices_transformed'] - before['world_vertices_transformed']
+                    resources = self._source_region_pair_resources(selected, matrices, scale)
+                    if resources is None or residency_token() != token:
+                        raise BlenderHostError('source_region_visual_resident_source_changed')
+                else:
+                    before = expansion['expanded_vertices']
+                    capture = self._capture(_acquisition_context=context, _acquisition_scope=scope,
+                                            _acquisition_work=expansion)
+                    world_vertices_transformed += expansion['expanded_vertices'] - before
                 result = {}
-                for ordinal, mesh in zip(ordinals, capture['meshes'], strict=True):
+                for ordinal, mesh, resource in zip(ordinals, capture['meshes'], resources, strict=True):
                     row = rows[ordinal]
+                    mesh = dict(mesh, mark_label='#B%04d' % (ordinal + 1))
                     if (mesh['object_id'] != row['object_id'] or len(mesh['vertices']) != row['vertex_count']
-                            or len(mesh['faces']) != row['triangle_count']
-                            or _digest(_source_region_visual_extrema(mesh['vertices'])) != _digest(row['world_bounds_m'])):
+                            or len(mesh['faces']) != row['triangle_count']):
                         raise BlenderHostError('source_region_visual_expanded_source_disagrees:' + row['object_id'])
-                    result[ordinal] = dict(mesh, mark_label='#B%04d' % (ordinal + 1))
+                    matched = None
+                    if resource is not None:
+                        mesh_stamps[ordinal] = resource
+                        # Include the exact pose and wrapper fields because the local
+                        # triangle resource alone does not bind world or display data.
+                        stamp = _digest([resource, row, scale,
+                                         {k: v for k, v in mesh.items() if k not in ('vertices', 'faces', 'edges')}])
+                        old = prior_meshes.get(ordinal)
+                        if old is not None and old[0] == stamp:
+                            matched = old[1]
+                        if matched is not None:
+                            verified[ordinal] = (stamp, matched, True)
+                        else:
+                            verified[ordinal] = (stamp, _digest([mesh]), False)
+                    if (matched is None and _digest(_source_region_visual_extrema(mesh['vertices']))
+                            != _digest(row['world_bounds_m'])):
+                        raise BlenderHostError('source_region_visual_expanded_source_disagrees:' + row['object_id'])
+                    result[ordinal] = mesh
                     checkpoint()
                 return result
 
@@ -1978,6 +2056,9 @@ class BlenderSceneHost:
                         or (len(data.vertices), len(data.polygons), len(data.loops)) != (
                             row['vertex_count'], row['triangle_count'], row['triangle_count'] * 3)):
                     raise BlenderHostError('source_region_visual_source_changed:' + oid)
+            if resident and (residency_token() != token or self._source_region_pair_resources(
+                    [objects[i] for i in retained], matrices, scale) != [mesh_stamps[i] for i in retained]):
+                raise BlenderHostError('source_region_visual_resident_source_changed')
             stages['same_window_source_recheck'] = interval(started)
 
             packet = dict(schema='human-eye-source-region-visual-capture-v1', source='blender',
@@ -1988,24 +2069,60 @@ class BlenderSceneHost:
                 source_triangle_indices=region['source_triangle_indices'], camera_plan=cameras, query=query)
             # List wrapper opts out of the legacy _digest scene-display exclusion.
             packet['revision'] = 'source-region-visual:' + _digest([packet])
+            started = time.perf_counter_ns()
+            metadata_keys = ('directory', 'display_snapshot', 'source_frame')
+            if known is not None:
+                metadata = {k: packet[k] for k in metadata_keys}
+                proof = {'generation': generation, 'metadata_sha256': _digest([metadata]),
+                         'mesh_sha256': [verified[i][1] if i in verified else _digest([meshes[i]]) for i in retained]}
+                metadata_hit = acknowledged and proof['metadata_sha256'] == previous['proof']['metadata_sha256']
+                referenced = {i for i in retained if metadata_hit and verified[i][2]}
+                camera_sha = _digest([cameras])
+            else:
+                metadata_hit = False
+                referenced = set()
+            stages['wire_binding'] = interval(started)
             stages['one_locked_host_window'] = interval(locked)
-            expanded_vertices = sum(row['vertex_count'] for row in (rows[i] for i in retained))
-            expanded_triangles = sum(row['triangle_count'] for row in (rows[i] for i in retained))
-            omitted_vertices = source_vertices - expanded_vertices
-            omitted_triangles = source_triangles - expanded_triangles
-            packet['work'] = dict(resident_before=resident_before, resident_after=self.residency_work()['resident_resources'],
+            resident_count = self.residency_work()['resident_resources']
+            cached = state.resources.values() if resident else ()
+            sent = [i for i in retained if i not in referenced]
+            omitted_vertices = sum(rows[i]['vertex_count'] for i in omitted)
+            omitted_triangles = sum(rows[i]['triangle_count'] for i in omitted)
+            packet['work'] = dict(resident_before=resident_before, resident_after=resident_count,
                 depsgraph_fetches=1, source_objects=len(rows), source_vertices=source_vertices, source_triangles=source_triangles,
                 retained_objects=len(retained), omitted_objects=len(omitted), viewport_tests=viewport_tests,
                 omitted_vertices_checked=omitted_vertices, omitted_polygons_checked=omitted_triangles,
                 omitted_loop_indices_checked=3 * omitted_triangles,
-                world_vertices_transformed=expansion['expanded_vertices'], sent_vertices=expanded_vertices,
-                sent_triangles=expanded_triangles, stages=stages, **expansion)
+                world_vertices_transformed=world_vertices_transformed,
+                sent_vertices=sum(rows[i]['vertex_count'] for i in sent),
+                sent_triangles=sum(rows[i]['triangle_count'] for i in sent), stages=stages,
+                verified_resource_hits=sum(hit for _, _, hit in verified.values()),
+                cached_vertices=sum(len(item['vertices_local']) for item in cached),
+                cached_triangles=sum(len(item['faces']) for item in cached),
+                mesh_wire_references=len(referenced), metadata_wire_reference=metadata_hit,
+                wire_known_state=('no_ack' if not known else 'verified_ack' if acknowledged else 'stale_ack'),
+                residency_fallback=fallback, **expansion)
             packet['sha256'] = _digest([packet])
-            checkpoint()
-            if len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
-                raise BlenderHostError('source_region_visual_document_budget_exceeded')
-            checkpoint()
-            return packet
+
+            def enforce_size(value):
+                checkpoint()
+                if len(json.dumps(value, ensure_ascii=True, allow_nan=False,
+                                  separators=(',', ':')).encode('utf8')) > max_response_bytes:
+                    raise BlenderHostError('source_region_visual_document_budget_exceeded')
+                checkpoint()
+
+            enforce_size(packet)
+            if known is None:
+                return packet
+            capture = {k: v for k, v in packet.items()
+                       if k != 'camera_plan' and (not metadata_hit or k not in metadata_keys)}
+            capture['meshes'] = [verified[i][1] if i in referenced else meshes[i] for i in retained]
+            wire = {'schema': 'human-eye-source-region-visual-wire-v1', 'proof': proof,
+                    'camera_sha256': camera_sha, 'capture': capture}
+            enforce_size(wire)
+            self._private_source_region_visual_proof = ({'proof': proof, 'meshes': verified}
+                                                        if generation is not None else None)
+            return wire
 
     def capture_directory(self, deadline_ns, max_response_bytes):
         """Aggregate evaluated vertex bounds without creating a mesh capture."""

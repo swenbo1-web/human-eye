@@ -1704,20 +1704,28 @@ class LiveSpatialService:
             with span('host.capture_source_region_visual', kind='host'):
                 capture = acquire(request, deadline_ns, 64 * 1024 * 1024)
             capture_closed = time.perf_counter_ns()
-            checkpoint('after_source_region_visual_capture')
-            directory = self.state_path.with_name(self.state_path.name + '.source_region_visual') / uuid.uuid4().hex
-            result = observe_scoped_visual_region(capture, request, directory,
-                host_sha=getattr(self.host, '_readonly_host_source_sha256', None),
-                check_budget=checkpoint, construction_callback=before_construction)
-            self._bind_read_result(result, source_check)
-            result['session_id'] = session_id
-            result['stages']['host_capture'] = {'started_ns': capture_started, 'closed_ns': capture_closed,
-                                               'elapsed_ns': capture_closed - capture_started}
-            checkpoint('before_source_region_visual_result')
-            finished = time.perf_counter_ns()
-            result['stages']['service_total'] = {'started_ns': start, 'closed_ns': finished,
-                                                'elapsed_ns': finished - start}
-            return result
+            discard = getattr(self.host, '_clear_visual_wire', None)
+            try:
+                checkpoint('after_source_region_visual_capture')
+                directory = self.state_path.with_name(self.state_path.name + '.source_region_visual') / uuid.uuid4().hex
+                result = observe_scoped_visual_region(capture, request, directory,
+                    host_sha=getattr(self.host, '_readonly_host_source_sha256', None),
+                    check_budget=checkpoint, construction_callback=before_construction)
+                self._bind_read_result(result, source_check)
+                result['session_id'] = session_id
+                result['stages']['host_capture'] = {'started_ns': capture_started, 'closed_ns': capture_closed,
+                                                   'elapsed_ns': capture_closed - capture_started}
+                checkpoint('before_source_region_visual_result')
+                finished = time.perf_counter_ns()
+                result['stages']['service_total'] = {'started_ns': start, 'closed_ns': finished,
+                                                    'elapsed_ns': finished - start}
+                if result.get('status') != 'complete' and callable(discard):
+                    discard()
+                return result
+            except Exception:
+                if callable(discard):
+                    discard()
+                raise
 
     def _observe_source_region(self, session_id, query, *, include_image):
         from .active_observation_host import source_binding
