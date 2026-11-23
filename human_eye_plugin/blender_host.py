@@ -1516,6 +1516,19 @@ class BlenderSceneHost:
         with self._lock:
             return self._capture_state(self._capture(_resident=True),_digest(['scene']))
 
+    def _capture_scene_delta(self, known=None):
+        """Encode a complete capture while its resident geometry is still private."""
+        self._main_thread()
+        with self._lock:
+            scene = self._capture(_resident=True)
+            residency = self._residency
+            if residency is None or not residency.enabled:
+                return copy.deepcopy(scene)
+            # The encoder detaches metadata and any forwarded resources. Its
+            # full-capture fallback also returns an independent copy.
+            capture = dict(scene, capture_state=residency.token(_digest(['scene'])))
+            return self.capture_delta(capture, known)
+
     def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
         """Acquire one target and possible occluders in its six viewports."""
         self._main_thread()

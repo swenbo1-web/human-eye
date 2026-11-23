@@ -524,20 +524,26 @@ class BlenderMCPHost:
                              ensure_ascii=True, allow_nan=False, separators=(',', ':'))
         if len(request.encode('utf8')) > limit:
             raise ValueError('Fixed host request exceeds ' + str(limit) + ' bytes')
-        methods = {'capture': 'capture_scene', 'capture_task': 'capture_task_scene',
+        methods = {'capture_task': 'capture_task_scene',
                    'motion_begin': 'begin_motion_goal', 'motion_status': 'motion_goal_status',
                    'motion_end': 'end_motion_goal', 'apply': 'apply_transform'}
         method = methods.get(command, command)
         lines = ['import json as _json, contextlib as _cl, io as _io',
                  '_request = _json.loads(' + repr(request) + ')', 'try:']
         lines += self._resident_setup()
+        baseline = None
+        if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
+            baseline = json.dumps(self._scene_decoder.baseline(), allow_nan=False, separators=(',', ':'))
         if command == 'native_observation_capabilities':
             lines.append("    _result = _host.native_observation_capabilities() if getattr(_host, 'native_observation_protocol', None) == " + repr(NATIVE_OBSERVATION_PROTOCOL) + " else {'supported': False}")
+        elif command == 'capture':
+            lines += ['    with _cl.redirect_stdout(_io.StringIO()):',
+                      '        _result = _host._capture_scene_delta(_json.loads(' + repr(baseline)
+                      + "), **_request['params'])"]
         else:
             lines += ['    with _cl.redirect_stdout(_io.StringIO()):',
                       '        _result = getattr(_host, ' + repr(method) + ")(**_request['params'])"]
-        if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
-            baseline = json.dumps(self._scene_decoder.baseline(), allow_nan=False, separators=(',', ':'))
+        if baseline is not None and command != 'capture':
             lines.append('    _result = _host.capture_delta(_result, _json.loads(' + repr(baseline) + '))')
         lines += [
             "    _envelope = {'protocol_version': '1.0', 'id': _request['id'], 'result': _result}",
