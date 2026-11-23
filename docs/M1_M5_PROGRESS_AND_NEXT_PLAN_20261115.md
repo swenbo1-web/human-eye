@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [Yanyite 低位双曲面对照](M4_YANYITE_LOW_BILATERAL_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17，插件零普通调用，整窗 88.596→84.250 s，CLI 原始 token 多 59.06%。实际模型自然采用闭盒，但首次两条 full 缺规范路径和像素，追加三次补证。推进 [有图曲面量测首包](M1_SOURCE_REGION_IMAGE_EVIDENCE_001_PLAN.md)。[M4 曲面选视角与同帧源面定位](M4_SOURCE_REGION_CURVED_VIEW_SAMPLE_001_INDEPENDENT_REVIEW.md) 已隔离和现场采用。[M1 世界闭盒选面](M1_SOURCE_REGION_WORLD_BOX_001_INDEPENDENT_REVIEW.md) 请求字节少 72.05%。[原左右曲面对照](M4_YANYITE_BILATERAL_REGION_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17、完整窗 85.195→113.376 s。[M2 直接宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场 2/2，双无图服务少 17.95%、热 RPC 少 26.27%。
+当前 [M1 有图曲面量测首包](M1_SOURCE_REGION_IMAGE_EVIDENCE_001_INDEPENDENT_REVIEW.md) 隔离通过，候选 `e8006670`，两次原 full 首包正文少 91.92%，量测、原图与同帧路径和像素完整。下一项 [双足曲面自然消费](M1_YANYITE_FOOT_REGION_IMAGE_EVIDENCE_CONSUMPTION_001_PLAN.md) 测旧新同题的抑制补查和性能。[Yanyite 低位原生与插件对照](M4_YANYITE_LOW_BILATERAL_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂 17/17、插件零普通调用、整窗少 4.91%、CLI 原始 token 多 59.06%。[M4 选视角和像素归属](M4_SOURCE_REGION_CURVED_VIEW_SAMPLE_001_INDEPENDENT_REVIEW.md) 已隔离及现场采用。[M2 直接宿主增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场 2/2，热 RPC 少 26.27%。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -12,7 +12,7 @@
 
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
-| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 闭盒已自然采用，推进有图曲面首包完整交付 |
+| M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 闭盒已自然采用，有图曲面首包隔离通过，推进自然补查对照 |
 | M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 跨选区复用和宿主直接增量已在真实 Blender 验证，本轮收口 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
 | M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 新双区原图与源面已被自然采纳，普通调用 7→0 |
