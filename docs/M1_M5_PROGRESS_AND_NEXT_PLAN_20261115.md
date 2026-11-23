@@ -1,6 +1,6 @@
 # M1–M5 当前进度与唯一推进顺序
 
-当前 [冷启动选区几何传输](M2_SOURCE_REGION_COLD_SELECTIVE_TRANSPORT_001_INDEPENDENT_REVIEW.md) 三资产回环原量测等价，装配 72,469→3,879 B、Yanyite 3,318,954→26,830 B。现场四格因请求重复包装全部失败，实际 Blender 量测分母 0。下一项为 [不改候选的现场恢复](M2_SOURCE_REGION_COLD_SELECTIVE_TRANSPORT_RECOVERY_001_PLAN.md)。[21 对象轨道留出](M4_RAIL_SOURCE_REGION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 插件 17/17、原生 15/17，差在原图与像素。[28 对象装配](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 与 [Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂各 17/17，完整窗分别少 44.18% 与 42.62%。[M2 增量](M2_RESIDENT_CAPTURE_DIRECT_DELTA_001_INDEPENDENT_REVIEW.md) 现场热 RPC 少 26.27%。
+当前 [冷启动选区传输现场恢复](M2_SOURCE_REGION_COLD_SELECTIVE_TRANSPORT_RECOVERY_001_INDEPENDENT_REVIEW.md) 四槽、十二量测全过。装配冷双向少 37.12%，Yanyite 少 96.06%。Yanyite 热复读仍重展整网，耗时 496.470→577.609 ms。下一项 [同代选区和原几何复用](M2_SOURCE_REGION_SELECTIVE_RESIDENCY_001_PLAN.md)。[21 对象轨道留出](M4_RAIL_SOURCE_REGION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 插件 17/17、原生 15/17。[28 对象装配](M4_ASSEMBLY_CROSS_ASSET_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 与 [Yanyite 相反方向双区](M4_YANYITE_OPPOSITE_DIRECTION_PRODUCT_NATIVE_001_INDEPENDENT_REVIEW.md) 两臂各 17/17，完整窗分别少 44.18% 与 42.62%。
 
 2026-11-22，[非共面留出独立复核](M1_SOURCE_REGION_TASK_ENTRY_HOLDOUT_001_INDEPENDENT_REVIEW.md) 两臂 7/7、各 8 调 7 图。B 自然采用 0/1，上一平面题采用 1/1 保留，专用入口 `e6e29f18` 隔离收口，基线仍为 `8cf3fabc`。[M4 同帧逐面证据回放](M4_SOURCE_REGION_FRAME_SAMPLE_IDENTITY_001_REVIEW.md)恢复原名单只增加 79 B，但不替代其它方向取景，保留离线证据并收口。[受控首包](M1_SOURCE_REGION_FIRST_PACKET_CONSUMPTION_001_INDEPENDENT_REVIEW.md)及[诊断原型](M1_SOURCE_REGION_DIAGNOSTIC_ARTIFACT_PROTOTYPE_001_INDEPENDENT_REVIEW.md)按原分母保留。
 
@@ -13,7 +13,7 @@
 | 模块 | 职责 | 当前阶段 |
 |---|---|---|
 | M1 模型接口 | 接收任务、绑定目标、交付可直接使用的事实和图像，包含MCP/Hook | 曲面与装配同版首包各采用 2/2，扣缓存用量结果有分化 |
-| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 选区下推已实装回环等价并少传，现场接线恢复待验证 |
+| M2 场景状态与读取 | 目录、资源/姿态分离、驻留、版本、选定读取和增量 | 无图闭盒下推冷读现场通过，热复读和换区复用待验证 |
 | M3 空间求解 | 剪枝、精确距离/关系/见证，明确还缺哪些信息 | 距离快路径及充分分离事实已实现，复杂非凸闭壳回退仍有覆盖瓶颈 |
 | M4 类人眼取数策略 | 根据任务和缺失信息选择对象、精度、视图及停止时机 | 轨道第三域首包采用 2/2，插件取景通过，原生 M19 无像素 |
 | M5 小脑控制器 | 在本地衔接观察、求解、反馈与下一步，减少必要的大模型往返 | 只读联合工程通过，节省一次公开调用和宿主读取。模型往返和完整收益待证 |
