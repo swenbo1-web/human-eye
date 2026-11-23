@@ -41,6 +41,7 @@ from .task_brief import project_task_brief, project_segment_brief, project_struc
 
 span = partial(_trace_span, source_name='mcp_transport')
 _NO_RPC_ID = object()
+_SCOPED_MEASUREMENT_MODE = 'source_region_measurement'
 
 
 _ID_SCHEMA = {"type": "string", "minLength": 1}
@@ -452,7 +453,40 @@ def _validate_goal_arguments(goal, pair):
     _goal(candidate)
 
 
-def _validate_arguments(name: str, arguments: Any) -> None:
+def _enable_scoped_measurement_schema(tool):
+    tool['description'] += (
+        ' Use source_region_measurement with include_image=false for a closed world-box region on one '
+        'current mesh and surface_proximity to a different whole mesh. Supply query.region.object, '
+        'query.region.world_box_m, query.reference and query.requested_facts=[surface_proximity]. '
+        'Omitted, brief and full response_detail return the same compact distance, world direction, '
+        'nearest points and current source triangles. Use source_region for image or reusable region_ref evidence.')
+    schema = tool['inputSchema']
+    query = schema['properties']['query']
+    mode = {'required': ['mode'], 'properties': {'mode': {'const': _SCOPED_MEASUREMENT_MODE}}}
+    query['properties']['mode']['enum'].append(_SCOPED_MEASUREMENT_MODE)
+    query['allOf'].append({'if': mode, 'then': {
+        'required': ['region', 'reference', 'requested_facts'],
+        'properties': {
+            'mode': {},
+            'region': {'required': ['object', 'world_box_m'],
+                       'properties': {'object': {}, 'world_box_m': {}},
+                       'additionalProperties': False},
+            'reference': {},
+            'requested_facts': {'const': ['surface_proximity']},
+        },
+        'additionalProperties': False,
+    }})
+    schema['allOf'].append({'if': {'required': ['query'], 'properties': {'query': mode}}, 'then': {
+        'required': ['include_image'],
+        'properties': {
+            'query': {}, 'include_image': {'const': False}, 'session_id': {},
+            'response_detail': {'description': 'Omitted, brief and full return the same measurement evidence.'},
+        },
+        'additionalProperties': False,
+    }})
+
+
+def _validate_arguments(name: str, arguments: Any, *, source_region_measurement=False) -> dict | None:
     if not isinstance(arguments, dict):
         raise ValueError("arguments must be an object")
     allowed = {
@@ -486,6 +520,13 @@ def _validate_arguments(name: str, arguments: Any) -> None:
     if 'response_detail' in arguments and (not isinstance(arguments['response_detail'], str)
             or arguments['response_detail'] not in ('full', 'brief')):
         raise ValueError('response_detail must be full or brief')
+    query = arguments.get('query')
+    if (name == 'human_eye_scene_observe' and isinstance(query, dict)
+            and query.get('mode') == _SCOPED_MEASUREMENT_MODE):
+        if not source_region_measurement:
+            raise ValueError('source_region_measurement_disabled')
+        from .source_region import validate_scoped_measurement_arguments
+        return validate_scoped_measurement_arguments(arguments)
     if "query" in arguments:
         selected_query = validate_query(arguments["query"])
     if name == 'human_eye_scene_observe':
@@ -2478,14 +2519,19 @@ class LiveSpatialMCPServer:
     """One persistent MCP process, with a stable default spatial session."""
 
     def __init__(self, service: Any, default_session_id: str | None = None, *,
-                 spatial_task_only=False, region_task_evidence=False):
+                 spatial_task_only=False, region_task_evidence=False, source_region_measurement=False):
         if type(spatial_task_only) is not bool:
             raise ValueError('spatial_task_only must be boolean')
         if type(region_task_evidence) is not bool:
             raise ValueError('region_task_evidence must be boolean')
+        if type(source_region_measurement) is not bool:
+            raise ValueError('source_region_measurement must be boolean')
+        if source_region_measurement and spatial_task_only:
+            raise ValueError('source_region_measurement requires the scene observation tool')
         self.service = service
         self.spatial_task_only = spatial_task_only
         self.region_task_evidence = region_task_evidence
+        self.source_region_measurement = source_region_measurement
         self.default_session_id = f"mcp-{uuid.uuid4()}" if default_session_id is None else default_session_id
         if not isinstance(self.default_session_id, str) or not self.default_session_id.strip():
             raise ValueError("default_session_id must be a nonempty string")
@@ -2563,7 +2609,20 @@ class LiveSpatialMCPServer:
         spatial_task = name in {tool['name'] for tool in SPATIAL_TASK_TOOLS_SCHEMA}
         if spatial_task != self.spatial_task_only:
             raise ValueError('Tool not exposed by this server mode: ' + name)
-        _validate_arguments(name, arguments)
+        scoped_query = _validate_arguments(name, arguments,
+                                           source_region_measurement=self.source_region_measurement)
+        if scoped_query is not None:
+            from .source_region import project_scoped_measurement
+            session_id = arguments.get('session_id', self.default_session_id)
+            value = self.service._measure_selective_source_region(session_id, scoped_query, include_image=False)
+            with span('mcp.content_encode', kind='encoding'):
+                if isinstance(value, dict) and value.get('status') in ('disabled', 'implementation_mismatch'):
+                    return _tool_result(value, is_error=True)
+                published = project_scoped_measurement(value, scoped_query)
+                text = json.dumps(published, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+                record_image_artifact('mcp_content', native_block_count=0)
+            self.service._check_request_budget('before_task_publication')
+            return {'content': [{'type': 'text', 'text': text}], 'isError': False}
         spatial_relations = name == 'human_eye_spatial_relations'
         if spatial_relations:
             arguments = {'query': _spatial_task_query(arguments), 'include_image': False}
@@ -2705,6 +2764,9 @@ class LiveSpatialMCPServer:
             result = {}
         elif method == "tools/list":
             tools = copy.deepcopy(SPATIAL_TASK_TOOLS_SCHEMA if self.spatial_task_only else LIVE_MCP_TOOLS_SCHEMA)
+            if self.source_region_measurement:
+                observe = next(tool for tool in tools if tool['name'] == 'human_eye_scene_observe')
+                _enable_scoped_measurement_schema(observe)
             if self.region_task_evidence and not self.spatial_task_only:
                 observe = next(tool for tool in tools if tool['name'] == 'human_eye_scene_observe')
                 observe['description'] += (
@@ -2743,12 +2805,13 @@ def handle_jsonrpc_message(req: Any, service: Any = None, *, server: LiveSpatial
 
 def run_stdio_mcp_server(service: Any, input_stream: TextIO | None = None,
                          output_stream: TextIO | None = None, *, spatial_task_only=False,
-                         region_task_evidence=False) -> None:
+                         region_task_evidence=False, source_region_measurement=False) -> None:
     """Serve newline-delimited MCP JSON-RPC without writing logs to stdout."""
     incoming = sys.stdin if input_stream is None else input_stream
     outgoing = sys.stdout if output_stream is None else output_stream
     server = LiveSpatialMCPServer(service, spatial_task_only=spatial_task_only,
-                                  region_task_evidence=region_task_evidence)
+                                  region_task_evidence=region_task_evidence,
+                                  source_region_measurement=source_region_measurement)
     try:
         for req,error in wire.requests(incoming):
             if error is not None:

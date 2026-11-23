@@ -20,7 +20,7 @@ from .active_observation_images import SceneObservationImages, _meshes_from_obje
 from .attention_raster import select_sparse_attention_view
 from .attention_rendering import _contrasting_boundaries
 from .blender_host import _digest as _host_digest, _observation_target_cameras
-from .query_policy import MAX_SOURCE_REGION_TRIANGLES, _source_region_world_box
+from .query_policy import MAX_SOURCE_REGION_TRIANGLES, _source_region_world_box, validate_source_region_query
 from .scene_cache import _validate_scene
 from .surface_proximity import measure_surface_proximity
 from .task_query import _surface_proximity_fact
@@ -673,11 +673,12 @@ def _witness_sources(holder, side, triangle_indices, vertex_indices, check_budge
             'source_vertex_indices': vertices, 'index_domain': SOURCE_INDEX_DOMAIN}
 
 
-def _measure_region_surfaces(left, right, triangle_indices, vertex_indices, check_budget, diagnostics):
+def _measure_region_surfaces(left, right, triangle_indices, vertex_indices, check_budget, diagnostics,
+                             *, retain_witness_triangles=False):
     diagnostics['surface_pair_count'] += 1
     holder, surface_work = {}, {}
     measured = measure_surface_proximity(left, right, check_budget,
-        diagnostics=surface_work, _prepared_holder=holder)
+        diagnostics=surface_work, _prepared_holder=holder, retain_witness_triangles=retain_witness_triangles)
     diagnostics['surface_work'] = surface_work
     witness = {
         'a': _witness_sources(holder, 0, triangle_indices, vertex_indices, check_budget),
@@ -845,9 +846,10 @@ def measure_selective_region(capture, target, reference, box, host_sha, check_bu
     rows, vertices = region['source_triangle_indices'], region['source_vertex_indices']
     work = {'surface_pair_count': 0, 'surface_pair_cache_hit': False}
     started = time.perf_counter_ns()
-    value = _measure_region_surfaces(left, right, rows, vertices, check_budget, work)
+    value = _measure_region_surfaces(left, right, rows, vertices, check_budget, work,
+                                     retain_witness_triangles=True)
     measurement = _interval(started)
-    return {
+    result = {
         'schema': 'human-eye-selective-source-region-measurement-v1', 'status': 'complete',
         'binding': copy.deepcopy(binding), 'payload_sha256': capture['payload_sha256'],
         'reference': dict(binding['reference']),
@@ -867,6 +869,86 @@ def measure_selective_region(capture, target, reference, box, host_sha, check_bu
         'work': {'host_capture': dict(capture['work']), 'task_query': work, 'raster_attempts': 0},
         'stages': {'host_capture': dict(capture['stages']), 'capture_validation': validation,
                    'region_array_preparation': preparation, 'task_measurement': measurement},
+    }
+    surface = value['surface']
+    exact = surface.get('exact_witness_triangles')
+    winner = surface.get('witness_triangle_indices') if exact is None else exact['indices']
+    if winner is not None:
+        a, b = winner
+        result['witness_provenance'] = {'source_triangle_a': rows[a], 'source_triangle_b': b}
+        if exact is not None:
+            result['witness_provenance']['exact_points_m'] = exact['points_m']
+    return result
+
+
+def validate_scoped_measurement_arguments(arguments):
+    """Admit only an explicit, image-free closed-box measurement request."""
+    if arguments.get('include_image') is not False:
+        raise ValueError('source_region_measurement requires include_image=false')
+    if set(arguments) - {'query', 'include_image', 'session_id', 'response_detail'}:
+        raise ValueError('source_region_measurement contains unsupported arguments')
+    query = arguments.get('query')
+    if (type(query) is not dict or query.get('mode') != 'source_region_measurement'
+            or set(query) != {'mode', 'region', 'reference', 'requested_facts'}
+            or type(query['region']) is not dict or set(query['region']) != {'object', 'world_box_m'}):
+        raise ValueError('source_region_measurement requires a region object and world_box_m')
+    selected = validate_source_region_query({**query, 'mode': 'source_region'})
+    if selected['region']['object'] == selected['reference']:
+        raise ValueError('source_region_measurement requires two distinct objects')
+    return selected
+
+
+def project_scoped_measurement(value, query):
+    """Publish the verified measurements without exposing a private capture or a full-scene reference."""
+    if (value.get('status') != 'complete' or value.get('frames') != []
+            or value.get('schema') != 'human-eye-selective-source-region-measurement-v1'
+            or value.get('read_only') is not True or value.get('execution_authority') is not False):
+        raise ValueError('source_region_measurement_current_capture_unavailable')
+
+    binding = value['binding']
+    box = query['region']['world_box_m']
+    captured_box = _source_region_world_box(binding.get('world_box_m'))
+    if (binding.get('capture_scope') != 'selected_source_region_and_reference'
+            or binding.get('target_selector') != query['region']['object']
+            or binding.get('reference_selector') != query['reference']
+            or binding.get('coordinate_frame') != 'world' or binding.get('unit') != 'm'
+            or any(a.hex() != b.hex() for key in ('min', 'max') for a, b in zip(
+                captured_box[key], box[key], strict=True))):
+        raise ValueError('source_region_measurement_capture_scope_mismatch')
+
+    fact = value['facts']['surface_proximity']
+    if fact.get('status') != 'measured' or fact.get('witness_status') != 'measured':
+        raise ValueError(fact.get('reason') or 'source_region_measurement_witness_unavailable')
+    measured = fact['value']
+    direction_status = fact['direction_status']
+    distance = measured['distance_m']
+    nearest = measured['nearest_witness']
+    if (distance > 0 and direction_status != 'measured'
+            or distance == 0 and direction_status != 'not_applicable'):
+        raise ValueError('source_region_measurement_direction_unavailable')
+
+    provenance = value.get('witness_provenance', {})
+    mapping = value['source_mapping']
+    witness_evidence = {}
+    for side in ('a', 'b'):
+        sources = mapping['nearest_witness'][side]
+        key = f'source_triangle_{side}'
+        row = provenance.get(key)
+        if (type(row) is not int or sources.get('exact_membership') is not True
+                or sources.get('index_domain') != SOURCE_INDEX_DOMAIN
+                or row not in sources['source_triangle_indices']):
+            raise ValueError('source_region_measurement_witness_source_unavailable')
+        witness_evidence[key] = row
+    if 'exact_points_m' in provenance:
+        witness_evidence['exact_points_m'] = provenance['exact_points_m']
+    return {
+        'schema': 'human-eye-source-region-scoped-measurement-v1', 'status': 'complete',
+        'measurement_scope': value['measurement_scope'], 'coordinate_frame': 'world', 'unit': 'm',
+        'world_box_m': box, 'region_object': binding['target'], 'reference_object': binding['reference'],
+        'selected_triangle_count': len(mapping['region']['submesh_to_source_triangle_indices']),
+        'distance_m': distance, 'direction_a_to_b': nearest['direction_a_to_b'],
+        'direction_status': direction_status, 'point_a_m': nearest['a'], 'point_b_m': nearest['b'],
+        'source_triangle_index_domain': SOURCE_INDEX_DOMAIN, 'read_only': True, **witness_evidence,
     }
 
 

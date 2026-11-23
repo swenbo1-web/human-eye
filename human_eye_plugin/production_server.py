@@ -102,11 +102,15 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
                         help='Expose only live read-only spatial relations and global surface-nearest tasks')
     parser.add_argument('--region-task-evidence', action='store_true',
                         help='Return the compact task evidence packet for live region-task observations')
+    parser.add_argument('--source-region-measurement', action='store_true',
+                        help='Enable the read-only closed-box distance mode on the live observation tool')
     args = parser.parse_args(argv)
     if args.demo and args.spatial_task_only:
         parser.error('--spatial-task-only cannot be combined with --demo')
     if args.demo and args.region_task_evidence:
         parser.error('--region-task-evidence cannot be combined with --demo')
+    if args.source_region_measurement and (args.demo or args.spatial_task_only):
+        parser.error('--source-region-measurement requires the live scene observation tool')
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
@@ -126,6 +130,8 @@ def main(argv: list[str] | None = None, *, spatial_task_only=False) -> int:
     options = {'spatial_task_only': True} if args.spatial_task_only else {}
     if args.region_task_evidence:
         options['region_task_evidence'] = True
+    if args.source_region_measurement:
+        options['source_region_measurement'] = True
     run_stdio_mcp_server(service, **options)
     return 0
 
