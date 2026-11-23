@@ -15,6 +15,7 @@ from .support_plane_discovery import validate_support_plane_discovery_request
 
 MAX_EXACT_PAIRS = 255
 MAX_VISUAL_LABEL_IDS = 6
+MAX_SOURCE_REGION_TRIANGLES = 4096
 QUERY_POLICY_REVISION = 'bounded-observation-query-v5-support-plane-discovery-20261028'
 _MODES = {'overview', 'exact_pairs', 'nearest', 'top1'}
 NATIVE_VISUAL_SCHEMA = {
@@ -70,7 +71,7 @@ def _native_visual(value):
 
 
 def validate_source_region_query(value):
-    """Select evaluated object-local triangle rows and one reference object."""
+    """Select current evaluated source faces by row or closed world box."""
     from .task_query import validate_object_selector
 
     fields = {'mode', 'region', 'region_ref', 'reference', 'requested_facts'}
@@ -84,10 +85,15 @@ def validate_source_region_query(value):
               'requested_facts': ['surface_proximity']}
     if 'region' in value:
         region = value['region']
-        if type(region) is not dict or set(region) != {'object', 'source_triangle_indices'}:
-            raise ValueError('source_region region requires object and source_triangle_indices')
-        result['region'] = {'object': validate_object_selector(region['object']),
-                            'source_triangle_indices': _source_triangle_indices(region['source_triangle_indices'])}
+        if type(region) is not dict or set(region) not in (
+                {'object', 'source_triangle_indices'}, {'object', 'world_box_m'}):
+            raise ValueError('source_region region requires object and exactly one of source_triangle_indices or world_box_m')
+        selector = validate_object_selector(region['object'])
+        if 'world_box_m' in region:
+            result['region'] = {'object': selector, 'world_box_m': _source_region_world_box(region['world_box_m'])}
+        else:
+            result['region'] = {'object': selector,
+                                'source_triangle_indices': _source_triangle_indices(region['source_triangle_indices'])}
         return result
     reference = value['region_ref']
     keys = {'schema', 'region_id', 'document_epoch', 'host_id', 'instance_id',
@@ -122,11 +128,35 @@ def validate_source_region_query(value):
 
 
 def _source_triangle_indices(value):
-    if (type(value) is not list or not value or len(value) > 4096
+    if (type(value) is not list or not value or len(value) > MAX_SOURCE_REGION_TRIANGLES
             or any(type(index) is not int or index < 0 for index in value)
             or len(set(value)) != len(value)):
         raise ValueError('source_triangle_indices requires 1..4096 unique nonnegative integer rows')
     return sorted(value)
+
+
+def _source_region_world_box(value):
+    if (type(value) is not dict or set(value) != {'min', 'max'}
+            or any(type(row) is not list or len(row) != 3 for row in value.values())):
+        raise ValueError('source_region world_box_m requires min and max 3D arrays')
+    bounds = {}
+    error = 'source_region world_box_m bounds must be finite binary64 numbers'
+    for key in ('min', 'max'):
+        row = []
+        for number in value[key]:
+            if type(number) not in (int, float):
+                raise ValueError(error)
+            try:
+                endpoint = float(number)
+            except OverflowError:
+                raise ValueError(error) from None
+            if not math.isfinite(endpoint) or endpoint != number:
+                raise ValueError(error)
+            row.append(endpoint)
+        bounds[key] = row
+    if any(low > high for low, high in zip(bounds['min'], bounds['max'])):
+        raise ValueError('source_region world_box_m requires min <= max on every axis')
+    return bounds
 
 
 def validate_query(query, *, object_ids=None, focal_id=None):

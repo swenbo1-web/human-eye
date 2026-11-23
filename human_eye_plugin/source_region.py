@@ -18,6 +18,7 @@ from .active_observation_host import scene_from_capture, source_binding
 from .active_observation_images import SceneObservationImages, _meshes_from_objects
 from .attention_rendering import _contrasting_boundaries
 from .blender_host import _observation_target_cameras
+from .query_policy import MAX_SOURCE_REGION_TRIANGLES
 from .scene_cache import _validate_scene
 from .surface_proximity import measure_surface_proximity
 from .task_query import _surface_proximity_fact
@@ -163,6 +164,38 @@ def _object_index(binding, selector):
     return matches[0]
 
 
+def resolve_region_selection(capture, region, binding, ordered_sha, check_budget, *, normalized_from=None):
+    """Resolve an explicit selection to a reference on the current ordered capture."""
+    object_index = _object_index(binding, region['object'])
+    mesh = capture['meshes'][object_index]
+    if 'world_box_m' not in region:
+        faces = _indices(region['source_triangle_indices'], len(mesh['faces']))
+        return _source_ref(capture, binding, object_index, faces, ordered_sha), None, None
+
+    check_budget('before_source_region_world_box_validation')
+    started = time.perf_counter_ns()
+    _validate_scene(capture)
+    validation = _interval(started)
+    check_budget('before_source_region_world_box_selection')
+    started = time.perf_counter_ns()
+    if normalized_from is None:
+        vertices = np.asarray(mesh['vertices'], dtype=np.float64)
+        triangles = np.asarray(mesh['faces'])
+    else:
+        normalized = normalized_from.meshes[object_index]
+        vertices, triangles = normalized.vertices, normalized.faces
+    box = region['world_box_m']
+    inside = np.all((vertices >= box['min']) & (vertices <= box['max']), axis=1)
+    selected = np.flatnonzero(inside[triangles].all(axis=1))
+    check_budget('after_source_region_world_box_selection')
+    if not selected.size:
+        raise ValueError('source_region_world_box_empty')
+    if selected.size > MAX_SOURCE_REGION_TRIANGLES:
+        raise ValueError('source_region_world_box_triangle_limit')
+    reference = _source_ref(capture, binding, object_index, selected.tolist(), ordered_sha)
+    return reference, _interval(started), validation
+
+
 def validate_region_ref(capture, region_ref, check_budget=_checkpoint, *, _binding=None,
                         _ordered_geometry_sha256=None):
     """Validate a self-contained reference against the complete fresh capture."""
@@ -215,7 +248,8 @@ class PreparedSourceRegion:
 
 
 def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
-                   _validated_region_ref=False, _ordered_geometry_sha256=None, _normalized_from=None):
+                   _validated_region_ref=False, _ordered_geometry_sha256=None, _normalized_from=None,
+                   _scene_validation_stage=None):
     """Prepare the selected submesh. A borrowed source must be from the same locked read selection."""
     started = time.perf_counter_ns()
     check_budget('source_region_prepare_source')
@@ -237,8 +271,11 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     region_ref = _source_ref(capture, binding, object_index, faces, ordered_sha)
     source_stage = _interval(started)
     started = time.perf_counter_ns()
-    _validate_scene(capture)
-    scene_validation_stage = _interval(started)
+    if _scene_validation_stage is None:
+        _validate_scene(capture)
+        scene_validation_stage = _interval(started)
+    else:
+        scene_validation_stage = _scene_validation_stage
     if _normalized_from is None:
         parsed, _, scene_identity = geometry(scene_from_capture(capture), include_triangles=False)
         # Host instances disambiguate geometrically identical scene objects.

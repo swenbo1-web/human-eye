@@ -23,7 +23,8 @@ from typing import Any, TextIO
 
 from .runtime_identity import BASE_VERSION, MCP_PROTOCOL_VERSION, runtime_identity
 from .auto_router import _trace_span, _trace_annotate as annotate
-from .query_policy import MAX_VISUAL_LABEL_IDS, NATIVE_VISUAL_SCHEMA, REGION_TASK_SCHEMA, validate_query
+from .query_policy import (MAX_SOURCE_REGION_TRIANGLES, MAX_VISUAL_LABEL_IDS,
+                           NATIVE_VISUAL_SCHEMA, REGION_TASK_SCHEMA, validate_query)
 from .task_query import FACTS as TASK_FACTS, SELECTOR_SCHEMA
 from .native_observation import _public_native_png
 from .measurement_presentation import finite_metric
@@ -43,7 +44,7 @@ _NO_RPC_ID = object()
 
 
 _ID_SCHEMA = {"type": "string", "minLength": 1}
-_SOURCE_TRIANGLE_ROWS_SCHEMA = {"type": "array", "minItems": 1, "maxItems": 4096,
+_SOURCE_TRIANGLE_ROWS_SCHEMA = {"type": "array", "minItems": 1, "maxItems": MAX_SOURCE_REGION_TRIANGLES,
     "uniqueItems": True, "items": {"type": "integer", "minimum": 0}}
 _SOURCE_REGION_REF_SCHEMA = {
     "type": "object", "required": ["schema", "region_id", "document_epoch", "host_id", "instance_id",
@@ -93,11 +94,14 @@ _QUERY_SCHEMA = {
     "description": "Selectors use name OR id. Legacy exact_pairs/nearest/top1 use object_ids/max_exact_pairs. nearest needs complete exact nonpenetrating order; top1 may prune by strict outward bounds and reports ties. Unknown/budget-limited proofs do not certify nearest.",
     "properties": {
         "mode": {"type": "string", "enum": ["directory", "task", "surface_nearest", "surface_scan", "overview", "exact_pairs", "nearest", "top1", "mesh_structure", "mesh_surface", "active_observation", "source_region"]},
-        "region": {"type": "object", "required": ["object", "source_triangle_indices"],
+        "region": {"type": "object", "required": ["object"],
             "properties": {"object": copy.deepcopy(SELECTOR_SCHEMA),
-                "source_triangle_indices": copy.deepcopy(_SOURCE_TRIANGLE_ROWS_SCHEMA)},
+                "source_triangle_indices": copy.deepcopy(_SOURCE_TRIANGLE_ROWS_SCHEMA),
+                "world_box_m": {"type": "object", "required": ["min", "max"], "additionalProperties": False,
+                    "properties": {"min": copy.deepcopy(_VECTOR_SCHEMA), "max": copy.deepcopy(_VECTOR_SCHEMA)}}},
+            "oneOf": [{"required": ["source_triangle_indices"]}, {"required": ["world_box_m"]}],
             "additionalProperties": False,
-            "description": "Current evaluated object-local triangle rows. The full selected set participates in measurement."},
+            "description": "Current evaluated rows or a closed world-metre box with finite binary64 endpoints. All three vertices must be inside. The full selected set participates in measurement."},
         "region_ref": copy.deepcopy(_SOURCE_REGION_REF_SCHEMA),
         "reference": copy.deepcopy(SELECTOR_SCHEMA),
         "objects": {"type": "array", "items": SELECTOR_SCHEMA, "minItems": 1, "maxItems": 4,
@@ -225,7 +229,7 @@ LIVE_MCP_TOOLS_SCHEMA = [
             "evidence with witnesses. Combine observations using their scene/source binding."
             " For finite active observation use {\"query\":{\"mode\":\"active_observation\"},\"include_image\":true}; add query.objects=[{\"name\":\"Target\"}] for one visual target with scene occluders. Returns brief source-bound region locations, owned-pixel anchors and remaining unknowns with up to six 512px native PNGs. Optional query.task_query supplies one ordered task query over whole objects. Its task_result, requested values, witnesses and source bindings appear in both brief and full. Explicit response_detail=full includes diagnostics."
             " Optional query.region_task={area_min_m2,area_max_m2,normal_z_min} discovers whole-scene rectangular regions with inclusive area and directed unit-normal z limits, then obtains needed local evidence. It combines with task_query. Its region rows and image references identify each scope and actual frame, including repeated view names."
-            " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. A returned top-level region_ref replaces region on later requests. Image depth uses the captured active view layer's effective visible meshes, retaining complete source indices. Measurements cover every selected triangle, including unseen portions and an explicitly selected hidden reference. Missing current display evidence or zero selected image pixels returns partial/evidence_insufficient with the measured task_result preserved. Default brief includes distance, nearest points with source faces, and region_ref. Use response_detail=full for face mappings and diagnostics."
+            " For an explicit evaluated triangle subset use query={mode:source_region,region:{object:{name:Target},source_triangle_indices:[0,1]},reference:{name:Reference},requested_facts:[surface_proximity]}. For world bounds, replace source_triangle_indices with world_box_m:{min:[0,0,0],max:[1,1,1]} to select triangles whose three vertices are inside the closed box. A returned top-level region_ref replaces region on later requests. Image depth uses the captured active view layer's effective visible meshes, retaining complete source indices. Measurements cover every selected triangle, including unseen portions and an explicitly selected hidden reference. Missing current display evidence or zero selected image pixels returns partial/evidence_insufficient with the measured task_result preserved. Default brief includes distance, nearest points with source faces, and region_ref. Use response_detail=full for face mappings and diagnostics."
         ),
         "inputSchema": {
             "type": "object",

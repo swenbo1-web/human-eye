@@ -1583,8 +1583,10 @@ class LiveSpatialService:
     def _observe_source_region(self, session_id, query, *, include_image):
         from .active_observation_host import source_binding
         from .read_context import query_key
+        from .scene_cache import _validate_scene
         from .source_region import (prepare_region, validate_region_ref, observe_region,
-                                    measure_region, ordered_geometry_identity, display_state)
+                                    measure_region, ordered_geometry_identity, display_state,
+                                    resolve_region_selection)
 
         if not self.config.get('enabled', True):
             return {'status': 'disabled', 'session_id': session_id, 'routing': None}
@@ -1620,27 +1622,44 @@ class LiveSpatialService:
                  'display_identity': display['identity'], 'display_status': display['status']})
             registry, _ = context.prepared('source_regions', lambda: {'aliases': {}, 'regions': {}})
             selection = query.get('region')
-            alias = query_key(selection) if selection is not None else None
+            # Closed boxes can describe the same faces in arbitrarily many ways.
+            # Keep only the existing bounded aliases for explicit rows.
+            alias = query_key(selection) if selection is not None and 'source_triangle_indices' in selection else None
             region_id = (registry['aliases'].get(alias) if selection is not None
                          else query['region_ref']['region_id'])
             prepared = registry['regions'].get(region_id)
-            prepare_hit = prepared is not None
             prepare_started = time.perf_counter_ns()
+            prepare_query = query
+            selection_stage = scene_validation_stage = None
             normalized_from = None
+            if prepared is None and selection is not None:
+                peer = next(iter(registry['regions'].values()), None)
+                reference, selection_stage, scene_validation_stage = resolve_region_selection(
+                    captured, selection, binding, ordered_geometry_sha256, self._check_request_budget,
+                    normalized_from=peer)
+                region_id = reference['region_id']
+                prepared = registry['regions'].get(region_id)
+                if prepared is not None and scene_validation_stage is None:
+                    # A newly resolved index alias does not vouch for fields such as edges.
+                    _validate_scene(captured)
+                    self._check_request_budget('after_source_region_alias_validation')
+                prepare_query = {'region_ref': reference}
+            prepare_hit = prepared is not None
             if prepared is None:
                 # activate() already bound this registry to the current ordered geometry and display.
                 normalized_from = next(iter(registry['regions'].values()), None)
-                prepared = prepare_region(captured, query, self._check_request_budget, _binding=binding,
-                    _validated_region_ref='region_ref' in query, _ordered_geometry_sha256=ordered_geometry_sha256,
-                    _normalized_from=normalized_from)
+                prepared = prepare_region(captured, prepare_query, self._check_request_budget, _binding=binding,
+                    _validated_region_ref='region_ref' in prepare_query,
+                    _ordered_geometry_sha256=ordered_geometry_sha256,
+                    _normalized_from=normalized_from, _scene_validation_stage=scene_validation_stage)
                 region_id = prepared.region_ref['region_id']
                 registry['regions'][region_id] = prepared
-                if alias is not None:
-                    registry['aliases'][alias] = region_id
                 if len(registry['regions']) > 8:
                     oldest = next(iter(registry['regions']))
                     del registry['regions'][oldest]
                     registry['aliases'] = {key: value for key, value in registry['aliases'].items() if value != oldest}
+            if alias is not None:
+                registry['aliases'][alias] = region_id
             prepare_closed = time.perf_counter_ns()
 
             def before_construction(view_name):
@@ -1695,6 +1714,10 @@ class LiveSpatialService:
                                   'elapsed_ns': measurement_closed - measurement_started})
             if not prepare_hit:
                 result['stages']['region_preparation'] = copy.deepcopy(prepared.preparation_stages)
+            if selection_stage is not None:
+                result['work']['world_box_selection_calls'] = 1
+                result['stages']['world_box_selection'] = selection_stage
+                result['stages']['world_box_scene_validation'] = scene_validation_stage
         self.record_event('observe', session_id=session_id, status=result['status'],
             observation_mode='source_region', task_work=result['work'])
         self._check_request_budget('before_source_region_result')
