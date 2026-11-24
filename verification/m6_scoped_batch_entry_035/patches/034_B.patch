@@ -1,0 +1,533 @@
+--- a/human_eye_plugin/blender_host.py
++++ b/human_eye_plugin/blender_host.py
+@@ -2514,6 +2514,163 @@
+             self._private_source_region_lease = dict(lease) if lease is not None else None
+             return envelope
+ 
++    def capture_source_region_batch(self, target, reference, world_boxes_m, deadline_ns, max_response_bytes):
++        """One current native acquisition; exactly two independently compacted closed boxes."""
++        self._main_thread()
++        selectors = [target, reference]
++        for selector in selectors:
++            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
++                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
++                           for value in selector.values())):
++                raise BlenderHostError('source_region_pair_selector')
++        if type(world_boxes_m) is not list or len(world_boxes_m) != 2:
++            raise BlenderHostError('source_region_batch_requires_two_boxes')
++        boxes = [self._source_region_pair_box(box) for box in world_boxes_m]
++        if type(deadline_ns) is not int or deadline_ns <= 0:
++            raise BlenderHostError('source_region_pair_deadline')
++        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
++            raise BlenderHostError('source_region_pair_document_budget')
++
++        def checkpoint():
++            if time.perf_counter_ns() >= deadline_ns:
++                raise BlenderHostError('source_region_pair_deadline_exceeded')
++
++        def interval(started):
++            closed = time.perf_counter_ns()
++            return {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed-started}
++
++        def source_frame():
++            layer = self.view_layer
++            pointer = getattr(layer, 'as_pointer', None)
++            layer_id = 'rna:' + str(int(pointer())) if callable(pointer) else 'python:' + str(id(layer))
++            return {'frame': int(getattr(self.scene, 'frame_current', 0)),
++                    'subframe': float(getattr(self.scene, 'frame_subframe', 0.)),
++                    'scale_length': self._scale(), 'view_layer': layer_id}
++
++        checkpoint()
++        scope = 'selected_source_region_and_reference'
++        with self._lock:
++            checkpoint()
++            started = time.perf_counter_ns()
++            graph = self._depsgraph()
++            if self.object_names is not None:
++                raise BlenderHostError('source_region_pair_explicit_object_scope_unsupported')
++            frame = source_frame()
++            objects, selection = self._task_objects(selectors)
++            if any('object_id' not in row for row in selection['bindings']):
++                reason = next(row['reason'] for row in selection['bindings'] if 'object_id' not in row)
++                raise BlenderHostError('source_region_pair_' + reason)
++            if len(objects) != 2 or selection['pair_reason'] is not None:
++                raise BlenderHostError('source_region_pair_selectors_resolve_to_same_object')
++            identity = self._identity_metadata(objects, capture_scope=scope)
++            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
++            if identity is None or not _hex_string(source_sha, 64):
++                raise BlenderHostError('source_region_pair_source_identity')
++            evaluated = {self.object_id(obj): obj.evaluated_get(graph) for obj in objects}
++            matrices = {oid: _matrix(obj.matrix_world) for oid, obj in evaluated.items()}
++            stages = {'directory_and_binding': interval(started)}
++
++            started = time.perf_counter_ns()
++            from_id, to_id = [row['object_id'] for row in selection['bindings']]
++            bound_objects = [dict(row, instance_id=identity['object_instances'][row['object_id']])
++                             for row in selection['bindings']]
++            binding = {'capture_scope': scope, 'document_epoch': identity['document_epoch'],
++                       'host_source_sha256': source_sha, 'target_selector': dict(target),
++                       'reference_selector': dict(reference), 'world_boxes_m': boxes,
++                       'target': bound_objects[0], 'reference': bound_objects[1], 'unit': 'm',
++                       'coordinate_frame': 'world', 'source_frame': frame,
++                       'world_matrices': {'target': matrices[from_id], 'reference': matrices[to_id]}}
++            scale = frame['scale_length']
++            display = self._display_snapshot(objects)
++            fallback = self._source_region_pair_residency_reason(graph, scale, objects, evaluated, display)
++            state = self._residency
++            resident = fallback is None
++            if resident:
++                for obj in objects:
++                    resource = state.resources.get(self._residency_module.identity(obj))
++                    pose = (matrices[self.object_id(obj)], scale)
++                    if resource is not None and resource['pose'] == pose and _digest(resource['pose']) != _digest(pose):
++                        fallback = 'signed_pose_mismatch'
++                        resident = False
++                        break
++            token = (state.instance_id, state.epoch, state.revision, state.serial) if resident else None
++            stages['residency_check'] = interval(started)
++            counters = dict.fromkeys(('to_mesh', 'triangulations', 'world_transforms', 'world_vertices_transformed',
++                                      'resource_vertices_read', 'resource_faces_read'), 0)
++            started = time.perf_counter_ns()
++            acquisition = (graph, scale, objects, evaluated, checkpoint)
++            stamps = None
++            if resident:
++                before = {stat: self._residency_stats[stat] for stat in counters}
++                capture = self._resident_capture(graph, scale, objects, None, None, acquisition,
++                                                 scope, None, display, _resources_only=True)
++                counters = {stat: self._residency_stats[stat] - value for stat, value in before.items()}
++                stamps = self._source_region_pair_resources(objects, matrices, scale)
++                if stamps is None or (state.instance_id, state.epoch, state.revision, state.serial) != token:
++                    raise BlenderHostError('source_region_pair_source_changed')
++            else:
++                capture = self._capture(_acquisition_context=acquisition, _acquisition_scope=scope, _resident=False)
++                counts = {name: sum(len(mesh[name]) for mesh in capture['meshes']) for name in ('vertices', 'faces')}
++                counters = {'to_mesh': 2, 'triangulations': 2, 'world_transforms': 2,
++                            'world_vertices_transformed': counts['vertices'],
++                            'resource_vertices_read': counts['vertices'], 'resource_faces_read': counts['faces']}
++            checkpoint()
++            stages['mesh_expansion'] = interval(started)
++            meshes = {mesh['object_id']: mesh for mesh in capture['meshes']}
++            target_mesh = meshes[from_id]
++            reference_geometry = {key: meshes[to_id][key] for key in ('vertices', 'faces')}
++            scanned_vertices, scanned_triangles = len(target_mesh['vertices']), len(target_mesh['faces'])
++            regions = []
++            started = time.perf_counter_ns()
++            for index, box in enumerate(boxes):
++                checkpoint()
++                selection_started = time.perf_counter_ns()
++                try:
++                    region = self._compact_source_region_pair(target_mesh, box, checkpoint)
++                except BlenderHostError as error:
++                    if str(error) not in ('source_region_pair_empty_world_box', 'source_region_pair_triangle_limit'):
++                        raise
++                    row = {'index': index, 'world_box_m': box, 'status': 'unmeasured', 'reason': str(error)}
++                else:
++                    row = {'index': index, 'world_box_m': box, 'status': 'complete', 'region': region}
++                row['selection_stage'] = interval(selection_started)
++                regions.append(row)
++            stages['selection_and_compaction'] = interval(started)
++            checkpoint()
++
++            started = time.perf_counter_ns()
++            current_objects, current_selection = self._task_objects(selectors)
++            if (current_selection != selection or len(current_objects) != 2
++                    or any(not _same_rna(a, b) for a, b in zip(objects, current_objects))
++                    or _digest(source_frame()) != _digest(frame)
++                    or self._identity_metadata(objects, capture_scope=scope) != identity
++                    or any(_digest(_matrix(obj.matrix_world)) != _digest(matrices[oid]) for oid, obj in evaluated.items())
++                    or resident and (self._display_snapshot(objects) != display
++                        or (state.instance_id, state.epoch, state.revision, state.serial) != token
++                        or self._source_region_pair_resources(objects, matrices, scale) != stamps)):
++                raise BlenderHostError('source_region_pair_source_changed')
++            stages['source_recheck'] = interval(started)
++            complete = [row['region'] for row in regions if row['status'] == 'complete']
++            work = {key: counters[key] for key in ('to_mesh', 'triangulations', 'world_transforms', 'world_vertices_transformed')}
++            work.update(candidate_objects=selection['candidate_count'], expanded_objects=counters['to_mesh'],
++                expanded_vertices=counters['resource_vertices_read'], expanded_triangles=counters['resource_faces_read'],
++                source_vertices=scanned_vertices, source_triangles=scanned_triangles,
++                transmitted_objects=2, transmitted_vertices=sum(len(row['vertices']) for row in complete)+len(reference_geometry['vertices']),
++                transmitted_triangles=sum(len(row['faces']) for row in complete)+len(reference_geometry['faces']),
++                box_vertices_scanned=2*scanned_vertices, box_triangles_scan_upper_bound=2*scanned_triangles,
++                boxes=2, region_triangle_limit=4096, reference_copies=1, acquisition_cycles=1,
++                mode='resident_capture' if resident else 'uncached_capture', fallback_reason=fallback)
++            packet = {'schema': 'human-eye-selective-source-region-batch-capture-v1', 'binding': binding,
++                      'regions': regions, 'reference': reference_geometry}
++            packet['payload_sha256'] = _digest(packet)
++            packet.update(work=work, stages=stages)
++            checkpoint()
++            encoded = json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
++            if len(encoded) > max_response_bytes:
++                raise BlenderHostError('source_region_pair_document_budget_exceeded')
++            checkpoint()
++            return packet
++
+     def capture_task_scene(self, selectors):
+         """Read only the uniquely bound targets in one synchronous observation."""
+         self._main_thread()
+--- a/human_eye_plugin/blender_mcp_host.py
++++ b/human_eye_plugin/blender_mcp_host.py
+@@ -44,8 +44,9 @@
+ _MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+ _OBSERVATION_UNPROBED = object()
+ _SELECTIVE_SOURCE_REGION = 'capture_source_region_pair'
++_SELECTIVE_SOURCE_BATCH = 'capture_source_region_batch'
+ _SELECTIVE_CAPTURE_CACHE_BYTES = 2 * 1024 * 1024
+-_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION})
++_OBSERVATION_COMMANDS=frozenset({'capture_directory','capture_task','capture_active_observation','capture_nearest_candidates','capture_surface_scan','native_observation_capabilities','observe_readonly_native','last_readonly_native_audit',_SELECTIVE_SOURCE_REGION,_SELECTIVE_SOURCE_BATCH})
+ _STRUCTURE_COMMANDS=frozenset({'observe_arm_twist','mesh_structure_capabilities','observe_mesh_structure','mesh_region_summary_capabilities',
+     'observe_mesh_structure_summary','patch_observation_capabilities','observe_patch',
+     'nonplanar_observation_capabilities','observe_nonplanar_patch','surface_geometry_capabilities','observe_surface_geometry','capture_surface_source','reference_view_capabilities','observe_reference_patch'})
+@@ -278,6 +279,23 @@
+             except (ValueError, TypeError, KeyError, UnicodeError, RecursionError) as error:
+                 self._fail('Invalid private source-region residency response: ' + str(error))
+ 
++    def capture_source_region_batch(self, target, reference, world_boxes_m, deadline_ns, max_response_bytes):
++        now = time.perf_counter_ns()
++        if type(deadline_ns) is not int or deadline_ns <= now:
++            raise ValueError('selective_source_region_deadline')
++        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_RESPONSE_BYTES:
++            raise ValueError('selective_source_region_response_budget')
++        deadline_ns = min(deadline_ns, now+int(self.timeout_s*1e9))
++        with self._lock:
++            capture = self._request(_SELECTIVE_SOURCE_BATCH, {'target': target, 'reference': reference,
++                'world_boxes_m': world_boxes_m, 'deadline_ns': deadline_ns, 'max_response_bytes': max_response_bytes})
++            from .scoped_batch import validate_batch_capture
++            def check(_stage):
++                if time.perf_counter_ns() >= deadline_ns:
++                    raise ValueError('selective_source_region_deadline')
++            validate_batch_capture(capture, target, reference, world_boxes_m, self._readonly_host_source_sha256, check)
++            return capture
++
+     def _materialize_selective_capture(self, reply, key, known, params):
+         from .source_region import _validate_selective_capture
+ 
+@@ -655,6 +673,7 @@
+     def _observation_code(self, command, params, request_id):
+         required = {'capture': set(), 'capture_evidence': set(), 'capture_task': {'selectors'},
+             _SELECTIVE_SOURCE_REGION: {'target', 'reference', 'world_box_m', 'deadline_ns', 'max_response_bytes'},
++            _SELECTIVE_SOURCE_BATCH: {'target', 'reference', 'world_boxes_m', 'deadline_ns', 'max_response_bytes'},
+             'capture_directory': {'deadline_ns', 'max_response_bytes'},
+             'capture_active_observation': {'selector', 'deadline_ns', 'max_response_bytes'},
+             'capture_nearest_candidates': {'focal_id', 'deadline_ns', 'max_response_bytes'},
+@@ -707,7 +726,7 @@
+             if len(payload) > request_limit:
+                 raise ValueError("BlenderMCP request exceeds the transport size limit")
+             try:
+-                if command == _SELECTIVE_SOURCE_REGION:
++                if command in (_SELECTIVE_SOURCE_REGION, _SELECTIVE_SOURCE_BATCH):
+                     outer = self._exchange(payload, deadline_ns=params['deadline_ns'],
+                                            max_response_bytes=params['max_response_bytes'])
+                 else:
+@@ -742,7 +761,7 @@
+                 if not isinstance(result, dict):
+                     raise ValueError("BlenderMCP host result must be an object")
+                 self._resident_ready = True
+-                if command == _SELECTIVE_SOURCE_REGION and time.perf_counter_ns() >= params['deadline_ns']:
++                if command in (_SELECTIVE_SOURCE_REGION, _SELECTIVE_SOURCE_BATCH) and time.perf_counter_ns() >= params['deadline_ns']:
+                     raise ValueError('selective_source_region_deadline')
+                 if command in {'capture', 'capture_task', 'capture_active_observation', 'capture_nearest_candidates', 'capture_surface_scan'}:
+                     result = self._scene_decoder.apply(result)
+--- a/human_eye_plugin/source_region.py
++++ b/human_eye_plugin/source_region.py
+@@ -724,12 +724,7 @@
+     return vertices, faces
+ 
+ 
+-def _validate_selective_capture(capture, target, reference, box, host_sha, check_budget):
+-    if (type(capture) is not dict or set(capture) !=
+-            {'schema', 'binding', 'region', 'reference', 'payload_sha256', 'work', 'stages'}
+-            or capture['schema'] != 'human-eye-selective-source-region-capture-v1'):
+-        raise ValueError('selective_source_region_capture_schema')
+-    binding = capture['binding']
++def _validate_selective_binding(binding, target, reference, box, host_sha):
+     if (type(binding) is not dict or set(binding) != {
+             'capture_scope', 'document_epoch', 'host_source_sha256', 'target_selector', 'reference_selector',
+             'world_box_m', 'target', 'reference', 'unit', 'coordinate_frame', 'source_frame', 'world_matrices'}
+@@ -766,6 +761,16 @@
+                 for row in matrix) for matrix in matrices.values())):
+         raise ValueError('selective_source_region_transform_binding')
+ 
++
++
++def _validate_selective_capture(capture, target, reference, box, host_sha, check_budget, *, _batch_shared=False):
++    if (type(capture) is not dict or set(capture) !=
++            {'schema', 'binding', 'region', 'reference', 'payload_sha256', 'work', 'stages'}
++            or capture['schema'] != 'human-eye-selective-source-region-capture-v1'):
++        raise ValueError('selective_source_region_capture_schema')
++    binding = capture['binding']
++    _validate_selective_binding(binding, target, reference, box, host_sha)
++
+     region, whole = capture['region'], capture['reference']
+     if (type(region) is not dict or set(region) != {'vertices', 'faces', 'source_triangle_indices',
+             'source_vertex_indices', 'source_triangle_vertices', 'source_triangle_count', 'source_vertex_count'}
+@@ -794,7 +799,8 @@
+     if (not _selective_digest(capture['payload_sha256']) or capture['payload_sha256'] != _host_digest(
+             {key: capture[key] for key in ('schema', 'binding', 'region', 'reference')})):
+         raise ValueError('selective_source_region_payload_digest_mismatch')
+-    _validate_selective_capture_work(capture, region, vertices, faces, ref_vertices, ref_faces)
++    if not _batch_shared:
++        _validate_selective_capture_work(capture, region, vertices, faces, ref_vertices, ref_faces)
+     check_budget('selective_source_region_capture_validated')
+ 
+ 
+@@ -832,10 +838,11 @@
+         raise ValueError(reason)
+ 
+ 
+-def measure_selective_region(capture, target, reference, box, host_sha, check_budget=_checkpoint):
++def measure_selective_region(capture, target, reference, box, host_sha, check_budget=_checkpoint, *, _batch_shared=False):
+     """Measure two privately scoped meshes without issuing a full-scene reference."""
+     started = time.perf_counter_ns()
+-    _validate_selective_capture(capture, target, reference, box, host_sha, check_budget)
++    if not _batch_shared:
++        _validate_selective_capture(capture, target, reference, box, host_sha, check_budget)
+     validation = _interval(started)
+     binding, region, whole = (capture[key] for key in ('binding', 'region', 'reference'))
+     started = time.perf_counter_ns()
+--- a/human_eye_plugin/live_service.py
++++ b/human_eye_plugin/live_service.py
+@@ -1666,6 +1666,10 @@
+                                                  'elapsed_ns': closed - started}
+             return result
+ 
++    def _measure_selective_source_region_batch(self, session_id, query, *, include_image=False):
++        from .scoped_batch import measure_batch
++        return measure_batch(self, session_id, query, include_image=include_image)
++
+     def _observe_source_region(self, session_id, query, *, include_image):
+         from .active_observation_host import source_binding
+         from .read_context import query_key
+--- a/human_eye_plugin/live_spatial_mcp.py
++++ b/human_eye_plugin/live_spatial_mcp.py
+@@ -464,6 +464,10 @@
+     query = schema['properties']['query']
+     mode = {'required': ['mode'], 'properties': {'mode': {'const': _SCOPED_MEASUREMENT_MODE}}}
+     query['properties']['mode']['enum'].append(_SCOPED_MEASUREMENT_MODE)
++    query['properties']['mode']['enum'].append('source_region_measurement_batch')
++    query['properties']['region']['properties']['world_boxes_m'] = {'type':'array','minItems':2,'maxItems':2,
++        'items':copy.deepcopy(query['properties']['region']['properties']['world_box_m'])}
++    query['properties']['region']['oneOf'].append({'required':['world_boxes_m']})
+     query['allOf'].append({'if': mode, 'then': {
+         'required': ['region', 'reference', 'requested_facts'],
+         'properties': {
+@@ -484,6 +488,15 @@
+         },
+         'additionalProperties': False,
+     }})
++
++    batch_mode = {'required':['mode'],'properties':{'mode':{'const':'source_region_measurement_batch'}}}
++    query['allOf'].append({'if':batch_mode,'then':{'required':['region','reference','requested_facts'],
++        'properties':{'mode':{},'region':{'required':['object','world_boxes_m'],
++            'properties':{'object':{},'world_boxes_m':{}},'additionalProperties':False},
++            'reference':{},'requested_facts':{'const':['surface_proximity']}},'additionalProperties':False}})
++    schema['allOf'].append({'if':{'required':['query'],'properties':{'query':batch_mode}},'then':{
++        'required':['include_image'],'properties':{'query':{},'include_image':{'const':False},'session_id':{},
++            'response_detail':{}},'additionalProperties':False}})
+ 
+ 
+ def _validate_arguments(name: str, arguments: Any, *, source_region_measurement=False) -> dict | None:
+@@ -522,9 +535,12 @@
+         raise ValueError('response_detail must be full or brief')
+     query = arguments.get('query')
+     if (name == 'human_eye_scene_observe' and isinstance(query, dict)
+-            and query.get('mode') == _SCOPED_MEASUREMENT_MODE):
++            and query.get('mode') in (_SCOPED_MEASUREMENT_MODE, 'source_region_measurement_batch')):
+         if not source_region_measurement:
+             raise ValueError('source_region_measurement_disabled')
++        if query['mode'] == 'source_region_measurement_batch':
++            from .scoped_batch import validate_batch_arguments
++            return validate_batch_arguments(arguments)
+         from .source_region import validate_scoped_measurement_arguments
+         return validate_scoped_measurement_arguments(arguments)
+     if "query" in arguments:
+@@ -2614,11 +2630,17 @@
+         if scoped_query is not None:
+             from .source_region import project_scoped_measurement
+             session_id = arguments.get('session_id', self.default_session_id)
+-            value = self.service._measure_selective_source_region(session_id, scoped_query, include_image=False)
++            batch = scoped_query['mode'] == 'source_region_measurement_batch'
++            value = (self.service._measure_selective_source_region_batch(session_id, scoped_query, include_image=False)
++                     if batch else self.service._measure_selective_source_region(session_id, scoped_query, include_image=False))
+             with span('mcp.content_encode', kind='encoding'):
+                 if isinstance(value, dict) and value.get('status') in ('disabled', 'implementation_mismatch'):
+                     return _tool_result(value, is_error=True)
+-                published = project_scoped_measurement(value, scoped_query)
++                if batch:
++                    from .scoped_batch import publish_batch
++                    published = publish_batch(value)
++                else:
++                    published = project_scoped_measurement(value, scoped_query)
+                 text = json.dumps(published, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+                 record_image_artifact('mcp_content', native_block_count=0)
+             self.service._check_request_budget('before_task_publication')
+--- /dev/null
++++ b/human_eye_plugin/scoped_batch.py
+@@ -0,0 +1,168 @@
++"""Isolated two-box adapter; original closed selection, exact solver and projection."""
++from __future__ import annotations
++import copy
++import json
++import time
++
++from .source_region import (validate_scoped_measurement_arguments, measure_selective_region,
++    project_scoped_measurement, _validate_selective_capture, _selective_mesh_arrays,
++    _host_digest, _source_region_world_box)
++
++MODE = 'source_region_measurement_batch'
++
++
++def validate_batch_arguments(arguments):
++    query = arguments.get('query')
++    if (type(query) is not dict or set(query) != {'mode', 'region', 'reference', 'requested_facts'}
++            or query.get('mode') != MODE or type(query.get('region')) is not dict
++            or set(query['region']) != {'object', 'world_boxes_m'}
++            or type(query['region']['world_boxes_m']) is not list or len(query['region']['world_boxes_m']) != 2):
++        raise ValueError('source_region_batch_requires_two_ordered_boxes')
++    selected = []
++    for box in query['region']['world_boxes_m']:
++        single = {**query, 'mode': 'source_region_measurement',
++                  'region': {'object': query['region']['object'], 'world_box_m': box}}
++        selected.append(validate_scoped_measurement_arguments({**arguments, 'query': single}))
++    return {'mode': MODE, 'region': {'object': selected[0]['region']['object'],
++            'world_boxes_m': [row['region']['world_box_m'] for row in selected]},
++            'reference': selected[0]['reference'], 'requested_facts': ['surface_proximity']}
++
++
++def _single_capture(batch, row):
++    binding = dict(batch['binding'])
++    binding.pop('world_boxes_m')
++    binding['world_box_m'] = row['world_box_m']
++    capture = {'schema': 'human-eye-selective-source-region-capture-v1', 'binding': binding,
++               'region': row['region'], 'reference': batch['reference']}
++    capture['payload_sha256'] = _host_digest(capture)
++    # The batch work is shared and validated once. This transient view retains it;
++    # no synthetic expansion/transfer counters are attributed to either region.
++    capture.update(work=batch['work'], stages=batch['stages'])
++    return capture
++
++
++def validate_batch_capture(batch, target, reference, boxes, host_sha, checkpoint):
++    if (type(batch) is not dict or set(batch) != {'schema', 'binding', 'regions', 'reference', 'payload_sha256', 'work', 'stages'}
++            or batch['schema'] != 'human-eye-selective-source-region-batch-capture-v1'
++            or type(batch['binding']) is not dict or 'world_boxes_m' not in batch['binding']
++            or type(batch['regions']) is not list or len(batch['regions']) != 2
++            or _host_digest(batch['binding']['world_boxes_m']) != _host_digest(boxes)):
++        raise ValueError('source_region_batch_capture_schema')
++    if batch['payload_sha256'] != _host_digest({key: batch[key] for key in ('schema','binding','regions','reference')}):
++        raise ValueError('source_region_batch_payload_digest')
++    whole_vertices, whole_faces = _selective_mesh_arrays(batch['reference'], checkpoint)
++    complete = []
++    for index, (row, box) in enumerate(zip(batch['regions'], boxes, strict=True)):
++        if (type(row) is not dict or row.get('index') != index or type(row.get('index')) is not int
++                or _host_digest(row.get('world_box_m')) != _host_digest(box) or type(row.get('selection_stage')) is not dict):
++            raise ValueError('source_region_batch_region_binding')
++        if row.get('status') == 'complete':
++            if set(row) != {'index', 'world_box_m', 'status', 'region', 'selection_stage'}:
++                raise ValueError('source_region_batch_region_schema')
++            capture = _single_capture(batch, row)
++            _validate_selective_capture(capture, target, reference, box, host_sha, checkpoint, _batch_shared=True)
++            complete.append(row['region'])
++        elif (set(row) != {'index','world_box_m','status','reason','selection_stage'}
++                or row['status'] != 'unmeasured' or row['reason'] not in (
++                    'source_region_pair_empty_world_box', 'source_region_pair_triangle_limit')):
++            raise ValueError('source_region_batch_region_status')
++    # Even all-empty rows must validate the shared current identity/transform.
++    binding = dict(batch['binding']); binding.pop('world_boxes_m')
++    if set(binding) != {'capture_scope','document_epoch','host_source_sha256','target_selector','reference_selector',
++            'target','reference','unit','coordinate_frame','source_frame','world_matrices'}:
++        raise ValueError('source_region_batch_binding_schema')
++    from .source_region import _validate_selective_binding
++    for box in boxes:
++        _validate_selective_binding(dict(binding, world_box_m=box), target, reference, box, host_sha)
++    work = batch['work']
++    if (type(work) is not dict or type(batch['stages']) is not dict
++            or any(type(work.get(k)) is not int for k in ('candidate_objects','source_vertices','source_triangles',
++                'expanded_objects','expanded_vertices','expanded_triangles','to_mesh','triangulations',
++                'world_transforms','world_vertices_transformed'))
++            or work['candidate_objects'] < 2 or work['source_vertices'] <= 0 or work['source_triangles'] <= 0
++            or work.get('mode') not in ('resident_capture','uncached_capture')):
++        raise ValueError('source_region_batch_accounting')
++    source = work['source_vertices'], work['source_triangles']
++    ref = len(whole_vertices), len(whole_faces)
++    total = source[0]+ref[0], source[1]+ref[1]
++    valid = ((2,*total),) if work['mode']=='uncached_capture' else ((0,0,0),(1,*source),(1,*ref),(2,*total))
++    if (tuple(work[k] for k in ('expanded_objects','expanded_vertices','expanded_triangles')) not in valid
++            or any(region['source_vertex_count'] != source[0] or region['source_triangle_count'] != source[1] for region in complete)):
++        raise ValueError('source_region_batch_expansion_accounting')
++    exact = dict(transmitted_objects=2, transmitted_vertices=sum(len(r['vertices']) for r in complete)+ref[0],
++        transmitted_triangles=sum(len(r['faces']) for r in complete)+ref[1],box_vertices_scanned=2*source[0],
++        box_triangles_scan_upper_bound=2*source[1],boxes=2,region_triangle_limit=4096,reference_copies=1,acquisition_cycles=1)
++    if any(type(work.get(k)) is not int or work[k] != value for k,value in exact.items()):
++        raise ValueError('source_region_batch_shared_accounting')
++    checkpoint('source_region_batch_capture_validated')
++
++
++def measure_batch(service, session_id, query, *, include_image=False):
++    from .live_service import RequestBudgetError, span
++    if include_image is not False:
++        raise ValueError('selective_source_region_requires_no_image')
++    query = validate_batch_arguments({'query': query, 'include_image': False})
++    target, reference = query['region']['object'], query['reference']
++    boxes = query['region']['world_boxes_m']
++    if not service.config.get('enabled', True):
++        return {'status': 'disabled', 'session_id': session_id, 'routing': None}
++    capture_pair = getattr(service.host, 'capture_source_region_batch', None)
++    if not callable(capture_pair):
++        raise ValueError('source_region_batch_host_unavailable')
++    started = time.perf_counter_ns()
++    with service._request_budget(), service._read_context.lock, service._observation_scope():
++        rejected, source_check = service._read_source_identity()
++        if rejected is not None:
++            return copy.deepcopy(rejected)
++        remaining = service._check_request_budget('before_selective_source_region_batch_capture')
++        deadline_ns = time.perf_counter_ns()+int((30 if remaining is None else remaining)*1e9)
++        def checkpoint(stage):
++            service._check_request_budget(stage)
++            if time.perf_counter_ns() >= deadline_ns:
++                raise RequestBudgetError('expired', stage)
++        capture_started = time.perf_counter_ns()
++        with span('host.capture_source_region_batch', kind='host'):
++            capture = capture_pair(target, reference, boxes, deadline_ns, 64*1024*1024)
++        capture_closed = time.perf_counter_ns()
++        checkpoint('after_selective_source_region_batch_capture')
++        host_sha = getattr(service.host, '_readonly_host_source_sha256', None)
++        validate_batch_capture(capture, target, reference, boxes, host_sha, checkpoint)
++        rows = []
++        for index, (row, box) in enumerate(zip(capture['regions'], boxes, strict=True)):
++            checkpoint('before_source_region_batch_region')
++            if row['status'] != 'complete':
++                rows.append({'index': index, 'world_box_m': box, 'status': 'unmeasured', 'reason': row['reason']})
++                continue
++            value = measure_selective_region(_single_capture(capture, row), target, reference, box, host_sha,
++                                              checkpoint, _batch_shared=True)
++            value['session_id'] = session_id
++            service._bind_read_result(value, source_check)
++            single_query = {'region': {'object': target, 'world_box_m': box}, 'reference': reference}
++            try:
++                published = project_scoped_measurement(value, single_query)
++            except ValueError as error:
++                rows.append({'index': index, 'world_box_m': box, 'status': 'unmeasured', 'reason': str(error)})
++            else:
++                rows.append(dict(published, index=index))
++            checkpoint('after_source_region_batch_region')
++        checkpoint('before_selective_source_region_batch_result')
++        closed = time.perf_counter_ns()
++        result = {'schema': 'human-eye-source-region-scoped-batch-v1', 'status':
++                    'complete' if all(r['status']=='complete' for r in rows) else
++                    'partial' if any(r['status']=='complete' for r in rows) else 'unmeasured',
++            'regions': rows, 'binding': copy.deepcopy(capture['binding']), 'frames': [],
++            'read_only': True, 'execution_authority': False, 'session_id': session_id,
++            'work': {'host_capture': capture['work'], 'region_count': 2},
++            'stages': {'host_read': {'started_ns': capture_started, 'closed_ns': capture_closed,
++                                   'elapsed_ns': capture_closed-capture_started},
++                       'service_total': {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed-started}}}
++        service._bind_read_result(result, source_check)
++        service.record_event('observe', session_id=session_id, observation_mode=MODE, task_work=result['work'])
++        return result
++
++
++def publish_batch(value):
++    if (value.get('schema') != 'human-eye-source-region-scoped-batch-v1' or value.get('read_only') is not True
++            or value.get('execution_authority') is not False or value.get('frames') != []):
++        raise ValueError('source_region_batch_current_capture_unavailable')
++    return {key: value[key] for key in ('schema','status','regions','binding','read_only','execution_authority')}

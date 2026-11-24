@@ -1,0 +1,14 @@
+--- a/human_eye_plugin/blender_mcp_host.py
++++ b/human_eye_plugin/blender_mcp_host.py
+@@ -293,7 +293,10 @@
+             def check(_stage):
+                 if time.perf_counter_ns() >= deadline_ns:
+                     raise ValueError('selective_source_region_deadline')
+-            validate_batch_capture(capture, target, reference, world_boxes_m, self._readonly_host_source_sha256, check)
++            try:
++                validate_batch_capture(capture, target, reference, world_boxes_m, self._readonly_host_source_sha256, check)
++            except (ValueError, TypeError, KeyError, UnicodeError, RecursionError) as error:
++                self._fail('Invalid private source-region batch response: ' + str(error))
+             return capture
+ 
+     def _materialize_selective_capture(self, reply, key, known, params):
