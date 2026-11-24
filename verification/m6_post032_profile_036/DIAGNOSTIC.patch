@@ -1,0 +1,159 @@
+--- baseline/human_eye_plugin/surface_proximity.py
++++ diagnostic/human_eye_plugin/surface_proximity.py
+@@ -193,7 +193,8 @@
+     if not all(sizes) or sum(sizes) > MAX_FACES:
+         raise _DomainError('surface_geometry_work_limit')
+     records, topology = [], []
+-    for mesh in meshes:
++    for _diagnostic_side, mesh in enumerate(meshes):
++        _diagnostic_token = _diagnostic_036_start()
+         faces, used, incidence = [], set(), Counter()
+         for row in mesh.faces:
+             budget.tick('validated_faces')
+@@ -207,6 +208,7 @@
+         topology.append(dict(boundary_edge_count=sum(count == 1 for count in incidence.values()),
+                              nonmanifold_edge_count=sum(count > 2 for count in incidence.values())))
+         records.append((mesh, faces, sorted(used)))
++        _diagnostic_036_finish(_diagnostic_token, 'admit_side_' + str(_diagnostic_side))
+     return records, topology
+ 
+ 
+@@ -217,7 +219,8 @@
+         raise _DomainError('surface_nonfinite_vertex')
+     origin = tuple(_bounded(Fraction.from_float(float(value))) for value in first)
+     relative, exponent = [], 0
+-    for mesh, faces, indices in records:
++    for _diagnostic_side, (mesh, faces, indices) in enumerate(records):
++        _diagnostic_token = _diagnostic_036_start()
+         coordinates = {}
+         for index in indices:
+             budget.tick('referenced_vertices')
+@@ -229,10 +232,12 @@
+             exponent = max(exponent, *(value.denominator.bit_length() - 1 for value in local))
+             coordinates[index] = local
+         relative.append((faces, coordinates))
++        _diagnostic_036_finish(_diagnostic_token, 'frame_coordinates_side_' + str(_diagnostic_side))
+     factor = _bounded(1 << exponent)
+     prepared = []
+     retained = [] if holder is not None else None
+-    for faces, coordinates in relative:
++    for _diagnostic_side, (faces, coordinates) in enumerate(relative):
++        _diagnostic_token = _diagnostic_036_start()
+         integers = {index: tuple(_bounded(value.numerator <<
+                     (exponent - value.denominator.bit_length() + 1)) for value in point)
+                     for index, point in coordinates.items()}
+@@ -259,6 +264,7 @@
+         prepared.append(triangles)
+         if retained is not None:
+             retained.append(integers)
++        _diagnostic_036_finish(_diagnostic_token, 'frame_triangles_side_' + str(_diagnostic_side))
+     if holder is not None:
+         holder['coordinates'] = tuple(retained)
+     return origin, factor, prepared
+@@ -446,7 +452,8 @@
+     from .surface_geometry import _bvh
+     roots = []
+     retained_bounds = [] if holder is not None else None
+-    for triangles in prepared:
++    for _diagnostic_side, triangles in enumerate(prepared):
++        _diagnostic_token = _diagnostic_036_start()
+         budget.tick('tree_build_units', len(triangles))
+         bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
+                   for triangle in triangles]
+@@ -454,6 +461,7 @@
+         roots.append(_bvh(bounds, budget))
+         if retained_bounds is not None:
+             retained_bounds.append(bounds)
++        _diagnostic_036_finish(_diagnostic_token, 'root_build_side_' + str(_diagnostic_side))
+     if holder is not None:
+         holder['trees'] = dict(pair=holder['pair'], triangles=tuple(prepared),
+                                bounds=tuple(retained_bounds), roots=tuple(roots))
+@@ -1266,3 +1274,88 @@
+                     and spatial.get('measurement_valid') is True,
+                 surface=surface, spatial=spatial, closed=closed,
+                 budget_stopped=budget_stopped, stop_reason=stop_reason)
++
++
++# 036 diagnostic-only aggregate boundary clocks. No algorithm/work changes.
++import time as _diagnostic_036_clock
++from functools import wraps as _diagnostic_036_wraps
++from .telemetry import current_trace as _diagnostic_036_trace
++
++def _diagnostic_036_data(trace):
++    return trace._data.setdefault('diagnostic_036', {
++        'schema': 'm6-036-boundary-phase-diagnostic-v1',
++        'timing_scope': 'same-product-clock inclusive boundary intervals; sums/counts per phase, nested phases must not be added',
++        'phase_totals': {}, 'pairs': []})
++
++def _diagnostic_036_start():
++    trace = _diagnostic_036_trace()
++    return None if trace is None else (trace, _diagnostic_036_clock.perf_counter_ns())
++
++def _diagnostic_036_finish(token, name):
++    if token is None:
++        return
++    trace, started = token
++    elapsed = _diagnostic_036_clock.perf_counter_ns() - started
++    data = _diagnostic_036_data(trace)
++    scopes = [data]
++    if '_active_pair' in data:
++        scopes.append(data['_active_pair'])
++    for scope in scopes:
++        row = scope['phase_totals'].setdefault(name, {'count': 0, 'ns': 0})
++        row['count'] += 1
++        row['ns'] += elapsed
++
++def _diagnostic_036_function(name, function):
++    @_diagnostic_036_wraps(function)
++    def measured(*args, **kwargs):
++        token = _diagnostic_036_start()
++        if token is None:
++            return function(*args, **kwargs)
++        try:
++            result = function(*args, **kwargs)
++        finally:
++            _diagnostic_036_finish(token, name)
++        if name == 'integer_frame_total':
++            data = _diagnostic_036_data(token[0])
++            pair = data.get('_active_pair')
++            if pair is not None:
++                origin, factor, prepared = result
++                pair['frame_origin_exact'] = [str(value) for value in origin]
++                pair['frame_factor_exponent'] = factor.bit_length() - 1
++                pair['prepared_triangles'] = [len(side) for side in prepared]
++        return result
++    return measured
++
++def _diagnostic_036_surface(function):
++    @_diagnostic_036_wraps(function)
++    def measured(left, right, *args, **kwargs):
++        trace = _diagnostic_036_trace()
++        if trace is None:
++            return function(left, right, *args, **kwargs)
++        data = _diagnostic_036_data(trace)
++        previous = data.get('_active_pair')
++        pair = {'index': len(data['pairs']), 'left_id': left.object_id, 'right_id': right.object_id,
++                'input_vertex_counts': [len(left.vertices), len(right.vertices)],
++                'input_face_counts': [len(left.faces), len(right.faces)], 'phase_totals': {}}
++        data['pairs'].append(pair)
++        data['_active_pair'] = pair
++        token = _diagnostic_036_start()
++        try:
++            return function(left, right, *args, **kwargs)
++        finally:
++            _diagnostic_036_finish(token, 'surface_total')
++            if previous is None:
++                data.pop('_active_pair', None)
++            else:
++                data['_active_pair'] = previous
++    return measured
++
++for _diagnostic_036_name, _diagnostic_036_function_name in (
++    ('admit_total', '_admit'), ('integer_frame_total', '_integer_frame'),
++    ('distance_roots_total', '_distance_roots'), ('nearest_total', '_nearest'),
++    ('traversal_tree', '_nearest_tree'), ('traversal_linear', '_nearest_linear'),
++    ('rounded_distance', '_rounded_distance'), ('witness_reconstruction', '_witness'),
++    ('point_publication', '_publish_points'), ('canonical_source_proof', '_witness_triangle_provenance')):
++    globals()[_diagnostic_036_function_name] = _diagnostic_036_function(
++        _diagnostic_036_name, globals()[_diagnostic_036_function_name])
++measure_surface_proximity = _diagnostic_036_surface(measure_surface_proximity)
