@@ -1,0 +1,415 @@
+{
+  "cycle_id": "M6-038-NEAREST-WINDOWS-SPAWN",
+  "decision": "no_go_semantics",
+  "source_sha256": "0f9e6336ec54adf9e7b9a5379b02d2c2cab9f6d1f734138c3fde29e08ccee241",
+  "checks": {
+    "frozen_two_distinct_archives": "pass",
+    "physical_S1_and_all_cleanup": "pass",
+    "same_offline_public_and_cache_semantics": "pass",
+    "multi_job_admission": "fail_nearest_before_after_expiry_and_failure",
+    "S2": "not_admissible_zero_dispatched",
+    "S4": "not_admissible_zero_dispatched",
+    "scan_regression_original_serial": "pass",
+    "ordinary_Blender_performance": "not_run_outside_authorization",
+    "second_scene_edit": "not_run_no_same_pose_saved_edit",
+    "later_expansion": "not_run_fails_admission",
+    "actual_client_cancellation": "not_run"
+  },
+  "worker_recommendation": null,
+  "cost_scope": "one paired Windows cold-context offline sample per case; no clean product stdio socket timing inference",
+  "models": 0,
+  "training": 0,
+  "paid_calls": 0,
+  "Blender_processes_started": 0,
+  "deployment": 0,
+  "reference_baseline": {
+    "git": "6c93f2375d1073b33e721a168f1fcf610ac6dbdc",
+    "version": "9.7.2+b32g",
+    "sources": 143
+  },
+  "groups": {
+    "D48": {
+      "cold_precision_qualification": "pass sequential admissions",
+      "proved_concurrent_misses": 0,
+      "S1_minus_A_sampled_peak_bytes": 54525952,
+      "resource_512_MiB_screen_pass": true,
+      "total_child_cpu_ns": 8390625000,
+      "arms": {
+        "A": {
+          "spawn_to_all_processes_reaped_ns": 9050587900,
+          "outer_pid_cpu_ns": 0,
+          "parent_cpu_os_before_result_ns": 8781250000,
+          "peak_observed_group_bytes": 73314304,
+          "peak_sample_width_ns": 48100,
+          "usable_samples": 82,
+          "incomplete_samples": 0,
+          "physical_core_assignment": "not traced; allowed logical mask and sampled process CPU are available"
+        },
+        "S1": {
+          "spawn_to_all_processes_reaped_ns": 9537367700,
+          "outer_pid_cpu_ns": 0,
+          "parent_cpu_os_before_result_ns": 1046875000,
+          "peak_observed_group_bytes": 127840256,
+          "peak_sample_width_ns": 119400,
+          "usable_samples": 567,
+          "incomplete_samples": 0,
+          "physical_core_assignment": "not traced; allowed logical mask and sampled process CPU are available"
+        }
+      },
+      "phases": {
+        "cold": {
+          "phase": "cold",
+          "timing": {
+            "A_business_ns": 4069502800,
+            "S1_business_ns": 4329188400,
+            "A_to_join_ns": 4069503700,
+            "S1_to_join_ns": 4350517800,
+            "business_difference_ns": 259685600,
+            "A_parent_cpu_ns": 4000000000,
+            "S1_parent_cpu_ns": 343750000,
+            "S1_full_worker_cpu_ns": 4187500000,
+            "S1_spawn_to_ready_ns": 415813400,
+            "S1_worker_import_ns": 326229900,
+            "S1_worker_import_cpu_ns": 296875000,
+            "S1_worker_kernel_ns": 3849833000,
+            "S1_worker_kernel_cpu_ns": 3750000000,
+            "S1_parent_pack_ns": 2417400,
+            "S1_parent_accept_decode_ns": 2117000,
+            "S1_worker_decode_ns": 2920000,
+            "S1_parent_send_ns": 953400,
+            "S1_wait_for_result_contains_worker_compute_ns": 3863349100,
+            "S1_cleanup_ns": 21322800,
+            "application_tx_bytes": 260888,
+            "application_rx_bytes": 197455
+          },
+          "A_compute_distribution": {
+            "count": 47,
+            "min_ns": 36032100,
+            "p50_ns": 89931700,
+            "p95_ns": 116362700,
+            "max_ns": 117323600,
+            "sum_ns": 4026580200,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 2013290100.0,
+              "four": 1006645050.0
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "S1_kernel_distribution": {
+            "count": 47,
+            "min_ns": 37951500,
+            "p50_ns": 85125700,
+            "p95_ns": 109795800,
+            "max_ns": 114001800,
+            "sum_ns": 3849833000,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 1924916500.0,
+              "four": 962458250.0
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "worker_lifecycle_counts": {
+            "dispatched": 47,
+            "started": 47,
+            "completed": 47,
+            "accepted": 47,
+            "discarded": 0
+          },
+          "maximum_active_worker_kernels": 1,
+          "result": {
+            "status": "complete",
+            "focal": "Target",
+            "winning_objects": [
+              "Peer_000"
+            ],
+            "distance_m": 0.0030000059049562493,
+            "full_public_geometry_and_cache_prefix_equal": true
+          }
+        },
+        "warm": {
+          "phase": "warm",
+          "timing": {
+            "A_business_ns": 20696500,
+            "S1_business_ns": 19918200,
+            "A_to_join_ns": 20697100,
+            "S1_to_join_ns": 19920200,
+            "business_difference_ns": -778300,
+            "A_parent_cpu_ns": 15625000,
+            "S1_parent_cpu_ns": 15625000,
+            "S1_full_worker_cpu_ns": 0,
+            "S1_spawn_to_ready_ns": 0,
+            "S1_worker_import_ns": 0,
+            "S1_worker_import_cpu_ns": 0,
+            "S1_worker_kernel_ns": 0,
+            "S1_worker_kernel_cpu_ns": 0,
+            "S1_parent_pack_ns": 0,
+            "S1_parent_accept_decode_ns": 0,
+            "S1_worker_decode_ns": 0,
+            "S1_parent_send_ns": 0,
+            "S1_wait_for_result_contains_worker_compute_ns": 0,
+            "S1_cleanup_ns": 0,
+            "application_tx_bytes": 0,
+            "application_rx_bytes": 0
+          },
+          "A_compute_distribution": {
+            "count": 0
+          },
+          "S1_kernel_distribution": {
+            "count": 0
+          },
+          "worker_lifecycle_counts": {
+            "dispatched": 0,
+            "started": 0,
+            "completed": 0,
+            "accepted": 0,
+            "discarded": 0
+          },
+          "maximum_active_worker_kernels": 0,
+          "result": {
+            "status": "complete",
+            "focal": "Target",
+            "winning_objects": [
+              "Peer_000"
+            ],
+            "distance_m": 0.0030000059049562493,
+            "full_public_geometry_and_cache_prefix_equal": true
+          }
+        },
+        "edited": {
+          "phase": "edited",
+          "timing": {
+            "A_business_ns": 4132818000,
+            "S1_business_ns": 4323167900,
+            "A_to_join_ns": 4132818200,
+            "S1_to_join_ns": 4345457700,
+            "business_difference_ns": 190349900,
+            "A_parent_cpu_ns": 4125000000,
+            "S1_parent_cpu_ns": 78125000,
+            "S1_full_worker_cpu_ns": 4203125000,
+            "S1_spawn_to_ready_ns": 423339800,
+            "S1_worker_import_ns": 335103600,
+            "S1_worker_import_cpu_ns": 312500000,
+            "S1_worker_kernel_ns": 3835698100,
+            "S1_worker_kernel_cpu_ns": 3734375000,
+            "S1_parent_pack_ns": 2456400,
+            "S1_parent_accept_decode_ns": 2168500,
+            "S1_worker_decode_ns": 2904200,
+            "S1_parent_send_ns": 842300,
+            "S1_wait_for_result_contains_worker_compute_ns": 3849214700,
+            "S1_cleanup_ns": 22283300,
+            "application_tx_bytes": 260982,
+            "application_rx_bytes": 197644
+          },
+          "A_compute_distribution": {
+            "count": 47,
+            "min_ns": 32365200,
+            "p50_ns": 90962600,
+            "p95_ns": 118314000,
+            "max_ns": 124196900,
+            "sum_ns": 4094406100,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 2047203050.0,
+              "four": 1023601525.0
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "S1_kernel_distribution": {
+            "count": 47,
+            "min_ns": 38208700,
+            "p50_ns": 85714000,
+            "p95_ns": 110747300,
+            "max_ns": 111248000,
+            "sum_ns": 3835698100,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 1917849050.0,
+              "four": 958924525.0
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "worker_lifecycle_counts": {
+            "dispatched": 47,
+            "started": 47,
+            "completed": 47,
+            "accepted": 47,
+            "discarded": 0
+          },
+          "maximum_active_worker_kernels": 1,
+          "result": {
+            "status": "complete",
+            "focal": "Target",
+            "winning_objects": [
+              "Peer_000"
+            ],
+            "distance_m": 0.0030000059049562493,
+            "full_public_geometry_and_cache_prefix_equal": true
+          }
+        }
+      }
+    },
+    "Assembly": {
+      "cold_precision_qualification": "pass sequential admissions",
+      "proved_concurrent_misses": 0,
+      "S1_minus_A_sampled_peak_bytes": 61476864,
+      "resource_512_MiB_screen_pass": true,
+      "total_child_cpu_ns": 640625000,
+      "arms": {
+        "A": {
+          "spawn_to_all_processes_reaped_ns": 1039647700,
+          "outer_pid_cpu_ns": 0,
+          "parent_cpu_os_before_result_ns": 890625000,
+          "peak_observed_group_bytes": 64856064,
+          "peak_sample_width_ns": 103400,
+          "usable_samples": 10,
+          "incomplete_samples": 0,
+          "physical_core_assignment": "not traced; allowed logical mask and sampled process CPU are available"
+        },
+        "S1": {
+          "spawn_to_all_processes_reaped_ns": 1485078500,
+          "outer_pid_cpu_ns": 15625000,
+          "parent_cpu_os_before_result_ns": 671875000,
+          "peak_observed_group_bytes": 126332928,
+          "peak_sample_width_ns": 206700,
+          "usable_samples": 52,
+          "incomplete_samples": 0,
+          "physical_core_assignment": "not traced; allowed logical mask and sampled process CPU are available"
+        }
+      },
+      "phases": {
+        "cold": {
+          "phase": "cold",
+          "timing": {
+            "A_business_ns": 255834000,
+            "S1_business_ns": 677712700,
+            "A_to_join_ns": 255834500,
+            "S1_to_join_ns": 696102600,
+            "business_difference_ns": 421878700,
+            "A_parent_cpu_ns": 250000000,
+            "S1_parent_cpu_ns": 31250000,
+            "S1_full_worker_cpu_ns": 640625000,
+            "S1_spawn_to_ready_ns": 417726500,
+            "S1_worker_import_ns": 328799400,
+            "S1_worker_import_cpu_ns": 312500000,
+            "S1_worker_kernel_ns": 235623100,
+            "S1_worker_kernel_cpu_ns": 218750000,
+            "S1_parent_pack_ns": 526100,
+            "S1_parent_accept_decode_ns": 389400,
+            "S1_worker_decode_ns": 540300,
+            "S1_parent_send_ns": 228800,
+            "S1_wait_for_result_contains_worker_compute_ns": 237863100,
+            "S1_cleanup_ns": 18383200,
+            "application_tx_bytes": 71163,
+            "application_rx_bytes": 38854
+          },
+          "A_compute_distribution": {
+            "count": 10,
+            "min_ns": 6714600,
+            "p50_ns": 11662500,
+            "p95_ns": 70119400,
+            "max_ns": 70119400,
+            "sum_ns": 240419600,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 120209800.0,
+              "four": 70119400
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "S1_kernel_distribution": {
+            "count": 10,
+            "min_ns": 6709400,
+            "p50_ns": 13103400,
+            "p95_ns": 67841600,
+            "max_ns": 67841600,
+            "sum_ns": 235623100,
+            "ideal_kernel_only_lower_bound_ns": {
+              "two": 117811550.0,
+              "four": 67841600
+            },
+            "ideal_bound_scope": "hypothetical profile lower bound; no admissible two- or four-job window"
+          },
+          "worker_lifecycle_counts": {
+            "dispatched": 10,
+            "started": 10,
+            "completed": 10,
+            "accepted": 10,
+            "discarded": 0
+          },
+          "maximum_active_worker_kernels": 1,
+          "result": {
+            "status": "complete",
+            "focal": "Obj_014",
+            "winning_objects": [
+              "Obj_002"
+            ],
+            "distance_m": 0.00024999864399433136,
+            "full_public_geometry_and_cache_prefix_equal": true
+          }
+        },
+        "warm": {
+          "phase": "warm",
+          "timing": {
+            "A_business_ns": 9492300,
+            "S1_business_ns": 9810000,
+            "A_to_join_ns": 9492900,
+            "S1_to_join_ns": 9811800,
+            "business_difference_ns": 317700,
+            "A_parent_cpu_ns": 0,
+            "S1_parent_cpu_ns": 0,
+            "S1_full_worker_cpu_ns": 0,
+            "S1_spawn_to_ready_ns": 0,
+            "S1_worker_import_ns": 0,
+            "S1_worker_import_cpu_ns": 0,
+            "S1_worker_kernel_ns": 0,
+            "S1_worker_kernel_cpu_ns": 0,
+            "S1_parent_pack_ns": 0,
+            "S1_parent_accept_decode_ns": 0,
+            "S1_worker_decode_ns": 0,
+            "S1_parent_send_ns": 0,
+            "S1_wait_for_result_contains_worker_compute_ns": 0,
+            "S1_cleanup_ns": 0,
+            "application_tx_bytes": 0,
+            "application_rx_bytes": 0
+          },
+          "A_compute_distribution": {
+            "count": 0
+          },
+          "S1_kernel_distribution": {
+            "count": 0
+          },
+          "worker_lifecycle_counts": {
+            "dispatched": 0,
+            "started": 0,
+            "completed": 0,
+            "accepted": 0,
+            "discarded": 0
+          },
+          "maximum_active_worker_kernels": 0,
+          "result": {
+            "status": "complete",
+            "focal": "Obj_014",
+            "winning_objects": [
+              "Obj_002"
+            ],
+            "distance_m": 0.00024999864399433136,
+            "full_public_geometry_and_cache_prefix_equal": true
+          }
+        }
+      }
+    }
+  },
+  "reviewed_totals": {
+    "git_files_verified": 24,
+    "sealed_files_verified": 217,
+    "sealed_bytes_verified": 6852671,
+    "assembly_global_candidates": 23,
+    "assembly_exact_misses": 10,
+    "assembly_strict_exclusions": 13,
+    "D48_cold_exact_misses": 47,
+    "valid_S1_jobs": 104,
+    "S2_jobs": 0,
+    "S4_jobs": 0,
+    "serial_scan_controls": 6,
+    "proved_max_permitted_window": 1
+  },
+  "pair_details": "PAIR_TIMINGS.json",
+  "scope": "Anonymized observations, per-pair measured durations and counts, fixed contract and independent review; full native geometry, supervised receipts and run bindings remain local."
+}
