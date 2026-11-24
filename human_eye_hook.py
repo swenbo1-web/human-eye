@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from functools import lru_cache
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
@@ -122,11 +123,26 @@ def host_prompt(event, *, agent='codex'):
     return '\n'.join(answers), metadata
 
 
-@lru_cache(maxsize=4)
 def _leaf(name):
     if name not in {'agent_hooks', 'task_intent', 'telemetry', 'runtime_identity'}:
         raise ValueError('Only fixed standard-library hook support modules can be loaded')
-    path = ROOT / 'human_eye_plugin' / (name + '.py')
+    relative = 'human_eye_plugin/' + name + '.py'
+    guards = [finder for finder in sys.meta_path
+              if getattr(finder, 'protocol', None) == 'human-eye-verified-source-v1']
+    if not guards:
+        return _standalone_leaf(name, ROOT / relative)
+    if len(guards) != 1 or guards[0].root != ROOT:
+        raise ValueError('Hook support source guard does not match the runtime root')
+    # Reuse the fixed launcher's canonical import and its executed-source witness.
+    guard = guards[0]
+    module = importlib.import_module('human_eye_plugin.' + name)
+    if guard._executed.get(id(module)) != (module, relative):
+        raise ValueError('Hook support module was not loaded by the verified source guard')
+    return module
+
+
+@lru_cache(maxsize=4)
+def _standalone_leaf(name, path):
     spec = importlib.util.spec_from_file_location('_human_eye_hook_leaf_' + name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
