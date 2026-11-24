@@ -2,7 +2,7 @@
 
 Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生 Blender 图像与受预算约束的有限刚体动作。目标是让 Agent 使用可核验的几何事实和合适的视图完成三维任务。
 
-当前落地优先面向Codex；总体目标、阶段依赖与验收出口以 [唯一主计划](docs/PRODUCT_ROADMAP.md) 为准，模块实现与技术取舍见 [架构分析](docs/ARCHITECTURE_ANALYSIS.md)，已交付能力见 [项目进度](docs/PROGRESS.md)。专项合同和历史报告中的“当前/下一步”属于当时阶段，不另行决定排期。
+当前落地优先面向 Codex。总体目标、阶段依赖与验收出口以[唯一主计划](docs/PRODUCT_ROADMAP.md)为准，模块实现与技术取舍见[架构分析](docs/ARCHITECTURE_ANALYSIS.md)，最新版本和已交付能力见[项目进度](docs/PROGRESS.md)。Windows 工作树与实验目录见[本机目录约定](docs/HUMAN_EYE_WORKSPACE.md)。
 
 ## 当前能力
 
@@ -15,7 +15,7 @@ Human Eye 为 AI Agent 提供结构化三维观察、网格间隙测量、原生
 - 有限独立静态刚体动作保持原期限、步数/位移预算、回读及未知结果阻断；不认证扫掠路径或物理模拟。
 - 对有限可信固定帧LBS来源，显式完整core模式交付三态、全部unknown原因、整三角极值与核心内见证；不自动判断损伤或获得写入权。
 
-当前checkout、默认配置及当前MCP已为**请求场景遥测修复版**`v21-scene-trace-owner-20261103`，125源`a045a800256f4767271308d239c735177f992ce3408d927d42bde5f1d4b60d8f`，安装`9.7.2+20261103.scene.trace.r1`。005已完成受锁迁移、当前桌面身份、正式GUI单Cube只读和真实Prompt工具前自动观察；当前指纹及1/8/12遥测一致，账本与预算保持。早期旧连接拒绝和随后新加载分时记录，无需再重连或重复测试句。原234相关项按同版复用。详见[最终宿主验收](docs/SOURCE_GUARD_COST_ACCEPTANCE.md#review-cycle-005-后续当前宿主与真实-hook-已验)。四动作Hook、写表单、模型收益及OwnedScheduler旧envelope边界未扩验。
+桌面现行版为 `9.7.2+20261110.scale.opt.r1`。M3 032 BVH 已进入产品集成，`b32g` 的整版隔离验收已发布。此前 `scene.trace.r1` 的桌面自动 Hook 证据见[当期宿主验收](docs/SOURCE_GUARD_COST_ACCEPTANCE.md#review-cycle-005-后续当前宿主与真实-hook-已验)。
 
 [新增单案原生反例](docs/MEASURABLE_OUTER_EXTREMUM_ACCEPTANCE.md)证明：外围可测伸长/面积比1.5时，固定core仍输出1且见证在core；旧失败保留，运行源未改。仅49相关公共回归和一个自建资产，不构成新模型或任意资产资格。
 

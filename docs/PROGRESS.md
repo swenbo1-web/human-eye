@@ -1,8 +1,10 @@
 # Human Eye 当前进度
 
-更新：2026-11-03。正式基线按既有封存记录为 `9.7.2+20261031.dense.focus.r1`，78个运行时源、87个固定发布文件；摘要 `22fb2523bdbfb68d6e7227ea3df3b4373daa1a76461344bc1755406c5feeec8a`。本批核对其项目配置保持，新候选仍为独立安装，未切换正式live或Hook。
+更新于 2026-11-24。桌面当前绑定 `9.7.2+20261110.scale.opt.r1`，137 个运行源，摘要 `3fc2651e108ad7ac252394871d78e1abaee1200c92a018125984b2fc240193bd`。M3 032 BVH 已进入产品集成 `6c93f237`，隔离发行 `9.7.2+b32g`。
 
-推进顺序仅以[唯一主计划](PRODUCT_ROADMAP.md)为准。当前隔离125源候选`9.7.2+20261103.source.guard.r1`，SHA`d9b01eec9ce561b9f9fe5304cc37c50aa641b1826ed3ee788501eb2f49192360`；原125/dbeb、124/3fa和默认78/22fb原安装保持。默认MCP/live/Hook不切换。
+整版通过 12/12 几何、4/4 只读、固定 Hook 直接调用和隔离 A→B→A 回退。D48 首次 RTT 7.405→4.354 秒，G60 完整试验窗 2.432→3.623 秒。固定 launcher 轻路径审计缺口在两版复现，自动派发与信任仍待隔离验收。[整版报告](https://github.com/swenbo1-web/human-eye/blob/c55442993a86bdaea4b4e9f4875b552765c79d16/verification/b32g_whole_release_acceptance_001/REPORT.md)
+
+推进顺序以[唯一主计划](PRODUCT_ROADMAP.md)为准。新建工作树、实验、安装及发布暂存按[本机目录约定](HUMAN_EYE_WORKSPACE.md)集中管理。以下段落保留为历史记录。
 
 ## REVIEW-CYCLE-002：可测外围极值原生反例
 
