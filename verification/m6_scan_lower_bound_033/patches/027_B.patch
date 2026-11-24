@@ -1,0 +1,339 @@
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -34,6 +34,29 @@
+ 
+ class _DomainError(ValueError):
+     pass
++
++
++class _SurfaceScanNegative:
++    """Private completed d>threshold proof, never a measured distance."""
++    __slots__ = ('threshold_key', 'work')
++
++    def __init__(self, threshold_key, work=None):
++        self.threshold_key = tuple(threshold_key)
++        self.work = {} if work is None else dict(work)
++
++    def _cache_payload(self):
++        return {'_surface_scan_negative_v1': list(self.threshold_key)}
++
++    @classmethod
++    def _from_cache(cls, value):
++        if type(value) is not dict or set(value) != {'_surface_scan_negative_v1'}:
++            return None
++        key = value['_surface_scan_negative_v1']
++        if (type(key) is not list or len(key) != 3 or any(type(x) is not int for x in key)
++                or key[0] < 0 or key[1] <= 0 or key[0].bit_length() > MAX_BITS
++                or key[1].bit_length() > MAX_BITS):
++            raise ValueError('Invalid private surface scan negative proof')
++        return cls(key)
+ 
+ 
+ def _bounded(value):
+@@ -421,23 +444,26 @@
+     return best
+ 
+ 
+-def _nearest_linear(prepared, budget, witness_pair=None):
++def _nearest_linear(prepared, budget, witness_pair=None, *, _search_bound=None):
+     best = None
+     for i, left in enumerate(prepared[0]):
+         for j, right in enumerate(prepared[1]):
+             budget.checkpoint('surface_proximity_pair')
+             budget.tick('leaf_pair_visits')
+             budget.counts['triangle_pairs'] += 1
+-            if best is not None:
++            limit = best if best is not None else _search_bound
++            if limit is not None:
+                 budget.tick('aabb_bound_tests')
+-                if _aabb_exceeds_best(left[4], right[4], best):
++                if _aabb_exceeds_best(left[4], right[4], limit):
+                     budget.counts['aabb_pruned_pairs'] += 1
+                     continue
+             candidate = _nearest_pair(left, right, best, budget)
+-            if witness_pair is not None and candidate is not best:
+-                witness_pair[:] = (i, j)
+-            best = candidate
+-            if best[0] == 0:
++            if (candidate is not None and (best is not None or _search_bound is None
++                    or candidate[0] * _search_bound[1] <= _search_bound[0] * candidate[1])):
++                if witness_pair is not None and candidate is not best:
++                    witness_pair[:] = (i, j)
++                best = candidate
++            if best is not None and best[0] == 0:
+                 return best
+     return best
+ 
+@@ -467,7 +493,7 @@
+     return _scratch(sum(gap*gap for gap in gaps))
+ 
+ 
+-def _nearest_tree(prepared, roots, budget, witness_pair=None):
++def _nearest_tree(prepared, roots, budget, witness_pair=None, *, _search_bound=None):
+     largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
+         zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
+     # One common priority scale protects extreme inputs. Safe pruning below
+@@ -486,9 +512,10 @@
+     while pending:
+         budget.tick('node_pair_visits')
+         _, _, left, right = heapq.heappop(pending)
+-        if best is not None:
++        limit = best if best is not None else _search_bound
++        if limit is not None:
+             budget.tick('aabb_bound_tests')
+-            if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best):
++            if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), limit):
+                 budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
+                 continue
+         if left[3] is not None and right[3] is not None:
+@@ -498,18 +525,22 @@
+                     budget.counts['triangle_pairs'] += 1
+                     a,b = prepared[0][i], prepared[1][j]
+                     planes = None
+-                    if best is not None:
++                    limit = best if best is not None else _search_bound
++                    if limit is not None:
+                         budget.tick('aabb_bound_tests')
+-                        if _aabb_exceeds_best(a[4], b[4], best):
++                        if _aabb_exceeds_best(a[4], b[4], limit):
+                             budget.counts['aabb_pruned_pairs'] += 1
+                             continue
+-                        pruned,planes = _triangle_plane_bounds(a,b,best,budget)
++                        pruned,planes = _triangle_plane_bounds(a,b,limit,budget)
+                         if pruned:
+                             budget.counts['plane_pruned_pairs'] += 1
+                             continue
+                     pair = (i,j)
+                     candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
+                                               budget,planes)
++                    if (candidate is None or (best is None and _search_bound is not None
++                            and candidate[0] * _search_bound[1] > _search_bound[0] * candidate[1])):
++                        continue
+                     if best is None:
+                         best,best_pair = candidate,pair
+                     else:
+@@ -527,9 +558,9 @@
+     return best
+ 
+ 
+-def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None):
++def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None, _search_bound=None):
+     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
+-        return _nearest_linear(prepared, budget, witness_pair)
++        return _nearest_linear(prepared, budget, witness_pair, _search_bound=_search_bound)
+     if prepared_trees is None:
+         roots = _distance_roots(prepared,budget,holder=prepared_holder)
+     else:
+@@ -537,7 +568,7 @@
+         budget.counts['shared_trees'] = True
+         if prepared_holder is not None:
+             prepared_holder['trees'] = prepared_trees
+-    return _nearest_tree(prepared, roots, budget, witness_pair)
++    return _nearest_tree(prepared, roots, budget, witness_pair, _search_bound=_search_bound)
+ 
+ 
+ def _witness(descriptor):
+@@ -758,7 +789,7 @@
+ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
+                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
+                               _prepared_trees=None,
+-                              _prepared_holder=None):
++                              _prepared_holder=None, _scan_threshold_m=None):
+     """Measure only the requested triangle surfaces, retaining known quantities."""
+     checkpoint('surface_proximity_admission')
+     budget = _Work(checkpoint, diagnostics)
+@@ -787,6 +818,18 @@
+             contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
+         if _prepared_holder is not None:
+             _prepared_holder['pair'] = pair
++        scan_key = search_bound = None
++        if _scan_threshold_m is not None:
++            if (type(_scan_threshold_m) not in (int, float)
++                    or not math.isfinite(float(_scan_threshold_m)) or _scan_threshold_m < 0):
++                raise ValueError('Invalid private surface scan threshold')
++            threshold = Fraction.from_float(float(_scan_threshold_m))
++            scan_key = _exact_distance_key(threshold.numerator ** 2, 1, threshold.denominator)
++            try:
++                squared = _bounded((threshold * factor) ** 2)
++                search_bound = (squared.numerator, squared.denominator)
++            except _DomainError as bound_error:
++                budget.counts['scan_bound_fallback'] = str(bound_error)
+         if contact is None:
+             trees = None
+             if (_prepared_pair is not None and type(_prepared_trees) is dict
+@@ -794,9 +837,17 @@
+                     and len(_prepared_trees.get('triangles', ())) == 2
+                     and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
+                 trees = _prepared_trees
+-            numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
+-                                                         prepared_holder=_prepared_holder,
+-                                                         witness_pair=witness_pair)
++            answer = _nearest(prepared, budget, prepared_trees=trees,
++                              prepared_holder=_prepared_holder, witness_pair=witness_pair,
++                              _search_bound=search_bound)
++            if answer is None:
++                if scan_key is None:
++                    raise ArithmeticError('Unbounded surface query found no source witness')
++                checkpoint('surface_proximity_publish')
++                negative = _SurfaceScanNegative(scan_key, budget.counts)
++                checkpoint('surface_proximity_complete')
++                return negative
++            numerator, denominator, descriptor = answer
+         else:
+             budget.counts['zero_witness_reused'] = True
+             numerator, denominator, descriptor = 0, 1, ('contact', contact)
+--- a/human_eye_plugin/task_query.py
++++ b/human_eye_plugin/task_query.py
+@@ -257,7 +257,7 @@
+ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
+                               diagnostics, retain_exact_rank=False, prepared_pair=None,
+                               boundary_contact=None, prepared_trees=None, before_compute=None,
+-                              _surface_scan=False, witness_capture=None):
++                              _surface_scan=False, witness_capture=None, _scan_threshold_m=None):
+     """Internal opt-in rank results use a distinct, fully serialized cache key."""
+     diagnostics['surface_pair_count'] = 0
+     diagnostics['surface_pair_cache_hit'] = False
+@@ -277,6 +277,10 @@
+             options['_boundary_contact'] = boundary_contact
+         if prepared_trees is not None:
+             options['_prepared_trees'] = prepared_trees
++        if _scan_threshold_m is not None:
++            if not _surface_scan:
++                raise ValueError('Bounded surface computation is scan-only')
++            options['_scan_threshold_m'] = _scan_threshold_m
+         return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
+     face_counts = len(left.faces), len(right.faces)
+     if (sum(face_counts) > MAX_FACES
+@@ -295,6 +299,11 @@
+         parameters['witness_capture'] = witness_capture
+         parameters['exact_source_encoding'] = 'rational_world_coordinates_v1'
+     cache_options = {'_surface_scan': True, '_diagnostics': diagnostics} if _surface_scan else {}
++    if _scan_threshold_m is not None:
++        from .surface_proximity import _exact_distance_key
++        numerator, denominator = float(_scan_threshold_m).as_integer_ratio()
++        cache_options.update(_surface_scan_threshold_key=_exact_distance_key(numerator * numerator, 1, denominator),
++                             _surface_scan_checkpoint=checkpoint)
+     result, diagnostics['surface_pair_cache_hit'] = cache.pair_measurement(
+         left, right, compute_surface, parameters=parameters, algorithm_version=version,
+         before_compute=before_compute, **cache_options)
+--- a/human_eye_plugin/scene_cache.py
++++ b/human_eye_plugin/scene_cache.py
+@@ -432,7 +432,8 @@
+             return copy.deepcopy(result)
+ 
+     def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version,
+-                         before_compute=None, _surface_scan=False, _diagnostics=None):
++                         before_compute=None, _surface_scan=False, _diagnostics=None,
++                         _surface_scan_threshold_key=None, _surface_scan_checkpoint=None):
+         """Return (detached_result, hit) for exactly the same ordered mesh pair.
+ 
+         The caller supplies all evaluator parameters, including tolerances and
+@@ -458,13 +459,22 @@
+                 surface_dependency_key=key if dependency_bound else None,
+                 surface_dependency_objects=[left['surface_scan_resource_dependency'],
+                     right['surface_scan_resource_dependency']] if dependency_bound else None)
++        from .surface_proximity import _SurfaceScanNegative, _compare_distance_keys
++        proof_checkpoint = _surface_scan_checkpoint or (lambda stage: None)
+         with self._lock:
+             cached = self._measurements.get(key)
+             if cached is not None:
+-                self._measurements.move_to_end(key)
+-                self._hits += 1
+-                self._estimated_saved_ms += cached[1]
+-                return _decode(cached[0]), True
++                decoded = _decode(cached[0])
++                negative = _SurfaceScanNegative._from_cache(decoded)
++                usable = (negative is None or (dependency_bound and _surface_scan_threshold_key is not None
++                    and _compare_distance_keys(_surface_scan_threshold_key, negative.threshold_key, proof_checkpoint) <= 0))
++                if usable:
++                    self._measurements.move_to_end(key)
++                    self._hits += 1
++                    self._estimated_saved_ms += cached[1]
++                    if negative is not None and _diagnostics is not None:
++                        _diagnostics['surface_negative_cache_hit'] = True
++                    return (negative if negative is not None else decoded), True
+             self._misses += 1
+             if before_compute is not None:
+                 before_compute()
+@@ -473,8 +483,16 @@
+             value = compute()
+             elapsed_ms = (time.perf_counter() - start) * 1000
+             # Canonical JSON also rejects NaN/Infinity anywhere in a result.
+-            encoded = _encode(value)
+-            if isinstance(value, dict) and value.get("measurement_valid") is True:
++            is_negative = type(value) is _SurfaceScanNegative
++            if is_negative and (not _surface_scan or _surface_scan_threshold_key is None):
++                raise ValueError('Private negative proof requested as measured distance')
++            encoded = _encode(value._cache_payload() if is_negative else value)
++            cacheable = (dependency_bound and is_negative
++                and tuple(_surface_scan_threshold_key) == value.threshold_key) or (
++                isinstance(value, dict) and value.get('measurement_valid') is True)
++            if is_negative:
++                proof_checkpoint('surface_scan_negative_cache_store')
++            if cacheable:
+                 charge = _charge(encoded, key) + 64
+                 if charge <= self.max_bytes:
+                     previous = self._measurements.get(key)
+@@ -483,7 +501,7 @@
+                     self._measurements[key] = (encoded, elapsed_ms)
+                     self._measurement_bytes += charge
+                     self._trim()
+-            return _decode(encoded), False
++            return (_SurfaceScanNegative._from_cache(_decode(encoded)) if is_negative else _decode(encoded)), False
+ 
+     def export_state(self):
+         """Export only history. No result, action permission or token survives."""
+--- a/human_eye_plugin/surface_scan.py
++++ b/human_eye_plugin/surface_scan.py
+@@ -8,7 +8,7 @@
+ import json
+ import math
+ 
+-from .surface_proximity import MAX_BITS, _compare_distance_keys, _exact_distance_key
++from .surface_proximity import MAX_BITS, _compare_distance_keys, _exact_distance_key, _SurfaceScanNegative
+ 
+ 
+ MAX_OBJECTS = 256
+@@ -138,6 +138,10 @@
+ 
+ 
+ def _threshold_state(measured, threshold_key, checkpoint):
++    if type(measured) is _SurfaceScanNegative:
++        if _compare_distance_keys(threshold_key, measured.threshold_key, checkpoint) <= 0:
++            return False, None
++        return None, 'surface_scan_negative_threshold_insufficient'
+     if measured.get('measurement_valid') is not True:
+         return None, measured.get('reason') or 'surface_measurement_unavailable'
+     key = measured.get('_exact_distance_sq')
+@@ -149,6 +153,8 @@
+ 
+ 
+ def _summary(measured):
++    if type(measured) is _SurfaceScanNegative:
++        return _SurfaceScanNegative(measured.threshold_key)
+     fields = ('measurement_valid', 'distance_m', '_exact_distance_sq', 'point_a_world',
+               'point_b_world', 'witness_status', 'witness_reason', 'method')
+     return {key: copy.deepcopy(measured[key]) for key in fields if key in measured}
+@@ -255,7 +261,8 @@
+                 try:
+                     measured = _surface_pair_measurement(by_id[ids[0]], by_id[ids[1]], cache,
+                         checkpoint, source=scene['source'], diagnostics=work,
+-                        retain_exact_rank=True, before_compute=reserve, _surface_scan=True)
++                        retain_exact_rank=True, before_compute=reserve, _surface_scan=True,
++                        _scan_threshold_m=threshold)
+                 except _PairDeferred:
+                     measured = None
+                 metrics['cache_hits'] += int(work.get('surface_pair_cache_hit', False))
+@@ -275,7 +282,11 @@
+                     unknown.pop(ids, None)
+                     state = 'measured_match' if match else 'measured_nonmatch'
+                     counts[state] += 1
+-                    entry['distance_m'] = measured['distance_m']
++                    if type(measured) is _SurfaceScanNegative:
++                        entry['negative_certificate'] = True
++                        entry['negative_threshold_sq_key'] = list(measured.threshold_key)
++                    else:
++                        entry['distance_m'] = measured['distance_m']
+                     if match:
+                         value = {'objects': [named(oid) for oid in ids],
+                                  **{key: copy.deepcopy(measured[key]) for key in (

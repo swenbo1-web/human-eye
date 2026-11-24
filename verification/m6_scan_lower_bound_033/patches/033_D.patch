@@ -1,0 +1,394 @@
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -37,27 +37,51 @@
+ 
+ 
+ class _SurfaceScanNegative:
+-    """Private completed d>threshold proof, never a measured distance."""
+-    __slots__ = ('threshold_key', 'work')
+-
+-    def __init__(self, threshold_key, work=None):
++    """Private d>threshold proof, optionally also d²>=complete lower_key."""
++    __slots__ = ('threshold_key', 'work', 'lower_key', 'lower_strict')
++
++    def __init__(self, threshold_key, work=None, *, lower_key=None):
+         self.threshold_key = tuple(threshold_key)
+         self.work = {} if work is None else dict(work)
++        self.lower_key = None if lower_key is None else tuple(lower_key)
++        self.lower_strict = False
+ 
+     def _cache_payload(self):
+-        return {'_surface_scan_negative_v1': list(self.threshold_key)}
++        value = {'_surface_scan_negative_v1': list(self.threshold_key)}
++        if self.lower_key is not None:
++            value.update(_surface_scan_lower_v1=list(self.lower_key), _surface_scan_lower_strict=False)
++        return value
++
++    def _exclusion_kind(self, threshold_key, checkpoint):
++        if _compare_distance_keys(threshold_key, self.threshold_key, checkpoint) <= 0:
++            return 'threshold'
++        if self.lower_key is not None:
++            checkpoint('surface_scan_lower_cache_compare')
++            if _compare_distance_keys(threshold_key, self.lower_key, checkpoint) < 0:
++                return 'lower_bound'
++        return None
+ 
+     @classmethod
+     def _from_cache(cls, value):
+-        if type(value) is not dict or set(value) != {'_surface_scan_negative_v1'}:
++        if type(value) is not dict or '_surface_scan_negative_v1' not in value:
+             return None
+-        key = value['_surface_scan_negative_v1']
+-        if (type(key) is not list or len(key) != 3 or any(type(x) is not int for x in key)
+-                or key[0] < 0 or key[1] <= 0 or key[0].bit_length() > MAX_BITS
+-                or key[1].bit_length() > MAX_BITS):
+-            raise ValueError('Invalid private surface scan negative proof')
+-        return cls(key)
+-
++        base = {'_surface_scan_negative_v1'}
++        enhanced = base | {'_surface_scan_lower_v1', '_surface_scan_lower_strict'}
++        if set(value) not in (base, enhanced):
++            raise ValueError('Invalid private surface scan negative proof fields')
++        def key(raw):
++            if (type(raw) is not list or len(raw) != 3 or any(type(x) is not int for x in raw)
++                    or raw[0] < 0 or raw[1] <= 0 or raw[0].bit_length() > MAX_BITS
++                    or raw[1].bit_length() > MAX_BITS or abs(raw[2]) > 4 * MAX_BITS):
++                raise ValueError('Invalid private surface scan negative proof')
++            return raw
++        threshold = key(value['_surface_scan_negative_v1'])
++        lower = None
++        if set(value) == enhanced:
++            if value['_surface_scan_lower_strict'] is not False:
++                raise ValueError('Unsupported private lower-bound strictness')
++            lower = key(value['_surface_scan_lower_v1'])
++        return cls(threshold, lower_key=lower)
+ 
+ def _bounded(value):
+     if type(value) is int:
+@@ -444,7 +468,147 @@
+     return best
+ 
+ 
+-def _nearest_linear(prepared, budget, witness_pair=None, *, _search_bound=None):
++SCAN_LOWER_PROOF_MAX_UNITS = 65536
++SCAN_LOWER_PROOF_HEADROOM = 128
++
++
++class _ScanLowerUnavailable(Exception):
++    pass
++
++
++class _ScanLowerProof:
++    """Scalar min over the original disjoint terminal Cartesian partition.
++
++    Node exits discharge count(left)*count(right), leaf exits discharge1.
++    Full negative traversal plus remaining==0 permits d²>=min(terminal bounds).
++    No source arrays or traversal log are retained by the certificate or cache.
++    Optional arithmetic uses its own frozen allowance; B Work is not changed.
++    Original checkpoint exceptions are never caught as optional refusals.
++    """
++    def __init__(self, bound, budget, factor, total_pairs):
++        self.bound, self.budget, self.factor = bound, budget, factor
++        self.total = self.remaining = total_pairs
++        self.minimum = None
++        self.active = True
++        self.units = 0
++        self.result_key = None
++        budget.counts.update(scan_lower_bound_status='collecting', scan_lower_bound_private_units=0,
++            scan_lower_bound_obligations_total=total_pairs, scan_lower_bound_obligations_completed=0,
++            scan_lower_bound_terminals=0)
++
++    def stop(self, reason):
++        self.active = False
++        self.minimum = None
++        self.budget.counts.update(scan_lower_bound_status='no_upgrade', scan_lower_bound_fallback_reason=reason)
++
++    def _charge(self, name, amount=1):
++        if MAX_WORK_UNITS - self.budget.counts['work_units'] < SCAN_LOWER_PROOF_HEADROOM:
++            raise _ScanLowerUnavailable('B_work_headroom')
++        if self.units + amount > SCAN_LOWER_PROOF_MAX_UNITS:
++            raise _ScanLowerUnavailable('private_work_limit')
++        self.budget.checkpoint('surface_scan_lower_' + name)
++        self.units += amount
++        self.budget.counts['scan_lower_bound_private_units'] = self.units
++
++    def _integer(self, value, cap):
++        if type(value) is not int or abs(value).bit_length() > cap:
++            raise _ScanLowerUnavailable('integer_width')
++        return value
++
++    def _add(self, a, b):
++        self._charge('arithmetic')
++        self._integer(a, _MAX_SCRATCH_BITS); self._integer(b, _MAX_SCRATCH_BITS)
++        if a and b and max(abs(a).bit_length(), abs(b).bit_length()) + 1 > _MAX_SCRATCH_BITS:
++            raise _ScanLowerUnavailable('integer_width')
++        return a + b
++
++    def _mul(self, a, b):
++        self._charge('arithmetic')
++        self._integer(a, _MAX_SCRATCH_BITS); self._integer(b, _MAX_SCRATCH_BITS)
++        if a and b and abs(a).bit_length() + abs(b).bit_length() > _MAX_SCRATCH_BITS:
++            raise _ScanLowerUnavailable('integer_width')
++        return a * b
++
++    def _compare(self, a, b):
++        self._charge('compare')
++        left, right = self._mul(a[0], b[1]), self._mul(b[0], a[1])
++        return (left > right) - (left < right)
++
++    def _record(self, kind, weight, make):
++        if not self.active:
++            return
++        try:
++            self._charge('terminal')
++            if type(weight) is not int or not 0 < weight <= self.remaining:
++                raise _ScanLowerUnavailable('coverage_invariant')
++            numerator, denominator = make()
++            self._integer(numerator, _MAX_SCRATCH_BITS); self._integer(denominator, _MAX_SCRATCH_BITS)
++            if numerator < 0 or denominator <= 0:
++                raise _ScanLowerUnavailable('invalid_ratio')
++            self._charge('normalize', 3)
++            divisor = math.gcd(numerator, denominator)
++            ratio = (numerator // divisor, denominator // divisor)
++            self._integer(ratio[0], MAX_BITS); self._integer(ratio[1], MAX_BITS)
++            if self._compare(ratio, self.bound) <= 0:
++                raise _ScanLowerUnavailable('terminal_not_strictly_above_request')
++            if self.minimum is None or self._compare(ratio, self.minimum) < 0:
++                self.minimum = ratio
++            self.remaining -= weight
++            counts = self.budget.counts
++            counts['scan_lower_bound_obligations_completed'] = self.total - self.remaining
++            counts['scan_lower_bound_terminals'] += 1
++            name = 'scan_lower_bound_' + kind
++            counts[name] = counts.get(name, 0) + 1
++        except _ScanLowerUnavailable as exc:
++            self.stop(str(exc))
++
++    def aabb(self, left, right, weight=1, kind='leaf_aabb'):
++        def make():
++            total = 0
++            for (lo, hi), (other_lo, other_hi) in zip(left, right):
++                gap = max(self._add(lo, -other_hi), self._add(other_lo, -hi), 0)
++                total = self._add(total, self._mul(gap, gap))
++            return total, 1
++        self._record(kind, weight, make)
++
++    def plane(self, a, b, planes):
++        def make():
++            if planes is None:
++                raise _ScanLowerUnavailable('missing_plane_exit')
++            distances, squared = (planes[0], a[2]) if planes[1] is None else (planes[1], b[2])
++            if not squared or not distances or not (all(x > 0 for x in distances) or all(x < 0 for x in distances)):
++                raise _ScanLowerUnavailable('unqualified_plane_exit')
++            gap = min(abs(x) for x in distances)
++            return self._mul(gap, gap), squared
++        self._record('plane', 1, make)
++
++    def exact_leaf(self, candidate):
++        def make():
++            if candidate is None:
++                raise _ScanLowerUnavailable('missing_exact_leaf')
++            return candidate[0], candidate[1]
++        self._record('exact_leaf', 1, make)
++
++    def finish(self):
++        if self.result_key is not None:
++            return list(self.result_key)
++        if not self.active:
++            return None
++        try:
++            self._charge('finish')
++            if self.remaining != 0 or self.minimum is None:
++                raise _ScanLowerUnavailable('incomplete_terminal_partition')
++            self.result_key = tuple(_exact_distance_key(*self.minimum, self.factor))
++            self.active = False
++            self.budget.counts.update(scan_lower_bound_status='complete', scan_lower_bound_key=list(self.result_key),
++                                     scan_lower_bound_relation='ge')
++            return list(self.result_key)
++        except _ScanLowerUnavailable as exc:
++            self.stop(str(exc))
++            return None
++
++
++def _nearest_linear(prepared, budget, witness_pair=None, *, _search_bound=None, _lower_proof=None):
+     best = None
+     for i, left in enumerate(prepared[0]):
+         for j, right in enumerate(prepared[1]):
+@@ -456,6 +620,8 @@
+                 budget.tick('aabb_bound_tests')
+                 if _aabb_exceeds_best(left[4], right[4], limit):
+                     budget.counts['aabb_pruned_pairs'] += 1
++                    if _lower_proof is not None:
++                        _lower_proof.aabb(left[4], right[4])
+                     continue
+             candidate = _nearest_pair(left, right, best, budget)
+             if (candidate is not None and (best is not None or _search_bound is None
+@@ -463,6 +629,11 @@
+                 if witness_pair is not None and candidate is not best:
+                     witness_pair[:] = (i, j)
+                 best = candidate
++                if _lower_proof is not None:
++                    _lower_proof.stop('positive_hit')
++                    _lower_proof = None
++            elif _lower_proof is not None:
++                _lower_proof.exact_leaf(candidate)
+             if best is not None and best[0] == 0:
+                 return best
+     return best
+@@ -493,7 +664,7 @@
+     return _scratch(sum(gap*gap for gap in gaps))
+ 
+ 
+-def _nearest_tree(prepared, roots, budget, witness_pair=None, *, _search_bound=None):
++def _nearest_tree(prepared, roots, budget, witness_pair=None, *, _search_bound=None, _lower_proof=None):
+     largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
+         zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
+     # One common priority scale protects extreme inputs. Safe pruning below
+@@ -517,6 +688,8 @@
+             budget.tick('aabb_bound_tests')
+             if _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), limit):
+                 budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
++                if _lower_proof is not None:
++                    _lower_proof.aabb(tuple(zip(left[0], left[1])), tuple(zip(right[0], right[1])), left[2]*right[2], 'node_aabb')
+                 continue
+         if left[3] is not None and right[3] is not None:
+             for i in left[3]:
+@@ -530,18 +703,27 @@
+                         budget.tick('aabb_bound_tests')
+                         if _aabb_exceeds_best(a[4], b[4], limit):
+                             budget.counts['aabb_pruned_pairs'] += 1
++                            if _lower_proof is not None:
++                                _lower_proof.aabb(a[4], b[4])
+                             continue
+                         pruned,planes = _triangle_plane_bounds(a,b,limit,budget)
+                         if pruned:
+                             budget.counts['plane_pruned_pairs'] += 1
++                            if _lower_proof is not None:
++                                _lower_proof.plane(a, b, planes)
+                             continue
+                     pair = (i,j)
+                     candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
+                                               budget,planes)
+                     if (candidate is None or (best is None and _search_bound is not None
+                             and candidate[0] * _search_bound[1] > _search_bound[0] * candidate[1])):
++                        if _lower_proof is not None:
++                            _lower_proof.exact_leaf(candidate)
+                         continue
+                     if best is None:
++                        if _lower_proof is not None:
++                            _lower_proof.stop('positive_hit')
++                            _lower_proof = None
+                         best,best_pair = candidate,pair
+                     else:
+                         comparison = candidate[0]*best[1]-best[0]*candidate[1]
+@@ -558,9 +740,9 @@
+     return best
+ 
+ 
+-def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None, _search_bound=None):
++def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None, _search_bound=None, _lower_proof=None):
+     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
+-        return _nearest_linear(prepared, budget, witness_pair, _search_bound=_search_bound)
++        return _nearest_linear(prepared, budget, witness_pair, _search_bound=_search_bound, _lower_proof=_lower_proof)
+     if prepared_trees is None:
+         roots = _distance_roots(prepared,budget,holder=prepared_holder)
+     else:
+@@ -568,7 +750,7 @@
+         budget.counts['shared_trees'] = True
+         if prepared_holder is not None:
+             prepared_holder['trees'] = prepared_trees
+-    return _nearest_tree(prepared, roots, budget, witness_pair, _search_bound=_search_bound)
++    return _nearest_tree(prepared, roots, budget, witness_pair, _search_bound=_search_bound, _lower_proof=_lower_proof)
+ 
+ 
+ def _witness(descriptor):
+@@ -830,6 +1012,8 @@
+                 search_bound = (squared.numerator, squared.denominator)
+             except _DomainError as bound_error:
+                 budget.counts['scan_bound_fallback'] = str(bound_error)
++        lower_proof = (_ScanLowerProof(search_bound, budget, factor, len(prepared[0])*len(prepared[1]))
++                       if search_bound is not None else None)
+         if contact is None:
+             trees = None
+             if (_prepared_pair is not None and type(_prepared_trees) is dict
+@@ -839,12 +1023,13 @@
+                 trees = _prepared_trees
+             answer = _nearest(prepared, budget, prepared_trees=trees,
+                               prepared_holder=_prepared_holder, witness_pair=witness_pair,
+-                              _search_bound=search_bound)
++                              _search_bound=search_bound, _lower_proof=lower_proof)
+             if answer is None:
+                 if scan_key is None:
+                     raise ArithmeticError('Unbounded surface query found no source witness')
+                 checkpoint('surface_proximity_publish')
+-                negative = _SurfaceScanNegative(scan_key, budget.counts)
++                lower_key = lower_proof.finish() if lower_proof is not None else None
++                negative = _SurfaceScanNegative(scan_key, budget.counts, lower_key=lower_key)
+                 checkpoint('surface_proximity_complete')
+                 return negative
+             numerator, denominator, descriptor = answer
+--- a/human_eye_plugin/scene_cache.py
++++ b/human_eye_plugin/scene_cache.py
+@@ -466,14 +466,20 @@
+             if cached is not None:
+                 decoded = _decode(cached[0])
+                 negative = _SurfaceScanNegative._from_cache(decoded)
+-                usable = (negative is None or (dependency_bound and _surface_scan_threshold_key is not None
+-                    and _compare_distance_keys(_surface_scan_threshold_key, negative.threshold_key, proof_checkpoint) <= 0))
++                negative_kind = (negative._exclusion_kind(_surface_scan_threshold_key, proof_checkpoint)
++                    if negative is not None and dependency_bound and _surface_scan_threshold_key is not None else None)
++                usable = negative is None or negative_kind is not None
+                 if usable:
+                     self._measurements.move_to_end(key)
+                     self._hits += 1
+                     self._estimated_saved_ms += cached[1]
+                     if negative is not None and _diagnostics is not None:
+                         _diagnostics['surface_negative_cache_hit'] = True
++                        _diagnostics['surface_lower_bound_cache_hit'] = negative_kind == 'lower_bound'
++                        _diagnostics['surface_negative_threshold_key'] = list(negative.threshold_key)
++                        if negative.lower_key is not None:
++                            _diagnostics['surface_lower_bound_key'] = list(negative.lower_key)
++                            _diagnostics['surface_lower_bound_relation'] = 'ge'
+                     return (negative if negative is not None else decoded), True
+             self._misses += 1
+             if before_compute is not None:
+@@ -486,6 +492,9 @@
+             is_negative = type(value) is _SurfaceScanNegative
+             if is_negative and (not _surface_scan or _surface_scan_threshold_key is None):
+                 raise ValueError('Private negative proof requested as measured distance')
++            if is_negative and value.lower_key is not None and _diagnostics is not None:
++                _diagnostics.update(surface_lower_bound_issued=True, surface_lower_bound_key=list(value.lower_key),
++                    surface_lower_bound_relation='ge', surface_negative_threshold_key=list(value.threshold_key))
+             encoded = _encode(value._cache_payload() if is_negative else value)
+             cacheable = (dependency_bound and is_negative
+                 and tuple(_surface_scan_threshold_key) == value.threshold_key) or (
+--- a/human_eye_plugin/surface_scan.py
++++ b/human_eye_plugin/surface_scan.py
+@@ -139,7 +139,7 @@
+ 
+ def _threshold_state(measured, threshold_key, checkpoint):
+     if type(measured) is _SurfaceScanNegative:
+-        if _compare_distance_keys(threshold_key, measured.threshold_key, checkpoint) <= 0:
++        if measured._exclusion_kind(threshold_key, checkpoint) is not None:
+             return False, None
+         return None, 'surface_scan_negative_threshold_insufficient'
+     if measured.get('measurement_valid') is not True:
+@@ -154,7 +154,7 @@
+ 
+ def _summary(measured):
+     if type(measured) is _SurfaceScanNegative:
+-        return _SurfaceScanNegative(measured.threshold_key)
++        return _SurfaceScanNegative(measured.threshold_key, lower_key=measured.lower_key)
+     fields = ('measurement_valid', 'distance_m', '_exact_distance_sq', 'point_a_world',
+               'point_b_world', 'witness_status', 'witness_reason', 'method')
+     return {key: copy.deepcopy(measured[key]) for key in fields if key in measured}
+@@ -285,6 +285,9 @@
+                     if type(measured) is _SurfaceScanNegative:
+                         entry['negative_certificate'] = True
+                         entry['negative_threshold_sq_key'] = list(measured.threshold_key)
++                        if measured.lower_key is not None:
++                            entry['lower_bound_sq_key'] = list(measured.lower_key)
++                            entry['lower_bound_relation'] = 'ge'
+                     else:
+                         entry['distance_m'] = measured['distance_m']
+                     if match:
