@@ -16,12 +16,16 @@ def require(value,reason):
 
 def encoded(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=True,allow_nan=False).encode()
 def digest(value):return hashlib.sha256(encoded(value)).hexdigest()
-def sub(a,b):return tuple(x-y for x,y in zip(a,b))
-def add(a,b):return tuple(x+y for x,y in zip(a,b))
-def mul(a,t):return tuple(x*t for x in a)
-def dot(a,b):return sum(x*y for x,y in zip(a,b))
+def sub(a,b):return (a[0]-b[0],a[1]-b[1],a[2]-b[2])
+def add(a,b):return (a[0]+b[0],a[1]+b[1],a[2]+b[2])
+def mul(a,t):return (a[0]*t,a[1]*t,a[2]*t)
+def dot(a,b):return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
 def cross(a,b):return (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])
-def normal(t):return cross(sub(t[1],t[0]),sub(t[2],t[0]))
+def normal(t):
+    p0,p1,p2=t
+    d1x,d1y,d1z=p1[0]-p0[0],p1[1]-p0[1],p1[2]-p0[2]
+    d2x,d2y,d2z=p2[0]-p0[0],p2[1]-p0[1],p2[2]-p0[2]
+    return (d1y*d2z-d1z*d2y,d1z*d2x-d1x*d2z,d1x*d2y-d1y*d2x)
 def orient(a,b,c,axes):
     x,y=axes;return (b[x]-a[x])*(c[y]-a[y])-(b[y]-a[y])*(c[x]-a[x])
 
@@ -50,12 +54,24 @@ def plane_slice(t,dist):
     return list(dict.fromkeys(points))
 
 
-def intersection(a,b,budget):
-    na,nb=normal(a),normal(b);require(any(na) and any(nb),'degenerate_triangle')
-    da=[dot(na,sub(p,a[0])) for p in b];db=[dot(nb,sub(p,b[0])) for p in a]
-    if all(v>0 for v in da) or all(v<0 for v in da) or all(v>0 for v in db) or all(v<0 for v in db):return []
+def intersection(a,b,budget,*,normals=None):
+    if normals is None:
+        na,nb=normal(a),normal(b)
+    else:
+        na,nb=normals
+    require(any(na) and any(nb),'degenerate_triangle')
+    a0=a[0];nax,nay,naz=na;a0x,a0y,a0z=a0
+    da=((b[0][0]-a0x)*nax+(b[0][1]-a0y)*nay+(b[0][2]-a0z)*naz,
+        (b[1][0]-a0x)*nax+(b[1][1]-a0y)*nay+(b[1][2]-a0z)*naz,
+        (b[2][0]-a0x)*nax+(b[2][1]-a0y)*nay+(b[2][2]-a0z)*naz)
+    if (da[0]>0 and da[1]>0 and da[2]>0) or (da[0]<0 and da[1]<0 and da[2]<0):return []
+    b0=b[0];nbx,nby,nbz=nb;b0x,b0y,b0z=b0
+    db=((a[0][0]-b0x)*nbx+(a[0][1]-b0y)*nby+(a[0][2]-b0z)*nbz,
+        (a[1][0]-b0x)*nbx+(a[1][1]-b0y)*nby+(a[1][2]-b0z)*nbz,
+        (a[2][0]-b0x)*nbx+(a[2][1]-b0y)*nby+(a[2][2]-b0z)*nbz)
+    if (db[0]>0 and db[1]>0 and db[2]>0) or (db[0]<0 and db[1]<0 and db[2]<0):return []
     axis=cross(na,nb)
-    if not any(axis):return clip_coplanar(a,b,na,budget) if all(d==0 for d in da) else []
+    if not any(axis):return clip_coplanar(a,b,na,budget) if not any(da) else []
     pa,pb=plane_slice(a,db),plane_slice(b,da)
     if not pa or not pb:return []
     k=max(range(3),key=lambda k:abs(axis[k]));pa.sort(key=lambda p:p[k]);pb.sort(key=lambda p:p[k])
@@ -119,15 +135,174 @@ def validate_tessellation(raw,triangles,polygons,budget):
     require(counts==[len(p)-2 for p in raw['polygons']],'tessellation_coverage')
 
 
+_SAH_BINS = 12
+_SAH_MIN_N = 12
+_SAH_MAX_DEPTH = 20
+
+
+def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
+    n = len(ids)
+    budget.consume(1 + n, 'surface_bvh_build')
+    if n == 1:
+        r = flat_bounds[ids[0]]
+        return ((r[0], r[1], r[2]), (r[3], r[4], r[5]), 1, ids, None, None)
+    if n == 2 and leaf_size >= 2:
+        r0, r1 = flat_bounds[ids[0]], flat_bounds[ids[1]]
+        return (
+            (r0[0] if r0[0] <= r1[0] else r1[0], r0[1] if r0[1] <= r1[1] else r1[1], r0[2] if r0[2] <= r1[2] else r1[2]),
+            (r0[3] if r0[3] >= r1[3] else r1[3], r0[4] if r0[4] >= r1[4] else r1[4], r0[5] if r0[5] >= r1[5] else r1[5]),
+            2, ids, None, None,
+        )
+    first = flat_bounds[ids[0]]
+    lx, ly, lz, hx, hy, hz = first[0], first[1], first[2], first[3], first[4], first[5]
+    for idx in ids[1:]:
+        row = flat_bounds[idx]
+        if row[0] < lx: lx = row[0]
+        if row[1] < ly: ly = row[1]
+        if row[2] < lz: lz = row[2]
+        if row[3] > hx: hx = row[3]
+        if row[4] > hy: hy = row[4]
+        if row[5] > hz: hz = row[5]
+    lo = (lx, ly, lz)
+    hi = (hx, hy, hz)
+    if n <= leaf_size:
+        return (lo, hi, n, ids, None, None)
+    if n > _SAH_MIN_N and depth < _SAH_MAX_DEPTH:
+        c0x = c1x = first[6]
+        c0y = c1y = first[7]
+        c0z = c1z = first[8]
+        for idx in ids[1:]:
+            row = flat_bounds[idx]
+            cx, cy, cz = row[6], row[7], row[8]
+            if cx < c0x: c0x = cx
+            elif cx > c1x: c1x = cx
+            if cy < c0y: c0y = cy
+            elif cy > c1y: c1y = cy
+            if cz < c0z: c0z = cz
+            elif cz > c1z: c1z = cz
+        best_cost = None
+        best_axis = -1
+        best_split = 0
+        best_cmin = 0
+        best_cspan = 1
+        min_side = max(1, n >> 4)
+        cbounds = ((c0x, c1x), (c0y, c1y), (c0z, c1z))
+        for axis in (0, 1, 2):
+            cmin, cmax = cbounds[axis]
+            if cmax <= cmin:
+                continue
+            cspan = cmax - cmin + 1
+            bcnt = [0] * _SAH_BINS
+            blx = [0] * _SAH_BINS
+            bly = [0] * _SAH_BINS
+            blz = [0] * _SAH_BINS
+            bhx = [0] * _SAH_BINS
+            bhy = [0] * _SAH_BINS
+            bhz = [0] * _SAH_BINS
+            ck = 6 + axis
+            for idx in ids:
+                row = flat_bounds[idx]
+                b = ((row[ck] - cmin) * _SAH_BINS) // cspan
+                c = bcnt[b]
+                if c == 0:
+                    blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b] = row[0], row[1], row[2], row[3], row[4], row[5]
+                else:
+                    if row[0] < blx[b]: blx[b] = row[0]
+                    if row[1] < bly[b]: bly[b] = row[1]
+                    if row[2] < blz[b]: blz[b] = row[2]
+                    if row[3] > bhx[b]: bhx[b] = row[3]
+                    if row[4] > bhy[b]: bhy[b] = row[4]
+                    if row[5] > bhz[b]: bhz[b] = row[5]
+                bcnt[b] = c + 1
+            right_area = [0] * _SAH_BINS
+            right_cnt = [0] * _SAH_BINS
+            rc = 0
+            has_r = False
+            rx0 = ry0 = rz0 = rx1 = ry1 = rz1 = 0
+            for b in range(_SAH_BINS - 1, 0, -1):
+                cnt = bcnt[b]
+                if cnt:
+                    rc += cnt
+                    if not has_r:
+                        rx0, ry0, rz0, rx1, ry1, rz1 = blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b]
+                        has_r = True
+                    else:
+                        if blx[b] < rx0: rx0 = blx[b]
+                        if bly[b] < ry0: ry0 = bly[b]
+                        if blz[b] < rz0: rz0 = blz[b]
+                        if bhx[b] > rx1: rx1 = bhx[b]
+                        if bhy[b] > ry1: ry1 = bhy[b]
+                        if bhz[b] > rz1: rz1 = bhz[b]
+                right_cnt[b - 1] = rc
+                if has_r:
+                    dx, dy, dz = rx1 - rx0, ry1 - ry0, rz1 - rz0
+                    right_area[b - 1] = dx * dy + dy * dz + dz * dx
+            lc = 0
+            has_l = False
+            lx0 = ly0 = lz0 = lx1 = ly1 = lz1 = 0
+            for b in range(_SAH_BINS - 1):
+                cnt = bcnt[b]
+                if cnt:
+                    lc += cnt
+                    if not has_l:
+                        lx0, ly0, lz0, lx1, ly1, lz1 = blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b]
+                        has_l = True
+                    else:
+                        if blx[b] < lx0: lx0 = blx[b]
+                        if bly[b] < ly0: ly0 = bly[b]
+                        if blz[b] < lz0: lz0 = blz[b]
+                        if bhx[b] > lx1: lx1 = bhx[b]
+                        if bhy[b] > ly1: ly1 = bhy[b]
+                        if bhz[b] > lz1: lz1 = bhz[b]
+                rc_s = right_cnt[b]
+                if lc >= min_side and rc_s >= min_side:
+                    dx, dy, dz = lx1 - lx0, ly1 - ly0, lz1 - lz0
+                    larea = dx * dy + dy * dz + dz * dx
+                    key = (lc * larea + rc_s * right_area[b], abs(lc - rc_s), axis, b + 1)
+                    if best_cost is None or key < best_cost:
+                        best_cost = key
+                        best_axis = axis
+                        best_split = b + 1
+                        best_cmin = cmin
+                        best_cspan = cspan
+        if best_axis >= 0:
+            ck = 6 + best_axis
+            left_ids = []
+            right_ids = []
+            for idx in ids:
+                if ((flat_bounds[idx][ck] - best_cmin) * _SAH_BINS) // best_cspan < best_split:
+                    left_ids.append(idx)
+                else:
+                    right_ids.append(idx)
+            if left_ids and right_ids:
+                return (
+                    lo, hi, n, None,
+                    _build_sah_bvh(flat_bounds, budget, left_ids, leaf_size, depth + 1),
+                    _build_sah_bvh(flat_bounds, budget, right_ids, leaf_size, depth + 1),
+                )
+    dx, dy, dz = hx - lx, hy - ly, hz - lz
+    axis = 0 if dx >= dy and dx >= dz else (1 if dy >= dz else 2)
+    ck = 6 + axis
+    ids.sort(key=lambda idx: (flat_bounds[idx][ck], idx))
+    mid = n >> 1
+    return (
+        lo, hi, n, None,
+        _build_sah_bvh(flat_bounds, budget, ids[:mid], leaf_size, depth + 1),
+        _build_sah_bvh(flat_bounds, budget, ids[mid:], leaf_size, depth + 1),
+    )
+
+
 def _bvh(bounds,budget,ids=None,*,leaf_size=4):
-    ids=list(range(len(bounds))) if ids is None else ids
-    budget.consume(1+len(ids),'surface_bvh_build')
-    lo=tuple(min(bounds[i][0][k] for i in ids) for k in range(3))
-    hi=tuple(max(bounds[i][1][k] for i in ids) for k in range(3))
-    if len(ids)<=leaf_size:return (lo,hi,len(ids),ids,None,None)
-    axis=max(range(3),key=lambda k:hi[k]-lo[k]);ids.sort(key=lambda i:(bounds[i][0][axis]+bounds[i][1][axis],i));mid=len(ids)//2
-    return (lo,hi,len(ids),None,_bvh(bounds,budget,ids[:mid],leaf_size=leaf_size),
-            _bvh(bounds,budget,ids[mid:],leaf_size=leaf_size))
+    ids=list(range(len(bounds))) if ids is None else list(ids)
+    if not ids:
+        budget.consume(1,'surface_bvh_build')
+        return ((0,0,0),(0,0,0),0,[],None,None)
+    flat_bounds=[None]*len(bounds)
+    for row_idx,row in enumerate(bounds):
+        a,b=row
+        ax,ay,az=a;bx,by,bz=b
+        flat_bounds[row_idx]=(ax,ay,az,bx,by,bz,ax+bx,ay+by,az+bz)
+    return _build_sah_bvh(flat_bounds,budget,ids,leaf_size,0)
 
 
 def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None,node_exclusion=None):
@@ -142,22 +317,30 @@ def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None,node_
     if roots is None:
         root=_bvh(bounds,budget);roots=(root,root if other_bounds is None else _bvh(other,budget))
     pending=[roots]
+    track_reused='leaf_bounds_reused' in stats
     while pending:
         budget.consume(1,'surface_bvh_node_pair');a,b=pending.pop();stats['node_pair_visits']+=1
-        if any(a[1][k]+pad<b[0][k] or b[1][k]+pad<a[0][k] for k in range(3)):
+        alo,ahi=a[0],a[1];blo,bhi=b[0],b[1]
+        if (ahi[0]+pad<blo[0] or bhi[0]+pad<alo[0]
+                or ahi[1]+pad<blo[1] or bhi[1]+pad<alo[1]
+                or ahi[2]+pad<blo[2] or bhi[2]+pad<alo[2]):
             stats['aabb_pruned_pairs']+=a[2]*(a[2]-1)//2 if a is b else a[2]*b[2];continue
         if node_exclusion is not None and a is not b and node_exclusion(a,b):continue
         if a[3] is not None and b[3] is not None:
             for i in a[3]:
+                bi0,bi1=bounds[i]
                 for j in b[3]:
                     if a is b and i>=j:continue
                     budget.consume(1,'surface_bvh_leaf_pair');stats['leaf_pair_visits']+=1
-                    singleton = a[2] == b[2] == 1
-                    if singleton:
-                        if 'leaf_bounds_reused' in stats:
-                            stats['leaf_bounds_reused'] += 1
-                    elif any(bounds[i][1][k]+pad<other[j][0][k] or other[j][1][k]+pad<bounds[i][0][k] for k in range(3)):
-                        stats['aabb_pruned_pairs']+=1;continue
+                    if a[2]==1 and b[2]==1:
+                        if track_reused:
+                            stats['leaf_bounds_reused']+=1
+                    else:
+                        oj0,oj1=other[j]
+                        if (bi1[0]+pad<oj0[0] or oj1[0]+pad<bi0[0]
+                                or bi1[1]+pad<oj0[1] or oj1[1]+pad<bi0[1]
+                                or bi1[2]+pad<oj0[2] or oj1[2]+pad<bi0[2]):
+                            stats['aabb_pruned_pairs']+=1;continue
                     yield tuple(sorted((i,j))) if other_bounds is None else (i,j)
         elif a is b:pending.extend(((a[4],a[4]),(a[4],a[5]),(a[5],a[5])))
         elif b[3] is not None or a[3] is None and a[2]>=b[2]:pending.extend(((a[4],b),(a[5],b)))
@@ -169,26 +352,57 @@ def analyze(prepared,triangles,triangle_polygons,*,budget,near_m=0.00001):
     raw=prepared['raw'];validate_tessellation(raw,triangles,triangle_polygons,budget)
     vertices,factor=world_integers(raw,budget);tolerance=Q(near_m)*factor
     pad=(tolerance.numerator+tolerance.denominator-1)//tolerance.denominator
-    bounds=[];bad=[];points=[]
+    bounds=[];bad=[];points=[];normals=[]
     for i,tri in enumerate(triangles):
         budget.consume(1,'surface_bounds');t=tuple(vertices[j] for j in tri);points.append(t)
-        if not any(normal(t)):bad.append(i)
-        bounds.append((tuple(min(p[k] for p in t) for k in range(3)),tuple(max(p[k] for p in t) for k in range(3))))
+        n=normal(t);normals.append(n)
+        if not any(n):bad.append(i)
+        p0,p1,p2=t
+        bounds.append(((min(p0[0],p1[0],p2[0]),min(p0[1],p1[1],p2[1]),min(p0[2],p1[2],p2[2])),
+                       (max(p0[0],p1[0],p2[0]),max(p0[1],p1[1],p2[1]),max(p0[2],p1[2],p2[2]))))
     retained=[];total=0;tested=0;completed=True;reason=None
     stats=dict(node_pair_visits=0,leaf_pair_visits=0,aabb_pruned_pairs=0)
     priorities={'transverse_crossing':0,'coplanar_overlap':1,'near_parallel':2,'boundary_contact':3}
     counts={k:0 for k in priorities}
     degenerate=set(bad);unknown_degenerate_pairs=0
+    tri_sets=[frozenset(tri) for tri in triangles]
     try:
         for j,i in candidate_pairs(bounds,pad,budget,stats):
                 if tested>=LIMITS['pair_tests']:raise ValueError('surface_pair_test_budget')
                 tested+=1;budget.consume(8,'surface_pair')
                 if i in degenerate or j in degenerate:unknown_degenerate_pairs+=1;continue
-                a,b=points[j],points[i];shared=sorted(set(triangles[j])&set(triangles[i]))
-                witness=intersection(a,b,budget);kind=None;gap=None
+                a,b=points[j],points[i]
+                tj_set=tri_sets[j];ti_set=tri_sets[i]
+                shared=sorted(tj_set & ti_set)
+                na,nb=normals[j],normals[i]
+                if len(shared) in (1,2):
+                    # Shared simplex half-space fast certificate: if one triangle stays
+                    # on a closed side of the other's plane and hits it only at shared IDs,
+                    # the contact equals that legal simplex (and nonparallel excludes tolerance).
+                    a0x,a0y,a0z=a[0];nax,nay,naz=na
+                    da0=(b[0][0]-a0x)*nax+(b[0][1]-a0y)*nay+(b[0][2]-a0z)*naz
+                    da1=(b[1][0]-a0x)*nax+(b[1][1]-a0y)*nay+(b[1][2]-a0z)*naz
+                    da2=(b[2][0]-a0x)*nax+(b[2][1]-a0y)*nay+(b[2][2]-a0z)*naz
+                    if (da0>=0 and da1>=0 and da2>=0) or (da0<=0 and da1<=0 and da2<=0):
+                        if da0 or da1 or da2:
+                            if ((not da0 or triangles[i][0] in shared)
+                                    and (not da1 or triangles[i][1] in shared)
+                                    and (not da2 or triangles[i][2] in shared)):
+                                continue
+                    b0x,b0y,b0z=b[0];nbx,nby,nbz=nb
+                    db0=(a[0][0]-b0x)*nbx+(a[0][1]-b0y)*nby+(a[0][2]-b0z)*nbz
+                    db1=(a[1][0]-b0x)*nbx+(a[1][1]-b0y)*nby+(a[1][2]-b0z)*nbz
+                    db2=(a[2][0]-b0x)*nbx+(a[2][1]-b0y)*nby+(a[2][2]-b0z)*nbz
+                    if (db0>=0 and db1>=0 and db2>=0) or (db0<=0 and db1<=0 and db2<=0):
+                        if db0 or db1 or db2:
+                            if ((not db0 or triangles[j][0] in shared)
+                                    and (not db1 or triangles[j][1] in shared)
+                                    and (not db2 or triangles[j][2] in shared)):
+                                continue
+                witness=intersection(a,b,budget,normals=(na,nb));kind=None;gap=None
                 if witness and not legal_simplex(witness,shared,vertices):kind='contact_'+dimension(witness)
                 if not witness and tolerance>0:
-                    na,nb=normal(a),normal(b);delta=dot(na,sub(b[0],a[0]));nn=dot(na,na)
+                    delta=dot(na,sub(b[0],a[0]));nn=dot(na,na)
                     if not any(cross(na,nb)) and 0<delta*delta<=tolerance*tolerance*nn:
                         projected=[sub(p,mul(na,Q(delta,nn))) for p in b]
                         overlap=clip_coplanar(a,projected,na,budget)
@@ -240,7 +454,29 @@ class _ClosedDomain(ValueError):
     pass
 
 
+_CLOSED_STAGES = {
+    name: 'closed_solid_' + name for name in (
+        'surface_bvh_build', 'surface_bvh_node_pair', 'surface_bvh_leaf_pair',
+        'topology_face', 'topology_edge', 'topology_connected',
+        'topology_vertex_link', 'oriented_volume', 'world_bound_faces',
+        'world_tree_builds', 'candidate_frame_builds', 'candidate_frame_coefficients',
+        'candidate_projection_tests', 'candidate_bound_faces', 'candidate_tree_builds',
+        'candidate_frame_fallbacks', 'cone_orientation_tests', 'cone_metadata_merges',
+        'cone_support_tests', 'cone_boundary_id_visits', 'cone_node_pair_checks',
+        'cone_anchor_tests', 'cone_separation_tests', 'simplex_node_certificates',
+        'cheap_pair_tests', 'plane_side_tests', 'strict_plane_rejections',
+        'shared_simplex_tests', 'shared_simplex_certificates', 'shared_edge_tests',
+        'shared_edge_certificates', 'shared_index_tests', 'self_pair_tests',
+        'cross_pair_tests', 'point_bvh', 'ray_bvh', 'point_queries',
+        'ray_attempts', 'ray_tests', 'cone_metadata_nodes', 'cone_face_tests',
+        'cone_vector_preparations',
+    )
+}
+
+
 class _ClosedWork:
+    __slots__ = ('checkpoint', 'exact', 'counts')
+
     def __init__(self, checkpoint, diagnostics, exact):
         self.checkpoint=checkpoint;self.exact=exact
         self.counts=diagnostics if diagnostics is not None else {}
@@ -261,13 +497,23 @@ class _ClosedWork:
             simplex_node_certificates=0,simplex_covered_pairs=0,candidate_frame='world')
 
     def consume(self, amount, stage):
-        self.checkpoint('closed_solid_'+stage)
-        if self.counts['work_units']+amount>CLOSED_SOLID_MAX_WORK:
+        cp=_CLOSED_STAGES.get(stage)
+        self.checkpoint(cp if cp is not None else 'closed_solid_'+stage)
+        counts=self.counts
+        new_work=counts['work_units']+amount
+        if new_work>CLOSED_SOLID_MAX_WORK:
             raise _ClosedDomain('closed_solid_work_budget')
-        self.counts['work_units']+=amount
+        counts['work_units']=new_work
 
     def tick(self, kind, amount=1):
-        self.consume(amount,kind);self.counts[kind]=self.counts.get(kind,0)+amount
+        cp=_CLOSED_STAGES.get(kind)
+        self.checkpoint(cp if cp is not None else 'closed_solid_'+kind)
+        counts=self.counts
+        new_work=counts['work_units']+amount
+        if new_work>CLOSED_SOLID_MAX_WORK:
+            raise _ClosedDomain('closed_solid_work_budget')
+        counts['work_units']=new_work
+        counts[kind]=counts.get(kind,0)+amount
 
     def pair(self, kind):
         self.consume(1,kind)
@@ -504,11 +750,17 @@ def _closed_node_simplex(a, b, metadata, projected, budget):
     then give exactly the common source point or edge in three dimensions.
     """
     budget.tick('cone_node_pair_checks')
-    left=metadata.get(id(a),{});right=metadata.get(id(b),{})
-    for anchor,first in left.items():
+    left=metadata.get(id(a));right=metadata.get(id(b))
+    if not left or not right:return False
+    if len(right)<len(left):
+        iter_items=right.items();other=left;swapped=True
+    else:
+        iter_items=left.items();other=right;swapped=False
+    for anchor,cone_iter in iter_items:
+        if anchor not in other:continue
         budget.tick('cone_anchor_tests')
-        if anchor not in right:continue
-        second=right[anchor]
+        cone_other=other[anchor]
+        first,second=(cone_other,cone_iter) if swapped else (cone_iter,cone_other)
         try:
             cross=_closed_cone_cross_cache(first,second,budget)
             lines=((first['lo'],1),(first['hi'],-1),
@@ -517,8 +769,8 @@ def _closed_node_simplex(a, b, metadata, projected, budget):
                 budget.tick('cone_separation_tests')
                 first_sides=(cross(line,first['lo']),cross(line,first['hi']))
                 second_sides=(cross(line,second['lo']),cross(line,second['hi']))
-                if any(value*sign<0 for value in first_sides):continue
-                if any(value*sign>0 for value in second_sides):continue
+                if first_sides[0]*sign<0 or first_sides[1]*sign<0:continue
+                if second_sides[0]*sign>0 or second_sides[1]*sign>0:continue
                 budget.tick('cone_boundary_id_visits')
                 online={anchor}
                 for cone,sides in ((first,first_sides),(second,second_sides)):
@@ -537,26 +789,30 @@ def _closed_node_simplex(a, b, metadata, projected, budget):
     return False
 
 
-def _closed_precheck(a, b, budget, *, shared=(), faces=None):
+def _closed_precheck(a, b, budget, *, shared=(), faces=None, fast_ints=False):
     """Certify strict plane separation or a legal shared simplex before slicing."""
     exact = budget.exact
     budget.tick('cheap_pair_tests')
     projections = [None, None]
     for side, (triangle, other) in enumerate(((a,b), (b,a))):
-        distances = exact._plane_distances(other[0], triangle[0][0], triangle[1], budget)
+        distances = exact._plane_distances(other[0], triangle[0][0], triangle[1], budget, fast_ints=fast_ints)
         projections[side] = distances
         budget.tick('plane_side_tests')
-        if all(value > 0 for value in distances) or all(value < 0 for value in distances):
+        d0, d1, d2 = distances
+        if (d0 > 0 and d1 > 0 and d2 > 0) or (d0 < 0 and d1 < 0 and d2 < 0):
             budget.tick('strict_plane_rejections')
             return True, tuple(projections)
-        if shared and (all(value >= 0 for value in distances) or all(value <= 0 for value in distances)):
+        if shared and ((d0 >= 0 and d1 >= 0 and d2 >= 0) or (d0 <= 0 and d1 <= 0 and d2 <= 0)):
             budget.tick('shared_simplex_tests')
             other_indices = faces[1-side]
-            zeros = {other_indices[index] for index,value in enumerate(distances) if value == 0}
+            zeros = set()
+            if d0 == 0: zeros.add(other_indices[0])
+            if d1 == 0: zeros.add(other_indices[1])
+            if d2 == 0: zeros.add(other_indices[2])
             if zeros and zeros.issubset(shared):
                 budget.tick('shared_simplex_certificates')
                 return True, tuple(projections)
-    if (len(shared) == 2 and all(value == 0 for row in projections for value in row)):
+    if (len(shared) == 2 and not any(projections[0]) and not any(projections[1])):
         # In the common plane, a nonzero normal component gives an injective
         # two-coordinate projection. Opposite open sides of the common edge
         # have exactly that edge in common. Same-side overlap is unresolved.
@@ -591,6 +847,9 @@ def _closed_validate_embedded(shell,budget):
     e=budget.exact
     bounds = shell.get('candidate_bounds', shell['bounds'])
     root = shell.get('candidate_root', shell['root'])
+    limit = e._FAST_COORD_LIMIT
+    fast_ints = (all(-limit < v < limit for v in shell['root'][0])
+                 and all(-limit < v < limit for v in shell['root'][1]))
     metadata=_closed_cone_metadata(shell,budget)
     exclusion=None
     if metadata:
@@ -600,11 +859,11 @@ def _closed_validate_embedded(shell,budget):
         faces = (shell['faces'][i], shell['faces'][j])
         budget.tick('shared_index_tests')
         shared = sorted(set(faces[0]) & set(faces[1]))
-        excluded, projections = _closed_precheck(a,b,budget,shared=shared,faces=faces)
+        excluded, projections = _closed_precheck(a,b,budget,shared=shared,faces=faces,fast_ints=fast_ints)
         if excluded:
             continue
         budget.pair('self_pair_tests')
-        points=e._intersection(a[0],b[0],a[1],b[1],budget,plane_distances=projections)
+        points=e._intersection_with_planes(a[0],b[0],a[1],b[1],budget,plane_distances=projections,fast_ints=fast_ints)[0] if fast_ints else e._intersection(a[0],b[0],a[1],b[1],budget,plane_distances=projections)
         if points:
             _closed_require(_closed_legal_contact(points,shared,shell['vertices'],budget),'self_intersection')
 

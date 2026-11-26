@@ -234,6 +234,7 @@ def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normali
 
     ordered = sorted(pairs, key=lambda row: (tuple(row['object_ids']) in unknown,
                                              row['lower_bound_m'], row['object_ids']))
+    mesh_cache = {}
     for row in ordered:
         checkpoint('surface_scan_pair')
         ids = tuple(row['object_ids'])
@@ -255,7 +256,8 @@ def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normali
                 try:
                     measured = _surface_pair_measurement(by_id[ids[0]], by_id[ids[1]], cache,
                         checkpoint, source=scene['source'], diagnostics=work,
-                        retain_exact_rank=True, before_compute=reserve, _surface_scan=True)
+                        retain_exact_rank=True, before_compute=reserve, _surface_scan=True,
+                        _mesh_cache=mesh_cache)
                 except _PairDeferred:
                     measured = None
                 metrics['cache_hits'] += int(work.get('surface_pair_cache_hit', False))

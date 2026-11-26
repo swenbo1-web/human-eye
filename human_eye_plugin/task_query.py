@@ -257,7 +257,7 @@ def project_task_geometry(result, meshes, request, checkpoint):
 def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
                               diagnostics, retain_exact_rank=False, prepared_pair=None,
                               boundary_contact=None, prepared_trees=None, before_compute=None,
-                              _surface_scan=False, witness_capture=None):
+                              _surface_scan=False, witness_capture=None, _mesh_cache=None):
     """Internal opt-in rank results use a distinct, fully serialized cache key."""
     diagnostics['surface_pair_count'] = 0
     diagnostics['surface_pair_cache_hit'] = False
@@ -277,6 +277,8 @@ def _surface_pair_measurement(left, right, cache, checkpoint, *, source,
             options['_boundary_contact'] = boundary_contact
         if prepared_trees is not None:
             options['_prepared_trees'] = prepared_trees
+        if _mesh_cache is not None:
+            options['_mesh_cache'] = _mesh_cache
         return measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work, **options)
     face_counts = len(left.faces), len(right.faces)
     if (sum(face_counts) > MAX_FACES
@@ -622,11 +624,13 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _norm
     metrics = {} if diagnostics is None else diagnostics
     metrics.update(pair_calls=0, kernel_calls=0, cache_hits=0, exact_rank_calls=0, pairs={})
     measurements = {}
+    mesh_cache = {}
     for oid in sorted(retained - {focal}):
         checkpoint('before_surface_nearest_pair')
         work = {}
         measurements[oid] = _surface_pair_measurement(by_id[focal], by_id[oid], cache,
-            checkpoint, source=scene['source'], diagnostics=work, retain_exact_rank=True)
+            checkpoint, source=scene['source'], diagnostics=work, retain_exact_rank=True,
+            _mesh_cache=mesh_cache)
         metrics['pair_calls'] += 1
         metrics['kernel_calls'] += work['surface_pair_count']
         metrics['cache_hits'] += int(work['surface_pair_cache_hit'])
