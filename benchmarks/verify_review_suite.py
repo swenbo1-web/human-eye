@@ -273,7 +273,7 @@ def verify_r01_fast_projection():
             "within_max_work_units": w["work_units"] <= sp.MAX_WORK_UNITS,
         }
 
-    # Verify query completes cleanly when projection defers due to tight headroom (enough for safe non-proj path)
+    # Verify query completes cleanly on Sheet(5) AND when credit-positive projection defers due to tight headroom
     sv5, sf5 = mac.sheet(5)  # 4*4*2 = 32 valid triangles
     sl = _freeze_mesh("sl", sv5, sf5)
     sr = _freeze_mesh("sr", [[p[0], p[1], p[2] + 0.05] for p in sv5], sf5)
@@ -287,13 +287,54 @@ def verify_r01_fast_projection():
     with patch.object(sp._Work, "__init__", defer_init):
         r_def = sp.measure_surface_proximity(sl, sr, NOOP, retain_exact_rank=True)
     assert r_def["measurement_valid"] is True and r_def["distance_m"] == r_safe_ref["distance_m"], (r_def.get("reason"), needed_safe, r_def["work"])
-    assert r_def["work"].get("witness_projection_budget_deferrals", 0) > 0, r_def["work"]
     assert r_def["work"]["work_units"] <= sp.MAX_WORK_UNITS
+
+    # Credit-positive tight headroom deferral: tilted 48F + far X-cluster pops last, defers 156u slab check, completes cleanly
+    ca_r, sa_r = math.cos(0.6), math.sin(0.6)
+    def _rot_d(p):
+        x, y, z = p
+        x1, z1 = ca_r * x + sa_r * z, -sa_r * x + ca_r * z
+        y2, z2 = ca_r * y - sa_r * z1, sa_r * y + ca_r * z1
+        return [x1, y2, z2]
+    dvl, dfl, dvr, dfr = [], [], [], []
+    for i_d in range(12):
+        for j_d in range(4):
+            b_d = len(dvl)
+            xd, yd = i_d * 0.4, j_d * 0.4
+            dvl.extend([_rot_d([xd, yd, 0.0]), _rot_d([xd + 0.3, yd, 0.0]), _rot_d([xd, yd + 0.3, 0.0])])
+            dfl.append([b_d, b_d + 1, b_d + 2])
+            b2_d = len(dvr)
+            dvr.extend([_rot_d([xd, yd, 0.5]), _rot_d([xd + 0.3, yd, 0.5]), _rot_d([xd, yd + 0.3, 0.5])])
+            dfr.append([b2_d, b2_d + 1, b2_d + 2])
+    dfr = list(reversed(dfr))
+    for k_d in range(12):
+        off_d = k_d * 0.02
+        b_d = len(dvl); dvl.extend([[50.0 + off_d, 0.0, 0.16], [50.01 + off_d, 0.0, 0.16], [50.0 + off_d, 0.01, 0.16]]); dfl.append([b_d, b_d + 1, b_d + 2])
+        b_d = len(dvl); dvl.extend([[53.0 + off_d, 0.0, 0.00], [53.01 + off_d, 0.0, 0.00], [53.0 + off_d, 0.01, 0.00]]); dfl.append([b_d, b_d + 1, b_d + 2])
+        b_d = len(dvr); dvr.extend([[50.0 + off_d, 0.0, 0.85], [50.01 + off_d, 0.0, 0.85], [50.0 + off_d, 0.01, 0.85]]); dfr.append([b_d, b_d + 1, b_d + 2])
+        b_d = len(dvr); dvr.extend([[53.0 + off_d, 0.0, 0.65], [53.01 + off_d, 0.0, 0.65], [53.0 + off_d, 0.01, 0.65]]); dfr.append([b_d, b_d + 1, b_d + 2])
+    def_l, def_r = _freeze_mesh("def_l", dvl, dfl), _freeze_mesh("def_r", dvr, dfr)
+    def_ref = sp.measure_surface_proximity(def_l, def_r, NOOP, retain_exact_rank=True)
+    def_on_wu = def_ref["work"]["work_units"]
+    r_def_cp = None
+    for rem_try in range(def_on_wu - 180, def_on_wu - 120):
+        def defer_cp_init(inst, cp, diag, base=sp.MAX_WORK_UNITS - rem_try):
+            orig_init(inst, cp, diag)
+            inst.counts["work_units"] = base
+        with patch.object(sp._Work, "__init__", defer_cp_init):
+            cand_def = sp.measure_surface_proximity(def_l, def_r, NOOP, retain_exact_rank=True)
+        if cand_def["measurement_valid"] and cand_def["work"].get("witness_projection_budget_deferrals", 0) > 0:
+            r_def_cp = cand_def
+            break
+    assert r_def_cp is not None, "Expected credit-positive tight headroom deferral to complete cleanly"
+    assert r_def_cp["_exact_distance_sq"] == def_ref["_exact_distance_sq"]
+    assert r_def_cp["work"]["work_units"] <= sp.MAX_WORK_UNITS
     headroom_checks["completes_with_optional_deferral"] = {
-        "measurement_valid": r_def["measurement_valid"],
-        "wp_deferrals": r_def["work"].get("witness_projection_budget_deferrals", 0),
-        "work_units": r_def["work"]["work_units"],
-        "within_max_work_units": r_def["work"]["work_units"] <= sp.MAX_WORK_UNITS,
+        "measurement_valid": r_def_cp["measurement_valid"],
+        "sheet5_valid": r_def["measurement_valid"],
+        "wp_deferrals": r_def_cp["work"].get("witness_projection_budget_deferrals", 0),
+        "work_units": r_def_cp["work"]["work_units"],
+        "within_max_work_units": r_def_cp["work"]["work_units"] <= sp.MAX_WORK_UNITS,
     }
     assert not eq_failures, eq_failures
     assert all(v["propagated"] for v in cancel_results.values()), cancel_results
@@ -704,45 +745,72 @@ def verify_r05_tie_pruning_and_subtree_oracle():
     rng.shuffle(fr_shuf)
     tie_l, tie_r = _freeze_mesh("tie_l", vl_t, fl_shuf), _freeze_mesh("tie_r", vr_t, fr_shuf)
 
-    # Also build rotated overlapping-AABB equidistant strips tilted in 3D so world AABBs overlap
-    # and _FastWitnessProjection.prunes_nodes MUST prune subtrees cleanly!
-    def rot30(p):
-        c, s = math.cos(math.radians(30)), math.sin(math.radians(30))
-        return [c * p[0] - s * p[1], s * p[0] + c * p[1], p[2]]
-    def make_diag_strips(n, gap):
+    # Also build 3D-tilted overlapping-AABB plates so world AABBs overlap completely
+    # while _FastWitnessProjection vertex slabs prune subtrees in BOTH strict and tie branches!
+    ca_t, sa_t = math.cos(0.6), math.sin(0.6)
+    def rot3d_t(p):
+        x, y, z = p
+        x1, z1 = ca_t * x + sa_t * z, -sa_t * x + ca_t * z
+        y2, z2 = ca_t * y - sa_t * z1, sa_t * y + ca_t * z1
+        return [x1, y2, z2]
+    def make_tilted_plate(nx, z_off):
         verts, faces = [], []
-        for k in range(n):
-            b = len(verts)
-            # Strip offset along diagonal (1, 1, 0) + small x extent
-            base = [[float(k), 0.0, gap], [float(k) + 0.5, 0.0, gap], [float(k), 0.5, gap]]
-            verts.extend([rot30(p) for p in base])
-            faces.append([b, b + 1, b + 2])
+        for i_t in range(nx):
+            for j_t in range(4):
+                b_t = len(verts)
+                xt, yt = i_t * 0.4, j_t * 0.4
+                verts.extend([rot3d_t([xt, yt, z_off]), rot3d_t([xt + 0.3, yt, z_off]), rot3d_t([xt, yt + 0.3, z_off])])
+                faces.append([b_t, b_t + 1, b_t + 2])
         return verts, faces
-    dv_l, df_l = make_diag_strips(36, 0.0)
-    dv_r, df_r = make_diag_strips(36, 0.25)
-    # Reverse indices on right so witness discovery starts non-canonically and pruning exercises tie + witness projection!
-    df_r_rev = list(reversed(df_r))
-    rot_l, rot_r = _freeze_mesh("rot_l", dv_l, df_l), _freeze_mesh("rot_r", dv_r, df_r_rev)
+    tv_l, tf_l = make_tilted_plate(12, 0.0)
+    tv_r, tf_r = make_tilted_plate(12, 0.5)
+    tilt_l, tilt_r = _freeze_mesh("tilt_l", tv_l, tf_l), _freeze_mesh("tilt_r", tv_r, list(reversed(tf_r)))
+    g508_objs = json.loads((ROOT / "verification/spatial_task_qualification_001/entry/run_01/ACTUAL_SNAPSHOT.json").read_bytes())["objects"]
+    g508_map = {r["name"]: r for r in g508_objs}
+    g0_l = _freeze_mesh("g0_l", g508_map["Target"]["vertices_world"], g508_map["Target"]["triangles"])
+    g0_r = _freeze_mesh("g0_r", g508_map["Peer_000"]["vertices_world"], g508_map["Peer_000"]["triangles"])
 
     pruned_audits = []
-    for label, ml, mr in (("cube192", c192_l, c192_r), ("shuffled_multi_tie_20x20", tie_l, tie_r), ("rotated_tie_36x36", rot_l, rot_r)):
-        o_d2, o_pair = _exact_mesh_sq_oracle(ml, mr)
-        pruned_nodes = []
-        orig_pn = sp._FastWitnessProjection.prunes_nodes
-        def audit_pn(self_proj, nl, nr, strict, budget, *args, **kwargs):
-            pruned = orig_pn(self_proj, nl, nr, strict, budget, *args, **kwargs)
-            if pruned:
-                pruned_nodes.append((leaf_ids(nl), leaf_ids(nr)))
-            return pruned
-        with patch.object(sp._FastWitnessProjection, "prunes_nodes", audit_pn):
-            res = sp.measure_surface_proximity(ml, mr, NOOP, retain_exact_rank=True, retain_witness_triangles=True)
-        assert _sq_key_to_fraction(res["_exact_distance_sq"]) == o_d2
-        assert res["witness_triangle_indices"] == list(o_pair), (label, res["witness_triangle_indices"], o_pair)
-        # Independently check EVERY pair of descendants inside every pruned projection subtree against oracle winner
+    for label, ml, mr, max_audit in (
+        ("cube192", c192_l, c192_r, None),
+        ("shuffled_multi_tie_20x20", tie_l, tie_r, None),
+        ("tilted_48x48_strict_and_tie", tilt_l, tilt_r, None),
+        ("g508_peer000_sampled", g0_l, g0_r, 40),
+    ):
+        pruned_events = []
+        holder = {}
+        with patch.object(sp, "_NODE_PRUNE_OBSERVER", lambda ev, lst=pruned_events: lst.append(ev)):
+            res = sp.measure_surface_proximity(ml, mr, NOOP, retain_exact_rank=True, retain_witness_triangles=True, _prepared_holder=holder)
+        factor = holder["pair"][3]
+        factor_sq = factor * factor
+        res_pair = tuple(res.get("witness_triangle_indices") or res["exact_witness_triangles"]["indices"])
+        res_d2 = _sq_key_to_fraction(res["_exact_distance_sq"])
+        if max_audit is None:
+            o_d2, o_pair = _exact_mesh_sq_oracle(ml, mr)
+            assert res_d2 == o_d2
+            assert list(res_pair) == list(o_pair), (label, res_pair, o_pair)
+        else:
+            o_d2, o_pair = res_d2, res_pair
+        # Independently check EVERY pair of descendants inside selected pruned projection subtrees + exact K04 inequality
         lv, rv = ml.vertices, mr.vertices
         lf, rf = ml.faces, mr.faces
+        sample_events = pruned_events
+        if max_audit is not None and len(pruned_events) > max_audit:
+            strict_evs = [e for e in pruned_events if e["strict"]][: max_audit // 2]
+            tie_evs = [e for e in pruned_events if not e["strict"]][: max_audit - len(strict_evs)]
+            sample_events = strict_evs + tie_evs
         checked_desc_pairs = 0
-        for lid_list, rid_list in pruned_nodes:
+        strict_count = sum(1 for e in pruned_events if e["strict"])
+        tie_count = sum(1 for e in pruned_events if not e["strict"])
+        slab_count = sum(1 for e in pruned_events if e["source"] == "vertex_slab")
+        for ev in sample_events:
+            bn, bd = ev["best"]
+            lhs = ev["gap"] * ev["gap"] * bd
+            rhs = ev["norm_sq"] * bn
+            assert (lhs > rhs) if ev["strict"] else (lhs >= rhs), (label, ev["strict"], lhs, rhs)
+            lid_list, rid_list = leaf_ids(ev["left"]), leaf_ids(ev["right"])
+            inc_d2 = Fraction(bn, bd * factor_sq)
+            inc_pair = ev["best_pair"]
             for ti in lid_list:
                 ta = [lv[k] for k in lf[ti]]
                 for tj in rid_list:
@@ -750,13 +818,21 @@ def verify_r05_tie_pruning_and_subtree_oracle():
                     d2 = _exact_tri_sq_fraction(ta, tb)
                     checked_desc_pairs += 1
                     assert not (d2 < o_d2 or (d2 == o_d2 and (ti, tj) < o_pair)), (label, ti, tj, d2, o_d2, o_pair)
+                    assert not (d2 < inc_d2 or (ev["strict"] and d2 == inc_d2) or (not ev["strict"] and d2 == inc_d2 and (ti, tj) < inc_pair)), (label, ti, tj, ev)
+        if label in ("tilted_48x48_strict_and_tie", "g508_peer000_sampled"):
+            assert strict_count > 0 and tie_count > 0 and slab_count > 0, (label, strict_count, tie_count, slab_count)
         pruned_audits.append({
             "case": label,
+            "status": "EXERCISED" if pruned_events else "NOT_EXERCISED",
             "oracle_pair": list(o_pair),
-            "solver_pair": res["witness_triangle_indices"],
+            "solver_pair": list(res_pair),
             "subtree_pruned_pairs": res["work"]["subtree_pruned_pairs"],
             "wp_pruned_pairs": res["work"].get("witness_projection_pruned_pairs", 0),
-            "wp_subtrees_exhaustively_audited": len(pruned_nodes),
+            "wp_node_pruned_pairs": len(pruned_events),
+            "wp_node_strict_count": strict_count,
+            "wp_node_tie_count": tie_count,
+            "wp_node_vertex_slab_count": slab_count,
+            "wp_subtrees_exhaustively_audited": len(sample_events),
             "wp_descendant_pairs_checked": checked_desc_pairs,
             "exact_oracle_match": True,
         })
@@ -1033,9 +1109,13 @@ def verify_assets_a01_to_a05():
     }
 
 
-def main():
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description="Run R01-R07 and A01-A05 correctness suites.")
+    parser.add_argument("--output", type=Path, default=None, help="Optional path to write JSON report (preserves frozen baseline JSON when omitted).")
+    args = parser.parse_args(argv)
     report = {
-        "schema": "m3-bvh-review-verification-v1",
+        "schema": "m3-bvh-review-verification-v2",
         "r01_fast_projection": verify_r01_fast_projection(),
         "r02_mesh_cache": verify_r02_mesh_cache(),
         "r03_sah_translation": verify_r03_sah_translation(),
@@ -1044,9 +1124,11 @@ def main():
         "r07_closed_and_analyze": verify_r07_closed_and_analyze(),
         "assets_a01_to_a05": verify_assets_a01_to_a05(),
     }
-    out_path = ROOT / "benchmarks/CORRECTNESS_AND_BOUNDARY_RESULTS.json"
-    out_path.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf8")
-    print(f"ALL VERIFICATION SUITES PASSED. Saved {out_path}")
+    if args.output is not None:
+        args.output.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf8")
+        print(f"ALL VERIFICATION SUITES PASSED. Saved {args.output}")
+    else:
+        print("ALL VERIFICATION SUITES PASSED (dry check, frozen JSON preserved).")
     for k, v in report.items():
         if isinstance(v, dict):
             print(f"  {k}: passed={v.get('passed')}")

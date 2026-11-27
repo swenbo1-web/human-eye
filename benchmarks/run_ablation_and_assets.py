@@ -110,11 +110,12 @@ def _activate_arm(arm):
     sys.modules.update(arm.mods)
 
 
-def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, measure_mem=True):
+def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, measure_mem=True, *, sig_fn=None):
     """Run multiple callable arms cleanly interleaved per cycle with gc disabled."""
     names = [n for n, _ in arm_fns]
     fn_map = dict(arm_fns)
     raw = {n: [] for n in names}
+    timed_outs = {n: [] for n in names}
 
     # Balanced cyclic Latin-style schedules across repeats
     perms = [
@@ -138,8 +139,9 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
                 arm, fn = fn_map[n]
                 _activate_arm(arm)
                 t0 = time.perf_counter_ns()
-                fn()
+                val = fn()
                 raw[n].append((time.perf_counter_ns() - t0) / 1e6)
+                timed_outs[n].append(val)
     finally:
         gc.enable()
 
@@ -147,6 +149,14 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
     for n in names:
         arm, fn = fn_map[n]
         _activate_arm(arm)
+        outs_n = timed_outs[n]
+        out = outs_n[-1]
+        if sig_fn is not None and len(outs_n) > 1:
+            ref = sig_fn(outs_n[0])
+            for idx, item in enumerate(outs_n[1:], start=1):
+                cur = sig_fn(item)
+                if cur != ref:
+                    raise AssertionError(f"Non-deterministic timed repeat for arm {n} repeat {idx}")
         s = sorted(raw[n])
         cnt = len(s)
         idx95 = min(cnt - 1, max(0, int(math.ceil(0.95 * cnt)) - 1))
@@ -154,14 +164,16 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
         peak = 0
         if measure_mem:
             c0 = time.process_time_ns()
-            out = fn()
+            cpu_out = fn()
             cpu_ms = (time.process_time_ns() - c0) / 1e6
             tracemalloc.start()
-            fn()
+            tm_out = fn()
             _, peak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
-        else:
-            out = fn()
+            if sig_fn is not None:
+                ref = sig_fn(out)
+                if sig_fn(cpu_out) != ref or sig_fn(tm_out) != ref:
+                    raise AssertionError(f"Instrumentation pass signature mismatch for arm {n}")
         summary[n] = {
             "timing": {
                 "raw_samples_ms": raw[n],
@@ -173,6 +185,9 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
                 "p95_note": "p95_nearest_rank" if cnt >= 30 else f"empirical_max_of_{cnt}_samples",
                 "cpu_time_ms": cpu_ms,
                 "peak_alloc_bytes": peak,
+                "peak_tracemalloc_bytes": peak,
+                "memory_metric_scope": "python_tracemalloc_only_not_process_rss",
+                "timed_outputs_verified": len(outs_n),
             },
             "result": out,
         }
@@ -181,30 +196,14 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
 
 def _sig_for_section(section, arm, out):
     if section == "surface_single":
-        sig = _surface_sig(out)
-        sig.pop("witness_triangle_indices", None)
-        sig.pop("exact_witness_triangles", None)
-        # Note: if exact_witness_triangles present on both/either, check separately too; keep full sig compare on A vs C
         return _surface_sig(out)
     if section == "spatial_relation":
-        res, diag = out
-        return {
-            "spatial": {
-                "measurement_valid": res["spatial"].get("measurement_valid"),
-                "relation": res["spatial"].get("relation"),
-                "certificate": res["spatial"].get("certificate"),
-                "reason": res["spatial"].get("reason"),
-            },
-            "surface": _surface_sig(res["surface"]),
-        }
+        res, _ = out
+        return _spatial_sig(res)
     if section == "closed_solid":
         return _closed_sig(out)
     if section == "surface_analyze":
-        res = out
-        ignored = {"spatial_work", "work", "exact_pair_tests", "work_used"}
-        s = {k: copy.deepcopy(v) for k, v in res.items() if k not in ignored}
-        s["complete"] = (res.get("status") == "complete")
-        return s
+        return _analyze_sig(out)
     return out
 
 
@@ -241,16 +240,12 @@ def _run_three_arm_main(arms, quick_only=False):
             (aname, (arm_obj, lambda arm=arm_obj, l=lf, r=rf: arm.sp.measure_surface_proximity(l, r, NOOP, retain_exact_rank=True, retain_witness_triangles=True)))
             for aname, arm_obj in (("A", a), ("B", b), ("C", c))
         ]
-        res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True)
+        res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True, sig_fn=_surface_sig)
         # Verify exact signature equality across A, B, C
         sA = _surface_sig(res["A"]["result"])
         sB = _surface_sig(res["B"]["result"])
         sC = _surface_sig(res["C"]["result"])
-        # Note: A (032) didn't implement retain_witness_triangles fallback in same key format on fast path? Check both!
-        assert sB == sC, (name, "B vs C mismatch", sB, sC)
-        # Core geometry exact comparison A vs C (strip optional witness_triangle_indices if A omitted it, or keep when present)
-        for k in ("measurement_valid", "reason", "distance_m", "_exact_distance_sq", "point_a_world", "point_b_world", "direction_a_to_b", "witness_status", "direction_status", "topology"):
-            assert sA[k] == sC[k], (name, k, sA[k], sC[k])
+        assert sA == sB == sC, (name, "A/B/C signature mismatch", sA, sB, sC)
         single_out[name] = {
             aname: {"timing": res[aname]["timing"], "work": _work_summary(res[aname]["result"]["work"]), "signature": _surface_sig(res[aname]["result"])}
             for aname in ("A", "B", "C")
@@ -268,7 +263,8 @@ def _run_three_arm_main(arms, quick_only=False):
             lf = _freeze_mesh(l_raw.object_id, l_raw.vertices, l_raw.faces)
             rf = _freeze_mesh(r_raw.object_id, r_raw.vertices, r_raw.faces)
             calls = [(aname, (arm_obj, lambda arm=arm_obj, l=lf, r=rf: runner(arm, l, r))) for aname, arm_obj in (("A", a), ("B", b), ("C", c))]
-            res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True)
+            sec_sig_fn = (lambda pair: _spatial_sig(pair[0])) if sec_key == "spatial_relation" else _closed_sig
+            res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True, sig_fn=sec_sig_fn)
             sigs = {}
             for aname in ("A", "B", "C"):
                 raw_r = res[aname]["result"]
@@ -284,7 +280,7 @@ def _run_three_arm_main(arms, quick_only=False):
                 assert sigs["B"] == sigs["C"] and sigs["A"] == sigs["C"], (name, sigs)
             else:
                 assert sigs["B"] == sigs["C"], (name, sigs["B"], sigs["C"])
-                assert sigs["A"]["spatial"] == sigs["C"]["spatial"], (name, sigs["A"]["spatial"], sigs["C"]["spatial"])
+                assert sigs["A"] == sigs["C"], (name, sigs["A"], sigs["C"])
             sec_out[name] = {
                 aname: {"timing": res[aname]["timing"], "work": res[aname]["_w"], "signature": sigs[aname]}
                 for aname in ("A", "B", "C")
@@ -297,7 +293,7 @@ def _run_three_arm_main(arms, quick_only=False):
         def mk_an(arm, p=prep, f=faces):
             return arm.sg.analyze(p, f, list(range(len(f))), budget=arm.ms.WorkBudget(), near_m=0.0)
         calls = [(aname, (arm_obj, lambda arm=arm_obj: mk_an(arm))) for aname, arm_obj in (("A", a), ("B", b), ("C", c))]
-        res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True)
+        res = _time_interleaved(calls, warmup=1, repeats=7, measure_mem=True, sig_fn=_analyze_sig)
         sA = _analyze_sig(res["A"]["result"])
         sB = _analyze_sig(res["B"]["result"])
         sC = _analyze_sig(res["C"]["result"])
@@ -333,14 +329,17 @@ def _run_three_arm_main(arms, quick_only=False):
         ("B_37e", (b, lambda: run_g508_batch(b, False))),
         ("C_nocache", (c, lambda: run_g508_batch(c, False))),
         ("C_cached", (c, lambda: run_g508_batch(c, True))),
-    ], warmup=1, repeats=7, measure_mem=True)
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: [_surface_sig(r) for r in pair[0]])
+    expected_g508_ids = ["Peer_000", "Competing_001"] + [f"Near_{idx:03d}" for idx in range(3, 12)]
+    assert [p.object_id for p in gps] == expected_g508_ids
+    ref_g508_outs, _ = g_res["A_032"]["result"]
+    assert len(ref_g508_outs) == len(expected_g508_ids)
     for k in ("A_032", "B_37e", "C_nocache", "C_cached"):
         outs, agg = g_res[k]["result"]
-        assert [_surface_sig(r) for r in outs] == [_surface_sig(r) for r in g_res["A_032"]["result"][0]] or True
-        for r0, r1 in zip(g_res["A_032"]["result"][0], outs):
-            for fld in ("measurement_valid", "distance_m", "_exact_distance_sq", "point_a_world", "point_b_world"):
-                assert r0[fld] == r1[fld], (k, fld)
-    out["g508_batch_11pairs"] = {k: {"timing": g_res[k]["timing"], "work": g_res[k]["result"][1]} for k in g_res}
+        assert len(outs) == len(expected_g508_ids), (k, len(outs), len(expected_g508_ids))
+        for p_mesh, r0, r1 in zip(gps, ref_g508_outs, outs, strict=True):
+            assert _surface_sig(r0) == _surface_sig(r1), (k, p_mesh.object_id, _surface_sig(r0), _surface_sig(r1))
+    out["g508_batch_11pairs"] = {k: {"timing": g_res[k]["timing"], "work": g_res[k]["result"][1], "batch_ids": expected_g508_ids} for k in g_res}
     print(f"  [batch] G508_11pairs  A={g_res['A_032']['timing']['median_ms']:.2f}ms C_nc={g_res['C_nocache']['timing']['median_ms']:.2f}ms C_cache={g_res['C_cached']['timing']['median_ms']:.2f}ms", flush=True)
 
     # E2E packet entries: G508_surface_nearest & G508_surface_scan_5mm (A vs C vs C_nocache)
@@ -371,7 +370,7 @@ def _run_three_arm_main(arms, quick_only=False):
         ("A_032", (a, lambda: run_e2e_near(a))),
         ("C_nocache", (c, lambda: run_e2e_near(c, True))),
         ("C_cached", (c, lambda: run_e2e_near(c, False))),
-    ], warmup=1, repeats=7, measure_mem=True)
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _nearest_sig(pair[0]))
     for k in ("C_nocache", "C_cached"):
         assert _nearest_sig(nr_res[k]["result"][0]) == _nearest_sig(nr_res["A_032"]["result"][0])
 
@@ -379,7 +378,7 @@ def _run_three_arm_main(arms, quick_only=False):
         ("A_032", (a, lambda: run_e2e_scan(a))),
         ("C_nocache", (c, lambda: run_e2e_scan(c, True))),
         ("C_cached", (c, lambda: run_e2e_scan(c, False))),
-    ], warmup=1, repeats=7, measure_mem=True)
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _scan_sig(pair[0], pair[1]))
     for k in ("C_nocache", "C_cached"):
         assert _scan_sig(*sc_res[k]["result"]) == _scan_sig(*sc_res["A_032"]["result"])
 
@@ -415,26 +414,28 @@ def _run_real_assets_b01_b02_c(arms):
                 agg[k] = agg.get(k, 0) + v
         return outs, agg
 
+    d48_expected_ids = [o["name"] for o in sorted(d48_raw["objects"], key=lambda x: x["name"]) if o["name"] != "Target"]
+    assert len(d48_expected_ids) == 47 and [p.name for p in d48_peers] == d48_expected_ids
     d48_timing = _time_interleaved([
         ("A_032", (a, lambda: d48_batch(a, False))),
         ("C_nocache", (c, lambda: d48_batch(c, False))),
         ("C_cached", (c, lambda: d48_batch(c, True))),
-    ], warmup=1, repeats=7, measure_mem=True)
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: [_surface_sig(r) for r in pair[0]])
 
     # Independent verification of ALL 94 witnesses + winner Peer_000 [14, 36] + full merge!
     d48_outs_a, d48_agg_a = d48_timing["A_032"]["result"]
     d48_outs_nc, d48_agg_nc = d48_timing["C_nocache"]["result"]
     d48_outs_c, d48_agg_c = d48_timing["C_cached"]["result"]
-    by_peer_c = {p.name: r for p, r in zip(d48_peers, d48_outs_c)}
+    assert len(d48_outs_a) == len(d48_outs_nc) == len(d48_outs_c) == len(d48_peers)
+    by_peer_c = {p.name: r for p, r in zip(d48_peers, d48_outs_c, strict=True)}
     _activate_arm(c)
     rank_c = c.sp._rank_surface_results(by_peer_c, NOOP)
     assert rank_c["ordered_object_id_groups"][0] == ["Peer_000"], rank_c["ordered_object_id_groups"][:3]
     p0_row = by_peer_c["Peer_000"]
     assert p0_row["exact_witness_triangles"]["indices"] == [14, 36], p0_row
     witnesses_verified = 0
-    for peer_m, r_a, r_nc, r_c in zip(d48_peers, d48_outs_a, d48_outs_nc, d48_outs_c):
-        for fld in ("measurement_valid", "distance_m", "_exact_distance_sq", "point_a_world", "point_b_world"):
-            assert r_a[fld] == r_nc[fld] == r_c[fld], (peer_m.name, fld)
+    for peer_m, r_a, r_nc, r_c in zip(d48_peers, d48_outs_a, d48_outs_nc, d48_outs_c, strict=True):
+        assert _surface_sig(r_a) == _surface_sig(r_nc) == _surface_sig(r_c), (peer_m.name, _surface_sig(r_a), _surface_sig(r_c))
         proof = witness_oracle.certify_pair(
             r_c["point_a_world"], r_c["point_b_world"], r_c["distance_m"],
             d48_objs["Target"], d48_objs[peer_m.name], position_tolerance_m=1e-9, distance_tolerance_m=1e-6,
@@ -469,11 +470,20 @@ def _run_real_assets_b01_b02_c(arms):
     pkt24_near, _ = _build_nearest_packet(ordered_24)
     pkt24_scan = _build_scan_packet(asm_ents, threshold=0.002)
 
+    def run_b02_scan(arm, use_cache=True):
+        diag = {}
+        if not use_cache:
+            with patch.object(arm.sp, "_pair_from_mesh_cache", lambda *ar, **kw: None):
+                res = arm.ss.surface_scan_result(pkt24_scan, arm.sc.SpatialSceneCache(), NOOP, diagnostics=diag)
+        else:
+            res = arm.ss.surface_scan_result(pkt24_scan, arm.sc.SpatialSceneCache(), NOOP, diagnostics=diag)
+        return res, diag
+
     b02_near = _time_interleaved([
         ("A_032", (a, lambda: a.tq.surface_nearest_result(pkt24_near, a.sc.SpatialSceneCache(), NOOP, diagnostics={}))),
         ("C_nocache", (c, lambda: _run_no_cache_nearest(c, pkt24_near))),
         ("C_cached", (c, lambda: c.tq.surface_nearest_result(pkt24_near, c.sc.SpatialSceneCache(), NOOP, diagnostics={}))),
-    ], warmup=1, repeats=7, measure_mem=True)
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=_nearest_sig)
     for k in ("C_nocache", "C_cached"):
         assert _nearest_sig(b02_near[k]["result"]) == _nearest_sig(b02_near["A_032"]["result"])
     # Cross-check nearest distance against BASE_TRUTH.json
@@ -481,11 +491,15 @@ def _run_real_assets_b01_b02_c(arms):
     assert b02_out["nearest_ids"] == ["Obj_002"]
 
     b02_scan = _time_interleaved([
-        ("A_032", (a, lambda: a.ss.surface_scan_result(pkt24_scan, a.sc.SpatialSceneCache(), NOOP, diagnostics={}))),
-        ("C_cached", (c, lambda: c.ss.surface_scan_result(pkt24_scan, c.sc.SpatialSceneCache(), NOOP, diagnostics={}))),
-    ], warmup=1, repeats=7, measure_mem=True)
-    assert b02_scan["C_cached"]["result"]["coverage"]["measured_match"] == asm_truth["match_count"]
-    print(f"  [B02] 24part_Obj014_nearest A={b02_near['A_032']['timing']['median_ms']:.2f}ms C_nc={b02_near['C_nocache']['timing']['median_ms']:.2f}ms C={b02_near['C_cached']['timing']['median_ms']:.2f}ms | scan_matches={b02_scan['C_cached']['result']['coverage']['measured_match']}", flush=True)
+        ("A_032", (a, lambda: run_b02_scan(a, True))),
+        ("C_nocache", (c, lambda: run_b02_scan(c, False))),
+        ("C_cached", (c, lambda: run_b02_scan(c, True))),
+    ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _scan_sig(pair[0], pair[1]))
+    for k in ("C_nocache", "C_cached"):
+        assert _scan_sig(*b02_scan[k]["result"]) == _scan_sig(*b02_scan["A_032"]["result"])
+    b02_scan_out = b02_scan["C_cached"]["result"][0]
+    assert b02_scan_out["coverage"]["measured_match"] == asm_truth["match_count"]
+    print(f"  [B02] 24part_Obj014_nearest A={b02_near['A_032']['timing']['median_ms']:.2f}ms C_nc={b02_near['C_nocache']['timing']['median_ms']:.2f}ms C={b02_near['C_cached']['timing']['median_ms']:.2f}ms | scan_matches={b02_scan_out['coverage']['measured_match']}", flush=True)
 
     manifest["assets"]["B02_24part_assembly_Obj014"] = {
         "classification": "real_frozen_24part_assembly_short_control",
@@ -496,9 +510,8 @@ def _run_real_assets_b01_b02_c(arms):
         "focal_id": "Obj_014",
         "nearest_winner": b02_out["nearest_ids"],
         "distance_m": b02_out["distance_m"],
-        "scan_2mm_matches": b02_scan["C_cached"]["result"]["coverage"]["measured_match"],
+        "scan_2mm_matches": b02_scan_out["coverage"]["measured_match"],
     }
-    print(f"  [B02] 24part_Obj014_nearest A={b02_near['A_032']['timing']['median_ms']:.2f}ms C_nc={b02_near['C_nocache']['timing']['median_ms']:.2f}ms C={b02_near['C_cached']['timing']['median_ms']:.2f}ms", flush=True)
 
     # C: External geometry families (Suzanne raw/subdiv1/subdiv2, Avocado, Lantern, BoomBox)
     ext = json.loads(EXT_SNAPSHOT_PATH.read_bytes())
@@ -544,12 +557,11 @@ def _run_real_assets_b01_b02_c(arms):
     ext_results = {}
     for ename, ml, mr in ext_pairs:
         res = _time_interleaved([
-            ("A", (a, lambda m1=ml, m2=mr: a.sp.measure_surface_proximity(m1, m2, NOOP, retain_exact_rank=True))),
+            ("A", (a, lambda m1=ml, m2=mr: a.sp.measure_surface_proximity(m1, m2, NOOP, retain_exact_rank=True, retain_witness_triangles=True))),
             ("C", (c, lambda m1=ml, m2=mr: c.sp.measure_surface_proximity(m1, m2, NOOP, retain_exact_rank=True, retain_witness_triangles=True))),
-        ], warmup=1, repeats=7, measure_mem=True)
+        ], warmup=1, repeats=7, measure_mem=True, sig_fn=_surface_sig)
         ra, rc = res["A"]["result"], res["C"]["result"]
-        for fld in ("measurement_valid", "distance_m", "_exact_distance_sq", "point_a_world", "point_b_world"):
-            assert ra[fld] == rc[fld], (ename, fld, ra[fld], rc[fld])
+        assert _surface_sig(ra) == _surface_sig(rc), (ename, _surface_sig(ra), _surface_sig(rc))
         proof = witness_oracle.certify_pair(
             rc["point_a_world"], rc["point_b_world"], rc["distance_m"],
             {"vertices_world": ml.vertices, "triangles": ml.faces},
@@ -696,7 +708,7 @@ def _run_s3_ablations_and_r06(arms):
             ("C_sah_ls1", (c, call_c_sah_ls1)),
             ("C_minus_proj", (c, call_c_no_proj)),
             ("C_full", (c, call_c_full)),
-        ], warmup=1, repeats=7, measure_mem=False)
+        ], warmup=1, repeats=7, measure_mem=False, sig_fn=_surface_sig)
         ablations[cname] = {
             k: {"median_ms": res[k]["timing"]["median_ms"], "raw_ms": res[k]["timing"]["raw_samples_ms"], "work_units": res[k]["result"]["work"]["work_units"], "narrow": res[k]["result"]["work"]["narrow_phase_pairs"], "leaves": res[k]["result"]["work"]["leaf_pair_visits"]}
             for k in res
@@ -774,7 +786,13 @@ def _run_p95_30_samples(arms):
     ]
     out = {}
     for name, fn_a, fn_c in cases:
-        res = _time_interleaved([("A", (a, fn_a)), ("C", (c, fn_c))], warmup=2, repeats=30, measure_mem=False)
+        res = _time_interleaved(
+            [("A", (a, fn_a)), ("C", (c, fn_c))],
+            warmup=2,
+            repeats=30,
+            measure_mem=False,
+            sig_fn=lambda out: [_surface_sig(r) for r in out] if isinstance(out, list) else _surface_sig(out),
+        )
         ra = res["A"]["timing"]["raw_samples_ms"]
         rc = res["C"]["timing"]["raw_samples_ms"]
         wins = sum(1 for x, y in zip(ra, rc) if y < x)

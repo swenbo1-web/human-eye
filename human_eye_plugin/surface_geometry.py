@@ -191,7 +191,7 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
             cmin, cmax = cbounds[axis]
             if cmax <= cmin:
                 continue
-            cspan = cmax - cmin + 1
+            cspan = cmax - cmin
             bcnt = [0] * _SAH_BINS
             blx = [0] * _SAH_BINS
             bly = [0] * _SAH_BINS
@@ -200,9 +200,12 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
             bhy = [0] * _SAH_BINS
             bhz = [0] * _SAH_BINS
             ck = 6 + axis
+            max_bin = _SAH_BINS - 1
             for idx in ids:
                 row = flat_bounds[idx]
                 b = ((row[ck] - cmin) * _SAH_BINS) // cspan
+                if b > max_bin:
+                    b = max_bin
                 c = bcnt[b]
                 if c == 0:
                     blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b] = row[0], row[1], row[2], row[3], row[4], row[5]
@@ -269,8 +272,12 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
             ck = 6 + best_axis
             left_ids = []
             right_ids = []
+            max_bin = _SAH_BINS - 1
             for idx in ids:
-                if ((flat_bounds[idx][ck] - best_cmin) * _SAH_BINS) // best_cspan < best_split:
+                b = ((flat_bounds[idx][ck] - best_cmin) * _SAH_BINS) // best_cspan
+                if b > max_bin:
+                    b = max_bin
+                if b < best_split:
                     left_ids.append(idx)
                 else:
                     right_ids.append(idx)
@@ -290,6 +297,24 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
         _build_sah_bvh(flat_bounds, budget, ids[:mid], leaf_size, depth + 1),
         _build_sah_bvh(flat_bounds, budget, ids[mid:], leaf_size, depth + 1),
     )
+
+
+def _bvh_median(bounds, budget, ids=None, *, leaf_size=4):
+    """Exact 032 longest-axis median BVH retained for closed-solid traversal compatibility."""
+    ids = list(range(len(bounds))) if ids is None else list(ids)
+    budget.consume(1 + len(ids), 'surface_bvh_build')
+    if not ids:
+        return ((0, 0, 0), (0, 0, 0), 0, [], None, None)
+    lo = tuple(min(bounds[i][0][k] for i in ids) for k in range(3))
+    hi = tuple(max(bounds[i][1][k] for i in ids) for k in range(3))
+    if len(ids) <= leaf_size:
+        return (lo, hi, len(ids), ids, None, None)
+    axis = max(range(3), key=lambda k: hi[k] - lo[k])
+    ids.sort(key=lambda i: (bounds[i][0][axis] + bounds[i][1][axis], i))
+    mid = len(ids) // 2
+    return (lo, hi, len(ids), None,
+            _bvh_median(bounds, budget, ids[:mid], leaf_size=leaf_size),
+            _bvh_median(bounds, budget, ids[mid:], leaf_size=leaf_size))
 
 
 def _bvh(bounds,budget,ids=None,*,leaf_size=4):
@@ -576,7 +601,7 @@ def _closed_world_tree(triangles, budget):
     bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
               for triangle in triangles]
     budget.tick('world_tree_builds')
-    return bounds, _bvh(bounds, budget)
+    return bounds, _bvh_median(bounds, budget)
 
 
 def _closed_candidate_trees(shells, budget):
@@ -621,7 +646,7 @@ def _closed_candidate_trees(shells, budget):
                 bounds.append((tuple(min(point[k] for point in points) for k in range(3)),
                                tuple(max(point[k] for point in points) for k in range(3))))
             budget.tick('candidate_tree_builds')
-            trees.append((bounds, _bvh(bounds, budget, leaf_size=1), projected))
+            trees.append((bounds, _bvh_median(bounds, budget, leaf_size=1), projected))
     except exact._DomainError:
         # An optional coordinate map cannot reduce the original bit domain.
         # Cancellation, deadlines and total-work failures remain unsuppressed.
@@ -1015,6 +1040,7 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         records,_,_,_,prepared=prepared_pair
         _closed_require(all(len(r[1])>=4 for r in records),'too_few_faces')
         if (type(prepared_trees) is dict and prepared_trees.get('pair') is prepared_pair
+                and prepared_trees.get('tree_kind', 'median_bvh_v1') == 'median_bvh_v1'
                 and len(prepared_trees.get('triangles',())) == 2
                 and all(a is b for a,b in zip(prepared_trees['triangles'],prepared))):
             world_trees = tuple(zip(prepared_trees['bounds'],prepared_trees['roots']))
@@ -1024,7 +1050,8 @@ def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pai
         if prepared_holder is not None:
             prepared_holder['trees'] = dict(pair=prepared_pair,triangles=tuple(prepared),
                 bounds=tuple(tree[0] for tree in world_trees),
-                roots=tuple(tree[1] for tree in world_trees))
+                roots=tuple(tree[1] for tree in world_trees),
+                tree_kind='median_bvh_v1')
         shells=[_closed_topology(record[0],record[1],triangles,budget,tree=tree)
                 for record,triangles,tree in zip(records,prepared,world_trees)]
         _closed_candidate_trees(shells,budget)
