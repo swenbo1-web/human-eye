@@ -138,9 +138,19 @@ def validate_tessellation(raw,triangles,polygons,budget):
 _SAH_BINS = 12
 _SAH_MIN_N = 12
 _SAH_MAX_DEPTH = 20
+_ZERO_SAH_BINS = [0] * _SAH_BINS
 
 
-def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
+def _alloc_sah_scratch():
+    """Allocate per-tree 12-bin SAH working buffers once for non-reentrant axis sweeps."""
+    return (
+        [0] * _SAH_BINS, [0] * _SAH_BINS, [0] * _SAH_BINS, [0] * _SAH_BINS,
+        [0] * _SAH_BINS, [0] * _SAH_BINS, [0] * _SAH_BINS,
+        [0] * _SAH_BINS, [0] * _SAH_BINS,
+    )
+
+
+def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth, scratch=None):
     n = len(ids)
     budget.consume(1 + n, 'surface_bvh_build')
     if n == 1:
@@ -206,47 +216,91 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
     if n <= leaf_size:
         return (lo, hi, n, ids, None, None)
     if sah_eligible:
+        if scratch is None:
+            scratch = _alloc_sah_scratch()
         best_cost = None
+        best_tie = None
         best_axis = -1
         best_split = 0
         best_cmin = 0
         best_cspan = 1
         min_side = max(1, n >> 4)
         cbounds = ((c0x, c1x), (c0y, c1y), (c0z, c1z))
+        bcnt, blx, bly, blz, bhx, bhy, bhz, right_area, right_cnt = scratch
         for axis in (0, 1, 2):
             cmin, cmax = cbounds[axis]
             if cmax <= cmin:
                 continue
             cspan = cmax - cmin
-            bcnt = [0] * _SAH_BINS
-            blx = [0] * _SAH_BINS
-            bly = [0] * _SAH_BINS
-            blz = [0] * _SAH_BINS
-            bhx = [0] * _SAH_BINS
-            bhy = [0] * _SAH_BINS
-            bhz = [0] * _SAH_BINS
+            bcnt[:] = _ZERO_SAH_BINS
             ck = 6 + axis
-            max_bin = _SAH_BINS - 1
-            for idx in ids:
-                row = flat_bounds[idx]
-                b = ((row[ck] - cmin) * _SAH_BINS) // cspan
-                if b > max_bin:
-                    b = max_bin
-                c = bcnt[b]
-                if c == 0:
-                    blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b] = row[0], row[1], row[2], row[3], row[4], row[5]
-                else:
-                    if row[0] < blx[b]: blx[b] = row[0]
-                    if row[1] < bly[b]: bly[b] = row[1]
-                    if row[2] < blz[b]: blz[b] = row[2]
-                    if row[3] > bhx[b]: bhx[b] = row[3]
-                    if row[4] > bhy[b]: bhy[b] = row[4]
-                    if row[5] > bhz[b]: bhz[b] = row[5]
-                bcnt[b] = c + 1
-            right_area = [0] * _SAH_BINS
-            right_cnt = [0] * _SAH_BINS
+            acc = cspan + 11
+            t1 = cmin + acc // 12; acc += cspan
+            t2 = cmin + acc // 12; acc += cspan
+            t3 = cmin + acc // 12; acc += cspan
+            t4 = cmin + acc // 12; acc += cspan
+            t5 = cmin + acc // 12; acc += cspan
+            t6 = cmin + acc // 12; acc += cspan
+            t7 = cmin + acc // 12; acc += cspan
+            t8 = cmin + acc // 12; acc += cspan
+            t9 = cmin + acc // 12; acc += cspan
+            t10 = cmin + acc // 12; acc += cspan
+            t11 = cmin + acc // 12
+            if cp is None:
+                for idx in ids:
+                    row = flat_bounds[idx]
+                    cval = row[ck]
+                    if cval < t6:
+                        if cval < t3:
+                            b = 0 if cval < t1 else (1 if cval < t2 else 2)
+                        else:
+                            b = 3 if cval < t4 else (4 if cval < t5 else 5)
+                    else:
+                        if cval < t9:
+                            b = 6 if cval < t7 else (7 if cval < t8 else 8)
+                        else:
+                            b = 9 if cval < t10 else (10 if cval < t11 else 11)
+                    c = bcnt[b]
+                    if c == 0:
+                        blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b] = row[0], row[1], row[2], row[3], row[4], row[5]
+                    else:
+                        if row[0] < blx[b]: blx[b] = row[0]
+                        if row[1] < bly[b]: bly[b] = row[1]
+                        if row[2] < blz[b]: blz[b] = row[2]
+                        if row[3] > bhx[b]: bhx[b] = row[3]
+                        if row[4] > bhy[b]: bhy[b] = row[4]
+                        if row[5] > bhz[b]: bhz[b] = row[5]
+                    bcnt[b] = c + 1
+            else:
+                for start in range(0, n, 256):
+                    cp('surface_proximity_surface_bvh_build')
+                    for idx in ids[start:start + 256]:
+                        row = flat_bounds[idx]
+                        cval = row[ck]
+                        if cval < t6:
+                            if cval < t3:
+                                b = 0 if cval < t1 else (1 if cval < t2 else 2)
+                            else:
+                                b = 3 if cval < t4 else (4 if cval < t5 else 5)
+                        else:
+                            if cval < t9:
+                                b = 6 if cval < t7 else (7 if cval < t8 else 8)
+                            else:
+                                b = 9 if cval < t10 else (10 if cval < t11 else 11)
+                        c = bcnt[b]
+                        if c == 0:
+                            blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b] = row[0], row[1], row[2], row[3], row[4], row[5]
+                        else:
+                            if row[0] < blx[b]: blx[b] = row[0]
+                            if row[1] < bly[b]: bly[b] = row[1]
+                            if row[2] < blz[b]: blz[b] = row[2]
+                            if row[3] > bhx[b]: bhx[b] = row[3]
+                            if row[4] > bhy[b]: bhy[b] = row[4]
+                            if row[5] > bhz[b]: bhz[b] = row[5]
+                        bcnt[b] = c + 1
             rc = 0
             has_r = False
+            cur_rarea = 0
             rx0 = ry0 = rz0 = rx1 = ry1 = rz1 = 0
             for b in range(_SAH_BINS - 1, 0, -1):
                 cnt = bcnt[b]
@@ -262,38 +316,48 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
                         if bhx[b] > rx1: rx1 = bhx[b]
                         if bhy[b] > ry1: ry1 = bhy[b]
                         if bhz[b] > rz1: rz1 = bhz[b]
-                right_cnt[b - 1] = rc
-                if has_r:
                     dx, dy, dz = rx1 - rx0, ry1 - ry0, rz1 - rz0
-                    right_area[b - 1] = dx * dy + dy * dz + dz * dx
+                    cur_rarea = dx * dy + dy * dz + dz * dx
+                right_cnt[b - 1] = rc
+                right_area[b - 1] = cur_rarea
             lc = 0
             has_l = False
             lx0 = ly0 = lz0 = lx1 = ly1 = lz1 = 0
             for b in range(_SAH_BINS - 1):
                 cnt = bcnt[b]
-                if cnt:
-                    lc += cnt
-                    if not has_l:
-                        lx0, ly0, lz0, lx1, ly1, lz1 = blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b]
-                        has_l = True
-                    else:
-                        if blx[b] < lx0: lx0 = blx[b]
-                        if bly[b] < ly0: ly0 = bly[b]
-                        if blz[b] < lz0: lz0 = blz[b]
-                        if bhx[b] > lx1: lx1 = bhx[b]
-                        if bhy[b] > ly1: ly1 = bhy[b]
-                        if bhz[b] > lz1: lz1 = bhz[b]
+                if not cnt:
+                    continue
+                lc += cnt
+                if not has_l:
+                    lx0, ly0, lz0, lx1, ly1, lz1 = blx[b], bly[b], blz[b], bhx[b], bhy[b], bhz[b]
+                    has_l = True
+                else:
+                    if blx[b] < lx0: lx0 = blx[b]
+                    if bly[b] < ly0: ly0 = bly[b]
+                    if blz[b] < lz0: lz0 = blz[b]
+                    if bhx[b] > lx1: lx1 = bhx[b]
+                    if bhy[b] > ly1: ly1 = bhy[b]
+                    if bhz[b] > lz1: lz1 = bhz[b]
                 rc_s = right_cnt[b]
                 if lc >= min_side and rc_s >= min_side:
                     dx, dy, dz = lx1 - lx0, ly1 - ly0, lz1 - lz0
                     larea = dx * dy + dy * dz + dz * dx
-                    key = (lc * larea + rc_s * right_area[b], abs(lc - rc_s), axis, b + 1)
-                    if best_cost is None or key < best_cost:
-                        best_cost = key
+                    cost = lc * larea + rc_s * right_area[b]
+                    if best_cost is None or cost < best_cost:
+                        best_cost = cost
+                        best_tie = (abs(lc - rc_s), axis, b + 1)
                         best_axis = axis
                         best_split = b + 1
                         best_cmin = cmin
                         best_cspan = cspan
+                    elif cost == best_cost:
+                        tie = (abs(lc - rc_s), axis, b + 1)
+                        if tie < best_tie:
+                            best_tie = tie
+                            best_axis = axis
+                            best_split = b + 1
+                            best_cmin = cmin
+                            best_cspan = cspan
         if best_axis >= 0:
             ck = 6 + best_axis
             cut = best_cmin + (best_split * best_cspan + _SAH_BINS - 1) // _SAH_BINS
@@ -319,8 +383,8 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
             if left_ids and right_ids:
                 return (
                     lo, hi, n, None,
-                    _build_sah_bvh(flat_bounds, budget, left_ids, leaf_size, depth + 1),
-                    _build_sah_bvh(flat_bounds, budget, right_ids, leaf_size, depth + 1),
+                    _build_sah_bvh(flat_bounds, budget, left_ids, leaf_size, depth + 1, scratch),
+                    _build_sah_bvh(flat_bounds, budget, right_ids, leaf_size, depth + 1, scratch),
                 )
     dx, dy, dz = hx - lx, hy - ly, hz - lz
     axis = 0 if dx >= dy and dx >= dz else (1 if dy >= dz else 2)
@@ -329,8 +393,8 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
     mid = n >> 1
     return (
         lo, hi, n, None,
-        _build_sah_bvh(flat_bounds, budget, ids[:mid], leaf_size, depth + 1),
-        _build_sah_bvh(flat_bounds, budget, ids[mid:], leaf_size, depth + 1),
+        _build_sah_bvh(flat_bounds, budget, ids[:mid], leaf_size, depth + 1, scratch),
+        _build_sah_bvh(flat_bounds, budget, ids[mid:], leaf_size, depth + 1, scratch),
     )
 
 
