@@ -1,0 +1,67 @@
+{
+  "start_ns": 116055365511800,
+  "geometry_preserved": true,
+  "close": {
+    "status": "pass",
+    "pid": 14800,
+    "method": "original_addon_execute_code_then_original_stop_unregister_and_GUI_quit",
+    "schedule_receipt": {
+      "request": {
+        "type": "execute_code",
+        "params": {
+          "code": "import bpy,json,sys,os,time\ndef _close_035_owned_gui():\n    module=sys.modules['blender_mcp']\n    server=getattr(bpy.types,'blendermcp_server',None)\n    module.unregister()\n    with open('D:\\\\HumanEye\\\\runs\\\\M6-041-KERNEL-HOOK\\\\s1\\\\warm_scan_recovery\\\\native\\\\GUI_CLOSED.json','x',encoding='utf8') as out:\n        json.dump({'pid':os.getpid(),'stopped':server is not None and not server.running,'at_ns':time.perf_counter_ns()},out)\n    bpy.ops.wm.quit_blender()\n    return None\nbpy.app.timers.register(_close_035_owned_gui,first_interval=.2)\nprint(json.dumps({'scheduled':True,'pid':os.getpid()}))\n"
+        }
+      },
+      "response": {
+        "status": "success",
+        "result": {
+          "executed": true,
+          "result": "{\"scheduled\": true, \"pid\": 14800}\n"
+        }
+      },
+      "error": null,
+      "elapsed_ns": 40769200,
+      "original_deadline_ns": 116645365641900,
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 49999,
+        "pid": 14800
+      },
+      "tx": {
+        "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_scan_recovery\\native\\qa_wire\\004.TX.bin",
+        "bytes": 667,
+        "sha256": "1793203bfdeb77960a54692f58c58ca1e9bb24ee385e4b97f54a8a10e3190d15"
+      },
+      "rx": {
+        "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_scan_recovery\\native\\qa_wire\\004.RX.bin",
+        "bytes": 104,
+        "sha256": "0aff93861d9195ec751e0e33079230d1548959ee13cfbd6ad122c34880815b74"
+      },
+      "origin": "actual_unmodified_addon_TCP_queue"
+    },
+    "GUI_close_callback": {
+      "pid": 14800,
+      "stopped": true,
+      "at_ns": 116110546118300
+    },
+    "error": null,
+    "forced": null,
+    "exit_code": 0,
+    "process_reaped": true,
+    "released_port": {
+      "host": "127.0.0.1",
+      "port": 49999,
+      "expected_pid": 14800,
+      "observed_ns": 116110745664400,
+      "rows": [],
+      "owned_listener": false,
+      "any_listener": false,
+      "api": "GetExtendedTcpTable/OWNER_PID_ALL"
+    },
+    "source_unchanged": true,
+    "owned_copy_unchanged": true,
+    "original_addon_unchanged": true,
+    "elapsed_ns": 946145700
+  },
+  "end_ns": 116110753010400
+}

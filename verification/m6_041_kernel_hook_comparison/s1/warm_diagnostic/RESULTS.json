@@ -1,0 +1,474 @@
+{
+  "status": "incomplete",
+  "plans": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic\\PLAN.json",
+    "sha256": "214afaa9e862e55e368fbb9d3a119af20059a8a5182e9e667ccbd4d0624ba195",
+    "bytes": 8885
+  },
+  "cells": 28,
+  "actual_responses": 70,
+  "hosts": [
+    {
+      "start_ns": 115922941843600,
+      "geometry_preserved": true,
+      "close": {
+        "status": "pass",
+        "pid": 192,
+        "method": "original_addon_execute_code_then_original_stop_unregister_and_GUI_quit",
+        "schedule_receipt": {
+          "request": {
+            "type": "execute_code",
+            "params": {
+              "code": "import bpy,json,sys,os,time\ndef _close_035_owned_gui():\n    module=sys.modules['blender_mcp']\n    server=getattr(bpy.types,'blendermcp_server',None)\n    module.unregister()\n    with open('D:\\\\HumanEye\\\\runs\\\\M6-041-KERNEL-HOOK\\\\s1\\\\warm_diagnostic\\\\G60\\\\native\\\\GUI_CLOSED.json','x',encoding='utf8') as out:\n        json.dump({'pid':os.getpid(),'stopped':server is not None and not server.running,'at_ns':time.perf_counter_ns()},out)\n    bpy.ops.wm.quit_blender()\n    return None\nbpy.app.timers.register(_close_035_owned_gui,first_interval=.2)\nprint(json.dumps({'scheduled':True,'pid':os.getpid()}))\n"
+            }
+          },
+          "response": {
+            "status": "success",
+            "result": {
+              "executed": true,
+              "result": "{\"scheduled\": true, \"pid\": 192}\n"
+            }
+          },
+          "error": null,
+          "elapsed_ns": 35870000,
+          "original_deadline_ns": 116512941853500,
+          "endpoint": {
+            "host": "127.0.0.1",
+            "port": 56174,
+            "pid": 192
+          },
+          "tx": {
+            "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic\\G60\\native\\qa_wire\\004.TX.bin",
+            "bytes": 671,
+            "sha256": "da50b3d82dd1f1641d80d808e631cbb994e566c821977b4db318542b922559e3"
+          },
+          "rx": {
+            "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic\\G60\\native\\qa_wire\\004.RX.bin",
+            "bytes": 102,
+            "sha256": "9eb8778f94878483e20d8f7fa2afeb1e8180531570bc72682d01865d54133c07"
+          },
+          "origin": "actual_unmodified_addon_TCP_queue"
+        },
+        "GUI_close_callback": {
+          "pid": 192,
+          "stopped": true,
+          "at_ns": 115977659630500
+        },
+        "error": null,
+        "forced": null,
+        "exit_code": 0,
+        "process_reaped": true,
+        "released_port": {
+          "host": "127.0.0.1",
+          "port": 56174,
+          "expected_pid": 192,
+          "observed_ns": 115977858509600,
+          "rows": [],
+          "owned_listener": false,
+          "any_listener": false,
+          "api": "GetExtendedTcpTable/OWNER_PID_ALL"
+        },
+        "source_unchanged": true,
+        "owned_copy_unchanged": true,
+        "original_addon_unchanged": true,
+        "elapsed_ns": 942320300
+      },
+      "end_ns": 115977867501500
+    },
+    {
+      "start_ns": 115977868024900,
+      "geometry_preserved": true,
+      "close": {
+        "status": "pass",
+        "pid": 16360,
+        "method": "original_addon_execute_code_then_original_stop_unregister_and_GUI_quit",
+        "schedule_receipt": {
+          "request": {
+            "type": "execute_code",
+            "params": {
+              "code": "import bpy,json,sys,os,time\ndef _close_035_owned_gui():\n    module=sys.modules['blender_mcp']\n    server=getattr(bpy.types,'blendermcp_server',None)\n    module.unregister()\n    with open('D:\\\\HumanEye\\\\runs\\\\M6-041-KERNEL-HOOK\\\\s1\\\\warm_diagnostic\\\\Yanyite\\\\native\\\\GUI_CLOSED.json','x',encoding='utf8') as out:\n        json.dump({'pid':os.getpid(),'stopped':server is not None and not server.running,'at_ns':time.perf_counter_ns()},out)\n    bpy.ops.wm.quit_blender()\n    return None\nbpy.app.timers.register(_close_035_owned_gui,first_interval=.2)\nprint(json.dumps({'scheduled':True,'pid':os.getpid()}))\n"
+            }
+          },
+          "response": {
+            "status": "success",
+            "result": {
+              "executed": true,
+              "result": "{\"scheduled\": true, \"pid\": 16360}\n"
+            }
+          },
+          "error": null,
+          "elapsed_ns": 25115400,
+          "original_deadline_ns": 116567868034100,
+          "endpoint": {
+            "host": "127.0.0.1",
+            "port": 49865,
+            "pid": 16360
+          },
+          "tx": {
+            "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic\\Yanyite\\native\\qa_wire\\004.TX.bin",
+            "bytes": 675,
+            "sha256": "d01322704382433f1a52c1268d59f1c9d0142a4b1f7c65e53eb3a2c33d29f9f5"
+          },
+          "rx": {
+            "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic\\Yanyite\\native\\qa_wire\\004.RX.bin",
+            "bytes": 104,
+            "sha256": "8e2f8a2e28ce5d15bfbd5b3b566f5b717b9f3f206b395ea48a264e698ef458f5"
+          },
+          "origin": "actual_unmodified_addon_TCP_queue"
+        },
+        "GUI_close_callback": {
+          "pid": 16360,
+          "stopped": true,
+          "at_ns": 116002881578900
+        },
+        "error": null,
+        "forced": null,
+        "exit_code": 0,
+        "process_reaped": true,
+        "released_port": {
+          "host": "127.0.0.1",
+          "port": 49865,
+          "expected_pid": 16360,
+          "observed_ns": 116003191117100,
+          "rows": [],
+          "owned_listener": false,
+          "any_listener": false,
+          "api": "GetExtendedTcpTable/OWNER_PID_ALL"
+        },
+        "source_unchanged": true,
+        "owned_copy_unchanged": true,
+        "original_addon_unchanged": true,
+        "elapsed_ns": 1045478400
+      },
+      "end_ns": 116003201446600
+    }
+  ],
+  "scores": {
+    "G60_first_nearest": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": false
+        },
+        {
+          "group": 2,
+          "valid": false
+        },
+        {
+          "group": 3,
+          "valid": false
+        },
+        {
+          "group": 4,
+          "valid": false
+        },
+        {
+          "group": 5,
+          "valid": false
+        },
+        {
+          "group": 6,
+          "valid": false
+        },
+        {
+          "group": 7,
+          "valid": false
+        }
+      ],
+      "all_seven_matched": false,
+      "diagnostic_primary": false
+    },
+    "G60_warm_nearest": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": false
+        },
+        {
+          "group": 2,
+          "valid": false
+        },
+        {
+          "group": 3,
+          "valid": false
+        },
+        {
+          "group": 4,
+          "valid": false
+        },
+        {
+          "group": 5,
+          "valid": false
+        },
+        {
+          "group": 6,
+          "valid": false
+        },
+        {
+          "group": 7,
+          "valid": false
+        }
+      ],
+      "all_seven_matched": false,
+      "diagnostic_primary": true
+    },
+    "G60_first_scan_after_nearest": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": false
+        },
+        {
+          "group": 2,
+          "valid": false
+        },
+        {
+          "group": 3,
+          "valid": false
+        },
+        {
+          "group": 4,
+          "valid": false
+        },
+        {
+          "group": 5,
+          "valid": false
+        },
+        {
+          "group": 6,
+          "valid": false
+        },
+        {
+          "group": 7,
+          "valid": false
+        }
+      ],
+      "all_seven_matched": false,
+      "diagnostic_primary": false
+    },
+    "G60_warm_scan": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": false
+        },
+        {
+          "group": 2,
+          "valid": false
+        },
+        {
+          "group": 3,
+          "valid": false
+        },
+        {
+          "group": 4,
+          "valid": false
+        },
+        {
+          "group": 5,
+          "valid": false
+        },
+        {
+          "group": 6,
+          "valid": false
+        },
+        {
+          "group": 7,
+          "valid": false
+        }
+      ],
+      "all_seven_matched": false,
+      "diagnostic_primary": true
+    },
+    "Yanyite_first_high": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 371.2929,
+          "r3_ms": 368.8678,
+          "delta_ms": -2.4250999999999863,
+          "relative": -0.006531501141012863
+        },
+        {
+          "group": 2,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 100.0084,
+          "r3_ms": 142.2978,
+          "delta_ms": 42.2894,
+          "relative": 0.42285847988768954
+        },
+        {
+          "group": 3,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 119.2561,
+          "r3_ms": 103.4672,
+          "delta_ms": -15.788899999999998,
+          "relative": -0.13239490474701088
+        },
+        {
+          "group": 4,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 129.9167,
+          "r3_ms": 143.6097,
+          "delta_ms": 13.693000000000012,
+          "relative": 0.10539830522173066
+        },
+        {
+          "group": 5,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 145.6799,
+          "r3_ms": 113.7489,
+          "delta_ms": -31.930999999999997,
+          "relative": -0.21918603733253517
+        },
+        {
+          "group": 6,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 121.5679,
+          "r3_ms": 133.5089,
+          "delta_ms": 11.941000000000017,
+          "relative": 0.0982249426040922
+        },
+        {
+          "group": 7,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 110.3774,
+          "r3_ms": 112.3462,
+          "delta_ms": 1.9688000000000017,
+          "relative": 0.017836984745065676
+        }
+      ],
+      "all_seven_matched": true,
+      "diagnostic_primary": false,
+      "median_delta_ms": 1.9688000000000017,
+      "median_relative": 0.017836984745065676,
+      "baseline_median_ms": 121.5679,
+      "r3_median_ms": 133.5089,
+      "material_regression": null
+    },
+    "Yanyite_warm_high": {
+      "rows": [
+        {
+          "group": 1,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 73.0547,
+          "r3_ms": 78.5204,
+          "delta_ms": 5.465699999999998,
+          "relative": 0.07481654157774931
+        },
+        {
+          "group": 2,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 39.4023,
+          "r3_ms": 46.9216,
+          "delta_ms": 7.519300000000001,
+          "relative": 0.19083403760694173
+        },
+        {
+          "group": 3,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 38.1028,
+          "r3_ms": 49.9047,
+          "delta_ms": 11.801899999999996,
+          "relative": 0.30973839192920205
+        },
+        {
+          "group": 4,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 37.8019,
+          "r3_ms": 45.4492,
+          "delta_ms": 7.647299999999994,
+          "relative": 0.2022993553234096
+        },
+        {
+          "group": 5,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 39.8139,
+          "r3_ms": 43.6431,
+          "delta_ms": 3.8292,
+          "relative": 0.09617746565897844
+        },
+        {
+          "group": 6,
+          "valid": true,
+          "order": [
+            "r3",
+            "032"
+          ],
+          "baseline_ms": 44.633,
+          "r3_ms": 38.9548,
+          "delta_ms": -5.678200000000004,
+          "relative": -0.12721977012524377
+        },
+        {
+          "group": 7,
+          "valid": true,
+          "order": [
+            "032",
+            "r3"
+          ],
+          "baseline_ms": 40.7931,
+          "r3_ms": 40.4523,
+          "delta_ms": -0.34080000000000155,
+          "relative": -0.008354354045169488
+        }
+      ],
+      "all_seven_matched": true,
+      "diagnostic_primary": true,
+      "median_delta_ms": 5.465699999999998,
+      "median_relative": 0.09617746565897844,
+      "baseline_median_ms": 39.8139,
+      "r3_median_ms": 45.4492,
+      "material_regression": true
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema": "m6-041-s2-error-control-v1",
+  "parent_plan": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s2\\PLAN.json",
+    "bytes": 23005,
+    "sha256": "acefc3ad62120b8aa4a928867c6cb249ce7b66cb85acb035c7d12ef1b81e7391"
+  },
+  "parent_summary": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s2\\formal\\SUMMARY.json",
+    "bytes": 4589,
+    "sha256": "d2124a505b67430c2dfb2c4778228f46eb1dbbc98bfbfc19e9a6e10ce5a45c2e"
+  },
+  "parent_results": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s2\\RESULTS.json",
+    "bytes": 12478,
+    "sha256": "3b41323cd31ffd842f2eeae2b44ec00e6c0b751fcf9621a8422c622e80c23a94"
+  },
+  "program": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s2\\error_control\\run_error_control.py",
+    "bytes": 8433,
+    "sha256": "d0b5a0f8012d18e9bd619aa67735491d8f726c6ad3911647ed204b1862a3144d"
+  },
+  "stdin": {
+    "path": "D:\\HumanEye\\runs\\M3-BVH-DEEP-COMPARE-040\\entry_runs\\light_matrix_002\\r1\\prompt_unrelated\\deep_hook\\INPUT.bin",
+    "bytes": 375,
+    "sha256": "51c101bc8f5e1dd47c2b6e453f75ba3a14a6dcd8b12b98e88d13600bdc13d0d7"
+  },
+  "slots": [
+    {
+      "condition": "unknown_option",
+      "arm": "A"
+    },
+    {
+      "condition": "unknown_option",
+      "arm": "B"
+    },
+    {
+      "condition": "unknown_option",
+      "arm": "D"
+    },
+    {
+      "condition": "unknown_option",
+      "arm": "C"
+    },
+    {
+      "condition": "missing_connector",
+      "arm": "A"
+    },
+    {
+      "condition": "missing_connector",
+      "arm": "B"
+    },
+    {
+      "condition": "missing_connector",
+      "arm": "D"
+    },
+    {
+      "condition": "missing_connector",
+      "arm": "C"
+    }
+  ],
+  "conditions": {
+    "unknown_option": {
+      "sole_input_difference": "Append one unsupported Hook option to the actual bound command's inner argv.",
+      "option": "--m6-041-invalid-hook-option",
+      "stdout": "exactly zero bytes",
+      "stderr": "same nonempty usage plus one argparse rejection under all four arms",
+      "exit": 2,
+      "audit_rows": 0
+    },
+    "missing_connector": {
+      "sole_input_difference": "Leave the exact isolated --config path absent rather than writing the normal per-slot connector.",
+      "stdout": "exactly b'{}\\r\\n'",
+      "stderr": "exactly zero bytes",
+      "exit": 0,
+      "audit_rows": 0
+    }
+  },
+  "common_contract": "Original stdin byte identity; exact launcher/real wrapper; no audit/state/lock, Blender/other connection, or active owned PID after completion.",
+  "purpose": "Independent command-exit control; no timing qualification, no new scored slots, no desktop Codex consumption, trust or in-flight host behavior.",
+  "receipt": {
+    "stage": "S2-error-control",
+    "approved_control_slots": 8
+  }
+}

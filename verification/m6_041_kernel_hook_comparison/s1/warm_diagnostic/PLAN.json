@@ -1,0 +1,375 @@
+{
+  "status": "frozen_before_diagnostic",
+  "reason": "Owner requested these additional denominators after seeing S1 single-slot results. Earlier S1 gates and attempts stay in their original denominators.",
+  "arm_sources": {
+    "032": {
+      "source_sha256": "a72aefd84549c05ec37ee09490354416e06f6451c14e8115f395efb80cf0a62d",
+      "version": "9.7.2+k041hook032",
+      "role": "S1 actual installed regular stdio",
+      "site_packages": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\install\\032\\.human-eye\\releases\\9.7.2+k041hook032\\site-packages",
+      "command_prefix": [
+        "D:\\he_m3_bvh032_private_654c1f69\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\install\\032\\.human-eye\\releases\\9.7.2+k041hook032\\admin\\target_runtime_entry.py"
+      ]
+    },
+    "r3": {
+      "source_sha256": "ebd8068712ae70af74d4cfacc6fd8e05f5056e6047334c91c6487f1cd18dff0e",
+      "version": "9.7.2+k041hookr3",
+      "role": "S1 actual installed regular stdio",
+      "site_packages": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\install\\r3\\.human-eye\\releases\\9.7.2+k041hookr3\\site-packages",
+      "command_prefix": [
+        "D:\\he_m3_bvh032_private_654c1f69\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\install\\r3\\.human-eye\\releases\\9.7.2+k041hookr3\\admin\\target_runtime_entry.py"
+      ]
+    }
+  },
+  "asset_pins": {
+    "G60": {
+      "path": "D:\\he_b32g_release_acceptance\\matrix\\B_G60_D12\\native\\input.blend",
+      "sha256": "9bba515e72bcbd307d3b41b42d426e253d9da56b1723c0da21663b3653bb7cd8",
+      "bytes": 92325
+    },
+    "Yanyite": {
+      "path": "D:\\he_m1_m2_source_region_scoped_measurement_001\\slots\\YB\\native\\input.blend",
+      "sha256": "614684bb54bcbea6f2494fe704a0f77dd2a607fdba115a391686abdb362b8a7d",
+      "bytes": 3415766
+    }
+  },
+  "parent": {
+    "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\PLAN_recovery_01.json",
+    "sha256": "d0ad58223f43dcc197b1911fd2e9ac69e354f680b8dbb36aa14681663cd2bd44",
+    "bytes": 23238
+  },
+  "schedule": [
+    [
+      "G60",
+      1,
+      "032"
+    ],
+    [
+      "G60",
+      1,
+      "r3"
+    ],
+    [
+      "G60",
+      2,
+      "r3"
+    ],
+    [
+      "G60",
+      2,
+      "032"
+    ],
+    [
+      "G60",
+      3,
+      "032"
+    ],
+    [
+      "G60",
+      3,
+      "r3"
+    ],
+    [
+      "G60",
+      4,
+      "r3"
+    ],
+    [
+      "G60",
+      4,
+      "032"
+    ],
+    [
+      "G60",
+      5,
+      "032"
+    ],
+    [
+      "G60",
+      5,
+      "r3"
+    ],
+    [
+      "G60",
+      6,
+      "r3"
+    ],
+    [
+      "G60",
+      6,
+      "032"
+    ],
+    [
+      "G60",
+      7,
+      "032"
+    ],
+    [
+      "G60",
+      7,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      1,
+      "032"
+    ],
+    [
+      "Yanyite",
+      1,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      2,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      2,
+      "032"
+    ],
+    [
+      "Yanyite",
+      3,
+      "032"
+    ],
+    [
+      "Yanyite",
+      3,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      4,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      4,
+      "032"
+    ],
+    [
+      "Yanyite",
+      5,
+      "032"
+    ],
+    [
+      "Yanyite",
+      5,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      6,
+      "r3"
+    ],
+    [
+      "Yanyite",
+      6,
+      "032"
+    ],
+    [
+      "Yanyite",
+      7,
+      "032"
+    ],
+    [
+      "Yanyite",
+      7,
+      "r3"
+    ]
+  ],
+  "steps": {
+    "G60": [
+      [
+        "first_nearest",
+        "G60_nearest",
+        "nearest"
+      ],
+      [
+        "warm_nearest",
+        "G60_nearest",
+        "nearest"
+      ],
+      [
+        "first_scan_after_nearest",
+        "G60_scan",
+        "scan"
+      ],
+      [
+        "warm_scan",
+        "G60_scan",
+        "scan"
+      ]
+    ],
+    "Yanyite": [
+      [
+        "first_high",
+        "Yanyite",
+        "high"
+      ],
+      [
+        "warm_high",
+        "Yanyite",
+        "high"
+      ]
+    ]
+  },
+  "requests": {
+    "G60": {
+      "first_nearest": {
+        "name": "human_eye_scene_observe",
+        "arguments": {
+          "session_id": "m3-bvh-040",
+          "include_image": false,
+          "response_detail": "full",
+          "query": {
+            "mode": "surface_nearest",
+            "objects": [
+              {
+                "name": "Target"
+              }
+            ]
+          }
+        }
+      },
+      "warm_nearest": {
+        "name": "human_eye_scene_observe",
+        "arguments": {
+          "session_id": "m3-bvh-040",
+          "include_image": false,
+          "response_detail": "full",
+          "query": {
+            "mode": "surface_nearest",
+            "objects": [
+              {
+                "name": "Target"
+              }
+            ]
+          }
+        }
+      },
+      "first_scan_after_nearest": {
+        "name": "human_eye_scene_observe",
+        "arguments": {
+          "session_id": "m3-bvh-040",
+          "include_image": false,
+          "response_detail": "full",
+          "query": {
+            "mode": "surface_scan",
+            "threshold_m": 0.005
+          }
+        }
+      },
+      "warm_scan": {
+        "name": "human_eye_scene_observe",
+        "arguments": {
+          "session_id": "m3-bvh-040",
+          "include_image": false,
+          "response_detail": "full",
+          "query": {
+            "mode": "surface_scan",
+            "threshold_m": 0.005
+          }
+        }
+      }
+    },
+    "Yanyite": {
+      "first_high": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "mode": "source_region_measurement",
+            "reference": {
+              "name": "Cube"
+            },
+            "region": {
+              "object": {
+                "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+              },
+              "world_box_m": {
+                "max": [
+                  0.03,
+                  0.055,
+                  0.855
+                ],
+                "min": [
+                  -0.03,
+                  -0.055,
+                  0.81
+                ]
+              }
+            },
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          }
+        },
+        "name": "human_eye_scene_observe"
+      },
+      "warm_high": {
+        "arguments": {
+          "include_image": false,
+          "query": {
+            "mode": "source_region_measurement",
+            "reference": {
+              "name": "Cube"
+            },
+            "region": {
+              "object": {
+                "name": "0135bbc4-c6c7-4003-a402-6f2e0283497d"
+              },
+              "world_box_m": {
+                "max": [
+                  0.03,
+                  0.055,
+                  0.855
+                ],
+                "min": [
+                  -0.03,
+                  -0.055,
+                  0.81
+                ]
+              }
+            },
+            "requested_facts": [
+              "surface_proximity"
+            ]
+          }
+        },
+        "name": "human_eye_scene_observe"
+      }
+    }
+  },
+  "state": "Each asset owns one standard GUI document and unchanged native copy throughout its seven paired blocks. Every group/arm uses a new externally pinned service, new state, new audit and original 30s bound. Initial service reads are measured separately; warm = immediately repeated identical request, no GUI edits. Host cache naturally persists across arms; G60 scan first follows nearest. Source-region warm means repeated exact box; no undocumented cache hit assumed.",
+  "comparison": "Per workload compare paired medians of R3-032 ms and R3/032-1. Material regression only if both are strictly greater than +5ms and +0.05. Also retain individual paired deltas/ratios, first reads, invalid slots and cleanup. Do not infer tail quantiles.",
+  "source": {
+    "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic.py": {
+      "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\warm_diagnostic.py",
+      "sha256": "ff9ccbedea89e61a7d8678344f2237b65c12d4504d7078067b4337725e05148e",
+      "bytes": 8792
+    },
+    "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\s1.py": {
+      "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\s1.py",
+      "sha256": "b90adfa606123eb342a8567c309c226a9040fa25c35a89311dcdabd87422c763",
+      "bytes": 14197
+    },
+    "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\finish_yanyite.py": {
+      "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\finish_yanyite.py",
+      "sha256": "25e0b587503abb81025b23aee347695b8d6b6abc4a7f61e39a97bbf024462ed5",
+      "bytes": 1344
+    },
+    "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\audit.py": {
+      "path": "D:\\HumanEye\\runs\\M6-041-KERNEL-HOOK\\s1\\audit.py",
+      "sha256": "973d2f387d6ba1269655cf209903e9965e15899e1daaad59994bd7bd9a055ece",
+      "bytes": 13186
+    }
+  }
+}
