@@ -14,6 +14,7 @@ from numbers import Integral
 import struct
 from types import SimpleNamespace
 
+from . import surface_batch_preproof as _batch_preproof
 from .telemetry import span
 
 
@@ -3791,6 +3792,8 @@ def _capture_referenced_immutable_mesh(mesh, object_id, checkpoint, *, max_faces
     ref_map = {}
     raw_tris = []
     lx = hx = ly = hy = lz = hz = None
+    min_e = max_e = None
+    frexp = math.frexp
     for f_idx, row in enumerate(face_iter):
         if f_idx & 63 == 0:
             checkpoint('surface_proximity_snapshot_admit')
@@ -3841,6 +3844,15 @@ def _capture_referenced_immutable_mesh(mesh, object_id, checkpoint, *, max_faces
                     elif vy > hy: hy = vy
                     if vz < lz: lz = vz
                     elif vz > hz: hz = vz
+                for val in (vx, vy, vz):
+                    if val != 0.0:
+                        _, e = frexp(val)
+                        ev = e - 53
+                        if min_e is None:
+                            min_e = max_e = ev
+                        else:
+                            if ev < min_e: min_e = ev
+                            elif ev > max_e: max_e = ev
                 ref_map[idx] = (vx, vy, vz)
             t3.append(idx)
         raw_tris.append((t3[0], t3[1], t3[2]))
@@ -3858,6 +3870,12 @@ def _capture_referenced_immutable_mesh(mesh, object_id, checkpoint, *, max_faces
         h.update(struct.pack('<III', a, b, c))
     digest = h.hexdigest()
 
+    preproof_eligible = (
+        min_e is None
+        or (max_e - min_e <= _batch_preproof.MAX_PREPROOF_EXP_SPAN
+            and _batch_preproof.MIN_PREPROOF_EXP <= min_e
+            and max_e <= _batch_preproof.MAX_PREPROOF_EXP)
+    )
     snap_mesh = SimpleNamespace(object_id=object_id, name=name, vertices=compact_verts, faces=compact_faces)
     return {
         'ok': True,
@@ -3866,6 +3884,9 @@ def _capture_referenced_immutable_mesh(mesh, object_id, checkpoint, *, max_faces
         'face_count': n_faces,
         'referenced_vertex_count': len(compact_verts),
         'referenced_bounds': ((lx, ly, lz), (hx, hy, hz)),
+        'min_exp': min_e,
+        'max_exp': max_e,
+        'preproof_eligible': preproof_eligible,
         'source_sha256': digest,
         'retained_bytes_est': len(compact_verts) * 72 + n_faces * 64,
     }
@@ -3924,13 +3945,16 @@ def build_batch_snapshot(target, peers, checkpoint, *, peer_ids=None, snapshot_i
 
 
 def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
-                                cutoff_mode='CUTOFF_ONLY_OFF', sort_policy='stable',
-                                order_hints=None, use_mesh_cache=True,
-                                retain_witness_triangles=False, snapshot=None,
-                                snapshot_id=None, max_peers=256, max_total_faces=65536):
+                                cutoff_mode='CUTOFF_ONLY_OFF', preproof_mode='NONE',
+                                sort_policy='stable', order_hints=None,
+                                use_mesh_cache=True, retain_witness_triangles=False,
+                                snapshot=None, snapshot_id=None,
+                                max_peers=256, max_total_faces=65536):
     """Find all exact nearest peers to target with snapshot immutability & proof-bearing dispositions."""
     if cutoff_mode not in _VALID_CUTOFF_MODES:
         raise ValueError(f'unsupported cutoff_mode: {cutoff_mode!r}')
+    if preproof_mode not in _batch_preproof.VALID_PREPROOF_MODES:
+        raise ValueError(f'unsupported preproof_mode: {preproof_mode!r}')
     if sort_policy not in ('stable', 'referenced_aabb', 'hints'):
         raise ValueError(f'unsupported sort_policy: {sort_policy!r}')
 
@@ -3974,6 +3998,10 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
                 'n_input': 0, 'n_measured': 0, 'n_strictly_excluded': 0, 'n_unknown': 0,
                 'n_visited': 0, 'n_prepared': 0, 'n_trees_built': 0, 'n_traversed': 0,
                 'n_excluded_root_aabb': 0, 'n_excluded_root_axis': 0, 'n_excluded_traversal': 0,
+                'preproof_mode': preproof_mode,
+                'n_excluded_pretree_aabb': 0, 'n_excluded_pretree_axis': 0,
+                'preproof_attempts': 0, 'preproof_deferrals': 0,
+                'preproof_failed_fallbacks': 0, 'preproof_target_memo_hits': 0,
             },
             'cutoff_pruned_count': 0,
             'evaluated_count': 0,
@@ -4011,6 +4039,7 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
         order = [idx for _, idx in scores]
 
     cache = {} if use_mesh_cache else None
+    target_axis_memo = {}
     outcomes_by_index = [None] * n_peers
     outcomes_by_id = {}
     nearest_indices = []
@@ -4018,9 +4047,18 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
     best_key = None
     incumbent_origin = None
     incumbent_axis = None
+    incumbent_axis_source_id = None
+    axis_epoch = 0
+    axis_registry = []
     n_measured = n_excluded = n_unknown = 0
     n_visited = n_prepared = n_trees_built = n_traversed = 0
     n_ex_raabb = n_ex_raxis = n_ex_trav = 0
+    n_ex_pre_aabb = n_ex_pre_axis = 0
+    pre_attempts = pre_deferrals = pre_failed = pre_memo_hits = 0
+
+    def _acc_pre_work(dst, src):
+        for wk_k, wk_v in src.items():
+            dst[wk_k] = dst.get(wk_k, 0) + wk_v
 
     try:
         for idx in order:
@@ -4044,18 +4082,82 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
                 }
             else:
                 n_visited += 1
-                outcome = _measure_surface_proximity_cutoff(
-                    t_ent['mesh'], p_ent['mesh'], checkpoint,
-                    upper_bound_sq_key=(None if cutoff_mode == 'EXHAUSTIVE' else best_key),
-                    upper_bound_origin=incumbent_origin,
-                    cutoff_mode=cutoff_mode,
-                    hint_axis=(incumbent_axis if cutoff_mode == 'CUTOFF_SETTLED_PROJECTION' else None),
-                    pair_identity=pair_id,
-                    snapshot_identity=snap_id,
-                    source_identity=src_id,
-                    retain_witness_triangles=retain_witness_triangles,
-                    _mesh_cache=cache,
-                )
+                outcome = None
+                pre_work = {}
+                if cutoff_mode != 'EXHAUSTIVE' and preproof_mode != 'NONE' and best_key is not None:
+                    pre_attempts += 1
+                    aabb_pre = _batch_preproof.check_pretree_root_aabb_exclusion(
+                        t_ent, p_ent, best_key, checkpoint,
+                    )
+                    _acc_pre_work(pre_work, aabb_pre['work'])
+                    if aabb_pre.get('deferred_reason') is not None:
+                        pre_deferrals += 1
+                    if aabb_pre['excluded']:
+                        outcome = {
+                            'result_kind': 'nearest_cutoff_exclusion',
+                            'disposition': 'strictly_above_cutoff',
+                            'pair_identity': pair_id,
+                            'snapshot_identity': snap_id,
+                            'source_identity': src_id,
+                            'exact_upper_bound_key': list(best_key),
+                            'upper_bound_origin': incumbent_origin,
+                            'proof_kind': 'pretree_root_aabb',
+                            'proof_receipt': aabb_pre['proof_receipt'],
+                            'work': pre_work,
+                            'stage': 'pretree_root_aabb_exclusion',
+                        }
+                    elif preproof_mode in ('B2_INCUMBENT_AXIS', 'B3_TARGET_MEMO_AXIS', 'B4_BOUNDED_MULTI_AXIS'):
+                        if preproof_mode == 'B4_BOUNDED_MULTI_AXIS':
+                            cand_axes = list(reversed(axis_registry))
+                        elif incumbent_axis is not None:
+                            cand_axes = [(incumbent_axis, incumbent_axis_source_id)]
+                        else:
+                            cand_axes = []
+                        memo_arg = None if preproof_mode == 'B2_INCUMBENT_AXIS' else target_axis_memo
+                        for cax, csrc in cand_axes:
+                            ax_pre = _batch_preproof.check_pretree_root_axis_exclusion(
+                                t_ent, p_ent, cax, best_key, checkpoint,
+                                target_memo=memo_arg,
+                                axis_epoch=axis_epoch,
+                                axis_source_peer_id=csrc,
+                            )
+                            _acc_pre_work(pre_work, ax_pre['work'])
+                            pre_memo_hits += ax_pre['work'].get('preproof_target_memo_hits', 0)
+                            if ax_pre.get('deferred_reason') is not None:
+                                pre_deferrals += 1
+                            if ax_pre['excluded']:
+                                outcome = {
+                                    'result_kind': 'nearest_cutoff_exclusion',
+                                    'disposition': 'strictly_above_cutoff',
+                                    'pair_identity': pair_id,
+                                    'snapshot_identity': snap_id,
+                                    'source_identity': src_id,
+                                    'exact_upper_bound_key': list(best_key),
+                                    'upper_bound_origin': incumbent_origin,
+                                    'proof_kind': 'pretree_root_axis',
+                                    'proof_receipt': ax_pre['proof_receipt'],
+                                    'work': pre_work,
+                                    'stage': 'pretree_root_axis_exclusion',
+                                }
+                                break
+                if outcome is None:
+                    if pre_work:
+                        pre_failed += 1
+                    outcome = _measure_surface_proximity_cutoff(
+                        t_ent['mesh'], p_ent['mesh'], checkpoint,
+                        upper_bound_sq_key=(None if cutoff_mode == 'EXHAUSTIVE' else best_key),
+                        upper_bound_origin=incumbent_origin,
+                        cutoff_mode=cutoff_mode,
+                        hint_axis=(incumbent_axis if cutoff_mode == 'CUTOFF_SETTLED_PROJECTION' else None),
+                        pair_identity=pair_id,
+                        snapshot_identity=snap_id,
+                        source_identity=src_id,
+                        retain_witness_triangles=retain_witness_triangles,
+                        _mesh_cache=cache,
+                    )
+                    if pre_work:
+                        wk_out = outcome.setdefault('work', {})
+                        _acc_pre_work(wk_out, pre_work)
 
             outcomes_by_index[idx] = outcome
             outcomes_by_id[pid] = outcome
@@ -4072,29 +4174,48 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
                 n_measured += 1
                 mres = outcome['measured_result']
                 ek = mres['_exact_distance_sq']
+                raw_ax = _exact_axis_from_measured_result(mres)
+                canon_ax = _batch_preproof.canonicalize_exact_axis(raw_ax) if raw_ax is not None else None
                 if best_key is None:
                     best_key = ek
                     nearest_indices = [idx]
                     incumbent_origin = {'peer_id': pid, 'peer_index': idx, 'exact_distance_sq': list(ek)}
-                    incumbent_axis = _exact_axis_from_measured_result(mres)
+                    if canon_ax is not None:
+                        incumbent_axis = canon_ax
+                        incumbent_axis_source_id = pid
+                        axis_epoch += 1
+                        axis_registry.append((canon_ax, pid))
                 else:
                     cmp = _compare_distance_keys(ek, best_key, checkpoint)
                     if cmp < 0:
                         best_key = ek
                         nearest_indices = [idx]
                         incumbent_origin = {'peer_id': pid, 'peer_index': idx, 'exact_distance_sq': list(ek)}
-                        new_ax = _exact_axis_from_measured_result(mres)
-                        if new_ax is not None:
-                            incumbent_axis = new_ax
+                        if canon_ax is not None and canon_ax != incumbent_axis:
+                            incumbent_axis = canon_ax
+                            incumbent_axis_source_id = pid
+                            axis_epoch += 1
+                            if preproof_mode == 'B3_TARGET_MEMO_AXIS':
+                                target_axis_memo.clear()
                     elif cmp == 0:
                         nearest_indices.append(idx)
+                    if canon_ax is not None and preproof_mode == 'B4_BOUNDED_MULTI_AXIS':
+                        axis_registry = [entry for entry in axis_registry if entry[0] != canon_ax]
+                        axis_registry.append((canon_ax, pid))
+                        if len(axis_registry) > _batch_preproof.MAX_MULTI_AXES:
+                            evicted_ax, _ = axis_registry.pop(0)
+                            target_axis_memo.pop((t_ent.get('source_sha256'), evicted_ax), None)
             elif rk == 'nearest_cutoff_exclusion':
                 n_excluded += 1
                 pk = outcome.get('proof_kind')
-                if pk == 'root_aabb':
+                if pk in ('root_aabb', 'pretree_root_aabb'):
                     n_ex_raabb += 1
-                elif pk == 'root_axis':
+                    if pk == 'pretree_root_aabb':
+                        n_ex_pre_aabb += 1
+                elif pk in ('root_axis', 'pretree_root_axis'):
                     n_ex_raxis += 1
+                    if pk == 'pretree_root_axis':
+                        n_ex_pre_axis += 1
                 else:
                     n_ex_trav += 1
             else:
@@ -4103,6 +4224,7 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
     finally:
         if cache is not None:
             cache.clear()
+        target_axis_memo.clear()
 
     nearest_indices.sort()
     unresolved_indices.sort()
@@ -4122,6 +4244,7 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
         'measurement_valid': status == 'complete',
         'status': status,
         'cutoff_mode': cutoff_mode,
+        'preproof_mode': preproof_mode,
         'sort_policy': sort_policy,
         'snapshot_identity': snap_id,
         'peer_ids': ids,
@@ -4149,6 +4272,13 @@ def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
             'n_excluded_root_aabb': n_ex_raabb,
             'n_excluded_root_axis': n_ex_raxis,
             'n_excluded_traversal': n_ex_trav,
+            'preproof_mode': preproof_mode,
+            'n_excluded_pretree_aabb': n_ex_pre_aabb,
+            'n_excluded_pretree_axis': n_ex_pre_axis,
+            'preproof_attempts': pre_attempts,
+            'preproof_deferrals': pre_deferrals,
+            'preproof_failed_fallbacks': pre_failed,
+            'preproof_target_memo_hits': pre_memo_hits,
         },
         'cutoff_pruned_count': n_excluded,
         'evaluated_count': n_measured,
