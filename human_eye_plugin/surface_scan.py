@@ -234,7 +234,7 @@ def surface_scan_result(packet, cache, checkpoint, *, diagnostics=None, _normali
 
     ordered = sorted(pairs, key=lambda row: (tuple(row['object_ids']) in unknown,
                                              row['lower_bound_m'], row['object_ids']))
-    mesh_cache = {}
+    mesh_cache = {'__sealed_query_meshes__': True}
     for row in ordered:
         checkpoint('surface_scan_pair')
         ids = tuple(row['object_ids'])

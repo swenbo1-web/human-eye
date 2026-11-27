@@ -223,8 +223,10 @@ _WORK_STAGES = {
         'leaf_pair_visits', 'queue_pushes', 'queue_bound_tests',
         'narrow_phase_pairs', 'plane_projection_tests', 'plane_bound_tests',
         'plane_pruned_pairs', 'subtree_pruned_pairs', 'surface_bvh_build',
-        'pair', 'pair_budget', 'triangle_prepare', 'aabb_bound_tests',
-        'witness_projection_completed_exact',
+        'pair', 'pair_budget', 'triangle_prepare',
+        'witness_projection', 'witness_projection_tests',
+        'witness_projection_direction_builds', 'witness_projection_tri_dots',
+        'witness_projection_node_visits', 'witness_projection_completed_exact',
     )
 }
 
@@ -428,48 +430,7 @@ def _build_fast_triangles(faces, integers, budget=None):
     return triangles
 
 
-def _integer_frame(records, budget, *, holder=None):
-    verts_cache = []
-    for mesh, _, _ in records:
-        vlist = _numpy_2d_list(mesh.vertices, ('f', 'i', 'u'))
-        verts_cache.append(vlist if vlist is not None else mesh.vertices)
-    first_verts = verts_cache[0]
-    first = first_verts[records[0][2][0]]
-    if len(first) != 3 or not (math.isfinite(float(first[0])) and math.isfinite(float(first[1])) and math.isfinite(float(first[2]))):
-        raise _DomainError('surface_nonfinite_vertex')
-    first_f = (float(first[0]), float(first[1]), float(first[2]))
-    origin = (_bounded(Fraction.from_float(first_f[0])),
-              _bounded(Fraction.from_float(first_f[1])),
-              _bounded(Fraction.from_float(first_f[2])))
-    o0 = _float_dyadic(first_f[0])
-    o1 = _float_dyadic(first_f[1])
-    o2 = _float_dyadic(first_f[2])
-    relative, exponent = [], 0
-    tick = budget.tick
-    for (_, faces, indices), verts in zip(records, verts_cache):
-        coordinates = {}
-        for index in indices:
-            tick('referenced_vertices')
-            values = verts[index]
-            if len(values) != 3:
-                raise _DomainError('surface_nonfinite_vertex')
-            vx, vy, vz = values[0], values[1], values[2]
-            if type(vx) is not float: vx = float(vx)
-            if type(vy) is not float: vy = float(vy)
-            if type(vz) is not float: vz = float(vz)
-            if not (math.isfinite(vx) and math.isfinite(vy) and math.isfinite(vz)):
-                raise _DomainError('surface_nonfinite_vertex')
-            dx = _sub_dyadic(_float_dyadic(vx), o0)
-            dy = _sub_dyadic(_float_dyadic(vy), o1)
-            dz = _sub_dyadic(_float_dyadic(vz), o2)
-            if dx[0] and -dx[1] > exponent:
-                exponent = -dx[1]
-            if dy[0] and -dy[1] > exponent:
-                exponent = -dy[1]
-            if dz[0] and -dz[1] > exponent:
-                exponent = -dz[1]
-            coordinates[index] = (dx, dy, dz)
-        relative.append((faces, coordinates))
+def _prepare_triangles_from_relative(relative, exponent, budget, *, holder=None):
     factor = _bounded(1 << exponent)
     limit = _FAST_COORD_LIMIT
     prepared = []
@@ -515,6 +476,52 @@ def _integer_frame(records, budget, *, holder=None):
             retained.append(integers)
     if holder is not None:
         holder['coordinates'] = tuple(retained)
+    return factor, prepared
+
+
+def _integer_frame(records, budget, *, holder=None):
+    verts_cache = []
+    for mesh, _, _ in records:
+        vlist = _numpy_2d_list(mesh.vertices, ('f', 'i', 'u'))
+        verts_cache.append(vlist if vlist is not None else mesh.vertices)
+    first_verts = verts_cache[0]
+    first = first_verts[records[0][2][0]]
+    if len(first) != 3 or not (math.isfinite(float(first[0])) and math.isfinite(float(first[1])) and math.isfinite(float(first[2]))):
+        raise _DomainError('surface_nonfinite_vertex')
+    first_f = (float(first[0]), float(first[1]), float(first[2]))
+    origin = (_bounded(Fraction.from_float(first_f[0])),
+              _bounded(Fraction.from_float(first_f[1])),
+              _bounded(Fraction.from_float(first_f[2])))
+    o0 = _float_dyadic(first_f[0])
+    o1 = _float_dyadic(first_f[1])
+    o2 = _float_dyadic(first_f[2])
+    relative, exponent = [], 0
+    tick = budget.tick
+    for (_, faces, indices), verts in zip(records, verts_cache):
+        coordinates = {}
+        for index in indices:
+            tick('referenced_vertices')
+            values = verts[index]
+            if len(values) != 3:
+                raise _DomainError('surface_nonfinite_vertex')
+            vx, vy, vz = values[0], values[1], values[2]
+            if type(vx) is not float: vx = float(vx)
+            if type(vy) is not float: vy = float(vy)
+            if type(vz) is not float: vz = float(vz)
+            if not (math.isfinite(vx) and math.isfinite(vy) and math.isfinite(vz)):
+                raise _DomainError('surface_nonfinite_vertex')
+            dx = _sub_dyadic(_float_dyadic(vx), o0)
+            dy = _sub_dyadic(_float_dyadic(vy), o1)
+            dz = _sub_dyadic(_float_dyadic(vz), o2)
+            if dx[0] and -dx[1] > exponent:
+                exponent = -dx[1]
+            if dy[0] and -dy[1] > exponent:
+                exponent = -dy[1]
+            if dz[0] and -dz[1] > exponent:
+                exponent = -dz[1]
+            coordinates[index] = (dx, dy, dz)
+        relative.append((faces, coordinates))
+    factor, prepared = _prepare_triangles_from_relative(relative, exponent, budget, holder=holder)
     return origin, factor, prepared
 
 
@@ -959,11 +966,18 @@ class _FastWitnessProjection:
         'prep_a', 'prep_b', 'epoch',
     )
 
+    _BUILD_COST = 8
+
     @classmethod
-    def build(cls, best, prep_a, prep_b, epoch):
+    def build(cls, best, prep_a, prep_b, epoch, budget):
         bn, bd, desc = best
         if bn <= 0 or bd <= 0:
             return None
+        budget.checkpoint('surface_proximity_witness_projection')
+        if not _wp_optional_allowance(budget, cls._BUILD_COST, reserve=_FAST_WP_HEADROOM_RESERVE):
+            return None
+        budget.consume(cls._BUILD_COST - 1, 'witness_projection')
+        budget.tick('witness_projection_direction_builds', 1)
         axis = _fast_descriptor_direction(desc)
         if axis is None:
             return None
@@ -988,14 +1002,19 @@ class _FastWitnessProjection:
         self.prep_a = prep_a
         self.prep_b = prep_b
         self.epoch = epoch
+        budget.counts['witness_projection_directions'] = budget.counts.get('witness_projection_directions', 0) + 1
         return self
 
-    def _tri_interval(self, idx, tri_cache, prep_side):
+    def _tri_interval(self, idx, tri_cache, prep_side, budget):
         row = tri_cache[idx]
         if row is not None:
             return row
-        ax, ay, az = self.axis
         pts = prep_side[idx][0]
+        cost = len(pts)
+        if not _wp_optional_allowance(budget, cost, reserve=_FAST_WP_HEADROOM_RESERVE):
+            return None
+        budget.tick('witness_projection_tri_dots', cost)
+        ax, ay, az = self.axis
         p0 = pts[0]
         d0 = p0[0] * ax + p0[1] * ay + p0[2] * az
         if len(pts) == 3:
@@ -1013,11 +1032,12 @@ class _FastWitnessProjection:
         tri_cache[idx] = row
         return row
 
-    def _node_interval(self, node, node_cache, tri_cache, prep_side):
+    def _node_interval(self, node, node_cache, tri_cache, prep_side, budget):
         hit = node_cache.get(id(node))
         if hit is not None:
             return hit
         # Iterative bottom-up post-order evaluation stays bounded and avoids recursion overhead.
+        # Nodes commit into node_cache only after children and budget ticks succeed.
         stack = [(node, False)]
         while stack:
             cur, ready = stack.pop()
@@ -1028,16 +1048,25 @@ class _FastWitnessProjection:
             if ids is not None:
                 lo = hi = None
                 for idx in ids:
-                    tlo, thi = self._tri_interval(idx, tri_cache, prep_side)
+                    t = self._tri_interval(idx, tri_cache, prep_side, budget)
+                    if t is None:
+                        return None
+                    tlo, thi = t
                     if lo is None or tlo < lo:
                         lo = tlo
                     if hi is None or thi > hi:
                         hi = thi
+                if not _wp_optional_allowance(budget, 1, reserve=_FAST_WP_HEADROOM_RESERVE):
+                    return None
+                budget.tick('witness_projection_node_visits', 1)
                 node_cache[cid] = (lo, hi)
             elif not ready:
                 lch, rch = cur[8], cur[9]
                 lid, rid = id(lch), id(rch)
                 if lid in node_cache and rid in node_cache:
+                    if not _wp_optional_allowance(budget, 1, reserve=_FAST_WP_HEADROOM_RESERVE):
+                        return None
+                    budget.tick('witness_projection_node_visits', 1)
                     la, rb = node_cache[lid], node_cache[rid]
                     node_cache[cid] = (
                         la[0] if la[0] <= rb[0] else rb[0],
@@ -1050,6 +1079,9 @@ class _FastWitnessProjection:
                     if lid not in node_cache:
                         stack.append((lch, False))
             else:
+                if not _wp_optional_allowance(budget, 1, reserve=_FAST_WP_HEADROOM_RESERVE):
+                    return None
+                budget.tick('witness_projection_node_visits', 1)
                 la = node_cache[id(cur[8])]
                 rb = node_cache[id(cur[9])]
                 node_cache[cid] = (
@@ -1058,7 +1090,10 @@ class _FastWitnessProjection:
                 )
         return node_cache[id(node)]
 
-    def prunes_nodes(self, left, right, strict, *, use_vertex_slab=True):
+    def prunes_nodes(self, left, right, strict, budget, *, use_vertex_slab=True):
+        if not _wp_optional_allowance(budget, 1, reserve=_FAST_WP_HEADROOM_RESERVE):
+            return False
+        budget.tick('witness_projection_tests', 1)
         ax, ay, az = self.axis
         cutoff = self.cutoff_strict if strict else self.cutoff_tie
         # Fast O(1) 8-corner AABB projection check first before any child scan.
@@ -1073,20 +1108,31 @@ class _FastWitnessProjection:
             return False
         la = self.node_a.get(id(left))
         if la is None:
-            la = self._node_interval(left, self.node_a, self.tri_a, self.prep_a)
+            la = self._node_interval(left, self.node_a, self.tri_a, self.prep_a, budget)
+            if la is None:
+                return False
         rb = self.node_b.get(id(right))
         if rb is None:
-            rb = self._node_interval(right, self.node_b, self.tri_b, self.prep_b)
+            rb = self._node_interval(right, self.node_b, self.tri_b, self.prep_b, budget)
+            if rb is None:
+                return False
         gap = la[0] - rb[1] if la[0] > rb[1] else (rb[0] - la[1] if rb[0] > la[1] else 0)
         return gap > cutoff
 
-    def prunes_triangles(self, i, j, strict):
+    def prunes_triangles(self, i, j, strict, budget):
+        if not _wp_optional_allowance(budget, 1, reserve=_FAST_WP_HEADROOM_RESERVE):
+            return False
+        budget.tick('witness_projection_tests', 1)
         ia = self.tri_a[i]
         if ia is None:
-            ia = self._tri_interval(i, self.tri_a, self.prep_a)
+            ia = self._tri_interval(i, self.tri_a, self.prep_a, budget)
+            if ia is None:
+                return False
         jb = self.tri_b[j]
         if jb is None:
-            jb = self._tri_interval(j, self.tri_b, self.prep_b)
+            jb = self._tri_interval(j, self.tri_b, self.prep_b, budget)
+            if jb is None:
+                return False
         gap = ia[0] - jb[1] if ia[0] > jb[1] else (jb[0] - ia[1] if jb[0] > ia[1] else 0)
         return gap > (self.cutoff_strict if strict else self.cutoff_tie)
 
@@ -1103,11 +1149,14 @@ class _ProjectionUnavailable(Exception):
     """Only this optional local proof is unavailable; use original exact work."""
 
 
-def _wp_optional_allowance(budget, amount):
-    if MAX_WORK_UNITS - budget.counts['work_units'] >= amount:
+def _wp_optional_allowance(budget, amount, *, reserve=0):
+    if MAX_WORK_UNITS - budget.counts['work_units'] >= amount + reserve:
         return True
     budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
     return False
+
+
+_FAST_WP_HEADROOM_RESERVE = 4096
 
 
 def _wp_scalar(value, cap):
@@ -1422,10 +1471,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
             fast_proj = None
             return
         fast_proj_epoch += 1
-        fast_proj = _FastWitnessProjection.build(best, prepared[0], prepared[1], fast_proj_epoch)
-        if fast_proj is not None:
-            budget.counts['witness_projection_direction_builds'] = budget.counts.get('witness_projection_direction_builds', 0) + 1
-            budget.counts['witness_projection_directions'] = budget.counts.get('witness_projection_directions', 0) + 1
+        fast_proj = _FastWitnessProjection.build(best, prepared[0], prepared[1], fast_proj_epoch, budget)
 
     def eval_leaf(left, right):
         nonlocal best, best_pair, best_floor, tie_floor, completed_exact, projection
@@ -1445,11 +1491,9 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                         if _aabb_exceeds_best(a[4], b[4], best, strict=strict):
                             budget.counts['aabb_pruned_pairs'] += 1
                             continue
-                    if fast_proj is not None:
-                        budget.counts['witness_projection_tests'] = budget.counts.get('witness_projection_tests', 0) + 1
-                        if fast_proj.prunes_triangles(i, j, strict):
-                            budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
-                            continue
+                    if fast_proj is not None and fast_proj.prunes_triangles(i, j, strict, budget):
+                        budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
+                        continue
                     pruned, planes = _triangle_plane_bounds(
                         a, b, best, budget, strict=strict, fast_ints=fast_ints)
                     if pruned:
@@ -1492,8 +1536,6 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
             strict = (sl[10], sr[10]) < best_pair
             if shift == 0:
                 budget.checkpoint('surface_proximity_aabb_bound_tests')
-                budget.counts['aabb_bound_tests'] += 1
-                credit.saved_bound()
                 limit = best_floor if strict else tie_floor
                 if key > limit:
                     budget.counts['subtree_pruned_pairs'] += sl[6] * sr[6]
@@ -1508,7 +1550,8 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                     return
             if fast_proj is not None:
                 use_vs = budget.counts['node_pair_visits'] >= 16 and sl[6] <= 512 and sr[6] <= 512
-                if fast_proj.prunes_nodes(sl, sr, strict, use_vertex_slab=use_vs):
+                if fast_proj.prunes_nodes(sl, sr, strict, budget, use_vertex_slab=use_vs):
+                    budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
                     budget.counts['subtree_pruned_pairs'] += sl[6] * sr[6]
                     return
                 if use_vs:
@@ -1553,6 +1596,10 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
         key, _, _, left, right, push_epoch = heapq.heappop(pending)
         if best is not None:
             if shift == 0:
+                budget.checkpoint('surface_proximity_aabb_bound_tests')
+                budget.counts['aabb_bound_tests'] += 1
+                credit.saved_bound()
+                # Global break is mathematically valid only when shift == 0 and key is exact unshifted AABB sq dist.
                 if key > best_floor:
                     pruned = left[6] * right[6]
                     for item in pending:
@@ -1574,7 +1621,8 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                     continue
             if fast_proj is not None and push_epoch != fast_proj.epoch:
                 use_vs = budget.counts['node_pair_visits'] >= 16 and left[6] <= 512 and right[6] <= 512
-                if fast_proj.prunes_nodes(left, right, strict, use_vertex_slab=use_vs):
+                if fast_proj.prunes_nodes(left, right, strict, budget, use_vertex_slab=use_vs):
+                    budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
                     budget.counts['subtree_pruned_pairs'] += left[6] * right[6]
                     continue
         if left[7] is not None and right[7] is not None:
@@ -1820,26 +1868,37 @@ def _boundary_witness(contact, pair, budget):
     return point
 
 
-class _DummyBuildBudget:
-    __slots__ = ('units',)
+class _CacheBuildBudget:
+    """Forward local-cache BVH build costs and checkpoints directly to caller budget."""
+    __slots__ = ('budget', 'units')
 
-    def __init__(self):
+    def __init__(self, budget):
+        self.budget = budget
         self.units = 0
 
     def consume(self, amount, stage):
         self.units += amount
+        self.budget.consume(amount, stage)
 
 
-def _prepare_cached_mesh(mesh, cache):
-    key = id(mesh)
-    entry = cache.get(key)
-    if entry is not None and entry['mesh'] is mesh:
-        return entry
-    if not len(mesh.faces) or len(mesh.faces) > MAX_FACES:
-        raise _DomainError('surface_geometry_work_limit')
-    noop = lambda stage, amount=1: None
-    rec, topo = _admit_one(mesh, noop, {int})
-    _, faces, indices = rec
+def _mesh_cache_is_immutable(mesh, cache):
+    if cache.get('__sealed_query_meshes__') is True:
+        return True
+    verts = getattr(mesh, 'vertices', None)
+    faces = getattr(mesh, 'faces', None)
+    if isinstance(verts, tuple) and isinstance(faces, tuple):
+        return True
+    v_flags = getattr(verts, 'flags', None)
+    f_flags = getattr(faces, 'flags', None)
+    return bool(v_flags is not None and f_flags is not None and not v_flags.writeable and not f_flags.writeable)
+
+
+def _ensure_cached_frame(ent, budget):
+    frame = ent.get('frame')
+    if frame is not None:
+        budget.tick('referenced_vertices', len(ent['admission'][0][2]))
+        return frame, True
+    mesh, _, indices = ent['admission'][0]
     vlist = _numpy_2d_list(mesh.vertices, ('f', 'i', 'u'))
     verts = vlist if vlist is not None else mesh.vertices
     first = verts[indices[0]]
@@ -1855,7 +1914,9 @@ def _prepare_cached_mesh(mesh, cache):
     o0, o1, o2 = o_dy
     rel = {}
     local_exp = 0
+    tick = budget.tick
     for idx in indices:
+        tick('referenced_vertices')
         values = verts[idx]
         if len(values) != 3:
             raise _DomainError('surface_nonfinite_vertex')
@@ -1882,58 +1943,69 @@ def _prepare_cached_mesh(mesh, cache):
         if b > max_bits:
             max_bits = b
         ints[idx] = (ix, iy, iz)
-    local_tris = local_bounds = local_root = None
-    bvh_units = 0
-    fit_fast = max_bits < 480
-    if fit_fast:
-        from .surface_geometry import _bvh
-        local_tris = _build_fast_triangles(faces, ints)
-        local_bounds = [((t[4][0][0], t[4][1][0], t[4][2][0]),
-                         (t[4][0][1], t[4][1][1], t[4][2][1])) for t in local_tris]
-        dbud = _DummyBuildBudget()
-        local_root = _bvh(local_bounds, dbud, leaf_size=2)
-        bvh_units = dbud.units
-    entry = dict(
-        mesh=mesh, record=rec, topology=topo,
+    frame = dict(
         o_dy=o_dy, origin_frac=origin_frac, local_exp=local_exp,
-        rel=rel, ints=ints, max_bits=max_bits, fit_fast=fit_fast,
-        local_tris=local_tris, local_bounds=local_bounds,
-        local_root=local_root, bvh_units=bvh_units,
+        rel=rel, ints=ints, max_bits=max_bits, fit_fast=max_bits < 480,
     )
-    cache[key] = entry
-    return entry
+    ent['frame'] = frame
+    return frame, False
 
 
-def _translate_bvh(node, shift_e, tx, ty, tz):
-    lo, hi, count, ids, left, right = node
-    if shift_e:
-        nlo = ((lo[0] << shift_e) + tx, (lo[1] << shift_e) + ty, (lo[2] << shift_e) + tz)
-        nhi = ((hi[0] << shift_e) + tx, (hi[1] << shift_e) + ty, (hi[2] << shift_e) + tz)
-    else:
-        nlo = (lo[0] + tx, lo[1] + ty, lo[2] + tz)
-        nhi = (hi[0] + tx, hi[1] + ty, hi[2] + tz)
-    if ids is not None:
-        return (nlo, nhi, count, ids, None, None)
-    return (nlo, nhi, count, None,
-            _translate_bvh(left, shift_e, tx, ty, tz),
-            _translate_bvh(right, shift_e, tx, ty, tz))
+def _translate_bvh(node, shift_e, tx, ty, tz, *, budget=None):
+    checkpoint = budget.checkpoint if budget is not None else None
+    nodes = 0
+
+    def walk(cur):
+        nonlocal nodes
+        if checkpoint is not None:
+            checkpoint('surface_proximity_surface_bvh_build')
+        nodes += 1
+        lo, hi, count, ids, left, right = cur
+        if shift_e:
+            nlo = ((lo[0] << shift_e) + tx, (lo[1] << shift_e) + ty, (lo[2] << shift_e) + tz)
+            nhi = ((hi[0] << shift_e) + tx, (hi[1] << shift_e) + ty, (hi[2] << shift_e) + tz)
+        else:
+            nlo = (lo[0] + tx, lo[1] + ty, lo[2] + tz)
+            nhi = (hi[0] + tx, hi[1] + ty, hi[2] + tz)
+        if ids is not None:
+            return (nlo, nhi, count, ids, None, None)
+        return (nlo, nhi, count, None, walk(left), walk(right))
+
+    root = walk(node)
+    if budget is not None:
+        budget.counts['mesh_cache_translate_units'] = budget.counts.get('mesh_cache_translate_units', 0) + nodes
+    return root
 
 
-def _translate_triangles(local_tris, shift_e, tx, ty, tz):
+def _translate_triangles(local_tris, shift_e, tx, ty, tz, *, budget=None, charge_prepare=False):
     tris = []
     append = tris.append
+    checkpoint = budget.checkpoint if budget is not None else None
+    tick = budget.tick if budget is not None else None
     if shift_e == 0:
         for pts, normal, squared, edges, bounds in local_tris:
+            if checkpoint is not None:
+                if charge_prepare:
+                    tick('prepared_triangles')
+                else:
+                    checkpoint('surface_proximity_triangle_prepare')
             npts = tuple((p[0] + tx, p[1] + ty, p[2] + tz) for p in pts)
             nedges = [((s[0] + tx, s[1] + ty, s[2] + tz),
                        (e[0] + tx, e[1] + ty, e[2] + tz), d, dd) for s, e, d, dd in edges]
             (lx0, hx0), (ly0, hy0), (lz0, hz0) = bounds
             nbounds = ((lx0 + tx, hx0 + tx), (ly0 + ty, hy0 + ty), (lz0 + tz, hz0 + tz))
             append((npts, normal, squared, nedges, nbounds))
+        if budget is not None:
+            budget.counts['mesh_cache_translate_units'] = budget.counts.get('mesh_cache_translate_units', 0) + len(tris)
         return tris
     s2 = shift_e + shift_e
     s4 = s2 + s2
     for pts, normal, squared, edges, bounds in local_tris:
+        if checkpoint is not None:
+            if charge_prepare:
+                tick('prepared_triangles')
+            else:
+                checkpoint('surface_proximity_triangle_prepare')
         npts = tuple(((p[0] << shift_e) + tx, (p[1] << shift_e) + ty, (p[2] << shift_e) + tz) for p in pts)
         nnormal = (normal[0] << s2, normal[1] << s2, normal[2] << s2) if squared else normal
         nsquared = squared << s4 if squared else 0
@@ -1946,6 +2018,8 @@ def _translate_triangles(local_tris, shift_e, tx, ty, tz):
                    ((ly0 << shift_e) + ty, (hy0 << shift_e) + ty),
                    ((lz0 << shift_e) + tz, (hz0 << shift_e) + tz))
         append((npts, nnormal, nsquared, nedges, nbounds))
+    if budget is not None:
+        budget.counts['mesh_cache_translate_units'] = budget.counts.get('mesh_cache_translate_units', 0) + len(tris)
     return tris
 
 
@@ -1953,46 +2027,139 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
     nl_raw, nr_raw = len(left.faces), len(right.faces)
     if not nl_raw or not nr_raw or nl_raw + nr_raw > MAX_FACES:
         raise _DomainError('surface_geometry_work_limit')
-    cl = _prepare_cached_mesh(left, mesh_cache)
-    cr = _prepare_cached_mesh(right, mesh_cache)
-    nl, nr = len(cl['record'][1]), len(cr['record'][1])
+    if not (_mesh_cache_is_immutable(left, mesh_cache) and _mesh_cache_is_immutable(right, mesh_cache)):
+        return None
+
+    def stage_entry(mesh):
+        ent = mesh_cache.get(id(mesh))
+        if (ent is not None and ent.get('mesh') is mesh
+                and ent.get('verts_id') == id(mesh.vertices)
+                and ent.get('faces_id') == id(mesh.faces)
+                and ent.get('verts_len') == len(mesh.vertices)
+                and ent.get('faces_len') == len(mesh.faces)
+                and 'admission' in ent):
+            return ent, False
+        return {
+            'mesh': mesh,
+            'verts_id': id(mesh.vertices), 'faces_id': id(mesh.faces),
+            'verts_len': len(mesh.vertices), 'faces_len': len(mesh.faces),
+        }, True
+
+    # Stage 1: Lazy on-demand admission with real checkpoints and per-face ticks.
+    valid_int_types = {int}
+    entries = []
+    for mesh in (left, right):
+        ent, is_new = stage_entry(mesh)
+        if is_new:
+            rec, topo = _admit_one(mesh, budget.tick, valid_int_types)
+            ent['admission'] = (rec, topo)
+            mesh_cache[id(mesh)] = ent
+        else:
+            rec, topo = ent['admission']
+            budget.tick('validated_faces', len(rec[1]))
+        entries.append(ent)
+
+    el, er = entries
+    rec_l, topo_l = el['admission']
+    rec_r, topo_r = er['admission']
+    nl, nr = len(rec_l[1]), len(rec_r[1])
     if not nl or not nr or nl + nr > MAX_FACES:
         raise _DomainError('surface_geometry_work_limit')
-    budget.tick('validated_faces', nl + nr)
-    budget.tick('referenced_vertices', len(cl['record'][2]) + len(cr['record'][2]))
-    dx_o = _sub_dyadic(cr['o_dy'][0], cl['o_dy'][0])
-    dy_o = _sub_dyadic(cr['o_dy'][1], cl['o_dy'][1])
-    dz_o = _sub_dyadic(cr['o_dy'][2], cl['o_dy'][2])
-    exponent = max(cl['local_exp'], cr['local_exp'],
+
+    # Stage 2: Lazy local coordinate frames & bit-domain verification.
+    fl, hl = _ensure_cached_frame(el, budget)
+    fr, hr = _ensure_cached_frame(er, budget)
+    budget.counts['mesh_cache_hits'] = budget.counts.get('mesh_cache_hits', 0) + int(hl) + int(hr)
+    budget.counts['mesh_cache_misses'] = budget.counts.get('mesh_cache_misses', 0) + int(not hl) + int(not hr)
+
+    dx_o = _sub_dyadic(fr['o_dy'][0], fl['o_dy'][0])
+    dy_o = _sub_dyadic(fr['o_dy'][1], fl['o_dy'][1])
+    dz_o = _sub_dyadic(fr['o_dy'][2], fl['o_dy'][2])
+    exponent = max(fl['local_exp'], fr['local_exp'],
                    -dx_o[1] if dx_o[0] else 0,
                    -dy_o[1] if dy_o[0] else 0,
                    -dz_o[1] if dz_o[0] else 0)
-    factor = _bounded(1 << exponent)
-    dL = exponent - cl['local_exp']
-    dR = exponent - cr['local_exp']
+    dL = exponent - fl['local_exp']
+    dR = exponent - fr['local_exp']
     tx = dx_o[0] << (exponent + dx_o[1]) if dx_o[0] else 0
     ty = dy_o[0] << (exponent + dy_o[1]) if dy_o[0] else 0
     tz = dz_o[0] << (exponent + dz_o[1]) if dz_o[0] else 0
     t_bits = max(abs(tx).bit_length(), abs(ty).bit_length(), abs(tz).bit_length())
-    if not (cl['fit_fast'] and cr['fit_fast']
-            and cl['max_bits'] + dL < 490
-            and max(t_bits, cr['max_bits'] + dR) + 1 < 490):
-        return None
-    budget.tick('prepared_triangles', nl + nr)
-    tris_l = cl['local_tris'] if dL == 0 else _translate_triangles(cl['local_tris'], dL, 0, 0, 0)
-    tris_r = _translate_triangles(cr['local_tris'], dR, tx, ty, tz)
-    records = (cl['record'], cr['record'])
-    topology = [cl['topology'], cr['topology']]
-    prepared = [tris_l, tris_r]
+    records = (rec_l, rec_r)
+    topology = [topo_l, topo_r]
+
+    if not (fl['fit_fast'] and fr['fit_fast']
+            and fl['max_bits'] + dL < 490
+            and max(t_bits, fr['max_bits'] + dR) + 1 < 490):
+        # Fallback cleanly without building local fast triangles or BVHs or re-running _admit.
+        budget.counts['mesh_cache_fallbacks'] = budget.counts.get('mesh_cache_fallbacks', 0) + 1
+        nx = (-dx_o[0], dx_o[1])
+        ny = (-dy_o[0], dy_o[1])
+        nz = (-dz_o[0], dz_o[1])
+        fb_exp = fl['local_exp']
+        rel_r_in_l = {}
+        for idx, (vx, vy, vz) in fr['rel'].items():
+            rx = _sub_dyadic(vx, nx)
+            ry = _sub_dyadic(vy, ny)
+            rz = _sub_dyadic(vz, nz)
+            if rx[0] and -rx[1] > fb_exp: fb_exp = -rx[1]
+            if ry[0] and -ry[1] > fb_exp: fb_exp = -ry[1]
+            if rz[0] and -rz[1] > fb_exp: fb_exp = -rz[1]
+            rel_r_in_l[idx] = (rx, ry, rz)
+        factor, prepared = _prepare_triangles_from_relative(
+            ((rec_l[1], fl['rel']), (rec_r[1], rel_r_in_l)), fb_exp, budget)
+        return records, topology, fl['origin_frac'], factor, prepared, None
+
+    factor = _bounded(1 << exponent)
+    # Stage 2b: Lazy local triangle construction & translation.
+    prepared = []
+    for ent, rec, frame, dS, sx, sy, sz in (
+        (el, rec_l, fl, dL, 0, 0, 0),
+        (er, rec_r, fr, dR, tx, ty, tz),
+    ):
+        local_tris = ent.get('local_tris')
+        tris_cached = local_tris is not None
+        if not tris_cached:
+            local_tris = _build_fast_triangles(rec[1], frame['ints'], budget=budget)
+            ent['local_tris'] = local_tris
+        if dS or sx or sy or sz:
+            tris = _translate_triangles(local_tris, dS, sx, sy, sz, budget=budget, charge_prepare=tris_cached)
+        else:
+            if tris_cached:
+                budget.tick('prepared_triangles', len(local_tris))
+            tris = local_tris
+        prepared.append(tris)
+
+    # Stage 3: Lazy local BVH construction ONLY for non-linear pairs.
     roots = None
     if need_trees and nl * nr > LINEAR_PAIR_LIMIT:
-        budget.tick('tree_build_units', nl + nr)
-        budget.tick('tree_builds', 2)
-        budget.consume(cl['bvh_units'] + cr['bvh_units'], 'surface_bvh_build')
-        root_l = cl['local_root'] if dL == 0 else _translate_bvh(cl['local_root'], dL, 0, 0, 0)
-        root_r = _translate_bvh(cr['local_root'], dR, tx, ty, tz)
-        roots = (root_l, root_r)
-    return records, topology, cl['origin_frac'], factor, prepared, roots
+        from .surface_geometry import _bvh
+        out_roots = []
+        for ent, n_faces, dS, sx, sy, sz in (
+            (el, nl, dL, 0, 0, 0),
+            (er, nr, dR, tx, ty, tz),
+        ):
+            budget.tick('tree_build_units', n_faces)
+            budget.tick('tree_builds', 1)
+            tree_entry = ent.get('tree')
+            if tree_entry is None:
+                local_bounds = [((t[4][0][0], t[4][1][0], t[4][2][0]),
+                                 (t[4][0][1], t[4][1][1], t[4][2][1])) for t in ent['local_tris']]
+                b_proxy = _CacheBuildBudget(budget)
+                local_root = _bvh(local_bounds, b_proxy, leaf_size=2)
+                tree_entry = {'local_root': local_root, 'bvh_units': b_proxy.units}
+                ent['tree'] = tree_entry
+                budget.counts['mesh_cache_tree_builds'] = budget.counts.get('mesh_cache_tree_builds', 0) + 1
+                budget.counts['mesh_cache_tree_build_units'] = budget.counts.get('mesh_cache_tree_build_units', 0) + b_proxy.units
+            else:
+                budget.counts['mesh_cache_tree_reuses'] = budget.counts.get('mesh_cache_tree_reuses', 0) + 1
+                budget.consume(tree_entry['bvh_units'], 'surface_bvh_build')
+            if dS or sx or sy or sz:
+                out_roots.append(_translate_bvh(tree_entry['local_root'], dS, sx, sy, sz, budget=budget))
+            else:
+                out_roots.append(tree_entry['local_root'])
+        roots = tuple(out_roots)
+    return records, topology, fl['origin_frac'], factor, prepared, roots
 
 
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,

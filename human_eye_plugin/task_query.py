@@ -624,7 +624,7 @@ def surface_nearest_result(packet, cache, checkpoint, *, diagnostics=None, _norm
     metrics = {} if diagnostics is None else diagnostics
     metrics.update(pair_calls=0, kernel_calls=0, cache_hits=0, exact_rank_calls=0, pairs={})
     measurements = {}
-    mesh_cache = {}
+    mesh_cache = {'__sealed_query_meshes__': True}
     for oid in sorted(retained - {focal}):
         checkpoint('before_surface_nearest_pair')
         work = {}
