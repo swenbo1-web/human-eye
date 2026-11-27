@@ -7,9 +7,12 @@ from collections import Counter
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from functools import cmp_to_key
+import hashlib
 import heapq
 import math
 from numbers import Integral
+import struct
+from types import SimpleNamespace
 
 from .telemetry import span
 
@@ -228,6 +231,9 @@ _WORK_STAGES = {
         'witness_projection_direction_builds', 'witness_projection_tri_dots',
         'witness_projection_node_visits', 'witness_projection_completed_exact',
         'bvh_compile', 'face_validate', 'mesh_cache_affine_fallback',
+        'common_frame_stage', 'extreme_frame_norm', 'flat_bounds',
+        'cutoff_root_aabb', 'pending_drain', 'snapshot_admit', 'batch_order',
+        'cutoff_root_proof', 'cutoff_traversal_proof',
     )
 }
 
@@ -661,12 +667,15 @@ def _integer_frame(records, budget, *, holder=None):
         for faces, indices, raw_coords in raw_sides:
             sc = []
             sapp = sc.append
-            for index, mx, ex, my, ey, mz, ez in raw_coords:
-                dx_u = (mx << (E_upper + ex) if mx else 0) - ox_u
-                dy_u = (my << (E_upper + ey) if my else 0) - oy_u
-                dz_u = (mz << (E_upper + ez) if mz else 0) - oz_u
-                or_all |= dx_u | dy_u | dz_u
-                sapp((index, dx_u, dy_u, dz_u))
+            n_raw = len(raw_coords)
+            for start in range(0, n_raw, 256):
+                checkpoint('surface_proximity_common_frame_stage')
+                for index, mx, ex, my, ey, mz, ez in raw_coords[start:start + 256]:
+                    dx_u = (mx << (E_upper + ex) if mx else 0) - ox_u
+                    dy_u = (my << (E_upper + ey) if my else 0) - oy_u
+                    dz_u = (mz << (E_upper + ez) if mz else 0) - oz_u
+                    or_all |= dx_u | dy_u | dz_u
+                    sapp((index, dx_u, dy_u, dz_u))
             shifted_sides.append((faces, indices, sc))
 
         common_tz = E_upper if or_all == 0 else min(E_upper, (or_all & -or_all).bit_length() - 1)
@@ -737,14 +746,17 @@ def _integer_frame(records, budget, *, holder=None):
     relative, exponent = [], 0
     for faces, _, raw_coords in raw_sides:
         coordinates = {}
-        for index, mx, ex, my, ey, mz, ez in raw_coords:
-            dx = _sub_dyadic(_norm_dy(mx, ex), o0)
-            dy = _sub_dyadic(_norm_dy(my, ey), o1)
-            dz = _sub_dyadic(_norm_dy(mz, ez), o2)
-            if dx[0] and -dx[1] > exponent: exponent = -dx[1]
-            if dy[0] and -dy[1] > exponent: exponent = -dy[1]
-            if dz[0] and -dz[1] > exponent: exponent = -dz[1]
-            coordinates[index] = (dx, dy, dz)
+        n_raw = len(raw_coords)
+        for start in range(0, n_raw, 256):
+            checkpoint('surface_proximity_extreme_frame_norm')
+            for index, mx, ex, my, ey, mz, ez in raw_coords[start:start + 256]:
+                dx = _sub_dyadic(_norm_dy(mx, ex), o0)
+                dy = _sub_dyadic(_norm_dy(my, ey), o1)
+                dz = _sub_dyadic(_norm_dy(mz, ez), o2)
+                if dx[0] and -dx[1] > exponent: exponent = -dx[1]
+                if dy[0] and -dy[1] > exponent: exponent = -dy[1]
+                if dz[0] and -dz[1] > exponent: exponent = -dz[1]
+                coordinates[index] = (dx, dy, dz)
         relative.append((faces, coordinates))
     factor, prepared = _prepare_triangles_from_relative(relative, exponent, budget, holder=holder)
     return origin, factor, prepared
@@ -1119,7 +1131,7 @@ def _nearest_pair(left, right, best, budget, plane_distances=None,
     return cur_best
 
 
-def _nearest_linear(prepared, budget, witness_pair=None, *, cutoff=None):
+def _nearest_linear(prepared, budget, witness_pair=None, *, cutoff=None, partition_out=None):
     fast_ints = _bounds_fit_fast(prepared[0]) and _bounds_fit_fast(prepared[1])
     bary_a = [None] * len(prepared[0]) if fast_ints else None
     bary_b = [None] * len(prepared[1]) if fast_ints else None
@@ -1154,6 +1166,20 @@ def _nearest_linear(prepared, budget, witness_pair=None, *, cutoff=None):
                 best = candidate
                 if best[0] == 0:
                     return best
+    if best is None and partition_out is not None:
+        na, nb = len(prepared[0]), len(prepared[1])
+        ap = budget.counts['aabb_pruned_pairs']
+        np_c = budget.counts['narrow_phase_pairs']
+        partition_out.update(
+            total_leaf_pairs=na * nb,
+            subtree_pruned_pairs=0,
+            aabb_pruned_pairs=ap,
+            plane_pruned_pairs=0,
+            wp_pruned_pairs=0,
+            narrow_phase_pairs=np_c,
+            covered_pairs=ap + np_c,
+            cutoff_axis_used=None,
+        )
     return best
 
 
@@ -1161,26 +1187,33 @@ def _distance_roots(prepared, budget, holder=None):
     from .surface_geometry import _bvh_from_flat_bounds
     roots = []
     retained_bounds = [] if holder is not None else None
+    cp = budget.checkpoint
     for triangles in prepared:
         n_tris = len(triangles)
         budget.tick('tree_build_units', n_tris)
         flat_bounds = [None] * n_tris
         if retained_bounds is None:
-            for row_idx, triangle in enumerate(triangles):
-                b = triangle[4]
-                ax, bx = b[0]
-                ay, by = b[1]
-                az, bz = b[2]
-                flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
+            for start in range(0, n_tris, 256):
+                cp('surface_proximity_flat_bounds')
+                end = min(start + 256, n_tris)
+                for row_idx in range(start, end):
+                    b = triangles[row_idx][4]
+                    ax, bx = b[0]
+                    ay, by = b[1]
+                    az, bz = b[2]
+                    flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
         else:
             bounds = [None] * n_tris
-            for row_idx, triangle in enumerate(triangles):
-                b = triangle[4]
-                ax, bx = b[0]
-                ay, by = b[1]
-                az, bz = b[2]
-                bounds[row_idx] = ((ax, ay, az), (bx, by, bz))
-                flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
+            for start in range(0, n_tris, 256):
+                cp('surface_proximity_flat_bounds')
+                end = min(start + 256, n_tris)
+                for row_idx in range(start, end):
+                    b = triangles[row_idx][4]
+                    ax, bx = b[0]
+                    ay, by = b[1]
+                    az, bz = b[2]
+                    bounds[row_idx] = ((ax, ay, az), (bx, by, bz))
+                    flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
             retained_bounds.append(bounds)
         budget.tick('tree_builds')
         roots.append(_bvh_from_flat_bounds(flat_bounds, budget, leaf_size=2))
@@ -1271,7 +1304,24 @@ _FAST_WP_AFTER_COMPLETED = 16
 _FAST_WP_NODE_BOX_MIN_CREDIT = 64
 _DEFAULT_PROJECTION_MODE = 'settled_credit_031_ref'
 _VALID_PROJECTION_MODES = frozenset({'settled_credit_031_ref', 'off', 'off_paid_dequeue_ref'})
+_VALID_CUTOFF_MODES = frozenset({'EXHAUSTIVE', 'CUTOFF_ONLY_OFF', 'CUTOFF_ONLY_PAID_REF', 'CUTOFF_SETTLED_PROJECTION'})
 _NODE_PRUNE_OBSERVER = None
+_CREDIT_ATTEMPT_OBSERVER = None
+
+
+def _emit_credit_event(phase, kind, credit, counts, **extra):
+    obs = _CREDIT_ATTEMPT_OBSERVER
+    if obs is not None:
+        obs({
+            'phase': phase,
+            'kind': kind,
+            'balance': credit.balance,
+            'available_credit': credit.available_credit,
+            'spent': credit.spent,
+            'attempts': credit.attempts,
+            'work_units': counts['work_units'],
+            **extra,
+        })
 
 
 class _FastWitnessProjection:
@@ -1333,18 +1383,26 @@ class _FastWitnessProjection:
         return self
 
     @classmethod
-    def build_for_cutoff(cls, cut_n, cut_d, seed_desc, prep_a, prep_b, budget):
-        """Build an exact Cauchy-Schwarz separating-axis projector for an external upper bound."""
-        if cut_n < 0 or cut_d <= 0:
+    def build_for_cutoff(cls, cut_n, cut_d, hint_axis, prep_a, prep_b, budget, *, credit):
+        """Build an exact Cauchy-Schwarz cutoff projector strictly under settled _ProjectionCredit."""
+        if credit is None or hint_axis is None or cut_n < 0 or cut_d <= 0:
             return None
         budget.checkpoint('surface_proximity_witness_projection')
-        if MAX_WORK_UNITS - budget.counts['work_units'] < cls._BUILD_COST:
-            budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+        ok, res = credit.try_run(
+            cls._BUILD_COST,
+            lambda: cls._build_cutoff_inner(cut_n, cut_d, hint_axis, prep_a, prep_b, budget),
+        )
+        return res if ok else None
+
+    @classmethod
+    def _build_cutoff_inner(cls, cut_n, cut_d, hint_axis, prep_a, prep_b, budget):
+        budget.consume(cls._BUILD_COST - 1, 'witness_projection')
+        budget.tick('witness_projection_direction_builds', 1)
+        if type(hint_axis) not in (tuple, list) or len(hint_axis) != 3:
             return None
-        axis = _fast_descriptor_direction(seed_desc)
-        if axis is None:
+        ax, ay, az = hint_axis
+        if type(ax) is not int or type(ay) is not int or type(az) is not int:
             return None
-        ax, ay, az = axis
         g = math.gcd(ax, math.gcd(ay, az))
         if not g:
             return None
@@ -1356,8 +1414,6 @@ class _FastWitnessProjection:
         norm_sq = ax * ax + ay * ay + az * az
         if norm_sq.bit_length() + cut_n.bit_length() > _MAX_SCRATCH_BITS:
             return None
-        budget.consume(cls._BUILD_COST - 1, 'witness_projection')
-        budget.tick('witness_projection_direction_builds', 1)
         self = cls()
         self.axis = (ax, ay, az)
         self.norm_sq = norm_sq
@@ -1527,10 +1583,14 @@ class _FastWitnessProjection:
 
             if 1 > credit.balance:
                 counts['witness_projection_credit_credit_deferrals'] += 1
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'node_box', credit, counts, reason='credit', upper=1)
                 return False
             if 1 > MAX_WORK_UNITS - counts['work_units']:
                 counts['witness_projection_credit_budget_deferrals'] += 1
                 counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'node_box', credit, counts, reason='budget', upper=1)
                 return False
             credit.attempts += 1
             counts['witness_projection_credit_attempts'] = credit.attempts
@@ -1538,6 +1598,8 @@ class _FastWitnessProjection:
             counts['witness_projection_credit_last_upper'] = 1
             credit.pending_upper = 1
             credit.pending_work_start = counts['work_units']
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('admit', 'node_box', credit, counts, upper=1)
             try:
                 budget.tick('witness_projection_tests', 1)
                 lmin = (ax * left[0] if ax >= 0 else ax * left[3]) + (ay * left[1] if ay >= 0 else ay * left[4]) + (az * left[2] if az >= 0 else az * left[5])
@@ -1555,6 +1617,8 @@ class _FastWitnessProjection:
                 counts['witness_projection_credit_balance'] = credit.balance
                 if actual < 0 or actual > 1 or credit.balance < 0:
                     raise ArithmeticError('witness_projection_credit_invariant')
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('settle', 'node_box', credit, counts, upper=1, actual=actual)
             if box_gap > cutoff:
                 counts['witness_projection_box_pruned_pairs'] = counts.get('witness_projection_box_pruned_pairs', 0) + 1
                 if _NODE_PRUNE_OBSERVER is not None:
@@ -1569,11 +1633,15 @@ class _FastWitnessProjection:
             if slab_upper > credit.balance:
                 counts['witness_projection_credit_credit_deferrals'] += 1
                 counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'node_slab', credit, counts, reason='credit', upper=slab_upper)
                 return False
             if slab_upper > MAX_WORK_UNITS - w0:
                 counts['witness_projection_credit_budget_deferrals'] += 1
                 counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
                 counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'node_slab', credit, counts, reason='budget', upper=slab_upper)
                 return False
             credit.attempts += 1
             counts['witness_projection_credit_attempts'] = credit.attempts
@@ -1581,6 +1649,8 @@ class _FastWitnessProjection:
             counts['witness_projection_credit_last_upper'] = slab_upper
             credit.pending_upper = slab_upper
             credit.pending_work_start = w0
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('admit', 'node_slab', credit, counts, upper=slab_upper)
             res = False
             slab_gap = 0
             try:
@@ -1603,6 +1673,8 @@ class _FastWitnessProjection:
                 counts['witness_projection_credit_balance'] = credit.balance
                 if actual < 0 or actual > slab_upper or credit.balance < 0:
                     raise ArithmeticError('witness_projection_credit_invariant')
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('settle', 'node_slab', credit, counts, upper=slab_upper, actual=actual)
             counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
             if res:
                 counts['witness_projection_vertex_slab_pruned_pairs'] = counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
@@ -1659,11 +1731,15 @@ class _FastWitnessProjection:
             upper = 1 + ta + tb
             if upper > credit.balance:
                 counts['witness_projection_credit_credit_deferrals'] += 1
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'tri_proj', credit, counts, reason='credit', upper=upper)
                 return False
             w0 = counts['work_units']
             if upper > MAX_WORK_UNITS - w0:
                 counts['witness_projection_credit_budget_deferrals'] += 1
                 counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('defer', 'tri_proj', credit, counts, reason='budget', upper=upper)
                 return False
             credit.attempts += 1
             counts['witness_projection_credit_attempts'] = credit.attempts
@@ -1671,6 +1747,8 @@ class _FastWitnessProjection:
             counts['witness_projection_credit_last_upper'] = upper
             credit.pending_upper = upper
             credit.pending_work_start = w0
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('admit', 'tri_proj', credit, counts, upper=upper)
             res = False
             try:
                 budget.tick('witness_projection_tests', 1)
@@ -1692,6 +1770,8 @@ class _FastWitnessProjection:
                 counts['witness_projection_credit_balance'] = credit.balance
                 if actual < 0 or actual > upper or credit.balance < 0:
                     raise ArithmeticError('witness_projection_credit_invariant')
+                if _CREDIT_ATTEMPT_OBSERVER is not None:
+                    _emit_credit_event('settle', 'tri_proj', credit, counts, upper=upper, actual=actual)
             return res
 
         if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
@@ -1975,9 +2055,13 @@ class _ProjectionCredit:
         counts = self.budget.counts
         if upper > self.balance:
             counts['witness_projection_credit_credit_deferrals'] += 1
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('defer', 'record', self, counts, reason='credit', upper=upper)
         else:
             counts['witness_projection_credit_budget_deferrals'] += 1
             counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('defer', 'record', self, counts, reason='budget', upper=upper)
 
     def earn_narrow(self, saved):
         self.balance += saved
@@ -1998,10 +2082,14 @@ class _ProjectionCredit:
         counts = budget.counts
         if upper > self.balance:
             counts['witness_projection_credit_credit_deferrals'] += 1
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('defer', 'try_run', self, counts, reason='credit', upper=upper)
             return False, None
         if upper > MAX_WORK_UNITS - counts['work_units']:
             counts['witness_projection_credit_budget_deferrals'] += 1
             counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('defer', 'try_run', self, counts, reason='budget', upper=upper)
             return False, None
         self.attempts += 1
         counts['witness_projection_credit_attempts'] = self.attempts
@@ -2009,6 +2097,8 @@ class _ProjectionCredit:
         counts['witness_projection_credit_last_upper'] = upper
         self.pending_upper = upper
         self.pending_work_start = counts['work_units']
+        if _CREDIT_ATTEMPT_OBSERVER is not None:
+            _emit_credit_event('admit', 'try_run', self, counts, upper=upper)
         try:
             out = fn()
         finally:
@@ -2021,6 +2111,8 @@ class _ProjectionCredit:
             counts['witness_projection_credit_balance'] = self.balance
             if actual < 0 or actual > upper or self.balance < 0:
                 raise ArithmeticError('witness_projection_credit_invariant')
+            if _CREDIT_ATTEMPT_OBSERVER is not None:
+                _emit_credit_event('settle', 'try_run', self, counts, upper=upper, actual=actual)
         return True, out
 
     def attempt(self, projection, best, i, j, a, b):
@@ -2041,7 +2133,8 @@ class _ProjectionCredit:
         return projection, pruned
 
 
-def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None, cutoff=None):
+def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None, cutoff=None,
+                  cutoff_credit=False, hint_axis=None, partition_out=None):
     mode = _DEFAULT_PROJECTION_MODE if projection_mode is None else projection_mode
     if mode not in _VALID_PROJECTION_MODES:
         raise ValueError(f'unsupported projection_mode: {mode!r}')
@@ -2084,6 +2177,9 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
     fast_proj_tried = False
     fast_proj_epoch = 0
     cutoff_proj = None
+    cutoff_proj_tried = False
+    cutoff_axis_used = None
+    leaf_wp_pruned = 0
     prep_a, prep_b = prepared[0], prepared[1]
 
     def invalidate_fast_proj():
@@ -2110,7 +2206,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
         return fast_proj
 
     def eval_leaf(left, right):
-        nonlocal best, best_pair, best_floor, tie_floor, completed_exact, projection
+        nonlocal best, best_pair, best_floor, tie_floor, completed_exact, projection, cutoff_proj, leaf_wp_pruned
         singleton = shift == 0 and left[6] == 1 and right[6] == 1
         for i in left[7]:
             a = prep_a[i]
@@ -2139,6 +2235,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         if fp is not None and fp.prunes_triangles(i, j, strict, budget, credit=credit):
                             counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
                             counts['witness_projection_tri_pruned_pairs'] = counts.get('witness_projection_tri_pruned_pairs', 0) + 1
+                            leaf_wp_pruned += 1
                             credit.earn_narrow(_wp_narrow_work_floor(a, b))
                             continue
                     if (proj_enabled and not fast_ints
@@ -2146,6 +2243,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                             and best[0] > 0 and projection is not False):
                         projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
                         if projection_pruned:
+                            leaf_wp_pruned += 1
                             continue
                     eff_best = best
                     tie_accept = strict
@@ -2160,9 +2258,12 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                     if pruned:
                         counts['plane_pruned_pairs'] += 1
                         continue
-                    if cutoff_proj is not None and cutoff_proj.prunes_triangles(i, j, True, budget):
+                    if (cutoff_proj is not None and cutoff_credit
+                            and cutoff_proj.prunes_triangles(i, j, True, budget, credit=credit)):
                         counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
                         counts['witness_projection_tri_pruned_pairs'] = counts.get('witness_projection_tri_pruned_pairs', 0) + 1
+                        leaf_wp_pruned += 1
+                        credit.earn_narrow(_wp_narrow_work_floor(a, b))
                         continue
                     eff_best = cutoff_sentinel
                     tie_accept = True
@@ -2183,6 +2284,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         best_floor = best[0] // best[1]
                         tie_floor = (best[0] - 1) // best[1]
                         projection = None
+                        cutoff_proj = None
                         invalidate_fast_proj()
                 elif candidate is not best:
                     comparison = candidate[0] * best[1] - best[0] * candidate[1]
@@ -2276,24 +2378,6 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
     if not dfs_aborted:
         tick('node_pair_visits')
         eval_leaf(cur_l, cur_r)
-        if cutoff_sentinel is not None and best is None and fast_ints and proj_enabled:
-            i0, j0 = cur_l[7][0], cur_r[7][0]
-            seed_cand = _nearest_pair(
-                prep_a[i0], prep_b[j0], None, budget, None,
-                fast_ints=fast_ints,
-                left_bary=bary_a, left_idx=i0,
-                right_bary=bary_b, right_idx=j0,
-            )
-            if seed_cand[0] > 0:
-                cutoff_proj = _FastWitnessProjection.build_for_cutoff(
-                    cutoff_sentinel[0], cutoff_sentinel[1], seed_cand[2], prep_a, prep_b, budget
-                )
-                if cutoff_proj is not None and left_root[6] <= 512 and right_root[6] <= 512:
-                    if cutoff_proj.prunes_nodes(left_root, right_root, True, budget, use_vertex_slab=True):
-                        counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
-                        counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
-                        counts['cutoff_pruned_pairs'] = counts.get('cutoff_pruned_pairs', 0) + na * nb
-                        return None
 
     for k, cd, sl, sr in siblings:
         push_pair(k, cd, sl, sr)
@@ -2315,8 +2399,11 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                 # Global break is mathematically valid only when shift == 0 and key is exact unshifted AABB sq dist.
                 if key > best_floor:
                     pruned = left[6] * right[6]
-                    for item in pending:
-                        pruned += item[3][6] * item[4][6]
+                    n_pend = len(pending)
+                    for start in range(0, n_pend, 256):
+                        checkpoint('surface_proximity_pending_drain')
+                        for item in pending[start:start + 256]:
+                            pruned += item[3][6] * item[4][6]
                     counts['subtree_pruned_pairs'] += pruned
                     break
                 bp0, bp1 = best_pair
@@ -2363,8 +2450,11 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         credit.saved_bound()
                 if key > cut_floor:
                     pruned = left[6] * right[6]
-                    for item in pending:
-                        pruned += item[3][6] * item[4][6]
+                    n_pend = len(pending)
+                    for start in range(0, n_pend, 256):
+                        checkpoint('surface_proximity_pending_drain')
+                        for item in pending[start:start + 256]:
+                            pruned += item[3][6] * item[4][6]
                     counts['subtree_pruned_pairs'] += pruned
                     break
             else:
@@ -2375,13 +2465,35 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         cutoff_sentinel, strict=True, remaining=cut_floor):
                     counts['subtree_pruned_pairs'] += left[6] * right[6]
                     continue
-            if cutoff_proj is not None:
-                use_vs = left[6] <= 512 and right[6] <= 512
-                if cutoff_proj.prunes_nodes(left, right, True, budget, use_vertex_slab=use_vs):
-                    counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
-                    counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
-                    counts['subtree_pruned_pairs'] += left[6] * right[6]
-                    continue
+            if cutoff_credit and proj_enabled and fast_ints and hint_axis is not None:
+                if cutoff_proj is None and not cutoff_proj_tried:
+                    need_cp = _FastWitnessProjection._BUILD_COST + 1
+                    rem_cp = MAX_WORK_UNITS - counts['work_units']
+                    if need_cp <= credit.balance and need_cp <= rem_cp:
+                        cutoff_proj_tried = True
+                        cutoff_proj = _FastWitnessProjection.build_for_cutoff(
+                            cutoff_sentinel[0], cutoff_sentinel[1], hint_axis,
+                            prep_a, prep_b, budget, credit=credit,
+                        )
+                        if cutoff_proj is not None:
+                            cutoff_axis_used = list(cutoff_proj.axis)
+                    else:
+                        credit.record_deferral(need_cp)
+                if cutoff_proj is not None:
+                    use_vs = left[6] <= 512 and right[6] <= 512
+                    if cutoff_proj.prunes_nodes(
+                            left, right, True, budget,
+                            use_vertex_slab=use_vs, credit=credit):
+                        counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                        counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
+                        counts['subtree_pruned_pairs'] += left[6] * right[6]
+                        singleton_leaf = (shift == 0 and left[6] == 1 and right[6] == 1)
+                        saved_np = (
+                            (left[6] * right[6] * (1 if singleton_leaf else 2))
+                            if (left[7] is not None and right[7] is not None) else 2
+                        )
+                        credit.earn_node_prune(saved_np)
+                        continue
 
         if left[7] is not None and right[7] is not None:
             eval_leaf(left, right)
@@ -2455,6 +2567,21 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                 for child in (right[8], right[9]):
                     k, cd = _node_queue_bounds(left, child, shift, budget, fast_ints=fast_ints)
                     push_pair(k, cd, left, child)
+    if best is None and partition_out is not None:
+        sp_c = counts['subtree_pruned_pairs']
+        ap_c = counts['aabb_pruned_pairs']
+        pp_c = counts['plane_pruned_pairs']
+        np_c = counts['narrow_phase_pairs']
+        partition_out.update(
+            total_leaf_pairs=na * nb,
+            subtree_pruned_pairs=sp_c,
+            aabb_pruned_pairs=ap_c,
+            plane_pruned_pairs=pp_c,
+            wp_pruned_pairs=leaf_wp_pruned,
+            narrow_phase_pairs=np_c,
+            covered_pairs=sp_c + ap_c + pp_c + leaf_wp_pruned + np_c,
+            cutoff_axis_used=cutoff_axis_used,
+        )
     if witness_pair is not None and best_pair is not None:
         witness_pair[:] = best_pair
     return best
@@ -2481,27 +2608,51 @@ def _local_cutoff_from_exact_key(cutoff_key, factor):
     return (cut_n, cut_d, cut_n // cut_d)
 
 
-def _prepared_root_aabb(triangles):
+def _prepared_root_aabb(triangles, budget=None):
     b0 = triangles[0][4]
     lx0, lx1 = b0[0]
     ly0, ly1 = b0[1]
     lz0, lz1 = b0[2]
-    for tri in triangles[1:]:
-        b = tri[4]
-        ax0, ax1 = b[0]
-        ay0, ay1 = b[1]
-        az0, az1 = b[2]
-        if ax0 < lx0: lx0 = ax0
-        if ax1 > lx1: lx1 = ax1
-        if ay0 < ly0: ly0 = ay0
-        if ay1 > ly1: ly1 = ay1
-        if az0 < lz0: lz0 = az0
-        if az1 > lz1: lz1 = az1
+    n_tris = len(triangles)
+    cp = budget.checkpoint if budget is not None else None
+    for start in range(1, n_tris, 256):
+        if cp is not None:
+            cp('surface_proximity_cutoff_root_aabb')
+        for tri in triangles[start:start + 256]:
+            b = tri[4]
+            ax0, ax1 = b[0]
+            ay0, ay1 = b[1]
+            az0, az1 = b[2]
+            if ax0 < lx0: lx0 = ax0
+            if ax1 > lx1: lx1 = ax1
+            if ay0 < ly0: ly0 = ay0
+            if ay1 > ly1: ly1 = ay1
+            if az0 < lz0: lz0 = az0
+            if az1 > lz1: lz1 = az1
     return ((lx0, lx1), (ly0, ly1), (lz0, lz1))
 
 
+def _verify_root_aabb_exclusion(box_a, box_b, cutoff):
+    ((lx0, lx1), (ly0, ly1), (lz0, lz1)) = box_a
+    ((rx0, rx1), (ry0, ry1), (rz0, rz1)) = box_b
+    gx = lx0 - rx1
+    if rx0 - lx1 > gx: gx = rx0 - lx1
+    if gx < 0: gx = 0
+    gy = ly0 - ry1
+    if ry0 - ly1 > gy: gy = ry0 - ly1
+    if gy < 0: gy = 0
+    gz = lz0 - rz1
+    if rz0 - lz1 > gz: gz = rz0 - lz1
+    if gz < 0: gz = 0
+    gap_sq = gx * gx + gy * gy + gz * gz
+    if gap_sq * cutoff[1] > cutoff[0]:
+        return True, gap_sq
+    return False, gap_sq
+
+
 def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None,
-             projection_mode=None, cutoff=None):
+             projection_mode=None, cutoff=None, cutoff_credit=False, hint_axis=None,
+             partition_out=None, proof_out=None):
     na, nb = len(prepared[0]), len(prepared[1])
     if cutoff is not None:
         if prepared_trees is not None:
@@ -2509,13 +2660,25 @@ def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, wit
             box_a = ((r0[0][0], r0[1][0]), (r0[0][1], r0[1][1]), (r0[0][2], r0[1][2]))
             box_b = ((r1[0][0], r1[1][0]), (r1[0][1], r1[1][1]), (r1[0][2], r1[1][2]))
         else:
-            box_a = _prepared_root_aabb(prepared[0])
-            box_b = _prepared_root_aabb(prepared[1])
-        if _aabb_exceeds_best(box_a, box_b, cutoff, strict=True, remaining=cutoff[2]):
+            box_a = _prepared_root_aabb(prepared[0], budget=budget)
+            box_b = _prepared_root_aabb(prepared[1], budget=budget)
+        ok_excl, gap_sq = _verify_root_aabb_exclusion(box_a, box_b, cutoff)
+        if ok_excl:
             budget.counts['cutoff_pruned_pairs'] = budget.counts.get('cutoff_pruned_pairs', 0) + na * nb
+            if proof_out is not None:
+                proof_out.update(
+                    proof_kind='root_aabb',
+                    box_a=box_a,
+                    box_b=box_b,
+                    aabb_gap_sq=gap_sq,
+                    local_cutoff=[cutoff[0], cutoff[1]],
+                    cut_floor=cutoff[2],
+                    strict_inequality_verified=True,
+                    total_leaf_pairs=na * nb,
+                )
             return None
     if na * nb <= LINEAR_PAIR_LIMIT:
-        return _nearest_linear(prepared, budget, witness_pair, cutoff=cutoff)
+        return _nearest_linear(prepared, budget, witness_pair, cutoff=cutoff, partition_out=partition_out)
     if prepared_trees is None:
         roots = _distance_roots(prepared, budget, holder=prepared_holder)
     else:
@@ -2523,7 +2686,12 @@ def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, wit
         budget.counts['shared_trees'] = True
         if prepared_holder is not None:
             prepared_holder['trees'] = prepared_trees
-    return _nearest_tree(prepared, roots, budget, witness_pair, projection_mode=projection_mode, cutoff=cutoff)
+    return _nearest_tree(
+        prepared, roots, budget, witness_pair,
+        projection_mode=projection_mode, cutoff=cutoff,
+        cutoff_credit=cutoff_credit, hint_axis=hint_axis,
+        partition_out=partition_out,
+    )
 
 
 def _witness(descriptor):
@@ -2752,6 +2920,9 @@ class _CacheBuildBudget:
     def consume(self, amount, stage):
         self.units += amount
         self.budget.consume(amount, stage)
+
+    def checkpoint(self, stage):
+        self.budget.checkpoint(stage)
 
 
 def _mesh_cache_is_immutable(verts, faces, budget=None):
@@ -3102,19 +3273,11 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
                               _prepared_trees=None,
-                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None,
-                              _upper_bound_sq_key=None):
+                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     mode = _DEFAULT_PROJECTION_MODE if _projection_mode is None else _projection_mode
     if mode not in _VALID_PROJECTION_MODES:
         raise ValueError(f'unsupported projection_mode: {mode!r}')
-    if _upper_bound_sq_key is not None:
-        if (type(_upper_bound_sq_key) not in (list, tuple) or len(_upper_bound_sq_key) != 3
-                or any(type(v) is not int for v in _upper_bound_sq_key)
-                or _upper_bound_sq_key[0] < 0 or _upper_bound_sq_key[1] <= 0
-                or _upper_bound_sq_key[0].bit_length() > MAX_BITS
-                or _upper_bound_sq_key[1].bit_length() > MAX_BITS):
-            raise ValueError('invalid _upper_bound_sq_key')
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
     budget.counts['witness_projection_mode'] = mode
@@ -3153,30 +3316,10 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
             contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
         if _prepared_holder is not None:
             _prepared_holder['pair'] = pair
-        cutoff = (_local_cutoff_from_exact_key(_upper_bound_sq_key, factor)
-                  if _upper_bound_sq_key is not None and contact is None else None)
         if contact is None:
             if cached_roots is not None:
-                if cutoff is not None:
-                    box_a = ((cached_roots[0][0][0], cached_roots[0][1][0]),
-                             (cached_roots[0][0][1], cached_roots[0][1][1]),
-                             (cached_roots[0][0][2], cached_roots[0][1][2]))
-                    box_b = ((cached_roots[1][0][0], cached_roots[1][1][0]),
-                             (cached_roots[1][0][1], cached_roots[1][1][1]),
-                             (cached_roots[1][0][2], cached_roots[1][1][2]))
-                    if _aabb_exceeds_best(box_a, box_b, cutoff, strict=True, remaining=cutoff[2]):
-                        budget.counts['cutoff_pruned_pairs'] = (
-                            budget.counts.get('cutoff_pruned_pairs', 0)
-                            + len(prepared[0]) * len(prepared[1])
-                        )
-                        nearest = None
-                    else:
-                        nearest = _nearest_tree(
-                            prepared, cached_roots, budget, witness_pair,
-                            projection_mode=mode, cutoff=cutoff)
-                else:
-                    nearest = _nearest_tree(
-                        prepared, cached_roots, budget, witness_pair, projection_mode=mode)
+                numerator, denominator, descriptor = _nearest_tree(
+                    prepared, cached_roots, budget, witness_pair, projection_mode=mode)
             else:
                 trees = None
                 if (_prepared_pair is not None and type(_prepared_trees) is dict
@@ -3184,22 +3327,12 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                         and len(_prepared_trees.get('triangles', ())) == 2
                         and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
                     trees = _prepared_trees
-                nearest = _nearest(prepared, budget, prepared_trees=trees,
-                                   prepared_holder=_prepared_holder,
-                                   witness_pair=witness_pair,
-                                   projection_mode=mode,
-                                   cutoff=cutoff)
-            if nearest is None:
-                checkpoint('surface_proximity_complete')
-                return {
-                    'measurement_valid': True,
-                    'cutoff_pruned': True,
-                    'pruned_strictly_above_cutoff': True,
-                    'topology': result['topology'],
-                    'method': METHOD,
-                    'work': dict(budget.counts),
-                }
-            numerator, denominator, descriptor = nearest
+                numerator, denominator, descriptor = _nearest(
+                    prepared, budget, prepared_trees=trees,
+                    prepared_holder=_prepared_holder,
+                    witness_pair=witness_pair,
+                    projection_mode=mode,
+                )
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)
@@ -3348,127 +3481,678 @@ def measure_spatial_relation(left, right, checkpoint, *, diagnostics=None, retai
                 budget_stopped=budget_stopped, stop_reason=stop_reason)
 
 
-def _mesh_world_aabb(mesh):
-    verts = getattr(mesh, 'vertices', None)
-    if verts is None:
+def _exact_axis_from_measured_result(res):
+    pts = (res.get('point_a_world'), res.get('point_b_world'))
+    if (res.get('measurement_valid') is not True
+            or res.get('witness_status') != 'measured'
+            or any(type(p) not in (list, tuple) or len(p) != 3 for p in pts)
+            or any(type(v) not in (int, float) or isinstance(v, bool) or not math.isfinite(v)
+                   for p in pts for v in p)):
         return None
+    deltas = []
+    max_e = 0
+    for a, b in zip(*pts):
+        d = Fraction.from_float(float(b)) - Fraction.from_float(float(a))
+        eb = d.denominator.bit_length() - 1
+        if eb > max_e:
+            max_e = eb
+        deltas.append(d)
+    ints = tuple(d.numerator << (max_e - (d.denominator.bit_length() - 1)) for d in deltas)
+    g = math.gcd(*ints)
+    if not g:
+        return None
+    ax, ay, az = (v // g for v in ints)
+    if ax.bit_length() > 1024 or ay.bit_length() > 1024 or az.bit_length() > 1024:
+        return None
+    return (ax, ay, az)
+
+
+def _measure_surface_proximity_cutoff(left, right, checkpoint, *,
+                                      upper_bound_sq_key=None, upper_bound_origin=None,
+                                      cutoff_mode='CUTOFF_ONLY_OFF', hint_axis=None,
+                                      pair_identity=None, snapshot_identity=None,
+                                      source_identity=None, retain_witness_triangles=False,
+                                      _mesh_cache=None):
+    """Proof-bearing exact cutoff measurement primitive returning a discriminated outcome."""
+    if cutoff_mode not in _VALID_CUTOFF_MODES:
+        raise ValueError(f'unsupported cutoff_mode: {cutoff_mode!r}')
+    if upper_bound_sq_key is not None:
+        if (type(upper_bound_sq_key) not in (list, tuple) or len(upper_bound_sq_key) != 3
+                or any(type(v) is not int for v in upper_bound_sq_key)
+                or upper_bound_sq_key[0] < 0 or upper_bound_sq_key[1] <= 0
+                or upper_bound_sq_key[0].bit_length() > MAX_BITS
+                or upper_bound_sq_key[1].bit_length() > MAX_BITS):
+            raise ValueError('invalid upper_bound_sq_key')
+
+    if cutoff_mode == 'EXHAUSTIVE' or upper_bound_sq_key is None:
+        mres = measure_surface_proximity(
+            left, right, checkpoint,
+            retain_exact_rank=True,
+            retain_witness_triangles=retain_witness_triangles,
+            _mesh_cache=_mesh_cache,
+        )
+        if mres.get('measurement_valid') is True and '_exact_distance_sq' in mres:
+            return {
+                'result_kind': 'exact_surface_measurement',
+                'measured_result': mres,
+                'pair_identity': pair_identity,
+                'snapshot_identity': snapshot_identity,
+                'source_identity': source_identity,
+                'work': dict(mres['work']),
+                'proof_cost': 0,
+                'stage': 'complete_measurement',
+            }
+        reason = mres.get('reason') or 'surface_measurement_unavailable'
+        return {
+            'result_kind': 'nearest_cutoff_unknown',
+            'reason': reason,
+            'resource_stop': reason in _SURFACE_RESOURCE_STOPS,
+            'pair_identity': pair_identity,
+            'snapshot_identity': snapshot_identity,
+            'source_identity': source_identity,
+            'work': dict(mres.get('work', {})),
+            'stage': 'exhaustive_fallback',
+        }
+
+    proj_mode = (
+        'off_paid_dequeue_ref' if cutoff_mode == 'CUTOFF_ONLY_PAID_REF'
+        else ('settled_credit_031_ref' if cutoff_mode == 'CUTOFF_SETTLED_PROJECTION' else 'off')
+    )
+    use_cutoff_credit = (cutoff_mode == 'CUTOFF_SETTLED_PROJECTION')
+    checkpoint('surface_proximity_admission')
+    budget = _Work(checkpoint, None)
+    budget.counts['witness_projection_mode'] = proj_mode
+    budget.counts['witness_projection_credit_reference'] = (
+        'mandatory_031_dequeue_aabb' if use_cutoff_credit
+        else ('paid_dequeue_reference' if proj_mode == 'off_paid_dequeue_ref' else 'none')
+    )
+    witness_pair = [] if retain_witness_triangles else None
+    if witness_pair is not None:
+        budget.counts['witness_triangle_checks'] = 0
+
+    stage = 'admission'
     try:
-        if len(verts) <= 0:
-            return None
-        if _is_numpy_2d_vertices(verts):
-            lo = verts.min(axis=0)
-            hi = verts.max(axis=0)
-            bx = ((float(lo[0]), float(lo[1]), float(lo[2])),
-                  (float(hi[0]), float(hi[1]), float(hi[2])))
+        fast_cached = (_pair_from_mesh_cache(left, right, budget, _mesh_cache)
+                       if _mesh_cache is not None else None)
+        if fast_cached is not None:
+            records, topology, origin, factor, prepared, cached_roots = fast_cached
         else:
-            v0 = verts[0]
-            if len(v0) != 3:
-                return None
-            lx = hx = float(v0[0])
-            ly = hy = float(v0[1])
-            lz = hz = float(v0[2])
-            for p in verts[1:]:
-                x, y, z = float(p[0]), float(p[1]), float(p[2])
-                if x < lx: lx = x
-                elif x > hx: hx = x
-                if y < ly: ly = y
-                elif y > hy: hy = y
-                if z < lz: lz = z
-                elif z > hz: hz = z
-            bx = ((lx, ly, lz), (hx, hy, hz))
-        if all(math.isfinite(c) for side in bx for c in side):
-            return bx
-    except Exception:
-        return None
-    return None
+            records, topology = _admit((left, right), budget)
+            origin, factor, prepared = _integer_frame(records, budget)
+            cached_roots = None
+        cutoff = _local_cutoff_from_exact_key(upper_bound_sq_key, factor)
+        partition_out = {}
+        proof_out = {}
+        if cached_roots is not None:
+            na, nb = len(prepared[0]), len(prepared[1])
+            if cutoff is not None:
+                box_a = ((cached_roots[0][0][0], cached_roots[0][1][0]),
+                         (cached_roots[0][0][1], cached_roots[0][1][1]),
+                         (cached_roots[0][0][2], cached_roots[0][1][2]))
+                box_b = ((cached_roots[1][0][0], cached_roots[1][1][0]),
+                         (cached_roots[1][0][1], cached_roots[1][1][1]),
+                         (cached_roots[1][0][2], cached_roots[1][1][2]))
+                ok_excl, gap_sq = _verify_root_aabb_exclusion(box_a, box_b, cutoff)
+                if ok_excl:
+                    budget.counts['cutoff_pruned_pairs'] = (
+                        budget.counts.get('cutoff_pruned_pairs', 0) + na * nb
+                    )
+                    proof_out.update(
+                        proof_kind='root_aabb',
+                        box_a=box_a,
+                        box_b=box_b,
+                        aabb_gap_sq=gap_sq,
+                        local_cutoff=[cutoff[0], cutoff[1]],
+                        cut_floor=cutoff[2],
+                        strict_inequality_verified=True,
+                        total_leaf_pairs=na * nb,
+                    )
+                    nearest = None
+                else:
+                    stage = 'cutoff_traversal'
+                    nearest = _nearest_tree(
+                        prepared, cached_roots, budget, witness_pair,
+                        projection_mode=proj_mode, cutoff=cutoff,
+                        cutoff_credit=use_cutoff_credit, hint_axis=hint_axis,
+                        partition_out=partition_out,
+                    )
+            else:
+                stage = 'exhaustive_after_cutoff_bit_defer'
+                nearest = _nearest_tree(
+                    prepared, cached_roots, budget, witness_pair,
+                    projection_mode=proj_mode,
+                )
+        else:
+            stage = 'cutoff_nearest'
+            nearest = _nearest(
+                prepared, budget, witness_pair=witness_pair,
+                projection_mode=proj_mode, cutoff=cutoff,
+                cutoff_credit=use_cutoff_credit, hint_axis=hint_axis,
+                partition_out=partition_out, proof_out=proof_out,
+            )
+
+        if nearest is None:
+            if cutoff is None:
+                return {
+                    'result_kind': 'nearest_cutoff_unknown',
+                    'reason': 'cutoff_without_valid_bound',
+                    'resource_stop': False,
+                    'pair_identity': pair_identity,
+                    'snapshot_identity': snapshot_identity,
+                    'source_identity': source_identity,
+                    'work': dict(budget.counts),
+                    'stage': 'proof_validation',
+                }
+            if proof_out.get('proof_kind') == 'root_aabb':
+                checkpoint('surface_proximity_cutoff_root_proof')
+                if not proof_out.get('strict_inequality_verified'):
+                    raise _DomainError('cutoff_root_proof_unverified')
+                receipt = {
+                    'origin': [[v.numerator, v.denominator] for v in origin],
+                    'factor': factor,
+                    **proof_out,
+                }
+                return {
+                    'result_kind': 'nearest_cutoff_exclusion',
+                    'disposition': 'strictly_above_cutoff',
+                    'pair_identity': pair_identity,
+                    'snapshot_identity': snapshot_identity,
+                    'source_identity': source_identity,
+                    'exact_upper_bound_key': list(upper_bound_sq_key),
+                    'upper_bound_origin': upper_bound_origin,
+                    'proof_kind': 'root_aabb',
+                    'proof_receipt': receipt,
+                    'work': dict(budget.counts),
+                    'stage': 'root_aabb_exclusion',
+                }
+            checkpoint('surface_proximity_cutoff_traversal_proof')
+            if (not partition_out
+                    or partition_out.get('covered_pairs') != partition_out.get('total_leaf_pairs')):
+                return {
+                    'result_kind': 'nearest_cutoff_unknown',
+                    'reason': 'cutoff_partition_unverified',
+                    'resource_stop': False,
+                    'pair_identity': pair_identity,
+                    'snapshot_identity': snapshot_identity,
+                    'source_identity': source_identity,
+                    'work': dict(budget.counts),
+                    'stage': 'traversal_partition_check',
+                }
+            receipt = {
+                'origin': [[v.numerator, v.denominator] for v in origin],
+                'factor': factor,
+                'local_cutoff': [cutoff[0], cutoff[1]],
+                'cut_floor': cutoff[2],
+                **partition_out,
+            }
+            return {
+                'result_kind': 'nearest_cutoff_exclusion',
+                'disposition': 'strictly_above_cutoff',
+                'pair_identity': pair_identity,
+                'snapshot_identity': snapshot_identity,
+                'source_identity': source_identity,
+                'exact_upper_bound_key': list(upper_bound_sq_key),
+                'upper_bound_origin': upper_bound_origin,
+                'proof_kind': 'complete_cutoff_traversal',
+                'proof_receipt': receipt,
+                'work': dict(budget.counts),
+                'stage': 'traversal_exclusion',
+            }
+
+        numerator, denominator, descriptor = nearest
+        stage = 'publish'
+        checkpoint('surface_proximity_publish')
+        distance = _rounded_distance(numerator, denominator, factor)
+        mres = dict(
+            measurement_valid=True, distance_m=distance, point_a_world=None,
+            point_b_world=None, direction_a_to_b=None, witness_status='unknown',
+            direction_status='unknown', topology=topology, method=METHOD,
+            work=dict(budget.counts),
+        )
+        checkpoint('surface_proximity_exact_rank_key')
+        mres['_exact_distance_sq'] = _exact_distance_key(numerator, denominator, factor)
+        with localcontext() as context:
+            context.prec = 80
+            local_distance = (Decimal(numerator) / Decimal(denominator)).sqrt()
+            if numerator == 0:
+                mres.update(direction_status='not_applicable', direction_reason='undefined_zero_distance')
+            try:
+                points = _witness(descriptor)
+                if numerator > 0:
+                    delta = _sub(points[1], points[0])
+                    direction = [float(Decimal(value.numerator) / Decimal(value.denominator) / local_distance)
+                                 if isinstance(value, Fraction) else float(Decimal(value) / local_distance)
+                                 for value in delta]
+                    mres.update(direction_a_to_b=direction, direction_status='measured')
+                publication = _publish_points(points, origin, factor, distance, include_exact=True)
+            except _DomainError:
+                mres['witness_reason'] = 'surface_witness_bit_budget'
+                if mres['direction_status'] == 'unknown':
+                    mres['direction_reason'] = 'surface_witness_bit_budget'
+                mres['work'] = dict(budget.counts)
+                publication = None
+                points = None
+        if publication is None:
+            if 'witness_reason' not in mres:
+                mres['witness_reason'] = 'original_surface_witness_precision_exceeded'
+        else:
+            world, exact_world = publication
+            mres.update(point_a_world=world[0], point_b_world=world[1], witness_status='measured')
+            if witness_pair:
+                mres.update(_witness_triangle_provenance(
+                    world, exact_world, points, witness_pair, prepared, origin, factor, budget))
+        checkpoint('surface_proximity_complete')
+        mres['work'] = dict(budget.counts)
+        return {
+            'result_kind': 'exact_surface_measurement',
+            'measured_result': mres,
+            'pair_identity': pair_identity,
+            'snapshot_identity': snapshot_identity,
+            'source_identity': source_identity,
+            'work': mres['work'],
+            'proof_cost': budget.counts.get('witness_projection_direction_builds', 0) * _FastWitnessProjection._BUILD_COST,
+            'stage': 'complete_measurement',
+        }
+    except _DomainError as exc:
+        reason = str(exc)
+        return {
+            'result_kind': 'nearest_cutoff_unknown',
+            'reason': reason,
+            'resource_stop': reason in _SURFACE_RESOURCE_STOPS,
+            'pair_identity': pair_identity,
+            'snapshot_identity': snapshot_identity,
+            'source_identity': source_identity,
+            'work': dict(budget.counts),
+            'stage': stage,
+        }
 
 
-def measure_nearest_surface_batch(target, peers, checkpoint, *, use_mesh_cache=True,
-                                use_cutoff=True, sort_by_aabb=True,
-                                retain_witness_triangles=False):
-    """Find all exact nearest peers to target with optional cutoff & AABB ordering."""
+def _capture_referenced_immutable_mesh(mesh, object_id, checkpoint, *, max_faces=MAX_FACES):
+    """Capture an immutable referenced-only snapshot without touching unreferenced container rows."""
+    verts_ref = getattr(mesh, 'vertices', None)
+    faces_ref = getattr(mesh, 'faces', None)
+    name = getattr(mesh, 'name', object_id)
+    if verts_ref is None or faces_ref is None:
+        return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+    try:
+        n_faces = len(faces_ref)
+        n_verts = len(verts_ref)
+    except TypeError:
+        return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+    if n_faces <= 0 or n_faces > max_faces or n_verts <= 0:
+        return {'ok': False, 'object_id': object_id, 'reason': 'surface_geometry_work_limit'}
+    raw_faces = _numpy_2d_list(faces_ref, ('i', 'u'))
+    face_iter = raw_faces if raw_faces is not None else faces_ref
+    try:
+        is_np_v = _is_numpy_2d_vertices(verts_ref)
+    except _DomainError as exc:
+        return {'ok': False, 'object_id': object_id, 'reason': str(exc)}
+
+    ref_map = {}
+    raw_tris = []
+    lx = hx = ly = hy = lz = hz = None
+    for f_idx, row in enumerate(face_iter):
+        if f_idx & 63 == 0:
+            checkpoint('surface_proximity_snapshot_admit')
+        try:
+            rlen = len(row)
+        except TypeError:
+            return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+        if rlen != 3:
+            return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+        t3 = []
+        for idx in row:
+            if type(idx) is not int:
+                if not isinstance(idx, Integral) or isinstance(idx, bool):
+                    return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+                idx = int(idx)
+            if not (0 <= idx < n_verts):
+                return {'ok': False, 'object_id': object_id, 'reason': 'surface_invalid_triangle_indices'}
+            if idx not in ref_map:
+                if is_np_v:
+                    vx = float(verts_ref.item((idx, 0)))
+                    vy = float(verts_ref.item((idx, 1)))
+                    vz = float(verts_ref.item((idx, 2)))
+                else:
+                    values = verts_ref[idx]
+                    try:
+                        vlen = len(values)
+                    except TypeError:
+                        return {'ok': False, 'object_id': object_id, 'reason': 'surface_nonfinite_vertex'}
+                    if vlen != 3:
+                        return {'ok': False, 'object_id': object_id, 'reason': 'surface_nonfinite_vertex'}
+                    vx, vy, vz = values[0], values[1], values[2]
+                    if isinstance(vx, bool) or isinstance(vy, bool) or isinstance(vz, bool):
+                        return {'ok': False, 'object_id': object_id, 'reason': 'surface_nonfinite_vertex'}
+                    try:
+                        if type(vx) is not float: vx = float(vx)
+                        if type(vy) is not float: vy = float(vy)
+                        if type(vz) is not float: vz = float(vz)
+                    except (TypeError, ValueError, OverflowError):
+                        return {'ok': False, 'object_id': object_id, 'reason': 'surface_nonfinite_vertex'}
+                if not (math.isfinite(vx) and math.isfinite(vy) and math.isfinite(vz)):
+                    return {'ok': False, 'object_id': object_id, 'reason': 'surface_nonfinite_vertex'}
+                if lx is None:
+                    lx = hx = vx; ly = hy = vy; lz = hz = vz
+                else:
+                    if vx < lx: lx = vx
+                    elif vx > hx: hx = vx
+                    if vy < ly: ly = vy
+                    elif vy > hy: hy = vy
+                    if vz < lz: lz = vz
+                    elif vz > hz: hz = vz
+                ref_map[idx] = (vx, vy, vz)
+            t3.append(idx)
+        raw_tris.append((t3[0], t3[1], t3[2]))
+
+    sorted_used = sorted(ref_map)
+    old_to_new = {old: new for new, old in enumerate(sorted_used)}
+    compact_verts = tuple(ref_map[old] for old in sorted_used)
+    compact_faces = tuple((old_to_new[a], old_to_new[b], old_to_new[c]) for a, b, c in raw_tris)
+
+    h = hashlib.sha256()
+    h.update(struct.pack('<II', len(compact_verts), n_faces))
+    for vx, vy, vz in compact_verts:
+        h.update(struct.pack('<ddd', vx, vy, vz))
+    for a, b, c in compact_faces:
+        h.update(struct.pack('<III', a, b, c))
+    digest = h.hexdigest()
+
+    snap_mesh = SimpleNamespace(object_id=object_id, name=name, vertices=compact_verts, faces=compact_faces)
+    return {
+        'ok': True,
+        'object_id': object_id,
+        'mesh': snap_mesh,
+        'face_count': n_faces,
+        'referenced_vertex_count': len(compact_verts),
+        'referenced_bounds': ((lx, ly, lz), (hx, hy, hz)),
+        'source_sha256': digest,
+        'retained_bytes_est': len(compact_verts) * 72 + n_faces * 64,
+    }
+
+
+def build_batch_snapshot(target, peers, checkpoint, *, peer_ids=None, snapshot_id=None,
+                         max_peers=256, max_total_faces=65536):
+    """Build a bounded, immutable query-local referenced geometry snapshot for batch evaluation."""
+    if type(max_peers) is not int or max_peers < 0:
+        raise ValueError('invalid max_peers')
+    if type(max_total_faces) is not int or max_total_faces <= 0:
+        raise ValueError('invalid max_total_faces')
     n_peers = len(peers)
+    if n_peers > max_peers:
+        raise ValueError(f'batch peers count {n_peers} exceeds max_peers {max_peers}')
+    if peer_ids is None:
+        ids = [getattr(p, 'object_id', f'peer_{i}') or f'peer_{i}' for i, p in enumerate(peers)]
+    else:
+        if len(peer_ids) != n_peers:
+            raise ValueError('peer_ids length mismatch')
+        ids = list(peer_ids)
+    if any(type(pid) is not str or not pid for pid in ids) or len(set(ids)) != n_peers:
+        raise ValueError('peer_ids must be nonempty unique strings')
+
+    target_id = getattr(target, 'object_id', 'target') or 'target'
+    target_entry = _capture_referenced_immutable_mesh(target, target_id, checkpoint)
+    agg_faces = target_entry.get('face_count', 0)
+    agg_verts = target_entry.get('referenced_vertex_count', 0)
+    agg_bytes = target_entry.get('retained_bytes_est', 0)
+
+    peer_entries = []
+    for pid, p in zip(ids, peers):
+        ent = _capture_referenced_immutable_mesh(p, pid, checkpoint)
+        if ent['ok'] and agg_faces + ent['face_count'] > max_total_faces:
+            raise ValueError(f'aggregate batch faces exceed max_total_faces={max_total_faces}')
+        agg_faces += ent.get('face_count', 0)
+        agg_verts += ent.get('referenced_vertex_count', 0)
+        agg_bytes += ent.get('retained_bytes_est', 0)
+        peer_entries.append(ent)
+
+    sh = hashlib.sha256()
+    sh.update(f"T:{target_entry.get('source_sha256', 'ERR')}|".encode('ascii'))
+    for pid, ent in zip(ids, peer_entries):
+        sh.update(f"{pid}:{ent.get('source_sha256', 'ERR')}|".encode('utf-8'))
+    snap_ident = f"{snapshot_id}:{sh.hexdigest()}" if snapshot_id else sh.hexdigest()
+
+    return {
+        'snapshot_identity': snap_ident,
+        'target_entry': target_entry,
+        'peer_entries': tuple(peer_entries),
+        'peer_ids': tuple(ids),
+        'aggregate_faces': agg_faces,
+        'aggregate_referenced_vertices': agg_verts,
+        'retained_geometry_bytes_est': agg_bytes,
+    }
+
+
+def measure_nearest_surface_batch(target, peers, checkpoint, *, peer_ids=None,
+                                cutoff_mode='CUTOFF_ONLY_OFF', sort_policy='stable',
+                                order_hints=None, use_mesh_cache=True,
+                                retain_witness_triangles=False, snapshot=None,
+                                snapshot_id=None, max_peers=256, max_total_faces=65536):
+    """Find all exact nearest peers to target with snapshot immutability & proof-bearing dispositions."""
+    if cutoff_mode not in _VALID_CUTOFF_MODES:
+        raise ValueError(f'unsupported cutoff_mode: {cutoff_mode!r}')
+    if sort_policy not in ('stable', 'referenced_aabb', 'hints'):
+        raise ValueError(f'unsupported sort_policy: {sort_policy!r}')
+
+    if snapshot is None:
+        snap = build_batch_snapshot(
+            target, peers, checkpoint,
+            peer_ids=peer_ids, snapshot_id=snapshot_id,
+            max_peers=max_peers, max_total_faces=max_total_faces,
+        )
+    else:
+        snap = snapshot
+        if peer_ids is not None and tuple(peer_ids) != snap['peer_ids']:
+            raise ValueError('snapshot peer_ids mismatch')
+
+    ids = list(snap['peer_ids'])
+    n_peers = len(ids)
+    t_ent = snap['target_entry']
+    p_ents = snap['peer_entries']
+    snap_id = snap['snapshot_identity']
+
     if n_peers == 0:
         return {
             'measurement_valid': False,
             'status': 'unknown',
+            'cutoff_mode': cutoff_mode,
+            'sort_policy': sort_policy,
+            'snapshot_identity': snap_id,
+            'peer_ids': [],
+            'nearest_ids': None,
             'nearest_indices': [],
+            'best_known_ids': [],
             'best_exact_distance_sq': None,
             'distance_m': None,
+            'best_known_distance_m': None,
+            'outcomes_by_id': {},
+            'outcomes_by_index': [],
             'results_by_index': [],
+            'unresolved_ids': [],
             'unresolved_indices': [],
+            'coverage': {
+                'n_input': 0, 'n_measured': 0, 'n_strictly_excluded': 0, 'n_unknown': 0,
+                'n_visited': 0, 'n_prepared': 0, 'n_trees_built': 0, 'n_traversed': 0,
+                'n_excluded_root_aabb': 0, 'n_excluded_root_axis': 0, 'n_excluded_traversal': 0,
+            },
             'cutoff_pruned_count': 0,
             'evaluated_count': 0,
+            'aggregate_faces': snap['aggregate_faces'],
+            'aggregate_referenced_vertices': snap['aggregate_referenced_vertices'],
+            'retained_geometry_bytes_est': snap['retained_geometry_bytes_est'],
         }
+
     order = list(range(n_peers))
-    if sort_by_aabb and n_peers > 1:
-        tbox = _mesh_world_aabb(target)
-        if tbox is not None:
-            (tx0, ty0, tz0), (tx1, ty1, tz1) = tbox
-            scores = []
-            for idx in order:
-                pbox = _mesh_world_aabb(peers[idx])
-                if pbox is None:
-                    scores.append((0.0, idx))
-                    continue
-                (px0, py0, pz0), (px1, py1, pz1) = pbox
-                gx = tx0 - px1 if tx0 > px1 else (px0 - tx1 if px0 > tx1 else 0.0)
-                gy = ty0 - py1 if ty0 > py1 else (py0 - ty1 if py0 > ty1 else 0.0)
-                gz = tz0 - pz1 if tz0 > pz1 else (pz0 - tz1 if pz0 > tz1 else 0.0)
-                gap = math.hypot(gx, gy, gz)
-                scores.append((gap if math.isfinite(gap) else 0.0, idx))
-            scores.sort()
-            order = [idx for _, idx in scores]
+    if n_peers > 1 and sort_policy == 'referenced_aabb' and t_ent['ok']:
+        checkpoint('surface_proximity_batch_order')
+        (tx0, ty0, tz0), (tx1, ty1, tz1) = t_ent['referenced_bounds']
+        scores = []
+        for idx, ent in enumerate(p_ents):
+            if not ent['ok']:
+                scores.append((0.0, idx))
+                continue
+            (px0, py0, pz0), (px1, py1, pz1) = ent['referenced_bounds']
+            gx = tx0 - px1 if tx0 > px1 else (px0 - tx1 if px0 > tx1 else 0.0)
+            gy = ty0 - py1 if ty0 > py1 else (py0 - ty1 if py0 > ty1 else 0.0)
+            gz = tz0 - pz1 if tz0 > pz1 else (pz0 - tz1 if pz0 > tz1 else 0.0)
+            gap = math.hypot(gx, gy, gz)
+            scores.append((gap if math.isfinite(gap) else 0.0, idx))
+        scores.sort()
+        order = [idx for _, idx in scores]
+    elif n_peers > 1 and sort_policy == 'hints' and order_hints is not None:
+        if len(order_hints) != n_peers:
+            raise ValueError('order_hints length mismatch')
+        checkpoint('surface_proximity_batch_order')
+        scores = []
+        for idx, val in enumerate(order_hints):
+            fv = float(val) if type(val) in (int, float) and math.isfinite(val) else 0.0
+            scores.append((fv, idx))
+        scores.sort()
+        order = [idx for _, idx in scores]
 
     cache = {} if use_mesh_cache else None
-    results_by_index = [None] * n_peers
+    outcomes_by_index = [None] * n_peers
+    outcomes_by_id = {}
     nearest_indices = []
     unresolved_indices = []
     best_key = None
-    cutoff_pruned_count = 0
-    evaluated_count = 0
+    incumbent_origin = None
+    incumbent_axis = None
+    n_measured = n_excluded = n_unknown = 0
+    n_visited = n_prepared = n_trees_built = n_traversed = 0
+    n_ex_raabb = n_ex_raxis = n_ex_trav = 0
 
-    for idx in order:
-        res = measure_surface_proximity(
-            target, peers[idx], checkpoint,
-            retain_exact_rank=True,
-            retain_witness_triangles=retain_witness_triangles,
-            _mesh_cache=cache,
-            _upper_bound_sq_key=(best_key if use_cutoff else None),
-        )
-        results_by_index[idx] = res
-        if res.get('cutoff_pruned'):
-            cutoff_pruned_count += 1
-        elif res.get('measurement_valid') is True and '_exact_distance_sq' in res:
-            evaluated_count += 1
-            ek = res['_exact_distance_sq']
-            if best_key is None:
-                best_key = ek
-                nearest_indices = [idx]
+    try:
+        for idx in order:
+            checkpoint('surface_proximity_batch_peer')
+            pid = ids[idx]
+            p_ent = p_ents[idx]
+            pair_id = {'target_id': t_ent['object_id'], 'peer_id': pid, 'peer_index': idx}
+            src_id = {'target_sha256': t_ent.get('source_sha256'), 'peer_sha256': p_ent.get('source_sha256')}
+
+            if not t_ent['ok'] or not p_ent['ok']:
+                reason = t_ent.get('reason') if not t_ent['ok'] else p_ent.get('reason')
+                outcome = {
+                    'result_kind': 'nearest_cutoff_unknown',
+                    'reason': reason or 'surface_measurement_unavailable',
+                    'resource_stop': False,
+                    'pair_identity': pair_id,
+                    'snapshot_identity': snap_id,
+                    'source_identity': src_id,
+                    'work': {},
+                    'stage': 'snapshot_admit',
+                }
             else:
-                cmp = _compare_distance_keys(ek, best_key, checkpoint)
-                if cmp < 0:
+                n_visited += 1
+                outcome = _measure_surface_proximity_cutoff(
+                    t_ent['mesh'], p_ent['mesh'], checkpoint,
+                    upper_bound_sq_key=(None if cutoff_mode == 'EXHAUSTIVE' else best_key),
+                    upper_bound_origin=incumbent_origin,
+                    cutoff_mode=cutoff_mode,
+                    hint_axis=(incumbent_axis if cutoff_mode == 'CUTOFF_SETTLED_PROJECTION' else None),
+                    pair_identity=pair_id,
+                    snapshot_identity=snap_id,
+                    source_identity=src_id,
+                    retain_witness_triangles=retain_witness_triangles,
+                    _mesh_cache=cache,
+                )
+
+            outcomes_by_index[idx] = outcome
+            outcomes_by_id[pid] = outcome
+            wk = outcome.get('work', {})
+            if wk.get('prepared_triangles', 0) > 0:
+                n_prepared += 1
+            if wk.get('tree_builds', 0) > 0 or wk.get('mesh_cache_tree_reuses', 0) > 0:
+                n_trees_built += 1
+            if wk.get('node_pair_visits', 0) > 0 or wk.get('leaf_pair_visits', 0) > 0:
+                n_traversed += 1
+
+            rk = outcome['result_kind']
+            if rk == 'exact_surface_measurement':
+                n_measured += 1
+                mres = outcome['measured_result']
+                ek = mres['_exact_distance_sq']
+                if best_key is None:
                     best_key = ek
                     nearest_indices = [idx]
-                elif cmp == 0:
-                    nearest_indices.append(idx)
-        else:
-            evaluated_count += 1
-            unresolved_indices.append(idx)
+                    incumbent_origin = {'peer_id': pid, 'peer_index': idx, 'exact_distance_sq': list(ek)}
+                    incumbent_axis = _exact_axis_from_measured_result(mres)
+                else:
+                    cmp = _compare_distance_keys(ek, best_key, checkpoint)
+                    if cmp < 0:
+                        best_key = ek
+                        nearest_indices = [idx]
+                        incumbent_origin = {'peer_id': pid, 'peer_index': idx, 'exact_distance_sq': list(ek)}
+                        new_ax = _exact_axis_from_measured_result(mres)
+                        if new_ax is not None:
+                            incumbent_axis = new_ax
+                    elif cmp == 0:
+                        nearest_indices.append(idx)
+            elif rk == 'nearest_cutoff_exclusion':
+                n_excluded += 1
+                pk = outcome.get('proof_kind')
+                if pk == 'root_aabb':
+                    n_ex_raabb += 1
+                elif pk == 'root_axis':
+                    n_ex_raxis += 1
+                else:
+                    n_ex_trav += 1
+            else:
+                n_unknown += 1
+                unresolved_indices.append(idx)
+    finally:
+        if cache is not None:
+            cache.clear()
 
     nearest_indices.sort()
     unresolved_indices.sort()
+    best_known_ids = [ids[i] for i in nearest_indices]
+    unresolved_ids = [ids[i] for i in unresolved_indices]
     status = ('complete' if (nearest_indices and not unresolved_indices)
               else ('partial' if nearest_indices else 'unknown'))
-    best_res = results_by_index[nearest_indices[0]] if nearest_indices else None
+    best_res = (outcomes_by_index[nearest_indices[0]]['measured_result']
+                if nearest_indices else None)
+    best_dist_m = best_res.get('distance_m') if best_res else None
+    results_compat = [
+        (o['measured_result'] if o['result_kind'] == 'exact_surface_measurement' else o)
+        for o in outcomes_by_index
+    ]
+
     return {
         'measurement_valid': status == 'complete',
         'status': status,
-        'nearest_indices': nearest_indices,
+        'cutoff_mode': cutoff_mode,
+        'sort_policy': sort_policy,
+        'snapshot_identity': snap_id,
+        'peer_ids': ids,
+        'nearest_ids': best_known_ids if status == 'complete' else None,
+        'nearest_indices': nearest_indices if status == 'complete' else [],
+        'best_known_ids': best_known_ids,
+        'best_known_indices': list(nearest_indices),
         'best_exact_distance_sq': best_key,
-        'distance_m': best_res.get('distance_m') if best_res else None,
-        'results_by_index': results_by_index,
+        'distance_m': best_dist_m if status == 'complete' else None,
+        'best_known_distance_m': best_dist_m,
+        'outcomes_by_id': outcomes_by_id,
+        'outcomes_by_index': outcomes_by_index,
+        'results_by_index': results_compat,
+        'unresolved_ids': unresolved_ids,
         'unresolved_indices': unresolved_indices,
-        'cutoff_pruned_count': cutoff_pruned_count,
-        'evaluated_count': evaluated_count,
+        'coverage': {
+            'n_input': n_peers,
+            'n_measured': n_measured,
+            'n_strictly_excluded': n_excluded,
+            'n_unknown': n_unknown,
+            'n_visited': n_visited,
+            'n_prepared': n_prepared,
+            'n_trees_built': n_trees_built,
+            'n_traversed': n_traversed,
+            'n_excluded_root_aabb': n_ex_raabb,
+            'n_excluded_root_axis': n_ex_raxis,
+            'n_excluded_traversal': n_ex_trav,
+        },
+        'cutoff_pruned_count': n_excluded,
+        'evaluated_count': n_measured,
+        'aggregate_faces': snap['aggregate_faces'],
+        'aggregate_referenced_vertices': snap['aggregate_referenced_vertices'],
+        'retained_geometry_bytes_est': snap['retained_geometry_bytes_est'],
     }
