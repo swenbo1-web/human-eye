@@ -1327,6 +1327,24 @@ class _FastWitnessProjection:
                 node_cache[cid] = (lo, hi)
             elif not ready:
                 lch, rch = cur[8], cur[9]
+                if lch is None:
+                    # Unexpanded lazy internal node: project raw descendant ids directly without forcing split
+                    lo = hi = None
+                    for idx in cur[14]:
+                        t = self._tri_interval(idx, tri_cache, prep_side, budget)
+                        if t is None:
+                            return None
+                        tlo, thi = t
+                        if lo is None or tlo < lo:
+                            lo = tlo
+                        if hi is None or thi > hi:
+                            hi = thi
+                    if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
+                        budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+                        return None
+                    budget.tick('witness_projection_node_visits', 1)
+                    node_cache[cid] = (lo, hi)
+                    continue
                 lid, rid = id(lch), id(rch)
                 if lid in node_cache and rid in node_cache:
                     if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
@@ -1816,7 +1834,7 @@ class _ProjectionCredit:
         return projection, pruned
 
 
-def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None):
+def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None, lazy_state=None, lazy_roots_out=None):
     mode = _DEFAULT_PROJECTION_MODE if projection_mode is None else projection_mode
     if mode not in _VALID_PROJECTION_MODES:
         raise ValueError(f'unsupported projection_mode: {mode!r}')
@@ -1827,19 +1845,135 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
         else ('paid_dequeue_reference' if mode == 'off_paid_dequeue_ref' else 'none')
     )
     limit = _FAST_COORD_LIMIT
-    fast_ints = all(-limit < r < limit for s in (0, 1) for b in (roots[s][0], roots[s][1]) for r in b)
     na, nb = len(prepared[0]), len(prepared[1])
+    if lazy_state is None:
+        fast_ints = all(-limit < r < limit for s in (0, 1) for b in (roots[s][0], roots[s][1]) for r in b)
+        largest_span = max(max(a, b) - min(c, d) for a, b, c, d in
+                           zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
+        span_bits = largest_span.bit_length()
+        shift = max(0, span_bits - (MAX_BITS - 1))
+        center_shift = max(0, span_bits - (MAX_BITS - 4))
+        left_root = _compile_bvh_node(roots[0], center_shift, budget=budget)
+        right_root = _compile_bvh_node(roots[1], center_shift, budget=budget)
+        expand_node = None
+    else:
+        flat_a, root_a_box, flat_b, root_b_box = lazy_state
+        r0lo, r0hi = root_a_box[0]
+        r1lo, r1hi = root_b_box[0]
+        fast_ints = all(-limit < r < limit for b in (r0lo, r0hi, r1lo, r1hi) for r in b)
+        largest_span = max(max(a, b) - min(c, d) for a, b, c, d in zip(r0hi, r1hi, r0lo, r1lo))
+        span_bits = largest_span.bit_length()
+        shift = max(0, span_bits - (MAX_BITS - 1))
+        center_shift = max(0, span_bits - (MAX_BITS - 4))
+        from .surface_geometry import _alloc_sah_scratch, _split_sah_one_level
+        scratches = (_alloc_sah_scratch(), _alloc_sah_scratch())
+        flats = (flat_a, flat_b)
+        lazy_nodes_created = 2
+        lazy_nodes_expanded = 0
+        consume = budget.consume
+        checkpoint = budget.checkpoint
+
+        def _make_root(box, cbox, n_tris, depth0=0):
+            lx, ly, lz = box[0]
+            hx, hy, hz = box[1]
+            consume(1 + n_tris, 'surface_bvh_build')
+            checkpoint('surface_proximity_bvh_compile')
+            cx2, cy2, cz2 = lx + hx, ly + hy, lz + hz
+            if center_shift:
+                cx2 >>= center_shift; cy2 >>= center_shift; cz2 >>= center_shift
+            ids0 = list(range(n_tris))
+            if n_tris <= 2:
+                return (lx, ly, lz, hx, hy, hz, n_tris, tuple(ids0), None, None, 0, cx2, cy2, cz2, None, depth0, True, None)
+            return [lx, ly, lz, hx, hy, hz, n_tris, None, None, None, 0, cx2, cy2, cz2, ids0, depth0, True, cbox]
+
+        left_root = _make_root(root_a_box[0], root_a_box[1], na)
+        right_root = _make_root(root_b_box[0], root_b_box[1], nb)
+
+        def _make_lazy_node(flat_b, ids, depth, is_sorted):
+            nonlocal lazy_nodes_created
+            n = len(ids)
+            consume(1 + n, 'surface_bvh_build')
+            checkpoint('surface_proximity_bvh_compile')
+            lazy_nodes_created += 1
+            cbox = None
+            if n == 1:
+                i0 = ids[0]
+                r = flat_b[i0]
+                lx, ly, lz, hx, hy, hz = r[0], r[1], r[2], r[3], r[4], r[5]
+                min_id = i0
+            elif n == 2:
+                i0, i1 = ids[0], ids[1]
+                r0, r1 = flat_b[i0], flat_b[i1]
+                lx = r0[0] if r0[0] <= r1[0] else r1[0]
+                ly = r0[1] if r0[1] <= r1[1] else r1[1]
+                lz = r0[2] if r0[2] <= r1[2] else r1[2]
+                hx = r0[3] if r0[3] >= r1[3] else r1[3]
+                hy = r0[4] if r0[4] >= r1[4] else r1[4]
+                hz = r0[5] if r0[5] >= r1[5] else r1[5]
+                min_id = i0 if is_sorted or i0 <= i1 else i1
+            elif n > 12 and depth < 20:
+                first = flat_b[ids[0]]
+                lx, ly, lz, hx, hy, hz, c0x, c0y, c0z = first
+                c1x, c1y, c1z = c0x, c0y, c0z
+                for idx in ids[1:]:
+                    r0, r1, r2, r3, r4, r5, cx, cy, cz = flat_b[idx]
+                    if r0 < lx: lx = r0
+                    if r1 < ly: ly = r1
+                    if r2 < lz: lz = r2
+                    if r3 > hx: hx = r3
+                    if r4 > hy: hy = r4
+                    if r5 > hz: hz = r5
+                    if cx < c0x: c0x = cx
+                    elif cx > c1x: c1x = cx
+                    if cy < c0y: c0y = cy
+                    elif cy > c1y: c1y = cy
+                    if cz < c0z: c0z = cz
+                    elif cz > c1z: c1z = cz
+                cbox = ((c0x, c1x), (c0y, c1y), (c0z, c1z))
+                min_id = ids[0] if is_sorted else min(ids)
+            else:
+                first = flat_b[ids[0]]
+                lx, ly, lz, hx, hy, hz = first[0], first[1], first[2], first[3], first[4], first[5]
+                for idx in ids[1:]:
+                    row = flat_b[idx]
+                    r0, r1, r2, r3, r4, r5 = row[0], row[1], row[2], row[3], row[4], row[5]
+                    if r0 < lx: lx = r0
+                    if r1 < ly: ly = r1
+                    if r2 < lz: lz = r2
+                    if r3 > hx: hx = r3
+                    if r4 > hy: hy = r4
+                    if r5 > hz: hz = r5
+                min_id = ids[0] if is_sorted else min(ids)
+            cx2, cy2, cz2 = lx + hx, ly + hy, lz + hz
+            if center_shift:
+                cx2 >>= center_shift; cy2 >>= center_shift; cz2 >>= center_shift
+            if n <= 2:
+                return (lx, ly, lz, hx, hy, hz, n, tuple(ids), None, None, min_id, cx2, cy2, cz2, None, depth, is_sorted, None)
+            return [lx, ly, lz, hx, hy, hz, n, None, None, None, min_id, cx2, cy2, cz2, ids, depth, is_sorted, cbox]
+
+        def expand_node(node, side_idx):
+            nonlocal lazy_nodes_expanded
+            lch = node[8]
+            if lch is not None:
+                return lch, node[9]
+            flat_b = flats[side_idx]
+            lazy_nodes_expanded += 1
+            left_ids, right_ids, child_sorted = _split_sah_one_level(
+                flat_b, budget, node[14],
+                node[0], node[1], node[2], node[3], node[4], node[5],
+                2, node[15], scratches[side_idx], node[16], node[17],
+            )
+            ndepth = node[15] + 1
+            lch = _make_lazy_node(flat_b, left_ids, ndepth, child_sorted)
+            rch = _make_lazy_node(flat_b, right_ids, ndepth, child_sorted)
+            node[8] = lch
+            node[9] = rch
+            node[14] = None
+            node[17] = None
+            return lch, rch
+
     bary_a = [None] * na if fast_ints else None
     bary_b = [None] * nb if fast_ints else None
-    largest_span = max(max(a, b) - min(c, d) for a, b, c, d in
-                       zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
-    # One common priority scale protects extreme inputs. Safe pruning below
-    # always uses unshifted bounds, regardless of this queue-only ordering.
-    span_bits = largest_span.bit_length()
-    shift = max(0, span_bits - (MAX_BITS - 1))
-    center_shift = max(0, span_bits - (MAX_BITS - 4))
-    left_root = _compile_bvh_node(roots[0], center_shift, budget=budget)
-    right_root = _compile_bvh_node(roots[1], center_shift, budget=budget)
 
     pending = []
     serial = 0
@@ -1964,7 +2098,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
     while cur_l[7] is None or cur_r[7] is None:
         budget.tick('node_pair_visits')
         if cur_r[7] is not None or (cur_l[7] is None and cur_l[6] >= cur_r[6]):
-            c0, c1 = cur_l[8], cur_l[9]
+            c0, c1 = (cur_l[8], cur_l[9]) if cur_l[8] is not None else expand_node(cur_l, 0)
             k0, cd0 = _node_queue_bounds(c0, cur_r, shift, budget, fast_ints=fast_ints)
             k1, cd1 = _node_queue_bounds(c1, cur_r, shift, budget, fast_ints=fast_ints)
             if (k0, cd0, c0[10]) <= (k1, cd1, c1[10]):
@@ -1974,7 +2108,7 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                 siblings.append((k0, cd0, c0, cur_r))
                 cur_l = c1
         else:
-            c0, c1 = cur_r[8], cur_r[9]
+            c0, c1 = (cur_r[8], cur_r[9]) if cur_r[8] is not None else expand_node(cur_r, 1)
             k0, cd0 = _node_queue_bounds(cur_l, c0, shift, budget, fast_ints=fast_ints)
             k1, cd1 = _node_queue_bounds(cur_l, c1, shift, budget, fast_ints=fast_ints)
             if (k0, cd0, c0[10]) <= (k1, cd1, c1[10]):
@@ -2042,23 +2176,74 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
         if left[7] is not None and right[7] is not None:
             eval_leaf(left, right)
         elif right[7] is not None or (left[7] is None and left[6] >= right[6]):
-            for child in (left[8], left[9]):
+            c0, c1 = (left[8], left[9]) if left[8] is not None else expand_node(left, 0)
+            for child in (c0, c1):
                 k, cd = _node_queue_bounds(child, right, shift, budget, fast_ints=fast_ints)
                 push_pair(k, cd, child, right)
         else:
-            for child in (right[8], right[9]):
+            c0, c1 = (right[8], right[9]) if right[8] is not None else expand_node(right, 1)
+            for child in (c0, c1):
                 k, cd = _node_queue_bounds(left, child, shift, budget, fast_ints=fast_ints)
                 push_pair(k, cd, left, child)
+    if lazy_state is not None:
+        budget.counts['lazy_bvh_enabled'] = True
+        budget.counts['lazy_bvh_nodes_created'] = lazy_nodes_created
+        budget.counts['lazy_bvh_nodes_expanded'] = lazy_nodes_expanded
+    if lazy_roots_out is not None:
+        lazy_roots_out.extend((left_root, right_root))
     if witness_pair is not None and best_pair is not None:
         witness_pair[:] = best_pair
     return best
 
 
+def _prepare_lazy_state(prepared, budget):
+    sides = []
+    for triangles in prepared:
+        n_tris = len(triangles)
+        budget.tick('tree_build_units', n_tris)
+        budget.tick('tree_builds')
+        flat_bounds = [None] * n_tris
+        b0 = triangles[0][4]
+        lx, hx = b0[0]
+        ly, hy = b0[1]
+        lz, hz = b0[2]
+        c0x = c1x = lx + hx
+        c0y = c1y = ly + hy
+        c0z = c1z = lz + hz
+        flat_bounds[0] = (lx, ly, lz, hx, hy, hz, c0x, c0y, c0z)
+        for row_idx in range(1, n_tris):
+            b = triangles[row_idx][4]
+            ax, bx = b[0]
+            ay, by = b[1]
+            az, bz = b[2]
+            cx, cy, cz = ax + bx, ay + by, az + bz
+            flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, cx, cy, cz)
+            if ax < lx: lx = ax
+            if ay < ly: ly = ay
+            if az < lz: lz = az
+            if bx > hx: hx = bx
+            if by > hy: hy = by
+            if bz > hz: hz = bz
+            if cx < c0x: c0x = cx
+            elif cx > c1x: c1x = cx
+            if cy < c0y: c0y = cy
+            elif cy > c1y: c1y = cy
+            if cz < c0z: c0z = cz
+            elif cz > c1z: c1z = cz
+        sides.append((flat_bounds, (((lx, ly, lz), (hx, hy, hz)), ((c0x, c1x), (c0y, c1y), (c0z, c1z)))))
+    return (sides[0][0], sides[0][1], sides[1][0], sides[1][1])
+
+
 def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None,
-             projection_mode=None):
+             projection_mode=None, _lazy_bvh=True, _lazy_roots_out=None):
     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
         return _nearest_linear(prepared, budget, witness_pair)
     if prepared_trees is None:
+        if prepared_holder is None and _lazy_bvh:
+            lazy_state = _prepare_lazy_state(prepared, budget)
+            return _nearest_tree(prepared, None, budget, witness_pair,
+                                 projection_mode=projection_mode, lazy_state=lazy_state,
+                                 lazy_roots_out=_lazy_roots_out)
         roots = _distance_roots(prepared,budget,holder=prepared_holder)
     else:
         roots = prepared_trees['roots']
@@ -2644,7 +2829,8 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
                               _prepared_trees=None,
-                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None):
+                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None,
+                              _lazy_bvh=True):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     mode = _DEFAULT_PROJECTION_MODE if _projection_mode is None else _projection_mode
     if mode not in _VALID_PROJECTION_MODES:
@@ -2701,7 +2887,8 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                 numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
                                                              prepared_holder=_prepared_holder,
                                                              witness_pair=witness_pair,
-                                                             projection_mode=mode)
+                                                             projection_mode=mode,
+                                                             _lazy_bvh=_lazy_bvh)
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)
