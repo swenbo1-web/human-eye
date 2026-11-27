@@ -232,6 +232,9 @@ _WORK_STAGES = {
 }
 
 
+_WORK_STAGES_GET = _WORK_STAGES.get
+
+
 class _Work:
     __slots__ = ('checkpoint', 'counts')
 
@@ -252,7 +255,7 @@ class _Work:
                            support_vertex_dots=0)
 
     def consume(self, amount, stage):
-        cp = _WORK_STAGES.get(stage)
+        cp = _WORK_STAGES_GET(stage)
         self.checkpoint(cp if cp is not None else 'surface_proximity_' + stage)
         counts = self.counts
         new_work = counts['work_units'] + amount
@@ -263,14 +266,17 @@ class _Work:
             counts['tree_build_units'] += amount
 
     def tick(self, kind, amount=1):
-        cp = _WORK_STAGES.get(kind)
+        cp = _WORK_STAGES_GET(kind)
         self.checkpoint(cp if cp is not None else 'surface_proximity_' + kind)
         counts = self.counts
         new_work = counts['work_units'] + amount
         if new_work > MAX_WORK_UNITS:
             raise _DomainError('surface_work_budget')
         counts['work_units'] = new_work
-        counts[kind] = counts.get(kind, 0) + amount
+        try:
+            counts[kind] += amount
+        except KeyError:
+            counts[kind] = amount
 
     def narrow_pair(self):
         if self.counts['narrow_phase_pairs'] >= MAX_NARROW_PHASE_PAIRS:
@@ -831,12 +837,29 @@ def _point_edges(point, edge, reverse, best, budget, *, tie_accept=False, fast_i
         qx, qy, qz = px - sx, py - sy, pz - sz
         parameter = qx * dx + qy * dy + qz * dz
         if parameter <= 0:
-            numerator, denominator, parameter = qx * qx + qy * qy + qz * qz, 1, 0
+            numerator = qx * qx + qy * qy + qz * qz
+            if best is not None:
+                lhs = numerator * best[1]
+                rhs = best[0]
+                if lhs > rhs or (lhs == rhs and not tie_accept):
+                    return best
+            denominator, parameter = 1, 0
         elif parameter >= squared:
             rx, ry, rz = px - ex, py - ey, pz - ez
-            numerator, denominator, parameter = rx * rx + ry * ry + rz * rz, 1, squared
+            numerator = rx * rx + ry * ry + rz * rz
+            if best is not None:
+                lhs = numerator * best[1]
+                rhs = best[0]
+                if lhs > rhs or (lhs == rhs and not tie_accept):
+                    return best
+            denominator, parameter = 1, squared
         else:
             numerator = (qx * qx + qy * qy + qz * qz) * squared - parameter * parameter
+            if best is not None:
+                lhs = numerator * best[1]
+                rhs = best[0] * squared
+                if lhs > rhs or (lhs == rhs and not tie_accept):
+                    return best
             denominator = squared
         distance = _closer(numerator, denominator, best, tie_accept=tie_accept)
         return (*distance, ('edge', point, start, delta, parameter, squared, reverse)) if distance else best
@@ -941,16 +964,34 @@ def _segment_face_contact(segment, triangle):
     return ('segment_face', start, delta, numerator, denominator)
 
 
-def _aabb_exceeds_best(left, right, best, *, strict=True):
+def _aabb_exceeds_best(left, right, best, *, strict=True, remaining=None, fast_ints=False):
     # The integer squared lower bound exceeds n/d iff it exceeds floor(n/d)
     # (or (n-1)//d for >= when tie-breaking disallows equal candidates).
-    remaining = (best[0] // best[1]) if strict else ((best[0] - 1) // best[1])
+    if remaining is None:
+        remaining = (best[0] // best[1]) if strict else ((best[0] - 1) // best[1])
     if remaining < 0:
         return True
-    for (left_min, left_max), (right_min, right_max) in zip(left, right):
-        gap = left_min - right_max
-        if right_min - left_max > gap:
-            gap = right_min - left_max
+    ((lx0, lx1), (ly0, ly1), (lz0, lz1)) = left
+    ((rx0, rx1), (ry0, ry1), (rz0, rz1)) = right
+    gx = lx0 - rx1
+    if rx0 - lx1 > gx:
+        gx = rx0 - lx1
+    gy = ly0 - ry1
+    if ry0 - ly1 > gy:
+        gy = ry0 - ly1
+    gz = lz0 - rz1
+    if rz0 - lz1 > gz:
+        gz = rz0 - lz1
+    if fast_ints:
+        gsq = 0
+        if gx > 0:
+            gsq += gx * gx
+        if gy > 0:
+            gsq += gy * gy
+        if gz > 0:
+            gsq += gz * gz
+        return gsq > remaining
+    for gap in (gx, gy, gz):
         if gap > 0:
             if gap.bit_length() <= 2048:
                 gap_sq = gap * gap
@@ -964,11 +1005,31 @@ def _aabb_exceeds_best(left, right, best, *, strict=True):
     return False
 
 
-def _plane_exceeds_best(distances, normal_squared, best, *, strict=True):
-    if not normal_squared or not distances or not (
-            all(value > 0 for value in distances) or all(value < 0 for value in distances)):
+def _plane_exceeds_best(distances, normal_squared, best, *, strict=True, fast_ints=False):
+    if not normal_squared or not distances:
         return False
-    gap = min(abs(value) for value in distances)
+    if len(distances) == 3:
+        d0, d1, d2 = distances
+        if d0 > 0 and d1 > 0 and d2 > 0:
+            gap = d0 if d0 <= d1 else d1
+            if d2 < gap:
+                gap = d2
+        elif d0 < 0 and d1 < 0 and d2 < 0:
+            gap = -d0
+            if -d1 < gap:
+                gap = -d1
+            if -d2 < gap:
+                gap = -d2
+        else:
+            return False
+    else:
+        if not (all(value > 0 for value in distances) or all(value < 0 for value in distances)):
+            return False
+        gap = min(abs(value) for value in distances)
+    if fast_ints:
+        lhs = gap * gap * best[1]
+        rhs = best[0] * normal_squared
+        return lhs > rhs if strict else lhs >= rhs
     # g²*d > n*n² iff integer g² > floor(n*n²/d); >= iff > (n*n² - 1)//d.
     product = _scratch(best[0] * normal_squared)
     if not strict:
@@ -986,11 +1047,11 @@ def _triangle_plane_bounds(left, right, best, budget, *, strict=True, fast_ints=
         return False, None
     da = _plane_distances(right[0], left[0][0], left[1], budget, fast_ints=fast_ints)
     budget.tick('plane_bound_tests')
-    if _plane_exceeds_best(da, left[2], best, strict=strict):
+    if _plane_exceeds_best(da, left[2], best, strict=strict, fast_ints=fast_ints):
         return True, (da, None)
     db = _plane_distances(left[0], right[0][0], right[1], budget, fast_ints=fast_ints)
     budget.tick('plane_bound_tests')
-    return _plane_exceeds_best(db, right[2], best, strict=strict), (da, db)
+    return _plane_exceeds_best(db, right[2], best, strict=strict, fast_ints=fast_ints), (da, db)
 
 
 def _nearest_pair(left, right, best, budget, plane_distances=None,
@@ -1058,11 +1119,13 @@ def _nearest_pair(left, right, best, budget, plane_distances=None,
     return cur_best
 
 
-def _nearest_linear(prepared, budget, witness_pair=None):
+def _nearest_linear(prepared, budget, witness_pair=None, *, cutoff=None):
     fast_ints = _bounds_fit_fast(prepared[0]) and _bounds_fit_fast(prepared[1])
     bary_a = [None] * len(prepared[0]) if fast_ints else None
     bary_b = [None] * len(prepared[1]) if fast_ints else None
     best = None
+    cut_floor = cutoff[2] if cutoff is not None else None
+    cutoff_sentinel = (cutoff[0], cutoff[1], None) if cutoff is not None else None
     for i, left in enumerate(prepared[0]):
         for j, right in enumerate(prepared[1]):
             budget.checkpoint('surface_proximity_pair')
@@ -1070,18 +1133,27 @@ def _nearest_linear(prepared, budget, witness_pair=None):
             budget.counts['triangle_pairs'] += 1
             if best is not None:
                 budget.tick('aabb_bound_tests')
-                if _aabb_exceeds_best(left[4], right[4], best):
+                if _aabb_exceeds_best(left[4], right[4], best, fast_ints=fast_ints):
                     budget.counts['aabb_pruned_pairs'] += 1
                     continue
-            candidate = _nearest_pair(left, right, best, budget,
+            elif cutoff_sentinel is not None:
+                budget.tick('aabb_bound_tests')
+                if _aabb_exceeds_best(left[4], right[4], cutoff_sentinel, strict=True,
+                                      remaining=cut_floor, fast_ints=fast_ints):
+                    budget.counts['aabb_pruned_pairs'] += 1
+                    continue
+            eff_best = best if best is not None else cutoff_sentinel
+            candidate = _nearest_pair(left, right, eff_best, budget,
+                                      tie_accept=(best is None and cutoff_sentinel is not None),
                                       fast_ints=fast_ints,
                                       left_bary=bary_a, left_idx=i,
                                       right_bary=bary_b, right_idx=j)
-            if witness_pair is not None and candidate is not best:
-                witness_pair[:] = (i, j)
-            best = candidate
-            if best[0] == 0:
-                return best
+            if candidate is not eff_best:
+                if witness_pair is not None:
+                    witness_pair[:] = (i, j)
+                best = candidate
+                if best[0] == 0:
+                    return best
     return best
 
 
@@ -1260,6 +1332,49 @@ class _FastWitnessProjection:
         budget.counts['witness_projection_directions'] = budget.counts.get('witness_projection_directions', 0) + 1
         return self
 
+    @classmethod
+    def build_for_cutoff(cls, cut_n, cut_d, seed_desc, prep_a, prep_b, budget):
+        """Build an exact Cauchy-Schwarz separating-axis projector for an external upper bound."""
+        if cut_n < 0 or cut_d <= 0:
+            return None
+        budget.checkpoint('surface_proximity_witness_projection')
+        if MAX_WORK_UNITS - budget.counts['work_units'] < cls._BUILD_COST:
+            budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+            return None
+        axis = _fast_descriptor_direction(seed_desc)
+        if axis is None:
+            return None
+        ax, ay, az = axis
+        g = math.gcd(ax, math.gcd(ay, az))
+        if not g:
+            return None
+        ax //= g
+        ay //= g
+        az //= g
+        if ax.bit_length() > 1024 or ay.bit_length() > 1024 or az.bit_length() > 1024:
+            return None
+        norm_sq = ax * ax + ay * ay + az * az
+        if norm_sq.bit_length() + cut_n.bit_length() > _MAX_SCRATCH_BITS:
+            return None
+        budget.consume(cls._BUILD_COST - 1, 'witness_projection')
+        budget.tick('witness_projection_direction_builds', 1)
+        self = cls()
+        self.axis = (ax, ay, az)
+        self.norm_sq = norm_sq
+        self.best = (cut_n, cut_d)
+        c_strict = math.isqrt((norm_sq * cut_n) // cut_d)
+        self.cutoff_strict = c_strict
+        self.cutoff_tie = c_strict
+        self.node_a = {}
+        self.node_b = {}
+        self.tri_a = [None] * len(prep_a)
+        self.tri_b = [None] * len(prep_b)
+        self.prep_a = prep_a
+        self.prep_b = prep_b
+        self.epoch = 0
+        budget.counts['witness_projection_directions'] = budget.counts.get('witness_projection_directions', 0) + 1
+        return self
+
     def _tri_interval(self, idx, tri_cache, prep_side, budget):
         row = tri_cache[idx]
         if row is not None:
@@ -1361,59 +1476,43 @@ class _FastWitnessProjection:
     def _slab_exceeds_cutoff(gap, cutoff):
         return gap > cutoff
 
+    def _emit_prune(self, left, right, strict, best_pair, source, gap, cutoff):
+        obs = _NODE_PRUNE_OBSERVER
+        if obs is not None:
+            obs({
+                'left': left,
+                'right': right,
+                'strict': strict,
+                'axis': self.axis,
+                'norm_sq': self.norm_sq,
+                'best': self.best,
+                'best_pair': best_pair,
+                'epoch': self.epoch,
+                'source': source,
+                'gap': gap,
+                'cutoff': cutoff,
+            })
+
     def prunes_nodes(self, left, right, strict, budget, *, use_vertex_slab=True, credit=None, best_pair=None):
-        def _emit_prune(source, gap, cutoff):
-            obs = _NODE_PRUNE_OBSERVER
-            if obs is not None:
-                obs({
-                    'left': left,
-                    'right': right,
-                    'strict': strict,
-                    'axis': self.axis,
-                    'norm_sq': self.norm_sq,
-                    'best': self.best,
-                    'best_pair': best_pair,
-                    'epoch': self.epoch,
-                    'source': source,
-                    'gap': gap,
-                    'cutoff': cutoff,
-                })
-
-        def _test_box():
-            budget.tick('witness_projection_tests', 1)
-            ax, ay, az = self.axis
-            cutoff = self.cutoff_strict if strict else self.cutoff_tie
-            lmin = (ax * left[0] if ax >= 0 else ax * left[3]) + (ay * left[1] if ay >= 0 else ay * left[4]) + (az * left[2] if az >= 0 else az * left[5])
-            lmax = (ax * left[3] if ax >= 0 else ax * left[0]) + (ay * left[4] if ay >= 0 else ay * left[1]) + (az * left[5] if az >= 0 else az * left[2])
-            rmin = (ax * right[0] if ax >= 0 else ax * right[3]) + (ay * right[1] if ay >= 0 else ay * right[4]) + (az * right[2] if az >= 0 else az * right[5])
-            rmax = (ax * right[3] if ax >= 0 else ax * right[0]) + (ay * right[4] if ay >= 0 else ay * right[1]) + (az * right[5] if az >= 0 else az * right[2])
-            gap = lmin - rmax if lmin > rmax else (rmin - lmax if rmin > lmax else 0)
-            return gap > cutoff, cutoff, gap
-
-        slab_gap = 0
-
-        def _test_slabs(cutoff):
-            nonlocal slab_gap
-            counts = budget.counts
-            counts['witness_projection_vertex_slabs'] = counts.get('witness_projection_vertex_slabs', 0) + 1
-            la = self._node_interval(left, self.node_a, self.tri_a, self.prep_a, budget)
-            if la is None:
-                return False
-            rb = self._node_interval(right, self.node_b, self.tri_b, self.prep_b, budget)
-            if rb is None:
-                return False
-            gap = la[0] - rb[1] if la[0] > rb[1] else (rb[0] - la[1] if rb[0] > la[1] else 0)
-            slab_gap = gap
-            return self._slab_exceeds_cutoff(gap, cutoff)
+        counts = budget.counts
+        ax, ay, az = self.axis
+        cutoff = self.cutoff_strict if strict else self.cutoff_tie
+        node_a = self.node_a
+        node_b = self.node_b
+        la = rb = None
 
         if credit is not None:
-            counts = budget.counts
-            cap = min(credit.balance, MAX_WORK_UNITS - counts['work_units'])
+            cap = credit.balance
+            rem_wu = MAX_WORK_UNITS - counts['work_units']
+            if rem_wu < cap:
+                cap = rem_wu
             can_slab = False
             slab_upper = 0
             if use_vertex_slab:
-                ul = self._cold_interval_upper(left, self.node_a)
-                ur = self._cold_interval_upper(right, self.node_b)
+                la = node_a.get(id(left))
+                rb = node_b.get(id(right))
+                ul = 0 if la is not None else ((1 + 3 * left[6]) if left[7] is not None else (5 * left[6] - 1))
+                ur = 0 if rb is not None else ((1 + 3 * right[6]) if right[7] is not None else (5 * right[6] - 1))
                 slab_upper = ul + ur
                 counts['witness_projection_upper_calls'] = counts.get('witness_projection_upper_calls', 0) + 1
                 if 1 + slab_upper <= cap:
@@ -1421,70 +1520,196 @@ class _FastWitnessProjection:
                 else:
                     counts['witness_projection_slab_deferred'] = counts.get('witness_projection_slab_deferred', 0) + 1
                     credit.record_deferral(1 + slab_upper)
-            run_box = can_slab or (cap >= _FAST_WP_NODE_BOX_MIN_CREDIT)
-            if not run_box:
+            if not can_slab and cap < _FAST_WP_NODE_BOX_MIN_CREDIT:
                 if not use_vertex_slab:
                     credit.record_deferral(_FAST_WP_NODE_BOX_MIN_CREDIT)
                 return False
-            ok, box_out = credit.try_run(1, _test_box)
-            if not ok:
+
+            if 1 > credit.balance:
+                counts['witness_projection_credit_credit_deferrals'] += 1
                 return False
-            box_pruned, cutoff, box_gap = box_out
-            if box_pruned:
+            if 1 > MAX_WORK_UNITS - counts['work_units']:
+                counts['witness_projection_credit_budget_deferrals'] += 1
+                counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+                return False
+            credit.attempts += 1
+            counts['witness_projection_credit_attempts'] = credit.attempts
+            counts['witness_projection_credit_upper_units'] += 1
+            counts['witness_projection_credit_last_upper'] = 1
+            credit.pending_upper = 1
+            credit.pending_work_start = counts['work_units']
+            try:
+                budget.tick('witness_projection_tests', 1)
+                lmin = (ax * left[0] if ax >= 0 else ax * left[3]) + (ay * left[1] if ay >= 0 else ay * left[4]) + (az * left[2] if az >= 0 else az * left[5])
+                lmax = (ax * left[3] if ax >= 0 else ax * left[0]) + (ay * left[4] if ay >= 0 else ay * left[1]) + (az * left[5] if az >= 0 else az * left[2])
+                rmin = (ax * right[0] if ax >= 0 else ax * right[3]) + (ay * right[1] if ay >= 0 else ay * right[4]) + (az * right[2] if az >= 0 else az * right[5])
+                rmax = (ax * right[3] if ax >= 0 else ax * right[0]) + (ay * right[4] if ay >= 0 else ay * right[1]) + (az * right[5] if az >= 0 else az * right[2])
+                box_gap = lmin - rmax if lmin > rmax else (rmin - lmax if rmin > lmax else 0)
+            finally:
+                actual = counts['work_units'] - credit.pending_work_start
+                credit.balance -= actual
+                credit.spent += actual
+                credit.pending_upper = credit.pending_work_start = None
+                counts['witness_projection_credit_spent_units'] = credit.spent
+                counts['witness_projection_credit_last_actual'] = actual
+                counts['witness_projection_credit_balance'] = credit.balance
+                if actual < 0 or actual > 1 or credit.balance < 0:
+                    raise ArithmeticError('witness_projection_credit_invariant')
+            if box_gap > cutoff:
                 counts['witness_projection_box_pruned_pairs'] = counts.get('witness_projection_box_pruned_pairs', 0) + 1
-                _emit_prune('box', box_gap, cutoff)
+                if _NODE_PRUNE_OBSERVER is not None:
+                    self._emit_prune(left, right, strict, best_pair, 'box', box_gap, cutoff)
                 return True
             if not can_slab:
                 return False
+
             counts['witness_projection_slab_admitted'] = counts.get('witness_projection_slab_admitted', 0) + 1
             counts['witness_projection_slab_reserved_units'] = counts.get('witness_projection_slab_reserved_units', 0) + slab_upper
             w0 = counts['work_units']
-            ok, res = credit.try_run(slab_upper, lambda: _test_slabs(cutoff))
+            if slab_upper > credit.balance:
+                counts['witness_projection_credit_credit_deferrals'] += 1
+                counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
+                return False
+            if slab_upper > MAX_WORK_UNITS - w0:
+                counts['witness_projection_credit_budget_deferrals'] += 1
+                counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+                counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
+                return False
+            credit.attempts += 1
+            counts['witness_projection_credit_attempts'] = credit.attempts
+            counts['witness_projection_credit_upper_units'] += slab_upper
+            counts['witness_projection_credit_last_upper'] = slab_upper
+            credit.pending_upper = slab_upper
+            credit.pending_work_start = w0
+            res = False
+            slab_gap = 0
+            try:
+                counts['witness_projection_vertex_slabs'] = counts.get('witness_projection_vertex_slabs', 0) + 1
+                if la is None:
+                    la = self._node_interval(left, node_a, self.tri_a, self.prep_a, budget)
+                if la is not None:
+                    if rb is None:
+                        rb = self._node_interval(right, node_b, self.tri_b, self.prep_b, budget)
+                    if rb is not None:
+                        slab_gap = la[0] - rb[1] if la[0] > rb[1] else (rb[0] - la[1] if rb[0] > la[1] else 0)
+                        res = self._slab_exceeds_cutoff(slab_gap, cutoff)
+            finally:
+                actual = counts['work_units'] - credit.pending_work_start
+                credit.balance -= actual
+                credit.spent += actual
+                credit.pending_upper = credit.pending_work_start = None
+                counts['witness_projection_credit_spent_units'] = credit.spent
+                counts['witness_projection_credit_last_actual'] = actual
+                counts['witness_projection_credit_balance'] = credit.balance
+                if actual < 0 or actual > slab_upper or credit.balance < 0:
+                    raise ArithmeticError('witness_projection_credit_invariant')
             counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
-            if ok and res:
+            if res:
                 counts['witness_projection_vertex_slab_pruned_pairs'] = counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
-                _emit_prune('vertex_slab', slab_gap, cutoff)
+                if _NODE_PRUNE_OBSERVER is not None:
+                    self._emit_prune(left, right, strict, best_pair, 'vertex_slab', slab_gap, cutoff)
                 return True
             return False
 
-        if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
-            budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+        if MAX_WORK_UNITS - counts['work_units'] < 1:
+            counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
             return False
-        box_pruned, cutoff, box_gap = _test_box()
-        if box_pruned:
-            budget.counts['witness_projection_box_pruned_pairs'] = budget.counts.get('witness_projection_box_pruned_pairs', 0) + 1
-            _emit_prune('box', box_gap, cutoff)
+        budget.tick('witness_projection_tests', 1)
+        lmin = (ax * left[0] if ax >= 0 else ax * left[3]) + (ay * left[1] if ay >= 0 else ay * left[4]) + (az * left[2] if az >= 0 else az * left[5])
+        lmax = (ax * left[3] if ax >= 0 else ax * left[0]) + (ay * left[4] if ay >= 0 else ay * left[1]) + (az * left[5] if az >= 0 else az * left[2])
+        rmin = (ax * right[0] if ax >= 0 else ax * right[3]) + (ay * right[1] if ay >= 0 else ay * right[4]) + (az * right[2] if az >= 0 else az * right[5])
+        rmax = (ax * right[3] if ax >= 0 else ax * right[0]) + (ay * right[4] if ay >= 0 else ay * right[1]) + (az * right[5] if az >= 0 else az * right[2])
+        box_gap = lmin - rmax if lmin > rmax else (rmin - lmax if rmin > lmax else 0)
+        if box_gap > cutoff:
+            counts['witness_projection_box_pruned_pairs'] = counts.get('witness_projection_box_pruned_pairs', 0) + 1
+            if _NODE_PRUNE_OBSERVER is not None:
+                self._emit_prune(left, right, strict, best_pair, 'box', box_gap, cutoff)
             return True
         if not use_vertex_slab:
             return False
-        if _test_slabs(cutoff):
-            budget.counts['witness_projection_vertex_slab_pruned_pairs'] = budget.counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
-            _emit_prune('vertex_slab', slab_gap, cutoff)
+        counts['witness_projection_vertex_slabs'] = counts.get('witness_projection_vertex_slabs', 0) + 1
+        la = node_a.get(id(left))
+        if la is None:
+            la = self._node_interval(left, node_a, self.tri_a, self.prep_a, budget)
+            if la is None:
+                return False
+        rb = node_b.get(id(right))
+        if rb is None:
+            rb = self._node_interval(right, node_b, self.tri_b, self.prep_b, budget)
+            if rb is None:
+                return False
+        slab_gap = la[0] - rb[1] if la[0] > rb[1] else (rb[0] - la[1] if rb[0] > la[1] else 0)
+        if self._slab_exceeds_cutoff(slab_gap, cutoff):
+            counts['witness_projection_vertex_slab_pruned_pairs'] = counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
+            if _NODE_PRUNE_OBSERVER is not None:
+                self._emit_prune(left, right, strict, best_pair, 'vertex_slab', slab_gap, cutoff)
             return True
         return False
 
     def prunes_triangles(self, i, j, strict, budget, *, credit=None):
-        def _test_tris():
-            budget.tick('witness_projection_tests', 1)
-            ia = self._tri_interval(i, self.tri_a, self.prep_a, budget)
-            if ia is None:
-                return False
-            jb = self._tri_interval(j, self.tri_b, self.prep_b, budget)
-            if jb is None:
-                return False
-            gap = ia[0] - jb[1] if ia[0] > jb[1] else (jb[0] - ia[1] if jb[0] > ia[1] else 0)
-            return gap > (self.cutoff_strict if strict else self.cutoff_tie)
-
+        tri_a = self.tri_a
+        tri_b = self.tri_b
+        cutoff = self.cutoff_strict if strict else self.cutoff_tie
         if credit is not None:
-            ta = 0 if self.tri_a[i] is not None else len(self.prep_a[i][0])
-            tb = 0 if self.tri_b[j] is not None else len(self.prep_b[j][0])
+            counts = budget.counts
+            ia = tri_a[i]
+            jb = tri_b[j]
+            ta = 0 if ia is not None else len(self.prep_a[i][0])
+            tb = 0 if jb is not None else len(self.prep_b[j][0])
             upper = 1 + ta + tb
-            ok, res = credit.try_run(upper, _test_tris)
-            return bool(ok and res)
+            if upper > credit.balance:
+                counts['witness_projection_credit_credit_deferrals'] += 1
+                return False
+            w0 = counts['work_units']
+            if upper > MAX_WORK_UNITS - w0:
+                counts['witness_projection_credit_budget_deferrals'] += 1
+                counts['witness_projection_budget_deferrals'] = counts.get('witness_projection_budget_deferrals', 0) + 1
+                return False
+            credit.attempts += 1
+            counts['witness_projection_credit_attempts'] = credit.attempts
+            counts['witness_projection_credit_upper_units'] += upper
+            counts['witness_projection_credit_last_upper'] = upper
+            credit.pending_upper = upper
+            credit.pending_work_start = w0
+            res = False
+            try:
+                budget.tick('witness_projection_tests', 1)
+                if ia is None:
+                    ia = self._tri_interval(i, tri_a, self.prep_a, budget)
+                if ia is not None:
+                    if jb is None:
+                        jb = self._tri_interval(j, tri_b, self.prep_b, budget)
+                    if jb is not None:
+                        gap = ia[0] - jb[1] if ia[0] > jb[1] else (jb[0] - ia[1] if jb[0] > ia[1] else 0)
+                        res = gap > cutoff
+            finally:
+                actual = counts['work_units'] - credit.pending_work_start
+                credit.balance -= actual
+                credit.spent += actual
+                credit.pending_upper = credit.pending_work_start = None
+                counts['witness_projection_credit_spent_units'] = credit.spent
+                counts['witness_projection_credit_last_actual'] = actual
+                counts['witness_projection_credit_balance'] = credit.balance
+                if actual < 0 or actual > upper or credit.balance < 0:
+                    raise ArithmeticError('witness_projection_credit_invariant')
+            return res
+
         if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
             budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
             return False
-        return _test_tris()
+        budget.tick('witness_projection_tests', 1)
+        ia = tri_a[i]
+        if ia is None:
+            ia = self._tri_interval(i, tri_a, self.prep_a, budget)
+            if ia is None:
+                return False
+        jb = tri_b[j]
+        if jb is None:
+            jb = self._tri_interval(j, tri_b, self.prep_b, budget)
+            if jb is None:
+                return False
+        gap = ia[0] - jb[1] if ia[0] > jb[1] else (jb[0] - ia[1] if jb[0] > ia[1] else 0)
+        return gap > cutoff
 
 
 WITNESS_PROJECTION_AFTER_COMPLETED = 64
@@ -1816,13 +2041,16 @@ class _ProjectionCredit:
         return projection, pruned
 
 
-def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None):
+def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None, cutoff=None):
     mode = _DEFAULT_PROJECTION_MODE if projection_mode is None else projection_mode
     if mode not in _VALID_PROJECTION_MODES:
         raise ValueError(f'unsupported projection_mode: {mode!r}')
     proj_enabled = (mode == 'settled_credit_031_ref')
-    budget.counts['witness_projection_mode'] = mode
-    budget.counts['witness_projection_credit_reference'] = (
+    counts = budget.counts
+    tick = budget.tick
+    checkpoint = budget.checkpoint
+    counts['witness_projection_mode'] = mode
+    counts['witness_projection_credit_reference'] = (
         'mandatory_031_dequeue_aabb' if proj_enabled
         else ('paid_dequeue_reference' if mode == 'off_paid_dequeue_ref' else 'none')
     )
@@ -1842,15 +2070,21 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
     right_root = _compile_bvh_node(roots[1], center_shift, budget=budget)
 
     pending = []
+    heappush = heapq.heappush
+    heappop = heapq.heappop
     serial = 0
     best = best_pair = None
     best_floor = tie_floor = None
+    cut_floor = cutoff[2] if cutoff is not None else None
+    cutoff_sentinel = (cutoff[0], cutoff[1], None) if cutoff is not None else None
     credit = _ProjectionCredit(budget)
     completed_exact = 0
     projection = None
     fast_proj = None
     fast_proj_tried = False
     fast_proj_epoch = 0
+    cutoff_proj = None
+    prep_a, prep_b = prepared[0], prepared[1]
 
     def invalidate_fast_proj():
         nonlocal fast_proj, fast_proj_tried, fast_proj_epoch
@@ -1866,43 +2100,45 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                 or completed_exact < _FAST_WP_AFTER_COMPLETED or fast_proj_tried):
             return None
         need = _FastWitnessProjection._BUILD_COST + min_extra
-        rem = MAX_WORK_UNITS - budget.counts['work_units']
+        rem = MAX_WORK_UNITS - counts['work_units']
         if need > credit.balance or need > rem:
             credit.record_deferral(need)
             return None
         fast_proj_tried = True
         fast_proj = _FastWitnessProjection.build(
-            best, prepared[0], prepared[1], fast_proj_epoch, budget, credit=credit)
+            best, prep_a, prep_b, fast_proj_epoch, budget, credit=credit)
         return fast_proj
 
     def eval_leaf(left, right):
         nonlocal best, best_pair, best_floor, tie_floor, completed_exact, projection
         singleton = shift == 0 and left[6] == 1 and right[6] == 1
         for i in left[7]:
-            a = prepared[0][i]
+            a = prep_a[i]
             for j in right[7]:
-                budget.tick('leaf_pair_visits')
-                budget.counts['triangle_pairs'] += 1
-                b = prepared[1][j]
-                pair = (i, j)
+                tick('leaf_pair_visits')
+                counts['triangle_pairs'] += 1
+                b = prep_b[j]
                 planes = None
                 if best is not None:
-                    strict = pair < best_pair
+                    bp0, bp1 = best_pair
+                    strict = (i < bp0 or (i == bp0 and j < bp1))
                     if not singleton:
-                        budget.tick('aabb_bound_tests')
-                        if _aabb_exceeds_best(a[4], b[4], best, strict=strict):
-                            budget.counts['aabb_pruned_pairs'] += 1
+                        tick('aabb_bound_tests')
+                        if _aabb_exceeds_best(a[4], b[4], best, strict=strict,
+                                              remaining=(best_floor if strict else tie_floor),
+                                              fast_ints=fast_ints):
+                            counts['aabb_pruned_pairs'] += 1
                             continue
                     pruned, planes = _triangle_plane_bounds(
                         a, b, best, budget, strict=strict, fast_ints=fast_ints)
                     if pruned:
-                        budget.counts['plane_pruned_pairs'] += 1
+                        counts['plane_pruned_pairs'] += 1
                         continue
                     if proj_enabled and fast_ints and best[0] > 0:
                         fp = ensure_fast_proj(1 + len(a[0]) + len(b[0]))
                         if fp is not None and fp.prunes_triangles(i, j, strict, budget, credit=credit):
-                            budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
-                            budget.counts['witness_projection_tri_pruned_pairs'] = budget.counts.get('witness_projection_tri_pruned_pairs', 0) + 1
+                            counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                            counts['witness_projection_tri_pruned_pairs'] = counts.get('witness_projection_tri_pruned_pairs', 0) + 1
                             credit.earn_narrow(_wp_narrow_work_floor(a, b))
                             continue
                     if (proj_enabled and not fast_ints
@@ -1911,66 +2147,112 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
                         if projection_pruned:
                             continue
+                    eff_best = best
+                    tie_accept = strict
+                elif cutoff_sentinel is not None:
+                    tick('aabb_bound_tests')
+                    if _aabb_exceeds_best(a[4], b[4], cutoff_sentinel, strict=True,
+                                          remaining=cut_floor, fast_ints=fast_ints):
+                        counts['aabb_pruned_pairs'] += 1
+                        continue
+                    pruned, planes = _triangle_plane_bounds(
+                        a, b, cutoff_sentinel, budget, strict=True, fast_ints=fast_ints)
+                    if pruned:
+                        counts['plane_pruned_pairs'] += 1
+                        continue
+                    if cutoff_proj is not None and cutoff_proj.prunes_triangles(i, j, True, budget):
+                        counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                        counts['witness_projection_tri_pruned_pairs'] = counts.get('witness_projection_tri_pruned_pairs', 0) + 1
+                        continue
+                    eff_best = cutoff_sentinel
+                    tie_accept = True
+                else:
+                    eff_best = None
+                    tie_accept = False
                 candidate = _nearest_pair(
-                    a, b, best, budget, planes,
-                    tie_accept=(best_pair is not None and pair < best_pair),
+                    a, b, eff_best, budget, planes,
+                    tie_accept=tie_accept,
                     fast_ints=fast_ints,
                     left_bary=bary_a, left_idx=i,
                     right_bary=bary_b, right_idx=j)
                 completed_exact += 1
-                budget.counts['witness_projection_completed_exact'] = completed_exact
+                counts['witness_projection_completed_exact'] = completed_exact
                 if best is None:
-                    best, best_pair = candidate, pair
-                    best_floor = best[0] // best[1]
-                    tie_floor = (best[0] - 1) // best[1]
-                    projection = None
-                    invalidate_fast_proj()
+                    if candidate is not eff_best:
+                        best, best_pair = candidate, (i, j)
+                        best_floor = best[0] // best[1]
+                        tie_floor = (best[0] - 1) // best[1]
+                        projection = None
+                        invalidate_fast_proj()
                 elif candidate is not best:
                     comparison = candidate[0] * best[1] - best[0] * candidate[1]
-                    if comparison < 0 or (comparison == 0 and pair < best_pair):
-                        best, best_pair = candidate, pair
+                    if comparison < 0 or (comparison == 0 and (i < best_pair[0] or (i == best_pair[0] and j < best_pair[1]))):
+                        best, best_pair = candidate, (i, j)
                         best_floor = best[0] // best[1]
                         tie_floor = (best[0] - 1) // best[1]
                         if projection is not None or fast_proj is not None:
-                            budget.counts['witness_projection_invalidations'] = budget.counts.get('witness_projection_invalidations', 0) + 1
+                            counts['witness_projection_invalidations'] = counts.get('witness_projection_invalidations', 0) + 1
                         projection = None
                         invalidate_fast_proj()
 
     def push_pair(key, cdist, sl, sr):
         nonlocal serial
         if best is not None:
-            strict = (sl[10], sr[10]) < best_pair
+            strict = (sl[10] < best_pair[0] or (sl[10] == best_pair[0] and sr[10] < best_pair[1]))
             if shift == 0:
-                budget.checkpoint('surface_proximity_aabb_bound_tests')
+                checkpoint('surface_proximity_aabb_bound_tests')
                 limit = best_floor if strict else tie_floor
                 if key > limit:
-                    budget.counts['subtree_pruned_pairs'] += sl[6] * sr[6]
+                    counts['subtree_pruned_pairs'] += sl[6] * sr[6]
                     return
             else:
-                budget.tick('aabb_bound_tests')
+                tick('aabb_bound_tests')
                 if _aabb_exceeds_best(
                         ((sl[0], sl[3]), (sl[1], sl[4]), (sl[2], sl[5])),
                         ((sr[0], sr[3]), (sr[1], sr[4]), (sr[2], sr[5])),
                         best, strict=strict):
-                    budget.counts['subtree_pruned_pairs'] += sl[6] * sr[6]
+                    counts['subtree_pruned_pairs'] += sl[6] * sr[6]
                     return
-        budget.tick('queue_pushes')
-        heapq.heappush(pending, (key, cdist, serial, sl, sr))
+        elif cutoff_sentinel is not None:
+            if shift == 0:
+                checkpoint('surface_proximity_aabb_bound_tests')
+                if key > cut_floor:
+                    counts['subtree_pruned_pairs'] += sl[6] * sr[6]
+                    return
+            else:
+                tick('aabb_bound_tests')
+                if _aabb_exceeds_best(
+                        ((sl[0], sl[3]), (sl[1], sl[4]), (sl[2], sl[5])),
+                        ((sr[0], sr[3]), (sr[1], sr[4]), (sr[2], sr[5])),
+                        cutoff_sentinel, strict=True, remaining=cut_floor):
+                    counts['subtree_pruned_pairs'] += sl[6] * sr[6]
+                    return
+        tick('queue_pushes')
+        heappush(pending, (key, cdist, serial, sl, sr))
         serial += 1
 
     # Inline 1-path greedy DFS descent to seed best quickly before priority loop.
     siblings = []
     cur_l, cur_r = left_root, right_root
+    dfs_aborted = False
     while cur_l[7] is None or cur_r[7] is None:
-        budget.tick('node_pair_visits')
+        tick('node_pair_visits')
         if cur_r[7] is not None or (cur_l[7] is None and cur_l[6] >= cur_r[6]):
             c0, c1 = cur_l[8], cur_l[9]
             k0, cd0 = _node_queue_bounds(c0, cur_r, shift, budget, fast_ints=fast_ints)
             k1, cd1 = _node_queue_bounds(c1, cur_r, shift, budget, fast_ints=fast_ints)
             if (k0, cd0, c0[10]) <= (k1, cd1, c1[10]):
+                if shift == 0 and cut_floor is not None and k0 > cut_floor:
+                    counts['subtree_pruned_pairs'] += c0[6] * cur_r[6] + c1[6] * cur_r[6]
+                    dfs_aborted = True
+                    break
                 siblings.append((k1, cd1, c1, cur_r))
                 cur_l = c0
             else:
+                if shift == 0 and cut_floor is not None and k1 > cut_floor:
+                    counts['subtree_pruned_pairs'] += c0[6] * cur_r[6] + c1[6] * cur_r[6]
+                    dfs_aborted = True
+                    break
                 siblings.append((k0, cd0, c0, cur_r))
                 cur_l = c1
         else:
@@ -1978,28 +2260,56 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
             k0, cd0 = _node_queue_bounds(cur_l, c0, shift, budget, fast_ints=fast_ints)
             k1, cd1 = _node_queue_bounds(cur_l, c1, shift, budget, fast_ints=fast_ints)
             if (k0, cd0, c0[10]) <= (k1, cd1, c1[10]):
+                if shift == 0 and cut_floor is not None and k0 > cut_floor:
+                    counts['subtree_pruned_pairs'] += cur_l[6] * c0[6] + cur_l[6] * c1[6]
+                    dfs_aborted = True
+                    break
                 siblings.append((k1, cd1, cur_l, c1))
                 cur_r = c0
             else:
+                if shift == 0 and cut_floor is not None and k1 > cut_floor:
+                    counts['subtree_pruned_pairs'] += cur_l[6] * c0[6] + cur_l[6] * c1[6]
+                    dfs_aborted = True
+                    break
                 siblings.append((k0, cd0, cur_l, c0))
                 cur_r = c1
-    budget.tick('node_pair_visits')
-    eval_leaf(cur_l, cur_r)
+    if not dfs_aborted:
+        tick('node_pair_visits')
+        eval_leaf(cur_l, cur_r)
+        if cutoff_sentinel is not None and best is None and fast_ints and proj_enabled:
+            i0, j0 = cur_l[7][0], cur_r[7][0]
+            seed_cand = _nearest_pair(
+                prep_a[i0], prep_b[j0], None, budget, None,
+                fast_ints=fast_ints,
+                left_bary=bary_a, left_idx=i0,
+                right_bary=bary_b, right_idx=j0,
+            )
+            if seed_cand[0] > 0:
+                cutoff_proj = _FastWitnessProjection.build_for_cutoff(
+                    cutoff_sentinel[0], cutoff_sentinel[1], seed_cand[2], prep_a, prep_b, budget
+                )
+                if cutoff_proj is not None and left_root[6] <= 512 and right_root[6] <= 512:
+                    if cutoff_proj.prunes_nodes(left_root, right_root, True, budget, use_vertex_slab=True):
+                        counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                        counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
+                        counts['cutoff_pruned_pairs'] = counts.get('cutoff_pruned_pairs', 0) + na * nb
+                        return None
 
     for k, cd, sl, sr in siblings:
         push_pair(k, cd, sl, sr)
 
+    fast_push = (shift == 0 and fast_ints)
     while pending:
-        budget.tick('node_pair_visits')
-        key, _, _, left, right = heapq.heappop(pending)
+        tick('node_pair_visits')
+        key, _, _, left, right = heappop(pending)
         if best is not None:
             if shift == 0:
-                budget.counts['dequeue_reused_aabb_bounds'] = budget.counts.get('dequeue_reused_aabb_bounds', 0) + 1
+                counts['dequeue_reused_aabb_bounds'] = counts.get('dequeue_reused_aabb_bounds', 0) + 1
                 if mode == 'off_paid_dequeue_ref':
-                    budget.tick('aabb_bound_tests')
+                    tick('aabb_bound_tests')
                 else:
-                    budget.checkpoint('surface_proximity_aabb_bound_tests')
-                    budget.counts['aabb_bound_tests'] += 1
+                    checkpoint('surface_proximity_aabb_bound_tests')
+                    counts['aabb_bound_tests'] += 1
                     if proj_enabled:
                         credit.saved_bound()
                 # Global break is mathematically valid only when shift == 0 and key is exact unshifted AABB sq dist.
@@ -2007,20 +2317,22 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                     pruned = left[6] * right[6]
                     for item in pending:
                         pruned += item[3][6] * item[4][6]
-                    budget.counts['subtree_pruned_pairs'] += pruned
+                    counts['subtree_pruned_pairs'] += pruned
                     break
-                strict = (left[10], right[10]) < best_pair
+                bp0, bp1 = best_pair
+                strict = (left[10] < bp0 or (left[10] == bp0 and right[10] < bp1))
                 if not strict and key > tie_floor:
-                    budget.counts['subtree_pruned_pairs'] += left[6] * right[6]
+                    counts['subtree_pruned_pairs'] += left[6] * right[6]
                     continue
             else:
-                budget.tick('aabb_bound_tests')
-                strict = (left[10], right[10]) < best_pair
+                tick('aabb_bound_tests')
+                bp0, bp1 = best_pair
+                strict = (left[10] < bp0 or (left[10] == bp0 and right[10] < bp1))
                 if _aabb_exceeds_best(
                         ((left[0], left[3]), (left[1], left[4]), (left[2], left[5])),
                         ((right[0], right[3]), (right[1], right[4]), (right[2], right[5])),
                         best, strict=strict):
-                    budget.counts['subtree_pruned_pairs'] += left[6] * right[6]
+                    counts['subtree_pruned_pairs'] += left[6] * right[6]
                     continue
             if proj_enabled and fast_ints and best[0] > 0:
                 fp = ensure_fast_proj(1)
@@ -2029,9 +2341,9 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                     if fp.prunes_nodes(
                             left, right, strict, budget,
                             use_vertex_slab=use_vs, credit=credit, best_pair=best_pair):
-                        budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
-                        budget.counts['witness_projection_node_pruned_pairs'] = budget.counts.get('witness_projection_node_pruned_pairs', 0) + 1
-                        budget.counts['subtree_pruned_pairs'] += left[6] * right[6]
+                        counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                        counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
+                        counts['subtree_pruned_pairs'] += left[6] * right[6]
                         singleton_leaf = (shift == 0 and left[6] == 1 and right[6] == 1)
                         saved_np = (
                             (left[6] * right[6] * (1 if singleton_leaf else 2))
@@ -2039,33 +2351,179 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode
                         )
                         credit.earn_node_prune(saved_np)
                         continue
+        elif cutoff_sentinel is not None:
+            if shift == 0:
+                counts['dequeue_reused_aabb_bounds'] = counts.get('dequeue_reused_aabb_bounds', 0) + 1
+                if mode == 'off_paid_dequeue_ref':
+                    tick('aabb_bound_tests')
+                else:
+                    checkpoint('surface_proximity_aabb_bound_tests')
+                    counts['aabb_bound_tests'] += 1
+                    if proj_enabled:
+                        credit.saved_bound()
+                if key > cut_floor:
+                    pruned = left[6] * right[6]
+                    for item in pending:
+                        pruned += item[3][6] * item[4][6]
+                    counts['subtree_pruned_pairs'] += pruned
+                    break
+            else:
+                tick('aabb_bound_tests')
+                if _aabb_exceeds_best(
+                        ((left[0], left[3]), (left[1], left[4]), (left[2], left[5])),
+                        ((right[0], right[3]), (right[1], right[4]), (right[2], right[5])),
+                        cutoff_sentinel, strict=True, remaining=cut_floor):
+                    counts['subtree_pruned_pairs'] += left[6] * right[6]
+                    continue
+            if cutoff_proj is not None:
+                use_vs = left[6] <= 512 and right[6] <= 512
+                if cutoff_proj.prunes_nodes(left, right, True, budget, use_vertex_slab=use_vs):
+                    counts['witness_projection_pruned_pairs'] = counts.get('witness_projection_pruned_pairs', 0) + 1
+                    counts['witness_projection_node_pruned_pairs'] = counts.get('witness_projection_node_pruned_pairs', 0) + 1
+                    counts['subtree_pruned_pairs'] += left[6] * right[6]
+                    continue
+
         if left[7] is not None and right[7] is not None:
             eval_leaf(left, right)
         elif right[7] is not None or (left[7] is None and left[6] >= right[6]):
-            for child in (left[8], left[9]):
-                k, cd = _node_queue_bounds(child, right, shift, budget, fast_ints=fast_ints)
-                push_pair(k, cd, child, right)
+            if fast_push:
+                r0, r1, r2, r3, r4, r5 = right[0], right[1], right[2], right[3], right[4], right[5]
+                r6, r10, r11, r12, r13 = right[6], right[10], right[11], right[12], right[13]
+                for child in (left[8], left[9]):
+                    tick('queue_bound_tests')
+                    gx = child[0] - r3
+                    if r0 - child[3] > gx: gx = r0 - child[3]
+                    gy = child[1] - r4
+                    if r1 - child[4] > gy: gy = r1 - child[4]
+                    gz = child[2] - r5
+                    if r2 - child[5] > gz: gz = r2 - child[5]
+                    k = (gx * gx if gx > 0 else 0) + (gy * gy if gy > 0 else 0) + (gz * gz if gz > 0 else 0)
+                    if best is not None:
+                        checkpoint('surface_proximity_aabb_bound_tests')
+                        bp0, bp1 = best_pair
+                        limit_k = best_floor if (child[10] < bp0 or (child[10] == bp0 and r10 < bp1)) else tie_floor
+                        if k > limit_k:
+                            counts['subtree_pruned_pairs'] += child[6] * r6
+                            continue
+                    elif cut_floor is not None:
+                        checkpoint('surface_proximity_aabb_bound_tests')
+                        if k > cut_floor:
+                            counts['subtree_pruned_pairs'] += child[6] * r6
+                            continue
+                    dx = child[11] - r11
+                    dy = child[12] - r12
+                    dz = child[13] - r13
+                    tick('queue_pushes')
+                    heappush(pending, (k, dx * dx + dy * dy + dz * dz, serial, child, right))
+                    serial += 1
+            else:
+                for child in (left[8], left[9]):
+                    k, cd = _node_queue_bounds(child, right, shift, budget, fast_ints=fast_ints)
+                    push_pair(k, cd, child, right)
         else:
-            for child in (right[8], right[9]):
-                k, cd = _node_queue_bounds(left, child, shift, budget, fast_ints=fast_ints)
-                push_pair(k, cd, left, child)
+            if fast_push:
+                l0, l1, l2, l3, l4, l5 = left[0], left[1], left[2], left[3], left[4], left[5]
+                l6, l10, l11, l12, l13 = left[6], left[10], left[11], left[12], left[13]
+                for child in (right[8], right[9]):
+                    tick('queue_bound_tests')
+                    gx = l0 - child[3]
+                    if child[0] - l3 > gx: gx = child[0] - l3
+                    gy = l1 - child[4]
+                    if child[1] - l4 > gy: gy = child[1] - l4
+                    gz = l2 - child[5]
+                    if child[2] - l5 > gz: gz = child[2] - l5
+                    k = (gx * gx if gx > 0 else 0) + (gy * gy if gy > 0 else 0) + (gz * gz if gz > 0 else 0)
+                    if best is not None:
+                        checkpoint('surface_proximity_aabb_bound_tests')
+                        bp0, bp1 = best_pair
+                        limit_k = best_floor if (l10 < bp0 or (l10 == bp0 and child[10] < bp1)) else tie_floor
+                        if k > limit_k:
+                            counts['subtree_pruned_pairs'] += l6 * child[6]
+                            continue
+                    elif cut_floor is not None:
+                        checkpoint('surface_proximity_aabb_bound_tests')
+                        if k > cut_floor:
+                            counts['subtree_pruned_pairs'] += l6 * child[6]
+                            continue
+                    dx = l11 - child[11]
+                    dy = l12 - child[12]
+                    dz = l13 - child[13]
+                    tick('queue_pushes')
+                    heappush(pending, (k, dx * dx + dy * dy + dz * dz, serial, left, child))
+                    serial += 1
+            else:
+                for child in (right[8], right[9]):
+                    k, cd = _node_queue_bounds(left, child, shift, budget, fast_ints=fast_ints)
+                    push_pair(k, cd, left, child)
     if witness_pair is not None and best_pair is not None:
         witness_pair[:] = best_pair
     return best
 
 
+def _local_cutoff_from_exact_key(cutoff_key, factor):
+    if (type(cutoff_key) not in (list, tuple) or len(cutoff_key) != 3
+            or any(type(v) is not int for v in cutoff_key)
+            or cutoff_key[0] < 0 or cutoff_key[1] <= 0
+            or cutoff_key[0].bit_length() > MAX_BITS or cutoff_key[1].bit_length() > MAX_BITS):
+        raise ValueError('invalid _upper_bound_sq_key')
+    cn, cd, ce = cutoff_key
+    shift = ce + 2 * (factor.bit_length() - 1)
+    if abs(shift) > MAX_BITS:
+        return None
+    if shift >= 0:
+        if cn.bit_length() + shift > MAX_BITS:
+            return None
+        cut_n, cut_d = cn << shift, cd
+    else:
+        if cd.bit_length() - shift > MAX_BITS:
+            return None
+        cut_n, cut_d = cn, cd << (-shift)
+    return (cut_n, cut_d, cut_n // cut_d)
+
+
+def _prepared_root_aabb(triangles):
+    b0 = triangles[0][4]
+    lx0, lx1 = b0[0]
+    ly0, ly1 = b0[1]
+    lz0, lz1 = b0[2]
+    for tri in triangles[1:]:
+        b = tri[4]
+        ax0, ax1 = b[0]
+        ay0, ay1 = b[1]
+        az0, az1 = b[2]
+        if ax0 < lx0: lx0 = ax0
+        if ax1 > lx1: lx1 = ax1
+        if ay0 < ly0: ly0 = ay0
+        if ay1 > ly1: ly1 = ay1
+        if az0 < lz0: lz0 = az0
+        if az1 > lz1: lz1 = az1
+    return ((lx0, lx1), (ly0, ly1), (lz0, lz1))
+
+
 def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None,
-             projection_mode=None):
-    if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
-        return _nearest_linear(prepared, budget, witness_pair)
+             projection_mode=None, cutoff=None):
+    na, nb = len(prepared[0]), len(prepared[1])
+    if cutoff is not None:
+        if prepared_trees is not None:
+            r0, r1 = prepared_trees['roots']
+            box_a = ((r0[0][0], r0[1][0]), (r0[0][1], r0[1][1]), (r0[0][2], r0[1][2]))
+            box_b = ((r1[0][0], r1[1][0]), (r1[0][1], r1[1][1]), (r1[0][2], r1[1][2]))
+        else:
+            box_a = _prepared_root_aabb(prepared[0])
+            box_b = _prepared_root_aabb(prepared[1])
+        if _aabb_exceeds_best(box_a, box_b, cutoff, strict=True, remaining=cutoff[2]):
+            budget.counts['cutoff_pruned_pairs'] = budget.counts.get('cutoff_pruned_pairs', 0) + na * nb
+            return None
+    if na * nb <= LINEAR_PAIR_LIMIT:
+        return _nearest_linear(prepared, budget, witness_pair, cutoff=cutoff)
     if prepared_trees is None:
-        roots = _distance_roots(prepared,budget,holder=prepared_holder)
+        roots = _distance_roots(prepared, budget, holder=prepared_holder)
     else:
         roots = prepared_trees['roots']
         budget.counts['shared_trees'] = True
         if prepared_holder is not None:
             prepared_holder['trees'] = prepared_trees
-    return _nearest_tree(prepared, roots, budget, witness_pair, projection_mode=projection_mode)
+    return _nearest_tree(prepared, roots, budget, witness_pair, projection_mode=projection_mode, cutoff=cutoff)
 
 
 def _witness(descriptor):
@@ -2644,11 +3102,19 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
                               _prepared_trees=None,
-                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None):
+                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None,
+                              _upper_bound_sq_key=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
     mode = _DEFAULT_PROJECTION_MODE if _projection_mode is None else _projection_mode
     if mode not in _VALID_PROJECTION_MODES:
         raise ValueError(f'unsupported projection_mode: {mode!r}')
+    if _upper_bound_sq_key is not None:
+        if (type(_upper_bound_sq_key) not in (list, tuple) or len(_upper_bound_sq_key) != 3
+                or any(type(v) is not int for v in _upper_bound_sq_key)
+                or _upper_bound_sq_key[0] < 0 or _upper_bound_sq_key[1] <= 0
+                or _upper_bound_sq_key[0].bit_length() > MAX_BITS
+                or _upper_bound_sq_key[1].bit_length() > MAX_BITS):
+            raise ValueError('invalid _upper_bound_sq_key')
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
     budget.counts['witness_projection_mode'] = mode
@@ -2687,10 +3153,30 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
             contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
         if _prepared_holder is not None:
             _prepared_holder['pair'] = pair
+        cutoff = (_local_cutoff_from_exact_key(_upper_bound_sq_key, factor)
+                  if _upper_bound_sq_key is not None and contact is None else None)
         if contact is None:
             if cached_roots is not None:
-                numerator, denominator, descriptor = _nearest_tree(
-                    prepared, cached_roots, budget, witness_pair, projection_mode=mode)
+                if cutoff is not None:
+                    box_a = ((cached_roots[0][0][0], cached_roots[0][1][0]),
+                             (cached_roots[0][0][1], cached_roots[0][1][1]),
+                             (cached_roots[0][0][2], cached_roots[0][1][2]))
+                    box_b = ((cached_roots[1][0][0], cached_roots[1][1][0]),
+                             (cached_roots[1][0][1], cached_roots[1][1][1]),
+                             (cached_roots[1][0][2], cached_roots[1][1][2]))
+                    if _aabb_exceeds_best(box_a, box_b, cutoff, strict=True, remaining=cutoff[2]):
+                        budget.counts['cutoff_pruned_pairs'] = (
+                            budget.counts.get('cutoff_pruned_pairs', 0)
+                            + len(prepared[0]) * len(prepared[1])
+                        )
+                        nearest = None
+                    else:
+                        nearest = _nearest_tree(
+                            prepared, cached_roots, budget, witness_pair,
+                            projection_mode=mode, cutoff=cutoff)
+                else:
+                    nearest = _nearest_tree(
+                        prepared, cached_roots, budget, witness_pair, projection_mode=mode)
             else:
                 trees = None
                 if (_prepared_pair is not None and type(_prepared_trees) is dict
@@ -2698,10 +3184,22 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                         and len(_prepared_trees.get('triangles', ())) == 2
                         and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
                     trees = _prepared_trees
-                numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
-                                                             prepared_holder=_prepared_holder,
-                                                             witness_pair=witness_pair,
-                                                             projection_mode=mode)
+                nearest = _nearest(prepared, budget, prepared_trees=trees,
+                                   prepared_holder=_prepared_holder,
+                                   witness_pair=witness_pair,
+                                   projection_mode=mode,
+                                   cutoff=cutoff)
+            if nearest is None:
+                checkpoint('surface_proximity_complete')
+                return {
+                    'measurement_valid': True,
+                    'cutoff_pruned': True,
+                    'pruned_strictly_above_cutoff': True,
+                    'topology': result['topology'],
+                    'method': METHOD,
+                    'work': dict(budget.counts),
+                }
+            numerator, denominator, descriptor = nearest
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)
@@ -2848,3 +3346,129 @@ def measure_spatial_relation(left, right, checkpoint, *, diagnostics=None, retai
                     and spatial.get('measurement_valid') is True,
                 surface=surface, spatial=spatial, closed=closed,
                 budget_stopped=budget_stopped, stop_reason=stop_reason)
+
+
+def _mesh_world_aabb(mesh):
+    verts = getattr(mesh, 'vertices', None)
+    if verts is None:
+        return None
+    try:
+        if len(verts) <= 0:
+            return None
+        if _is_numpy_2d_vertices(verts):
+            lo = verts.min(axis=0)
+            hi = verts.max(axis=0)
+            bx = ((float(lo[0]), float(lo[1]), float(lo[2])),
+                  (float(hi[0]), float(hi[1]), float(hi[2])))
+        else:
+            v0 = verts[0]
+            if len(v0) != 3:
+                return None
+            lx = hx = float(v0[0])
+            ly = hy = float(v0[1])
+            lz = hz = float(v0[2])
+            for p in verts[1:]:
+                x, y, z = float(p[0]), float(p[1]), float(p[2])
+                if x < lx: lx = x
+                elif x > hx: hx = x
+                if y < ly: ly = y
+                elif y > hy: hy = y
+                if z < lz: lz = z
+                elif z > hz: hz = z
+            bx = ((lx, ly, lz), (hx, hy, hz))
+        if all(math.isfinite(c) for side in bx for c in side):
+            return bx
+    except Exception:
+        return None
+    return None
+
+
+def measure_nearest_surface_batch(target, peers, checkpoint, *, use_mesh_cache=True,
+                                use_cutoff=True, sort_by_aabb=True,
+                                retain_witness_triangles=False):
+    """Find all exact nearest peers to target with optional cutoff & AABB ordering."""
+    n_peers = len(peers)
+    if n_peers == 0:
+        return {
+            'measurement_valid': False,
+            'status': 'unknown',
+            'nearest_indices': [],
+            'best_exact_distance_sq': None,
+            'distance_m': None,
+            'results_by_index': [],
+            'unresolved_indices': [],
+            'cutoff_pruned_count': 0,
+            'evaluated_count': 0,
+        }
+    order = list(range(n_peers))
+    if sort_by_aabb and n_peers > 1:
+        tbox = _mesh_world_aabb(target)
+        if tbox is not None:
+            (tx0, ty0, tz0), (tx1, ty1, tz1) = tbox
+            scores = []
+            for idx in order:
+                pbox = _mesh_world_aabb(peers[idx])
+                if pbox is None:
+                    scores.append((0.0, idx))
+                    continue
+                (px0, py0, pz0), (px1, py1, pz1) = pbox
+                gx = tx0 - px1 if tx0 > px1 else (px0 - tx1 if px0 > tx1 else 0.0)
+                gy = ty0 - py1 if ty0 > py1 else (py0 - ty1 if py0 > ty1 else 0.0)
+                gz = tz0 - pz1 if tz0 > pz1 else (pz0 - tz1 if pz0 > tz1 else 0.0)
+                gap = math.hypot(gx, gy, gz)
+                scores.append((gap if math.isfinite(gap) else 0.0, idx))
+            scores.sort()
+            order = [idx for _, idx in scores]
+
+    cache = {} if use_mesh_cache else None
+    results_by_index = [None] * n_peers
+    nearest_indices = []
+    unresolved_indices = []
+    best_key = None
+    cutoff_pruned_count = 0
+    evaluated_count = 0
+
+    for idx in order:
+        res = measure_surface_proximity(
+            target, peers[idx], checkpoint,
+            retain_exact_rank=True,
+            retain_witness_triangles=retain_witness_triangles,
+            _mesh_cache=cache,
+            _upper_bound_sq_key=(best_key if use_cutoff else None),
+        )
+        results_by_index[idx] = res
+        if res.get('cutoff_pruned'):
+            cutoff_pruned_count += 1
+        elif res.get('measurement_valid') is True and '_exact_distance_sq' in res:
+            evaluated_count += 1
+            ek = res['_exact_distance_sq']
+            if best_key is None:
+                best_key = ek
+                nearest_indices = [idx]
+            else:
+                cmp = _compare_distance_keys(ek, best_key, checkpoint)
+                if cmp < 0:
+                    best_key = ek
+                    nearest_indices = [idx]
+                elif cmp == 0:
+                    nearest_indices.append(idx)
+        else:
+            evaluated_count += 1
+            unresolved_indices.append(idx)
+
+    nearest_indices.sort()
+    unresolved_indices.sort()
+    status = ('complete' if (nearest_indices and not unresolved_indices)
+              else ('partial' if nearest_indices else 'unknown'))
+    best_res = results_by_index[nearest_indices[0]] if nearest_indices else None
+    return {
+        'measurement_valid': status == 'complete',
+        'status': status,
+        'nearest_indices': nearest_indices,
+        'best_exact_distance_sq': best_key,
+        'distance_m': best_res.get('distance_m') if best_res else None,
+        'results_by_index': results_by_index,
+        'unresolved_indices': unresolved_indices,
+        'cutoff_pruned_count': cutoff_pruned_count,
+        'evaluated_count': evaluated_count,
+    }
