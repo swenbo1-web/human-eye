@@ -367,7 +367,7 @@ class TestK03CacheOwnershipAndLifetime(unittest.TestCase):
         mut_faces[0] = [3, 4, 5]
         self.assertEqual(sp.measure_surface_proximity(m_f, fixed, NOOP, _mesh_cache=cache_tol)["distance_m"], 4.0)
 
-        # 4. Owned read-only float64 ndarray -> safe to cache
+        # 4. R3 C01: Even owned read-only float64 ndarray MUST fail closed in _mesh_cache
         owned_ro = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=np.float64)
         owned_ro.flags.writeable = False
         cache_ok = {}
@@ -375,7 +375,9 @@ class TestK03CacheOwnershipAndLifetime(unittest.TestCase):
         r1 = sp.measure_surface_proximity(m_ok, fixed, NOOP, _mesh_cache=cache_ok)
         r2 = sp.measure_surface_proximity(m_ok, fixed, NOOP, _mesh_cache=cache_ok)
         self.assertEqual(r1["distance_m"], 1.0)
-        self.assertEqual(r2["work"].get("mesh_cache_hits", 0), 2)
+        self.assertEqual(r2["distance_m"], 1.0)
+        self.assertEqual(r2["work"].get("mesh_cache_hits", 0), 0)
+        self.assertEqual(len(cache_ok), 0)
 
         # 5. Cache cap <= 256 across > 300 distinct immutable meshes
         cap_cache = {}
@@ -488,10 +490,10 @@ class TestK07ComparatorNegativeControls(unittest.TestCase):
         })
         self.assertFalse(sig_false["complete"])
 
-        # _time_interleaved must reject an arm whose repeat outputs change between repeats
+        # _time_interleaved must reject an arm whose repeat outputs change between repeats (R3 C04 raises RuntimeError)
         arm = raa._load_arm_modules(ROOT)
         seq = iter([1, 1, 2])  # warmup=1 -> 1; repeat 0 -> 1; repeat 1 -> 2 != 1!
-        with self.assertRaises(AssertionError):
+        with self.assertRaises((AssertionError, RuntimeError)):
             raa._time_interleaved(
                 [("cur", (arm, lambda: next(seq)))],
                 warmup=1, repeats=2, measure_mem=False, sig_fn=lambda x: {"v": x},

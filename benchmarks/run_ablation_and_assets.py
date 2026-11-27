@@ -77,14 +77,21 @@ def _mesh_sha256(mesh):
 def _load_arm_modules(arm_root: Path):
     saved_modules = {k: sys.modules.pop(k) for k in list(sys.modules) if k == "human_eye_plugin" or k.startswith("human_eye_plugin.")}
     saved_m1 = {k: sys.modules.pop(k) for k in list(sys.modules) if k == "human_eye_module1_operators" or k.startswith("human_eye_module1_operators.")}
-    sys.path.insert(0, str(arm_root))
+    resolved_root = arm_root.resolve()
+    sys.path.insert(0, str(resolved_root))
     try:
         import human_eye_module1_operators  # noqa: F401
         from human_eye_plugin import mesh_structure, runtime_identity, scene_cache, surface_geometry, surface_proximity, surface_scan, task_query
         mods = {k: v for k, v in sys.modules.items() if k.startswith("human_eye_plugin") or k.startswith("human_eye_module1_operators")}
+        for mname, mod in mods.items():
+            mfile = getattr(mod, "__file__", None)
+            if mfile is not None and not Path(mfile).resolve().is_relative_to(resolved_root):
+                raise RuntimeError(f"Cross-arm module origin leak for {mname}: {mfile} not under {resolved_root}")
         ident = runtime_identity.runtime_identity()["source_sha256"]
+        if not isinstance(ident, str) or len(ident) != 64 or not all(ch in "0123456789abcdef" for ch in ident):
+            raise RuntimeError(f"Invalid runtime_identity source_sha256 for {resolved_root}: {ident!r}")
         return SimpleNamespace(
-            root=arm_root,
+            root=resolved_root,
             mods=mods,
             sha256=ident,
             sp=surface_proximity,
@@ -111,13 +118,18 @@ def _activate_arm(arm):
 
 
 def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, measure_mem=True, *, sig_fn=None):
-    """Run multiple callable arms cleanly interleaved per cycle with gc disabled."""
+    """Run multiple callable arms cleanly interleaved per cycle with gc disabled and at-return snapshot verification."""
+    if repeats <= 0:
+        raise ValueError(f"repeats must be positive, got {repeats}")
     names = [n for n, _ in arm_fns]
+    if len(set(names)) != len(names):
+        raise ValueError(f"Duplicate arm names in _time_interleaved: {names}")
     fn_map = dict(arm_fns)
     raw = {n: [] for n in names}
-    timed_outs = {n: [] for n in names}
+    ref_sigs = {}
+    verified_counts = {n: 0 for n in names}
+    last_outs = {}
 
-    # Balanced cyclic Latin-style schedules across repeats
     perms = [
         names,
         list(reversed(names)),
@@ -141,7 +153,15 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
                 t0 = time.perf_counter_ns()
                 val = fn()
                 raw[n].append((time.perf_counter_ns() - t0) / 1e6)
-                timed_outs[n].append(val)
+                if sig_fn is not None:
+                    cur = copy.deepcopy(sig_fn(val))
+                    if n not in ref_sigs:
+                        ref_sigs[n] = cur
+                    elif cur != ref_sigs[n]:
+                        raise RuntimeError(f"Non-deterministic timed repeat for arm {n} repeat {r}")
+                    verified_counts[n] += 1
+                if r == repeats - 1:
+                    last_outs[n] = copy.deepcopy(val)
     finally:
         gc.enable()
 
@@ -149,14 +169,7 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
     for n in names:
         arm, fn = fn_map[n]
         _activate_arm(arm)
-        outs_n = timed_outs[n]
-        out = outs_n[-1]
-        if sig_fn is not None and len(outs_n) > 1:
-            ref = sig_fn(outs_n[0])
-            for idx, item in enumerate(outs_n[1:], start=1):
-                cur = sig_fn(item)
-                if cur != ref:
-                    raise AssertionError(f"Non-deterministic timed repeat for arm {n} repeat {idx}")
+        out = last_outs[n]
         s = sorted(raw[n])
         cnt = len(s)
         idx95 = min(cnt - 1, max(0, int(math.ceil(0.95 * cnt)) - 1))
@@ -171,9 +184,9 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
             _, peak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
             if sig_fn is not None:
-                ref = sig_fn(out)
-                if sig_fn(cpu_out) != ref or sig_fn(tm_out) != ref:
-                    raise AssertionError(f"Instrumentation pass signature mismatch for arm {n}")
+                ref = ref_sigs[n]
+                if copy.deepcopy(sig_fn(cpu_out)) != ref or copy.deepcopy(sig_fn(tm_out)) != ref:
+                    raise RuntimeError(f"Instrumentation pass signature mismatch for arm {n}")
         summary[n] = {
             "timing": {
                 "raw_samples_ms": raw[n],
@@ -187,7 +200,7 @@ def _time_interleaved(arm_fns: list[tuple[str, object]], warmup=1, repeats=7, me
                 "peak_alloc_bytes": peak,
                 "peak_tracemalloc_bytes": peak,
                 "memory_metric_scope": "python_tracemalloc_only_not_process_rss",
-                "timed_outputs_verified": len(outs_n),
+                "timed_outputs_verified": verified_counts[n],
             },
             "result": out,
         }

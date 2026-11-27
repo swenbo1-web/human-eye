@@ -227,6 +227,7 @@ _WORK_STAGES = {
         'witness_projection', 'witness_projection_tests',
         'witness_projection_direction_builds', 'witness_projection_tri_dots',
         'witness_projection_node_visits', 'witness_projection_completed_exact',
+        'bvh_compile', 'face_validate',
     )
 }
 
@@ -237,6 +238,7 @@ class _Work:
     def __init__(self, checkpoint, diagnostics):
         self.checkpoint = checkpoint
         self.counts = diagnostics if diagnostics is not None else {}
+        self.counts.clear()
         self.counts.update(validated_faces=0, referenced_vertices=0, triangle_pairs=0,
                            intersection_tests=0, point_face_tests=0,
                            point_edge_tests=0, edge_edge_tests=0, predicate_steps=0,
@@ -479,6 +481,7 @@ def _prepare_triangles_from_relative(relative, exponent, budget, *, holder=None)
         integers = {}
         fast_side = True
         for index, (dx, dy, dz) in coordinates.items():
+            checkpoint('surface_proximity_referenced_vertices')
             ix = dx[0] << (exponent + dx[1]) if dx[0] else 0
             iy = dy[0] << (exponent + dy[1]) if dy[0] else 0
             iz = dz[0] << (exponent + dz[1]) if dz[0] else 0
@@ -913,7 +916,9 @@ def _distance_roots(prepared, budget, holder=None):
     return tuple(roots)
 
 
-def _compile_bvh_node(node, center_shift):
+def _compile_bvh_node(node, center_shift, budget=None):
+    if budget is not None:
+        budget.checkpoint('surface_proximity_bvh_compile')
     lo, hi, count, ids, left, right = node
     lx, ly, lz = lo
     hx, hy, hz = hi
@@ -924,8 +929,8 @@ def _compile_bvh_node(node, center_shift):
         cz2 >>= center_shift
     if ids is not None:
         return (lx, ly, lz, hx, hy, hz, count, tuple(ids), None, None, min(ids), cx2, cy2, cz2)
-    lw = _compile_bvh_node(left, center_shift)
-    rw = _compile_bvh_node(right, center_shift)
+    lw = _compile_bvh_node(left, center_shift, budget=budget)
+    rw = _compile_bvh_node(right, center_shift, budget=budget)
     min_id = lw[10] if lw[10] <= rw[10] else rw[10]
     return (lx, ly, lz, hx, hy, hz, count, None, lw, rw, min_id, cx2, cy2, cz2)
 
@@ -989,6 +994,8 @@ def _fast_descriptor_direction(descriptor):
 
 _FAST_WP_AFTER_COMPLETED = 16
 _FAST_WP_NODE_BOX_MIN_CREDIT = 64
+_DEFAULT_PROJECTION_MODE = 'settled_credit_031_ref'
+_VALID_PROJECTION_MODES = frozenset({'settled_credit_031_ref', 'off'})
 _NODE_PRUNE_OBSERVER = None
 
 
@@ -1079,31 +1086,14 @@ class _FastWitnessProjection:
         return row
 
     @staticmethod
-    def _node_interval_upper(node, node_cache, tri_cache, prep_side, cap):
+    def _cold_interval_upper(node, node_cache):
+        """O(1) conservative work upper bound with zero descendant traversal."""
         if id(node) in node_cache:
             return 0
-        cost = 0
-        stack = [node]
-        seen_tris = set()
-        while stack:
-            cur = stack.pop()
-            if id(cur) in node_cache:
-                continue
-            cost += 1
-            if cost > cap:
-                return cost
-            ids = cur[7]
-            if ids is not None:
-                for idx in ids:
-                    if tri_cache[idx] is None and idx not in seen_tris:
-                        seen_tris.add(idx)
-                        cost += len(prep_side[idx][0])
-                        if cost > cap:
-                            return cost
-            else:
-                stack.append(cur[8])
-                stack.append(cur[9])
-        return cost
+        n = node[6]
+        if node[7] is not None:
+            return 1 + 3 * n
+        return 5 * n - 1
 
     def _node_interval(self, node, node_cache, tri_cache, prep_side, budget):
         hit = node_cache.get(id(node))
@@ -1193,29 +1183,12 @@ class _FastWitnessProjection:
             gap = lmin - rmax if lmin > rmax else (rmin - lmax if rmin > lmax else 0)
             return gap > cutoff, cutoff, gap
 
-        if credit is not None:
-            if not use_vertex_slab and credit.balance < _FAST_WP_NODE_BOX_MIN_CREDIT:
-                credit.record_deferral(_FAST_WP_NODE_BOX_MIN_CREDIT)
-                return False
-            ok, box_out = credit.try_run(1, _test_box)
-            if not ok:
-                return False
-            box_pruned, cutoff, box_gap = box_out
-        else:
-            if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
-                budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
-                return False
-            box_pruned, cutoff, box_gap = _test_box()
-        if box_pruned:
-            _emit_prune('box', box_gap, cutoff)
-            return True
-        if not use_vertex_slab:
-            return False
-
         slab_gap = 0
 
-        def _test_slabs():
+        def _test_slabs(cutoff):
             nonlocal slab_gap
+            counts = budget.counts
+            counts['witness_projection_vertex_slabs'] = counts.get('witness_projection_vertex_slabs', 0) + 1
             la = self._node_interval(left, self.node_a, self.tri_a, self.prep_a, budget)
             if la is None:
                 return False
@@ -1227,22 +1200,58 @@ class _FastWitnessProjection:
             return gap > cutoff
 
         if credit is not None:
-            cap = min(credit.balance, MAX_WORK_UNITS - budget.counts['work_units'])
-            ul = self._node_interval_upper(left, self.node_a, self.tri_a, self.prep_a, cap)
-            if ul > cap:
-                credit.record_deferral(ul)
+            counts = budget.counts
+            cap = min(credit.balance, MAX_WORK_UNITS - counts['work_units'])
+            can_slab = False
+            slab_upper = 0
+            if use_vertex_slab:
+                ul = self._cold_interval_upper(left, self.node_a)
+                ur = self._cold_interval_upper(right, self.node_b)
+                slab_upper = ul + ur
+                counts['witness_projection_upper_calls'] = counts.get('witness_projection_upper_calls', 0) + 1
+                if 1 + slab_upper <= cap:
+                    can_slab = True
+                else:
+                    counts['witness_projection_slab_deferred'] = counts.get('witness_projection_slab_deferred', 0) + 1
+                    credit.record_deferral(1 + slab_upper)
+            run_box = can_slab or (cap >= _FAST_WP_NODE_BOX_MIN_CREDIT)
+            if not run_box:
+                if not use_vertex_slab:
+                    credit.record_deferral(_FAST_WP_NODE_BOX_MIN_CREDIT)
                 return False
-            ur = self._node_interval_upper(right, self.node_b, self.tri_b, self.prep_b, cap - ul)
-            upper = ul + ur
-            if upper > cap:
-                credit.record_deferral(upper)
+            ok, box_out = credit.try_run(1, _test_box)
+            if not ok:
                 return False
-            ok, res = credit.try_run(upper, _test_slabs)
+            box_pruned, cutoff, box_gap = box_out
+            if box_pruned:
+                counts['witness_projection_box_pruned_pairs'] = counts.get('witness_projection_box_pruned_pairs', 0) + 1
+                _emit_prune('box', box_gap, cutoff)
+                return True
+            if not can_slab:
+                return False
+            counts['witness_projection_slab_admitted'] = counts.get('witness_projection_slab_admitted', 0) + 1
+            counts['witness_projection_slab_reserved_units'] = counts.get('witness_projection_slab_reserved_units', 0) + slab_upper
+            w0 = counts['work_units']
+            ok, res = credit.try_run(slab_upper, lambda: _test_slabs(cutoff))
+            counts['witness_projection_slab_actual_units'] = counts.get('witness_projection_slab_actual_units', 0) + (counts['work_units'] - w0)
             if ok and res:
+                counts['witness_projection_vertex_slab_pruned_pairs'] = counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
                 _emit_prune('vertex_slab', slab_gap, cutoff)
                 return True
             return False
-        if _test_slabs():
+
+        if MAX_WORK_UNITS - budget.counts['work_units'] < 1:
+            budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
+            return False
+        box_pruned, cutoff, box_gap = _test_box()
+        if box_pruned:
+            budget.counts['witness_projection_box_pruned_pairs'] = budget.counts.get('witness_projection_box_pruned_pairs', 0) + 1
+            _emit_prune('box', box_gap, cutoff)
+            return True
+        if not use_vertex_slab:
+            return False
+        if _test_slabs(cutoff):
+            budget.counts['witness_projection_vertex_slab_pruned_pairs'] = budget.counts.get('witness_projection_vertex_slab_pruned_pairs', 0) + 1
             _emit_prune('vertex_slab', slab_gap, cutoff)
             return True
         return False
@@ -1600,7 +1609,15 @@ class _ProjectionCredit:
         return projection, pruned
 
 
-def _nearest_tree(prepared, roots, budget, witness_pair=None):
+def _nearest_tree(prepared, roots, budget, witness_pair=None, *, projection_mode=None):
+    mode = _DEFAULT_PROJECTION_MODE if projection_mode is None else projection_mode
+    if mode not in _VALID_PROJECTION_MODES:
+        raise ValueError(f'unsupported projection_mode: {mode!r}')
+    proj_enabled = (mode == 'settled_credit_031_ref')
+    budget.counts['witness_projection_mode'] = mode
+    budget.counts['witness_projection_credit_reference'] = (
+        'mandatory_031_dequeue_aabb' if proj_enabled else 'none'
+    )
     limit = _FAST_COORD_LIMIT
     fast_ints = all(-limit < r < limit for s in (0, 1) for b in (roots[s][0], roots[s][1]) for r in b)
     na, nb = len(prepared[0]), len(prepared[1])
@@ -1613,8 +1630,8 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
     span_bits = largest_span.bit_length()
     shift = max(0, span_bits - (MAX_BITS - 1))
     center_shift = max(0, span_bits - (MAX_BITS - 4))
-    left_root = _compile_bvh_node(roots[0], center_shift)
-    right_root = _compile_bvh_node(roots[1], center_shift)
+    left_root = _compile_bvh_node(roots[0], center_shift, budget=budget)
+    right_root = _compile_bvh_node(roots[1], center_shift, budget=budget)
 
     pending = []
     serial = 0
@@ -1673,14 +1690,15 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                     if pruned:
                         budget.counts['plane_pruned_pairs'] += 1
                         continue
-                    if fast_ints and best[0] > 0:
+                    if proj_enabled and fast_ints and best[0] > 0:
                         fp = ensure_fast_proj(1 + len(a[0]) + len(b[0]))
                         if fp is not None and fp.prunes_triangles(i, j, strict, budget, credit=credit):
                             budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
                             budget.counts['witness_projection_tri_pruned_pairs'] = budget.counts.get('witness_projection_tri_pruned_pairs', 0) + 1
                             credit.earn_narrow(_wp_narrow_work_floor(a, b))
                             continue
-                    if (not fast_ints and completed_exact >= WITNESS_PROJECTION_AFTER_COMPLETED
+                    if (proj_enabled and not fast_ints
+                            and completed_exact >= WITNESS_PROJECTION_AFTER_COMPLETED
                             and best[0] > 0 and projection is not False):
                         projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
                         if projection_pruned:
@@ -1770,7 +1788,8 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
             if shift == 0:
                 budget.checkpoint('surface_proximity_aabb_bound_tests')
                 budget.counts['aabb_bound_tests'] += 1
-                credit.saved_bound()
+                if proj_enabled:
+                    credit.saved_bound()
                 # Global break is mathematically valid only when shift == 0 and key is exact unshifted AABB sq dist.
                 if key > best_floor:
                     pruned = left[6] * right[6]
@@ -1791,28 +1810,11 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
                         best, strict=strict):
                     budget.counts['subtree_pruned_pairs'] += left[6] * right[6]
                     continue
-            if fast_ints and best[0] > 0:
+            if proj_enabled and fast_ints and best[0] > 0:
                 fp = ensure_fast_proj(1)
                 if fp is not None:
                     use_vs = left[6] <= 512 and right[6] <= 512
-                    cap = min(credit.balance, MAX_WORK_UNITS - budget.counts['work_units'])
-                    run_box = False
-                    if use_vs and cap >= 2:
-                        ul = fp._node_interval_upper(left, fp.node_a, fp.tri_a, fp.prep_a, cap - 1)
-                        if 1 + ul <= cap:
-                            ur = fp._node_interval_upper(right, fp.node_b, fp.tri_b, fp.prep_b, cap - 1 - ul)
-                            if 1 + ul + ur <= cap:
-                                run_box = True
-                            else:
-                                credit.record_deferral(1 + ul + ur)
-                        else:
-                            credit.record_deferral(1 + ul)
-                    elif use_vs:
-                        credit.record_deferral(2)
-                    if not run_box and cap >= _FAST_WP_NODE_BOX_MIN_CREDIT:
-                        use_vs = False
-                        run_box = True
-                    if run_box and fp.prunes_nodes(
+                    if fp.prunes_nodes(
                             left, right, strict, budget,
                             use_vertex_slab=use_vs, credit=credit, best_pair=best_pair):
                         budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
@@ -1840,7 +1842,8 @@ def _nearest_tree(prepared, roots, budget, witness_pair=None):
     return best
 
 
-def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None):
+def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None,
+             projection_mode=None):
     if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
         return _nearest_linear(prepared, budget, witness_pair)
     if prepared_trees is None:
@@ -1850,7 +1853,7 @@ def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, wit
         budget.counts['shared_trees'] = True
         if prepared_holder is not None:
             prepared_holder['trees'] = prepared_trees
-    return _nearest_tree(prepared, roots, budget, witness_pair)
+    return _nearest_tree(prepared, roots, budget, witness_pair, projection_mode=projection_mode)
 
 
 def _witness(descriptor):
@@ -2081,78 +2084,36 @@ class _CacheBuildBudget:
         self.budget.consume(amount, stage)
 
 
-def _is_owned_readonly_numpy(array, allowed_kinds):
-    if type(array).__module__ != 'numpy' or type(array).__name__ != 'ndarray':
-        return False
-    dtype = getattr(array, 'dtype', None)
-    flags = getattr(array, 'flags', None)
-    if dtype is None or flags is None:
-        return False
-    return bool(
-        getattr(array, 'base', None) is None
-        and flags.owndata
-        and not flags.writeable
-        and dtype.kind in allowed_kinds
-        and getattr(array, 'ndim', 0) == 2
-        and array.shape[1] == 3
-    )
-
-
-def _mesh_cache_is_immutable(mesh, cache):
-    """Fail-closed deep/owned immutability check; never trusts unverified dict flags."""
+def _mesh_cache_is_immutable(mesh, budget=None):
+    """Fail-closed deep tuple immutability check; ALL ndarrays and non-tuples fail closed."""
     verts = getattr(mesh, 'vertices', None)
     faces = getattr(mesh, 'faces', None)
-    if verts is None or faces is None:
+    if type(verts) is not tuple or type(faces) is not tuple:
         return False
-    verts_tuple = type(verts) is tuple
-    faces_tuple = type(faces) is tuple
-    if not verts_tuple and not _is_owned_readonly_numpy(verts, ('f', 'i', 'u')):
+    if not faces or len(faces) > MAX_FACES:
         return False
-    if not faces_tuple and not _is_owned_readonly_numpy(faces, ('i', 'u')):
-        return False
-    if faces_tuple:
-        if not faces or len(faces) > MAX_FACES:
+    n_verts = len(verts)
+    checked_v = set()
+    checkpoint = budget.checkpoint if budget is not None else None
+    for row in faces:
+        if checkpoint is not None:
+            checkpoint('surface_proximity_face_validate')
+        if type(row) is not tuple or len(row) != 3:
             return False
-        n_verts = len(verts)
-        checked_v = set() if verts_tuple else None
-        for row in faces:
-            if type(row) is not tuple or len(row) != 3:
-                return False
-            a, b, c = row
-            if type(a) is not int or type(b) is not int or type(c) is not int:
-                return False
-            if not (0 <= a < n_verts and 0 <= b < n_verts and 0 <= c < n_verts):
-                return False
-            if verts_tuple:
-                for idx in row:
-                    if idx not in checked_v:
-                        v = verts[idx]
-                        if (type(v) is not tuple or len(v) != 3
-                                or type(v[0]) not in (int, float)
-                                or type(v[1]) not in (int, float)
-                                or type(v[2]) not in (int, float)):
-                            return False
-                        checked_v.add(idx)
-    elif verts_tuple:
-        # faces is owned read-only ndarray; validate referenced rows lazily isn't free so require finite small check via flat/ref
-        if not len(faces) or len(faces) > MAX_FACES:
+        a, b, c = row
+        if type(a) is not int or type(b) is not int or type(c) is not int:
             return False
-        n_verts = len(verts)
-        checked_v = set()
-        for row in faces:
-            if len(row) != 3:
-                return False
-            for idx in (int(row[0]), int(row[1]), int(row[2])):
-                if not (0 <= idx < n_verts):
+        if not (0 <= a < n_verts and 0 <= b < n_verts and 0 <= c < n_verts):
+            return False
+        for idx in row:
+            if idx not in checked_v:
+                v = verts[idx]
+                if (type(v) is not tuple or len(v) != 3
+                        or type(v[0]) not in (int, float)
+                        or type(v[1]) not in (int, float)
+                        or type(v[2]) not in (int, float)):
                     return False
-                if idx not in checked_v:
-                    v = verts[idx]
-                    if (type(v) is not tuple or len(v) != 3
-                            or type(v[0]) not in (int, float)
-                            or type(v[1]) not in (int, float)
-                            or type(v[2]) not in (int, float)):
-                        return False
-                    checked_v.add(idx)
+                checked_v.add(idx)
     return True
 
 
@@ -2162,7 +2123,7 @@ def _ensure_cached_frame(ent, budget):
         budget.tick('referenced_vertices', len(ent['admission'][0][2]))
         return frame, True
     mesh, _, indices = ent['admission'][0]
-    verts = mesh.vertices
+    verts = ent.get('verts_ref', mesh.vertices)
     is_np = _is_numpy_2d_vertices(verts)
     budget.checkpoint('surface_proximity_referenced_vertices')
     fx, fy, fz = _read_vertex_xyz(verts, indices[0], is_np)
@@ -2174,6 +2135,7 @@ def _ensure_cached_frame(ent, budget):
     rel = {}
     local_exp = 0
     tick = budget.tick
+    checkpoint = budget.checkpoint
     for idx in indices:
         tick('referenced_vertices')
         vx, vy, vz = _read_vertex_xyz(verts, idx, is_np)
@@ -2187,6 +2149,7 @@ def _ensure_cached_frame(ent, budget):
     ints = {}
     max_bits = 0
     for idx, (dx, dy, dz) in rel.items():
+        checkpoint('surface_proximity_referenced_vertices')
         ix = dx[0] << (local_exp + dx[1]) if dx[0] else 0
         iy = dy[0] << (local_exp + dy[1]) if dy[0] else 0
         iz = dz[0] << (local_exp + dz[1]) if dz[0] else 0
@@ -2282,26 +2245,30 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
         return None
 
     def cached_valid(mesh):
-        ent = mesh_cache.get(id(mesh))
-        if (ent is not None and ent.get('mesh') is mesh
-                and ent.get('verts_ref') is mesh.vertices
-                and ent.get('faces_ref') is mesh.faces
-                and ent.get('verts_id') == id(mesh.vertices)
-                and ent.get('faces_id') == id(mesh.faces)
-                and ent.get('verts_len') == len(mesh.vertices)
-                and ent.get('faces_len') == len(mesh.faces)
-                and 'admission' in ent):
-            vk = ent.get('verts_kind')
-            fk = ent.get('faces_kind')
-            v_ok = (vk == 'tuple') or (vk == 'numpy_ro' and _is_owned_readonly_numpy(mesh.vertices, ('f', 'i', 'u')))
-            f_ok = (fk == 'tuple') or (fk == 'numpy_ro' and _is_owned_readonly_numpy(mesh.faces, ('i', 'u')))
-            if v_ok and f_ok:
+        mid = id(mesh)
+        ent = mesh_cache.get(mid)
+        if ent is not None:
+            verts = getattr(mesh, 'vertices', None)
+            faces = getattr(mesh, 'faces', None)
+            if (ent.get('mesh') is mesh
+                    and ent.get('verts_ref') is verts
+                    and ent.get('faces_ref') is faces
+                    and ent.get('verts_id') == id(verts)
+                    and ent.get('faces_id') == id(faces)
+                    and ent.get('verts_len') == (len(verts) if type(verts) is tuple else -1)
+                    and ent.get('faces_len') == (len(faces) if type(faces) is tuple else -1)
+                    and ent.get('verts_kind') == 'tuple'
+                    and ent.get('faces_kind') == 'tuple'
+                    and type(verts) is tuple
+                    and type(faces) is tuple
+                    and 'admission' in ent):
                 return ent, True
+            mesh_cache.pop(mid, None)
         return None, False
 
     c_l, ok_l = cached_valid(left)
     c_r, ok_r = cached_valid(right)
-    if (not ok_l and not _mesh_cache_is_immutable(left, mesh_cache)) or (not ok_r and not _mesh_cache_is_immutable(right, mesh_cache)):
+    if (not ok_l and not _mesh_cache_is_immutable(left, budget)) or (not ok_r and not _mesh_cache_is_immutable(right, budget)):
         return None
 
     # Stage 1: Lazy on-demand admission with real checkpoints and per-face ticks.
@@ -2313,14 +2280,18 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
             rec, _ = ent['admission']
             budget.tick('validated_faces', len(rec[1]))
         else:
+            verts_ref = mesh.vertices
+            faces_ref = mesh.faces
             rec, topo = _admit_one(mesh, budget.tick, valid_int_types, checkpoint=budget.checkpoint)
             ent = {
                 'mesh': mesh,
-                'verts_ref': mesh.vertices, 'faces_ref': mesh.faces,
-                'verts_id': id(mesh.vertices), 'faces_id': id(mesh.faces),
-                'verts_len': len(mesh.vertices), 'faces_len': len(mesh.faces),
-                'verts_kind': 'tuple' if type(mesh.vertices) is tuple else 'numpy_ro',
-                'faces_kind': 'tuple' if type(mesh.faces) is tuple else 'numpy_ro',
+                'verts_ref': verts_ref, 'faces_ref': faces_ref,
+                'verts_id': id(verts_ref), 'faces_id': id(faces_ref),
+                'verts_len': len(verts_ref), 'faces_len': len(faces_ref),
+                'verts_kind': 'tuple',
+                'faces_kind': 'tuple',
+                'face_count': len(rec[1]),
+                'ref_vertex_count': len(rec[2]),
                 'admission': (rec, topo),
             }
             if len(mesh_cache) >= _MESH_CACHE_MAX_ENTRIES:
@@ -2369,7 +2340,9 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
         nz = (-dz_o[0], dz_o[1])
         fb_exp = fl['local_exp']
         rel_r_in_l = {}
+        checkpoint = budget.checkpoint
         for idx, (vx, vy, vz) in fr['rel'].items():
+            checkpoint('surface_proximity_referenced_vertices')
             rx = _sub_dyadic(vx, nx)
             ry = _sub_dyadic(vy, ny)
             rz = _sub_dyadic(vz, nz)
@@ -2436,10 +2409,17 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
 def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
                               _prepared_trees=None,
-                              _prepared_holder=None, _mesh_cache=None):
+                              _prepared_holder=None, _mesh_cache=None, _projection_mode=None):
     """Measure only the requested triangle surfaces, retaining known quantities."""
+    mode = _DEFAULT_PROJECTION_MODE if _projection_mode is None else _projection_mode
+    if mode not in _VALID_PROJECTION_MODES:
+        raise ValueError(f'unsupported projection_mode: {mode!r}')
     checkpoint('surface_proximity_admission')
     budget = _Work(checkpoint, diagnostics)
+    budget.counts['witness_projection_mode'] = mode
+    budget.counts['witness_projection_credit_reference'] = (
+        'mandatory_031_dequeue_aabb' if mode == 'settled_credit_031_ref' else 'none'
+    )
     witness_pair = [] if retain_witness_triangles else None
     if witness_pair is not None:
         budget.counts['witness_triangle_checks'] = 0
@@ -2473,7 +2453,8 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
             _prepared_holder['pair'] = pair
         if contact is None:
             if cached_roots is not None:
-                numerator, denominator, descriptor = _nearest_tree(prepared, cached_roots, budget, witness_pair)
+                numerator, denominator, descriptor = _nearest_tree(
+                    prepared, cached_roots, budget, witness_pair, projection_mode=mode)
             else:
                 trees = None
                 if (_prepared_pair is not None and type(_prepared_trees) is dict
@@ -2483,7 +2464,8 @@ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, reta
                     trees = _prepared_trees
                 numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
                                                              prepared_holder=_prepared_holder,
-                                                             witness_pair=witness_pair)
+                                                             witness_pair=witness_pair,
+                                                             projection_mode=mode)
         else:
             budget.counts['zero_witness_reused'] = True
             numerator, denominator, descriptor = 0, 1, ('contact', contact)

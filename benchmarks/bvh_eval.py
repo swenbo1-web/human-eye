@@ -493,21 +493,21 @@ def _closed_sig(res):
 def _analyze_sig(res):
     ignored = {"spatial_work", "work", "exact_pair_tests", "work_used"}
     out = {k: copy.deepcopy(v) for k, v in res.items() if k not in ignored}
-    scan_ok = bool(res.get("scan_complete") is True)
-    acct_ok = bool(res.get("pair_accounting_complete") is True) if "pair_accounting_complete" in res else True
+    scan_ok = res.get("scan_complete") is True
+    acct_ok = res.get("pair_accounting_complete") is True
     out["complete"] = bool(scan_ok and acct_ok and res.get("status") == "observed")
     return out
 
 
 def _is_sha256_hex(val):
-    return isinstance(val, str) and len(val) == 64 and all(c in "0123456789abcdefABCDEF" for c in val)
+    return isinstance(val, str) and len(val) == 64 and all(c in "0123456789abcdef" for c in val)
 
 
 def _binding_sig(out):
     binding = out.get("binding")
     if not isinstance(binding, dict):
         return None
-    sig = {k: copy.deepcopy(v) for k, v in binding.items() if k != "runtime_source_sha256"}
+    sig = copy.deepcopy(binding)
     sig["runtime_source_sha256_valid"] = _is_sha256_hex(binding.get("runtime_source_sha256"))
     return sig
 
@@ -540,11 +540,20 @@ def _work_summary(work):
         "plane_bound_tests", "plane_pruned_pairs",
         "witness_projection_tests", "witness_projection_pruned_pairs",
         "witness_projection_node_pruned_pairs", "witness_projection_tri_pruned_pairs",
+        "witness_projection_box_pruned_pairs",
         "witness_projection_direction_builds", "witness_projection_directions",
         "witness_projection_invalidations", "witness_projection_budget_deferrals",
+        "witness_projection_upper_calls",
+        "witness_projection_slab_admitted", "witness_projection_slab_deferred",
+        "witness_projection_slab_reserved_units", "witness_projection_slab_actual_units",
         "witness_projection_credit_deferrals", "witness_projection_credit_credit_deferrals",
+        "witness_projection_credit_budget_deferrals",
+        "witness_projection_credit_attempts",
         "witness_projection_credit_node_units", "witness_projection_credit_narrow_units",
-        "witness_projection_credit_spent_units", "witness_projection_credit_borrow_attempts",
+        "witness_projection_credit_node_prune_units",
+        "witness_projection_credit_spent_units", "witness_projection_credit_balance",
+        "witness_projection_credit_upper_units",
+        "witness_projection_mode", "witness_projection_credit_reference",
         "witness_projection_tri_dots", "witness_projection_node_visits",
         "witness_projection_vertex_slabs", "witness_projection_vertex_slab_pruned_pairs",
         "witness_projection_cache_lookups", "witness_projection_cache_hits",
@@ -559,27 +568,33 @@ def _work_summary(work):
 
 
 def _time_fn(fn, warmup, repeats, measure_mem=True, *, check_sig=None):
+    if repeats <= 0:
+        raise ValueError(f"repeats must be positive, got {repeats}")
     for _ in range(warmup):
         fn()
     gc.collect()
     gc.disable()
     times_ns = []
-    timed_results = []
+    ref_sig = None
+    verified_count = 0
+    last_res = None
     try:
-        for _ in range(repeats):
+        for idx in range(repeats):
             t0 = time.perf_counter_ns()
             res = fn()
             times_ns.append(time.perf_counter_ns() - t0)
-            timed_results.append(res)
+            if check_sig is not None:
+                cur_sig = copy.deepcopy(check_sig(res))
+                if ref_sig is None:
+                    ref_sig = cur_sig
+                elif cur_sig != ref_sig:
+                    raise RuntimeError(f"Non-deterministic timed repeat output at index {idx}")
+                verified_count += 1
+            if idx == repeats - 1:
+                last_res = copy.deepcopy(res)
     finally:
         gc.enable()
-    if check_sig is not None and len(timed_results) > 1:
-        ref_sig = check_sig(timed_results[0])
-        for idx, extra_res in enumerate(timed_results[1:], start=1):
-            cur_sig = check_sig(extra_res)
-            if cur_sig != ref_sig:
-                raise AssertionError(f"Non-deterministic timed repeat output at index {idx}")
-    res = timed_results[-1] if timed_results else fn()
+    res = last_res
     raw_ms = [t / 1e6 for t in times_ns]
     times_ms = sorted(raw_ms)
     n = len(times_ms)
@@ -593,14 +608,14 @@ def _time_fn(fn, warmup, repeats, measure_mem=True, *, check_sig=None):
         c0 = time.process_time_ns()
         mem_out = fn()
         cpu_time_ms = (time.process_time_ns() - c0) / 1e6
-        if check_sig is not None and check_sig(mem_out) != check_sig(res):
-            raise AssertionError("Instrumentation pass signature mismatch")
+        if check_sig is not None and copy.deepcopy(check_sig(mem_out)) != ref_sig:
+            raise RuntimeError("Instrumentation pass signature mismatch")
         tracemalloc.start()
         tm_out = fn()
         _, peak_bytes = tracemalloc.get_traced_memory()
         tracemalloc.stop()
-        if check_sig is not None and check_sig(tm_out) != check_sig(res):
-            raise AssertionError("Tracemalloc pass signature mismatch")
+        if check_sig is not None and copy.deepcopy(check_sig(tm_out)) != ref_sig:
+            raise RuntimeError("Tracemalloc pass signature mismatch")
     return {
         "raw_samples_ms": raw_ms,
         "median_ms": statistics.median(times_ms),
@@ -613,7 +628,7 @@ def _time_fn(fn, warmup, repeats, measure_mem=True, *, check_sig=None):
         "peak_alloc_bytes": peak_bytes,
         "peak_tracemalloc_bytes": peak_bytes,
         "memory_metric_scope": "python_tracemalloc_only_not_process_rss",
-        "timed_outputs_verified": len(timed_results),
+        "timed_outputs_verified": verified_count,
     }, res
 
 
@@ -717,7 +732,7 @@ def run_benchmark(warmup=1, repeats=3, quick=False, measure_mem=True):
         "surface_analyze": {"near_m": 0.0},
     }
     results = {
-        "schema": "m3-bvh-eval-v3",
+        "schema": "m3-bvh-eval-v4",
         "runtime_identity_sha256": runtime_identity()["source_sha256"],
         "environment": {
             "python_version": sys.version.split()[0],
@@ -916,16 +931,38 @@ def _nonempty_str(val):
 def _validate_input_sha(section, row):
     val = row.get("input_sha256")
     if section in ("surface_single", "spatial_relation", "closed_solid"):
-        return isinstance(val, list) and len(val) == 2 and all(_nonempty_str(x) for x in val)
+        return isinstance(val, list) and len(val) == 2 and all(_is_sha256_hex(x) for x in val)
     if section == "surface_batch":
         ids = row.get("batch_ids")
         if not isinstance(ids, list) or not ids:
             return False
-        return isinstance(val, list) and len(val) == 1 + len(ids) and all(_nonempty_str(x) for x in val)
-    return _nonempty_str(val) or (isinstance(val, list) and len(val) >= 1 and all(_nonempty_str(x) for x in val))
+        return isinstance(val, list) and len(val) == 1 + len(ids) and all(_is_sha256_hex(x) for x in val)
+    return _is_sha256_hex(val) or (isinstance(val, list) and len(val) >= 1 and all(_is_sha256_hex(x) for x in val))
 
 
-def _validate_row(side, section, name, row):
+def _valid_nested_sha256(obj):
+    if isinstance(obj, dict) and obj:
+        return all(_is_sha256_hex(v) or _valid_nested_sha256(v) for v in obj.values())
+    return False
+
+
+def _validate_surface_sig_struct(prefix, sig):
+    errors = []
+    req = ("measurement_valid", "reason", "distance_m", "witness_status", "direction_status")
+    for k in req:
+        if k not in sig:
+            errors.append(f"{prefix}: missing required surface signature key {k!r}")
+    mv = sig.get("measurement_valid")
+    if type(mv) is not bool:
+        errors.append(f"{prefix}: measurement_valid must be bool, got {mv!r}")
+    elif mv is True and sig.get("distance_m") is None:
+        errors.append(f"{prefix}: measurement_valid=True with distance_m=None")
+    elif mv is False and not _nonempty_str(sig.get("reason")):
+        errors.append(f"{prefix}: measurement_valid=False without reason")
+    return errors
+
+
+def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_batch_manifest=None):
     errors = []
     if not isinstance(row, dict):
         return [f"{side}.{section}.{name}: row must be a dict"]
@@ -938,10 +975,18 @@ def _validate_row(side, section, name, row):
             errors.append(f"{side}.{section}.{name}: duplicate entries in batch_ids: {ids}")
         if not isinstance(sigs, list) or not sigs or any(not isinstance(s, dict) for s in sigs):
             errors.append(f"{side}.{section}.{name}: signatures must be a non-empty list of dicts")
-        elif isinstance(ids, list) and len(sigs) != len(ids):
-            errors.append(f"{side}.{section}.{name}: len(signatures)={len(sigs)} != len(batch_ids)={len(ids)}")
+        else:
+            if isinstance(ids, list) and len(sigs) != len(ids):
+                errors.append(f"{side}.{section}.{name}: len(signatures)={len(sigs)} != len(batch_ids)={len(ids)}")
+            for idx, s in enumerate(sigs):
+                errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signatures[{idx}]", s))
         if "expected_batch_ids" in row and row["expected_batch_ids"] != ids:
             errors.append(f"{side}.{section}.{name}: batch_ids {ids} != expected_batch_ids {row['expected_batch_ids']}")
+        if expected_batch_manifest is not None:
+            if name not in expected_batch_manifest:
+                errors.append(f"{side}.{section}.{name}: batch missing from expected_batch_manifest")
+            elif expected_batch_manifest[name] != ids:
+                errors.append(f"{side}.{section}.{name}: batch_ids {ids} != expected_batch_manifest {expected_batch_manifest[name]}")
         if not _validate_input_sha(section, row):
             errors.append(f"{side}.{section}.{name}: missing or invalid input_sha256")
         return errors
@@ -953,7 +998,9 @@ def _validate_row(side, section, name, row):
         errors.append(f"{side}.{section}.{name}: missing or non-dict signature")
         return errors
 
-    if section == "spatial_relation":
+    if section == "surface_single":
+        errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signature", sig))
+    elif section == "spatial_relation":
         spatial = sig.get("spatial")
         surface = sig.get("surface")
         if not isinstance(spatial, dict) or not isinstance(surface, dict):
@@ -973,41 +1020,74 @@ def _validate_row(side, section, name, row):
             errors.append(f"{side}.{section}.{name}: spatial measurement_valid=False with non-None relation")
         if sig.get("budget_stopped") is True and not sig.get("stop_reason"):
             errors.append(f"{side}.{section}.{name}: budget_stopped=True without stop_reason")
+    elif section == "closed_solid":
+        if type(sig.get("measurement_valid")) is not bool or "relation" not in sig or "certificate" not in sig:
+            errors.append(f"{side}.{section}.{name}: missing required closed_solid fields")
     elif section == "surface_analyze":
+        if "status" not in sig or "scan_complete" not in sig or "pair_accounting_complete" not in sig:
+            errors.append(f"{side}.{section}.{name}: analyze missing required completeness/status fields")
         claimed_complete = sig.get("complete") is True or sig.get("status") == "complete"
         if claimed_complete:
             if sig.get("status") != "observed" or sig.get("scan_complete") is not True or sig.get("pair_accounting_complete") is not True:
                 errors.append(f"{side}.{section}.{name}: analyze claims complete without observed+scan_complete+pair_accounting_complete")
     elif section == "e2e_entries":
-        if "binding" in sig:
-            b = sig.get("binding")
-            if not isinstance(b, dict) or b.get("runtime_source_sha256_valid") is not True:
+        b = sig.get("binding")
+        if not isinstance(b, dict):
+            errors.append(f"{side}.{section}.{name}: e2e signature missing binding dict")
+        else:
+            if b.get("runtime_source_sha256_valid") is not True:
                 errors.append(f"{side}.{section}.{name}: e2e binding missing or invalid runtime_source_sha256_valid")
+            raw_rt = b.get("runtime_source_sha256")
+            if not _is_sha256_hex(raw_rt):
+                errors.append(f"{side}.{section}.{name}: e2e binding missing valid runtime_source_sha256")
+            elif arm_runtime_sha is not None and raw_rt != arm_runtime_sha:
+                errors.append(f"{side}.{section}.{name}: e2e binding runtime_source_sha256 {raw_rt} != arm pin {arm_runtime_sha}")
+        if name.endswith("surface_scan_5mm") and "dispositions" in sig:
+            disps = sig.get("dispositions")
+            if isinstance(disps, list):
+                oid_keys = [tuple(d.get("object_ids") or ()) for d in disps if isinstance(d, dict)]
+                if len(oid_keys) != len(disps) or len(set(oid_keys)) != len(oid_keys):
+                    errors.append(f"{side}.{section}.{name}: invalid or duplicate scan dispositions")
     return errors
 
 
 def _canonical_row_sig(section, row):
-    if section == "spatial_relation":
-        return copy.deepcopy(row["signature"])
-    return row["signature"]
+    sig = copy.deepcopy(row["signature"])
+    if section == "e2e_entries" and isinstance(sig.get("binding"), dict):
+        # Cross-arm runtime_source_sha256 pinning is verified per arm BEFORE this normalization.
+        sig["binding"].pop("runtime_source_sha256", None)
+    return sig
 
 
-def _compare_signatures(baseline, current, partial=False):
+def _compare_signatures(baseline, current, partial=False, *, expected_batch_manifest=None):
     mismatches = []
     if not isinstance(baseline, dict) or not isinstance(current, dict):
         return ["baseline and current must be dicts"]
-    if baseline.get("schema") != "m3-bvh-eval-v3" or current.get("schema") != "m3-bvh-eval-v3":
-        mismatches.append(f"schema mismatch (expected m3-bvh-eval-v3): baseline={baseline.get('schema')} current={current.get('schema')}")
+    if baseline.get("schema") != "m3-bvh-eval-v4" or current.get("schema") != "m3-bvh-eval-v4":
+        mismatches.append(f"schema mismatch (expected m3-bvh-eval-v4): baseline={baseline.get('schema')} current={current.get('schema')}")
         return mismatches
-    b_opt = baseline.get("options_sha256")
-    c_opt = current.get("options_sha256")
-    if not _nonempty_str(b_opt) or not _nonempty_str(c_opt):
-        mismatches.append("missing options_sha256 in baseline or current")
-    elif b_opt != c_opt:
-        mismatches.append(f"options_sha256 mismatch: baseline={b_opt} current={c_opt}")
-    if "inputs_sha256" in baseline or "inputs_sha256" in current:
-        if baseline.get("inputs_sha256") != current.get("inputs_sha256"):
-            mismatches.append("inputs_sha256 mismatch between baseline and current")
+    b_rt = baseline.get("runtime_identity_sha256")
+    c_rt = current.get("runtime_identity_sha256")
+    if not _is_sha256_hex(b_rt):
+        mismatches.append(f"baseline missing valid 64-hex runtime_identity_sha256: {b_rt!r}")
+    if not _is_sha256_hex(c_rt):
+        mismatches.append(f"current missing valid 64-hex runtime_identity_sha256: {c_rt!r}")
+    for label, doc in (("baseline", baseline), ("current", current)):
+        sopt = doc.get("solver_options")
+        osha = doc.get("options_sha256")
+        if not isinstance(sopt, dict):
+            mismatches.append(f"{label} missing solver_options dict")
+        elif not _is_sha256_hex(osha):
+            mismatches.append(f"{label} missing valid 64-hex options_sha256: {osha!r}")
+        elif _stable_hash(sopt) != osha:
+            mismatches.append(f"{label} options_sha256 does not match _stable_hash(solver_options)")
+    if baseline.get("options_sha256") != current.get("options_sha256"):
+        mismatches.append(f"options_sha256 mismatch: baseline={baseline.get('options_sha256')} current={current.get('options_sha256')}")
+    for label, doc in (("baseline", baseline), ("current", current)):
+        if not _valid_nested_sha256(doc.get("inputs_sha256")):
+            mismatches.append(f"{label} missing valid 64-hex inputs_sha256 manifest")
+    if baseline.get("inputs_sha256") != current.get("inputs_sha256"):
+        mismatches.append("inputs_sha256 mismatch between baseline and current")
 
     compared_items = 0
     sections = ("surface_single", "spatial_relation", "closed_solid", "surface_analyze", "e2e_entries")
@@ -1028,9 +1108,9 @@ def _compare_signatures(baseline, current, partial=False):
             for missing in sorted(b_keys - c_keys):
                 mismatches.append(f"missing baseline workload {section}.{missing}")
         for name in sorted(b_keys):
-            mismatches.extend(_validate_row("baseline", section, name, b_sec[name]))
+            mismatches.extend(_validate_row("baseline", section, name, b_sec[name], arm_runtime_sha=b_rt))
         for name in sorted(c_keys):
-            mismatches.extend(_validate_row("current", section, name, c_sec[name]))
+            mismatches.extend(_validate_row("current", section, name, c_sec[name], arm_runtime_sha=c_rt))
         for name in sorted(b_keys & c_keys):
             compared_items += 1
             b_row, c_row = b_sec[name], c_sec[name]
@@ -1058,9 +1138,9 @@ def _compare_signatures(baseline, current, partial=False):
         for missing in sorted(set(b_batches) - set(c_batches)):
             mismatches.append(f"missing baseline workload surface_batch.{missing}")
     for name in sorted(b_batches):
-        mismatches.extend(_validate_row("baseline", "surface_batch", name, b_batches[name]))
+        mismatches.extend(_validate_row("baseline", "surface_batch", name, b_batches[name], arm_runtime_sha=b_rt, expected_batch_manifest=expected_batch_manifest))
     for name in sorted(c_batches):
-        mismatches.extend(_validate_row("current", "surface_batch", name, c_batches[name]))
+        mismatches.extend(_validate_row("current", "surface_batch", name, c_batches[name], arm_runtime_sha=c_rt, expected_batch_manifest=expected_batch_manifest))
     for name in sorted(set(b_batches) & set(c_batches)):
         compared_items += 1
         b_row, c_row = b_batches[name], c_batches[name]
@@ -1089,35 +1169,50 @@ def _compare_signatures(baseline, current, partial=False):
 
 def verify_comparator_negative_controls():
     """Verify _compare_signatures and signature extractors catch every injected semantic/structural mismatch."""
+    def _require(cond, msg):
+        if not cond:
+            raise RuntimeError(msg)
+
     valid_rt_sha = "a" * 64
+    cand_rt_sha = "e" * 64
+    sha_b = "b" * 64
+    sha_c = "c" * 64
+    sha_d = "d" * 64
+    sha_f = "f" * 64
+    sha_0 = "0" * 64
+    sha_1 = "1" * 64
+    sopt = {"retain_exact_rank": True}
+    surf_row_ok = {
+        "measurement_valid": True, "reason": None, "distance_m": 1.0,
+        "_exact_distance_sq": [1, 1, 0], "point_a_world": [0.0, 0.0, 0.0],
+        "point_b_world": [0.0, 0.0, 1.0], "direction_a_to_b": [0.0, 0.0, 1.0],
+        "witness_status": "measured", "witness_reason": None,
+        "direction_status": "measured", "direction_reason": None,
+        "topology": [{"boundary_edge_count": 0}],
+        "witness_triangle_indices": [0, 0], "exact_witness_triangles": None,
+    }
     base = {
-        "schema": "m3-bvh-eval-v3",
-        "options_sha256": _stable_hash({"retain_exact_rank": True}),
-        "inputs_sha256": {"snapshot": "b" * 64},
+        "schema": "m3-bvh-eval-v4",
+        "runtime_identity_sha256": valid_rt_sha,
+        "solver_options": copy.deepcopy(sopt),
+        "options_sha256": _stable_hash(sopt),
+        "inputs_sha256": {"snapshot": sha_b},
         "surface_single": {
             "P1": {
-                "input_sha256": ["a", "b"],
-                "signature": {
-                    "measurement_valid": True, "reason": None, "distance_m": 1.0,
-                    "_exact_distance_sq": [1, 1, 0], "point_a_world": [0.0, 0.0, 0.0],
-                    "point_b_world": [0.0, 0.0, 1.0], "direction_a_to_b": [0.0, 0.0, 1.0],
-                    "witness_status": "measured", "witness_reason": None,
-                    "direction_status": "measured", "direction_reason": None,
-                    "topology": [{"boundary_edge_count": 0}],
-                    "witness_triangle_indices": [0, 0], "exact_witness_triangles": None,
-                },
+                "input_sha256": [sha_0, sha_1],
+                "signature": copy.deepcopy(surf_row_ok),
             }
         },
         "surface_batch": {
             "B1": {
-                "input_sha256": ["t", "p0", "p1"],
+                "input_sha256": [sha_0, sha_1, sha_b],
                 "batch_ids": ["p0", "p1"],
-                "signatures": [{"distance_m": 1.0}, {"distance_m": 2.0}],
+                "signatures": [copy.deepcopy(surf_row_ok), {**copy.deepcopy(surf_row_ok), "distance_m": 2.0}],
             }
         },
         "spatial_relation": {
             "SR1": {
-                "input_sha256": ["a", "b"],
+                "input_sha256": [sha_0, sha_1],
                 "relation": "separated",
                 "certificate": "strict_all_referenced_vertex_support",
                 "signature": {
@@ -1136,13 +1231,13 @@ def verify_comparator_negative_controls():
         },
         "closed_solid": {
             "C1": {
-                "input_sha256": ["a", "b"],
+                "input_sha256": [sha_0, sha_1],
                 "signature": {"measurement_valid": True, "relation": "separated", "certificate": "c1", "reason": None},
             }
         },
         "surface_analyze": {
             "A1": {
-                "input_sha256": "an-sha",
+                "input_sha256": sha_d,
                 "signature": {
                     "status": "observed", "scan_complete": True, "pair_accounting_complete": True,
                     "complete": True, "total": 0, "regions": [], "degenerate_triangles": [],
@@ -1151,57 +1246,92 @@ def verify_comparator_negative_controls():
         },
         "e2e_entries": {
             "G508_surface_nearest": {
-                "input_sha256": "near-sha",
+                "input_sha256": sha_f,
                 "signature": {
                     "status": "complete", "nearest_ids": ["Peer_000"], "distance_m": 0.003,
                     "unresolved": {}, "excluded": [], "measurement_notes": {}, "best_known_evidence": [],
                     "binding": {
                         "scene_revision": "r1", "scene_fingerprint": "fp1", "document_epoch": "e1",
-                        "directory_sha256": "d1", "host_source_sha256": "c" * 64,
+                        "directory_sha256": sha_0, "host_source_sha256": sha_c,
+                        "runtime_source_sha256": valid_rt_sha,
                         "runtime_source_sha256_valid": True,
                     },
                 },
             },
             "G508_surface_scan_5mm": {
-                "input_sha256": "scan-sha",
+                "input_sha256": sha_f,
                 "signature": {
                     "status": "complete", "coverage": {"bound_excluded": 0}, "matches": [],
                     "dispositions": [{"object_ids": ["a", "b"], "status": "measured_match", "distance_m": 0.003}],
                     "binding": {
                         "scene_revision": "r1", "scene_fingerprint": "fp1", "document_epoch": "e1",
-                        "directory_sha256": "d2", "host_source_sha256": "c" * 64,
+                        "directory_sha256": sha_1, "host_source_sha256": sha_c,
+                        "runtime_source_sha256": valid_rt_sha,
                         "runtime_source_sha256_valid": True,
                     },
                 },
             },
         },
     }
-    assert _compare_signatures(base, copy.deepcopy(base), partial=False) == []
+    _require(_compare_signatures(base, copy.deepcopy(base), partial=False) == [], "identical v4 comparison failed")
 
-    def expect_caught(label, mutator, *, partial=False, mutate_both=False):
+    # Positive control: cross-arm with DIFFERENT valid pinned source hashes passes when each matches its own arm pin
+    cross_cand = copy.deepcopy(base)
+    cross_cand["runtime_identity_sha256"] = cand_rt_sha
+    cross_cand["e2e_entries"]["G508_surface_nearest"]["signature"]["binding"]["runtime_source_sha256"] = cand_rt_sha
+    cross_cand["e2e_entries"]["G508_surface_scan_5mm"]["signature"]["binding"]["runtime_source_sha256"] = cand_rt_sha
+    _require(_compare_signatures(base, cross_cand, partial=False) == [], "cross-arm pinned SHAs failed")
+
+    # Positive control: registered partial subset with matching expected_batch_manifest
+    part_cand = copy.deepcopy(cross_cand)
+    part_cand["surface_single"] = {}
+    _require(
+        _compare_signatures(base, part_cand, partial=True, expected_batch_manifest={"B1": ["p0", "p1"]}) == [],
+        "registered partial comparison with manifest failed",
+    )
+
+    def expect_caught(label, mutator, *, partial=False, mutate_both=False, manifest=None):
         b_doc = copy.deepcopy(base)
         cand = copy.deepcopy(base)
         if mutate_both:
             mutator(b_doc)
         mutator(cand)
-        errs = _compare_signatures(b_doc, cand, partial=partial)
+        errs = _compare_signatures(b_doc, cand, partial=partial, expected_batch_manifest=manifest)
         if not errs:
-            raise AssertionError(f"Comparator negative control failed to catch: {label}")
+            raise RuntimeError(f"Comparator negative control failed to catch: {label}")
         return {"control": label, "caught": True, "message": errs[0].splitlines()[0]}
 
     def make_empty(doc):
         for s in ("surface_single", "surface_batch", "spatial_relation", "closed_solid", "surface_analyze", "e2e_entries"):
             doc[s] = {}
 
-    # Extractor unit assertions for K07 analyze status=="observed" & nearest/scan binding
+    # Extractor unit assertions for R3 C04 (must survive python -O via explicit raise)
     an_obs_incomplete = _analyze_sig({"status": "observed", "scan_complete": False, "pair_accounting_complete": True, "total": 0, "regions": [], "degenerate_triangles": []})
-    assert an_obs_incomplete["complete"] is False, an_obs_incomplete
+    _require(an_obs_incomplete["complete"] is False, f"expected complete=False, got {an_obs_incomplete}")
+    an_missing_acct = _analyze_sig({"status": "observed", "scan_complete": True, "total": 0, "regions": [], "degenerate_triangles": []})
+    _require(an_missing_acct["complete"] is False, f"missing pair_accounting_complete returned True: {an_missing_acct}")
     an_legacy_word = _analyze_sig({"status": "complete", "scan_complete": True, "pair_accounting_complete": True})
-    assert an_legacy_word["complete"] is False, an_legacy_word
+    _require(an_legacy_word["complete"] is False, f"legacy status=complete returned True: {an_legacy_word}")
     ns_bad_rt = _nearest_sig({"status": "complete", "binding": {"scene_revision": "r1", "runtime_source_sha256": "not-a-sha"}})
-    assert ns_bad_rt["binding"]["runtime_source_sha256_valid"] is False, ns_bad_rt
+    _require(ns_bad_rt["binding"]["runtime_source_sha256_valid"] is False, ns_bad_rt)
     ns_good_rt = _nearest_sig({"status": "complete", "binding": {"scene_revision": "r1", "runtime_source_sha256": valid_rt_sha}})
-    assert ns_good_rt["binding"]["runtime_source_sha256_valid"] is True
+    _require(ns_good_rt["binding"]["runtime_source_sha256_valid"] is True and ns_good_rt["binding"]["runtime_source_sha256"] == valid_rt_sha, ns_good_rt)
+
+    # _time_fn at-return snapshot catches reused mutable result dict aliasing & check_sig=None reports 0 verified
+    mut_box = {"val": 0}
+    step_box = [0]
+    def mut_ret():
+        step_box[0] += 1
+        mut_box["val"] = step_box[0]
+        return mut_box
+    caught_alias = False
+    try:
+        _time_fn(mut_ret, warmup=0, repeats=3, measure_mem=False, check_sig=lambda r: {"v": r["val"]})
+    except RuntimeError:
+        caught_alias = True
+    _require(caught_alias, "_time_fn failed to catch reused mutable dict aliasing")
+    t_unverified, _ = _time_fn(lambda: {"ok": True}, warmup=0, repeats=3, measure_mem=False, check_sig=None)
+    _require(t_unverified["timed_outputs_verified"] == 0, f"expected timed_outputs_verified=0, got {t_unverified}")
 
     checks = [
         expect_caught("missing_workload_full", lambda c: c["surface_single"].pop("P1"), partial=False),
@@ -1217,7 +1347,6 @@ def verify_comparator_negative_controls():
         expect_caught("scan_disposition_distance_changed", lambda c: c["e2e_entries"]["G508_surface_scan_5mm"]["signature"]["dispositions"][0].__setitem__("distance_m", 0.004)),
         expect_caught("analyze_regions_changed", lambda c: c["surface_analyze"]["A1"]["signature"]["regions"].append({"faces": [0, 1]})),
         expect_caught("analyze_degenerate_changed", lambda c: c["surface_analyze"]["A1"]["signature"]["degenerate_triangles"].append(3)),
-        # New K07 fail-closed negative controls:
         expect_caught("missing_input_sha256_one_side", lambda c: c["surface_single"]["P1"].pop("input_sha256")),
         expect_caught("missing_input_sha256_both_sides", lambda c: c["surface_single"]["P1"].pop("input_sha256"), mutate_both=True),
         expect_caught("options_sha256_missing", lambda c: c.pop("options_sha256")),
@@ -1232,8 +1361,23 @@ def verify_comparator_negative_controls():
         expect_caught("scan_binding_runtime_sha_invalid", lambda c: c["e2e_entries"]["G508_surface_scan_5mm"]["signature"]["binding"].__setitem__("runtime_source_sha256_valid", False), mutate_both=True),
         expect_caught("spatial_support_evidence_changed", lambda c: c["spatial_relation"]["SR1"]["signature"]["spatial"]["support_evidence"].__setitem__("direction", [1, 0, 0])),
         expect_caught("spatial_top_measurement_valid_changed", lambda c: c["spatial_relation"]["SR1"]["signature"].__setitem__("measurement_valid", False)),
+        # New R3 C04 fail-closed controls:
+        expect_caught("short_malformed_input_sha_both", lambda c: c["surface_single"]["P1"].__setitem__("input_sha256", ["a", "not-a-hash"]), mutate_both=True),
+        expect_caught("uppercase_hex_input_sha_rejected", lambda c: c["surface_single"]["P1"].__setitem__("input_sha256", ["A" * 64, sha_1]), mutate_both=True),
+        expect_caught("missing_top_level_inputs_sha256_both", lambda c: c.pop("inputs_sha256"), mutate_both=True),
+        expect_caught("options_sha256_recompute_mismatch_both", lambda c: c["solver_options"].__setitem__("retain_exact_rank", False), mutate_both=True),
+        expect_caught("e2e_binding_unpinned_valid_sha_mismatch", lambda c: c["e2e_entries"]["G508_surface_nearest"]["signature"]["binding"].__setitem__("runtime_source_sha256", cand_rt_sha)),
+        expect_caught("e2e_binding_missing_runtime_sha", lambda c: c["e2e_entries"]["G508_surface_nearest"]["signature"]["binding"].pop("runtime_source_sha256"), mutate_both=True),
+        expect_caught("expected_batch_manifest_truncated_both", lambda c: (c["surface_batch"]["B1"]["batch_ids"].pop(), c["surface_batch"]["B1"]["signatures"].pop(), c["surface_batch"]["B1"]["input_sha256"].pop()), mutate_both=True, manifest={"B1": ["p0", "p1"]}),
+        expect_caught("surface_single_missing_required_field_both", lambda c: c["surface_single"]["P1"]["signature"].pop("distance_m"), mutate_both=True),
+        expect_caught("scan_duplicate_disposition_both", lambda c: c["e2e_entries"]["G508_surface_scan_5mm"]["signature"]["dispositions"].append({"object_ids": ["a", "b"], "status": "measured_match", "distance_m": 0.003}), mutate_both=True),
     ]
-    return {"passed": True, "controls_checked": len(checks), "details": checks}
+    return {
+        "passed": True,
+        "controls_checked": len(checks) + 5,  # +3 extractor + _time_fn alias + zero_verified
+        "alias_caught": caught_alias,
+        "details": checks,
+    }
 
 
 def print_report(results, baseline=None):
