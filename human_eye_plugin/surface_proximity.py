@@ -523,6 +523,7 @@ def _prepare_triangles_from_relative(relative, exponent, budget, *, holder=None)
 
 
 def _integer_frame(records, budget, *, holder=None):
+    """Exact binary64-to-integer common-exponent frame (fast bounded-spread path + arbitrary-exponent fallback)."""
     verts_info = []
     for mesh, _, _ in records:
         verts = mesh.vertices
@@ -533,25 +534,210 @@ def _integer_frame(records, budget, *, holder=None):
     origin = (_bounded(Fraction.from_float(fx)),
               _bounded(Fraction.from_float(fy)),
               _bounded(Fraction.from_float(fz)))
-    o0 = _float_dyadic(fx)
-    o1 = _float_dyadic(fy)
-    o2 = _float_dyadic(fz)
-    relative, exponent = [], 0
+
+    frexp = math.frexp
+    ldexp = math.ldexp
+    isfinite = math.isfinite
     tick = budget.tick
+    checkpoint = budget.checkpoint
+
+    min_e = None
+    max_e = None
+    if fx != 0.0:
+        m, e = frexp(fx); om0 = int(ldexp(m, 53)); oe0 = e - 53
+        min_e = max_e = oe0
+    else:
+        om0 = oe0 = 0
+    if fy != 0.0:
+        m, e = frexp(fy); om1 = int(ldexp(m, 53)); oe1 = e - 53
+        if min_e is None: min_e = max_e = oe1
+        else:
+            if oe1 < min_e: min_e = oe1
+            if oe1 > max_e: max_e = oe1
+    else:
+        om1 = oe1 = 0
+    if fz != 0.0:
+        m, e = frexp(fz); om2 = int(ldexp(m, 53)); oe2 = e - 53
+        if min_e is None: min_e = max_e = oe2
+        else:
+            if oe2 < min_e: min_e = oe2
+            if oe2 > max_e: max_e = oe2
+    else:
+        om2 = oe2 = 0
+
+    raw_sides = []
     for (_, faces, indices), (verts, is_np) in zip(records, verts_info):
+        raw_coords = []
+        app = raw_coords.append
+        if is_np:
+            item = verts.item
+            for index in indices:
+                tick('referenced_vertices')
+                vx = float(item((index, 0)))
+                vy = float(item((index, 1)))
+                vz = float(item((index, 2)))
+                if not (isfinite(vx) and isfinite(vy) and isfinite(vz)):
+                    raise _DomainError('surface_nonfinite_vertex')
+                if vx != 0.0:
+                    m, e = frexp(vx); mx = int(ldexp(m, 53)); ex = e - 53
+                    if min_e is None: min_e = max_e = ex
+                    else:
+                        if ex < min_e: min_e = ex
+                        if ex > max_e: max_e = ex
+                else:
+                    mx = ex = 0
+                if vy != 0.0:
+                    m, e = frexp(vy); my = int(ldexp(m, 53)); ey = e - 53
+                    if min_e is None: min_e = max_e = ey
+                    else:
+                        if ey < min_e: min_e = ey
+                        if ey > max_e: max_e = ey
+                else:
+                    my = ey = 0
+                if vz != 0.0:
+                    m, e = frexp(vz); mz = int(ldexp(m, 53)); ez = e - 53
+                    if min_e is None: min_e = max_e = ez
+                    else:
+                        if ez < min_e: min_e = ez
+                        if ez > max_e: max_e = ez
+                else:
+                    mz = ez = 0
+                app((index, mx, ex, my, ey, mz, ez))
+        else:
+            for index in indices:
+                tick('referenced_vertices')
+                values = verts[index]
+                if len(values) != 3:
+                    raise _DomainError('surface_nonfinite_vertex')
+                vx, vy, vz = values[0], values[1], values[2]
+                if type(vx) is not float: vx = float(vx)
+                if type(vy) is not float: vy = float(vy)
+                if type(vz) is not float: vz = float(vz)
+                if not (isfinite(vx) and isfinite(vy) and isfinite(vz)):
+                    raise _DomainError('surface_nonfinite_vertex')
+                if vx != 0.0:
+                    m, e = frexp(vx); mx = int(ldexp(m, 53)); ex = e - 53
+                    if min_e is None: min_e = max_e = ex
+                    else:
+                        if ex < min_e: min_e = ex
+                        if ex > max_e: max_e = ex
+                else:
+                    mx = ex = 0
+                if vy != 0.0:
+                    m, e = frexp(vy); my = int(ldexp(m, 53)); ey = e - 53
+                    if min_e is None: min_e = max_e = ey
+                    else:
+                        if ey < min_e: min_e = ey
+                        if ey > max_e: max_e = ey
+                else:
+                    my = ey = 0
+                if vz != 0.0:
+                    m, e = frexp(vz); mz = int(ldexp(m, 53)); ez = e - 53
+                    if min_e is None: min_e = max_e = ez
+                    else:
+                        if ez < min_e: min_e = ez
+                        if ez > max_e: max_e = ez
+                else:
+                    mz = ez = 0
+                app((index, mx, ex, my, ey, mz, ez))
+        raw_sides.append((faces, indices, raw_coords))
+
+    if min_e is None:
+        min_e = max_e = 0
+
+    if max_e - min_e <= 900 and -min_e <= 900:
+        E_upper = 0 if min_e >= 0 else -min_e
+        ox_u = om0 << (E_upper + oe0) if om0 else 0
+        oy_u = om1 << (E_upper + oe1) if om1 else 0
+        oz_u = om2 << (E_upper + oe2) if om2 else 0
+        or_all = 0
+        shifted_sides = []
+        for faces, indices, raw_coords in raw_sides:
+            sc = []
+            sapp = sc.append
+            for index, mx, ex, my, ey, mz, ez in raw_coords:
+                dx_u = (mx << (E_upper + ex) if mx else 0) - ox_u
+                dy_u = (my << (E_upper + ey) if my else 0) - oy_u
+                dz_u = (mz << (E_upper + ez) if mz else 0) - oz_u
+                or_all |= dx_u | dy_u | dz_u
+                sapp((index, dx_u, dy_u, dz_u))
+            shifted_sides.append((faces, indices, sc))
+
+        common_tz = E_upper if or_all == 0 else min(E_upper, (or_all & -or_all).bit_length() - 1)
+        exponent = E_upper - common_tz
+        factor = _bounded(1 << exponent)
+        limit = _FAST_COORD_LIMIT
+        prepared = []
+        retained = [] if holder is not None else None
+        for faces, indices, sc in shifted_sides:
+            max_idx = indices[-1] if indices else -1
+            use_list = (holder is None and 0 <= max_idx < 65536 and max_idx < 4 * len(indices))
+            integers = [None] * (max_idx + 1) if use_list else {}
+            fast_side = True
+            if common_tz:
+                for index, dx_u, dy_u, dz_u in sc:
+                    checkpoint('surface_proximity_referenced_vertices')
+                    ix = dx_u >> common_tz
+                    iy = dy_u >> common_tz
+                    iz = dz_u >> common_tz
+                    if ix <= -limit or ix >= limit or iy <= -limit or iy >= limit or iz <= -limit or iz >= limit:
+                        fast_side = False
+                        _bounded(ix); _bounded(iy); _bounded(iz)
+                    integers[index] = (ix, iy, iz)
+            else:
+                for index, ix, iy, iz in sc:
+                    checkpoint('surface_proximity_referenced_vertices')
+                    if ix <= -limit or ix >= limit or iy <= -limit or iy >= limit or iz <= -limit or iz >= limit:
+                        fast_side = False
+                        _bounded(ix); _bounded(iy); _bounded(iz)
+                    integers[index] = (ix, iy, iz)
+            if fast_side:
+                triangles = _build_fast_triangles(faces, integers, budget=budget)
+            else:
+                triangles = []
+                for face in faces:
+                    checkpoint('surface_proximity_triangle_prepare')
+                    tick('prepared_triangles')
+                    points = tuple(integers[index] for index in face)
+                    normal = _normal(points)
+                    if not any(normal):
+                        start, end = min(points), max(points)
+                        points = (start,) if start == end else (start, end)
+                    squared = _dot(normal, normal)
+                    edges = []
+                    for i in range(3 if squared else len(points) - 1):
+                        start, end = points[i], points[(i + 1) % len(points)]
+                        delta = _sub(end, start)
+                        edges.append((start, end, delta, _dot(delta, delta)))
+                    bounds = tuple((min(point[k] for point in points),
+                                    max(point[k] for point in points)) for k in range(3))
+                    triangles.append((points, normal, squared, edges, bounds))
+            prepared.append(triangles)
+            if retained is not None:
+                retained.append(integers)
+        if holder is not None:
+            holder['coordinates'] = tuple(retained)
+        return origin, factor, prepared
+
+    def _norm_dy(m_raw, e_raw):
+        if m_raw == 0:
+            return 0, 0
+        tz = (m_raw & -m_raw).bit_length() - 1
+        return m_raw >> tz, e_raw + tz
+
+    o0 = _norm_dy(om0, oe0)
+    o1 = _norm_dy(om1, oe1)
+    o2 = _norm_dy(om2, oe2)
+    relative, exponent = [], 0
+    for faces, _, raw_coords in raw_sides:
         coordinates = {}
-        for index in indices:
-            tick('referenced_vertices')
-            vx, vy, vz = _read_vertex_xyz(verts, index, is_np)
-            dx = _sub_dyadic(_float_dyadic(vx), o0)
-            dy = _sub_dyadic(_float_dyadic(vy), o1)
-            dz = _sub_dyadic(_float_dyadic(vz), o2)
-            if dx[0] and -dx[1] > exponent:
-                exponent = -dx[1]
-            if dy[0] and -dy[1] > exponent:
-                exponent = -dy[1]
-            if dz[0] and -dz[1] > exponent:
-                exponent = -dz[1]
+        for index, mx, ex, my, ey, mz, ez in raw_coords:
+            dx = _sub_dyadic(_norm_dy(mx, ex), o0)
+            dy = _sub_dyadic(_norm_dy(my, ey), o1)
+            dz = _sub_dyadic(_norm_dy(mz, ez), o2)
+            if dx[0] and -dx[1] > exponent: exponent = -dx[1]
+            if dy[0] and -dy[1] > exponent: exponent = -dy[1]
+            if dz[0] and -dz[1] > exponent: exponent = -dz[1]
             coordinates[index] = (dx, dy, dz)
         relative.append((faces, coordinates))
     factor, prepared = _prepare_triangles_from_relative(relative, exponent, budget, holder=holder)
