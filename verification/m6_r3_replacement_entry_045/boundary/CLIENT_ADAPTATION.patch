@@ -1,0 +1,120 @@
+--- 044/live_pressure/run.py
++++ 045/boundary/run.py
+@@ -1,4 +1,4 @@
+-"""044 sole frozen pressure: ordinary genesis, independent reopen, ABC task calls."""
++"""045 sole frozen 129 boundary: ordinary genesis, independent reopen, ABC task calls."""
+ from __future__ import annotations
+ 
+ from copy import deepcopy
+@@ -14,16 +14,16 @@
+ import traceback
+ 
+ HERE=Path(__file__).resolve().parent
+-RAW=Path("D:/HumanEye/runs/M6-044-R3-FRESH-BUDGET/live_pressure")
++RAW=Path("D:/HumanEye/runs/M6-045-R3-REPLACEMENT-ENTRY/boundary")
+ ROOT=RAW.parent
+-FINAL=ROOT/"pressure"
+-FAMILY=HERE.parent/"live_family"
+-CYCLE="M6-044-R3-FRESH-BUDGET"
++FINAL=ROOT/"oracle"
++FAMILY=HERE.parents[1]/"m6_r3_fresh_budget_044/live_family"
++CYCLE="M6-045-R3-REPLACEMENT-ENTRY"
+ PLAN=RAW/"PLAN.json"
+ NOW=time.perf_counter_ns
+-EXPECTED={"FINAL_FREEZE.json":"fabf8b50eec1f85e102bf3ad2ad78322fcf42bfc99e2adb976b1dd7336df8325",
+-          "FINAL_GEOMETRY.json":"7924a92dd3eae50a980d0d25190987ba7ef54c4d814985a15adc3b6797eb3b06",
+-          "FINAL_INDEPENDENT_TRUTH.json":"284e968268bba23be59933d996a57aaa9bb33c0c638912e55f03b615ba75c97b"}
++EXPECTED={"FINAL_FREEZE.json":"3b283ad99ae043aac13151ca70feffd042a332575e68889860073b2805ce85a3",
++          "FINAL_GEOMETRY.json":"4f2ed6c63e01feae64f1f952cdb26e9151a882ce1e066da045abe990b868549a",
++          "FINAL_INDEPENDENT_TRUTH.json":"e2907348751c42ce0eb972e73ef30888eff795cb2dd7d9c4456a50c417f9e90c"}
+ 
+ 
+ def need(value,reason):
+@@ -85,19 +85,24 @@
+     need([geom[k]["name"] for k in ("left","right")]==["Pressure_Inner","Pressure_Outer"],"original_order")
+     for key in ("left","right"):
+         item=geom[key]
+-        need(len(item["faces"])==125 and len({tuple(f) for f in item["faces"]})==125,"unique_source_faces")
++        need(len(item["faces"])==129 and len({tuple(f) for f in item["faces"]})==129,"unique_source_faces")
+         for vertex in item["vertices_world"]:
+             for value in vertex:
+                 need(type(value) in (int,float) and math.isfinite(value) and
+                      struct.pack("<d",struct.unpack("<f",struct.pack("<f",value))[0])==struct.pack("<d",value),"exact_binary32")
+-    prior=read(ROOT/"live_family/PLAN_02.json")
++    prior=read(Path("D:/HumanEye/runs/M6-044-R3-FRESH-BUDGET/live_family/PLAN_02.json"))
++    original_pressure_plan=Path("D:/HumanEye/runs/M6-044-R3-FRESH-BUDGET/live_pressure/PLAN.json")
++    need(request()==read(original_pressure_plan)["request"],"exact_preserved_ordinary_request")
+     original,s1,_,_=api()
+     arms=original.installed(s1)
+     need(arms==prior["arms"],"same_unchanged_installs")
+     sources={str(path):pin(path) for path in (Path(__file__),HERE/"build_scene.py",FAMILY/"capture.py",FAMILY/"run.py")}
+     sources.update(prior["sources"])
+-    plan=dict(schema="m6-044-ordinary-pressure-plan-v1",cycle_id=CYCLE,status="frozen_before_native_genesis",
+-        contract="3fe87bcf50bad31866ebeaf53272d1796dd62a6f",fixed=fixed,family_plan=pin(ROOT/"live_family/PLAN_02.json"),
++    plan=dict(schema="m6-045-ordinary-boundary-plan-v1",cycle_id=CYCLE,status="frozen_before_native_genesis",
++        contract="3e9e06ea381d3ad3669f7ac14e5ba25e4ba245f0",fixed=fixed,family_plan=pin(Path("D:/HumanEye/runs/M6-044-R3-FRESH-BUDGET/live_family/PLAN_02.json")),
++        original_pressure_plan=pin(original_pressure_plan),n=129,possible_triangle_pairs=16641,
++        original_limits=dict(faces=4096,narrow_phase_pairs=16384,work_units=1179648,request_budget_s=30.0),
++        reused_044_tooling={name:pin(HERE.parents[1]/"m6_r3_fresh_budget_044/live_pressure"/name) for name in ("run.py","build_scene.py")},
+         base_asset=prior["asset"],support=prior["support"],sources=sources,arms=arms,request=request(),order="ABC",
+         genesis="one ordinary owned GUI from exact family asset copy; replace only private RAM objects with fixed world arrays, identity transforms, unit1/frame1; save one new pressure.blend copy; close",
+         reopen="different ordinary GUI PID opens the saved private artifact, recaptures all original vertices/faces bitwise before any ABC call",
+@@ -131,7 +136,7 @@
+             got=actual[mode]
+             need(binary(got["vertices_local"])==binary(expected["vertices_world"])==binary(got["vertices_world_m"]),"source_coordinate_bytes")
+             need(got["triangles"]==expected["faces"]==got["native_polygon_vertices"] and
+-                 got["source_triangle_rows"]==got["triangle_polygons"]==list(range(125)),"native_source_order")
++                 got["source_triangle_rows"]==got["triangle_polygons"]==list(range(129)),"native_source_order")
+     return value
+ 
+ 
+@@ -165,9 +170,10 @@
+     record["trace"]=trace
+     observed=[e for e in logs if e.get("event")=="observe" and e.get("request_id")==trace["request_id"]]
+     record["observe_records"]=observed
++    record["work"]=observed[0].get("task_work") if len(observed)==1 else None
+     record["entry_rejected"]=bool(answer["tool_error"] or answer["rpc_error"])
+     if record["entry_rejected"]:
+-        record.update(distance_known=False,distance_m=None,entry_reason=body)
++        record.update(distance_known=False,distance_m=None,entry_reason=body,unknown_reason="original_entry_rejection")
+         return
+     need(json.loads(received["result"]["content"][0]["text"])==body and len(received["result"]["content"])==1,"original_reply_form")
+     need(body["binding"]["runtime_source_sha256"]==source and body["trace_id"]==trace["trace_id"],"body_source_trace")
+@@ -185,6 +191,7 @@
+         need(binary([points["a"],points["b"]])==binary(want),"unique_exact_published_points")
+     else:need(distance is None,"no_partial_unknown_distance")
+     record.update(public_status=body["status"],surface_fact=sf,distance_known=known,distance_m=distance,
++        unknown_reason=sf.get("reason") if not known else None,no_partial_unknown_distance=known or distance is None,
+         work=observed[0].get("task_work"),independent_canonical_native_face_pair=truth["canonical_native_face_pair"],
+         native_index_scope="public original task fact has point witness; canonical native pair follows the frozen unique witness and verified source mapping",
+         semantic=normalize(body,source))
+@@ -218,14 +225,15 @@
+ 
+ def run(window_path):
+     plan=read(PLAN)
+-    for ref in (*plan["fixed"].values(),*plan["sources"].values(),*plan["support"].values(),plan["base_asset"],plan["family_plan"]):check(ref)
++    for ref in (*plan["fixed"].values(),*plan["sources"].values(),*plan["support"].values(),
++                *plan["reused_044_tooling"].values(),plan["base_asset"],plan["family_plan"],plan["original_pressure_plan"]):check(ref)
+     window=read(window_path)
+     need(window["cycle_id"]==CYCLE and window["status"]=="available" and window.get("token"),"new_pressure_window")
+     original,s1,gui,service=api();need(original.installed(s1)==plan["arms"],"unchanged_installs")
+     output=RAW/"attempt_001";output.mkdir()
+-    report=dict(schema="m6-044-pressure-ordinary-result-v1",plan=pin(PLAN),window=pin(window_path),started_ns=NOW(),errors=[],cells={})
++    report=dict(schema="m6-045-boundary-ordinary-result-v1",plan=pin(PLAN),window=pin(window_path),started_ns=NOW(),errors=[],cells={})
+     writer=reader=None
+-    destination=RAW/"authored/pressure.blend";destination.parent.mkdir()
++    destination=RAW/"authored/boundary.blend";destination.parent.mkdir()
+     try:
+         gui.ASSET_SHAS={plan["base_asset"]["sha256"]:"closed_family_genesis_copy"}
+         writer=gui.Owned(output/"genesis",plan["base_asset"],plan["support"],window)
+@@ -254,6 +262,10 @@
+         need(binary(before)==binary(after),"read_only_scene_preserved")
+         report["scene_preserved"]=True
+         report["B_success_C_unknown"]=report["cells"]["B"]["distance_known"] and not report["cells"]["C"]["distance_known"]
++        report["coverage_comparisons"]={left+"_to_"+right:dict(
++            left_known=report["cells"][left]["distance_known"],right_known=report["cells"][right]["distance_known"],
++            newly_unknown=report["cells"][left]["distance_known"] and not report["cells"][right]["distance_known"],
++            right_original_reason=report["cells"][right].get("unknown_reason")) for left,right in (("A","B"),("A","C"),("B","C"))}
+         report["all_known"]=all(c["distance_known"] for c in report["cells"].values())
+         if report["all_known"]:
+             need(all(report["cells"][a]["semantic"]==report["cells"]["A"]["semantic"] for a in "BC"),"same_host_original_public_equality")

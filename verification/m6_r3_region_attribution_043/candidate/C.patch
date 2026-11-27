@@ -1,0 +1,25 @@
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -1636,6 +1636,12 @@
+     # always uses unshifted bounds, regardless of this queue-only ordering.
+     span_bits = largest_span.bit_length()
+     shift = max(0, span_bits - (MAX_BITS - 1))
++    contained_zero_fifo = shift == 0 and (
++        all(roots[0][0][axis] < roots[1][0][axis]
++            and roots[1][1][axis] < roots[0][1][axis] for axis in range(3))
++        or all(roots[1][0][axis] < roots[0][0][axis]
++               and roots[0][1][axis] < roots[1][1][axis] for axis in range(3))
++    )
+     center_shift = max(0, span_bits - (MAX_BITS - 4))
+     left_root = _compile_bvh_node(roots[0], center_shift, budget=budget)
+     right_root = _compile_bvh_node(roots[1], center_shift, budget=budget)
+@@ -1754,7 +1760,8 @@
+                     budget.counts['subtree_pruned_pairs'] += sl[6] * sr[6]
+                     return
+         budget.tick('queue_pushes')
+-        heapq.heappush(pending, (key, cdist, serial, sl, sr))
++        secondary = 0 if contained_zero_fifo and key == 0 else cdist
++        heapq.heappush(pending, (key, secondary, serial, sl, sr))
+         serial += 1
+ 
+     # Inline 1-path greedy DFS descent to seed best quickly before priority loop.

@@ -1,0 +1,13 @@
+# 048 fixed independent controls
+
+`CONTROLS.json` contains exactly two controls, in fixed order. They were frozen without importing or running A/C. No alternative geometry or helper-only third positive control is included.
+
+1. **Coplanar multifeature contact.** One triangle has vertices `(0,0,0),(4,0,0),(0,4,0)`; the other has `(1,-1,0),(3,3,0),(-1,1,0)`. Six original edge halfplanes give the five-vertex intersection recorded in the JSON, of exact area `23/6`. The minimum squared distance is zero; there is only one native face pair, `[0,0]`, but infinitely many minimizing point pairs. A legal witness is any common point used on both sides. This control distinguishes face-pair identity from an unstated ordering of points within that pair.
+
+2. **The existing047 binary64 point/segment example.** Let `h=2^-52`, `L=2^50`, `D=L²+(L+1)²`, `p=(1+h,1+h,0)`, `a=(1,1,0)`, and `b=(5/4,5/4+h,0)`. All input coordinates are exact binary64 values. The interior projection parameter is `(2L+1)/D`; the residual is `h*(-(L+1),L,0)/D`. Thus the exact squared distance is `h²/D`, and the correctly rounded distance is `0x1.6a09e667f3bcap-103` (`1.394522238736839e-31`). Both exact points round to `(1.0000000000000002,1.0000000000000002,0)`.
+
+The point is encoded as one degenerate face `[0,0,0]`, the segment as `[0,1,1]`. The plain surface kernel explicitly reduces degenerate triples to point/segment hulls; no closed-shell fact is requested. Both controls have one possible source pair and use the linear branch.
+
+The frozen source-derived expectation for the second control separates scalar and witness status: the raw kernel can retain `measurement_valid=true`, the positive distance and a measured direction, while withholding both world points with `witness_status=unknown` and `original_surface_witness_precision_exceeded`. The public surface fact consequently reports that reason while retaining its scalar value. It is not a total loss of the scalar answer and, if shared by A/C, is not a new version regression. This is a prediction from identical existing publication/fact branches, not an048 execution result.
+
+The ordinary surface fact promises valid source-surface witnesses when available. Neither its schema nor these source branches establish a global lexicographic coordinate choice inside a multi-point intersection. A changed valid contact point, a changed mandated native face pair, and a newly missing field must therefore be evaluated separately. Normal public facts need not expose retained native row indices; their absence is not itself a source-pair error. All geometric truth, exact points, rounded coordinates, source pins and comparison rules are in the single frozen JSON.

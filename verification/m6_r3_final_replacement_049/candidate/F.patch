@@ -1,0 +1,2169 @@
+--- a/human_eye_plugin/surface_proximity.py
++++ b/human_eye_plugin/surface_proximity.py
+@@ -2441,6 +2441,20 @@
+     return records, topology, fl['origin_frac'], factor, prepared, roots
+ 
+ 
++def _use_032_surface(left, right):
++    """Select before changing preparation or the original per-pair work ledger."""
++    try:
++        n, m = len(left.faces), len(right.faces)
++    except (AttributeError, TypeError):
++        return True
++    product = n * m
++    if not product or n + m > MAX_FACES or product > MAX_NARROW_PHASE_PAIRS:
++        return True
++    # Conservative R3 work bound for preparation, traversal, settled credit
++    # spend, and source checks at publication.
++    return n*n + m*m + 8*(n + m) + 124*product + 4 > MAX_WORK_UNITS
++
++
+ def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
+                               retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
+                               _prepared_trees=None,
+@@ -2449,8 +2463,18 @@
+     mode = _DEFAULT_PROJECTION_MODE if _projection_mode is None else _projection_mode
+     if mode not in _VALID_PROJECTION_MODES:
+         raise ValueError(f'unsupported projection_mode: {mode!r}')
++    if _use_032_surface(left, right):
++        from ._surface_proximity_032 import measure_surface_proximity as original
++        measured = original(
++            left, right, checkpoint, diagnostics=diagnostics,
++            retain_exact_rank=retain_exact_rank, retain_witness_triangles=retain_witness_triangles,
++            _prepared_pair=_prepared_pair, _boundary_contact=_boundary_contact,
++            _prepared_trees=_prepared_trees, _prepared_holder=_prepared_holder)
++        measured['work']['solver_path'] = '032'
++        return measured
+     checkpoint('surface_proximity_admission')
+     budget = _Work(checkpoint, diagnostics)
++    budget.counts['solver_path'] = 'r3'
+     budget.counts['witness_projection_mode'] = mode
+     budget.counts['witness_projection_credit_reference'] = (
+         'mandatory_031_dequeue_aabb' if mode == 'settled_credit_031_ref'
+@@ -2602,6 +2626,12 @@
+ def measure_spatial_relation(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
+                              prepared_holder=None):
+     """Prove sufficient support separation, or run the original classifier once."""
++    if _use_032_surface(left, right):
++        from ._surface_proximity_032 import measure_spatial_relation as original
++        measured = original(left, right, checkpoint, diagnostics=diagnostics,
++                            retain_exact_rank=retain_exact_rank, prepared_holder=prepared_holder)
++        measured['surface']['work']['solver_path'] = '032'
++        return measured
+     metrics = diagnostics if diagnostics is not None else {}
+     metrics.update(surface_pair_count=1, closed_solid_pair_count=0,
+                    closed_solid_work={}, support_work={})
+--- a/human_eye_plugin/surface_geometry.py
++++ b/human_eye_plugin/surface_geometry.py
+@@ -1023,7 +1023,15 @@
+         prepared_holder.pop('trees',None)
+         prepared_holder.pop('pair',None)
+     from . import surface_proximity as exact
++    if exact._use_032_surface(left, right):
++        from ._surface_geometry_032 import classify_closed_solids as original
++        measured = original(left, right, checkpoint, diagnostics=diagnostics,
++                            prepared_pair=prepared_pair, prepared_holder=prepared_holder,
++                            prepared_trees=prepared_trees)
++        measured['work']['solver_path'] = '032'
++        return measured
+     budget=_ClosedWork(checkpoint,diagnostics,exact)
++    budget.counts['solver_path'] = 'r3'
+     result=dict(measurement_valid=False,relation=None,method=CLOSED_SOLID_METHOD,
+         geometry_scope=CLOSED_SOLID_SCOPE,relation_tolerance_m=0.0,work=budget.counts)
+     try:
+--- /dev/null
++++ b/human_eye_plugin/_surface_proximity_032.py
+@@ -0,0 +1,1268 @@
++"""Finite exact distances between the captured binary64 triangle surfaces.
++
++The small intersection predicates below reuse surface_geometry's formulas with
++checked arithmetic. This module has no solid qualification or action callers.
++"""
++from collections import Counter
++from decimal import Decimal, localcontext
++from fractions import Fraction
++from functools import cmp_to_key
++import heapq
++import math
++from numbers import Integral
++
++from .telemetry import span
++
++
++MAX_FACES = 4096
++MAX_TRIANGLE_PAIRS = 16384
++MAX_NARROW_PHASE_PAIRS = MAX_TRIANGLE_PAIRS
++MAX_WORK_UNITS = MAX_FACES * 32 + MAX_TRIANGLE_PAIRS * 64
++LINEAR_PAIR_LIMIT = 256
++MAX_BITS = 4096
++MAX_EXACT_SOURCE_BYTES = 1024
++_MAX_SCRATCH_BITS = 2 * MAX_BITS + 1
++METHOD = 'exact_binary64_triangle_surface_hulls_v3'
++_PUBLICATION_TOLERANCE = Fraction.from_float(1e-9)
++SPATIAL_METHOD = 'exact_sufficient_spatial_relation_v1'
++SPATIAL_SCOPE = 'referenced_triangle_unions_and_their_vertex_convex_hulls'
++_SURFACE_RESOURCE_STOPS = frozenset({'surface_work_budget', 'surface_pair_budget',
++                                      'surface_geometry_work_limit'})
++_CLOSED_RESOURCE_STOPS = frozenset({'closed_solid_work_budget', 'closed_solid_pair_budget',
++    'closed_solid_ray_budget', 'closed_solid_vertex_budget', 'closed_solid_geometry_work_limit'})
++
++
++class _DomainError(ValueError):
++    pass
++
++
++def _bounded(value):
++    if type(value) is int:
++        if value.bit_length() > MAX_BITS:
++            raise _DomainError('surface_exact_bit_budget')
++        return value
++    numerator = value.numerator if isinstance(value, Fraction) else value
++    denominator = value.denominator if isinstance(value, Fraction) else 1
++    if abs(numerator).bit_length() > MAX_BITS or denominator.bit_length() > MAX_BITS:
++        raise _DomainError('surface_exact_bit_budget')
++    return value
++
++
++def _fraction(numerator, denominator=1):
++    _bounded(numerator)
++    _bounded(denominator)
++    return _bounded(Fraction(numerator, denominator))
++
++
++def _sub(a, b):
++    return tuple(_bounded(x - y) for x, y in zip(a, b))
++
++
++def _add(a, b):
++    return tuple(_bounded(x + y) for x, y in zip(a, b))
++
++
++def _mul(a, scale):
++    return tuple(_bounded(x * scale) for x in a)
++
++
++def _dot(a, b):
++    total = 0
++    for x, y in zip(a, b):
++        total = _bounded(total + _bounded(x * y))
++    return total
++
++
++def _cross(a, b):
++    return tuple(_bounded(_bounded(a[i] * b[j]) - _bounded(a[j] * b[i]))
++                 for i, j in ((1, 2), (2, 0), (0, 1)))
++
++
++def _normal(triangle):
++    return _cross(_sub(triangle[1], triangle[0]), _sub(triangle[2], triangle[0]))
++
++
++def _orient(a, b, c, axes):
++    x, y = axes
++    return _bounded(_bounded(_bounded(b[x] - a[x]) * _bounded(c[y] - a[y]))
++                    - _bounded(_bounded(b[y] - a[y]) * _bounded(c[x] - a[x])))
++
++
++def _clip_coplanar(a, b, normal, budget):
++    # Same closed convex clipping formula as surface_geometry.clip_coplanar.
++    drop = max(range(3), key=lambda k: abs(normal[k]))
++    axes = tuple(k for k in range(3) if k != drop)
++    sign = 1 if _orient(*b, axes) > 0 else -1
++    polygon = list(a)
++    for i in range(3):
++        budget.tick('predicate_steps', 1 + len(polygon))
++        if not polygon:
++            break
++        c, d = b[i], b[(i + 1) % 3]
++        result = []
++        for j, point in enumerate(polygon):
++            previous = polygon[j - 1]
++            current_side = sign * _orient(c, d, point, axes)
++            previous_side = sign * _orient(c, d, previous, axes)
++            if (current_side >= 0) != (previous_side >= 0):
++                parameter = _fraction(previous_side, _bounded(previous_side - current_side))
++                result.append(_add(previous, _mul(_sub(point, previous), parameter)))
++            if current_side >= 0:
++                result.append(point)
++        polygon = list(dict.fromkeys(result))
++    return polygon
++
++
++def _plane_slice(triangle, distances):
++    # Same edge/plane construction as surface_geometry.plane_slice.
++    points = [point for point, distance in zip(triangle, distances) if distance == 0]
++    for i in range(3):
++        j = (i + 1) % 3
++        if distances[i] * distances[j] < 0:
++            parameter = _fraction(distances[i], _bounded(distances[i] - distances[j]))
++            points.append(_add(triangle[i], _mul(_sub(triangle[j], triangle[i]), parameter)))
++    return list(dict.fromkeys(points))
++
++
++def _plane_distances(points, origin, normal, budget):
++    budget.tick('plane_projection_tests', len(points))
++    return tuple(_dot(normal, _sub(point, origin)) for point in points)
++
++
++def _intersection(a, b, normal_a, normal_b, budget, *, plane_distances=None):
++    # Same bidirectional slices and common-line interval as the existing kernel.
++    da, db = (None, None) if plane_distances is None else plane_distances
++    if da is None:
++        da = _plane_distances(b, a[0], normal_a, budget)
++    if db is None:
++        db = _plane_distances(a, b[0], normal_b, budget)
++    if (all(value > 0 for value in da) or all(value < 0 for value in da)
++            or all(value > 0 for value in db) or all(value < 0 for value in db)):
++        return []
++    axis = _cross(normal_a, normal_b)
++    if not any(axis):
++        return _clip_coplanar(a, b, normal_a, budget) if all(value == 0 for value in da) else []
++    pa, pb = _plane_slice(a, db), _plane_slice(b, da)
++    if not pa or not pb:
++        return []
++    k = max(range(3), key=lambda index: abs(axis[index]))
++    pa.sort(key=lambda point: point[k])
++    pb.sort(key=lambda point: point[k])
++    left = max(pa[0], pb[0], key=lambda point: point[k])
++    right = min(pa[-1], pb[-1], key=lambda point: point[k])
++    return [] if left[k] > right[k] else list(dict.fromkeys((left, right)))
++
++
++class _Work:
++    def __init__(self, checkpoint, diagnostics):
++        self.checkpoint = checkpoint
++        self.counts = diagnostics if diagnostics is not None else {}
++        self.counts.update(validated_faces=0, referenced_vertices=0, triangle_pairs=0,
++                           intersection_tests=0, point_face_tests=0,
++                           point_edge_tests=0, edge_edge_tests=0, predicate_steps=0,
++                           aabb_bound_tests=0, aabb_pruned_pairs=0,
++                           work_units=0, prepared_triangles=0, tree_builds=0,
++                           tree_build_units=0, node_pair_visits=0, leaf_pair_visits=0,
++                           queue_pushes=0, queue_bound_tests=0, narrow_phase_pairs=0,
++                           plane_projection_tests=0, plane_bound_tests=0,
++                           plane_pruned_pairs=0, subtree_pruned_pairs=0, shared_trees=False,
++                           support_direction_components=0, support_source_vertices=0,
++                           support_vertex_dots=0)
++
++    def consume(self, amount, stage):
++        self.checkpoint('surface_proximity_' + stage)
++        if self.counts['work_units'] + amount > MAX_WORK_UNITS:
++            raise _DomainError('surface_work_budget')
++        self.counts['work_units'] += amount
++        if stage == 'surface_bvh_build':
++            self.counts['tree_build_units'] += amount
++
++    def tick(self, kind, amount=1):
++        self.consume(amount, kind)
++        self.counts[kind] = self.counts.get(kind, 0) + amount
++
++    def narrow_pair(self):
++        if self.counts['narrow_phase_pairs'] >= MAX_NARROW_PHASE_PAIRS:
++            self.checkpoint('surface_proximity_pair_budget')
++            raise _DomainError('surface_pair_budget')
++        self.tick('narrow_phase_pairs')
++
++
++def _admit(meshes, budget):
++    sizes = [len(mesh.faces) for mesh in meshes]
++    if not all(sizes) or sum(sizes) > MAX_FACES:
++        raise _DomainError('surface_geometry_work_limit')
++    records, topology = [], []
++    for mesh in meshes:
++        faces, used, incidence = [], set(), Counter()
++        for row in mesh.faces:
++            budget.tick('validated_faces')
++            if (len(row) != 3 or any(not isinstance(index, Integral)
++                    or isinstance(index, bool) or not 0 <= index < len(mesh.vertices) for index in row)):
++                raise _DomainError('surface_invalid_triangle_indices')
++            face = tuple(int(index) for index in row)
++            faces.append(face)
++            used.update(face)
++            incidence.update(tuple(sorted((face[i], face[(i + 1) % 3]))) for i in range(3))
++        topology.append(dict(boundary_edge_count=sum(count == 1 for count in incidence.values()),
++                             nonmanifold_edge_count=sum(count > 2 for count in incidence.values())))
++        records.append((mesh, faces, sorted(used)))
++    return records, topology
++
++
++def _integer_frame(records, budget, *, holder=None):
++    first_mesh, _, first_indices = records[0]
++    first = first_mesh.vertices[first_indices[0]]
++    if len(first) != 3 or any(not math.isfinite(float(value)) for value in first):
++        raise _DomainError('surface_nonfinite_vertex')
++    origin = tuple(_bounded(Fraction.from_float(float(value))) for value in first)
++    relative, exponent = [], 0
++    for mesh, faces, indices in records:
++        coordinates = {}
++        for index in indices:
++            budget.tick('referenced_vertices')
++            values = mesh.vertices[index]
++            if len(values) != 3 or any(not math.isfinite(float(value)) for value in values):
++                raise _DomainError('surface_nonfinite_vertex')
++            point = tuple(_bounded(Fraction.from_float(float(value))) for value in values)
++            local = _sub(point, origin)
++            exponent = max(exponent, *(value.denominator.bit_length() - 1 for value in local))
++            coordinates[index] = local
++        relative.append((faces, coordinates))
++    factor = _bounded(1 << exponent)
++    prepared = []
++    retained = [] if holder is not None else None
++    for faces, coordinates in relative:
++        integers = {index: tuple(_bounded(value.numerator <<
++                    (exponent - value.denominator.bit_length() + 1)) for value in point)
++                    for index, point in coordinates.items()}
++        triangles = []
++        for face in faces:
++            budget.checkpoint('surface_proximity_triangle_prepare')
++            budget.tick('prepared_triangles')
++            points = tuple(integers[index] for index in face)
++            normal = _normal(points)
++            if not any(normal):
++                # A collinear triple's lexicographic extremes are its closed
++                # hull endpoints, regardless of vertex order or duplicates.
++                start, end = min(points), max(points)
++                points = (start,) if start == end else (start, end)
++            squared = _dot(normal, normal)
++            edges = []
++            for i in range(3 if squared else len(points) - 1):
++                start, end = points[i], points[(i + 1) % len(points)]
++                delta = _sub(end, start)
++                edges.append((start, end, delta, _dot(delta, delta)))
++            bounds = tuple((min(point[k] for point in points),
++                            max(point[k] for point in points)) for k in range(3))
++            triangles.append((points, normal, squared, edges, bounds))
++        prepared.append(triangles)
++        if retained is not None:
++            retained.append(integers)
++    if holder is not None:
++        holder['coordinates'] = tuple(retained)
++    return origin, factor, prepared
++
++
++def _ratio(numerator, denominator):
++    divisor = math.gcd(numerator, denominator)
++    return _bounded(numerator // divisor), _bounded(denominator // divisor)
++
++
++def _closer(numerator, denominator, best):
++    if numerator < 0 or denominator <= 0:
++        raise ArithmeticError('Invalid exact squared surface distance')
++    numerator, denominator = _ratio(numerator, denominator)
++    if best is None or numerator * best[1] < best[0] * denominator:
++        return numerator, denominator
++    return None
++
++
++def _point_faces(point, triangle, reverse, best, budget):
++    points, normal, squared, _, _ = triangle
++    budget.tick('point_face_tests')
++    q = _sub(point, points[0])
++    u = _dot(_cross(_sub(points[2], points[0]), normal), q)
++    v = _dot(_cross(normal, _sub(points[1], points[0])), q)
++    if u < 0 or v < 0 or u + v > squared:
++        return best
++    height = _dot(q, normal)
++    distance = _closer(height * height, squared, best)
++    return (*distance, ('face', point, normal, height, squared, reverse)) if distance else best
++
++
++def _point_edges(point, edge, reverse, best, budget):
++    budget.tick('point_edge_tests')
++    start, end, delta, squared = edge
++    q = _sub(point, start)
++    parameter = _dot(q, delta)
++    if parameter <= 0:
++        numerator, denominator, parameter = _dot(q, q), 1, 0
++    elif parameter >= squared:
++        residual = _sub(point, end)
++        numerator, denominator, parameter = _dot(residual, residual), 1, squared
++    else:
++        numerator = _dot(q, q) * squared - parameter * parameter
++        denominator = squared
++    distance = _closer(numerator, denominator, best)
++    return (*distance, ('edge', point, start, delta, parameter, squared, reverse)) if distance else best
++
++
++def _edge_edges(left, right, best, budget):
++    budget.tick('edge_edge_tests')
++    a, _, u, aa = left
++    b, _, v, bb = right
++    normal = _cross(u, v)
++    determinant = _dot(normal, normal)
++    if determinant == 0:
++        return best
++    w = _sub(a, b)
++    ab, au, bv = _dot(u, v), _dot(u, w), _dot(v, w)
++    s, t = ab * bv - bb * au, aa * bv - ab * au
++    if not (0 <= s <= determinant and 0 <= t <= determinant):
++        return best
++    height = _dot(w, normal)
++    distance = _closer(height * height, determinant, best)
++    return (*distance, ('edges', a, b, u, v, s, t, determinant)) if distance else best
++
++
++def _segment_face_contact(segment, triangle):
++    """Prove an interior plane crossing before constructing its witness."""
++    if len(segment[0]) != 2:
++        return None
++    start, end = segment[0]
++    points, normal, squared, _, _ = triangle
++    da = _dot(normal, _sub(start, points[0]))
++    db = _dot(normal, _sub(end, points[0]))
++    if not (da < 0 < db or db < 0 < da):
++        # Endpoint and coplanar contacts use the existing closed features.
++        return None
++    denominator = _bounded(da - db)
++    numerator = da
++    if denominator < 0:
++        numerator, denominator = -numerator, -denominator
++    delta = segment[3][0][2]
++    scaled = _add(_mul(_sub(start, points[0]), denominator), _mul(delta, numerator))
++    u = _dot(_cross(_sub(points[2], points[0]), normal), scaled)
++    v = _dot(_cross(normal, _sub(points[1], points[0])), scaled)
++    if u < 0 or v < 0 or _bounded(u + v) > _bounded(squared * denominator):
++        return None
++    return ('segment_face', start, delta, numerator, denominator)
++
++
++def _aabb_exceeds_best(left, right, best):
++    # The integer squared lower bound exceeds n/d iff it exceeds floor(n/d).
++    # Subtract each squared gap from that floor instead of forming L2*d. A gap
++    # difference needs at most 4097 scratch bits; only a gap whose square fits
++    # the remaining <=4096-bit integer is ever squared. Equality never prunes.
++    remaining = best[0] // best[1]
++    for (left_min, left_max), (right_min, right_max) in zip(left, right):
++        gap = max(left_min - right_max, right_min - left_max, 0)
++        if gap > math.isqrt(remaining):
++            return True
++        remaining -= gap * gap
++    return False
++
++
++def _plane_exceeds_best(distances, normal_squared, best):
++    if not normal_squared or not distances or not (
++            all(value > 0 for value in distances) or all(value < 0 for value in distances)):
++        return False
++    gap = min(abs(value) for value in distances)
++    # g²*d > n*n² iff integer g² > floor(n*n²/d). Both factors of the
++    # sole product have <=4096 bits; g itself never needs to be squared.
++    threshold = _scratch(best[0] * normal_squared) // best[1]
++    return gap > math.isqrt(threshold)
++
++
++def _triangle_plane_bounds(left, right, best, budget):
++    if not left[2] or not right[2]:
++        return False, None
++    da = _plane_distances(right[0], left[0][0], left[1], budget)
++    budget.tick('plane_bound_tests')
++    if _plane_exceeds_best(da, left[2], best):
++        return True, (da, None)
++    db = _plane_distances(left[0], right[0][0], right[1], budget)
++    budget.tick('plane_bound_tests')
++    return _plane_exceeds_best(db, right[2], best), (da, db)
++
++
++def _nearest_pair(left, right, best, budget, plane_distances=None):
++    budget.narrow_pair()
++    budget.tick('intersection_tests')
++    if left[2] and right[2]:
++        contact = _intersection(left[0], right[0], left[1], right[1], budget,
++                                plane_distances=plane_distances)
++        if contact:
++            return 0, 1, ('contact', contact[0])
++    elif left[2] or right[2]:
++        contact = (_segment_face_contact(right, left) if left[2]
++                   else _segment_face_contact(left, right))
++        if contact:
++            return 0, 1, contact
++    elif len(left[0]) == len(right[0]) == 1:
++        delta = _sub(right[0][0], left[0][0])
++        distance = _closer(_dot(delta, delta), 1, best)
++        if distance:
++            best = (*distance, ('points', left[0][0], right[0][0]))
++    for point in left[0]:
++        if right[2]:
++            best = _point_faces(point, right, False, best, budget)
++        for edge in right[3]:
++            best = _point_edges(point, edge, False, best, budget)
++    for point in right[0]:
++        if left[2]:
++            best = _point_faces(point, left, True, best, budget)
++        for edge in left[3]:
++            best = _point_edges(point, edge, True, best, budget)
++    for edge_a in left[3]:
++        for edge_b in right[3]:
++            best = _edge_edges(edge_a, edge_b, best, budget)
++    return best
++
++
++def _nearest_linear(prepared, budget, witness_pair=None):
++    best = None
++    for i, left in enumerate(prepared[0]):
++        for j, right in enumerate(prepared[1]):
++            budget.checkpoint('surface_proximity_pair')
++            budget.tick('leaf_pair_visits')
++            budget.counts['triangle_pairs'] += 1
++            if best is not None:
++                budget.tick('aabb_bound_tests')
++                if _aabb_exceeds_best(left[4], right[4], best):
++                    budget.counts['aabb_pruned_pairs'] += 1
++                    continue
++            candidate = _nearest_pair(left, right, best, budget)
++            if witness_pair is not None and candidate is not best:
++                witness_pair[:] = (i, j)
++            best = candidate
++            if best[0] == 0:
++                return best
++    return best
++
++
++def _distance_roots(prepared, budget, holder=None):
++    from ._surface_geometry_032 import _bvh
++    roots = []
++    retained_bounds = [] if holder is not None else None
++    for triangles in prepared:
++        budget.tick('tree_build_units', len(triangles))
++        bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
++                  for triangle in triangles]
++        budget.tick('tree_builds')
++        roots.append(_bvh(bounds, budget))
++        if retained_bounds is not None:
++            retained_bounds.append(bounds)
++    if holder is not None:
++        holder['trees'] = dict(pair=holder['pair'], triangles=tuple(prepared),
++                               bounds=tuple(retained_bounds), roots=tuple(roots))
++    return tuple(roots)
++
++
++def _queue_distance(left, right, shift, budget):
++    budget.tick('queue_bound_tests')
++    gaps = [max(left[0][axis]-right[1][axis], right[0][axis]-left[1][axis], 0) >> shift
++            for axis in range(3)]
++    return _scratch(sum(gap*gap for gap in gaps))
++
++
++WITNESS_PROJECTION_AFTER_COMPLETED = 64
++WITNESS_PROJECTION_BUILD_BITS = 256
++WITNESS_PROJECTION_AXIS_BITS = 128
++WITNESS_PROJECTION_SCRATCH_BITS = 512
++WITNESS_PROJECTION_FIRST_ALLOWANCE = 100
++WITNESS_PROJECTION_TEST_ALLOWANCE = 50
++
++
++class _ProjectionUnavailable(Exception):
++    """Only this optional local proof is unavailable; use original exact work."""
++
++
++def _wp_optional_allowance(budget, amount):
++    if MAX_WORK_UNITS - budget.counts['work_units'] >= amount:
++        return True
++    budget.counts['witness_projection_budget_deferrals'] = budget.counts.get('witness_projection_budget_deferrals', 0) + 1
++    return False
++
++
++def _wp_scalar(value, cap):
++    if type(value) is not int or abs(value).bit_length() > min(cap, MAX_BITS):
++        raise _ProjectionUnavailable('local_bits')
++    return value
++
++
++def _wp_add(a, b, cap, budget):
++    budget.tick('witness_projection_arithmetic')
++    cap = min(cap, _MAX_SCRATCH_BITS)
++    _wp_scalar(a, cap)
++    _wp_scalar(b, cap)
++    if a == 0:
++        return b
++    if b == 0:
++        return a
++    if max(abs(a).bit_length(), abs(b).bit_length()) + 1 > cap:
++        raise _ProjectionUnavailable('local_bits')
++    return a + b
++
++
++def _wp_mul(a, b, cap, budget):
++    budget.tick('witness_projection_arithmetic')
++    cap = min(cap, _MAX_SCRATCH_BITS)
++    _wp_scalar(a, cap)
++    _wp_scalar(b, cap)
++    if a == 0 or b == 0:
++        return 0
++    if abs(a).bit_length() + abs(b).bit_length() > cap:
++        raise _ProjectionUnavailable('local_bits')
++    return a * b
++
++
++def _wp_vector(value, budget):
++    if type(value) not in (tuple, list) or len(value) != 3:
++        raise _ProjectionUnavailable('descriptor')
++    budget.tick('witness_projection_descriptor_components', 3)
++    return tuple(_wp_scalar(x, WITNESS_PROJECTION_BUILD_BITS) for x in value)
++
++
++def _wp_difference(a, b, budget):
++    return tuple(_wp_add(x, -y, WITNESS_PROJECTION_BUILD_BITS, budget) for x, y in zip(a, b))
++
++
++def _wp_descriptor_direction(descriptor, budget):
++    """Positive-denominator symbolic form of point_b minus point_a."""
++    if type(descriptor) not in (tuple, list) or not descriptor:
++        raise _ProjectionUnavailable('descriptor')
++    kind, *values = descriptor
++    cap = WITNESS_PROJECTION_BUILD_BITS
++    if kind == 'points' and len(values) == 2:
++        return _wp_difference(_wp_vector(values[1], budget), _wp_vector(values[0], budget), budget)
++    if kind == 'face' and len(values) == 5:
++        point, normal, height, squared, reverse = values
++        normal = _wp_vector(normal, budget)
++        budget.tick('witness_projection_descriptor_components', 2)
++        height, squared = _wp_scalar(height, cap), _wp_scalar(squared, cap)
++        if squared <= 0 or type(reverse) is not bool:
++            raise _ProjectionUnavailable('descriptor')
++        sign = (1 if reverse else -1) * ((height > 0) - (height < 0))
++        budget.tick('witness_projection_arithmetic', 3)
++        return tuple(sign * x for x in normal)
++    if kind == 'edge' and len(values) == 6:
++        point, start, delta, parameter, squared, reverse = values
++        point, start, delta = (_wp_vector(p, budget) for p in (point, start, delta))
++        budget.tick('witness_projection_descriptor_components', 2)
++        parameter, squared = _wp_scalar(parameter, cap), _wp_scalar(squared, cap)
++        if squared <= 0 or type(reverse) is not bool:
++            raise _ProjectionUnavailable('descriptor')
++        difference = _wp_difference(start, point, budget)
++        axis = tuple(_wp_add(_wp_mul(x, squared, cap, budget), _wp_mul(v, parameter, cap, budget), cap, budget)
++                     for x, v in zip(difference, delta))
++        if reverse:
++            budget.tick('witness_projection_arithmetic', 3)
++            axis = tuple(-x for x in axis)
++        return axis
++    if kind == 'edges' and len(values) == 7:
++        a, b, u, v, s, t, denominator = values
++        a, b, u, v = (_wp_vector(p, budget) for p in (a, b, u, v))
++        budget.tick('witness_projection_descriptor_components', 3)
++        s, t, denominator = (_wp_scalar(x, cap) for x in (s, t, denominator))
++        if denominator <= 0:
++            raise _ProjectionUnavailable('descriptor')
++        difference = _wp_difference(b, a, budget)
++        return tuple(_wp_add(_wp_add(_wp_mul(x, denominator, cap, budget),
++                         _wp_mul(y, t, cap, budget), cap, budget),
++                         -_wp_mul(z, s, cap, budget), cap, budget)
++                     for x, y, z in zip(difference, v, u))
++    raise _ProjectionUnavailable('descriptor')
++
++
++class _WitnessProjection:
++    """One actual-best epoch, one primitive axis, two lazy source-row maps."""
++    @classmethod
++    def from_best(cls, best, budget):
++        budget.tick('witness_projection_direction_builds')
++        try:
++            if (type(best) not in (tuple, list) or len(best) != 3
++                    or type(best[0]) is not int or type(best[1]) is not int
++                    or best[0] <= 0 or best[1] <= 0):
++                raise _ProjectionUnavailable('descriptor')
++            axis = _wp_descriptor_direction(best[2], budget)
++            budget.tick('witness_projection_arithmetic', 3)
++            divisor = math.gcd(*axis)
++            if not divisor:
++                raise _ProjectionUnavailable('zero_axis')
++            budget.tick('witness_projection_arithmetic', 3)
++            axis = tuple(x // divisor for x in axis)
++            if any(abs(x).bit_length() > WITNESS_PROJECTION_AXIS_BITS for x in axis):
++                raise _ProjectionUnavailable('local_bits')
++            cap = WITNESS_PROJECTION_SCRATCH_BITS
++            squared = 0
++            for x in axis:
++                squared = _wp_add(squared, _wp_mul(x, x, cap, budget), cap, budget)
++            numerator, denominator = (_wp_scalar(x, cap) for x in best[:2])
++            product = _wp_mul(squared, numerator, cap, budget)
++            budget.tick('witness_projection_arithmetic', 2)
++            cutoff = math.isqrt(product // denominator)
++        except _ProjectionUnavailable as exc:
++            label = {'descriptor': 'descriptor', 'zero_axis': 'zero_axis', 'local_bits': 'local_limit'}[str(exc)]
++            name = 'witness_projection_' + label + '_skips'
++            budget.counts[name] = budget.counts.get(name, 0) + 1
++            return False
++        budget.tick('witness_projection_directions')
++        # One real cache epoch will be released, either on best replacement or
++        # query return. Charge its release now rather than after exact work may
++        # have used the final original budget unit. There is no refund/reset.
++        budget.tick('witness_projection_epoch_release_units')
++        self = cls.__new__(cls)
++        self.best = best
++        self.axis = axis
++        self.norm_squared = squared
++        self.cutoff = cutoff
++        self.epoch = budget.counts['witness_projection_directions']
++        self.intervals = ({}, {})
++        return self
++
++    def interval(self, side, row, triangle, budget):
++        budget.tick('witness_projection_cache_lookups')
++        cache = self.intervals[side]
++        if row in cache:
++            budget.counts['witness_projection_cache_hits'] = budget.counts.get('witness_projection_cache_hits', 0) + 1
++            return cache[row]
++        cap = WITNESS_PROJECTION_SCRATCH_BITS
++        try:
++            values = []
++            for point in triangle[0]:
++                budget.tick('witness_projection_vertex_dots')
++                total = 0
++                for x, n in zip(point, self.axis):
++                    total = _wp_add(total, _wp_mul(x, n, cap, budget), cap, budget)
++                values.append(total)
++            interval = min(values), max(values)
++        except _ProjectionUnavailable:
++            budget.counts['witness_projection_local_limit_skips'] = budget.counts.get('witness_projection_local_limit_skips', 0) + 1
++            interval = False
++        budget.tick('witness_projection_intervals_built')
++        cache[row] = interval
++        return interval
++
++    def prunes(self, i, j, a, b, budget):
++        budget.tick('witness_projection_tests')
++        left = self.interval(0, i, a, budget)
++        right = self.interval(1, j, b, budget)
++        if left is False or right is False:
++            return False
++        try:
++            gap = max(_wp_add(left[0], -right[1], WITNESS_PROJECTION_SCRATCH_BITS, budget),
++                      _wp_add(right[0], -left[1], WITNESS_PROJECTION_SCRATCH_BITS, budget), 0)
++        except _ProjectionUnavailable:
++            budget.counts['witness_projection_local_limit_skips'] = budget.counts.get('witness_projection_local_limit_skips', 0) + 1
++            return False
++        if gap > self.cutoff:
++            budget.counts['witness_projection_pruned_pairs'] = budget.counts.get('witness_projection_pruned_pairs', 0) + 1
++            return True
++        return False
++
++
++def _wp_attempt_work_bound(projection, i, j, a, b):
++    """51 axis units; test base5; cold side1+7 per prepared hull point.
++
++    Cached False intervals are still cached: their failed construction has
++    already been paid, and a future lookup cannot repeat that construction.
++    """
++    cost = 51 if projection is None else 0
++    cost += 5
++    for side, row, triangle in ((0, i, a), (1, j, b)):
++        if projection is None or row not in projection.intervals[side]:
++            cost += 1 + 7 * len(triangle[0])
++    return cost
++
++
++def _wp_narrow_work_floor(a, b):
++    """Strict positive separation excludes contact early returns.
++
++    A completed original narrow call must pay narrow+intersection=2 and every
++    native point-face, point-edge and edge-edge feature entry counted here.
++    Normal triangles give35. No optional or old plane/AABB work is credited.
++    """
++    va, vb = len(a[0]), len(b[0])
++    ea, eb = len(a[3]), len(b[3])
++    return 2 + va * (int(bool(b[2])) + eb) + vb * (int(bool(a[2])) + ea) + ea * eb
++
++
++class _ProjectionCredit:
++    """Query-local, non-borrowing account of already saved original work.
++
++    Start0. A reused unshifted dequeue bound saves1 at the same checkpoint.
++    Only a proved strict leaf exclusion earns its original narrow work floor.
++    Each attempt must fit both settled credit and original remaining budget;
++    finally debit the actual original _Work delta, including every failure.
++    There is no refund, replay, increase of a limit or whole-query result cache.
++    """
++    def __init__(self, budget):
++        self.budget = budget
++        self.balance = 0
++        self.spent = 0
++        self.earned_bounds = 0
++        self.earned_narrow = 0
++        self.attempts = 0
++        self.pending_upper = None
++        self.pending_work_start = None
++        for name in ('balance', 'node_units', 'narrow_units', 'spent_units', 'attempts',
++                     'credit_deferrals', 'budget_deferrals', 'upper_units', 'last_upper', 'last_actual'):
++            budget.counts['witness_projection_credit_' + name] = 0
++
++    @property
++    def available_credit(self):
++        """True prefix margin also while an admitted attempt is in progress."""
++        pending = (0 if self.pending_work_start is None else
++                   self.budget.counts['work_units'] - self.pending_work_start)
++        return self.balance - pending
++
++    def saved_bound(self):
++        self.balance += 1
++        self.earned_bounds += 1
++        counts = self.budget.counts
++        counts['witness_projection_credit_node_units'] = self.earned_bounds
++        counts['witness_projection_credit_balance'] = self.balance
++
++    def attempt(self, projection, best, i, j, a, b):
++        budget = self.budget
++        counts = budget.counts
++        upper = _wp_attempt_work_bound(projection, i, j, a, b)
++        if upper > self.balance:
++            counts['witness_projection_credit_credit_deferrals'] += 1
++            return projection, False
++        if upper > MAX_WORK_UNITS - counts['work_units']:
++            counts['witness_projection_credit_budget_deferrals'] += 1
++            return projection, False
++        self.attempts += 1
++        counts['witness_projection_credit_attempts'] = self.attempts
++        counts['witness_projection_credit_upper_units'] += upper
++        counts['witness_projection_credit_last_upper'] = upper
++        self.pending_upper = upper
++        self.pending_work_start = counts['work_units']
++        pruned = False
++        try:
++            if projection is None:
++                projection = _WitnessProjection.from_best(best, budget)
++            if projection is not False:
++                pruned = projection.prunes(i, j, a, b, budget)
++        finally:
++            actual = counts['work_units'] - self.pending_work_start
++            self.balance -= actual
++            self.spent += actual
++            self.pending_upper = self.pending_work_start = None
++            counts['witness_projection_credit_spent_units'] = self.spent
++            counts['witness_projection_credit_last_actual'] = actual
++            counts['witness_projection_credit_balance'] = self.balance
++            if actual < 0 or actual > upper or self.balance < 0:
++                raise ArithmeticError('witness_projection_credit_invariant')
++        if pruned:
++            saved = _wp_narrow_work_floor(a, b)
++            self.balance += saved
++            self.earned_narrow += saved
++            counts['witness_projection_credit_narrow_units'] = self.earned_narrow
++            counts['witness_projection_credit_balance'] = self.balance
++        return projection, pruned
++
++
++def _nearest_tree(prepared, roots, budget, witness_pair=None):
++    largest_span = max(max(a, b)-min(c, d) for a,b,c,d in
++        zip(roots[0][1], roots[1][1], roots[0][0], roots[1][0]))
++    # One common priority scale protects extreme inputs. Safe pruning below
++    # always uses unshifted bounds, regardless of this queue-only ordering.
++    shift = max(0, largest_span.bit_length()-(MAX_BITS-1))
++    pending = []
++    serial = 0
++    def push(left, right):
++        nonlocal serial
++        key = _queue_distance(left, right, shift, budget)
++        budget.tick('queue_pushes')
++        heapq.heappush(pending, (key, serial, left, right))
++        serial += 1
++    push(*roots)
++    best = best_pair = None
++    best_floor = None
++    credit = _ProjectionCredit(budget)
++    completed_exact = 0
++    projection = None
++    while pending:
++        budget.tick('node_pair_visits')
++        key, _, left, right = heapq.heappop(pending)
++        if best is not None:
++            if shift == 0:
++                budget.checkpoint('surface_proximity_aabb_bound_tests')
++                budget.counts['aabb_bound_tests'] += 1
++                credit.saved_bound()
++                node_excluded = key > best_floor
++            else:
++                budget.tick('aabb_bound_tests')
++                node_excluded = _aabb_exceeds_best(zip(left[0], left[1]), zip(right[0], right[1]), best)
++            if node_excluded:
++                budget.counts['subtree_pruned_pairs'] += left[2]*right[2]
++                continue
++        if left[3] is not None and right[3] is not None:
++            for i in left[3]:
++                for j in right[3]:
++                    budget.tick('leaf_pair_visits')
++                    budget.counts['triangle_pairs'] += 1
++                    a,b = prepared[0][i], prepared[1][j]
++                    planes = None
++                    if best is not None:
++                        budget.tick('aabb_bound_tests')
++                        if _aabb_exceeds_best(a[4], b[4], best):
++                            budget.counts['aabb_pruned_pairs'] += 1
++                            continue
++                        pruned,planes = _triangle_plane_bounds(a,b,best,budget)
++                        if pruned:
++                            budget.counts['plane_pruned_pairs'] += 1
++                            continue
++                    if (completed_exact >= WITNESS_PROJECTION_AFTER_COMPLETED
++                            and best is not None and best[0] > 0 and projection is not False):
++                        projection, projection_pruned = credit.attempt(projection, best, i, j, a, b)
++                        if projection_pruned:
++                            continue
++                    pair = (i,j)
++                    candidate = _nearest_pair(a,b,None if best_pair is None or pair < best_pair else best,
++                                              budget,planes)
++                    completed_exact += 1
++                    budget.counts['witness_projection_completed_exact'] = completed_exact
++                    if best is None:
++                        best,best_pair = candidate,pair
++                        best_floor = best[0] // best[1]
++                        projection = None
++                    else:
++                        comparison = candidate[0]*best[1]-best[0]*candidate[1]
++                        if comparison < 0 or comparison == 0 and pair < best_pair:
++                            best,best_pair = candidate,pair
++                            best_floor = best[0] // best[1]
++                            if projection is not None:
++                                budget.counts['witness_projection_invalidations'] = budget.counts.get('witness_projection_invalidations', 0) + 1
++                            projection = None
++        elif right[3] is not None or left[3] is None and left[2] >= right[2]:
++            push(left[4],right)
++            push(left[5],right)
++        else:
++            push(left,right[4])
++            push(left,right[5])
++    if witness_pair is not None and best_pair is not None:
++        witness_pair[:] = best_pair
++    return best
++
++
++def _nearest(prepared, budget, *, prepared_trees=None, prepared_holder=None, witness_pair=None):
++    if len(prepared[0])*len(prepared[1]) <= LINEAR_PAIR_LIMIT:
++        return _nearest_linear(prepared, budget, witness_pair)
++    if prepared_trees is None:
++        roots = _distance_roots(prepared,budget,holder=prepared_holder)
++    else:
++        roots = prepared_trees['roots']
++        budget.counts['shared_trees'] = True
++        if prepared_holder is not None:
++            prepared_holder['trees'] = prepared_trees
++    return _nearest_tree(prepared, roots, budget, witness_pair)
++
++
++def _witness(descriptor):
++    kind, *values = descriptor
++    if kind == 'contact':
++        return values[0], values[0]
++    if kind == 'points':
++        return values[0], values[1]
++    if kind == 'segment_face':
++        start, delta, numerator, denominator = values
++        point = _add(start, _mul(delta, _fraction(numerator, denominator)))
++        return point, point
++    if kind == 'edges':
++        a, b, u, v, s, t, denominator = values
++        return _add(a, _mul(u, _fraction(s, denominator))), _add(b, _mul(v, _fraction(t, denominator)))
++    if kind == 'face':
++        point, normal, height, squared, reverse = values
++        on_surface = _sub(point, _mul(normal, _fraction(height, squared)))
++    else:
++        point, start, delta, parameter, squared, reverse = values
++        on_surface = _add(start, _mul(delta, _fraction(parameter, squared)))
++    return (on_surface, point) if reverse else (point, on_surface)
++
++
++def _scratch(value):
++    if abs(value).bit_length() > _MAX_SCRATCH_BITS:
++        raise _DomainError('surface_exact_bit_budget')
++    return value
++
++
++def _rounded_distance(numerator, denominator, factor):
++    """Round the exact square root to binary64, including halfway cases."""
++    if numerator == 0:
++        return 0.0
++    exponent = numerator.bit_length() - denominator.bit_length()
++    below = (numerator < denominator << exponent if exponent >= 0
++             else numerator << -exponent < denominator)
++    squared_exponent = exponent - int(below)
++    root_exponent = squared_exponent // 2
++    frame_exponent = factor.bit_length() - 1
++    world_exponent = root_exponent - frame_exponent
++    if world_exponent < -1075:
++        raise _DomainError('surface_distance_below_float_resolution')
++    if world_exponent >= 1024:
++        raise _DomainError('surface_distance_outside_float_range')
++    unit_exponent = max(world_exponent - 52, -1074)
++    shift = -2 * (frame_exponent + unit_exponent)
++    if shift >= 0:
++        cancel = min(shift, (denominator & -denominator).bit_length() - 1)
++        scaled_numerator = _scratch(numerator << (shift - cancel))
++        scaled_denominator = denominator >> cancel
++    else:
++        cancel = min(-shift, (numerator & -numerator).bit_length() - 1)
++        scaled_numerator = numerator >> cancel
++        scaled_denominator = _scratch(denominator << (-shift - cancel))
++    integer = math.isqrt(scaled_numerator // scaled_denominator)
++    left = _scratch(4 * scaled_numerator)
++    right = _scratch(scaled_denominator * (2 * integer + 1) ** 2)
++    if left > right or left == right and integer % 2:
++        integer += 1
++    if integer == 0:
++        raise _DomainError('surface_distance_below_float_resolution')
++    try:
++        return math.ldexp(float(integer), unit_exponent)
++    except OverflowError as exc:
++        raise _DomainError('surface_distance_outside_float_range') from exc
++
++
++def _publish_points(points, origin, factor, distance, *, include_exact=False):
++    exact = [_add(origin, tuple(_fraction(value, factor) for value in point)) for point in points]
++    rounded = [tuple(float(value) for value in point) for point in exact]
++    if any(not math.isfinite(value) for point in rounded for value in point):
++        return None
++    errors = [_sub(tuple(Fraction.from_float(value) for value in point), source)
++              for point, source in zip(rounded, exact)]
++    tolerance_squared = _PUBLICATION_TOLERANCE * _PUBLICATION_TOLERANCE
++    if any(_dot(error, error) > tolerance_squared for error in errors):
++        return None
++    displacement_error = _sub(errors[1], errors[0])
++    if _dot(displacement_error, displacement_error) > tolerance_squared:
++        return None
++    if distance > 0 and rounded[0] == rounded[1]:
++        return None
++    reported = math.dist(*rounded)
++    if not math.isfinite(reported) or abs(reported - distance) > 1e-9:
++        return None
++    displayed = [list(point) for point in rounded]
++    return (displayed, exact) if include_exact else displayed
++
++
++def _exact_distance_key(numerator, denominator, factor):
++    """Private world square = odd numerator / odd denominator * 2**exponent."""
++    if numerator == 0:
++        return [0, 1, 0]
++    n_shift = (numerator & -numerator).bit_length() - 1
++    d_shift = (denominator & -denominator).bit_length() - 1
++    return [numerator >> n_shift, denominator >> d_shift,
++            n_shift - d_shift - 2 * (factor.bit_length() - 1)]
++
++
++def _compare_distance_keys(left, right, checkpoint):
++    checkpoint('surface_proximity_rank_compare')
++    a, b, ae = left
++    c, d, ce = right
++    if a == 0 or c == 0:
++        return (a > 0) - (c > 0)
++    common_n, common_d = math.gcd(a, c), math.gcd(b, d)
++    lhs = (a // common_n) * (d // common_d)
++    rhs = (c // common_n) * (b // common_d)
++    leading = lhs.bit_length() + ae - rhs.bit_length() - ce
++    if leading:
++        return 1 if leading > 0 else -1
++    # Equal leading exponents bound the aligned products by the original
++    # <=2*MAX_BITS cross-product width, without expanding either factor².
++    shift = ae - ce
++    if shift >= 0:
++        lhs <<= shift
++    else:
++        rhs <<= -shift
++    return (lhs > rhs) - (lhs < rhs)
++
++
++def _rank_surface_results(results_by_id, checkpoint):
++    """Rank provided kernel results only; no scene coverage or host assertion."""
++    known, unresolved = {}, {}
++    for identity, result in sorted(results_by_id.items()):
++        checkpoint('surface_proximity_rank_candidate')
++        if result.get('measurement_valid') is not True:
++            unresolved[identity] = result.get('reason') or 'surface_measurement_unavailable'
++            continue
++        key = result.get('_exact_distance_sq')
++        if (type(key) not in (list, tuple) or len(key) != 3
++                or any(type(value) is not int for value in key)
++                or key[0] < 0 or key[1] <= 0
++                or key[0].bit_length() > MAX_BITS or key[1].bit_length() > MAX_BITS):
++            unresolved[identity] = 'surface_exact_rank_key_unavailable'
++            continue
++        known[identity] = key
++    identities = sorted(known, key=cmp_to_key(
++        lambda a, b: _compare_distance_keys(known[a], known[b], checkpoint)))
++    groups = []
++    for identity in identities:
++        if groups and _compare_distance_keys(known[groups[-1][0]], known[identity], checkpoint) == 0:
++            groups[-1].append(identity)
++        else:
++            groups.append([identity])
++    checkpoint('surface_proximity_rank_complete')
++    return dict(status='partial' if unresolved and known else 'unknown' if not known else 'ranked',
++                ordered_object_id_groups=groups, unresolved=unresolved,
++                scope='provided_kernel_results_only')
++
++
++def _point_on_prepared_triangle(point, triangle):
++    points, normal, squared, edges, _ = triangle
++    if not squared:
++        if not edges:
++            return point == points[0]
++        start, _, edge, edge_squared = edges[0]
++        offset = _sub(point, start)
++        return not any(_cross(offset, edge)) and 0 <= _dot(offset, edge) <= edge_squared
++    if _dot(normal, _sub(point, points[0])) != 0:
++        return False
++    drop = max(range(3), key=lambda axis: abs(normal[axis]))
++    axes = tuple(axis for axis in range(3) if axis != drop)
++    sign = 1 if _orient(*points, axes) > 0 else -1
++    return all(sign * _orient(points[i], points[(i + 1) % 3], point, axes) >= 0 for i in range(3))
++
++
++def _witness_triangle_provenance(world, exact_world, local_points, indices, prepared, origin, factor, budget):
++    # Validate the same winning triangles for the two encodings of these points.
++    try:
++        with span('surface_proximity.rounded_source_membership'):
++            for point, side, index in zip(world, prepared, indices):
++                budget.tick('witness_triangle_checks')
++                local = _mul(_sub(tuple(Fraction.from_float(value) for value in point), origin), factor)
++                if not _point_on_prepared_triangle(local, side[index]):
++                    break
++            else:
++                return {'witness_triangle_indices': indices}
++        with span('surface_proximity.exact_source_membership'):
++            for local, side, index in zip(local_points, prepared, indices):
++                budget.tick('exact_witness_triangle_checks')
++                if not _point_on_prepared_triangle(local, side[index]):
++                    return {}
++            points_m = [[str(value) for value in point] for point in exact_world]
++            if sum(len(value) for point in points_m for value in point) <= MAX_EXACT_SOURCE_BYTES:
++                return {'exact_witness_triangles': {'indices': indices, 'points_m': points_m}}
++    except _DomainError:
++        pass  # Evidence is optional when the remaining exact-arithmetic budget is insufficient.
++    return {}
++
++
++def _boundary_witness(contact, pair, budget):
++    """Check a same-query exact contact against its two original triangles."""
++    if type(contact) is not dict or contact.get('pair') is not pair:
++        return None
++    indices, point = contact.get('triangles'), contact.get('point')
++    if (type(indices) is not tuple or len(indices) != 2
++            or any(type(index) is not int for index in indices)
++            or type(point) is not tuple or len(point) != 3
++            or any(type(value) not in (int, Fraction) for value in point)):
++        return None
++    budget.checkpoint('surface_proximity_boundary_witness')
++    try:
++        for value in point:
++            _bounded(value)
++        for side, index in zip(pair[4], indices):
++            if not 0 <= index < len(side):
++                return None
++            triangle = side[index]
++            if not triangle[2] or not _point_on_prepared_triangle(point, triangle):
++                return None
++    except _DomainError:
++        return None
++    return point
++
++
++def measure_surface_proximity(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
++                              retain_witness_triangles=False, _prepared_pair=None, _boundary_contact=None,
++                              _prepared_trees=None,
++                              _prepared_holder=None):
++    """Measure only the requested triangle surfaces, retaining known quantities."""
++    checkpoint('surface_proximity_admission')
++    budget = _Work(checkpoint, diagnostics)
++    witness_pair = [] if retain_witness_triangles else None
++    if witness_pair is not None:
++        budget.counts['witness_triangle_checks'] = 0
++    if _prepared_holder is not None:
++        for key in ('pair', 'work', 'coordinates', 'trees', 'witness_points'):
++            _prepared_holder.pop(key, None)
++        _prepared_holder['work'] = budget
++    result = dict(measurement_valid=False, distance_m=None, point_a_world=None,
++        point_b_world=None, direction_a_to_b=None, witness_status='unknown',
++        direction_status='unknown', topology=None, method=METHOD,
++        work=budget.counts)
++    try:
++        if (_prepared_pair is None or _prepared_pair[0][0][0] is not left
++                or _prepared_pair[0][1][0] is not right):
++            records, result['topology'] = _admit((left, right), budget)
++            origin, factor, prepared = _integer_frame(records, budget, holder=_prepared_holder)
++            pair = (records, result['topology'], origin, factor, prepared)
++            contact = None
++        else:
++            records, result['topology'], origin, factor, prepared = _prepared_pair
++            pair = _prepared_pair
++            budget.counts['shared_preparation'] = True
++            contact = _boundary_witness(_boundary_contact, _prepared_pair, budget)
++        if _prepared_holder is not None:
++            _prepared_holder['pair'] = pair
++        if contact is None:
++            trees = None
++            if (_prepared_pair is not None and type(_prepared_trees) is dict
++                    and _prepared_trees.get('pair') is _prepared_pair
++                    and len(_prepared_trees.get('triangles', ())) == 2
++                    and all(a is b for a,b in zip(_prepared_trees['triangles'],prepared))):
++                trees = _prepared_trees
++            numerator, denominator, descriptor = _nearest(prepared, budget, prepared_trees=trees,
++                                                         prepared_holder=_prepared_holder,
++                                                         witness_pair=witness_pair)
++        else:
++            budget.counts['zero_witness_reused'] = True
++            numerator, denominator, descriptor = 0, 1, ('contact', contact)
++            if witness_pair is not None:
++                witness_pair[:] = _boundary_contact['triangles']
++    except _DomainError as exc:
++        result['reason'] = str(exc)
++        return result
++    checkpoint('surface_proximity_publish')
++    try:
++        distance = _rounded_distance(numerator, denominator, factor)
++    except _DomainError as exc:
++        result['reason'] = str(exc)
++        return result
++    with localcontext() as context:
++        context.prec = 80
++        local_distance = (Decimal(numerator) / Decimal(denominator)).sqrt()
++        result.update(measurement_valid=True, distance_m=distance)
++        if retain_exact_rank:
++            checkpoint('surface_proximity_exact_rank_key')
++            result['_exact_distance_sq'] = _exact_distance_key(numerator, denominator, factor)
++        if numerator == 0:
++            result.update(direction_status='not_applicable', direction_reason='undefined_zero_distance')
++        try:
++            points = _witness(descriptor)
++            if _prepared_holder is not None:
++                _prepared_holder['witness_points'] = points
++            if numerator > 0:
++                delta = _sub(points[1], points[0])
++                direction = [float(Decimal(value.numerator) / Decimal(value.denominator) / local_distance)
++                             if isinstance(value, Fraction) else float(Decimal(value) / local_distance)
++                             for value in delta]
++                result.update(direction_a_to_b=direction, direction_status='measured')
++            publication = _publish_points(points, origin, factor, distance, include_exact=True)
++        except _DomainError:
++            result['witness_reason'] = 'surface_witness_bit_budget'
++            if result['direction_status'] == 'unknown':
++                result['direction_reason'] = 'surface_witness_bit_budget'
++            return result
++    if publication is None:
++        result['witness_reason'] = 'original_surface_witness_precision_exceeded'
++    else:
++        world, exact_world = publication
++        result.update(point_a_world=world[0], point_b_world=world[1], witness_status='measured')
++        if witness_pair:
++            result.update(_witness_triangle_provenance(
++                world, exact_world, points, witness_pair, prepared, origin, factor, budget))
++    checkpoint('surface_proximity_complete')
++    return result
++
++
++def _public_support_direction(surface, budget):
++    points = (surface.get('point_a_world'), surface.get('point_b_world'))
++    if (surface.get('measurement_valid') is not True or surface.get('witness_status') != 'measured'
++            or any(type(point) not in (list, tuple) or len(point) != 3 for point in points)
++            or any(type(value) not in (int, float) or not math.isfinite(value)
++                   for point in points for value in point)):
++        return None, 'spatial_support_direction_unavailable'
++    direction = []
++    for left, right in zip(*points):
++        budget.tick('support_direction_components')
++        direction.append(_bounded(Fraction.from_float(float(right)) - Fraction.from_float(float(left))))
++    exponent = max(value.denominator.bit_length()-1 for value in direction)
++    integers = tuple(_bounded(value.numerator << (exponent-value.denominator.bit_length()+1))
++                     for value in direction)
++    divisor = math.gcd(*integers)
++    if not divisor:
++        return None, 'spatial_support_direction_zero'
++    return tuple(value//divisor for value in integers), None
++
++
++def _referenced_support_evidence(surface, holder, budget):
++    direction, reason = _public_support_direction(surface, budget)
++    if direction is None:
++        return None, reason
++    pair, coordinates = holder.get('pair'), holder.get('coordinates')
++    if pair is None or coordinates is None:
++        return None, 'spatial_support_preparation_unavailable'
++    extrema, indices = [], []
++    for side, (record, points) in enumerate(zip(pair[0], coordinates)):
++        value = chosen = None
++        for index in record[2]:
++            budget.tick('support_source_vertices')
++            budget.tick('support_vertex_dots')
++            projection = _dot(direction, points[index])
++            if value is None or (projection > value if side == 0 else projection < value):
++                value, chosen = projection, index
++        extrema.append(value)
++        indices.append(chosen)
++    if extrema[1] <= extrema[0]:
++        return None, 'spatial_support_not_strictly_separated'
++    return dict(proposal='first_public_nearest_points_difference', primitive_direction=list(direction),
++        left_max=extrema[0], right_min=extrema[1], left_vertex_index=indices[0], right_vertex_index=indices[1],
++        referenced_counts=[len(record[2]) for record in pair[0]],
++        origin=[[value.numerator, value.denominator] for value in pair[2]], factor=pair[3]), None
++
++
++def measure_spatial_relation(left, right, checkpoint, *, diagnostics=None, retain_exact_rank=False,
++                             prepared_holder=None):
++    """Prove sufficient support separation, or run the original classifier once."""
++    metrics = diagnostics if diagnostics is not None else {}
++    metrics.update(surface_pair_count=1, closed_solid_pair_count=0,
++                   closed_solid_work={}, support_work={})
++    surface_work = {}
++    metrics['surface_work'] = surface_work
++    holder = prepared_holder if prepared_holder is not None else {}
++    surface = measure_surface_proximity(left, right, checkpoint, diagnostics=surface_work,
++        retain_exact_rank=retain_exact_rank, _prepared_holder=holder)
++    budget = holder['work']
++    before_support = budget.counts['work_units']
++    spatial = dict(measurement_valid=False, relation=None, method=SPATIAL_METHOD,
++                   geometry_scope=SPATIAL_SCOPE, relation_tolerance_m=0.0)
++    closed = None
++    budget_stopped = surface.get('reason') in _SURFACE_RESOURCE_STOPS
++    stop_reason = surface.get('reason') if budget_stopped else None
++    support_reason = stop_reason
++    if not budget_stopped:
++        try:
++            evidence, support_reason = _referenced_support_evidence(surface, holder, budget)
++            if evidence is not None:
++                spatial.update(measurement_valid=True, relation='separated',
++                    certificate='strict_all_referenced_vertex_support', support_evidence=evidence)
++        except _DomainError as exc:
++            support_reason = str(exc)
++            if support_reason in _SURFACE_RESOURCE_STOPS:
++                budget_stopped, stop_reason = True, support_reason
++    metrics['support_work'].update({key:budget.counts[key] for key in
++        ('support_direction_components', 'support_source_vertices', 'support_vertex_dots')})
++    metrics['support_work'].update(work_units_before=before_support,
++        work_units_after=budget.counts['work_units'], reason=support_reason)
++    if budget_stopped:
++        spatial['reason'] = stop_reason
++    elif spatial['measurement_valid'] is not True:
++        from ._surface_geometry_032 import classify_closed_solids
++        metrics['closed_solid_pair_count'] = 1
++        closed = classify_closed_solids(left, right, checkpoint, diagnostics=metrics['closed_solid_work'],
++            prepared_pair=holder.get('pair'), prepared_trees=holder.get('trees'), prepared_holder=holder)
++        spatial = {key:closed[key] for key in ('measurement_valid', 'relation', 'method', 'geometry_scope',
++            'relation_tolerance_m', 'certificate', 'local_evidence', 'reason') if key in closed}
++        if closed.get('reason') in _CLOSED_RESOURCE_STOPS:
++            budget_stopped, stop_reason = True, closed['reason']
++    checkpoint('spatial_relation_complete')
++    return dict(measurement_valid=surface.get('measurement_valid') is True
++                    and spatial.get('measurement_valid') is True,
++                surface=surface, spatial=spatial, closed=closed,
++                budget_stopped=budget_stopped, stop_reason=stop_reason)
+--- /dev/null
++++ b/human_eye_plugin/_surface_geometry_032.py
+@@ -0,0 +1,822 @@
++"""Finite exact predicates on frozen raw vertices and host tessellation.
++
++Standalone Blender helper. Contacts are geometry facts, never damage labels.
++All predicates use the exact dyadic input affine map, not renderer coordinates.
++"""
++from fractions import Fraction as Q
++import hashlib,heapq,json,math,time
++
++PROTOCOL='surface-geometry-v1'
++LIMITS=dict(vertices=4096,triangles=4096,pair_tests=16384,results=128,bits=4096)
++
++
++def require(value,reason):
++    if not value:raise ValueError('surface_'+reason)
++
++
++def encoded(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=True,allow_nan=False).encode()
++def digest(value):return hashlib.sha256(encoded(value)).hexdigest()
++def sub(a,b):return tuple(x-y for x,y in zip(a,b))
++def add(a,b):return tuple(x+y for x,y in zip(a,b))
++def mul(a,t):return tuple(x*t for x in a)
++def dot(a,b):return sum(x*y for x,y in zip(a,b))
++def cross(a,b):return (a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])
++def normal(t):return cross(sub(t[1],t[0]),sub(t[2],t[0]))
++def orient(a,b,c,axes):
++    x,y=axes;return (b[x]-a[x])*(c[y]-a[y])-(b[y]-a[y])*(c[x]-a[x])
++
++
++def clip_coplanar(a,b,n,budget):
++    """Closed convex intersection; retains points/segments as well as area."""
++    drop=max(range(3),key=lambda k:abs(n[k]));axes=tuple(k for k in range(3) if k!=drop)
++    sign=1 if orient(*b,axes)>0 else -1;poly=list(a)
++    for i in range(3):
++        budget.consume(1+len(poly),'surface_clip')
++        if not poly:break
++        c,d=b[i],b[(i+1)%3];out=[]
++        for j,p in enumerate(poly):
++            r=poly[j-1];fp=sign*orient(c,d,p,axes);fr=sign*orient(c,d,r,axes)
++            if (fp>=0)!=(fr>=0):out.append(add(r,mul(sub(p,r),Q(fr,fr-fp))))
++            if fp>=0:out.append(p)
++        poly=list(dict.fromkeys(out))
++    return poly
++
++
++def plane_slice(t,dist):
++    points=[p for p,d in zip(t,dist) if d==0]
++    for i in range(3):
++        j=(i+1)%3
++        if dist[i]*dist[j]<0:points.append(add(t[i],mul(sub(t[j],t[i]),Q(dist[i],dist[i]-dist[j]))))
++    return list(dict.fromkeys(points))
++
++
++def intersection(a,b,budget):
++    na,nb=normal(a),normal(b);require(any(na) and any(nb),'degenerate_triangle')
++    da=[dot(na,sub(p,a[0])) for p in b];db=[dot(nb,sub(p,b[0])) for p in a]
++    if all(v>0 for v in da) or all(v<0 for v in da) or all(v>0 for v in db) or all(v<0 for v in db):return []
++    axis=cross(na,nb)
++    if not any(axis):return clip_coplanar(a,b,na,budget) if all(d==0 for d in da) else []
++    pa,pb=plane_slice(a,db),plane_slice(b,da)
++    if not pa or not pb:return []
++    k=max(range(3),key=lambda k:abs(axis[k]));pa.sort(key=lambda p:p[k]);pb.sort(key=lambda p:p[k])
++    left=max(pa[0],pb[0],key=lambda p:p[k]);right=min(pa[-1],pb[-1],key=lambda p:p[k])
++    return [] if left[k]>right[k] else list(dict.fromkeys((left,right)))
++
++
++def dimension(points):
++    if len(points)<=1:return 'point'
++    direction=sub(points[1],points[0])
++    return 'area' if any(any(cross(direction,sub(p,points[0]))) for p in points[2:]) else 'line'
++
++
++def relation(points,a,b):
++    kind=dimension(points)
++    if kind=='area':return 'coplanar_overlap'
++    if kind=='line' and any(cross(normal(a),normal(b))):
++        center=tuple(Q(sum(p[k] for p in points),len(points)) for k in range(3))
++        def strict_inside(t):
++            n=normal(t)
++            return all(dot(cross(sub(t[(i+1)%3],t[i]),sub(center,t[i])),n)>0 for i in range(3))
++        if strict_inside(a) and strict_inside(b):return 'transverse_crossing'
++    return 'boundary_contact'
++
++
++def legal_simplex(points,shared,vertices):
++    if not shared or len(shared)==3:return False
++    if len(shared)==1:return all(p==vertices[shared[0]] for p in points)
++    a,b=(vertices[i] for i in shared);d=sub(b,a);n=dot(d,d)
++    return bool(n) and all(not any(cross(sub(p,a),d)) and 0<=dot(sub(p,a),d)<=n for p in points)
++
++
++def world_integers(raw,budget):
++    """One exact dyadic frame; integer AABBs cannot round away contacts."""
++    matrix=[[Q(x) for x in row] for row in raw['matrix_world']];scale=Q(raw['unit_scale'])
++    require(dot(matrix[0][:3],cross(matrix[1][:3],matrix[2][:3]))!=0,'singular_metric_frame')
++    points=[];exponent=0
++    for p in raw['vertices']:
++        budget.consume(4,'surface_exact_frame')
++        v=tuple((sum(matrix[r][c]*Q(p[c]) for c in range(3))+matrix[r][3])*scale for r in range(3))
++        for x in v:
++            require(x.denominator&(x.denominator-1)==0,'non_dyadic_frame')
++            require(x.numerator.bit_length()<=LIMITS['bits'] and x.denominator.bit_length()<=LIMITS['bits'],'coordinate_bit_budget')
++            exponent=max(exponent,x.denominator.bit_length()-1)
++        points.append(v)
++    factor=1<<exponent
++    result=[tuple(int(x*factor) for x in p) for p in points]
++    require(all(abs(x).bit_length()<=LIMITS['bits'] for p in result for x in p),'coordinate_bit_budget')
++    return result,factor
++
++
++def validate_tessellation(raw,triangles,polygons,budget):
++    require(type(triangles) is list and type(polygons) is list and len(triangles)==len(polygons)
++        and len(triangles)<=LIMITS['triangles'] and len(raw['vertices'])<=LIMITS['vertices'],'geometry_budget')
++    counts=[0]*len(raw['polygons'])
++    for t,p in zip(triangles,polygons):
++        budget.consume(4,'surface_tessellation')
++        require(type(p) is int and 0<=p<len(counts) and type(t) is list and len(t)==3
++            and all(type(i) is int and i in raw['polygons'][p] for i in t) and len(set(t))==3,'tessellation_mapping')
++        counts[p]+=1
++    require(counts==[len(p)-2 for p in raw['polygons']],'tessellation_coverage')
++
++
++def _bvh(bounds,budget,ids=None,*,leaf_size=4):
++    ids=list(range(len(bounds))) if ids is None else ids
++    budget.consume(1+len(ids),'surface_bvh_build')
++    lo=tuple(min(bounds[i][0][k] for i in ids) for k in range(3))
++    hi=tuple(max(bounds[i][1][k] for i in ids) for k in range(3))
++    if len(ids)<=leaf_size:return (lo,hi,len(ids),ids,None,None)
++    axis=max(range(3),key=lambda k:hi[k]-lo[k]);ids.sort(key=lambda i:(bounds[i][0][axis]+bounds[i][1][axis],i));mid=len(ids)//2
++    return (lo,hi,len(ids),None,_bvh(bounds,budget,ids[:mid],leaf_size=leaf_size),
++            _bvh(bounds,budget,ids[mid:],leaf_size=leaf_size))
++
++
++def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None,node_exclusion=None):
++    """Exact outward BVH; disjoint node pairs certify all descendant pairs.
++
++    Nodes partition source triangle ids. Self traversal visits LL, LR, RR;
++    cross traversal splits one side, so no unordered pair is duplicated.
++    """
++    if not bounds:return
++    other=bounds if other_bounds is None else other_bounds
++    if not other:return
++    if roots is None:
++        root=_bvh(bounds,budget);roots=(root,root if other_bounds is None else _bvh(other,budget))
++    pending=[roots]
++    while pending:
++        budget.consume(1,'surface_bvh_node_pair');a,b=pending.pop();stats['node_pair_visits']+=1
++        if any(a[1][k]+pad<b[0][k] or b[1][k]+pad<a[0][k] for k in range(3)):
++            stats['aabb_pruned_pairs']+=a[2]*(a[2]-1)//2 if a is b else a[2]*b[2];continue
++        if node_exclusion is not None and a is not b and node_exclusion(a,b):continue
++        if a[3] is not None and b[3] is not None:
++            for i in a[3]:
++                for j in b[3]:
++                    if a is b and i>=j:continue
++                    budget.consume(1,'surface_bvh_leaf_pair');stats['leaf_pair_visits']+=1
++                    singleton = a[2] == b[2] == 1
++                    if singleton:
++                        if 'leaf_bounds_reused' in stats:
++                            stats['leaf_bounds_reused'] += 1
++                    elif any(bounds[i][1][k]+pad<other[j][0][k] or other[j][1][k]+pad<bounds[i][0][k] for k in range(3)):
++                        stats['aabb_pruned_pairs']+=1;continue
++                    yield tuple(sorted((i,j))) if other_bounds is None else (i,j)
++        elif a is b:pending.extend(((a[4],a[4]),(a[4],a[5]),(a[5],a[5])))
++        elif b[3] is not None or a[3] is None and a[2]>=b[2]:pending.extend(((a[4],b),(a[5],b)))
++        else:pending.extend(((a,b[4]),(a,b[5])))
++
++
++def analyze(prepared,triangles,triangle_polygons,*,budget,near_m=0.00001):
++    require(type(near_m) in (int,float) and math.isfinite(near_m) and 0<=near_m<=.001,'near_threshold')
++    raw=prepared['raw'];validate_tessellation(raw,triangles,triangle_polygons,budget)
++    vertices,factor=world_integers(raw,budget);tolerance=Q(near_m)*factor
++    pad=(tolerance.numerator+tolerance.denominator-1)//tolerance.denominator
++    bounds=[];bad=[];points=[]
++    for i,tri in enumerate(triangles):
++        budget.consume(1,'surface_bounds');t=tuple(vertices[j] for j in tri);points.append(t)
++        if not any(normal(t)):bad.append(i)
++        bounds.append((tuple(min(p[k] for p in t) for k in range(3)),tuple(max(p[k] for p in t) for k in range(3))))
++    retained=[];total=0;tested=0;completed=True;reason=None
++    stats=dict(node_pair_visits=0,leaf_pair_visits=0,aabb_pruned_pairs=0)
++    priorities={'transverse_crossing':0,'coplanar_overlap':1,'near_parallel':2,'boundary_contact':3}
++    counts={k:0 for k in priorities}
++    degenerate=set(bad);unknown_degenerate_pairs=0
++    try:
++        for j,i in candidate_pairs(bounds,pad,budget,stats):
++                if tested>=LIMITS['pair_tests']:raise ValueError('surface_pair_test_budget')
++                tested+=1;budget.consume(8,'surface_pair')
++                if i in degenerate or j in degenerate:unknown_degenerate_pairs+=1;continue
++                a,b=points[j],points[i];shared=sorted(set(triangles[j])&set(triangles[i]))
++                witness=intersection(a,b,budget);kind=None;gap=None
++                if witness and not legal_simplex(witness,shared,vertices):kind='contact_'+dimension(witness)
++                if not witness and tolerance>0:
++                    na,nb=normal(a),normal(b);delta=dot(na,sub(b[0],a[0]));nn=dot(na,na)
++                    if not any(cross(na,nb)) and 0<delta*delta<=tolerance*tolerance*nn:
++                        projected=[sub(p,mul(na,Q(delta,nn))) for p in b]
++                        overlap=clip_coplanar(a,projected,na,budget)
++                        if len(overlap)>=3 and dimension(overlap)=='area':
++                            witness=overlap;kind='near_parallel_overlap';gap=math.sqrt(float(Q(delta*delta,nn*factor*factor)))
++                if kind:
++                    budget.consume(1,'surface_result_priority')
++                    category='near_parallel' if kind=='near_parallel_overlap' else relation(witness,a,b)
++                    total+=1;counts[category]+=1;left,right=sorted((j,i));key=(-priorities[category],-left,-right)
++                    if len(retained)<LIMITS['results'] or key>retained[0][:3]:
++                        center=[float(Q(sum(p[k] for p in witness),len(witness)*factor)) for k in range(3)]
++                        require(all(math.isfinite(x) for x in center),'display_coordinate_overflow')
++                        row=dict(triangles=[left,right],polygons=[triangle_polygons[left],triangle_polygons[right]],kind=kind,
++                            relation=category,center_m=center,plane_gap_m=gap,shared_source_vertices=shared)
++                        item=(*key,row)
++                        if len(retained)<LIMITS['results']:heapq.heappush(retained,item)
++                        else:heapq.heapreplace(retained,item)
++    except Exception as exc:
++        # Budget errors are explicit partial coverage. Programming faults must
++        # not be disguised as ordinary geometry refusals.
++        if type(exc).__name__!='StructureStopped' and str(exc)!='surface_pair_test_budget':raise
++        completed=False;reason=str(exc)
++    budget.check('surface_report')
++    require(not completed or stats['aabb_pruned_pairs']+tested==len(points)*(len(points)-1)//2,'pair_accounting_invariant')
++    found=[item[3] for item in sorted(retained,key=lambda item:(-item[0],-item[1],-item[2]))]
++    return dict(schema=PROTOCOL,status='observed' if completed and not bad else 'partial',source=prepared['source'],
++        tessellation_sha256=digest(dict(triangles=triangles,polygon_indices=triangle_polygons)),
++        metric='exact_dyadic_input_affine_metres_not_renderer_precision',near_threshold_m=near_m,
++        scan_complete=completed,triangle_count=len(points),pair_count=len(points)*(len(points)-1)//2,
++        spatial_index='exact_integer_bvh_v1',spatial_work=stats,exact_pair_tests=tested,
++        pair_accounting_complete=completed and stats['aabb_pruned_pairs']+tested==len(points)*(len(points)-1)//2,
++        degenerate_triangles=bad[:128],
++        degenerate_triangles_total=len(bad),unknown_degenerate_pairs=unknown_degenerate_pairs,
++        found=total,total=total if completed and not bad else None,counts_by_relation=counts,
++        delivery_priority=list(priorities),delivered=len(found),omitted=total-len(found),regions=found,
++        reason=reason,execution_authority=False,damage_classification='not_inferred',
++        not_checked=['nonparallel_near_distance','volume_containment','wire_intersections','intent','evaluated_modifier_geometry'],
++        work_used=budget.used)
++
++
++CLOSED_SOLID_MAX_WORK = 262144
++CLOSED_SOLID_MAX_PAIR_TESTS = 16384
++CLOSED_SOLID_MAX_RAY_TESTS = 16384
++CLOSED_SOLID_METHOD = 'bounded_exact_closed_shell_v1'
++CLOSED_SOLID_SCOPE = 'two_connected_embedded_closed_orientable_triangle_shells_binary64_world_zero_tolerance'
++
++
++class _ClosedDomain(ValueError):
++    pass
++
++
++class _ClosedWork:
++    def __init__(self, checkpoint, diagnostics, exact):
++        self.checkpoint=checkpoint;self.exact=exact
++        self.counts=diagnostics if diagnostics is not None else {}
++        self.counts.update(work_units=0,pair_tests=0,self_pair_tests=0,cross_pair_tests=0,
++            ray_tests=0,point_queries=0,ray_attempts=0,validated_faces=0,referenced_vertices=0,
++            node_pair_visits=0,leaf_pair_visits=0,aabb_pruned_pairs=0,prepared_pair_reused=False,
++            prepared_triangles=0,world_tree_builds=0,world_bound_faces=0,
++            candidate_frame_builds=0,candidate_frame_coefficients=0,candidate_projection_tests=0,
++            candidate_bound_faces=0,candidate_tree_builds=0,candidate_frame_fallbacks=0,
++            leaf_bounds_reused=0,cheap_pair_tests=0,plane_projection_tests=0,plane_side_tests=0,
++            prepared_trees_reused=False,
++            strict_plane_rejections=0,shared_index_tests=0,shared_simplex_tests=0,
++            shared_simplex_certificates=0,shared_edge_tests=0,shared_edge_certificates=0,
++            cheap_bit_fallbacks=0,cone_metadata_nodes=0,cone_face_tests=0,
++            cone_anchor_tests=0,cone_vector_preparations=0,cone_orientation_tests=0,
++            cone_support_tests=0,cone_metadata_merges=0,cone_boundary_id_visits=0,
++            cone_node_pair_checks=0,cone_separation_tests=0,cone_bit_fallbacks=0,
++            simplex_node_certificates=0,simplex_covered_pairs=0,candidate_frame='world')
++
++    def consume(self, amount, stage):
++        self.checkpoint('closed_solid_'+stage)
++        if self.counts['work_units']+amount>CLOSED_SOLID_MAX_WORK:
++            raise _ClosedDomain('closed_solid_work_budget')
++        self.counts['work_units']+=amount
++
++    def tick(self, kind, amount=1):
++        self.consume(amount,kind);self.counts[kind]=self.counts.get(kind,0)+amount
++
++    def pair(self, kind):
++        self.consume(1,kind)
++        if self.counts['pair_tests']>=CLOSED_SOLID_MAX_PAIR_TESTS:
++            raise _ClosedDomain('closed_solid_pair_budget')
++        self.counts['pair_tests']+=1;self.counts[kind]+=1
++
++
++def _closed_require(value, reason):
++    if not value:raise _ClosedDomain('closed_solid_'+reason)
++
++
++def _closed_topology(mesh, faces, triangles, budget, *, tree=None):
++    from collections import defaultdict
++    e=budget.exact
++    edges=defaultdict(list);links=defaultdict(list);used=set();unique=set()
++    vertices={}
++    for ordinal,(face,triangle) in enumerate(zip(faces,triangles)):
++        budget.consume(1,'topology_face')
++        _closed_require(triangle[2] and len(triangle[0])==3,'degenerate_face')
++        key=tuple(sorted(face));_closed_require(key not in unique,'duplicate_face');unique.add(key)
++        for i,v in enumerate(face):
++            used.add(v);vertices[v]=triangle[0][i]
++            a,b=face[(i+1)%3],face[(i+2)%3]
++            links[v].append((a,b))
++            edges[tuple(sorted((v,a)))].append((ordinal,v<a))
++    _closed_require(len(used)==len(mesh.vertices),'unreferenced_vertices')
++    neighbours=[set() for _ in faces]
++    for adjacent in edges.values():
++        budget.consume(1,'topology_edge')
++        _closed_require(len(adjacent)==2 and adjacent[0][1]!=adjacent[1][1],'open_nonmanifold_or_orientation')
++        a,b=adjacent[0][0],adjacent[1][0];neighbours[a].add(b);neighbours[b].add(a)
++    seen={0};pending=[0]
++    while pending:
++        budget.consume(1,'topology_connected')
++        for other in neighbours[pending.pop()]-seen:seen.add(other);pending.append(other)
++    _closed_require(len(seen)==len(faces),'multiple_shells')
++    for rows in links.values():
++        graph=defaultdict(set)
++        for a,b in rows:graph[a].add(b);graph[b].add(a)
++        _closed_require(all(len(row)==2 for row in graph.values()),'nonmanifold_vertex')
++        first=next(iter(graph));seen={first};pending=[first]
++        while pending:
++            budget.consume(1,'topology_vertex_link')
++            for other in graph[pending.pop()]-seen:seen.add(other);pending.append(other)
++        _closed_require(len(seen)==len(graph),'nonmanifold_vertex')
++    volume=0
++    for tri in triangles:
++        budget.consume(1,'oriented_volume')
++        volume=e._bounded(volume+e._dot(tri[0][0],e._cross(tri[0][1],tri[0][2])))
++    _closed_require(volume!=0,'zero_volume')
++    if tree is None:
++        tree = _closed_world_tree(triangles, budget)
++    bounds, root = tree
++    return dict(vertices=vertices,faces=faces,triangles=triangles,bounds=bounds,root=root)
++
++
++def _closed_world_tree(triangles, budget):
++    budget.tick('world_bound_faces', len(triangles))
++    bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
++              for triangle in triangles]
++    budget.tick('world_tree_builds')
++    return bounds, _bvh(bounds, budget)
++
++
++def _closed_candidate_trees(shells, budget):
++    """Replace intersection-candidate coordinates with one invertible integer map.
++
++    The rows u, n cross u, n are mutually orthogonal and nonzero. Primitive
++    row reduction and positive whole-row powers of two preserve invertibility.
++    Only overlap candidates use this map. World trees retain their metric and
++    remain available to point/ray queries and the same-pair distance consumer.
++    """
++    if len(shells[0]['triangles']) * len(shells[1]['triangles']) <= 256:
++        return
++    exact = budget.exact
++    budget.tick('candidate_frame_builds')
++    try:
++        triangle = shells[0]['triangles'][0]
++        edge = exact._sub(triangle[0][1], triangle[0][0])
++        normal = triangle[1]
++        rows = (edge, exact._cross(normal, edge), normal)
++        primitive = []
++        for row in rows:
++            divisor = math.gcd(*row)
++            if not divisor:
++                raise exact._DomainError('surface_candidate_frame_singular')
++            primitive.append(tuple(value // divisor for value in row))
++        widths = [max(abs(value).bit_length() for value in row) for row in primitive]
++        width = max(widths)
++        basis = []
++        for row, bits in zip(primitive, widths):
++            budget.tick('candidate_frame_coefficients', 3)
++            basis.append(tuple(exact._bounded(value << (width-bits)) for value in row))
++        trees = []
++        for shell in shells:
++            projected = {}
++            for index, point in shell['vertices'].items():
++                budget.tick('candidate_projection_tests', 3)
++                projected[index] = tuple(exact._dot(axis, point) for axis in basis)
++            bounds = []
++            for face in shell['faces']:
++                budget.tick('candidate_bound_faces')
++                points = [projected[index] for index in face]
++                bounds.append((tuple(min(point[k] for point in points) for k in range(3)),
++                               tuple(max(point[k] for point in points) for k in range(3))))
++            budget.tick('candidate_tree_builds')
++            trees.append((bounds, _bvh(bounds, budget, leaf_size=1), projected))
++    except exact._DomainError:
++        # An optional coordinate map cannot reduce the original bit domain.
++        # Cancellation, deadlines and total-work failures remain unsuppressed.
++        budget.tick('candidate_frame_fallbacks')
++        return
++    for shell, (bounds, root, projected) in zip(shells, trees):
++        shell['candidate_bounds'] = bounds
++        shell['candidate_root'] = root
++        shell['candidate_vertices'] = projected
++    budget.counts['candidate_frame'] = 'invertible_integer_triangle_basis'
++
++
++def _closed_cone_cross(left, right, budget):
++    budget.tick('cone_orientation_tests')
++    bounded=budget.exact._bounded
++    return bounded(bounded(left[0]*right[1])-bounded(left[1]*right[0]))
++
++
++def _closed_cone_cross_cache(first, second, budget):
++    """Reuse the two already-proved widths and each actual support determinant."""
++    values={(first['lo'],first['hi']):first['width'],
++            (second['lo'],second['hi']):second['width']}
++
++    def cross(left, right):
++        if left==right:return 0
++        key=(left,right)
++        if key in values:return values[key]
++        reverse=(right,left)
++        if reverse in values:return -values[reverse]
++        value=_closed_cone_cross(left,right,budget)
++        values[key]=value
++        return value
++    return cross
++
++
++def _closed_merge_cones(first, second, budget):
++    """Merge at most four support rays, retaining an angle strictly below pi."""
++    budget.tick('cone_metadata_merges')
++    cross=_closed_cone_cross_cache(first,second,budget)
++    lo,hi=first['lo'],first['hi']
++    for ray in (second['lo'],second['hi']):
++        budget.tick('cone_support_tests')
++        lower,upper=cross(lo,ray),cross(ray,hi)
++        if lower>=0 and upper>=0:continue
++        if lower<0 and upper>0:lo=ray
++        elif lower>0 and upper<0:hi=ray
++        else:return None
++    width=cross(lo,hi)
++    if width<=0:return None
++    supports=(first['lo'],first['hi'],second['lo'],second['hi'])
++    for ray in supports:
++        budget.tick('cone_support_tests')
++        if cross(lo,ray)<0 or cross(ray,hi)<0:return None
++    lower_ids=set();upper_ids=set()
++    for cone in (first,second):
++        for ray,ids in ((cone['lo'],cone['lo_ids']),(cone['hi'],cone['hi_ids'])):
++            if cross(lo,ray)==0:
++                budget.tick('cone_boundary_id_visits',len(ids));lower_ids.update(ids)
++            if cross(ray,hi)==0:
++                budget.tick('cone_boundary_id_visits',len(ids));upper_ids.update(ids)
++    return dict(lo=lo,hi=hi,width=width,
++                lo_ids=frozenset(lower_ids),hi_ids=frozenset(upper_ids))
++
++
++def _closed_cone_metadata(shell, budget):
++    """Bottom-up self-only certificates in the fixed first two candidate axes.
++
++    Every retained anchor belongs to every descendant face. Each such face has
++    a nondegenerate two-coordinate projection. The two support rays enclose
++    every projected vertex in a convex cone of angle strictly below pi, and
++    their id sets contain all source vertices on the respective boundary ray.
++    """
++    projected=shell.get('candidate_vertices')
++    if projected is None:return {}
++    metadata={};bounded=budget.exact._bounded
++
++    def visit(node):
++        budget.tick('cone_metadata_nodes')
++        rows={}
++        if node[3] is not None:
++            if len(node[3])!=1:return rows
++            budget.tick('cone_face_tests')
++            face=shell['faces'][node[3][0]]
++            try:
++                vectors=[]
++                for index,anchor in enumerate(face):
++                    origin=projected[anchor]
++                    pair=[]
++                    for other in (face[(index+1)%3],face[(index+2)%3]):
++                        budget.tick('cone_vector_preparations')
++                        point=projected[other]
++                        pair.append((bounded(point[0]-origin[0]),bounded(point[1]-origin[1])))
++                    vectors.append(pair)
++                area=_closed_cone_cross(*vectors[0],budget)
++                if not area:return rows
++                for index,anchor in enumerate(face):
++                    lo,hi=vectors[index]
++                    lower,upper=face[(index+1)%3],face[(index+2)%3]
++                    if area<0:lo,hi=hi,lo;lower,upper=upper,lower
++                    budget.tick('cone_boundary_id_visits',2)
++                    rows[anchor]=dict(lo=lo,hi=hi,width=abs(area),
++                        lo_ids=frozenset((lower,)),hi_ids=frozenset((upper,)))
++            except budget.exact._DomainError:
++                budget.tick('cone_bit_fallbacks');rows={}
++        else:
++            left=visit(node[4]);right=visit(node[5])
++            for anchor,first in left.items():
++                budget.tick('cone_anchor_tests')
++                if anchor not in right:continue
++                try:merged=_closed_merge_cones(first,right[anchor],budget)
++                except budget.exact._DomainError:
++                    budget.tick('cone_bit_fallbacks');continue
++                if merged is not None:rows[anchor]=merged
++        if rows:metadata[id(node)]=rows
++        return rows
++
++    visit(shell['candidate_root'])
++    return metadata
++
++
++def _closed_node_simplex(a, b, metadata, projected, budget):
++    """Certify only legal shared source simplices for two nodes of one shell.
++
++    Opposite closed halfplanes force every possible intersection onto their
++    separating line. At most two distinct projected source ids on that line
++    then give exactly the common source point or edge in three dimensions.
++    """
++    budget.tick('cone_node_pair_checks')
++    left=metadata.get(id(a),{});right=metadata.get(id(b),{})
++    for anchor,first in left.items():
++        budget.tick('cone_anchor_tests')
++        if anchor not in right:continue
++        second=right[anchor]
++        try:
++            cross=_closed_cone_cross_cache(first,second,budget)
++            lines=((first['lo'],1),(first['hi'],-1),
++                   (second['lo'],-1),(second['hi'],1))
++            for line,sign in lines:
++                budget.tick('cone_separation_tests')
++                first_sides=(cross(line,first['lo']),cross(line,first['hi']))
++                second_sides=(cross(line,second['lo']),cross(line,second['hi']))
++                if any(value*sign<0 for value in first_sides):continue
++                if any(value*sign>0 for value in second_sides):continue
++                budget.tick('cone_boundary_id_visits')
++                online={anchor}
++                for cone,sides in ((first,first_sides),(second,second_sides)):
++                    for value,ids in zip(sides,(cone['lo_ids'],cone['hi_ids'])):
++                        if value==0:
++                            budget.tick('cone_boundary_id_visits',len(ids));online.update(ids)
++                if len(online)>2:continue
++                if len(online)==2:
++                    start,end=online
++                    if projected[start][:2]==projected[end][:2]:continue
++                budget.tick('simplex_node_certificates')
++                budget.counts['simplex_covered_pairs']+=a[2]*b[2]
++                return True
++        except budget.exact._DomainError:
++            budget.tick('cone_bit_fallbacks')
++    return False
++
++
++def _closed_precheck(a, b, budget, *, shared=(), faces=None):
++    """Certify strict plane separation or a legal shared simplex before slicing."""
++    exact = budget.exact
++    budget.tick('cheap_pair_tests')
++    projections = [None, None]
++    for side, (triangle, other) in enumerate(((a,b), (b,a))):
++        distances = exact._plane_distances(other[0], triangle[0][0], triangle[1], budget)
++        projections[side] = distances
++        budget.tick('plane_side_tests')
++        if all(value > 0 for value in distances) or all(value < 0 for value in distances):
++            budget.tick('strict_plane_rejections')
++            return True, tuple(projections)
++        if shared and (all(value >= 0 for value in distances) or all(value <= 0 for value in distances)):
++            budget.tick('shared_simplex_tests')
++            other_indices = faces[1-side]
++            zeros = {other_indices[index] for index,value in enumerate(distances) if value == 0}
++            if zeros and zeros.issubset(shared):
++                budget.tick('shared_simplex_certificates')
++                return True, tuple(projections)
++    if (len(shared) == 2 and all(value == 0 for row in projections for value in row)):
++        # In the common plane, a nonzero normal component gives an injective
++        # two-coordinate projection. Opposite open sides of the common edge
++        # have exactly that edge in common. Same-side overlap is unresolved.
++        budget.tick('shared_edge_tests')
++        start, end = [a[0][faces[0].index(index)] for index in shared]
++        left = next(point for index,point in zip(faces[0],a[0]) if index not in shared)
++        right = next(point for index,point in zip(faces[1],b[0]) if index not in shared)
++        drop = max(range(3), key=lambda axis: abs(a[1][axis]))
++        axes = tuple(axis for axis in range(3) if axis != drop)
++        try:
++            sa = exact._orient(start, end, left, axes)
++            sb = exact._orient(start, end, right, axes)
++        except exact._DomainError:
++            budget.tick('cheap_bit_fallbacks')
++        else:
++            if sa < 0 < sb or sb < 0 < sa:
++                budget.tick('shared_edge_certificates')
++                return True, tuple(projections)
++    return False, tuple(projections)
++
++
++def _closed_legal_contact(points, shared, vertices, budget):
++    e=budget.exact
++    if len(shared)==1:return all(p==vertices[shared[0]] for p in points)
++    if len(shared)!=2:return False
++    a,b=(vertices[i] for i in shared);d=e._sub(b,a);squared=e._dot(d,d)
++    return bool(squared) and all(not any(e._cross(e._sub(p,a),d))
++        and 0<=e._dot(e._sub(p,a),d)<=squared for p in points)
++
++
++def _closed_validate_embedded(shell,budget):
++    e=budget.exact
++    bounds = shell.get('candidate_bounds', shell['bounds'])
++    root = shell.get('candidate_root', shell['root'])
++    metadata=_closed_cone_metadata(shell,budget)
++    exclusion=None
++    if metadata:
++        exclusion=lambda a,b:_closed_node_simplex(a,b,metadata,shell['candidate_vertices'],budget)
++    for i,j in candidate_pairs(bounds,0,budget,budget.counts,roots=(root,root),node_exclusion=exclusion):
++        a,b=shell['triangles'][i],shell['triangles'][j]
++        faces = (shell['faces'][i], shell['faces'][j])
++        budget.tick('shared_index_tests')
++        shared = sorted(set(faces[0]) & set(faces[1]))
++        excluded, projections = _closed_precheck(a,b,budget,shared=shared,faces=faces)
++        if excluded:
++            continue
++        budget.pair('self_pair_tests')
++        points=e._intersection(a[0],b[0],a[1],b[1],budget,plane_distances=projections)
++        if points:
++            _closed_require(_closed_legal_contact(points,shared,shell['vertices'],budget),'self_intersection')
++
++
++def _closed_in_triangle(point, triangle, budget, strict=False):
++    e=budget.exact;points,n,squared,_,_=triangle
++    q=e._sub(point,points[0])
++    if e._dot(n,q)!=0:return False
++    u=e._dot(e._cross(e._sub(points[2],points[0]),n),q)
++    v=e._dot(e._cross(n,e._sub(points[1],points[0])),q)
++    total=e._bounded(u+v)
++    return u>0 and v>0 and total<squared if strict else u>=0 and v>=0 and total<=squared
++
++
++def _closed_transverse(points,a,b,budget,*,middle_holder=None):
++    e=budget.exact
++    if middle_holder is not None:middle_holder.pop('middle',None)
++    if len(points)!=2 or points[0]==points[1] or not any(e._cross(a[1],b[1])):return False
++    middle=e._mul(e._add(points[0],points[1]),e._fraction(1,2))
++    transverse=_closed_in_triangle(middle,a,budget,True) and _closed_in_triangle(middle,b,budget,True)
++    if transverse and middle_holder is not None:middle_holder['middle']=middle
++    return transverse
++
++
++def _closed_transverse_evidence(records,i,j,middle,origin,factor,exact):
++    """Retain this successful pair; float coordinates only locate the crossing."""
++    triangles=[]
++    for (mesh,faces,_),index in zip(records,(i,j)):
++        triangles.append([[float(value) for value in mesh.vertices[vertex]] for vertex in faces[index]])
++    evidence=dict(type='transverse_triangle_crossing',triangle_indices=[i,j],
++        triangle_vertices_world_m=triangles,
++        triangle_scope='current_capture_zero_based_triangles_target_then_candidate_not_polygon_ids',
++        point_world_m=None,point_status='unknown',
++        point_scope='boundary_crossing_localization_not_volume_interior_or_penetration_depth',
++        publication_tolerance_m=float(exact._PUBLICATION_TOLERANCE))
++    try:
++        published=exact._publish_points((middle,middle),origin,factor,0.)
++    except (exact._DomainError,OverflowError):
++        evidence['point_reason']='world_point_publication_limit'
++    else:
++        if published is None:evidence['point_reason']='world_point_precision_exceeded'
++        else:evidence.update(point_world_m=list(published[0]),point_status='approximate')
++    return evidence
++
++
++def _closed_point_candidates(point,shell,budget):
++    pending=[shell['root']]
++    while pending:
++        budget.consume(1,'point_bvh')
++        node=pending.pop()
++        if any(point[k]<node[0][k] or point[k]>node[1][k] for k in range(3)):continue
++        if node[3] is not None:
++            for i in node[3]:
++                low,high=shell['bounds'][i]
++                if all(low[k]<=point[k]<=high[k] for k in range(3)):yield i
++        else:pending.extend((node[4],node[5]))
++
++
++def _closed_ray_box(point,direction,low,high,budget):
++    e=budget.exact;near=0;far=None
++    for k in range(3):
++        left=e._fraction(e._bounded(low[k]-point[k]),direction[k])
++        right=e._fraction(e._bounded(high[k]-point[k]),direction[k])
++        near=max(near,left);far=right if far is None else min(far,right)
++        if far<near:return False
++    return far>0
++
++
++def _closed_ray_candidates(point,direction,shell,budget):
++    pending=[shell['root']]
++    while pending:
++        budget.consume(1,'ray_bvh')
++        node=pending.pop()
++        if not _closed_ray_box(point,direction,node[0],node[1],budget):continue
++        if node[3] is not None:
++            for i in node[3]:
++                if _closed_ray_box(point,direction,*shell['bounds'][i],budget):yield i
++        else:pending.extend((node[4],node[5]))
++
++
++def _closed_location(point,shell,budget):
++    e=budget.exact;budget.tick('point_queries')
++    for i in _closed_point_candidates(point,shell,budget):
++        if _closed_in_triangle(point,shell['triangles'][i],budget):return 'boundary'
++    for k in range(1,9):
++        budget.tick('ray_attempts');direction=(1,k,k*k+1);count=0;ambiguous=False
++        for i in _closed_ray_candidates(point,direction,shell,budget):
++            budget.tick('ray_tests')
++            if budget.counts['ray_tests']>CLOSED_SOLID_MAX_RAY_TESTS:
++                raise _ClosedDomain('closed_solid_ray_budget')
++            triangle=shell['triangles'][i];n=triangle[1]
++            numerator=e._dot(n,e._sub(triangle[0][0],point));denominator=e._dot(n,direction)
++            if denominator==0:
++                if numerator==0:ambiguous=True;break
++                continue
++            parameter=e._fraction(numerator,denominator)
++            if parameter<=0:continue
++            hit=e._add(point,e._mul(direction,parameter))
++            if not _closed_in_triangle(hit,triangle,budget):continue
++            if not _closed_in_triangle(hit,triangle,budget,True):ambiguous=True;break
++            count+=1
++        if not ambiguous:return 'inside' if count%2 else 'outside'
++    raise _ClosedDomain('closed_solid_ray_degeneracy')
++
++
++def _closed_separating_plane(triangle,left,right,budget):
++    e=budget.exact;origin=triangle[0][0];n=triangle[1]
++    def signs(shell):
++        positive=False;negative=False
++        for point in shell['vertices'].values():
++            budget.consume(1,'supporting_plane')
++            value=e._dot(n,e._sub(point,origin))
++            positive|=value>0;negative|=value<0
++            if positive and negative:return None
++        return 1 if positive else -1 if negative else 0
++    a=signs(left)
++    if a is None:return False
++    b=signs(right)
++    return b is not None and a*b<0
++
++
++def classify_closed_solids(left,right,checkpoint,*,diagnostics=None,prepared_pair=None,prepared_holder=None,
++                           prepared_trees=None):
++    """Zero-tolerance relation of represented embedded, connected closed shells.
++
++    Interior overlap needs a strict containment or transverse-boundary witness.
++    Contact needs a global separating plane certificate. Unresolved coincident
++    or mesh-edge boundary arrangements remain unknown, never guessed touching.
++    """
++    if prepared_holder is not None:
++        prepared_holder.pop('boundary_contact',None)
++        prepared_holder.pop('trees',None)
++        prepared_holder.pop('pair',None)
++    from . import _surface_proximity_032 as exact
++    budget=_ClosedWork(checkpoint,diagnostics,exact)
++    result=dict(measurement_valid=False,relation=None,method=CLOSED_SOLID_METHOD,
++        geometry_scope=CLOSED_SOLID_SCOPE,relation_tolerance_m=0.0,work=budget.counts)
++    try:
++        budget.consume(1,'admission')
++        _closed_require(sum(len(mesh.vertices) for mesh in (left,right))<=LIMITS['vertices'],
++                        'vertex_budget')
++        if (prepared_pair is None or prepared_pair[0][0][0] is not left
++                or prepared_pair[0][1][0] is not right):
++            records,topology=exact._admit((left,right),budget)
++            origin,factor,prepared=exact._integer_frame(records,budget)
++            prepared_pair=(records,topology,origin,factor,prepared)
++        else:budget.counts['prepared_pair_reused']=True
++        if prepared_holder is not None:prepared_holder['pair']=prepared_pair
++        records,_,_,_,prepared=prepared_pair
++        _closed_require(all(len(r[1])>=4 for r in records),'too_few_faces')
++        if (type(prepared_trees) is dict and prepared_trees.get('pair') is prepared_pair
++                and len(prepared_trees.get('triangles',())) == 2
++                and all(a is b for a,b in zip(prepared_trees['triangles'],prepared))):
++            world_trees = tuple(zip(prepared_trees['bounds'],prepared_trees['roots']))
++            budget.counts['prepared_trees_reused'] = True
++        else:
++            world_trees = tuple(_closed_world_tree(triangles,budget) for triangles in prepared)
++        if prepared_holder is not None:
++            prepared_holder['trees'] = dict(pair=prepared_pair,triangles=tuple(prepared),
++                bounds=tuple(tree[0] for tree in world_trees),
++                roots=tuple(tree[1] for tree in world_trees))
++        shells=[_closed_topology(record[0],record[1],triangles,budget,tree=tree)
++                for record,triangles,tree in zip(records,prepared,world_trees)]
++        _closed_candidate_trees(shells,budget)
++        for shell in shells:_closed_validate_embedded(shell,budget)
++        a,b=shells;contacts=[];middle_holder={}
++        a_bounds = a.get('candidate_bounds', a['bounds'])
++        b_bounds = b.get('candidate_bounds', b['bounds'])
++        roots = (a.get('candidate_root', a['root']), b.get('candidate_root', b['root']))
++        for i,j in candidate_pairs(a_bounds,0,budget,budget.counts,
++                other_bounds=b_bounds,roots=roots):
++            ta,tb=a['triangles'][i],b['triangles'][j]
++            excluded, projections = _closed_precheck(ta,tb,budget)
++            if excluded:
++                continue
++            budget.pair('cross_pair_tests')
++            points=exact._intersection(ta[0],tb[0],ta[1],tb[1],budget,plane_distances=projections)
++            if not points:continue
++            if prepared_holder is not None and 'boundary_contact' not in prepared_holder:
++                prepared_holder['boundary_contact']=dict(pair=prepared_pair,
++                    point=points[0],triangles=(i,j))
++            if _closed_transverse(points,ta,tb,budget,middle_holder=middle_holder):
++                result.update(measurement_valid=True,relation='penetrating',certificate='transverse_boundary_interiors')
++                result['local_evidence']=_closed_transverse_evidence(records,i,j,middle_holder['middle'],
++                    prepared_pair[2],prepared_pair[3],exact)
++                return result
++            contacts.append((i,j))
++        if contacts:
++            seen=set()
++            for i,j in contacts:
++                for side,index in ((0,i),(1,j)):
++                    if (side,index) in seen:continue
++                    seen.add((side,index))
++                    if _closed_separating_plane(shells[side]['triangles'][index],a,b,budget):
++                        result.update(measurement_valid=True,relation='touching',certificate='global_supporting_plane_with_contact')
++                        return result
++            for source,target in ((a,b),(b,a)):
++                groups=(source['vertices'].values(),
++                    (exact._mul(exact._add(exact._add(t[0][0],t[0][1]),t[0][2]),exact._fraction(1,3)) for t in source['triangles']))
++                for points in groups:
++                    for point in points:
++                        if _closed_location(point,target,budget)=='inside':
++                            result.update(measurement_valid=True,relation='penetrating',certificate='strict_containment_point')
++                            return result
++            raise _ClosedDomain('closed_solid_ambiguous_boundary_arrangement')
++        locations=[_closed_location(next(iter(a['vertices'].values())),b,budget),
++                   _closed_location(next(iter(b['vertices'].values())),a,budget)]
++        _closed_require('boundary' not in locations,'unresolved_boundary')
++        result.update(measurement_valid=True,relation='penetrating' if 'inside' in locations else 'separated',
++            certificate='disjoint_boundaries_with_exact_parity')
++        return result
++    except (_ClosedDomain,exact._DomainError) as error:
++        reason=str(error)
++        result['reason']=reason.replace('surface_','closed_solid_',1) if reason.startswith('surface_') else reason
++        return result

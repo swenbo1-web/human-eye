@@ -1,0 +1,106 @@
+{
+  "cycle_id": "M6-042-ENTRY-WARM-REGION",
+  "scope": "final review preparation only; no acceptance or automatic run",
+  "fixed_contract": "c7c00d98289fad46e71a4278db7b7a4ea5858d5d",
+  "r3_source_sha256": "ebd8068712ae70af74d4cfacc6fd8e05f5056e6047334c91c6487f1cd18dff0e",
+  "endpoint": {
+    "host": "127.0.0.1",
+    "port": 48142,
+    "asset": "G60_D12",
+    "native_blend_sha256": "9bba515e72bcbd307d3b41b42d426e253d9da56b1723c0da21663b3653bb7cd8"
+  },
+  "mcp": {
+    "server": "human_eye_live",
+    "tool": "human_eye_connection_status",
+    "canonical": "mcp__human_eye_live__human_eye_connection_status",
+    "args": {},
+    "regex": "^mcp__human_eye_live__human_eye_connection_status$"
+  },
+  "unrelated_prompt": "Summarize this text in one sentence: The train leaves at noon and stops twice.",
+  "related_prompt": "Inspect the current Blender scene and identify one mesh visible in the current observation. Use the observation already supplied for this turn. Then call human_eye_connection_status exactly once with empty arguments. That is the only tool for this turn. Keep the scene read-only. Reply with the observation's correlation.request_id, one observed mesh name, and the connection status returned by that call. If the observation ID is absent, report it as absent.",
+  "schedule": {
+    "unrelated": [
+      [
+        "H0",
+        "H1",
+        "OFF"
+      ],
+      [
+        "H1",
+        "OFF",
+        "H0"
+      ],
+      [
+        "OFF",
+        "H0",
+        "H1"
+      ]
+    ],
+    "related": [
+      [
+        "H0",
+        "H1"
+      ],
+      [
+        "H1",
+        "H0"
+      ],
+      [
+        "H0",
+        "H1"
+      ]
+    ],
+    "cancel": [
+      {
+        "arm": "H1",
+        "event": "UserPromptSubmit",
+        "input": "related_prompt",
+        "interrupt_only_after": "actual host reports Hook started while that run is still in-flight",
+        "if_no_inflight_window": "record not captured; do not infer cancellation from an ordinary fast completion"
+      }
+    ]
+  },
+  "same_turn_witness": {
+    "unique_value": "correlation.request_id from the actual positive UserPromptSubmit additionalContext, never preloaded into prompt",
+    "proof": "Host delivery before first model tool plus one matched status call and that unchanged tool result. If a host exposes no delivery record, correlate model's exact per-run ID to captured Hook output/audit and prove no alternate tool/artifact route.",
+    "post_expected": {
+      "audit_status": "tool_result_delivery_retained",
+      "trace_outcome": "duplicate_delivery_omitted",
+      "additional_geometry_observations": 0
+    }
+  },
+  "short_direct_oracle": {
+    "tool": "human_eye_scene_observe",
+    "args": {
+      "session_id": "m3-bvh-040",
+      "include_image": false,
+      "response_detail": "full",
+      "query": {
+        "mode": "surface_nearest",
+        "objects": [
+          {
+            "name": "Target"
+          }
+        ]
+      }
+    },
+    "expected_nearest": "Peer_000",
+    "expected_candidates": 11,
+    "request_source": {
+      "archive_sha256": "214afaa9e862e55e368fbb9d3a119af20059a8a5182e9e667ccbd4d0624ba195",
+      "case": "G60 first_nearest"
+    }
+  },
+  "trust_state": "native review required for each command precursor; no trust provisioning",
+  "actual_frozen_run": "not started",
+  "supersedes_draft": {
+    "path": "D:\\HumanEye\\runs\\M6-042-ENTRY-WARM-REGION\\E_FINAL_001\\FORMAL_PROTOCOL.json",
+    "sha256": "de41870a23a43cc9f0308edf74b7960382e7265b1b2af2baba42e4e2f6091c00",
+    "reason": "Original negative draft skipped geometry but classified as unknown; freeze a verified general prompt before any host turns."
+  },
+  "direct_qualification_recovery": {
+    "supersedes": "D:\\HumanEye\\runs\\M6-042-ENTRY-WARM-REGION\\E_FINAL_001\\FORMAL_PROTOCOL_02.json",
+    "previous_sha256": "eec76f00bd817cdf85b8f0f2a51bd2bbeba2b6150ea54d32c49968d95adc1452",
+    "reason": "Original pinned public surface_nearest rejects the direct QA draft without a session ID. Restore the complete existing 041 request. Both model prompts, all hooks and the endpoint are unchanged."
+  }
+}
