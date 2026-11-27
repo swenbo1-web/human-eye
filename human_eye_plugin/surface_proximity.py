@@ -900,17 +900,32 @@ def _nearest_linear(prepared, budget, witness_pair=None):
 
 
 def _distance_roots(prepared, budget, holder=None):
-    from .surface_geometry import _bvh
+    from .surface_geometry import _bvh_from_flat_bounds
     roots = []
     retained_bounds = [] if holder is not None else None
     for triangles in prepared:
-        budget.tick('tree_build_units', len(triangles))
-        bounds = [(tuple(row[0] for row in triangle[4]), tuple(row[1] for row in triangle[4]))
-                  for triangle in triangles]
-        budget.tick('tree_builds')
-        roots.append(_bvh(bounds, budget, leaf_size=2))
-        if retained_bounds is not None:
+        n_tris = len(triangles)
+        budget.tick('tree_build_units', n_tris)
+        flat_bounds = [None] * n_tris
+        if retained_bounds is None:
+            for row_idx, triangle in enumerate(triangles):
+                b = triangle[4]
+                ax, bx = b[0]
+                ay, by = b[1]
+                az, bz = b[2]
+                flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
+        else:
+            bounds = [None] * n_tris
+            for row_idx, triangle in enumerate(triangles):
+                b = triangle[4]
+                ax, bx = b[0]
+                ay, by = b[1]
+                az, bz = b[2]
+                bounds[row_idx] = ((ax, ay, az), (bx, by, bz))
+                flat_bounds[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
             retained_bounds.append(bounds)
+        budget.tick('tree_builds')
+        roots.append(_bvh_from_flat_bounds(flat_bounds, budget, leaf_size=2))
     if holder is not None:
         holder['trees'] = dict(pair=holder['pair'], triangles=tuple(prepared),
                                bounds=tuple(retained_bounds), roots=tuple(roots),
@@ -2401,7 +2416,7 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
     # Stage 3: Lazy local BVH construction ONLY for non-linear pairs.
     roots = None
     if need_trees and nl * nr > LINEAR_PAIR_LIMIT:
-        from .surface_geometry import _bvh
+        from .surface_geometry import _bvh_from_flat_bounds
         out_roots = []
         for ent, n_faces, dS, sx, sy, sz in (
             (el, nl, dL, 0, 0, 0),
@@ -2411,10 +2426,16 @@ def _pair_from_mesh_cache(left, right, budget, mesh_cache, witness_pair=None, ne
             budget.tick('tree_builds', 1)
             tree_entry = ent.get('tree')
             if tree_entry is None:
-                local_bounds = [((t[4][0][0], t[4][1][0], t[4][2][0]),
-                                 (t[4][0][1], t[4][1][1], t[4][2][1])) for t in ent['local_tris']]
+                local_tris = ent['local_tris']
+                local_flat = [None] * len(local_tris)
+                for row_idx, t in enumerate(local_tris):
+                    b = t[4]
+                    ax, bx = b[0]
+                    ay, by = b[1]
+                    az, bz = b[2]
+                    local_flat[row_idx] = (ax, ay, az, bx, by, bz, ax + bx, ay + by, az + bz)
                 b_proxy = _CacheBuildBudget(budget)
-                local_root = _bvh(local_bounds, b_proxy, leaf_size=2)
+                local_root = _bvh_from_flat_bounds(local_flat, b_proxy, leaf_size=2)
                 tree_entry = {'local_root': local_root, 'bvh_units': b_proxy.units}
                 ent['tree'] = tree_entry
                 budget.counts['mesh_cache_tree_builds'] = budget.counts.get('mesh_cache_tree_builds', 0) + 1

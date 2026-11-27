@@ -154,32 +154,58 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
             2, ids, None, None,
         )
     first = flat_bounds[ids[0]]
-    lx, ly, lz, hx, hy, hz = first[0], first[1], first[2], first[3], first[4], first[5]
-    for idx in ids[1:]:
-        row = flat_bounds[idx]
-        if row[0] < lx: lx = row[0]
-        if row[1] < ly: ly = row[1]
-        if row[2] < lz: lz = row[2]
-        if row[3] > hx: hx = row[3]
-        if row[4] > hy: hy = row[4]
-        if row[5] > hz: hz = row[5]
+    sah_eligible = (n > leaf_size and n > _SAH_MIN_N and depth < _SAH_MAX_DEPTH)
+    cp = getattr(budget, 'checkpoint', None) if n >= 512 else None
+    if sah_eligible:
+        lx, ly, lz, hx, hy, hz, c0x, c0y, c0z = first
+        c1x, c1y, c1z = c0x, c0y, c0z
+        if cp is None:
+            for idx in ids[1:]:
+                r0, r1, r2, r3, r4, r5, cx, cy, cz = flat_bounds[idx]
+                if r0 < lx: lx = r0
+                if r1 < ly: ly = r1
+                if r2 < lz: lz = r2
+                if r3 > hx: hx = r3
+                if r4 > hy: hy = r4
+                if r5 > hz: hz = r5
+                if cx < c0x: c0x = cx
+                elif cx > c1x: c1x = cx
+                if cy < c0y: c0y = cy
+                elif cy > c1y: c1y = cy
+                if cz < c0z: c0z = cz
+                elif cz > c1z: c1z = cz
+        else:
+            for start in range(1, n, 256):
+                cp('surface_proximity_surface_bvh_build')
+                for idx in ids[start:start + 256]:
+                    r0, r1, r2, r3, r4, r5, cx, cy, cz = flat_bounds[idx]
+                    if r0 < lx: lx = r0
+                    if r1 < ly: ly = r1
+                    if r2 < lz: lz = r2
+                    if r3 > hx: hx = r3
+                    if r4 > hy: hy = r4
+                    if r5 > hz: hz = r5
+                    if cx < c0x: c0x = cx
+                    elif cx > c1x: c1x = cx
+                    if cy < c0y: c0y = cy
+                    elif cy > c1y: c1y = cy
+                    if cz < c0z: c0z = cz
+                    elif cz > c1z: c1z = cz
+    else:
+        lx, ly, lz, hx, hy, hz = first[0], first[1], first[2], first[3], first[4], first[5]
+        for idx in ids[1:]:
+            row = flat_bounds[idx]
+            if row[0] < lx: lx = row[0]
+            if row[1] < ly: ly = row[1]
+            if row[2] < lz: lz = row[2]
+            if row[3] > hx: hx = row[3]
+            if row[4] > hy: hy = row[4]
+            if row[5] > hz: hz = row[5]
     lo = (lx, ly, lz)
     hi = (hx, hy, hz)
     if n <= leaf_size:
         return (lo, hi, n, ids, None, None)
-    if n > _SAH_MIN_N and depth < _SAH_MAX_DEPTH:
-        c0x = c1x = first[6]
-        c0y = c1y = first[7]
-        c0z = c1z = first[8]
-        for idx in ids[1:]:
-            row = flat_bounds[idx]
-            cx, cy, cz = row[6], row[7], row[8]
-            if cx < c0x: c0x = cx
-            elif cx > c1x: c1x = cx
-            if cy < c0y: c0y = cy
-            elif cy > c1y: c1y = cy
-            if cz < c0z: c0z = cz
-            elif cz > c1z: c1z = cz
+    if sah_eligible:
         best_cost = None
         best_axis = -1
         best_split = 0
@@ -270,17 +296,26 @@ def _build_sah_bvh(flat_bounds, budget, ids, leaf_size, depth):
                         best_cspan = cspan
         if best_axis >= 0:
             ck = 6 + best_axis
+            cut = best_cmin + (best_split * best_cspan + _SAH_BINS - 1) // _SAH_BINS
             left_ids = []
             right_ids = []
-            max_bin = _SAH_BINS - 1
-            for idx in ids:
-                b = ((flat_bounds[idx][ck] - best_cmin) * _SAH_BINS) // best_cspan
-                if b > max_bin:
-                    b = max_bin
-                if b < best_split:
-                    left_ids.append(idx)
-                else:
-                    right_ids.append(idx)
+            append_l = left_ids.append
+            append_r = right_ids.append
+            cp_p = getattr(budget, 'checkpoint', None) if n >= 512 else None
+            if cp_p is None:
+                for idx in ids:
+                    if flat_bounds[idx][ck] < cut:
+                        append_l(idx)
+                    else:
+                        append_r(idx)
+            else:
+                for start in range(0, n, 256):
+                    cp_p('surface_proximity_surface_bvh_build')
+                    for idx in ids[start:start + 256]:
+                        if flat_bounds[idx][ck] < cut:
+                            append_l(idx)
+                        else:
+                            append_r(idx)
             if left_ids and right_ids:
                 return (
                     lo, hi, n, None,
@@ -328,6 +363,15 @@ def _bvh(bounds,budget,ids=None,*,leaf_size=4):
         ax,ay,az=a;bx,by,bz=b
         flat_bounds[row_idx]=(ax,ay,az,bx,by,bz,ax+bx,ay+by,az+bz)
     return _build_sah_bvh(flat_bounds,budget,ids,leaf_size,0)
+
+
+def _bvh_from_flat_bounds(flat_bounds, budget, ids=None, *, leaf_size=4):
+    """Build exact SAH BVH directly from pre-flattened (lx,ly,lz,hx,hy,hz,2cx,2cy,2cz) tuples."""
+    ids = list(range(len(flat_bounds))) if ids is None else list(ids)
+    if not ids:
+        budget.consume(1, 'surface_bvh_build')
+        return ((0, 0, 0), (0, 0, 0), 0, [], None, None)
+    return _build_sah_bvh(flat_bounds, budget, ids, leaf_size, 0)
 
 
 def candidate_pairs(bounds,pad,budget,stats,*,other_bounds=None,roots=None,node_exclusion=None):
