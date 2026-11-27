@@ -542,6 +542,7 @@ def _work_summary(work):
         "witness_projection_node_pruned_pairs", "witness_projection_tri_pruned_pairs",
         "witness_projection_box_pruned_pairs",
         "witness_projection_direction_builds", "witness_projection_directions",
+        "dequeue_reused_aabb_bounds",
         "witness_projection_invalidations", "witness_projection_budget_deferrals",
         "witness_projection_upper_calls",
         "witness_projection_slab_admitted", "witness_projection_slab_deferred",
@@ -946,23 +947,147 @@ def _valid_nested_sha256(obj):
     return False
 
 
-def _validate_surface_sig_struct(prefix, sig):
+def _validate_surface_sig_struct(prefix, sig, *, options=None):
     errors = []
-    req = ("measurement_valid", "reason", "distance_m", "witness_status", "direction_status")
+    req = (
+        "measurement_valid", "reason", "distance_m", "_exact_distance_sq",
+        "point_a_world", "point_b_world", "direction_a_to_b",
+        "witness_status", "direction_status",
+        "witness_triangle_indices", "exact_witness_triangles",
+    )
     for k in req:
         if k not in sig:
             errors.append(f"{prefix}: missing required surface signature key {k!r}")
+    if errors:
+        return errors
+
     mv = sig.get("measurement_valid")
     if type(mv) is not bool:
-        errors.append(f"{prefix}: measurement_valid must be bool, got {mv!r}")
-    elif mv is True and sig.get("distance_m") is None:
-        errors.append(f"{prefix}: measurement_valid=True with distance_m=None")
-    elif mv is False and not _nonempty_str(sig.get("reason")):
-        errors.append(f"{prefix}: measurement_valid=False without reason")
+        return [f"{prefix}: measurement_valid must be bool, got {mv!r}"]
+
+    ws = sig.get("witness_status")
+    ds = sig.get("direction_status")
+    if ws not in ("measured", "unknown"):
+        errors.append(f"{prefix}: invalid witness_status {ws!r}")
+    if ds not in ("measured", "not_applicable", "unknown"):
+        errors.append(f"{prefix}: invalid direction_status {ds!r}")
+
+    dm = sig.get("distance_m")
+    ek = sig.get("_exact_distance_sq")
+    want_exact_rank = True if (isinstance(options, dict) and options.get("retain_exact_rank") is True) else False
+
+    def _is_vec3(v):
+        return (
+            isinstance(v, (list, tuple)) and len(v) == 3
+            and all(type(c) in (int, float) and math.isfinite(c) for c in v)
+        )
+
+    if mv is True:
+        if type(dm) not in (int, float) or not math.isfinite(dm) or dm < 0.0:
+            errors.append(f"{prefix}: measurement_valid=True with invalid distance_m={dm!r}")
+        if want_exact_rank:
+            if not (
+                isinstance(ek, (list, tuple)) and len(ek) == 3
+                and all(type(x) is int for x in ek) and ek[0] >= 0 and ek[1] > 0
+            ):
+                errors.append(f"{prefix}: retain_exact_rank requested with invalid _exact_distance_sq={ek!r}")
+        if ws == "measured":
+            if not _is_vec3(sig.get("point_a_world")) or not _is_vec3(sig.get("point_b_world")):
+                errors.append(f"{prefix}: witness_status='measured' with invalid witness points")
+        elif ws == "unknown":
+            if not _nonempty_str(sig.get("witness_reason")):
+                errors.append(f"{prefix}: witness_status='unknown' without witness_reason")
+        if ds == "measured":
+            if not _is_vec3(sig.get("direction_a_to_b")) or (type(dm) in (int, float) and dm <= 0.0):
+                errors.append(f"{prefix}: direction_status='measured' inconsistent with direction/distance")
+        elif ds == "not_applicable":
+            if dm != 0.0 or not _nonempty_str(sig.get("direction_reason")):
+                errors.append(f"{prefix}: direction_status='not_applicable' inconsistent with distance/reason")
+        elif ds == "unknown":
+            if not _nonempty_str(sig.get("direction_reason")):
+                errors.append(f"{prefix}: direction_status='unknown' without direction_reason")
+        wti = sig.get("witness_triangle_indices")
+        if wti is not None and not (
+            isinstance(wti, (list, tuple)) and len(wti) == 2 and all(type(x) is int and x >= 0 for x in wti)
+        ):
+            errors.append(f"{prefix}: invalid witness_triangle_indices={wti!r}")
+    else:
+        if not _nonempty_str(sig.get("reason")):
+            errors.append(f"{prefix}: measurement_valid=False without reason")
+        if dm is not None:
+            errors.append(f"{prefix}: measurement_valid=False with non-None distance_m={dm!r}")
+        if ws != "unknown" or ds != "unknown":
+            errors.append(f"{prefix}: measurement_valid=False requires unknown witness/direction status")
     return errors
 
 
-def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_batch_manifest=None):
+def check_entry_receipts(ref_sig, cand_sig, *, ref_runtime_sha, cand_runtime_sha, entry_kind):
+    """Verify two cross-arm entry receipts against independent runtime pins before normalization."""
+    errors = []
+    if not _is_sha256_hex(ref_runtime_sha):
+        errors.append(f"invalid ref_runtime_sha: {ref_runtime_sha!r}")
+    if not _is_sha256_hex(cand_runtime_sha):
+        errors.append(f"invalid cand_runtime_sha: {cand_runtime_sha!r}")
+    if entry_kind not in ("nearest", "scan"):
+        errors.append(f"unsupported entry_kind: {entry_kind!r}")
+    if not isinstance(ref_sig, dict) or not isinstance(cand_sig, dict):
+        errors.append("entry receipts must be dicts")
+        return errors
+
+    for label, sig, pin in (("baseline", ref_sig, ref_runtime_sha), ("current", cand_sig, cand_runtime_sha)):
+        b = sig.get("binding")
+        if not isinstance(b, dict):
+            errors.append(f"{label}.{entry_kind}: missing binding dict")
+        else:
+            if b.get("runtime_source_sha256_valid") is not True:
+                errors.append(f"{label}.{entry_kind}: invalid runtime_source_sha256_valid")
+            raw_rt = b.get("runtime_source_sha256")
+            if not _is_sha256_hex(raw_rt):
+                errors.append(f"{label}.{entry_kind}: missing/malformed binding runtime_source_sha256")
+            elif _is_sha256_hex(pin) and raw_rt != pin:
+                errors.append(f"{label}.{entry_kind}: binding runtime_source_sha256 {raw_rt} != expected pin {pin}")
+        if entry_kind == "nearest":
+            if not _nonempty_str(sig.get("status")) or not isinstance(sig.get("nearest_ids"), list):
+                errors.append(f"{label}.nearest: missing status or nearest_ids list")
+            dm = sig.get("distance_m")
+            if dm is not None and (type(dm) not in (int, float) or not math.isfinite(dm) or dm < 0.0):
+                errors.append(f"{label}.nearest: invalid distance_m={dm!r}")
+            if "unresolved" not in sig or "excluded" not in sig:
+                errors.append(f"{label}.nearest: missing unresolved/excluded keys")
+        elif entry_kind == "scan":
+            if not _nonempty_str(sig.get("status")) or not isinstance(sig.get("coverage"), dict):
+                errors.append(f"{label}.scan: missing status or coverage dict")
+            disps = sig.get("dispositions")
+            if not isinstance(disps, list):
+                errors.append(f"{label}.scan: missing dispositions list")
+            else:
+                oid_keys = [tuple(d.get("object_ids") or ()) for d in disps if isinstance(d, dict) and d.get("object_ids")]
+                if len(oid_keys) != len(disps) or len(set(oid_keys)) != len(oid_keys):
+                    errors.append(f"{label}.scan: invalid or duplicate scan dispositions")
+    if errors:
+        return errors
+
+    norm_ref = copy.deepcopy(ref_sig)
+    norm_cand = copy.deepcopy(cand_sig)
+    norm_ref["binding"].pop("runtime_source_sha256", None)
+    norm_cand["binding"].pop("runtime_source_sha256", None)
+    if norm_ref != norm_cand:
+        errors.append(f"{entry_kind} semantic mismatch after verified runtime pin normalization")
+    return errors
+
+
+def assert_entry_receipts_equal(ref_sig, cand_sig, *, ref_runtime_sha, cand_runtime_sha, entry_kind):
+    errs = check_entry_receipts(
+        ref_sig, cand_sig,
+        ref_runtime_sha=ref_runtime_sha,
+        cand_runtime_sha=cand_runtime_sha,
+        entry_kind=entry_kind,
+    )
+    if errs:
+        raise RuntimeError("; ".join(errs))
+
+
+def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_batch_manifest=None, section_options=None):
     errors = []
     if not isinstance(row, dict):
         return [f"{side}.{section}.{name}: row must be a dict"]
@@ -979,7 +1104,7 @@ def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_ba
             if isinstance(ids, list) and len(sigs) != len(ids):
                 errors.append(f"{side}.{section}.{name}: len(signatures)={len(sigs)} != len(batch_ids)={len(ids)}")
             for idx, s in enumerate(sigs):
-                errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signatures[{idx}]", s))
+                errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signatures[{idx}]", s, options=section_options))
         if "expected_batch_ids" in row and row["expected_batch_ids"] != ids:
             errors.append(f"{side}.{section}.{name}: batch_ids {ids} != expected_batch_ids {row['expected_batch_ids']}")
         if expected_batch_manifest is not None:
@@ -999,30 +1124,41 @@ def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_ba
         return errors
 
     if section == "surface_single":
-        errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signature", sig))
+        errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signature", sig, options=section_options))
     elif section == "spatial_relation":
         spatial = sig.get("spatial")
         surface = sig.get("surface")
         if not isinstance(spatial, dict) or not isinstance(surface, dict):
             errors.append(f"{side}.{section}.{name}: signature missing spatial or surface dict")
             return errors
+        errors.extend(_validate_surface_sig_struct(f"{side}.{section}.{name}.signature.surface", surface, options=section_options))
         if "relation" in row and row["relation"] != spatial.get("relation"):
             errors.append(f"{side}.{section}.{name}: top-level relation {row['relation']!r} != spatial.relation {spatial.get('relation')!r}")
         if "certificate" in row and row["certificate"] != spatial.get("certificate"):
             errors.append(f"{side}.{section}.{name}: top-level certificate {row['certificate']!r} != spatial.certificate {spatial.get('certificate')!r}")
-        if "measurement_valid" in sig:
-            top_ok = sig.get("measurement_valid")
-            sp_ok = spatial.get("measurement_valid")
-            sf_ok = surface.get("measurement_valid")
-            if top_ok is True and (sp_ok is not True or sf_ok is not True):
-                errors.append(f"{side}.{section}.{name}: top measurement_valid=True contradicts spatial/surface validity")
-        if spatial.get("measurement_valid") is False and spatial.get("relation") is not None:
-            errors.append(f"{side}.{section}.{name}: spatial measurement_valid=False with non-None relation")
-        if sig.get("budget_stopped") is True and not sig.get("stop_reason"):
+        top_ok = sig.get("measurement_valid")
+        sp_ok = spatial.get("measurement_valid")
+        sf_ok = surface.get("measurement_valid")
+        if type(top_ok) is not bool or type(sp_ok) is not bool or type(sf_ok) is not bool:
+            errors.append(f"{side}.{section}.{name}: spatial measurement_valid flags must all be bool")
+        elif top_ok != (sp_ok and sf_ok):
+            errors.append(f"{side}.{section}.{name}: top measurement_valid={top_ok} != (spatial={sp_ok} and surface={sf_ok})")
+        if sp_ok is True:
+            if spatial.get("relation") not in ("separated", "touching", "penetrating") or not _nonempty_str(spatial.get("certificate")):
+                errors.append(f"{side}.{section}.{name}: spatial measurement_valid=True missing valid relation/certificate")
+        elif sp_ok is False:
+            if spatial.get("relation") is not None or not _nonempty_str(spatial.get("reason")):
+                errors.append(f"{side}.{section}.{name}: spatial measurement_valid=False with non-None relation or missing reason")
+        if sig.get("budget_stopped") is True and not _nonempty_str(sig.get("stop_reason")):
             errors.append(f"{side}.{section}.{name}: budget_stopped=True without stop_reason")
     elif section == "closed_solid":
-        if type(sig.get("measurement_valid")) is not bool or "relation" not in sig or "certificate" not in sig:
+        mv = sig.get("measurement_valid")
+        if type(mv) is not bool or "relation" not in sig or "certificate" not in sig:
             errors.append(f"{side}.{section}.{name}: missing required closed_solid fields")
+        elif mv is True and (sig.get("relation") not in ("separated", "touching", "penetrating") or not _nonempty_str(sig.get("certificate"))):
+            errors.append(f"{side}.{section}.{name}: closed_solid valid=True invalid relation/certificate")
+        elif mv is False and (sig.get("relation") is not None or not _nonempty_str(sig.get("reason"))):
+            errors.append(f"{side}.{section}.{name}: closed_solid valid=False invalid relation/reason")
     elif section == "surface_analyze":
         if "status" not in sig or "scan_complete" not in sig or "pair_accounting_complete" not in sig:
             errors.append(f"{side}.{section}.{name}: analyze missing required completeness/status fields")
@@ -1042,10 +1178,12 @@ def _validate_row(side, section, name, row, *, arm_runtime_sha=None, expected_ba
                 errors.append(f"{side}.{section}.{name}: e2e binding missing valid runtime_source_sha256")
             elif arm_runtime_sha is not None and raw_rt != arm_runtime_sha:
                 errors.append(f"{side}.{section}.{name}: e2e binding runtime_source_sha256 {raw_rt} != arm pin {arm_runtime_sha}")
-        if name.endswith("surface_scan_5mm") and "dispositions" in sig:
+        if "scan" in name:
             disps = sig.get("dispositions")
-            if isinstance(disps, list):
-                oid_keys = [tuple(d.get("object_ids") or ()) for d in disps if isinstance(d, dict)]
+            if not isinstance(disps, list):
+                errors.append(f"{side}.{section}.{name}: scan e2e entry missing dispositions list")
+            else:
+                oid_keys = [tuple(d.get("object_ids") or ()) for d in disps if isinstance(d, dict) and d.get("object_ids")]
                 if len(oid_keys) != len(disps) or len(set(oid_keys)) != len(oid_keys):
                     errors.append(f"{side}.{section}.{name}: invalid or duplicate scan dispositions")
     return errors
@@ -1059,7 +1197,8 @@ def _canonical_row_sig(section, row):
     return sig
 
 
-def _compare_signatures(baseline, current, partial=False, *, expected_batch_manifest=None):
+def _compare_signatures(baseline, current, partial=False, *, expected_batch_manifest=None,
+                        expected_workload_manifest=None, expected_arm_pins=None):
     mismatches = []
     if not isinstance(baseline, dict) or not isinstance(current, dict):
         return ["baseline and current must be dicts"]
@@ -1072,6 +1211,13 @@ def _compare_signatures(baseline, current, partial=False, *, expected_batch_mani
         mismatches.append(f"baseline missing valid 64-hex runtime_identity_sha256: {b_rt!r}")
     if not _is_sha256_hex(c_rt):
         mismatches.append(f"current missing valid 64-hex runtime_identity_sha256: {c_rt!r}")
+    if isinstance(expected_arm_pins, dict):
+        exp_b = expected_arm_pins.get("baseline")
+        exp_c = expected_arm_pins.get("current")
+        if exp_b is not None and b_rt != exp_b:
+            mismatches.append(f"baseline runtime_identity_sha256 {b_rt} != expected external pin {exp_b}")
+        if exp_c is not None and c_rt != exp_c:
+            mismatches.append(f"current runtime_identity_sha256 {c_rt} != expected external pin {exp_c}")
     for label, doc in (("baseline", baseline), ("current", current)):
         sopt = doc.get("solver_options")
         osha = doc.get("options_sha256")
@@ -1089,6 +1235,16 @@ def _compare_signatures(baseline, current, partial=False, *, expected_batch_mani
     if baseline.get("inputs_sha256") != current.get("inputs_sha256"):
         mismatches.append("inputs_sha256 mismatch between baseline and current")
 
+    def _sec_opts(doc, sec):
+        sopt = doc.get("solver_options")
+        if not isinstance(sopt, dict):
+            return None
+        if sec in sopt and isinstance(sopt[sec], dict):
+            return sopt[sec]
+        if "retain_exact_rank" in sopt:
+            return sopt
+        return None
+
     compared_items = 0
     sections = ("surface_single", "spatial_relation", "closed_solid", "surface_analyze", "e2e_entries")
     for section in sections:
@@ -1102,15 +1258,29 @@ def _compare_signatures(baseline, current, partial=False, *, expected_batch_mani
             continue
         b_keys = set(b_sec)
         c_keys = set(c_sec)
+        if isinstance(expected_workload_manifest, dict) and section in expected_workload_manifest:
+            exp_keys = set(expected_workload_manifest[section])
+            if not exp_keys:
+                mismatches.append(f"expected_workload_manifest[{section}] must be non-empty")
+            for missing in sorted(exp_keys - b_keys):
+                mismatches.append(f"baseline missing manifest workload {section}.{missing}")
+            for missing in sorted(exp_keys - c_keys):
+                mismatches.append(f"current missing manifest workload {section}.{missing}")
+            for extra in sorted(b_keys - exp_keys):
+                mismatches.append(f"baseline unregistered workload {section}.{extra}")
+            for extra in sorted(c_keys - exp_keys):
+                mismatches.append(f"current unregistered workload {section}.{extra}")
         for extra in sorted(c_keys - b_keys):
             mismatches.append(f"extra candidate-only workload {section}.{extra}")
         if not partial:
             for missing in sorted(b_keys - c_keys):
                 mismatches.append(f"missing baseline workload {section}.{missing}")
+        b_sopt = _sec_opts(baseline, section)
+        c_sopt = _sec_opts(current, section)
         for name in sorted(b_keys):
-            mismatches.extend(_validate_row("baseline", section, name, b_sec[name], arm_runtime_sha=b_rt))
+            mismatches.extend(_validate_row("baseline", section, name, b_sec[name], arm_runtime_sha=b_rt, section_options=b_sopt))
         for name in sorted(c_keys):
-            mismatches.extend(_validate_row("current", section, name, c_sec[name], arm_runtime_sha=c_rt))
+            mismatches.extend(_validate_row("current", section, name, c_sec[name], arm_runtime_sha=c_rt, section_options=c_sopt))
         for name in sorted(b_keys & c_keys):
             compared_items += 1
             b_row, c_row = b_sec[name], c_sec[name]
@@ -1132,15 +1302,27 @@ def _compare_signatures(baseline, current, partial=False, *, expected_batch_mani
     if not isinstance(b_batches, dict) or not isinstance(c_batches, dict):
         mismatches.append("section surface_batch must be a dict in baseline and current")
         return mismatches
+    if isinstance(expected_workload_manifest, dict) and "surface_batch" in expected_workload_manifest:
+        exp_b_keys = set(expected_workload_manifest["surface_batch"])
+        for missing in sorted(exp_b_keys - set(b_batches)):
+            mismatches.append(f"baseline missing manifest workload surface_batch.{missing}")
+        for missing in sorted(exp_b_keys - set(c_batches)):
+            mismatches.append(f"current missing manifest workload surface_batch.{missing}")
+        for extra in sorted(set(b_batches) - exp_b_keys):
+            mismatches.append(f"baseline unregistered workload surface_batch.{extra}")
+        for extra in sorted(set(c_batches) - exp_b_keys):
+            mismatches.append(f"current unregistered workload surface_batch.{extra}")
     for extra in sorted(set(c_batches) - set(b_batches)):
         mismatches.append(f"extra candidate-only workload surface_batch.{extra}")
     if not partial:
         for missing in sorted(set(b_batches) - set(c_batches)):
             mismatches.append(f"missing baseline workload surface_batch.{missing}")
+    b_sb_opt = _sec_opts(baseline, "surface_batch")
+    c_sb_opt = _sec_opts(current, "surface_batch")
     for name in sorted(b_batches):
-        mismatches.extend(_validate_row("baseline", "surface_batch", name, b_batches[name], arm_runtime_sha=b_rt, expected_batch_manifest=expected_batch_manifest))
+        mismatches.extend(_validate_row("baseline", "surface_batch", name, b_batches[name], arm_runtime_sha=b_rt, expected_batch_manifest=expected_batch_manifest, section_options=b_sb_opt))
     for name in sorted(c_batches):
-        mismatches.extend(_validate_row("current", "surface_batch", name, c_batches[name], arm_runtime_sha=c_rt, expected_batch_manifest=expected_batch_manifest))
+        mismatches.extend(_validate_row("current", "surface_batch", name, c_batches[name], arm_runtime_sha=c_rt, expected_batch_manifest=expected_batch_manifest, section_options=c_sb_opt))
     for name in sorted(set(b_batches) & set(c_batches)):
         compared_items += 1
         b_row, c_row = b_batches[name], c_batches[name]
@@ -1225,7 +1407,7 @@ def verify_comparator_negative_controls():
                         "certificate": "strict_all_referenced_vertex_support", "reason": None,
                         "support_evidence": {"direction": [0, 0, 1]}, "local_evidence": None,
                     },
-                    "surface": {"measurement_valid": True, "distance_m": 1.0},
+                    "surface": copy.deepcopy(surf_row_ok),
                 },
             }
         },
@@ -1290,13 +1472,56 @@ def verify_comparator_negative_controls():
         "registered partial comparison with manifest failed",
     )
 
-    def expect_caught(label, mutator, *, partial=False, mutate_both=False, manifest=None):
+    # Positive control: valid resource-limited surface receipt & optional-provenance-None pass
+    rl_cand = copy.deepcopy(cross_cand)
+    rl_base = copy.deepcopy(base)
+    res_lim_sig = {
+        "measurement_valid": False, "reason": "surface_work_budget", "distance_m": None,
+        "_exact_distance_sq": None, "point_a_world": None, "point_b_world": None,
+        "direction_a_to_b": None, "witness_status": "unknown", "witness_reason": None,
+        "direction_status": "unknown", "direction_reason": None,
+        "topology": None, "witness_triangle_indices": None, "exact_witness_triangles": None,
+    }
+    rl_base["surface_single"]["P1"]["signature"] = copy.deepcopy(res_lim_sig)
+    rl_cand["surface_single"]["P1"]["signature"] = copy.deepcopy(res_lim_sig)
+    _require(_compare_signatures(rl_base, rl_cand, partial=False) == [], "valid resource-limited receipt rejected")
+    no_prov_base = copy.deepcopy(base)
+    no_prov_cand = copy.deepcopy(cross_cand)
+    no_prov_base["surface_single"]["P1"]["signature"]["witness_triangle_indices"] = None
+    no_prov_cand["surface_single"]["P1"]["signature"]["witness_triangle_indices"] = None
+    _require(_compare_signatures(no_prov_base, no_prov_cand, partial=False) == [], "valid distance with omitted provenance rejected")
+
+    # Shared cross-arm entry receipt comparator positive + negative controls (R3-F03)
+    near_ref = copy.deepcopy(base["e2e_entries"]["G508_surface_nearest"]["signature"])
+    near_cand = copy.deepcopy(cross_cand["e2e_entries"]["G508_surface_nearest"]["signature"])
+    assert_entry_receipts_equal(near_ref, near_cand, ref_runtime_sha=valid_rt_sha, cand_runtime_sha=cand_rt_sha, entry_kind="nearest")
+    scan_ref = copy.deepcopy(base["e2e_entries"]["G508_surface_scan_5mm"]["signature"])
+    scan_cand = copy.deepcopy(cross_cand["e2e_entries"]["G508_surface_scan_5mm"]["signature"])
+    assert_entry_receipts_equal(scan_ref, scan_cand, ref_runtime_sha=valid_rt_sha, cand_runtime_sha=cand_rt_sha, entry_kind="scan")
+    for bad_label, fn_bad in (
+        ("entry_wrong_digest", lambda: assert_entry_receipts_equal(near_ref, near_cand, ref_runtime_sha=valid_rt_sha, cand_runtime_sha=sha_b, entry_kind="nearest")),
+        ("entry_missing_binding", lambda: assert_entry_receipts_equal(near_ref, {**near_cand, "binding": None}, ref_runtime_sha=valid_rt_sha, cand_runtime_sha=cand_rt_sha, entry_kind="nearest")),
+        ("entry_semantic_drift_scan", lambda: assert_entry_receipts_equal(scan_ref, {**scan_cand, "dispositions": [{"object_ids": ["a", "b"], "status": "measured_match", "distance_m": 0.999}]}, ref_runtime_sha=valid_rt_sha, cand_runtime_sha=cand_rt_sha, entry_kind="scan")),
+    ):
+        try:
+            fn_bad()
+        except RuntimeError:
+            pass
+        else:
+            raise RuntimeError(f"Entry receipt negative control failed to catch: {bad_label}")
+
+    def expect_caught(label, mutator, *, partial=False, mutate_both=False, manifest=None, wk_manifest=None, arm_pins=None):
         b_doc = copy.deepcopy(base)
         cand = copy.deepcopy(base)
         if mutate_both:
             mutator(b_doc)
         mutator(cand)
-        errs = _compare_signatures(b_doc, cand, partial=partial, expected_batch_manifest=manifest)
+        errs = _compare_signatures(
+            b_doc, cand, partial=partial,
+            expected_batch_manifest=manifest,
+            expected_workload_manifest=wk_manifest,
+            expected_arm_pins=arm_pins,
+        )
         if not errs:
             raise RuntimeError(f"Comparator negative control failed to catch: {label}")
         return {"control": label, "caught": True, "message": errs[0].splitlines()[0]}
@@ -1371,10 +1596,19 @@ def verify_comparator_negative_controls():
         expect_caught("expected_batch_manifest_truncated_both", lambda c: (c["surface_batch"]["B1"]["batch_ids"].pop(), c["surface_batch"]["B1"]["signatures"].pop(), c["surface_batch"]["B1"]["input_sha256"].pop()), mutate_both=True, manifest={"B1": ["p0", "p1"]}),
         expect_caught("surface_single_missing_required_field_both", lambda c: c["surface_single"]["P1"]["signature"].pop("distance_m"), mutate_both=True),
         expect_caught("scan_duplicate_disposition_both", lambda c: c["e2e_entries"]["G508_surface_scan_5mm"]["signature"]["dispositions"].append({"object_ids": ["a", "b"], "status": "measured_match", "distance_m": 0.003}), mutate_both=True),
+        # New R3-F04 / R3-F05 controls:
+        expect_caught("surface_negative_distance_both", lambda c: c["surface_single"]["P1"]["signature"].__setitem__("distance_m", -1.0), mutate_both=True),
+        expect_caught("surface_infinite_distance_both", lambda c: c["surface_single"]["P1"]["signature"].__setitem__("distance_m", float("inf")), mutate_both=True),
+        expect_caught("surface_bogus_witness_status_both", lambda c: c["surface_single"]["P1"]["signature"].__setitem__("witness_status", "bogus"), mutate_both=True),
+        expect_caught("surface_missing_exact_rank_when_requested_both", lambda c: c["surface_single"]["P1"]["signature"].__setitem__("_exact_distance_sq", None), mutate_both=True),
+        expect_caught("spatial_top_false_contradicts_both_true", lambda c: c["spatial_relation"]["SR1"]["signature"].__setitem__("measurement_valid", False), mutate_both=True),
+        expect_caught("scan_missing_dispositions_field_both", lambda c: c["e2e_entries"]["G508_surface_scan_5mm"]["signature"].pop("dispositions"), mutate_both=True),
+        expect_caught("expected_workload_manifest_both_omitted", lambda c: c["surface_single"].pop("P1"), mutate_both=True, wk_manifest={"surface_single": ["P1"]}),
+        expect_caught("expected_arm_pins_wrong_external_pin", lambda c: None, arm_pins={"baseline": valid_rt_sha, "current": cand_rt_sha}),
     ]
     return {
         "passed": True,
-        "controls_checked": len(checks) + 5,  # +3 extractor + _time_fn alias + zero_verified
+        "controls_checked": len(checks) + 10,
         "alias_caught": caught_alias,
         "details": checks,
     }
@@ -1422,6 +1656,8 @@ def main():
     parser.add_argument("--no-mem", action="store_true")
     parser.add_argument("--save-baseline", type=Path)
     parser.add_argument("--compare", type=Path)
+    parser.add_argument("--expected-baseline-sha", type=str, default=None)
+    parser.add_argument("--expected-current-sha", type=str, default=None)
     parser.add_argument("--verify-comparator", action="store_true")
     args = parser.parse_args()
 
@@ -1447,7 +1683,10 @@ def main():
         print(f"Saved baseline to {args.save_baseline}")
 
     if baseline is not None:
-        mismatches = _compare_signatures(baseline, results, partial=args.quick)
+        pins = None
+        if args.expected_baseline_sha or args.expected_current_sha:
+            pins = {"baseline": args.expected_baseline_sha, "current": args.expected_current_sha}
+        mismatches = _compare_signatures(baseline, results, partial=args.quick, expected_arm_pins=pins)
         if mismatches:
             print("EQUIVALENCE CHECK FAILED:")
             for msg in mismatches:

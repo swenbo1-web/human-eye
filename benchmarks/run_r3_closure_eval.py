@@ -52,10 +52,19 @@ PRESERVED_ARTIFACTS = [
     "benchmarks/KERNEL_041_HANDOFF.md",
     "benchmarks/KERNEL_041_RESULTS.json",
     "benchmarks/KERNEL_041_REVIEW.md",
+    "benchmarks/KERNEL_041_R3_CASES.json",
+    "benchmarks/KERNEL_041_R3_HANDOFF.md",
+    "benchmarks/KERNEL_041_R3_RESULTS.json",
+    "benchmarks/KERNEL_041_R3_REVIEW.md",
     "benchmarks/REVIEW_FIXES.md",
     "benchmarks/baseline_032.json",
     "benchmarks/opt_bvh_final.json",
 ]
+
+EXPECTED_ARM_SHAS = {
+    "032": "0f9e6336ec54adf9e7b9a5379b02d2c2cab9f6d1f734138c3fde29e08ccee241",
+    "b7d469d_R2": "e35b7e16c11ff8360bdcf2e5340019a9fc37ba11ad2bb09864989a28d6525414",
+}
 
 PRESERVED_CONSTANTS = {
     "MAX_FACES": 4096,
@@ -207,6 +216,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
         gc.collect()
         gc.disable()
         times_ms = []
+        repeat_sig_hashes = []
         ref_sig = None
         verified = 0
         last_out = None
@@ -216,6 +226,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
                 val = fn()
                 times_ms.append((time.perf_counter_ns() - t0) / 1e6)
                 cur_sig = copy.deepcopy(sig_fn(val))
+                repeat_sig_hashes.append(bvh_eval._stable_hash(cur_sig))
                 if ref_sig is None:
                     ref_sig = cur_sig
                 elif cur_sig != ref_sig:
@@ -232,7 +243,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
         if copy.deepcopy(sig_fn(tm_out)) != ref_sig:
             raise RuntimeError(f"Tracemalloc pass mismatch in worker for {resolved_arm}")
         s = sorted(times_ms)
-        return times_ms, statistics.median(s), peak, verified, last_out, ref_sig
+        return times_ms, statistics.median(s), peak, verified, repeat_sig_hashes, last_out, ref_sig
 
     def batch_call(target, peers, use_cache: bool):
         cache = {} if use_cache else None
@@ -269,7 +280,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
         ("Sheet_Parallel_5um", sh_l, sh_r),
     ]
     for cname, l_m, r_m in single_cases:
-        samples, med, peak, ver, out, sig = smoke_call(
+        samples, med, peak, ver, rhashes, out, sig = smoke_call(
             lambda l=l_m, r=r_m: sp.measure_surface_proximity(l, r, NOOP, retain_exact_rank=True, retain_witness_triangles=True, **extra_kw),
             bvh_eval._surface_sig,
         )
@@ -278,6 +289,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
             "median_ms": round(med, 3),
             "tracemalloc_peak_bytes": peak,
             "timed_outputs_verified": ver,
+            "repeat_signature_sha256": rhashes,
             "signature": sig,
             "work_summary": bvh_eval._work_summary(out["work"]),
         }
@@ -295,12 +307,13 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
                 "median_ms": None,
                 "tracemalloc_peak_bytes": None,
                 "timed_outputs_verified": 0,
+                "repeat_signature_sha256": [],
                 "batch_ids": list(D48_5_NAMES),
                 "signatures": None,
                 "work_summary": {},
             }
             continue
-        samples, med, peak, ver, (outs, agg), sig = smoke_call(
+        samples, med, peak, ver, rhashes, (outs, agg), sig = smoke_call(
             lambda t=dt, ps=dps, uc=ucache: batch_call(t, ps, uc),
             lambda pair: [bvh_eval._surface_sig(r) for r in pair[0]],
         )
@@ -309,6 +322,7 @@ def _worker_main(arm_root: Path, proj_mode: str | None, out_json: Path, warmup: 
             "median_ms": round(med, 3),
             "tracemalloc_peak_bytes": peak,
             "timed_outputs_verified": ver,
+            "repeat_signature_sha256": rhashes,
             "batch_ids": list(D48_5_NAMES),
             "signatures": sig,
             "work_summary": bvh_eval._work_summary(agg),
@@ -349,36 +363,33 @@ def _collect_c01_to_c06_audits():
 
     NOOP = bvh_eval.NOOP
 
-    # C03 exhaustive sweep audit table for tilted48, sheet5um, repeated_epoch_36
+    # C03 exhaustive sweep audit table using REAL executed off_paid_dequeue_ref + real multi-epoch fixture
+    snap = json.loads(G508_PATH.read_bytes())
+    g_objs = {r["name"]: r for r in snap["objects"]}
+    gt = _freeze("Target", g_objs["Target"]["vertices_world"], g_objs["Target"]["triangles"])
+    gc_comp = _freeze("Competing_001", g_objs["Competing_001"]["vertices_world"], g_objs["Competing_001"]["triangles"])
     tl, tr = _tilted_plate(12, 0.0), _tilted_plate(12, 0.5, reverse=True)
     ml, mr = _freeze("tl", *tl), _freeze("tr", *tr)
     sv, sf = mac.sheet(17)
     tris_sf = [list(f) for f in bvh_eval._triangulate(sf)]
     sp_l = _freeze("sp_l", sv, tris_sf)
     sp_r = _freeze("sp_r", [[p[0], p[1], p[2] + 5e-6] for p in sv], tris_sf)
-    st_vl, st_fl, st_vr, st_fr = [], [], [], []
-    for k in range(36):
-        x0, x1 = k * 0.08, k * 0.08 + 0.06
-        z = 0.002 if k == 35 else 0.12 * (1.0 - k / 36.0)
-        b = len(st_vl)
-        st_vl.extend([[x0, 0.0, 0.0], [x1, 0.0, 0.0], [x0, 0.2, 0.0]])
-        st_fl.append([b, b + 1, b + 2])
-        st_vr.extend([[x0, 0.0, z + 0.5], [x1, 0.0, z + 0.5], [x0, 0.2, z + 0.5]])
-        st_fr.append([b, b + 1, b + 2])
-    ep_l, ep_r = _freeze("ep_l", st_vl, st_fl), _freeze("ep_r", st_vr, st_fr)
 
     orig_init = sp._Work.__init__
     c03_sweeps = {}
-    for fname, a_m, b_m in (("tilted48", ml, mr), ("sheet5um", sp_l, sp_r), ("repeated_epoch_36", ep_l, ep_r)):
+    for fname, a_m, b_m in (("tilted48", ml, mr), ("G508_Competing_001", gt, gc_comp), ("sheet5um", sp_l, sp_r)):
         ref_off = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True, _projection_mode="off")
+        ref_paid = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True, _projection_mode="off_paid_dequeue_ref")
         ref_on = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True)
         m_off = ref_off["work"]["work_units"]
-        m_ref_031 = m_off + ref_off["work"]["aabb_bound_tests"]
-        ref_sig = bvh_eval._surface_sig(ref_off)
+        m_paid_ref = ref_paid["work"]["work_units"]
+        ref_sig = bvh_eval._surface_sig(ref_paid)
         by_ref = {}
-        for rname, base_w in (("vs_M_off", m_off), ("vs_M_ref_031", m_ref_031)):
+        for rname, base_w in (("vs_M_off", m_off), ("vs_M_paid_ref", m_paid_ref)):
             var_map = {}
-            for variant in ("OFF", "ON_normal", "ON_fail_dir", "ON_fail_slab"):
+            for variant in ("PAID_REF", "OFF", "ON_normal", "ON_in_admission_fail_dir", "ON_in_admission_fail_slab"):
+                if rname == "vs_M_off" and variant == "PAID_REF":
+                    continue
                 invalid_deltas, prov_diff_deltas = [], []
                 for delta in range(0, 33):
                     cap = base_w + delta
@@ -387,14 +398,11 @@ def _collect_c01_to_c06_audits():
                     def pinit(inst, cp, diag, init_w=sp.MAX_WORK_UNITS - cap):
                         orig_init(inst, cp, diag)
                         inst.counts["work_units"] = init_w
-                    pm = "off" if variant == "OFF" else "settled_credit_031_ref"
-                    if variant == "ON_fail_dir":
+                    pm = "off_paid_dequeue_ref" if variant == "PAID_REF" else ("off" if variant == "OFF" else "settled_credit_031_ref")
+                    if variant == "ON_in_admission_fail_dir":
                         ctx = patch.object(sp, "_fast_descriptor_direction", return_value=None)
-                    elif variant == "ON_fail_slab":
-                        ctx = patch.object(
-                            sp._FastWitnessProjection, "prunes_nodes",
-                            lambda self, l, r, st, bd, **kw: (self._node_interval(l, self.node_a, self.tri_a, self.prep_a, bd), False)[1],
-                        )
+                    elif variant == "ON_in_admission_fail_slab":
+                        ctx = patch.object(sp._FastWitnessProjection, "_slab_exceeds_cutoff", staticmethod(lambda g, c: False))
                     else:
                         ctx = patch.object(sp, "_NODE_PRUNE_OBSERVER", None)
                     with patch.object(sp._Work, "__init__", pinit), ctx:
@@ -411,19 +419,18 @@ def _collect_c01_to_c06_audits():
             by_ref[rname] = var_map
         c03_sweeps[fname] = {
             "M_off": m_off,
-            "M_ref_031": m_ref_031,
+            "dequeue_reused_aabb_bounds": ref_off["work"]["dequeue_reused_aabb_bounds"],
+            "M_paid_ref": m_paid_ref,
+            "M_old_proxy_aabb_total": m_off + ref_off["work"]["aabb_bound_tests"],
             "ON_normal_work_units": ref_on["work"]["work_units"],
             "ON_normal_credit_summary": {
                 k: v for k, v in bvh_eval._work_summary(ref_on["work"]).items()
-                if "credit" in k or "upper" in k or "slab" in k or "mode" in k
+                if "credit" in k or "upper" in k or "slab" in k or "mode" in k or "direction" in k or "inval" in k
             },
             **by_ref,
         }
 
-    # C05a projection audit summary
-    snap = json.loads(G508_PATH.read_bytes())
-    g_objs = {r["name"]: r for r in snap["objects"]}
-    gt = _freeze("Target", g_objs["Target"]["vertices_world"], g_objs["Target"]["triangles"])
+    # C05a projection audit summary (verify Fraction denominator == 1 before int conversion)
     gp = _freeze("Peer_000", g_objs["Peer_000"]["vertices_world"], g_objs["Peer_000"]["triangles"])
 
     def leaf_ids(n):
@@ -432,10 +439,16 @@ def _collect_c01_to_c06_audits():
     def indep_src_coords(mesh, origin_frac, factor):
         out = []
         for row in mesh.faces:
-            out.append([
-                tuple(int((Fraction.from_float(float(c)) - origin_frac[k]) * factor) for k, c in enumerate(mesh.vertices[vid]))
-                for vid in row
-            ])
+            tri_pts = []
+            for vid in row:
+                pt = []
+                for k, c in enumerate(mesh.vertices[vid]):
+                    val = (Fraction.from_float(float(c)) - origin_frac[k]) * factor
+                    if val.denominator != 1:
+                        raise RuntimeError(f"Non-integer scaled source vertex in frame audit: {val!r}")
+                    pt.append(int(val))
+                tri_pts.append(tuple(pt))
+            out.append(tri_pts)
         return out
 
     c05a_summary = {}
@@ -520,6 +533,9 @@ def main():
     parser.add_argument("--out-json", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--output-prefix", type=str, default="KERNEL_041_R3_CLOSURE")
+    parser.add_argument("--arm-manifest", type=Path, default=None)
+    parser.add_argument("--expected-r3-sha", type=str, default=None)
     args = parser.parse_args()
 
     if args.worker:
@@ -528,21 +544,36 @@ def main():
         return
 
     from benchmarks import bvh_eval
+    from human_eye_plugin import runtime_identity
 
-    if not (ARM_032_ROOT / "human_eye_plugin" / "surface_proximity.py").exists():
-        raise RuntimeError(f"Missing arm_a_032 snapshot at {ARM_032_ROOT}")
-    if not (ARM_R2_ROOT / "human_eye_plugin" / "surface_proximity.py").exists():
-        raise RuntimeError(f"Missing arm_b7d469d snapshot at {ARM_R2_ROOT}")
+    r3_rt_sha = runtime_identity.runtime_identity()["source_sha256"]
+    expected_pins = dict(EXPECTED_ARM_SHAS)
+    expected_pins["R3_default"] = args.expected_r3_sha or r3_rt_sha
+    expected_pins["R3_off"] = expected_pins["R3_default"]
+
+    manifest_roots = {}
+    if args.arm_manifest is not None:
+        raw_m = json.loads(args.arm_manifest.read_bytes())
+        for aname, row in raw_m.items():
+            if isinstance(row, dict):
+                if row.get("expected_runtime_sha256"):
+                    expected_pins[aname] = row["expected_runtime_sha256"]
+                if row.get("root"):
+                    manifest_roots[aname] = Path(row["root"])
 
     arm_specs = [
-        ("032", ARM_032_ROOT, ""),
-        ("b7d469d_R2", ARM_R2_ROOT, ""),
-        ("R3_default", ROOT, "settled_credit_031_ref"),
-        ("R3_off", ROOT, "off"),
+        ("032", manifest_roots.get("032", ARM_032_ROOT), ""),
+        ("b7d469d_R2", manifest_roots.get("b7d469d_R2", ARM_R2_ROOT), ""),
+        ("R3_default", manifest_roots.get("R3_default", ROOT), "settled_credit_031_ref"),
+        ("R3_off", manifest_roots.get("R3_off", ROOT), "off"),
     ]
+    for aname, aroot, _ in arm_specs:
+        if not (aroot / "human_eye_plugin" / "surface_proximity.py").exists():
+            raise RuntimeError(f"Missing arm snapshot for {aname} at {aroot}")
+
     worker_results = {}
     for arm_name, arm_root, pm in arm_specs:
-        out_path = SCRATCH / f"r3_worker_{arm_name}.json"
+        out_path = SCRATCH / f"r3_closure_worker_{arm_name}.json"
         cmd = [
             sys.executable, "-B", str(Path(__file__).resolve()),
             "--worker", "--arm-root", str(arm_root),
@@ -555,7 +586,13 @@ def main():
         proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, check=False)
         if proc.returncode != 0:
             raise RuntimeError(f"Worker {arm_name} failed:\n{proc.stdout}\n{proc.stderr}")
-        worker_results[arm_name] = json.loads(out_path.read_bytes())
+        wres = json.loads(out_path.read_bytes())
+        exp_sha = expected_pins.get(arm_name)
+        if exp_sha and wres.get("runtime_source_sha256") != exp_sha:
+            raise RuntimeError(
+                f"External source pin mismatch for {arm_name}: got {wres.get('runtime_source_sha256')}, expected {exp_sha}"
+            )
+        worker_results[arm_name] = wres
 
     # Verify exact semantic parity across ALL 4 isolated arms
     ref_smoke = worker_results["032"]["smoke"]
@@ -589,7 +626,7 @@ def main():
     print("Running R3 and K01-K07 unit suites and C04 -O verification...", flush=True)
     p_comp_norm = subprocess.run([sys.executable, "-B", str(ROOT / "benchmarks/bvh_eval.py"), "--verify-comparator"], cwd=str(ROOT), capture_output=True, text=True, check=False)
     p_comp_opt = subprocess.run([sys.executable, "-B", "-O", str(ROOT / "benchmarks/bvh_eval.py"), "--verify-comparator"], cwd=str(ROOT), capture_output=True, text=True, check=False)
-    p_unit = subprocess.run([sys.executable, "-B", "-m", "unittest", "benchmarks/test_kernel_041_r3_c01_to_c06.py", "benchmarks/test_kernel_041_k01_to_k07.py", "-v"], cwd=str(ROOT), capture_output=True, text=True, check=False)
+    p_unit = subprocess.run([sys.executable, "-B", "-m", "unittest", "benchmarks/test_kernel_041_r3_closure.py", "benchmarks/test_kernel_041_r3_c01_to_c06.py", "benchmarks/test_kernel_041_k01_to_k07.py", "-v"], cwd=str(ROOT), capture_output=True, text=True, check=False)
     p_rev = subprocess.run([sys.executable, "-B", str(ROOT / "benchmarks/verify_review_suite.py")], cwd=str(ROOT), capture_output=True, text=True, check=False)
     if any(p.returncode != 0 for p in (p_comp_norm, p_comp_opt, p_unit, p_rev)):
         raise RuntimeError(
@@ -600,7 +637,6 @@ def main():
 
     audits = _collect_c01_to_c06_audits()
 
-    # Build side-by-side smoke summary + C02 single-variable delta vs b7d469d
     smoke_comparison = {}
     for cname in ref_smoke:
         entry = {}
@@ -611,12 +647,13 @@ def main():
                 "median_ms": r["median_ms"],
                 "tracemalloc_peak_bytes": r["tracemalloc_peak_bytes"],
                 "timed_outputs_verified": r["timed_outputs_verified"],
+                "repeat_signature_sha256": r.get("repeat_signature_sha256", []),
                 "work_summary": r["work_summary"],
             }
         r2_med = entry["b7d469d_R2"]["median_ms"]
         r3_med = entry["R3_default"]["median_ms"]
         smoke_comparison[cname] = {
-            "policy": "exploratory_bounded_smoke_1warmup_3repeats_isolated_subprocesses_no_p95_claim",
+            "policy": "exploratory_bounded_smoke_1warmup_3repeats_isolated_subprocesses_no_p95_claim_no_single_var_c02_attribution",
             "memory_metric": "python_tracemalloc_only_not_process_rss",
             "arms": entry,
             "r3_vs_r2_median_ratio": round(r3_med / r2_med, 3) if (r2_med and r3_med) else None,
@@ -625,25 +662,24 @@ def main():
     head_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(ROOT), text=True).strip()
     branch = subprocess.check_output(["git", "branch", "--show-current"], cwd=str(ROOT), text=True).strip()
 
-    from human_eye_plugin import runtime_identity
-    r3_rt_sha = runtime_identity.runtime_identity()["source_sha256"]
-
     changed_files = [
         "human_eye_plugin/surface_proximity.py",
         "benchmarks/bvh_eval.py",
         "benchmarks/run_ablation_and_assets.py",
-        "benchmarks/test_kernel_041_k01_to_k07.py",
         "benchmarks/test_kernel_041_r3_c01_to_c06.py",
+        "benchmarks/test_kernel_041_r3_closure.py",
         "benchmarks/run_r3_closure_eval.py",
     ]
 
     cases_doc = {
-        "schema": "m3-bvh-kernel-041-r3-cases-v1",
+        "schema": "m3-bvh-kernel-041-r3-closure-cases-v1",
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "branch": branch,
+        "reviewed_r3_commit": "7f907d05c53bb57cebbe037e540485e228240060",
         "reviewed_r2_commit": "b7d469d390abdeac93dfacfcce0dc385eae2f341",
         "accepted_reference_commit": "6c93f2375d1073b33e721a168f1fcf610ac6dbdc",
         "runtime_source_sha256": r3_rt_sha,
+        "expected_arm_pins": expected_pins,
         "preserved_constants": PRESERVED_CONSTANTS,
         "preserved_artifact_digests": {p: _file_sha256(ROOT / p) for p in PRESERVED_ARTIFACTS},
         "modified_or_new_code_digests": {p: _file_sha256(ROOT / p) for p in changed_files},
@@ -656,6 +692,7 @@ def main():
         "c03_mode_policy": {
             "default_mode": "settled_credit_031_ref",
             "credit_reference": "mandatory_031_dequeue_aabb",
+            "paid_reference_mode": "off_paid_dequeue_ref",
             "explicit_safe_mode": "off",
             "selected_option": "Option A + pure O(1) cold_interval_upper (0 / 1+3n / 5n-1)",
         },
@@ -668,15 +705,16 @@ def main():
     }
 
     results_doc = {
-        "schema": "m3-bvh-kernel-041-r3-results-v1",
+        "schema": "m3-bvh-kernel-041-r3-closure-results-v1",
         "generated_utc": cases_doc["generated_utc"],
         "branch": branch,
-        "base_commit_before_r3_commit": head_sha,
+        "base_commit_before_closure_commit": head_sha,
         "arms": {
             name: {
+                "expected_runtime_sha256": expected_pins.get(name),
                 "runtime_source_sha256": w["runtime_source_sha256"],
                 "projection_mode": w["projection_mode"],
-                "isolation_method": "fresh_serial_subprocess_verified_module_paths",
+                "isolation_method": "fresh_serial_subprocess_verified_module_paths_and_external_pin",
             }
             for name, w in worker_results.items()
         },
@@ -684,7 +722,7 @@ def main():
         "gates": {
             "C04_comparator_normal": json.loads(p_comp_norm.stdout),
             "C04_comparator_python_O": json.loads(p_comp_opt.stdout),
-            "unit_tests_r3_plus_k01_k07": {
+            "unit_tests_closure_plus_r3_plus_k01_k07": {
                 "passed": True,
                 "returncode": p_unit.returncode,
                 "summary_line": p_unit.stderr.strip().splitlines()[-1] if p_unit.stderr.strip() else "",
@@ -709,14 +747,16 @@ def main():
         },
         "handoff_status": "RESTRICTED_EXPERIMENT_ONLY",
         "handoff_reasons": [
-            "All R3 local closure fixes (C01, C02, C03 Option A, C04, C05, C06) passed isolated verification.",
-            "Status remains RESTRICTED_EXPERIMENT_ONLY because: (1) private historical fixtures zero489/first_yield/pair129 and exact 040 48F ordering are MISSING_HISTORICAL_INPUT in public repo; (2) under C03 Option A settled_credit_031_ref, injected failed proofs still show holes relative to same-rev OFF M_off while showing 0 holes relative to mandatory-dequeue 031 M_ref_031 (explicit _projection_mode='off' provided when strict zero-speculation budget is required); (3) Blender/MCP live host integration belongs to the experiment branch.",
+            "All R3 minimal closure items (R3-F01 through R3-F06) verified in direct-kernel isolated scope.",
+            "Status remains RESTRICTED_EXPERIMENT_ONLY because: (1) private historical fixtures zero489/first_yield/pair129 and exact 040 48F ordering remain MISSING_HISTORICAL_INPUT in public repo; (2) Option A settled_credit_031_ref shows 0 holes vs actually executed off_paid_dequeue_ref across normal and in-admission failed proofs (including 5-epoch G508_Competing_001 and tilted48), while still showing documented holes on injected failures relative to same-rev OFF M_off; (3) experiment branch owns caller sealing and host qualification.",
         ],
     }
 
-    (ROOT / "benchmarks/KERNEL_041_R3_CASES.json").write_text(json.dumps(cases_doc, indent=2, sort_keys=True), encoding="utf8")
-    (ROOT / "benchmarks/KERNEL_041_R3_RESULTS.json").write_text(json.dumps(results_doc, indent=2, sort_keys=True), encoding="utf8")
-    print("Wrote benchmarks/KERNEL_041_R3_CASES.json and benchmarks/KERNEL_041_R3_RESULTS.json successfully.")
+    cases_path = ROOT / "benchmarks" / f"{args.output_prefix}_CASES.json"
+    results_path = ROOT / "benchmarks" / f"{args.output_prefix}_RESULTS.json"
+    cases_path.write_text(json.dumps(cases_doc, indent=2, sort_keys=True), encoding="utf8")
+    results_path.write_text(json.dumps(results_doc, indent=2, sort_keys=True), encoding="utf8")
+    print(f"Wrote {cases_path.relative_to(ROOT)} and {results_path.relative_to(ROOT)} successfully.")
 
 
 if __name__ == "__main__":

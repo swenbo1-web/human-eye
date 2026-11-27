@@ -356,10 +356,11 @@ class TestR3_C03_BudgetContract(unittest.TestCase):
 
         def sweep_fixture(a_m, b_m):
             ref_off = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True, _projection_mode="off")
+            ref_paid = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True, _projection_mode="off_paid_dequeue_ref")
             ref_on = sp.measure_surface_proximity(a_m, b_m, NOOP, retain_exact_rank=True, retain_witness_triangles=True)
             ref_sig = bvh_eval._surface_sig(ref_off)
             m_off = ref_off["work"]["work_units"]
-            m_ref_031 = m_off + ref_off["work"]["aabb_bound_tests"]
+            m_ref_031 = ref_paid["work"]["work_units"]
 
             holes_m_off = {v: {"invalid": [], "prov_diff": []} for v in ("OFF", "ON_normal", "ON_fail_dir", "ON_fail_slab")}
             holes_m_031 = {v: {"invalid": [], "prov_diff": []} for v in ("OFF", "ON_normal", "ON_fail_dir", "ON_fail_slab")}
@@ -377,10 +378,7 @@ class TestR3_C03_BudgetContract(unittest.TestCase):
                         if variant == "ON_fail_dir":
                             ctx = patch.object(sp, "_fast_descriptor_direction", return_value=None)
                         elif variant == "ON_fail_slab":
-                            ctx = patch.object(
-                                sp._FastWitnessProjection, "prunes_nodes",
-                                lambda self, l, r, st, bd, **kw: (self._node_interval(l, self.node_a, self.tri_a, self.prep_a, bd), False)[1],
-                            )
+                            ctx = patch.object(sp._FastWitnessProjection, "_slab_exceeds_cutoff", staticmethod(lambda g, c: False))
                         else:
                             ctx = patch.object(sp, "_NODE_PRUNE_OBSERVER", None)
                         with patch.object(sp._Work, "__init__", pinit), ctx:
@@ -674,19 +672,20 @@ class TestR3_C06_BoundedPrepAndCacheAccounting(unittest.TestCase):
             r_retry = sp.measure_surface_proximity(ma, mb, NOOP, retain_exact_rank=True, _mesh_cache=cache)
             self.assertEqual(bvh_eval._surface_sig(r_clean), bvh_eval._surface_sig(r_retry))
 
-        # Affine bit-domain fallback loop cancellation checkpoint
+        # Affine bit-domain fallback loop cancellation checkpoint (dedicated stage sentinel)
         ext_a = _freeze("ea", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [(0, 1, 2)] * 17)
         ext_b = _freeze("eb", [(0.0, 0.0, math.ldexp(1.0, -520)), (1.0, 0.0, math.ldexp(1.0, -520)), (0.0, 1.0, math.ldexp(1.0, -520))], [(0, 1, 2)] * 17)
         fb_cache = {}
-        seen_rv = 0
+        seen_fb = 0
         def cp_fb(s):
-            nonlocal seen_rv
-            if s == "surface_proximity_referenced_vertices":
-                seen_rv += 1
-                if seen_rv == 9:  # hits inside affine fallback rel_r_in_l / materialization
-                    raise _Cancelled("fallback_rv")
+            nonlocal seen_fb
+            if s == "surface_proximity_mesh_cache_affine_fallback":
+                seen_fb += 1
+                if seen_fb == 2:
+                    raise _Cancelled("fallback_loop")
         with self.assertRaises(_Cancelled):
             sp.measure_surface_proximity(ext_a, ext_b, cp_fb, _mesh_cache=fb_cache)
+        self.assertGreaterEqual(seen_fb, 2)
         r_fb = sp.measure_surface_proximity(ext_a, ext_b, NOOP, retain_exact_rank=True, _mesh_cache=fb_cache)
         self.assertTrue(r_fb["measurement_valid"])
         self.assertGreater(r_fb["work"].get("mesh_cache_fallbacks", 0), 0)

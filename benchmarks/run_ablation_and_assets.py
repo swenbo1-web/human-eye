@@ -38,6 +38,7 @@ from benchmarks.bvh_eval import (
     _closed_sig,
     _triangulate,
     _work_summary,
+    assert_entry_receipts_equal,
     build_workloads,
 )
 from verification import m3_asset_cases as mac
@@ -239,6 +240,11 @@ def _median_bvh(bounds, budget, *, leaf_size=2):
     return build(list(range(len(bounds))))
 
 
+def _require(cond, msg):
+    if not cond:
+        raise RuntimeError(msg)
+
+
 def _run_three_arm_main(arms, quick_only=False):
     w = build_workloads(quick=False)
     a, b, c = arms["A"], arms["B"], arms["C"]
@@ -258,7 +264,7 @@ def _run_three_arm_main(arms, quick_only=False):
         sA = _surface_sig(res["A"]["result"])
         sB = _surface_sig(res["B"]["result"])
         sC = _surface_sig(res["C"]["result"])
-        assert sA == sB == sC, (name, "A/B/C signature mismatch", sA, sB, sC)
+        _require(sA == sB == sC, f"{name}: A/B/C signature mismatch")
         single_out[name] = {
             aname: {"timing": res[aname]["timing"], "work": _work_summary(res[aname]["result"]["work"]), "signature": _surface_sig(res[aname]["result"])}
             for aname in ("A", "B", "C")
@@ -385,7 +391,11 @@ def _run_three_arm_main(arms, quick_only=False):
         ("C_cached", (c, lambda: run_e2e_near(c, False))),
     ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _nearest_sig(pair[0]))
     for k in ("C_nocache", "C_cached"):
-        assert _nearest_sig(nr_res[k]["result"][0]) == _nearest_sig(nr_res["A_032"]["result"][0])
+        assert_entry_receipts_equal(
+            _nearest_sig(nr_res["A_032"]["result"][0]),
+            _nearest_sig(nr_res[k]["result"][0]),
+            ref_runtime_sha=a.sha256, cand_runtime_sha=c.sha256, entry_kind="nearest",
+        )
 
     sc_res = _time_interleaved([
         ("A_032", (a, lambda: run_e2e_scan(a))),
@@ -393,7 +403,11 @@ def _run_three_arm_main(arms, quick_only=False):
         ("C_cached", (c, lambda: run_e2e_scan(c, False))),
     ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _scan_sig(pair[0], pair[1]))
     for k in ("C_nocache", "C_cached"):
-        assert _scan_sig(*sc_res[k]["result"]) == _scan_sig(*sc_res["A_032"]["result"])
+        assert_entry_receipts_equal(
+            _scan_sig(*sc_res["A_032"]["result"]),
+            _scan_sig(*sc_res[k]["result"]),
+            ref_runtime_sha=a.sha256, cand_runtime_sha=c.sha256, entry_kind="scan",
+        )
 
     out["e2e_entries"] = {
         "G508_surface_nearest": {k: {"timing": nr_res[k]["timing"], "kernel_calls": nr_res[k]["result"][1]["kernel_calls"]} for k in nr_res},
@@ -498,10 +512,14 @@ def _run_real_assets_b01_b02_c(arms):
         ("C_cached", (c, lambda: c.tq.surface_nearest_result(pkt24_near, c.sc.SpatialSceneCache(), NOOP, diagnostics={}))),
     ], warmup=1, repeats=7, measure_mem=True, sig_fn=_nearest_sig)
     for k in ("C_nocache", "C_cached"):
-        assert _nearest_sig(b02_near[k]["result"]) == _nearest_sig(b02_near["A_032"]["result"])
+        assert_entry_receipts_equal(
+            _nearest_sig(b02_near["A_032"]["result"]),
+            _nearest_sig(b02_near[k]["result"]),
+            ref_runtime_sha=a.sha256, cand_runtime_sha=c.sha256, entry_kind="nearest",
+        )
     # Cross-check nearest distance against BASE_TRUTH.json
     b02_out = b02_near["C_cached"]["result"]
-    assert b02_out["nearest_ids"] == ["Obj_002"]
+    _require(b02_out["nearest_ids"] == ["Obj_002"], f"unexpected B02 winner: {b02_out['nearest_ids']}")
 
     b02_scan = _time_interleaved([
         ("A_032", (a, lambda: run_b02_scan(a, True))),
@@ -509,9 +527,13 @@ def _run_real_assets_b01_b02_c(arms):
         ("C_cached", (c, lambda: run_b02_scan(c, True))),
     ], warmup=1, repeats=7, measure_mem=True, sig_fn=lambda pair: _scan_sig(pair[0], pair[1]))
     for k in ("C_nocache", "C_cached"):
-        assert _scan_sig(*b02_scan[k]["result"]) == _scan_sig(*b02_scan["A_032"]["result"])
+        assert_entry_receipts_equal(
+            _scan_sig(*b02_scan["A_032"]["result"]),
+            _scan_sig(*b02_scan[k]["result"]),
+            ref_runtime_sha=a.sha256, cand_runtime_sha=c.sha256, entry_kind="scan",
+        )
     b02_scan_out = b02_scan["C_cached"]["result"][0]
-    assert b02_scan_out["coverage"]["measured_match"] == asm_truth["match_count"]
+    _require(b02_scan_out["coverage"]["measured_match"] == asm_truth["match_count"], "B02 scan match count mismatch")
     print(f"  [B02] 24part_Obj014_nearest A={b02_near['A_032']['timing']['median_ms']:.2f}ms C_nc={b02_near['C_nocache']['timing']['median_ms']:.2f}ms C={b02_near['C_cached']['timing']['median_ms']:.2f}ms | scan_matches={b02_scan_out['coverage']['measured_match']}", flush=True)
 
     manifest["assets"]["B02_24part_assembly_Obj014"] = {
