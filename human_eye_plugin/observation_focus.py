@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import math
 import time
 
@@ -10,12 +11,17 @@ import numpy as np
 from .active_observation import cross, fingerprint, subtract, vector
 from .active_observation_host import CAMERA_DIRECTIONS
 from .active_observation_images import _meshes_from_objects
-from .query_policy import MAX_SOURCE_REGION_TRIANGLES
+from .query_policy import MAX_SOURCE_REGION_TRIANGLES, validate_source_region_query
 from .source_region import (
     SOURCE_INDEX_DOMAIN, _MIN_SURFACE_PIXELS, _capture_region_frame, _generation, _interval, _object_index,
     _region_image_store, _source_ref, _world_box_source_indices, prepare_region,
 )
 from .task_query import _surface_pair_measurement
+
+
+# Limit the additive component value in both full and brief MCP responses.
+_FOCUS_COMPONENT_VALUE_BYTES_LIMIT = 1024
+_FOCUS_COMPONENT_SCOPE = 'one_target_vertex_connected_component_to_reference_whole_object'
 
 
 def _scaled_cross(points):
@@ -158,6 +164,72 @@ def select_task_region(captured, binding, object_index, task_region, check_budge
     }
 
 
+def _vertex_connected_triangle_rows(faces, seed, check_budget):
+    """Walk source vertex indices, with no edge-sharing or coordinate welding requirement."""
+    incident = {}
+    for index, face in enumerate(faces):
+        if index % 128 == 0:
+            check_budget('focus_component_adjacency')
+        for vertex in face:
+            incident.setdefault(vertex, []).append(index)
+
+    visited, pending = {seed}, [seed]
+    scanned = 0
+    while pending:
+        if scanned % 128 == 0:
+            check_budget('focus_component_walk')
+        row = pending.pop()
+        scanned += 1
+        for vertex in faces[row]:
+            # All source faces incident to this vertex are now reachable.
+            for other in incident.pop(vertex, ()):
+                if other not in visited:
+                    visited.add(other)
+                    pending.append(other)
+    return sorted(visited)
+
+
+def _focus_component_value_bytes(value):
+    return len(json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode('utf-8'))
+
+
+def _nearest_surface_component(captured, binding, object_index, reference, ordered_sha, primary, distance,
+                               work, stages, check_budget):
+    started = time.perf_counter_ns()
+    check_budget('before_focus_component')
+    faces = captured['meshes'][object_index]['faces']
+    if len(faces) > MAX_SOURCE_REGION_TRIANGLES:
+        reason = 'focus_component_triangle_limit'
+    else:
+        rows = _vertex_connected_triangle_rows(faces, primary, check_budget)
+        work.update(focus_component_face_scans=len(faces), focus_component_rows=len(rows))
+        component_reference = _source_ref(captured, binding, object_index, rows, ordered_sha)
+        # The component contains a witness for the whole target's minimum.
+        # Restricting to it keeps that distance with no additional solve.
+        component = {'status': 'measured', 'scope': _FOCUS_COMPONENT_SCOPE,
+                     'region_ref': component_reference, 'distance_m': distance}
+        if _focus_component_value_bytes(component) > _FOCUS_COMPONENT_VALUE_BYTES_LIMIT:
+            reason = 'focus_component_text_budget'
+        else:
+            # An observation may be valid even if its identifiers cannot be used
+            # by source_region. Publish only a ref the existing query admits.
+            try:
+                validate_source_region_query({
+                    'mode': 'source_region', 'region_ref': component_reference,
+                    'reference': {'id': reference['host_id']}, 'requested_facts': ['surface_proximity'],
+                })
+            except ValueError:
+                reason = 'focus_component_reference_unavailable'
+            else:
+                reason = None
+    if reason is not None:
+        component = {'status': 'unknown', 'scope': _FOCUS_COMPONENT_SCOPE, 'reason': reason}
+    check_budget('after_focus_component')
+    work['focus_component_value_bytes'] = _focus_component_value_bytes(component)
+    stages['focus_component_preparation'] = _interval(started)
+    return component
+
+
 def _select_nearest_surface(captured, binding, object_index, task_region, ordered_sha,
                             cache, work, stages, check_budget):
     reference_index = _object_index(binding, task_region['reference'])
@@ -233,9 +305,12 @@ def _select_nearest_surface(captured, binding, object_index, task_region, ordere
     for label, obj, index, point in zip(('a', 'b'), objects, indices, points, strict=True):
         witness[label] = {'host_id': obj['host_id'], 'instance_id': obj['instance_id'],
                           'source_triangle_index': index, 'point_m': point}
+    component = _nearest_surface_component(captured, binding, object_index, objects[1], ordered_sha,
+                                           primary, distance, work, stages, check_budget)
     task.update(source_triangle_indices=[primary], primary_source_triangle_index=primary,
                 front_normal_world=normal, nearest_surface={
                     'status': 'measured', 'distance_m': distance, 'method': measured['method'], 'witness': witness,
+                    'component': component,
                 })
     return task
 
@@ -267,7 +342,8 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
     task_region = focus.get('task_region') if isinstance(focus, dict) else None
     nearest = task_region is not None and task_region.get('relation') == 'nearest_surface'
     if nearest:
-        work.update(surface_pair_count=0, surface_pair_cache_hit=False)
+        work.update(surface_pair_count=0, surface_pair_cache_hit=False,
+                    focus_component_face_scans=0, focus_component_rows=0, focus_component_value_bytes=0)
 
     def select():
         started = time.perf_counter_ns()
@@ -384,7 +460,7 @@ def _validate_nearest_surface_focus(focus, binding):
     primary = focus['primary_source_triangle_index']
     rows = focus['task_source_triangle_indices']
     if nearest['status'] == 'unknown':
-        if reference is not None or primary is not None or rows:
+        if reference is not None or primary is not None or rows or 'component' in nearest:
             raise ValueError('nearest_surface_focus_source_binding_mismatch')
         return
     witness = nearest['witness']
@@ -399,6 +475,31 @@ def _validate_nearest_surface_focus(focus, binding):
                    for label, obj in zip(('a', 'b'), (focus['object'], focus['reference']), strict=True)
                    for key in ('host_id', 'instance_id'))):
         raise ValueError('nearest_surface_focus_source_binding_mismatch')
+    _validate_focus_component(nearest, reference, primary)
+
+
+def _validate_focus_component(nearest, selected, primary):
+    component = nearest['component']
+    if component.get('scope') != _FOCUS_COMPONENT_SCOPE:
+        raise ValueError('focus_component_scope_mismatch')
+    if component.get('status') == 'unknown':
+        if set(component) != {'status', 'scope', 'reason'}:
+            raise ValueError('focus_component_unknown_evidence_mismatch')
+        return
+
+    if set(component) != {'status', 'scope', 'region_ref', 'distance_m'} or component['status'] != 'measured':
+        raise ValueError('focus_component_evidence_mismatch')
+    reference = component['region_ref']
+    rows = reference['source_triangle_indices']
+    fields = set(selected) - {'source_triangle_indices', 'region_id'}
+    if (component['distance_m'] != nearest['distance_m'] or set(reference) != set(selected)
+            or any(reference[key] != selected[key] for key in fields)
+            or type(rows) is not list or not 1 <= len(rows) <= MAX_SOURCE_REGION_TRIANGLES
+            or any(type(row) is not int or row < 0 for row in rows) or sorted(set(rows)) != rows
+            or primary not in rows or _focus_component_value_bytes(component) > _FOCUS_COMPONENT_VALUE_BYTES_LIMIT
+            or reference['region_id'] != 'source-region:' + fingerprint({
+                key: value for key, value in reference.items() if key != 'region_id'})):
+        raise ValueError('focus_component_source_binding_mismatch')
 
 
 def validate_focus_delivery(result, frames):
