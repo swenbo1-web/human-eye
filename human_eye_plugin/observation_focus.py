@@ -11,6 +11,8 @@ import numpy as np
 from .active_observation import cross, fingerprint, subtract, vector
 from .active_observation_host import CAMERA_DIRECTIONS
 from .active_observation_images import _meshes_from_objects
+from .attention_raster import _SPARSE_GRID_SIZE, select_sparse_attention_view
+from .blender_host import BlenderHostError, _observation_target_cameras
 from .query_policy import MAX_SOURCE_REGION_TRIANGLES, validate_source_region_query
 from .source_region import (
     SOURCE_INDEX_DOMAIN, _MIN_SURFACE_PIXELS, _capture_region_frame, _generation, _interval, _object_index,
@@ -22,6 +24,8 @@ from .task_query import _surface_pair_measurement
 # Limit the additive component value in both full and brief MCP responses.
 _FOCUS_COMPONENT_VALUE_BYTES_LIMIT = 1024
 _FOCUS_COMPONENT_SCOPE = 'one_target_vertex_connected_component_to_reference_whole_object'
+_FOCUS_PROBE_FACE_LIMIT = 16_384
+_FOCUS_PROBE_VERTEX_LIMIT = 65_536
 
 
 def _scaled_cross(points):
@@ -315,6 +319,73 @@ def _select_nearest_surface(captured, binding, object_index, task_region, ordere
     return task
 
 
+def _focus_side_directions(normal, scene_eye):
+    # Place eight candidates at a fixed 45-degree tilt around the surface
+    # normal. The least-aligned world axis gives a stable, nonsingular basis.
+    normal = np.asarray(normal)
+    axis = np.eye(3)[np.argmin(np.abs(normal))]
+    tangent = axis - normal * np.dot(normal, axis)
+    tangent /= np.linalg.norm(tangent)
+    bitangent = np.cross(normal, tangent)
+    diagonal = math.sqrt(.5)
+    headings = ((1, 0), (diagonal, diagonal), (0, 1), (-diagonal, diagonal),
+                (-1, 0), (-diagonal, -diagonal), (0, -1), (diagonal, -diagonal))
+    directions = []
+    for i, (x, y) in enumerate(headings):
+        direction = normal + x * tangent + y * bitangent
+        if np.linalg.norm(direction / np.linalg.norm(direction) - scene_eye) > 1e-12:
+            directions.append((f'SIDE_{i}', direction.tolist()))
+    return directions
+
+
+def _focus_second_view(prepared, normal, display, work, stages, check_budget):
+    started = time.perf_counter_ns()
+    check_budget('focus_before_side_probe')
+    scene = prepared.cameras['views'][0]
+    baseline = prepared.cameras['views'][-1]
+    retry_normal = baseline['name'] == 'FOCUS'
+    mask = tuple(display['participation_mask'])
+    face_count = sum(len(mesh.faces) for mesh, visible in zip(prepared.meshes, mask, strict=True) if visible)
+    vertex_count = sum(len(mesh.vertices) for mesh in prepared.meshes)
+    poses = [dict(baseline, name='NORMAL')]
+    votes = {}
+    chosen = 'NORMAL'
+    alternative = None
+    if face_count > _FOCUS_PROBE_FACE_LIMIT or vertex_count > _FOCUS_PROBE_VERTEX_LIMIT:
+        reason = 'probe_geometry_limit'
+    else:
+        directions = _focus_side_directions(normal, scene['target_to_eye_unit'])
+        bounds = [[mesh.vertices.min(axis=0).tolist(), mesh.vertices.max(axis=0).tolist()]
+                  for mesh in prepared.meshes]
+        try:
+            sides = _observation_target_cameras(prepared.region_mesh.vertices.tolist(), bounds,
+                                                directions=directions)
+        except BlenderHostError:
+            reason = 'probe_camera_unavailable'
+        else:
+            poses.extend(sides['views'])
+            _, votes = select_sparse_attention_view(prepared.meshes, poses, object_mask=mask,
+                object_index=prepared.object_index, source_triangle_indices=prepared.source_triangle_indices,
+                check_budget=check_budget)
+            if 'NORMAL' in votes:
+                chosen = max(votes, key=votes.get)
+            if chosen != 'NORMAL':
+                alternative = next(pose for pose in poses if pose['name'] == chosen)
+                reason = 'side_probe_ahead'
+            else:
+                reason = 'normal_kept' if 'NORMAL' in votes else 'normal_probe_unavailable'
+    check_budget('focus_after_side_probe')
+    work.update(focus_view_probe_views=len(votes), focus_view_probe_samples=len(votes) * _SPARSE_GRID_SIZE ** 2)
+    stages['focus_view_direction_selection'] = {
+        **_interval(started), 'votes': votes, 'grid_size': _SPARSE_GRID_SIZE,
+        'directions_world': {pose['name']: pose['target_to_eye_unit'] for pose in poses},
+        'chosen_candidate': chosen, 'reason': reason, 'normal_already_sampled': not retry_normal,
+        'displayed_face_count': face_count, 'all_vertex_count': vertex_count,
+        'vote_semantics': 'predicted_target_owned_sample_centres',
+    }
+    return alternative, retry_normal
+
+
 @dataclass
 class FocusState:
     source_ref: dict | None
@@ -343,7 +414,8 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
     nearest = task_region is not None and task_region.get('relation') == 'nearest_surface'
     if nearest:
         work.update(surface_pair_count=0, surface_pair_cache_hit=False,
-                    focus_component_face_scans=0, focus_component_rows=0, focus_component_value_bytes=0)
+                    focus_component_face_scans=0, focus_component_rows=0, focus_component_value_bytes=0,
+                    focus_view_probe_views=0, focus_view_probe_samples=0)
 
     def select():
         started = time.perf_counter_ns()
@@ -387,7 +459,13 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
     elif include_image and binding['capture_state'] is None:
         reason = 'capture_generation_unavailable'
     elif include_image:
-        if len(state.attempted) < len(state.directions) and state.pixels < _MIN_SURFACE_PIXELS:
+        directions = state.directions
+        # If SCENE already points along the normal, allow a side as the only
+        # useful second frame. An interrupted SCENE supplies no probe trigger.
+        if nearest and len(directions) == 1 and ('SCENE' not in state.attempted
+                or type(state.attempted['SCENE']) is int):
+            directions = [*directions, ('FOCUS', state.normal)]
+        if len(state.attempted) < len(directions) and state.pixels < _MIN_SURFACE_PIXELS:
             prepared = prepare_region(captured, {'region_ref': state.source_ref}, check_budget,
                 _binding=binding, _validated_region_ref=True, _scene_validation_stage=validation_stage,
                 _camera_directions=state.directions)
@@ -402,13 +480,30 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
 
         pixel_options = {} if task is None else {
             'primary_source_triangle_index': task['primary_source_triangle_index']}
-        for name, _ in state.directions:
+        for name, _ in directions:
             if state.pixels >= _MIN_SURFACE_PIXELS:
                 break
             if name in state.attempted:
                 continue
             check_budget('focus_before_view')
-            frame, sample = _capture_region_frame(prepared, name, None, display, work, stages,
+            frame_source = prepared
+            if nearest and name == 'FOCUS' and type(state.attempted.get('SCENE')) is int:
+                side, retry_normal = _focus_second_view(prepared, state.normal, display, work, stages, check_budget)
+                if side is None and not retry_normal:
+                    break
+                if side is not None:
+                    # The first frame keeps its original camera binding. Bind
+                    # the second frame to exactly the camera used for voting.
+                    started = time.perf_counter_ns()
+                    frame_source = prepare_region(captured, {'region_ref': state.source_ref}, check_budget,
+                        _binding=binding, _validated_region_ref=True, _normalized_from=prepared,
+                        _scene_validation_stage=validation_stage,
+                        _camera_directions=[(name, side['direction_rational'])])
+                    if frame_source.cameras['views'] != [dict(side, name=name)]:
+                        raise ValueError('focus_second_view_camera_binding_mismatch')
+                    frame_source.images = _region_image_store(frame_source, directory, display)
+                    stages['focus_second_view_preparation'] = _interval(started)
+            frame, sample = _capture_region_frame(frame_source, name, None, display, work, stages,
                                                    charge, check_budget, sampled_pixel=True, **pixel_options)
             pixels = sample['selected_surface_pixels']
             state.attempted[name] = pixels
