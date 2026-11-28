@@ -1057,8 +1057,9 @@ class LiveSpatialService:
                     or goal is not None or scene_delta is not None):
                 raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
             selector = query['objects'][0] if 'objects' in query else None
+            options = {'focus': query['focus']} if 'focus' in query else {}
             return self._observe_active_observation(session_id, include_image=include_image,
-                selector=selector, task_query=query.get('task_query'), region_task=query.get('region_task'))
+                selector=selector, task_query=query.get('task_query'), region_task=query.get('region_task'), **options)
         if query['mode'] == 'directory':
             if (include_image or task_instruction or focal_id is not None or reference_id is not None
                     or goal is not None or scene_delta is not None):
@@ -1832,7 +1833,8 @@ class LiveSpatialService:
         finally:
             context.lock.release()
 
-    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
+    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None,
+                                    focus=None):
         from .active_observation_host import source_binding, observe_capture
         from .read_context import capture_key, query_key
         if not self.config.get('enabled', True):
@@ -1840,6 +1842,7 @@ class LiveSpatialService:
         context = self._read_context
         started = time.perf_counter_ns()
         construction = {'attempts': 0}
+        target_capture = selector is not None and focus is None
         with context.lock, self._observation_scope():
             rejected, source_check = self._read_source_identity()
             if rejected is not None:
@@ -1847,7 +1850,7 @@ class LiveSpatialService:
             self._check_request_budget('before_active_observation_capture')
             capture_started = time.perf_counter_ns()
             with span('host.capture', kind='host'):
-                if selector is None:
+                if not target_capture:
                     captured = self.host.capture_scene()
                 else:
                     capture_target = getattr(self.host, 'capture_active_observation', None)
@@ -1860,16 +1863,32 @@ class LiveSpatialService:
             capture_closed = time.perf_counter_ns()
             self._check_request_budget('after_active_observation_capture')
             binding = source_binding(captured)
-            if selector is None and 'observation_target' in binding:
+            if not target_capture and 'observation_target' in binding:
                 raise ValueError('active_observation_complete_scene_required')
-            if selector is not None and binding.get('observation_target', {}).get('selector') != selector:
+            if target_capture and binding.get('observation_target', {}).get('selector') != selector:
                 raise ValueError('active_observation_target_request_binding_mismatch')
             task_view = None
             if task_query is not None:
                 task_prepare_started = time.perf_counter_ns()
                 task_view, task_sources, task_work = self._prepare_observation_task_view(captured, task_query)
                 task_prepare_closed = time.perf_counter_ns()
-            context.activate(captured, 'active_observation', binding)
+            if focus is None:
+                context.activate(captured, 'active_observation', binding)
+            else:
+                from .observation_focus import observe_focus
+                from .source_region import display_state, ordered_geometry_identity
+                from .scene_cache import _validate_scene
+                validation_start = time.perf_counter_ns()
+                _validate_scene(captured)
+                validation_end = time.perf_counter_ns()
+                validation_stage = dict(started_ns=validation_start, closed_ns=validation_end,
+                                        elapsed_ns=validation_end - validation_start)
+                display = display_state(captured, binding)
+                ordered_sha = ordered_geometry_identity(captured, binding)
+                self._check_request_budget('after_focus_capture_validation')
+                context.activate(captured, 'active_observation_focus', dict(session=session_id,
+                    selector=selector, focus=focus, source=binding['source_binding_sha256'],
+                    geometry=ordered_sha, display=display['identity']))
             binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
                 separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
 
@@ -1881,6 +1900,11 @@ class LiveSpatialService:
 
             def compute():
                 directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
+                if focus is not None:
+                    observed = observe_focus(captured, selector, focus, directory, context, binding, display,
+                        ordered_sha, validation_stage, include_image=include_image,
+                        construction_callback=before_construction, check_budget=self._check_request_budget)
+                    return observed, ()
                 geometry_ids = []
                 region_options = {} if region_task is None else {'region_task': region_task}
                 if region_task is not None and capture_key(captured) is not None:
@@ -1912,9 +1936,10 @@ class LiveSpatialService:
             if hit:
                 result['work'] = {key: 0 for key in generation_work}
                 result['stages'] = {}
-            result.setdefault('work', {}).update(capture_calls=1,
-                result_cache_hit=hit, frame_reuses=len(result.get('frames', [])) if hit else 0)
-            if selector is not None:
+            work = result.setdefault('work', {})
+            work.update(capture_calls=1, result_cache_hit=hit,
+                        frame_reuses=len(result.get('frames', [])) if hit else work.get('frame_reuses', 0))
+            if target_capture:
                 result['work']['target_acquisition'] = copy.deepcopy(captured['observation_target']['work'])
             result['stages'].update(
                 host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
@@ -1970,7 +1995,7 @@ class LiveSpatialService:
                     task_measurement={'started_ns': task_started, 'closed_ns': task_closed,
                         'elapsed_ns': task_closed - task_started})
         event_fields = {}
-        if selector is not None:
+        if target_capture:
             event_fields['target_view_classifications'] = result['target_view_classifications']
         self.record_event('observe', session_id=session_id, status=result['status'],
             observation_mode='active_observation', task_work=result['work'], **event_fields)

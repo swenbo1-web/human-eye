@@ -251,7 +251,7 @@ class PreparedSourceRegion:
 
 def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
                    _validated_region_ref=False, _ordered_geometry_sha256=None, _normalized_from=None,
-                   _scene_validation_stage=None):
+                   _scene_validation_stage=None, _camera_directions=None):
     """Prepare the selected submesh. A borrowed source must be from the same locked read selection."""
     started = time.perf_counter_ns()
     check_budget('source_region_prepare_source')
@@ -316,7 +316,8 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     started = time.perf_counter_ns()
     world_bounds = [[item.vertices.min(axis=0).tolist(), item.vertices.max(axis=0).tolist()]
                     for item in meshes]
-    cameras = _observation_target_cameras(compact_vertices.tolist(), world_bounds)
+    camera_options = {} if _camera_directions is None else {'directions': _camera_directions}
+    cameras = _observation_target_cameras(compact_vertices.tolist(), world_bounds, **camera_options)
     cameras.update(schema='active-coverage-source-region-cameras-v1',
                    scope='source_region_fitted_XY_whole_scene_conservative_depth')
     cameras['margin']['square_fit'] = 'selected source triangle world vertices about one common center'
@@ -326,6 +327,9 @@ def prepare_region(capture, query, check_budget=_checkpoint, *, _binding=None,
     binding['camera_policy'].update(scope='region_fitted_viewport_full_scene_depth',
                                     region_id=region_ref['region_id'],
                                     display_scope=current_display['scope'])
+    if _camera_directions is not None:
+        binding['camera_policy'].update(order=list(cameras['directions']),
+            directions={name: list(direction) for name, direction in _camera_directions})
     binding.pop('source_binding_sha256')
     binding['source_binding_sha256'] = fingerprint(binding)
     binding.update(ordered_geometry_sha256=ordered_sha, geometry_identity=scene_identity,
@@ -503,16 +507,20 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
     return {key: value for key, value in frame.items() if key != 'buffers'}, visibility
 
 
+def _region_image_store(prepared, directory, image_scope):
+    return SceneObservationImages(prepared.objects, prepared.cameras, directory,
+        scene_identity=prepared.binding['geometry_identity'],
+        candidate_identity=prepared.binding['camera_identity'],
+        display_identity=prepared.binding['display_identity'],
+        object_mask=tuple(image_scope['participation_mask']), image_scope=image_scope,
+        _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
+
+
 def _observe_displayed_region(prepared, directory, image_scope, work, stages,
                                construction_callback, check_budget):
     check_budget('source_region_before_frame')
     mask = tuple(image_scope['participation_mask'])
-    prepared.images = SceneObservationImages(prepared.objects, prepared.cameras, directory,
-        scene_identity=prepared.binding['geometry_identity'],
-        candidate_identity=prepared.binding['camera_identity'],
-        display_identity=prepared.binding['display_identity'],
-        object_mask=mask, image_scope=image_scope,
-        _prepared_meshes=prepared.meshes, _measure_stages=True, _reuse_published_payload=True)
+    prepared.images = _region_image_store(prepared, directory, image_scope)
     started = time.perf_counter_ns()
     region = _selected_rectangle(prepared) if mask[prepared.object_index] else None
     stages['source_region_rectangle_selection'] = _interval(started)

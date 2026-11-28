@@ -59,6 +59,26 @@ def validate_region_task(value):
     return normalized
 
 
+def _observation_focus(value):
+    if value == 'auto':
+        return value
+    if type(value) is dict and set(value) == {'source_triangle_index'}:
+        index = value['source_triangle_index']
+        if type(index) is int and index >= 0:
+            return {'source_triangle_index': index}
+    if type(value) is dict and set(value) == {'normal_world'}:
+        normal = value['normal_world']
+        if type(normal) is list and len(normal) == 3 and all(type(x) in (int, float) for x in normal):
+            try:
+                components = [float(x) for x in normal]
+            except OverflowError:
+                components = []
+            if components and all(map(math.isfinite, components)) and any(components):
+                scale = max(map(abs, components))
+                return {'normal_world': [x / scale if x else 0.0 for x in components]}
+    raise ValueError('active_observation focus requires auto, a nonzero finite normal_world, or a source_triangle_index')
+
+
 def _native_visual(value):
     if type(value) is not dict or set(value)-{'mode','view'}:
         raise ValueError('query.native_visual contains unsupported fields')
@@ -173,6 +193,13 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     if type(query) is dict and query.get('mode') == 'active_observation':
         if set(query) == {'mode'}:
             return {'mode': 'active_observation'}
+        if 'focus' in query:
+            from .task_query import validate_object_selector
+            if (set(query) != {'mode', 'objects', 'focus'} or type(query['objects']) is not list
+                    or len(query['objects']) != 1):
+                raise ValueError('active_observation focus requires exactly one object and no additional task')
+            return {'mode': 'active_observation', 'objects': [validate_object_selector(query['objects'][0])],
+                    'focus': _observation_focus(query['focus'])}
         if set(query) - {'task_query', 'region_task'} not in ({'mode'}, {'mode', 'objects'}):
             raise ValueError('active_observation accepts mode, one optional object selector, task_query and region_task')
         from .task_query import validate_object_selector, validate_task_query

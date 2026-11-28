@@ -115,6 +115,12 @@ _QUERY_SCHEMA = {
                     "items": {"type": "string", "enum": list(TASK_FACTS)}}},
             "additionalProperties": False},
         'region_task': copy.deepcopy(REGION_TASK_SCHEMA),
+        'focus': {'description': 'On one active_observation object, focus on one source triangle: auto prefers surfaces poorly faced by registered views, normal_world selects a facing surface, or supply its current row. At most two images are constructed; the best verified sample is delivered.',
+                  'oneOf': [{'const': 'auto'},
+                            {'type': 'object', 'required': ['source_triangle_index'], 'additionalProperties': False,
+                             'properties': {'source_triangle_index': {'type': 'integer', 'minimum': 0}}},
+                            {'type': 'object', 'required': ['normal_world'], 'additionalProperties': False,
+                             'properties': {'normal_world': {**_VECTOR_SCHEMA, 'not': {'const': [0, 0, 0]}}}}]},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
             "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},
@@ -151,8 +157,12 @@ _QUERY_SCHEMA = {
                                   {"required": ["region_ref"], "not": {"required": ["region"]}}],
                         "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "active_observation"}}, "required": ["mode"]},
-               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}, 'region_task': {}},
+               "then": {"properties": {"mode": {}, "objects": {"maxItems": 1}, "task_query": {}, 'region_task': {}, 'focus': {}},
                         'not': {'required': ['objects', 'region_task']}, "additionalProperties": False}},
+              {'if': {'required': ['focus']},
+               'then': {'required': ['mode', 'objects'], 'properties': {
+                   'mode': {'const': 'active_observation'}, 'objects': {'minItems': 1, 'maxItems': 1},
+                   'focus': {}}, 'additionalProperties': False}},
               {"if": {"properties": {"mode": {"const": "directory"}}, "required": ["mode"]},
                "then": {"properties": {"mode": {}}, "additionalProperties": False}},
               {"if": {"properties": {"mode": {"const": "surface_nearest"}}, "required": ["mode"]},
@@ -1583,6 +1593,15 @@ def project_active_observation_brief(value):
     first image follows its text at index one. Unsupported or conflicting
     references retain the full response through the caller's existing path.
     """
+    if value.get('observation_status') == 'directed_focus':
+        fields = ('status', 'result_kind', 'observation_status', 'binding', 'facts',
+                  'image_delivery', 'read_only', 'execution_authority')
+        brief = {'schema': 'active-observation-focus-brief-v1'}
+        brief.update((key, value[key]) for key in fields if key in value)
+        brief['frames'] = [{key: frame[key] for key in
+            ('view_name', 'frame_identity', 'image_ref', 'image_path', 'image_sha256', 'PNG_bytes')}
+            for frame in value['frames']]
+        return brief
     if 'region_task' in value.get('facts', {}):
         return _project_region_task_brief(value)
     object_columns = ['object_index', 'host_id', 'instance_id', 'object_name']
@@ -2266,6 +2285,9 @@ def _active_observation_content(value, *, is_error, audit, response_detail=None,
     try:
         if type(frames) is not list or len(frames) > (1 if source_region else 6):
             raise ValueError('Active observation requires at most six frame references')
+        if value.get('observation_status') == 'directed_focus':
+            from .observation_focus import validate_focus_delivery
+            validate_focus_delivery(value, frames)
         if source_region:
             _validate_source_region_projection(value)
         else:

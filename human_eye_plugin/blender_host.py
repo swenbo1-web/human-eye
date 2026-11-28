@@ -576,7 +576,7 @@ def _observation_outside_xy_viewports(bounds, cameras):
         return False, tested
 
 
-def _observation_target_cameras(target_vertices, world_bounds):
+def _observation_target_cameras(target_vertices, world_bounds, *, directions=None):
     """Fit target XY and enclose whole-scene depth using dependency-free math."""
     vertices = [_vector(point, 'target vertex') for point in target_vertices]
     if len(vertices) < 3 or not world_bounds:
@@ -598,9 +598,10 @@ def _observation_target_cameras(target_vertices, world_bounds):
                 max(abs(low[axis]), abs(high[axis])))), math.inf))
     except (OverflowError, ValueError) as error:
         raise BlenderHostError('active_observation_target_camera_numeric_insufficient') from error
-    directions = [('SCENE', (4, -4, 3)), ('TOP', (0, 0, 1)),
-                  ('LEFT', (-1, 0, 1)), ('RIGHT', (1, 0, 1)),
-                  ('FRONT', (0, -1, 1)), ('BACK', (0, 1, 1))]
+    if directions is None:
+        directions = [('SCENE', (4, -4, 3)), ('TOP', (0, 0, 1)),
+                      ('LEFT', (-1, 0, 1)), ('RIGHT', (1, 0, 1)),
+                      ('FRONT', (0, -1, 1)), ('BACK', (0, 1, 1))]
     poses = []
     for name, rational in directions:
         length = _norm(rational)
