@@ -235,7 +235,11 @@ LIVE_MCP_TOOLS_SCHEMA = [
     {
         "name": "human_eye_scene_observe",
         "description": (
-            "Current Blender facts. Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. For whole-object A-to-B distance use "
+            "Current Blender facts. To view the target surface nearest to the actual surface of a reference, use "
+            '{"query":{"mode":"active_observation","objects":[{"name":"Target"}],"focus":{"task_region":{"reference":{"name":"Reference"},"relation":"nearest_surface"}}}}. '
+            "A successful image brief can provide the global closest gap, one target source triangle at that gap, "
+            "the original PNG and a sampled pixel. Measure the respective selections to report gaps for separate pieces. "
+            "Directory query={mode:directory} with include_image=false returns tight evaluated world bounds, AABB centers and an independent directory binding. For whole-object A-to-B distance use "
             "{\"include_image\":false,\"query\":{\"mode\":\"task\",\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"requested_facts\":[\"surface_proximity\"]}}. "
             "Includes world closest points and world A-to-B direction at positive distance. "
             "A target/candidates set requires surface_proximity with spatial_relation (support proof, closed-shell fallback) or closed_solid_relation. "
