@@ -25,6 +25,7 @@ import struct
 import threading
 import time
 import uuid
+import copy
 from contextlib import contextmanager
 
 
@@ -66,7 +67,7 @@ _READBACK_TOLERANCE_M = 1e-6
 # The host source digest commits transitively to these two read-only helpers.
 # Keep the public V1 capability unchanged; load only the exact checked bytes.
 _READONLY_DEPENDENCY_SHA256 = {
-    'episode_gateway.py': 'b886b4b0d4da8ceaf32b952c810a9843ec4ec7d907830050db1e5b91815fe379',
+    'episode_gateway.py': '11bddcf41f775ccb7ee8d01e8c03369258367865f2ec6e0698bd99b3507c88cb',
     'forward_deadline.py': '72c4f6e3dba0c62f624a34f19c530b712833cbab963e13bcf9ecd34bcf5aaac2',
 }
 _READONLY_SOURCE_LIMIT = 256 * 1024
@@ -189,7 +190,16 @@ def validate_prewrite_refusal(value, *, action, expected_revision,
     return json.loads(json.dumps(refusal, allow_nan=False))
 
 
+def _bounds_midpoint(low, high):
+    total = low + high
+    return total / 2 if math.isfinite(total) else low / 2 + high / 2
+
+
 def _digest(value):
+    # The viewport sidecar has its own digest. Existing scene approvals and
+    # native evidence continue to use the normalized geometry scene contract.
+    if type(value) is dict and 'meshes' in value and 'display_snapshot' in value:
+        value = {key: item for key, item in value.items() if key != 'display_snapshot'}
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
                                      ensure_ascii=False, allow_nan=False).encode()).hexdigest()
 
@@ -200,9 +210,236 @@ def _same_rna(left, right):
         return True
     if left is None or right is None:
         return False
-    if hasattr(left, "as_pointer") and hasattr(right, "as_pointer"):
-        return left.as_pointer() == right.as_pointer()
+    try:
+        if hasattr(left, "as_pointer") and hasattr(right, "as_pointer"):
+            return left.as_pointer() == right.as_pointer()
+    except ReferenceError:
+        # Undo/file load can leave an old Python wrapper around a freed ID.
+        return False
     return False
+
+
+def _scene_residency_module():
+    """The bridge may preload this standalone helper from its source snapshot."""
+    import sys
+    import types
+    from pathlib import Path
+    source=Path(__file__).resolve().with_name('scene_residency.py')
+    name='_human_eye_scene_residency'
+    module=sys.modules.get(name)
+    if module is not None and Path(getattr(module,'__file__','')).resolve()==source:
+        return module
+    module=types.ModuleType(name);module.__file__=str(source)
+    _exec_source_snapshot(module,source);sys.modules[name]=module
+    return module
+
+
+def _acquisition_bounds(corners, matrix, scale):
+    """Outward binary64 affine interval; unknown never excludes geometry.
+
+    The local box must be Blender's evaluated box for the restricted static
+    triangle mesh, not a model-supplied estimate. Every product/add/scale is
+    widened, covering both exact affine coordinates and _capture's operation
+    sequence. This proves arithmetic enclosure, not the Blender API premise.
+    """
+    try:
+        if len(corners) != 8:
+            return None
+        points = [tuple(float(p[k]) for k in range(3)) for p in corners]
+        if any(not math.isfinite(v) for p in points for v in p) or all(p == (-1., -1., -1.) for p in points):
+            return None
+        low = [min(p[k] for p in points) for k in range(3)]
+        high = [max(p[k] for p in points) for k in range(3)]
+        expected = {(x, y, z) for x in (low[0], high[0]) for y in (low[1], high[1]) for z in (low[2], high[2])}
+        if set(points) != expected:
+            return None
+        lower, upper = [], []
+        for r in range(3):
+            lo = hi = 0.
+            for c in range(3):
+                products = matrix[r][c] * low[c], matrix[r][c] * high[c]
+                lo = math.nextafter(lo + math.nextafter(min(products), -math.inf), -math.inf)
+                hi = math.nextafter(hi + math.nextafter(max(products), math.inf), math.inf)
+            lo = math.nextafter(math.nextafter(lo + matrix[r][3], -math.inf) * scale, -math.inf)
+            hi = math.nextafter(math.nextafter(hi + matrix[r][3], math.inf) * scale, math.inf)
+            if not math.isfinite(lo) or not math.isfinite(hi):
+                return None
+            lower.append(lo)
+            upper.append(hi)
+        return [lower, upper]
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def _acquisition_lower(left, right):
+    if left is None or right is None:
+        return 0.
+    gap = max(0., *(math.nextafter(left[0][k] - right[1][k], -math.inf) for k in range(3)),
+                   *(math.nextafter(right[0][k] - left[1][k], -math.inf) for k in range(3)))
+    return gap if math.isfinite(gap) else 0.
+
+
+def _acquisition_upper(left, right):
+    """L1 distance upper bound between actual captured triangle vertices."""
+    if left is None or right is None:
+        return math.inf
+    total = 0.
+    for a, b in zip(left, right):
+        if a != b:
+            delta = math.nextafter(abs(a - b), math.inf)
+            total = math.nextafter(total + delta, math.inf)
+    return total
+
+
+def _acquisition_witness(data, matrix, scale):
+    """Read three vertices of one real triangle; never sample vertex zero alone."""
+    from fractions import Fraction
+    try:
+        polygon = data.polygons[0]
+        start, total = polygon.loop_start, polygon.loop_total
+        if (type(start) is not int or type(total) is not int or total != 3
+                or start < 0 or start + 3 > len(data.loops)):
+            return None
+        face = [data.loops[start + offset].vertex_index for offset in range(3)]
+        if any(type(i) is not int or not 0 <= i < len(data.vertices) for i in face):
+            return None
+        points = []
+        for index in face:
+            point = [float(data.vertices[index].co[k]) for k in range(3)]
+            world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale for r in range(3)]
+            if any(not math.isfinite(v) for v in world):
+                return None
+            points.append(world)
+        edges = [[Fraction.from_float(points[j][k]) - Fraction.from_float(points[0][k])
+                  for k in range(3)] for j in (1, 2)]
+        if not any(edges[0][i] * edges[1][j] != edges[0][j] * edges[1][i] for i, j in ((0, 1), (0, 2), (1, 2))):
+            return None
+        return {'point_world_m': points[0], 'triangle_vertex_indices': face, 'triangle_world_m': points}
+    except (AttributeError, TypeError, ValueError, IndexError, OverflowError, RuntimeError):
+        return None
+
+
+def _acquisition_validate_triangles(data, *, check_coordinates, checkpoint, object_id):
+    """Validate references before exclusion or native triangle expansion.
+
+    The directory already bounds scene counts. Excluded meshes also need
+    finite referenced coordinates; retained meshes reuse capture's coordinate
+    checks. No mesh edits, geometric qualification or bounds recalculation.
+    """
+    checkpoint()
+    vertices, polygons, loops = data.vertices, data.polygons, data.loops
+    vertex_count, loop_count = len(vertices), len(loops)
+    seen = bytearray(vertex_count) if check_coordinates else None
+    for ordinal, polygon in enumerate(polygons):
+        if ordinal % 256 == 0:
+            checkpoint()
+        try:
+            start, total = polygon.loop_start, polygon.loop_total
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id) from exc
+        if (type(start) is not int or type(total) is not int or total != 3
+                or start < 0 or start + total > loop_count):
+            raise BlenderHostError('acquisition_invalid_triangle_structure:' + object_id)
+        for offset in range(3):
+            try:
+                index = loops[start + offset].vertex_index
+            except (AttributeError, IndexError, TypeError, ValueError) as exc:
+                raise BlenderHostError('acquisition_invalid_triangle_indices:' + object_id) from exc
+            if type(index) is not int or not 0 <= index < vertex_count:
+                raise BlenderHostError('acquisition_invalid_triangle_indices:' + object_id)
+            if seen is not None:
+                seen[index] = 1
+    if seen is not None:
+        # Complete index validation above precedes any coordinate dereference.
+        for index, referenced in enumerate(seen):
+            if index % 256 == 0:
+                checkpoint()
+            if referenced:
+                try:
+                    coordinate = vertices[index].co
+                    finite = all(math.isfinite(float(coordinate[k])) for k in range(3))
+                except (AttributeError, IndexError, TypeError, ValueError, OverflowError) as exc:
+                    raise BlenderHostError('acquisition_nonfinite_referenced_vertex:' + object_id) from exc
+                if not finite:
+                    raise BlenderHostError('acquisition_nonfinite_referenced_vertex:' + object_id)
+    checkpoint()
+
+
+def _acquisition_vertices(vertices, checkpoint):
+    for index, vertex in enumerate(vertices):
+        if index % 128 == 0:
+            checkpoint()
+        yield vertex
+
+
+def _scan_local_summary(local, faces, checkpoint):
+    """Exact dyadic local eligibility; the cache retains only small summaries."""
+    from fractions import Fraction as F
+    rational = []
+    for ordinal, point in enumerate(local):
+        if ordinal % 128 == 0:
+            checkpoint()
+        rational.append(tuple(F(value) for value in point))
+    minimum_cross = None
+    maximum_edge = F(0)
+    for ordinal, face in enumerate(faces):
+        if ordinal % 128 == 0:
+            checkpoint()
+        a, b, c = (rational[index] for index in face)
+        first = tuple(b[k] - a[k] for k in range(3))
+        second = tuple(c[k] - a[k] for k in range(3))
+        cross = _cross(first, second)
+        magnitude = max(abs(value) for value in cross)
+        if not magnitude:
+            raise BlenderHostError('degenerate_local_triangle_source')
+        minimum_cross = magnitude if minimum_cross is None else min(minimum_cross, magnitude)
+        maximum_edge = max(maximum_edge, *(abs(value) for value in first + second),
+                           *(abs(c[k] - b[k]) for k in range(3)))
+    checkpoint()
+    return dict(min_cross_inf=minimum_cross, max_edge_inf=maximum_edge,
+                local_abs_max=tuple(max(abs(point[k]) for point in rational) for k in range(3)))
+
+
+def _scan_world_precision(summary, matrix, scale):
+    """Certify every captured triangle stays finite and nondegenerate.
+
+    The local cross/edge summary covers all faces. Exact rational error bounds
+    follow capture's binary64 product, sum, translation and scale operations.
+    Failure is unresolved precision, not a claim of definite degeneracy.
+    """
+    from fractions import Fraction as F
+    unit, underflow = F(1, 2**52), F(1, 2**1074)
+    finite_limit = F(float.fromhex('0x1.fffffffffffffp+1023'))
+    physical_scale = F(scale)
+    linear = [[F(matrix[r][c]) * physical_scale for c in range(3)] for r in range(3)]
+    determinant = sum(linear[0][c] * (
+        linear[1][(c+1)%3] * linear[2][(c+2)%3]
+        - linear[1][(c+2)%3] * linear[2][(c+1)%3]) for c in range(3))
+    transpose_norm = max(sum(abs(linear[r][c]) for r in range(3)) for c in range(3))
+    if not determinant or not transpose_norm:
+        return False
+    cross_lower = abs(determinant) * summary['min_cross_inf'] / transpose_norm
+    edge_upper = max(sum(abs(value) for value in row) for row in linear) * summary['max_edge_inf']
+    delta = F(0)
+    for row in matrix[:3]:
+        amplitude = error = F(0)
+        for coefficient, local_maximum in zip(row[:3], summary['local_abs_max']):
+            product = abs(F(coefficient)) * local_maximum
+            product_error = unit * product + underflow
+            product_amplitude = product + product_error
+            operation_error = unit * (amplitude + product_amplitude) + underflow
+            amplitude += product_amplitude + operation_error
+            error += product_error + operation_error
+            if product_amplitude > finite_limit or amplitude > finite_limit:
+                return False
+        operation_error = unit * (amplitude + abs(F(row[3]))) + underflow
+        amplitude += abs(F(row[3])) + operation_error
+        error += operation_error
+        scale_error = unit * amplitude * physical_scale + underflow
+        if amplitude > finite_limit or amplitude * physical_scale + scale_error > finite_limit:
+            return False
+        delta = max(delta, error * physical_scale + scale_error)
+    return cross_lower > 8 * delta * edge_upper + 8 * delta * delta
 
 
 def _vector(value, name):
@@ -269,6 +506,186 @@ def _euler_xyz(degrees):
             [-sy, cy * sx, cy * cx]]
 
 
+def _observation_affine_interval(bounds, coefficients, translation):
+    """Enclose real affine values and any binary64 three-term dot ordering."""
+    try:
+        if (len(bounds) != 2 or any(len(row) != 3 for row in bounds)
+                or any(not math.isfinite(x) for row in bounds for x in row)
+                or any(bounds[0][k] > bounds[1][k] for k in range(3))):
+            return None
+        lower = upper = 0.
+        magnitudes = [abs(translation)]
+        for axis, coefficient in enumerate(coefficients):
+            products = [coefficient * bounds[end][axis] for end in (0, 1)]
+            lower = math.nextafter(lower + math.nextafter(min(products), -math.inf), -math.inf)
+            upper = math.nextafter(upper + math.nextafter(max(products), math.inf), math.inf)
+            magnitudes.append(max(abs(x) for x in products))
+        lower = math.nextafter(lower + translation, -math.inf)
+        upper = math.nextafter(upper + translation, math.inf)
+        # gamma32 exceeds the error of three products, any dot reduction/FMA,
+        # and translation. The absolute term covers gradual underflow.
+        unit = 2. ** -53
+        error = (32 * unit / (1 - 32 * unit)) * math.fsum(magnitudes) + 8 * math.ulp(0.)
+        lower = math.nextafter(lower - error, -math.inf)
+        upper = math.nextafter(upper + error, math.inf)
+        return [lower, upper] if math.isfinite(lower) and math.isfinite(upper) else None
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def _observation_outside_xy_viewports(bounds, cameras):
+    """Prove strict exclusion from all six published XY viewports."""
+    tested = 0
+    if bounds is None:
+        return False, tested
+    try:
+        views = cameras['views']
+        if (type(views) is not list or len(views) != 6
+                or [pose['name'] for pose in views] != ['SCENE', 'TOP', 'LEFT', 'RIGHT', 'FRONT', 'BACK']):
+            return False, tested
+        for pose in views:
+            tested += 1
+            view, projection = pose['view_matrix'], pose['projection_matrix']
+            if (pose.get('projection') != 'orthographic'
+                    or any(type(matrix) is not list or len(matrix) != 4
+                           or any(type(row) is not list or len(row) != 4 for row in matrix)
+                           for matrix in (view, projection))
+                    or any(type(value) not in (int, float) or not math.isfinite(value)
+                           for matrix in (view, projection) for row in matrix for value in row)
+                    or view[3] != [0., 0., 0., 1.] or projection[3] != [0., 0., 0., 1.]
+                    or projection[0][1:] != [0., 0., 0.]
+                    or [projection[1][0], projection[1][2], projection[1][3]] != [0., 0., 0.]
+                    or projection[0][0] <= 0 or projection[1][1] <= 0):
+                return False, tested
+            outside = False
+            for axis in (0, 1):
+                interval = _observation_affine_interval(bounds, view[axis][:3], view[axis][3])
+                if interval is None:
+                    return False, tested
+                lower = math.nextafter(interval[0] * projection[axis][axis], -math.inf)
+                upper = math.nextafter(interval[1] * projection[axis][axis], math.inf)
+                if not math.isfinite(lower) or not math.isfinite(upper):
+                    return False, tested
+                if upper < -1 or lower > 1:
+                    outside = True
+                    break
+            if not outside:
+                return False, tested
+        return True, tested
+    except (TypeError, ValueError, KeyError, IndexError, OverflowError):
+        return False, tested
+
+
+def _observation_target_cameras(target_vertices, world_bounds):
+    """Fit target XY and enclose whole-scene depth using dependency-free math."""
+    vertices = [_vector(point, 'target vertex') for point in target_vertices]
+    if len(vertices) < 3 or not world_bounds:
+        raise BlenderHostError('active_observation_target_camera_geometry')
+    low = [min(point[k] for point in vertices) for k in range(3)]
+    high = [max(point[k] for point in vertices) for k in range(3)]
+    center = [a * .5 + b * .5 for a, b in zip(low, high)]
+    relative_vertices = [[point[k] - center[k] for k in range(3)] for point in vertices]
+    unit = 2. ** -53
+    gamma = 32 * unit / (1 - 32 * unit)
+    try:
+        # Bound local subtraction/dot, the center dot and the raster's global
+        # dot separately. Positive outward sums preserve the final error bound.
+        magnitudes = []
+        for axis in range(3):
+            relative_extent = math.nextafter(max(abs(low[axis] - center[axis]),
+                                                 abs(high[axis] - center[axis])), math.inf)
+            magnitudes.append(math.nextafter(math.fsum((relative_extent, abs(center[axis]),
+                max(abs(low[axis]), abs(high[axis])))), math.inf))
+    except (OverflowError, ValueError) as error:
+        raise BlenderHostError('active_observation_target_camera_numeric_insufficient') from error
+    directions = [('SCENE', (4, -4, 3)), ('TOP', (0, 0, 1)),
+                  ('LEFT', (-1, 0, 1)), ('RIGHT', (1, 0, 1)),
+                  ('FRONT', (0, -1, 1)), ('BACK', (0, 1, 1))]
+    poses = []
+    for name, rational in directions:
+        length = _norm(rational)
+        direction = [x / length for x in rational]
+        up_seed = [0., 1., 0.] if abs(direction[2]) > .999999 else [0., 0., 1.]
+        right = _cross([-x for x in direction], up_seed)
+        right = [x / _norm(right) for x in right]
+        up = _cross(right, [-x for x in direction])
+        projected_x = [_dot(point, right) for point in relative_vertices]
+        projected_y = [_dot(point, up) for point in relative_vertices]
+        projected_bounds = [[min(projected_x), min(projected_y)],
+                            [max(projected_x), max(projected_y)]]
+        half_unpadded = max(abs(value) for row in projected_bounds for value in row)
+        half_span = half_unpadded * 1.1
+        if not math.isfinite(half_span) or half_span <= 0:
+            raise BlenderHostError('active_observation_target_camera_span')
+        offset = -_dot(direction, center)
+        ranges = [_observation_affine_interval(box, direction, offset) for box in world_bounds]
+        if any(interval is None for interval in ranges):
+            raise BlenderHostError('active_observation_target_camera_depth_unknown')
+        front = max(interval[1] for interval in ranges)
+        distance = math.nextafter(max(.1, front + .1, 2 * half_span), math.inf)
+        eye = [center[k] + direction[k] * distance for k in range(3)]
+        view = [axis + [-_dot(axis, eye)] for axis in (right, up, direction)]
+        view.append([0., 0., 0., 1.])
+        inverse_half_span = 1 / half_span
+        for axis_index, axis in enumerate((right, up)):
+            translation = view[axis_index][3]
+            shift = _dot(axis, center) + translation
+            try:
+                terms = [abs(translation), abs(translation)]
+                terms.extend(math.nextafter(abs(coefficient) * magnitude, math.inf)
+                             for coefficient, magnitude in zip(axis, magnitudes))
+                magnitude = math.nextafter(math.fsum(terms), math.inf)
+                error = math.nextafter(gamma * magnitude + 32 * math.ulp(0.), math.inf)
+                lower = math.nextafter(math.nextafter(projected_bounds[0][axis_index] + shift,
+                                                       -math.inf) - error, -math.inf)
+                upper = math.nextafter(math.nextafter(projected_bounds[1][axis_index] + shift,
+                                                       math.inf) + error, math.inf)
+                ndc_lower = math.nextafter(lower * inverse_half_span, -math.inf)
+                ndc_upper = math.nextafter(upper * inverse_half_span, math.inf)
+            except (OverflowError, ValueError) as cause:
+                raise BlenderHostError('active_observation_target_camera_numeric_insufficient') from cause
+            # This uses the actual published view/projection coefficients and
+            # encloses exact coverage and the two-stage binary64 raster path.
+            # Insufficient precision has its own outcome, without enlarging XY.
+            if (not math.isfinite(ndc_lower) or not math.isfinite(ndc_upper)
+                    or ndc_lower < -1 or ndc_upper > 1):
+                raise BlenderHostError('active_observation_target_camera_numeric_insufficient')
+        camera_depth = [_observation_affine_interval(box, direction, view[2][3]) for box in world_bounds]
+        if any(interval is None for interval in camera_depth):
+            raise BlenderHostError('active_observation_target_camera_depth_unknown')
+        nearest = min(-interval[1] for interval in camera_depth)
+        farthest = max(-interval[0] for interval in camera_depth)
+        near = .08
+        far = math.nextafter(max(.081, farthest + max(2 * half_span, .01)), math.inf)
+        if nearest <= near or not math.isfinite(far):
+            raise BlenderHostError('active_observation_target_camera_depth_unrepresentable')
+        projection = [[inverse_half_span, 0., 0., 0.], [0., inverse_half_span, 0., 0.],
+                      [0., 0., -2 / (far - near), -(far + near) / (far - near)],
+                      [0., 0., 0., 1.]]
+        poses.append(dict(name=name, projection='orthographic', size_px=[512, 512],
+            direction_rational=list(rational), target_to_eye_direction_rational=list(rational),
+            target_to_eye_unit=direction, eye_to_scene_unit=[-x for x in direction],
+            eye=eye, target=center, near=near, far=far, span=2 * half_span,
+            up_seed=up_seed, right_unit=right, up_unit=up, target_world_m=center,
+            camera_eye_world_m=eye, view_span_m=2 * half_span, half_span_m=half_span,
+            near_m=near, far_m=far, view_matrix=view, projection_matrix=projection,
+            m_per_pixel=2 * half_span / 511,
+            unpadded_projected_bounds_xy_m=projected_bounds,
+            unpadded_symmetric_half_span_m=half_unpadded,
+            target_vertices_checked=len(vertices), min_camera_depth_m=nearest,
+            max_camera_depth_m=farthest, depth_scope='all_scene_conservative_bounds'))
+    return dict(schema='active-coverage-target-cameras-v1', directions=[name for name, _ in directions],
+        common_center_world_m=center, views=poses,
+        margin={'per_side_fraction_of_unpadded_symmetric_span': .05,
+                'square_fit': 'target actual world vertices about one common center'},
+        scope='target_fitted_XY_whole_scene_conservative_depth',
+        frustum_boundary='Inclusive NDC [-1,1]; positive camera depth.',
+        basis='view rows right,true_up,target_to_eye',
+        geometry_conversion='captured binary64 world vertices', uniform_object_color_rgb=[180, 190, 205],
+        raster_depth_ties='Strict nearer update; equal-depth retains earlier supplied surface.',
+        pixel_center_convention='NDC maps to (size-1)/2; raster samples integer index +0.5.')
+
+
 class BlenderSceneHost:
     """Capture world-space metres and apply a revision-checked delta SE(3).
 
@@ -296,6 +713,8 @@ class BlenderSceneHost:
             except ImportError as exc:
                 raise BlenderHostError("This operation requires Blender's Python runtime") from exc
         self.bpy = bpy_module
+        self._default_scene = scene is None
+        self._default_view_layer = view_layer is None
         self.scene = scene if scene is not None else bpy_module.context.scene
         self.view_layer = view_layer if view_layer is not None else bpy_module.context.view_layer
         layers = getattr(self.scene, "view_layers", None)
@@ -314,6 +733,16 @@ class BlenderSceneHost:
             raise BlenderHostError('identity_metadata must be boolean')
         self.identity_metadata = identity_metadata
         self._lock = threading.RLock()
+        self._residency_module = self._residency = None
+        self._private_source_region_lease = None
+        self._residency_stats = dict(to_mesh=0, triangulations=0, resource_builds=0,
+            world_transforms=0, capture_cache_hits=0, nearest_cache_hits=0,
+            directory_builds=0, directory_vertices=0, directory_cache_hits=0,
+            scan_cache_hits=0, source_qualification_vertices=0,
+            source_qualification_faces=0, source_qualification_cache_hits=0,
+            resource_vertices_read=0, resource_faces_read=0, world_vertices_transformed=0,
+            scan_directory_objects=0, scan_bound_tests=0,
+            display_snapshots=0, display_objects=0, display_read_ns=0)
 
     @staticmethod
     def _main_thread():
@@ -327,6 +756,25 @@ class BlenderSceneHost:
         return "blender:" + _digest(identity)
 
     def _depsgraph(self):
+        try:
+            return self._current_depsgraph()
+        except ReferenceError as exc:
+            if not self._default_scene:
+                raise BlenderHostError('The explicitly supplied scene or view layer is no longer available') from exc
+            self.scene=self.bpy.context.scene
+            self.view_layer=self.bpy.context.view_layer
+            if self._residency is not None:self._residency.reset()
+            return self._current_depsgraph()
+
+    def _current_depsgraph(self):
+        if self._default_scene and not _same_rna(self.bpy.context.scene,self.scene):
+            self.scene=self.bpy.context.scene
+            self.view_layer=self.bpy.context.view_layer
+        elif self._default_view_layer and _same_rna(self.bpy.context.scene,self.scene):
+            self.view_layer=self.bpy.context.view_layer
+        # Explicit scenes remain pinned, but invalid RNA must be a clear refusal.
+        if not self._default_scene:
+            getattr(self.scene,'name',None)
         self.view_layer.update()
         graph = getattr(self.view_layer, "depsgraph", None)
         if graph is None:
@@ -338,8 +786,209 @@ class BlenderSceneHost:
             raise BlenderHostError("The dependency graph belongs to a different scene")
         return graph
 
-    def _objects(self, graph):
+    def close_residency(self):
+        self._private_source_region_lease = None
+        if self._residency is not None:self._residency.close()
+
+    def residency_work(self):
+        return dict(self._residency_stats, enabled=self._residency is not None and self._residency.enabled,
+                    resident_resources=len(self._residency.resources) if self._residency is not None else 0)
+
+    def _sync_residency(self, graph, scale, *, _surface_scan=False, _display_snapshot=None):
+        if self._residency is None:
+            self._residency_module=_scene_residency_module()
+            self._residency=self._residency_module.SceneResidency(self.bpy)
+        state=self._residency
+        if not state.enabled:return False
+        rows=[];live=set();by_id={}
+        display_objects = ({row['host_id']: row for row in _display_snapshot['objects']}
+                           if _display_snapshot is not None else {})
+        ident=self._residency_module.identity
+        for obj in self.scene.objects:
+            key=ident(obj);data=getattr(obj,'data',None)
+            live.add(key)
+            live.add(ident(data))
+            if getattr(obj,'type',None)=='MESH':by_id[self.object_id(obj)]=key
+            try:
+                matrix = _matrix(obj.matrix_world)
+            except BlenderHostError:
+                if not _surface_scan:
+                    raise
+                matrix = 'invalid_world_matrix'
+            display = display_objects.get(self.object_id(obj))
+            hide_viewport = display['hide_viewport'] if display is not None else getattr(obj, 'hide_viewport', None)
+            hide_render = display['hide_render'] if display is not None else getattr(obj, 'hide_render', None)
+            row = (key,ident(data),str(obj.name),str(getattr(obj,'name_full',obj.name)),
+                getattr(obj,'type',None),matrix,self._guard_description(obj),
+                list(getattr(obj,'color',())),hide_viewport,hide_render,
+                len(getattr(data,'vertices',())),len(getattr(data,'polygons',())))
+            if _surface_scan:
+                row += (getattr(obj, 'instance_type', 'NONE'), bool(getattr(obj, 'is_instancer', False)))
+            rows.append(row)
+        namespace=getattr(getattr(self.bpy,'app',None),'driver_namespace',None)
+        namespace_marker=None
+        if isinstance(namespace,dict):
+            key='_human_eye_residency_document_v1'
+            if key not in namespace:namespace[key]=uuid.uuid4().hex
+            namespace_marker=namespace[key]
+        context=(ident(self.scene),ident(self.view_layer),namespace_marker,
+                 str(getattr(getattr(self.bpy,'data',None),'filepath','')))
+        signature=(rows,scale,getattr(self.scene.unit_settings,'system',None),
+            getattr(self.scene.unit_settings,'length_unit',None),int(getattr(self.scene,'frame_current',0)),
+            float(getattr(self.scene,'frame_subframe',0)),
+            ident(getattr(getattr(self.view_layer,'objects',None),'active',None)))
+        if _surface_scan:
+            signature += (any(bool(getattr(item, 'is_instance', False))
+                              for item in getattr(graph, 'object_instances', ())),)
+        state.sync(context,signature,live);state.by_object_id=by_id
+        state.wire={oid:entry for oid,entry in state.wire.items() if oid in by_id}
+        return True
+
+    def _resource_stamp(self, obj):
+        state = self._residency
+        ident = self._residency_module.identity
+        key, data = ident(obj), getattr(obj, 'data', None)
+        guards = self._guard_description(obj)
+        dynamic = bool(guards['modifiers'] or guards['animation'] or guards['data_animation'] or guards['shape_keys'])
+        geometry_guards = dict(guards, parent=ident(getattr(obj, 'parent', None)),
+                              children=sorted(ident(child) for child in getattr(obj, 'children', ())))
+        return (ident(data), state.dirty.get(key, 0), state.dirty.get(ident(data), 0), geometry_guards,
+                int(getattr(self.scene, 'frame_current', 0)) if dynamic else None,
+                float(getattr(self.scene, 'frame_subframe', 0)) if dynamic else None)
+
+    def _resident_capture(self, graph, scale, objects, task_selection, task_identity, acquisition,
+                          acquisition_scope, prepared_local, display_snapshot, *, _resources_only=False):
+        state=self._residency
+        selection_key=_digest([acquisition_scope if acquisition is not None else
+            'task' if task_selection is not None else 'scene',
+            task_selection['selectors'] if task_selection is not None else [self.object_id(o) for o in objects]])
+        cached=None if _resources_only else state.captures.get(selection_key)
+        if cached is not None:
+            self._residency_stats['capture_cache_hits']+=1
+            current = dict(cached)
+            current.pop('display_snapshot', None)
+            if display_snapshot is not None:
+                current['display_snapshot'] = display_snapshot
+            return current
+        meshes=[];vertex_count=face_count=0
+        active=getattr(getattr(self.view_layer,'objects',None),'active',None)
+        ident=self._residency_module.identity
+        selected_keys={ident(obj) for obj in objects}
+        for ordinal,obj in enumerate(objects,1):
+            checkpoint=acquisition[4] if acquisition is not None else lambda:None
+            checkpoint()
+            evaluated=obj.evaluated_get(graph) if acquisition is None else acquisition[3][self.object_id(obj)]
+            if not bool(getattr(evaluated,'is_evaluated',True)):
+                raise BlenderHostError('Mesh is not evaluated in the current view layer: '+obj.name)
+            matrix=_matrix(evaluated.matrix_world);key=ident(obj)
+            stamp=self._resource_stamp(obj)
+            resource=state.resources.get(key)
+            if resource is None or resource['stamp']!=stamp:
+                temporary=None
+                try:
+                    prepared = prepared_local.get(self.object_id(obj)) if prepared_local is not None else None
+                    if prepared is None:
+                        self._residency_stats['to_mesh']+=1;temporary=evaluated.to_mesh()
+                        if temporary is None:raise BlenderHostError('Evaluated mesh is unavailable: '+obj.name)
+                        if len(temporary.vertices)>500000:raise BlenderHostError('Scene geometry budget exceeded')
+                        self._residency_stats['triangulations']+=1;temporary.calc_loop_triangles()
+                        if len(temporary.loop_triangles)>1000000:raise BlenderHostError('Scene geometry budget exceeded')
+                        local=tuple(tuple(float(v.co[i]) for i in range(3)) for v in
+                                    _acquisition_vertices(temporary.vertices,checkpoint))
+                        faces=tuple(tuple(int(i) for i in triangle.vertices) for triangle in temporary.loop_triangles)
+                        self._residency_stats['resource_vertices_read'] += len(local)
+                        self._residency_stats['resource_faces_read'] += len(faces)
+                    else:
+                        local, faces = prepared
+                    if (len(local)<3 or not faces or any(not math.isfinite(x) for p in local for x in p)
+                            or any(len(f)!=3 or min(f)<0 or max(f)>=len(local) for f in faces)):
+                        raise BlenderHostError('A mesh requires valid evaluated triangles: '+obj.name)
+                    edges=tuple(sorted({tuple(sorted((f[a],f[b]))) for f in faces for a,b in ((0,1),(1,2),(2,0))}))
+                    remaining=[k for k in state.resources if k!=key]
+                    def cache_exceeded():
+                        return (len(remaining)>=256 or len(local)+sum(len(state.resources[k]['vertices_local']) for k in remaining)>500000
+                                or len(faces)+sum(len(state.resources[k]['faces']) for k in remaining)>1000000)
+                    while cache_exceeded():
+                        evict=next((k for k in remaining if k not in selected_keys),None)
+                        if evict is None:raise BlenderHostError('Scene geometry budget exceeded')
+                        remaining.remove(evict);old_resource=state.resources.pop(evict)
+                        state.wire={oid:item for oid,item in state.wire.items() if item[0] is not old_resource}
+                        state.captures.clear();state.nearest.clear()
+                    state.resource_serial+=1
+                    resource=dict(resource_id='mesh:'+str(key),revision=state.resource_serial,
+                        stamp=copy.deepcopy(stamp),vertices_local=local,faces=faces,edges=edges,pose=None,mesh=None)
+                    state.resources[key]=resource;self._residency_stats['resource_builds']+=1
+                finally:
+                    if temporary is not None:evaluated.to_mesh_clear()
+            vertex_count+=len(resource['vertices_local']);face_count+=len(resource['faces'])
+            if vertex_count>500000 or face_count>1000000:raise BlenderHostError('Scene geometry budget exceeded')
+            color=[int(round(min(1.,max(0.,float(c)))*255)) for c in list(getattr(obj,'color',(0.5,0.5,0.5,1)))[:3]]
+            if len(color)!=3:raise BlenderHostError('Object color must have three components')
+            # World geometry depends on the evaluated resource and physical
+            # pose. Names, selection ordinals, active state and colors must
+            # refresh metadata without repeating the vertex forward map.
+            pose=(matrix,scale)
+            if resource['pose']!=pose:
+                vertices=[[(sum(matrix[r][c]*p[c] for c in range(3))+matrix[r][3])*scale for r in range(3)]
+                          for p in resource['vertices_local']]
+                if any(not math.isfinite(v) for p in vertices for v in p):raise BlenderHostError('Nonfinite evaluated geometry: '+obj.name)
+                axes,confidence,reason,_=_frame(matrix)
+                resource['mesh']=dict(vertices=vertices,
+                    faces=[list(f) for f in resource['faces']],edges=[list(e) for e in resource['edges']],
+                    local_axes=axes,pivot_world=[matrix[r][3]*scale for r in range(3)],
+                    axes_source='host',axes_confidence=confidence,axes_reason=reason)
+                resource['pose']=copy.deepcopy(pose);self._residency_stats['world_transforms']+=1
+                self._residency_stats['world_vertices_transformed'] += len(resource['vertices_local'])
+            if not _resources_only:
+                state.wire[self.object_id(obj)]=(resource,copy.deepcopy(matrix),scale)
+            # Copy the small metadata dict; geometry remains private and is
+            # detached once at the public capture boundary. Older selections
+            # retain their own labels when another selection reuses a resource.
+            meshes.append(dict(resource['mesh'],object_id=self.object_id(obj),
+                mark_label='#B%04d'%ordinal,name=str(obj.name),
+                is_focal_target=_same_rna(obj,active),color_rgb=color))
+        if _resources_only:
+            return {'meshes': meshes}
+        scene=dict(unit='m',coordinate_frame='world',source='blender',meshes=meshes)
+        if task_selection is not None:
+            scene.update(capture_scope='selected_objects',task_selection=task_selection,host_identity=task_identity)
+        elif acquisition is not None:scene.update(capture_scope=acquisition_scope,execution_authority=False)
+        elif self.execution_metadata:scene['host_execution']=self._execution_status(objects)
+        if task_selection is None and self.identity_metadata:
+            identity=self._identity_metadata(objects,capture_scope=acquisition_scope) if acquisition is not None else self._identity_metadata(objects)
+            if identity is not None:scene['host_identity']=identity
+        if task_selection is None:
+            scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale,
+                frame=int(getattr(self.scene,'frame_current',0)),guards=[[self.object_id(o),self._guard_description(o)] for o in objects]))
+        else:scene['revision']='blender:'+_digest(dict(scene=scene,scale_length=scale))
+        # Display reads belong to this request and have an independent identity.
+        # Keep the established geometry revision and refresh even on cache hits.
+        if display_snapshot is not None:
+            scene['display_snapshot'] = display_snapshot
+        if len(state.captures)>=8:state.captures.clear()
+        state.captures[selection_key]=scene
+        return scene
+
+    def _capture_state(self, scene, selection_key):
+        result=copy.deepcopy(scene)
+        if self._residency is not None and self._residency.enabled:result['capture_state']=self._residency.token(selection_key)
+        return result
+
+    def capture_delta(self, capture, known=None):
+        scene=capture.get('capture',capture);token=scene.get('capture_state')
+        if token is None or self._residency is None or token!=self._residency.token(token.get('selection_key','')):
+            return copy.deepcopy(capture)
+        return self._residency_module.encode_capture(capture,known,self._residency.wire)
+
+    def _objects(self, graph, *, _surface_scan=False):
         objects = list(self.scene.objects)
+        if _surface_scan:
+            meshes = sorted((obj for obj in objects if getattr(obj, 'type', None) == 'MESH'), key=self.object_id)
+            if len(meshes) > 256:
+                raise BlenderHostError('surface_scan_scene_object_budget')
+            if self.object_names is not None and self.object_names != frozenset(obj.name for obj in meshes):
+                raise BlenderHostError('object_names must cover every scene mesh, including hidden meshes')
+            return meshes
         unsupported = {"CURVE", "SURFACE", "FONT", "META", "VOLUME", "POINTCLOUD", "CURVES", "GREASEPENCIL", "GPENCIL"}
         for obj in objects:
             if getattr(obj, "type", None) in unsupported:
@@ -408,7 +1057,7 @@ class BlenderSceneHost:
         return {"schema_version": "1.0", "operation": "rigid_transform",
                 "supported": not reasons, "scope": "independent_static_rigid_meshes", "reasons": reasons}
 
-    def _identity_metadata(self, objects):
+    def _identity_metadata(self, objects, *, capture_scope='complete_scene_meshes'):
         """Bind new goal segments to runtime IDs without editing a .blend file.
 
         The driver namespace is ephemeral Blender runtime storage and resets
@@ -432,17 +1081,128 @@ class BlenderSceneHost:
         document = [epoch, scene_uid, str(getattr(getattr(self.bpy, 'data', None), 'filepath', ''))]
         return {'schema_version': '1.0', 'document_epoch': _digest(document),
                 'object_instances': {self.object_id(obj): str(value) for obj, value in zip(objects, values)},
-                'capture_scope': 'complete_scene_meshes'}
+                'capture_scope': capture_scope}
 
-    def _capture(self, *, _native_evidence=False, _read_only_native=False):
+    def _display_snapshot(self, objects):
+        """Read the capture layer's effective viewport state without mesh work."""
+        started = time.perf_counter_ns()
+        layer = self.view_layer
+        pointer = getattr(layer, 'as_pointer', None)
+        layer_id = 'rna:' + str(int(pointer())) if callable(pointer) else 'python:' + str(id(layer))
+        rows = []
+        unavailable = False
+        supported = False
+        for obj in objects:
+            row = dict(host_id=self.object_id(obj))
+            uid = getattr(obj, 'session_uid', None)
+            row['instance_id'] = str(uid) if type(uid) is int and uid != 0 else None
+            missing = []
+            for field in ('visible_get', 'hide_get', 'hide_viewport', 'hide_render'):
+                try:
+                    value = getattr(obj, field)
+                    if field in ('visible_get', 'hide_get'):
+                        supported = supported or callable(value)
+                        value = value(view_layer=layer)
+                    if type(value) is not bool:
+                        value = None
+                except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+                    value = None
+                row[field] = value
+                if value is None:
+                    missing.append(field)
+            if row['instance_id'] is None:
+                missing.append('instance_id')
+            if missing:
+                row['unavailable_fields'] = missing
+            unavailable = unavailable or row['visible_get'] is None or row['instance_id'] is None
+            rows.append(row)
+        snapshot = dict(schema='blender-viewport-display-v1', scope='active_view_layer',
+                        status='unknown' if unavailable else 'captured',
+                        view_layer=dict(name=str(getattr(layer, 'name', '')),
+                                        instance_id=layer_id),
+                        objects=sorted(rows, key=lambda row: row['host_id']))
+        if unavailable:
+            snapshot['reason'] = 'current_viewport_display_source_unavailable'
+        snapshot['sha256'] = _digest(snapshot)
+        self._residency_stats['display_snapshots'] += 1
+        self._residency_stats['display_objects'] += len(rows)
+        self._residency_stats['display_read_ns'] += time.perf_counter_ns() - started
+        # Hosts predating the optional viewport read contract keep their
+        # capture shape. Consumers treat its absence as unavailable evidence.
+        return snapshot if supported else None
+
+    def _refresh_cached_display(self, scene, objects):
+        """Replace small display metadata and return its exact JSON size delta."""
+        included = {mesh['object_id'] for mesh in scene['meshes']}
+        current = self._display_snapshot([obj for obj in objects if self.object_id(obj) in included])
+        previous = scene.pop('display_snapshot', None)
+        if current is not None:
+            scene['display_snapshot'] = current
+
+        def wire_bytes(snapshot):
+            if snapshot is None:
+                return 0
+            # A nonempty scene contributes the separating comma. Strip one
+            # of the standalone metadata object's two braces to account for it.
+            return len(json.dumps(dict(display_snapshot=snapshot), ensure_ascii=True,
+                                  allow_nan=False, separators=(',', ':')).encode('utf8')) - 1
+
+        return wire_bytes(current) - wire_bytes(previous)
+
+    def _task_objects(self, selectors):
+        """Bind finite selectors before expanding any selected geometry."""
+        candidates = [obj for obj in self.scene.objects if getattr(obj, 'type', None) == 'MESH']
+        candidate_ids = ([self.object_id(obj) for obj in candidates]
+                         if any('id' in selector for selector in selectors) else None)
+        selected, bindings = {}, []
+        for selector in selectors:
+            if 'id' in selector:
+                matches = [obj for obj, object_id in zip(candidates, candidate_ids) if object_id == selector['id']]
+            else:
+                matches = [obj for obj in candidates if obj.name == selector['name']]
+            if len(matches) != 1:
+                bindings.append({'status': 'unknown', 'selector': dict(selector),
+                    'reason': 'object_not_found' if not matches else 'object_name_ambiguous'})
+                continue
+            obj = matches[0]
+            object_id = self.object_id(obj)
+            selected[object_id] = obj
+            bindings.append({'object_id': object_id, 'name': str(obj.name)})
+        objects = [selected[object_id] for object_id in sorted(selected)]
+        for obj in objects:
+            if getattr(obj, 'instance_type', 'NONE') != 'NONE' or bool(getattr(obj, 'is_instancer', False)):
+                raise BlenderHostError('Instanced selected geometry is unsupported: ' + obj.name)
+            if any(getattr(modifier, 'type', None) == 'NODES' for modifier in getattr(obj, 'modifiers', ())):
+                raise BlenderHostError('Selected geometry-node instances cannot be excluded: ' + obj.name)
+        pair_reason = None
+        if (len(bindings) == 2 and all('object_id' in row for row in bindings)
+                and bindings[0]['object_id'] == bindings[1]['object_id']):
+            pair_reason = 'pair_selectors_resolve_to_same_object'
+        return objects, {'selectors': [dict(selector) for selector in selectors], 'bindings': bindings,
+                         'pair_reason': pair_reason, 'candidate_count': len(candidates)}
+
+    def _capture(self, *, _native_evidence=False, _read_only_native=False, _task_selectors=None,
+                 _acquisition_context=None, _resident=False,
+                 _acquisition_scope='surface_nearest_candidates', _prepared_local=None):
         if type(_native_evidence) is not bool:
             raise BlenderHostError("_native_evidence must be boolean")
         if type(_read_only_native) is not bool:
             raise BlenderHostError("_read_only_native must be boolean")
         if _native_evidence and not (self.execution_metadata and self.identity_metadata):
             raise BlenderHostError("Native evidence requires explicit execution and identity metadata")
-        graph, scale = self._depsgraph(), self._scale()
-        objects = self._objects(graph)
+        graph, scale = (self._depsgraph(), self._scale()) if _acquisition_context is None else _acquisition_context[:2]
+        task_selection = task_identity = None
+        if _acquisition_context is not None:
+            if _native_evidence or _task_selectors is not None:
+                raise BlenderHostError('Acquisition context cannot supply legacy evidence')
+            objects = _acquisition_context[2]
+        elif _task_selectors is None:
+            objects = self._objects(graph)
+        else:
+            objects, task_selection = self._task_objects(_task_selectors)
+            task_identity = self._identity_metadata(objects, capture_scope='selected_objects')
+            if task_identity is None:
+                raise BlenderHostError('Selected capture requires document and object instance identity')
         native_objects = [] if _native_evidence else None
         native_capability = native_identity = None
         if _native_evidence:
@@ -454,9 +1214,16 @@ class BlenderSceneHost:
             if native_identity is None:
                 raise BlenderHostError("Native original-pose evidence requires complete host identity")
         active = getattr(getattr(self.view_layer, "objects", None), "active", None)
+        display_snapshot = None if _native_evidence else self._display_snapshot(objects)
+        if _resident and self._sync_residency(graph,scale,_surface_scan=_acquisition_scope=='surface_scan_candidates',
+                                             _display_snapshot=display_snapshot):
+            return self._resident_capture(graph,scale,objects,task_selection,task_identity,
+                                          _acquisition_context,_acquisition_scope,_prepared_local,display_snapshot)
         meshes, vertex_count, face_count = [], 0, 0
         for ordinal, obj in enumerate(objects, 1):
-            evaluated = obj.evaluated_get(graph)
+            if _acquisition_context is not None:
+                _acquisition_context[4]()
+            evaluated = obj.evaluated_get(graph) if _acquisition_context is None else _acquisition_context[3][self.object_id(obj)]
             if not bool(getattr(evaluated, "is_evaluated", True)):
                 raise BlenderHostError("Mesh is not evaluated in the current view layer: " + obj.name)
             matrix = _matrix(evaluated.matrix_world)
@@ -464,24 +1231,34 @@ class BlenderSceneHost:
                 raise BlenderHostError("Native original and evaluated world matrices disagree: " + obj.name)
             temporary = None
             try:
-                temporary = evaluated.to_mesh()
-                if temporary is None:
-                    raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
-                temporary.calc_loop_triangles()
-                if (vertex_count + len(temporary.vertices) > 500_000
-                        or face_count + len(temporary.loop_triangles) > 1_000_000):
-                    raise BlenderHostError("Scene geometry budget exceeded")
+                prepared = _prepared_local.get(self.object_id(obj)) if _prepared_local is not None else None
+                if prepared is None:
+                    temporary = evaluated.to_mesh()
+                    if temporary is None:
+                        raise BlenderHostError("Evaluated mesh is unavailable: " + obj.name)
+                    temporary.calc_loop_triangles()
+                    if (vertex_count + len(temporary.vertices) > 500_000
+                            or face_count + len(temporary.loop_triangles) > 1_000_000):
+                        raise BlenderHostError("Scene geometry budget exceeded")
                 vertices = []
                 evaluated_local = [] if _native_evidence else None
-                for vertex in temporary.vertices:
-                    point = [float(vertex.co[i]) for i in range(3)]
+                vertex_source = (prepared[0] if prepared is not None else temporary.vertices if _acquisition_context is None else
+                                 _acquisition_vertices(temporary.vertices, _acquisition_context[4]))
+                for vertex_ordinal, vertex in enumerate(vertex_source):
+                    if prepared is not None and vertex_ordinal % 128 == 0:
+                        _acquisition_context[4]()
+                    point = list(vertex) if prepared is not None else [float(vertex.co[i]) for i in range(3)]
                     if _native_evidence:
                         evaluated_local.append(point)
                     world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale for r in range(3)]
                     if any(not math.isfinite(v) for v in world):
                         raise BlenderHostError("Nonfinite evaluated geometry: " + obj.name)
                     vertices.append(world)
-                faces = [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles]
+                faces = ([list(face) for face in prepared[1]] if prepared is not None else
+                         [[int(i) for i in triangle.vertices] for triangle in temporary.loop_triangles])
+                if prepared is not None:
+                    self._residency_stats['world_transforms'] += 1
+                    self._residency_stats['world_vertices_transformed'] += len(vertices)
                 if len(vertices) < 3 or not faces or any(len(face) != 3 or min(face) < 0 or max(face) >= len(vertices) for face in faces):
                     raise BlenderHostError("A mesh requires valid evaluated triangles: " + obj.name)
                 vertex_count, face_count = vertex_count + len(vertices), face_count + len(faces)
@@ -543,17 +1320,29 @@ class BlenderSceneHost:
                 if temporary is not None:
                     evaluated.to_mesh_clear()
         scene = {"unit": "m", "coordinate_frame": "world", "source": "blender", "meshes": meshes}
-        if self.execution_metadata:
+        if task_selection is not None:
+            scene['capture_scope'] = 'selected_objects'
+            scene['task_selection'] = task_selection
+            scene['host_identity'] = task_identity
+        elif _acquisition_context is not None:
+            scene['capture_scope'] = _acquisition_scope
+            scene['execution_authority'] = False
+        elif self.execution_metadata:
             scene["host_execution"] = self._execution_status(objects)
-        if self.identity_metadata:
-            identity = self._identity_metadata(objects)
+        if task_selection is None and self.identity_metadata:
+            identity = self._identity_metadata(objects, capture_scope=_acquisition_scope) if _acquisition_context is not None else self._identity_metadata(objects)
             if identity is not None:
                 scene['host_identity'] = identity
         # Guard changes must invalidate approvals even if displayed geometry did
         # not move. The digest is deterministic across bridge process launches.
-        scene["revision"] = "blender:" + _digest({"scene": scene, "scale_length": scale,
-                "frame": int(getattr(self.scene, "frame_current", 0)),
-                "guards": [[self.object_id(obj), self._guard_description(obj)] for obj in objects]})
+        if task_selection is None:
+            scene["revision"] = "blender:" + _digest({"scene": scene, "scale_length": scale,
+                    "frame": int(getattr(self.scene, "frame_current", 0)),
+                    "guards": [[self.object_id(obj), self._guard_description(obj)] for obj in objects]})
+        else:
+            scene['revision'] = 'blender:' + _digest({'scene': scene, 'scale_length': scale})
+        if display_snapshot is not None:
+            scene['display_snapshot'] = display_snapshot
         if _native_evidence:
             current_objects = self._objects(graph)
             if (len(current_objects) != len(objects)
@@ -730,7 +1519,1013 @@ class BlenderSceneHost:
         """Read evaluated world geometry; raises if collision coverage is incomplete."""
         self._main_thread()
         with self._lock:
-            return self._capture()
+            return self._capture_state(self._capture(_resident=True),_digest(['scene']))
+
+    def _capture_scene_delta(self, known=None):
+        """Encode a complete capture while its resident geometry is still private."""
+        self._main_thread()
+        with self._lock:
+            scene = self._capture(_resident=True)
+            residency = self._residency
+            if residency is None or not residency.enabled:
+                return copy.deepcopy(scene)
+            # The encoder detaches metadata and any forwarded resources. Its
+            # full-capture fallback also returns an independent copy.
+            capture = dict(scene, capture_state=residency.token(_digest(['scene'])))
+            return self.capture_delta(capture, known)
+
+    def capture_active_observation(self, selector, deadline_ns, max_response_bytes):
+        """Acquire one target and possible occluders in its six viewports."""
+        self._main_thread()
+        if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                       for value in selector.values())):
+            raise BlenderHostError('active_observation_target_selector')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('active_observation_target_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('active_observation_target_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('active_observation_target_deadline_exceeded')
+
+        def interval(started):
+            closed = time.perf_counter_ns()
+            return dict(started_ns=started, closed_ns=closed, elapsed_ns=closed - started)
+
+        checkpoint()
+        with self._lock:
+            stages = {}
+            before = dict(self._residency_stats)
+            started = time.perf_counter_ns()
+            graph, scale = self._depsgraph(), self._scale()
+            objects = self._objects(graph)
+            ids = [self.object_id(obj) for obj in objects]
+            key, value = next(iter(selector.items()))
+            matches = [obj for obj, oid in zip(objects, ids)
+                       if (oid if key == 'id' else obj.name) == value]
+            if len(matches) != 1:
+                raise BlenderHostError('active_observation_target_not_found' if not matches
+                                       else 'active_observation_target_ambiguous')
+            target = matches[0]
+            target_id = self.object_id(target)
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('active_observation_target_source_identity')
+            frame = dict(frame=int(getattr(self.scene, 'frame_current', 0)),
+                         subframe=float(getattr(self.scene, 'frame_subframe', 0.)), scale_length=scale)
+            evaluated_by_id, frozen, rows = {}, {}, []
+            source_vertices = triangle_budget = 0
+            uncertain_counts = False
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                evaluated = obj.evaluated_get(graph)
+                evaluated_by_id[oid] = evaluated
+                matrix = _matrix(evaluated.matrix_world)
+                data = getattr(evaluated, 'data', None)
+                try:
+                    counts = (len(data.vertices), len(data.loops), len(data.polygons))
+                except (AttributeError, TypeError, ReferenceError):
+                    counts = None
+                if counts is None:
+                    uncertain_counts = True
+                    vertices = upper = None
+                else:
+                    vertices, loops, polygons = counts
+                    upper = max(0, loops - 2 * polygons)
+                    source_vertices += vertices
+                    triangle_budget += upper
+                try:
+                    corners = evaluated.bound_box
+                except (AttributeError, RuntimeError, ReferenceError):
+                    corners = ()
+                bounds = _acquisition_bounds(corners, matrix, scale)
+                rows.append(dict(object_id=oid, name=str(obj.name),
+                    instance_id=identity['object_instances'][oid], matrix_world=matrix,
+                    bounds_world_m=bounds, vertex_count=vertices, triangle_budget_upper=upper))
+                frozen[oid] = (matrix, self._guard_description(obj), counts)
+            if source_vertices > 500000:
+                raise BlenderHostError('Scene geometry budget exceeded')
+            # An upper bound above the actual-face budget cannot prove either
+            # acceptance or rejection. Read all geometry through the original
+            # bounded capture in that case, also covering unavailable counts.
+            require_complete = uncertain_counts or triangle_budget > 1000000
+            stages['directory_and_target_binding'] = interval(started)
+            started = time.perf_counter_ns()
+            initial_ids = {row['object_id'] for row in rows
+                           if row['bounds_world_m'] is None or require_complete}
+            initial_ids.add(target_id)
+            initial = [obj for obj, oid in zip(objects, ids) if oid in initial_ids]
+            initial_capture = self._capture(
+                _acquisition_context=(graph, scale, initial, evaluated_by_id, checkpoint),
+                _resident=True, _acquisition_scope='target_observation_meshes')
+            meshes = {mesh['object_id']: mesh for mesh in initial_capture['meshes']}
+            stages['target_and_unknown_geometry'] = interval(started)
+            started = time.perf_counter_ns()
+            depth_bounds = []
+            tight_vertices = 0
+            for row in rows:
+                bounds = row['bounds_world_m']
+                if bounds is None:
+                    vertices = meshes[row['object_id']]['vertices']
+                    tight_vertices += len(vertices)
+                    bounds = [[min(point[k] for point in vertices) for k in range(3)],
+                              [max(point[k] for point in vertices) for k in range(3)]]
+                depth_bounds.append(bounds)
+            cameras = _observation_target_cameras(meshes[target_id]['vertices'], depth_bounds)
+            stages['target_cameras'] = interval(started)
+            started = time.perf_counter_ns()
+            retained = objects
+            retained_ids = ids
+            excluded_ids = []
+            bound_tests = 0
+            if not require_complete and len(initial_ids) < len(objects):
+                retained, retained_ids = [], []
+                for obj, row in zip(objects, rows):
+                    checkpoint()
+                    oid = row['object_id']
+                    outside = False
+                    if oid not in initial_ids:
+                        outside, tested = _observation_outside_xy_viewports(row['bounds_world_m'], cameras)
+                        bound_tests += tested
+                    if outside:
+                        excluded_ids.append(oid)
+                    else:
+                        retained.append(obj)
+                        retained_ids.append(oid)
+            stages['viewport_selection'] = interval(started)
+            started = time.perf_counter_ns()
+            remaining = [obj for obj in retained if self.object_id(obj) not in meshes]
+            if remaining:
+                remainder = self._capture(
+                    _acquisition_context=(graph, scale, remaining, evaluated_by_id, checkpoint),
+                    _resident=True, _acquisition_scope='target_observation_meshes')
+                meshes.update((mesh['object_id'], mesh) for mesh in remainder['meshes'])
+            # Merge the disjoint acquisitions in original scene order. The
+            # target is never extracted or world-transformed a second time,
+            # including hosts whose residency handlers are unavailable.
+            ordered = [dict(meshes[oid], mark_label='#B%04d' % (index + 1))
+                       for index, oid in enumerate(retained_ids)]
+            if (sum(len(mesh['vertices']) for mesh in ordered) > 500000
+                    or sum(len(mesh['faces']) for mesh in ordered) > 1000000):
+                raise BlenderHostError('Scene geometry budget exceeded')
+            stages['remaining_geometry'] = interval(started)
+            started = time.perf_counter_ns()
+            if (self._objects(graph) != objects or self._scale() != scale
+                    or int(getattr(self.scene, 'frame_current', 0)) != frame['frame']
+                    or float(getattr(self.scene, 'frame_subframe', 0.)) != frame['subframe']
+                    or self._identity_metadata(objects) != identity):
+                raise BlenderHostError('active_observation_target_source_changed')
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                matrix, guards, counts = frozen[oid]
+                evaluated = evaluated_by_id[oid]
+                if _matrix(evaluated.matrix_world) != matrix or self._guard_description(obj) != guards:
+                    raise BlenderHostError('active_observation_target_source_changed')
+                if counts is not None and counts != (len(evaluated.data.vertices), len(evaluated.data.loops),
+                                                      len(evaluated.data.polygons)):
+                    raise BlenderHostError('active_observation_target_source_changed')
+            metadata = dict(schema='active-observation-target-v1', selector=dict(selector),
+                target_object_id=target_id, target_instance_id=identity['object_instances'][target_id],
+                target_object_index=retained_ids.index(target_id), camera_plan=cameras,
+                scene_directory=rows, full_scene_identity=identity, retained_object_ids=retained_ids,
+                excluded_object_ids=excluded_ids, directory_sha256=_digest(rows), source_frame=frame)
+            scene = dict(unit='m', coordinate_frame='world', source='blender',
+                capture_scope='target_observation_meshes', execution_authority=False, meshes=ordered,
+                host_identity=self._identity_metadata(retained, capture_scope='target_observation_meshes'),
+                observation_target=metadata)
+            scene['revision'] = 'blender:' + _digest(scene)
+            selection_key = _digest(['active_observation', target_id, metadata['directory_sha256'], _digest(cameras)])
+            scene = self._capture_state(scene, selection_key)
+            stages['source_validation_and_binding'] = interval(started)
+            metadata = scene['observation_target']
+            metadata['work'] = dict(strategy='selective_xy_viewports', scene_objects=len(objects), retained_objects=len(retained),
+                excluded_objects=len(excluded_ids), source_vertices_metadata=source_vertices,
+                triangle_budget_upper=triangle_budget, source_counts_require_complete=require_complete,
+                expanded_vertices=sum(len(mesh['vertices']) for mesh in ordered),
+                expanded_triangles=sum(len(mesh['faces']) for mesh in ordered),
+                bound_tests=bound_tests, tight_bounds_vertices_scanned=tight_vertices,
+                target_camera_vertex_projections=6 * len(meshes[target_id]['vertices']),
+                residency_delta={key: self._residency_stats[key] - value for key, value in before.items()},
+                stages=stages)
+            checkpoint()
+            if len(json.dumps(scene, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')) > max_response_bytes:
+                raise BlenderHostError('active_observation_target_document_budget_exceeded')
+            checkpoint()
+            return scene
+
+    def capture_directory(self, deadline_ns, max_response_bytes):
+        """Aggregate evaluated vertex bounds without creating a mesh capture."""
+        self._main_thread()
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('directory_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('directory_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('directory_deadline_exceeded')
+
+        checkpoint()
+        with self._lock:
+            graph, scale = self._depsgraph(), self._scale()
+            checkpoint()
+            objects = self._objects(graph)
+            resident = self._sync_residency(graph, scale)
+            selection_key = _digest(['directory'])
+            cached = self._residency.captures.get(selection_key) if resident else None
+            if cached is not None:
+                result = self._capture_state(cached, selection_key)
+                result['cache_hit'] = True
+                self._residency_stats['directory_cache_hits'] += 1
+            else:
+                identity = self._identity_metadata(objects, capture_scope='scene_directory')
+                source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+                if identity is None or not _hex_string(source_sha, 64):
+                    raise BlenderHostError('directory_source_identity_unavailable')
+                rows = []
+                vertex_count = triangle_budget = 0
+                for obj in objects:
+                    checkpoint()
+                    evaluated = obj.evaluated_get(graph)
+                    if not bool(getattr(evaluated, 'is_evaluated', True)):
+                        raise BlenderHostError('directory_object_not_evaluated: ' + obj.name)
+                    matrix = _matrix(evaluated.matrix_world)
+                    temporary = None
+                    try:
+                        self._residency_stats['to_mesh'] += 1
+                        temporary = evaluated.to_mesh()
+                        if temporary is None or not len(temporary.vertices):
+                            raise BlenderHostError('directory_empty_or_unavailable_mesh: ' + obj.name)
+                        vertex_count += len(temporary.vertices)
+                        # A polygon with n loops has at most n-2 triangles.
+                        # Read collection lengths without triangulating or walking faces.
+                        triangle_budget += max(0, len(temporary.loops) - 2 * len(temporary.polygons))
+                        if vertex_count > 500000 or triangle_budget > 1000000:
+                            raise BlenderHostError('Scene geometry budget exceeded')
+                        low = [math.inf] * 3
+                        high = [-math.inf] * 3
+                        for vertex in _acquisition_vertices(temporary.vertices, checkpoint):
+                            point = tuple(float(vertex.co[i]) for i in range(3))
+                            world = [(sum(matrix[r][c] * point[c] for c in range(3)) + matrix[r][3]) * scale
+                                     for r in range(3)]
+                            self._residency_stats['directory_vertices'] += 1
+                            if any(not math.isfinite(value) for value in world):
+                                raise BlenderHostError('directory_nonfinite_geometry: ' + obj.name)
+                            for axis in range(3):
+                                low[axis] = min(low[axis], world[axis])
+                                high[axis] = max(high[axis], world[axis])
+                        rows.append(dict(object_id=self.object_id(obj), name=str(obj.name),
+                            bbox_min=low, bbox_max=high,
+                            center=[_bounds_midpoint(a, b) for a, b in zip(low, high)]))
+                    finally:
+                        if temporary is not None:
+                            evaluated.to_mesh_clear()
+                packet = dict(schema='human-eye-directory-v1', result_kind='scene_directory',
+                    status='complete', unit='m', coordinate_frame='world', objects=rows,
+                    coverage=dict(status='complete', mesh_objects=len(objects), measured_objects=len(rows)),
+                    binding=dict(host_source_sha256=source_sha, host_identity=identity,
+                        frame=int(getattr(self.scene, 'frame_current', 0)),
+                        subframe=float(getattr(self.scene, 'frame_subframe', 0.)), scale_length=scale),
+                    execution_authority=False)
+                packet['directory_sha256'] = _digest(packet)
+                packet['capture_state'] = None
+                packet['cache_hit'] = False
+                checkpoint()
+                # Cache only a complete independent directory. Mesh resources,
+                # delta baselines and action state retain their own ownership.
+                if resident:
+                    if len(self._residency.captures) >= 8:
+                        self._residency.captures.clear()
+                    self._residency.captures[selection_key] = packet
+                self._residency_stats['directory_builds'] += 1
+                result = self._capture_state(packet, selection_key)
+            checkpoint()
+            encoded = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+            if len(encoded) > max_response_bytes:
+                raise BlenderHostError('directory_document_budget_exceeded')
+            checkpoint()
+            return result
+
+    def _acquisition_directory_source(self, obj, graph, scale, *, allow_hidden=False):
+        """Shared cheap static directory read; geometry expansion stays separate."""
+        oid = self.object_id(obj)
+        guards = self._guard_description(obj)
+        if (guards['parent'] is not None or guards['children'] or guards['constraints']
+                or guards['modifiers'] or guards['animation'] or guards['data_animation']
+                or guards['rigid_body'] or guards['rigid_body_constraint'] or guards['shape_keys']
+                or guards['linked'] or guards['edit_mode']
+                or getattr(getattr(obj, 'data', None), 'library', None) is not None
+                or getattr(obj, 'instance_type', 'NONE') != 'NONE'
+                or bool(getattr(obj, 'is_instancer', False))):
+            raise BlenderHostError('acquisition_static_triangle_source_required:' + oid)
+        evaluated = obj.evaluated_get(graph)
+        source_mode = 'evaluated_static'
+        if getattr(evaluated, 'is_evaluated', False) is not True:
+            hidden = bool(getattr(obj, 'hide_viewport', False))
+            hidden_get = getattr(obj, 'hide_get', None)
+            if callable(hidden_get):
+                hidden = hidden or bool(hidden_get())
+            if not allow_hidden or not hidden:
+                raise BlenderHostError('acquisition_evaluation_unavailable:' + oid)
+            from types import SimpleNamespace
+            evaluated = SimpleNamespace(data=obj.data, matrix_world=obj.matrix_world,
+                                        is_evaluated=True, bound_box=getattr(obj, 'bound_box', ()))
+            source_mode = 'static_original_hidden'
+        data = getattr(evaluated, 'data', None)
+        if (data is None or not hasattr(data, 'vertices') or not hasattr(data, 'polygons')
+                or not hasattr(data, 'loops') or len(data.vertices) < 3 or not len(data.polygons)
+                or len(data.loops) != 3 * len(data.polygons)):
+            raise BlenderHostError('acquisition_triangle_data_required:' + oid)
+        matrix = _matrix(evaluated.matrix_world)
+        try:
+            corners = evaluated.bound_box
+        except (AttributeError, RuntimeError):
+            corners = ()
+        return evaluated, guards, matrix, _acquisition_bounds(corners, matrix, scale), source_mode
+
+    def _scan_local_geometry(self, data, checkpoint, oid):
+        _acquisition_validate_triangles(data, check_coordinates=False, checkpoint=checkpoint, object_id=oid)
+        local = tuple(tuple(float(vertex.co[k]) for k in range(3)) for vertex in
+                      _acquisition_vertices(data.vertices, checkpoint))
+        if any(not math.isfinite(value) for point in local for value in point):
+            raise BlenderHostError('nonfinite_local_triangle_source')
+        faces = []
+        for ordinal, polygon in enumerate(data.polygons):
+            if ordinal % 256 == 0:
+                checkpoint()
+            faces.append(tuple(data.loops[polygon.loop_start + offset].vertex_index for offset in range(3)))
+        self._residency_stats['resource_vertices_read'] += len(local)
+        self._residency_stats['resource_faces_read'] += len(faces)
+        return local, tuple(faces)
+
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+        """Internal unsigned-surface acquisition, one synchronous host window.
+
+        Restricted to independent static triangle meshes. API-derived bounds
+        only choose acquisition; the returned packet is not a nearest result,
+        solid certificate, legacy complete-scene capture or action authority.
+        """
+        self._main_thread()
+        if selector is None:
+            if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+                raise BlenderHostError('acquisition_focal_id')
+        else:
+            if focal_id is not None:
+                raise BlenderHostError('acquisition_focal_selector_conflict')
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('acquisition_selector')
+            selector_key, selector_value = next(iter(selector.items()))
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('acquisition_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('acquisition_document_budget')
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('acquisition_deadline_exceeded')
+        checkpoint()
+        with self._lock:
+            graph, scale = self._depsgraph(), self._scale()
+            checkpoint()
+            objects = self._objects(graph)
+            ids = [self.object_id(obj) for obj in objects]
+            if selector is not None:
+                matches = [oid for obj, oid in zip(objects, ids)
+                           if (oid if selector_key == 'id' else obj.name) == selector_value]
+                if not matches:
+                    raise BlenderHostError('acquisition_selector_not_found')
+                if len(matches) != 1:
+                    raise BlenderHostError('acquisition_selector_ambiguous')
+                focal_id = matches[0]
+            if len(set(ids)) != len(ids) or focal_id not in ids or len(ids) < 2:
+                raise BlenderHostError('acquisition_object_coverage')
+            resident=self._sync_residency(graph,scale)
+            nearest_key=_digest(['nearest',focal_id])
+            cached=self._residency.nearest.get(nearest_key) if resident else None
+            if cached is not None:
+                checkpoint()
+                result=copy.deepcopy(cached[0]);checkpoint()
+                display_bytes = self._refresh_cached_display(result['capture'], objects)
+                if cached[1] + display_bytes > max_response_bytes:
+                    raise BlenderHostError('acquisition_document_budget_exceeded')
+                checkpoint()
+                self._residency_stats['nearest_cache_hits']+=1
+                return result
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('acquisition_source_identity_unavailable')
+            frame = int(getattr(self.scene, 'frame_current', 0))
+            evaluated_by_id, frozen, rows = {}, {}, {}
+            source_vertices = source_faces = 0
+
+            def read_directory(obj):
+                nonlocal source_vertices, source_faces
+                checkpoint()
+                oid = self.object_id(obj)
+                evaluated, guards, matrix, bounds, _ = self._acquisition_directory_source(obj, graph, scale)
+                data = evaluated.data
+                source_vertices += len(data.vertices)
+                source_faces += len(data.polygons)
+                if source_vertices > 500_000 or source_faces > 1_000_000:
+                    raise BlenderHostError('acquisition_scene_geometry_budget')
+                evaluated_by_id[oid] = evaluated
+                frozen[oid] = (guards, matrix, len(data.vertices), len(data.polygons))
+                row = {'object_id': oid, 'bounds_world_m': bounds,
+                       'witness': _acquisition_witness(data, matrix, scale)}
+                if row['bounds_world_m'] is not None and row['witness'] is not None:
+                    lo, hi = row['bounds_world_m']
+                    if any(not lo[k] <= point[k] <= hi[k] for point in row['witness']['triangle_world_m'] for k in range(3)):
+                        row['bounds_world_m'] = None
+                checkpoint()
+                return row
+
+            focal_obj = objects[ids.index(focal_id)]
+            rows[focal_id] = read_directory(focal_obj)
+            focal_witness = rows[focal_id]['witness']
+            upper, seed, focal_index, seed_index = math.inf, None, 0, 0
+            for obj, oid in zip(objects, ids):
+                if oid != focal_id:
+                    rows[oid] = read_directory(obj)
+                    witness = rows[oid]['witness']
+                    if focal_witness is not None and witness is not None and upper != 0.:
+                        for fi, point_a in enumerate(focal_witness['triangle_world_m']):
+                            for si, point_b in enumerate(witness['triangle_world_m']):
+                                value = _acquisition_upper(point_a, point_b)
+                                if value < upper:
+                                    upper, seed, focal_index, seed_index = value, oid, fi, si
+                                if upper == 0.:
+                                    break
+                            if upper == 0.:
+                                break
+            # Search uses the original triangle ordering throughout. Cyclic
+            # rotation preserves orientation and the existing first-point
+            # witness schema, including the capture readback and digest.
+            if seed is not None:
+                for oid, offset in ((focal_id, focal_index), (seed, seed_index)):
+                    witness = rows[oid]['witness']
+                    for field in ('triangle_world_m', 'triangle_vertex_indices'):
+                        values = witness[field]
+                        witness[field] = values[offset:] + values[:offset]
+                    witness['point_world_m'] = witness['triangle_world_m'][0]
+            selected, coverage = [], []
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                row = rows[oid]
+                lower = _acquisition_lower(rows[focal_id]['bounds_world_m'], row['bounds_world_m'])
+                excluded = oid != focal_id and oid != seed and row['witness'] is not None and lower > upper
+                _acquisition_validate_triangles(evaluated_by_id[oid].data,
+                    check_coordinates=excluded, checkpoint=checkpoint, object_id=oid)
+                row.update(lower_bound_m=lower, disposition='excluded_strict_bound' if excluded else 'retained',
+                           bounds_status='enclosed' if row['bounds_world_m'] is not None else 'unknown')
+                coverage.append(row)
+                if not excluded:
+                    selected.append(obj)
+            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint),_resident=True)
+            checkpoint()
+            # The witness defining U must survive the actual selected capture.
+            captured = {mesh['object_id']: mesh for mesh in scene['meshes']}
+            for oid in (focal_id, seed):
+                witness = rows[oid]['witness'] if oid is not None else None
+                if witness is not None:
+                    mesh = captured[oid]
+                    indices = witness['triangle_vertex_indices']
+                    if (not any(sorted(face) == sorted(indices) for face in mesh['faces'])
+                            or [mesh['vertices'][i] for i in indices] != witness['triangle_world_m']):
+                        raise BlenderHostError('acquisition_witness_capture_mismatch')
+            # No second dependency-graph update; reject observable mutations in
+            # this synchronous main-thread read, never describe edit history.
+            if (self._objects(graph) != objects or self._scale() != scale
+                    or int(getattr(self.scene, 'frame_current', 0)) != frame
+                    or self._identity_metadata(objects) != identity):
+                raise BlenderHostError('acquisition_source_changed')
+            for obj, oid in zip(objects, ids):
+                old = frozen[oid]
+                evaluated = evaluated_by_id[oid]
+                if (self._guard_description(obj) != old[0] or _matrix(evaluated.matrix_world) != old[1]
+                        or len(evaluated.data.vertices) != old[2] or len(evaluated.data.polygons) != old[3]):
+                    raise BlenderHostError('acquisition_source_changed')
+            scene=self._capture_state(scene,nearest_key)
+            packet = {'protocol': 'single-read-surface-candidates-v1', 'capture': scene,
+                'focal_id': focal_id, 'coverage': coverage,
+                'scope': 'independent_static_triangle_meshes_current_evaluated_surfaces',
+                'bound_method': 'outward_evaluated_local_box_affine_linf',
+                'upper_method': 'outward_L1_real_triangle_vertex_pair',
+                'M3_qualification_performed': False,
+                'witness_upper_bound_m': upper if math.isfinite(upper) else None, 'upper_seed_id': seed,
+                'unresolved_bounds_ids': [row['object_id'] for row in coverage if row['bounds_status'] == 'unknown'],
+                'unresolved_witness_ids': [row['object_id'] for row in coverage if row['witness'] is None],
+                'binding': {'host_source_sha256': source_sha, 'host_identity': identity, 'frame': frame,
+                            'scale_length': scale, 'coordinate_frame': 'world', 'unit': 'm',
+                            'same_main_thread_read': True, 'external_edit_history_proven': False},
+                'work': {'directory_objects': len(objects), 'source_vertices': source_vertices,
+                         'source_faces': source_faces, 'expanded_objects': len(selected),
+                         'expanded_vertices': sum(len(m['vertices']) for m in scene['meshes']),
+                         'expanded_faces': sum(len(m['faces']) for m in scene['meshes'])},
+                'result_kind': 'acquisition_only_not_nearest_result', 'execution_authority': False}
+            packet['binding']['directory_sha256'] = _digest(coverage)
+            checkpoint()
+            packet_bytes=len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+            if packet_bytes > max_response_bytes:
+                raise BlenderHostError('acquisition_document_budget_exceeded')
+            checkpoint()
+            if resident:
+                if len(self._residency.nearest)>=8:self._residency.nearest.clear()
+                self._residency.nearest[nearest_key]=(copy.deepcopy(packet),packet_bytes)
+            return packet
+
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        """Acquire one complete mesh directory and one retained endpoint union."""
+        self._main_thread()
+        if type(threshold_m) not in (int, float):
+            raise BlenderHostError('surface_scan_threshold')
+        try:
+            threshold_m = float(threshold_m)
+        except OverflowError as exc:
+            raise BlenderHostError('surface_scan_threshold') from exc
+        if not math.isfinite(threshold_m) or threshold_m < 0:
+            raise BlenderHostError('surface_scan_threshold')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('acquisition_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('acquisition_document_budget')
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('acquisition_deadline_exceeded')
+        def instances():
+            return any(bool(getattr(item, 'is_instance', False)) for item in getattr(graph, 'object_instances', ()))
+        def current_scope_issues():
+            issues = ['evaluated_instances_not_supported'] if instances() else []
+            if any(getattr(obj, 'type', None) != 'MESH' and
+                   (getattr(obj, 'instance_type', 'NONE') != 'NONE' or bool(getattr(obj, 'is_instancer', False)))
+                   for obj in self.scene.objects):
+                issues.append('nonmesh_scene_instancers_not_supported')
+            return issues
+        checkpoint()
+        with self._lock:
+            before = dict(self._residency_stats)
+            graph, scale = self._depsgraph(), self._scale()
+            objects = self._objects(graph, _surface_scan=True)
+            ids = [self.object_id(obj) for obj in objects]
+            if len(set(ids)) != len(ids):
+                raise BlenderHostError('acquisition_object_coverage')
+            resident = self._sync_residency(graph, scale, _surface_scan=True)
+            state = self._residency
+            selection_key = _digest(['surface_scan', threshold_m])
+            identity = self._identity_metadata(objects)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('acquisition_source_identity_unavailable')
+            scope_issues = current_scope_issues()
+            def current_work(work, cache_hit):
+                return dict(work, cache_hit=cache_hit,
+                            residency_delta={key: self._residency_stats[key] - value for key, value in before.items()})
+            cached = state.nearest.get(selection_key) if resident else None
+            if cached is not None and (cached[0]['binding']['host_identity'] != identity
+                                       or cached[0]['binding']['host_source_sha256'] != source_sha
+                                       or cached[0]['scope_issues'] != scope_issues):
+                cached = None
+            if cached is not None:
+                checkpoint()
+                result = copy.deepcopy(cached[0])
+                display_bytes = self._refresh_cached_display(result['capture'], objects)
+                self._residency_stats['scan_cache_hits'] += 1
+                result['work'] = current_work(result['work'], True)
+                # Reuse the full-document size and account for the small current
+                # display metadata and counters without serializing geometry.
+                def work_bytes(value):
+                    return len(json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+                packet_bytes = cached[1] + display_bytes - work_bytes(cached[0]['work']) + work_bytes(result['work'])
+                if packet_bytes > max_response_bytes:
+                    raise BlenderHostError('acquisition_document_budget_exceeded')
+                checkpoint()
+                return result
+            frame = (int(getattr(self.scene, 'frame_current', 0)), float(getattr(self.scene, 'frame_subframe', 0)))
+            rows, sources, frozen, prepared = {}, {}, {}, {}
+            source_vertices = source_faces = 0
+            ident = self._residency_module.identity
+            def source_observable(obj):
+                try:
+                    matrix = _matrix(obj.matrix_world)
+                except BlenderHostError:
+                    matrix = None
+                return (self._guard_description(obj), ident(getattr(obj, 'data', None)), matrix,
+                        getattr(obj, 'instance_type', 'NONE'), bool(getattr(obj, 'is_instancer', False)))
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                self._residency_stats['scan_directory_objects'] += 1
+                frozen[oid] = source_observable(obj)
+                row = dict(object_id=oid, name=str(obj.name), bounds_world_m=None, bounds_status='unknown',
+                           source_status='unsupported', source_mode=None, reason=None)
+                try:
+                    evaluated, guards, matrix, bounds, source_mode = self._acquisition_directory_source(
+                        obj, graph, scale, allow_hidden=True)
+                    data = evaluated.data
+                    source_vertices += len(data.vertices)
+                    source_faces += len(data.polygons)
+                    if source_vertices > 500_000 or source_faces > 1_000_000:
+                        raise BlenderHostError('acquisition_scene_geometry_budget')
+                    sources[oid] = (evaluated, matrix, self._resource_stamp(obj), len(data.vertices), len(data.polygons))
+                    row.update(bounds_world_m=bounds, bounds_status='enclosed' if bounds is not None else 'unknown',
+                               source_status='supported', source_mode=source_mode)
+                except (BlenderHostError, AttributeError, TypeError, ValueError, IndexError, RuntimeError) as exc:
+                    if str(exc).startswith(('acquisition_deadline', 'acquisition_scene_geometry_budget')):
+                        raise
+                    row['reason'] = str(exc)[:512] or type(exc).__name__
+                rows[oid] = row
+            pairs, provisional_union = [], set()
+            for index, oid in enumerate(ids):
+                checkpoint()
+                for other in ids[index + 1:]:
+                    lower = _acquisition_lower(rows[oid]['bounds_world_m'], rows[other]['bounds_world_m'])
+                    self._residency_stats['scan_bound_tests'] += 1
+                    unsupported = rows[oid]['source_status'] != 'supported' or rows[other]['source_status'] != 'supported'
+                    disposition = 'unknown_source' if unsupported else 'excluded_strict_bound' if lower > threshold_m else 'retained'
+                    pairs.append(dict(object_ids=[oid, other], lower_bound_m=lower, disposition=disposition))
+                    if disposition == 'retained':
+                        provisional_union.update((oid, other))
+            for obj, oid in zip(objects, ids):
+                checkpoint()
+                if oid not in sources:
+                    continue
+                evaluated, matrix, stamp, _, _ = sources[oid]
+                key = ident(obj)
+                resource = state.resources.get(key) if resident else None
+                if resource is not None and resource['stamp'] != stamp:
+                    resource = None
+                check = state.source_checks.get(key) if resident else None
+                local = faces = None
+                try:
+                    if check is not None and check['stamp'] == stamp:
+                        self._residency_stats['source_qualification_cache_hits'] += 1
+                        if check['reason'] is not None:
+                            raise BlenderHostError(check['reason'])
+                        summary = check['summary']
+                    else:
+                        if resource is not None:
+                            local, faces = resource['vertices_local'], resource['faces']
+                        else:
+                            local, faces = self._scan_local_geometry(evaluated.data, checkpoint, oid)
+                        self._residency_stats['source_qualification_vertices'] += len(local)
+                        self._residency_stats['source_qualification_faces'] += len(faces)
+                        summary = _scan_local_summary(local, faces, checkpoint)
+                        if resident:
+                            state.source_checks[key] = dict(stamp=copy.deepcopy(stamp), summary=summary, reason=None)
+                    if not _scan_world_precision(summary, matrix, scale):
+                        raise BlenderHostError('world_precision_unresolved')
+                    if oid in provisional_union and resource is None:
+                        if local is None:
+                            local, faces = self._scan_local_geometry(evaluated.data, checkpoint, oid)
+                        prepared[oid] = (local, faces)
+                except (BlenderHostError, AttributeError, TypeError, ValueError, IndexError, OverflowError) as exc:
+                    reason = str(exc)[:512] or type(exc).__name__
+                    if reason.startswith('acquisition_deadline'):
+                        raise
+                    if resident and reason != 'world_precision_unresolved':
+                        state.source_checks[key] = dict(stamp=copy.deepcopy(stamp), summary=None, reason=reason)
+                    rows[oid].update(source_status='unsupported', reason=reason)
+            union = set()
+            for ordinal, pair in enumerate(pairs):
+                if ordinal % 256 == 0:
+                    checkpoint()
+                oid, other = pair['object_ids']
+                if rows[oid]['source_status'] != 'supported' or rows[other]['source_status'] != 'supported':
+                    pair['disposition'] = 'unknown_source'
+                if pair['disposition'] == 'retained':
+                    union.update((oid, other))
+            selected = [obj for obj, oid in zip(objects, ids) if oid in union]
+            evaluated_by_id = {oid: value[0] for oid, value in sources.items()}
+            scene = self._capture(_acquisition_context=(graph, scale, selected, evaluated_by_id, checkpoint),
+                                  _resident=True, _acquisition_scope='surface_scan_candidates', _prepared_local=prepared)
+            checkpoint()
+            if (self._objects(graph, _surface_scan=True) != objects or self._scale() != scale
+                    or (int(getattr(self.scene, 'frame_current', 0)), float(getattr(self.scene, 'frame_subframe', 0))) != frame
+                    or self._identity_metadata(objects) != identity or current_scope_issues() != scope_issues):
+                raise BlenderHostError('acquisition_source_changed')
+            for obj, oid in zip(objects, ids):
+                if source_observable(obj) != frozen[oid]:
+                    raise BlenderHostError('acquisition_source_changed')
+                if oid in sources:
+                    evaluated, matrix, stamp, vertex_count, face_count = sources[oid]
+                    if (_matrix(evaluated.matrix_world) != matrix or self._resource_stamp(obj) != stamp
+                            or len(evaluated.data.vertices) != vertex_count or len(evaluated.data.polygons) != face_count):
+                        raise BlenderHostError('acquisition_source_changed')
+            coverage = [rows[oid] for oid in ids]
+            directory_sha = _digest(coverage)
+            # A far source or catalog-scope change can leave the endpoint union
+            # unchanged. Its revision still invalidates complete result reuse.
+            scene = dict(scene, revision='blender:' + _digest(dict(capture_revision=scene['revision'],
+                directory_sha256=directory_sha, scope_issues=scope_issues, host_identity=identity)))
+            scene = self._capture_state(scene, selection_key)
+            packet = dict(protocol='single-read-surface-scan-v1', result_kind='acquisition_only_not_surface_scan_result',
+                threshold_m=threshold_m, scope='independent_static_triangle_meshes_current_evaluated_surfaces',
+                scope_issues=scope_issues, capture=scene, coverage=coverage, pairs=pairs,
+                bound_method='outward_evaluated_local_box_affine_linf', M3_qualification_performed=False,
+                binding=dict(host_source_sha256=source_sha, host_identity=identity, directory_sha256=directory_sha,
+                    frame=frame[0], scale_length=scale, coordinate_frame='world', unit='m',
+                    same_main_thread_read=True, external_edit_history_proven=False),
+                execution_authority=False,
+                work=current_work(dict(directory_objects=len(objects), source_vertices=source_vertices, source_faces=source_faces,
+                    broad_pairs=len(pairs), retained_pairs=sum(pair['disposition']=='retained' for pair in pairs),
+                    expanded_objects=len(selected), expanded_vertices=sum(len(mesh['vertices']) for mesh in scene['meshes']),
+                    expanded_faces=sum(len(mesh['faces']) for mesh in scene['meshes'])), False))
+            checkpoint()
+            packet_bytes = len(json.dumps(packet, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8'))
+            if packet_bytes > max_response_bytes:
+                raise BlenderHostError('acquisition_document_budget_exceeded')
+            checkpoint()
+            if resident:
+                if len(state.nearest) >= 8:
+                    state.nearest.clear()
+                state.nearest[selection_key] = (copy.deepcopy(packet), packet_bytes)
+            return packet
+
+    @staticmethod
+    def _source_region_pair_box(world_box_m):
+        error = 'source_region_pair_invalid_world_box'
+        if (type(world_box_m) is not dict or set(world_box_m) != {'min', 'max'}
+                or any(type(row) is not list or len(row) != 3 for row in world_box_m.values())):
+            raise BlenderHostError(error)
+        bounds = {}
+        for key in ('min', 'max'):
+            values = []
+            for number in world_box_m[key]:
+                if type(number) not in (int, float):
+                    raise BlenderHostError(error)
+                try:
+                    value = float(number)
+                except OverflowError:
+                    raise BlenderHostError(error) from None
+                if not math.isfinite(value) or number != value:
+                    raise BlenderHostError(error)
+                values.append(value)
+            bounds[key] = values
+        if any(lo > hi for lo, hi in zip(bounds['min'], bounds['max'])):
+            raise BlenderHostError(error)
+        return bounds
+
+    @staticmethod
+    def _compact_source_region_pair(mesh, box, checkpoint):
+        minimum, maximum = box['min'], box['max']
+        vertices, faces = mesh['vertices'], mesh['faces']
+        # Retain the same closed binary64 inequalities as the public selector.
+        inside = [all(lo <= value <= hi for lo, value, hi in zip(minimum, point, maximum))
+                  for point in _acquisition_vertices(vertices, checkpoint)]
+        selected_indices, selected_faces = [], []
+        for index, face in enumerate(_acquisition_vertices(faces, checkpoint)):
+            if all(inside[vertex] for vertex in face):
+                selected_indices.append(index)
+                selected_faces.append(face)
+                if len(selected_indices) > 4096:
+                    raise BlenderHostError('source_region_pair_triangle_limit')
+        if not selected_indices:
+            raise BlenderHostError('source_region_pair_empty_world_box')
+        vertex_indices = sorted({vertex for face in selected_faces for vertex in face})
+        compact_index = {original: compact for compact, original in enumerate(vertex_indices)}
+        region = {'vertices': [vertices[index] for index in vertex_indices],
+                  'faces': [[compact_index[vertex] for vertex in face] for face in selected_faces],
+                  'source_triangle_indices': selected_indices, 'source_vertex_indices': vertex_indices,
+                  'source_triangle_vertices': selected_faces, 'source_triangle_count': len(faces),
+                  'source_vertex_count': len(vertices)}
+        checkpoint()
+        return region
+
+    def _source_region_pair_residency_reason(self, graph, scale, objects, evaluated, display):
+        if (display is None or display['status'] != 'captured'
+                or any('unavailable_fields' in row for row in display['objects'])):
+            return 'display_unavailable'
+        for obj in objects:
+            guards = self._guard_description(obj)
+            data = getattr(obj, 'data', None)
+            if (data is None or getattr(data, 'library', None) is not None
+                    or any(guards[key] for key in (
+                        'parent', 'children', 'constraints', 'modifiers', 'animation', 'data_animation',
+                        'rigid_body', 'rigid_body_constraint', 'shape_keys', 'linked', 'edit_mode'))
+                    or getattr(evaluated[self.object_id(obj)], 'is_evaluated', False) is not True):
+                return 'dynamic_or_unproven_source'
+        try:
+            if not self._sync_residency(graph, scale, _display_snapshot=display):
+                return 'residency_unavailable'
+        except (BlenderHostError, AttributeError, ReferenceError, RuntimeError):
+            return 'residency_unavailable'
+        handlers = getattr(self.bpy.app, 'handlers', None)
+        active = {id(target) for target, callback in self._residency.callbacks if callback in target}
+        if any(id(getattr(handlers, name, None)) not in active
+               for name in ('depsgraph_update_post', 'undo_post', 'redo_post', 'load_post')):
+            return 'residency_invalidation_unavailable'
+        return None
+
+    def _source_region_pair_resources(self, objects, matrices, scale):
+        """Read current resource revisions without visiting a vertex or face."""
+        resources = []
+        for obj in objects:
+            key = self._residency_module.identity(obj)
+            resource = self._residency.resources.get(key)
+            if (resource is None or resource['stamp'] != self._resource_stamp(obj)
+                    or resource['mesh'] is None
+                    or _digest(resource['pose']) != _digest((matrices[self.object_id(obj)], scale))):
+                return None
+            resources.append((resource['resource_id'], resource['revision']))
+        return resources
+
+    def capture_source_region_pair(self, target, reference, world_box_m, deadline_ns, max_response_bytes, known=None):
+        """Read a private pair, reusing only whole resources with current dependency proof."""
+        self._main_thread()
+        selectors = [target, reference]
+        for selector in selectors:
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('source_region_pair_selector')
+        box = self._source_region_pair_box(world_box_m)
+        if known is not None and (type(known) is not dict or set(known) != {
+                'document_epoch', 'instance_id', 'epoch', 'revision', 'selection_sha256', 'payload_sha256'}
+                or not _hex_string(known['document_epoch'], 64) or not _hex_string(known['instance_id'], 32)
+                or not _hex_string(known['selection_sha256'], 64) or not _hex_string(known['payload_sha256'], 64)
+                or any(type(known[key]) is not int or known[key] < 0 for key in ('epoch', 'revision'))):
+            raise BlenderHostError('source_region_pair_invalid_lease')
+        if type(deadline_ns) is not int or deadline_ns <= 0:
+            raise BlenderHostError('source_region_pair_deadline')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= 64 * 1024 * 1024:
+            raise BlenderHostError('source_region_pair_document_budget')
+
+        def checkpoint():
+            if time.perf_counter_ns() >= deadline_ns:
+                raise BlenderHostError('source_region_pair_deadline_exceeded')
+
+        def interval(started):
+            closed = time.perf_counter_ns()
+            return {'started_ns': started, 'closed_ns': closed, 'elapsed_ns': closed - started}
+
+        def source_frame():
+            layer = self.view_layer
+            pointer = getattr(layer, 'as_pointer', None)
+            layer_id = 'rna:' + str(int(pointer())) if callable(pointer) else 'python:' + str(id(layer))
+            return {'frame': int(getattr(self.scene, 'frame_current', 0)),
+                    'subframe': float(getattr(self.scene, 'frame_subframe', 0.)),
+                    'scale_length': self._scale(), 'view_layer': layer_id}
+
+        checkpoint()
+        scope = 'selected_source_region_and_reference'
+        with self._lock:
+            checkpoint()
+            started = time.perf_counter_ns()
+            graph = self._depsgraph()
+            if self.object_names is not None:
+                raise BlenderHostError('source_region_pair_explicit_object_scope_unsupported')
+            frame = source_frame()
+            objects, selection = self._task_objects(selectors)
+            if any('object_id' not in row for row in selection['bindings']):
+                reason = next(row['reason'] for row in selection['bindings'] if 'object_id' not in row)
+                raise BlenderHostError('source_region_pair_' + reason)
+            if len(objects) != 2 or selection['pair_reason'] is not None:
+                raise BlenderHostError('source_region_pair_selectors_resolve_to_same_object')
+            identity = self._identity_metadata(objects, capture_scope=scope)
+            source_sha = globals().get('_READONLY_LOADED_HOST_SHA256')
+            if identity is None or not _hex_string(source_sha, 64):
+                raise BlenderHostError('source_region_pair_source_identity')
+            evaluated = {self.object_id(obj): obj.evaluated_get(graph) for obj in objects}
+            matrices = {oid: _matrix(obj.matrix_world) for oid, obj in evaluated.items()}
+            stages = {'directory_and_binding': interval(started)}
+
+            started = time.perf_counter_ns()
+            from_id, to_id = [row['object_id'] for row in selection['bindings']]
+            bound_objects = [dict(row, instance_id=identity['object_instances'][row['object_id']])
+                             for row in selection['bindings']]
+            binding = {'capture_scope': scope, 'document_epoch': identity['document_epoch'],
+                       'host_source_sha256': source_sha, 'target_selector': dict(target),
+                       'reference_selector': dict(reference), 'world_box_m': box,
+                       'target': bound_objects[0], 'reference': bound_objects[1], 'unit': 'm',
+                       'coordinate_frame': 'world', 'source_frame': frame,
+                       'world_matrices': {'target': matrices[from_id], 'reference': matrices[to_id]}}
+            scale = frame['scale_length']
+            display = self._display_snapshot(objects)
+            fallback = self._source_region_pair_residency_reason(graph, scale, objects, evaluated, display)
+            state = self._residency
+            prior = self._private_source_region_lease
+            stamps = None
+            if fallback is None:
+                stamps = self._source_region_pair_resources(objects, matrices, scale)
+                if known is not None and known == prior and stamps is None:
+                    fallback = 'retained_resource_unavailable'
+                # The older whole-resource cache's pose equality merges signed zeros.
+                # Keep that behavior for public callers and use the uncached private
+                # path when numeric equality cannot prove the same forward map.
+                for obj in objects:
+                    resource = state.resources.get(self._residency_module.identity(obj))
+                    pose = (matrices[self.object_id(obj)], scale)
+                    if resource is not None and resource['pose'] == pose and _digest(resource['pose']) != _digest(pose):
+                        fallback = 'signed_pose_mismatch'
+                        break
+
+            def lease_record(resource_stamps, payload_sha):
+                return {'document_epoch': identity['document_epoch'], 'instance_id': state.instance_id,
+                        'epoch': state.epoch, 'revision': state.revision,
+                        'selection_sha256': _digest([binding, display['sha256'], resource_stamps]),
+                        'payload_sha256': payload_sha}
+
+            resident = fallback is None
+            token = (state.instance_id, state.epoch, state.revision, state.serial) if resident else None
+            hit = (resident and known is not None and known == prior and stamps is not None
+                   and known == lease_record(stamps, known['payload_sha256']))
+            stages['residency_check'] = interval(started)
+            counters = dict.fromkeys(('to_mesh', 'triangulations', 'world_transforms', 'world_vertices_transformed',
+                                      'resource_vertices_read', 'resource_faces_read'), 0)
+            scanned_vertices = scanned_triangles = carried_vertices = carried_triangles = 0
+            packet = None
+            lease = known if hit else None
+            if not hit:
+                started = time.perf_counter_ns()
+                acquisition = (graph, scale, objects, evaluated, checkpoint)
+                if resident:
+                    before = {stat: self._residency_stats[stat] for stat in counters}
+                    capture = self._resident_capture(graph, scale, objects, None, None, acquisition,
+                                                     scope, None, display, _resources_only=True)
+                    counters = {stat: self._residency_stats[stat] - value for stat, value in before.items()}
+                    stamps = self._source_region_pair_resources(objects, matrices, scale)
+                    if stamps is None or (state.instance_id, state.epoch, state.revision, state.serial) != token:
+                        raise BlenderHostError('source_region_pair_source_changed')
+                else:
+                    capture = self._capture(_acquisition_context=acquisition, _acquisition_scope=scope, _resident=False)
+                    counts = {name: sum(len(mesh[name]) for mesh in capture['meshes']) for name in ('vertices', 'faces')}
+                    counters = {'to_mesh': 2, 'triangulations': 2, 'world_transforms': 2,
+                                'world_vertices_transformed': counts['vertices'],
+                                'resource_vertices_read': counts['vertices'], 'resource_faces_read': counts['faces']}
+                checkpoint()
+                stages['mesh_expansion'] = interval(started)
+
+                started = time.perf_counter_ns()
+                meshes = {mesh['object_id']: mesh for mesh in capture['meshes']}
+                target_mesh = meshes[from_id]
+                scanned_vertices, scanned_triangles = len(target_mesh['vertices']), len(target_mesh['faces'])
+                region = self._compact_source_region_pair(target_mesh, box, checkpoint)
+                reference_geometry = {key: meshes[to_id][key] for key in ('vertices', 'faces')}
+                carried_vertices = len(region['vertices']) + len(reference_geometry['vertices'])
+                carried_triangles = len(region['faces']) + len(reference_geometry['faces'])
+                stages['selection_and_compaction'] = interval(started)
+
+                started = time.perf_counter_ns()
+                packet = {'schema': 'human-eye-selective-source-region-capture-v1', 'binding': binding,
+                          'region': region, 'reference': reference_geometry}
+                packet['payload_sha256'] = _digest(packet)
+                if resident:
+                    lease = lease_record(stamps, packet['payload_sha256'])
+                stages['payload_binding'] = interval(started)
+
+            started = time.perf_counter_ns()
+            current_objects, current_selection = self._task_objects(selectors)
+            if (current_selection != selection or len(current_objects) != 2
+                    or any(not _same_rna(a, b) for a, b in zip(objects, current_objects))
+                    or _digest(source_frame()) != _digest(frame)
+                    or self._identity_metadata(objects, capture_scope=scope) != identity
+                    or any(_digest(_matrix(obj.matrix_world)) != _digest(matrices[oid]) for oid, obj in evaluated.items())
+                    or resident and (self._display_snapshot(objects) != display
+                        or (state.instance_id, state.epoch, state.revision, state.serial) != token
+                        or self._source_region_pair_resources(objects, matrices, scale) != stamps)):
+                raise BlenderHostError('source_region_pair_source_changed')
+            stages['source_recheck'] = interval(started)
+
+            started = time.perf_counter_ns()
+            retained = state.resources.values() if state is not None else ()
+            work = {key: counters[key] for key in ('to_mesh', 'triangulations', 'world_transforms',
+                                                   'world_vertices_transformed')}
+            work.update(candidate_objects=selection['candidate_count'], expanded_objects=counters['to_mesh'],
+                        expanded_vertices=counters['resource_vertices_read'], expanded_triangles=counters['resource_faces_read'],
+                        transmitted_objects=0 if hit else 2, transmitted_vertices=carried_vertices,
+                        transmitted_triangles=carried_triangles, private_cache_retained_objects=0,
+                        box_vertices_scanned=scanned_vertices, box_triangles_scanned=scanned_triangles,
+                        retained_resources=len(retained), retained_vertices=sum(len(row['vertices_local']) for row in retained),
+                        retained_triangles=sum(len(row['faces']) for row in retained), retained_compact_leases=int(lease is not None),
+                        mode='lease_hit' if hit else 'resident_capture' if resident else 'uncached_capture', fallback_reason=fallback)
+            stages['binding'] = interval(started)
+            if packet is not None:
+                packet.update(work=work, stages=stages)
+            envelope = {'schema': 'human-eye-private-source-region-residency-v1', 'host_source_sha256': source_sha,
+                        'lease': lease, 'capture': packet, 'work': work, 'stages': stages}
+            checkpoint()
+            encoded = json.dumps(envelope, ensure_ascii=True, allow_nan=False, separators=(',', ':')).encode('utf8')
+            if len(encoded) > max_response_bytes:
+                raise BlenderHostError('source_region_pair_document_budget_exceeded')
+            checkpoint()
+            self._private_source_region_lease = dict(lease) if lease is not None else None
+            return envelope
+
+    def capture_task_scene(self, selectors):
+        """Read only the uniquely bound targets in one synchronous observation."""
+        self._main_thread()
+        if type(selectors) is not list or not 1 <= len(selectors) <= 4:
+            raise BlenderHostError('Task objects require 1..4 selectors')
+        for selector in selectors:
+            if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                    or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                           for value in selector.values())):
+                raise BlenderHostError('Task selector requires one bounded nonempty id or name')
+        with self._lock:
+            return self._capture_state(self._capture(_task_selectors=selectors,_resident=True),_digest(['task',selectors]))
 
     def capture_evidence(self):
         """Read one coherent original-pose sidecar without changing old capture.
@@ -743,6 +2538,332 @@ class BlenderSceneHost:
         self._main_thread()
         with self._lock:
             return self._capture(_native_evidence=True)
+
+    def _arm_twist_source_module(self, *, execution=False):
+        cache_name = '_arm_twist_execution_module' if execution else '_arm_twist_module'
+        module = getattr(self, cache_name, None)
+        if module is not None:
+            return module
+        import importlib.util
+        import sys
+        import types
+        from pathlib import Path
+        root = Path(__file__).resolve().parent
+        names = ('rig_pose.py', 'arm_twist_weights.py', 'arm_twist_expert.py', 'arm_twist_source.py')
+        if execution:
+            names += ('arm_twist_correction.py',)
+        sources = getattr(self, '_arm_correction_dependency_sources' if execution else '_arm_twist_dependency_sources', None)
+        if sources is None:
+            guard = next((f for f in sys.meta_path if getattr(f, 'protocol', None) ==
+                'human-eye-verified-source-v1' and f.root == root.parent), None)
+            sources = {name: (guard.sources['human_eye_plugin/' + name] if guard is not None
+                else (root / name).read_bytes()) for name in names}
+        if set(sources) != set(names):
+            raise BlenderHostError('Arm twist dependency snapshot unavailable')
+        digest = hashlib.sha256(str(root).encode('utf8') + b''.join(sources[n] for n in names)).hexdigest()
+        package_name = '_human_eye_arm_twist_' + digest[:24]
+        package = sys.modules.get(package_name)
+        if package is None:
+            package = types.ModuleType(package_name)
+            package.__path__ = [str(root)]
+            package.__package__ = package_name
+            sys.modules[package_name] = package
+            created = [(package_name, package)]
+            try:
+                for name in names:
+                    leaf = name[:-3]
+                    spec = importlib.util.spec_from_file_location(package_name + '.' + leaf, root / name)
+                    child = importlib.util.module_from_spec(spec)
+                    sys.modules[spec.name] = child
+                    setattr(package, leaf, child)
+                    created.append((spec.name, child))
+                    _exec_source_snapshot(child, root / name, sources[name])
+            except BaseException:
+                for key, child in reversed(created):
+                    if sys.modules.get(key) is child:
+                        del sys.modules[key]
+                raise
+        if execution:
+            self._arm_correction_module = package.arm_twist_correction
+            self._arm_correction_preview = package.arm_twist_correction.preview_axial_redistribution
+        setattr(self, cache_name, package.arm_twist_source)
+        return getattr(self, cache_name)
+
+    def _arm_axial_side(self, mesh, rig, bones, sentinel, scale):
+        """Small native facts missing from the selected source patch."""
+        ident = self._residency_module.identity
+        for obj in (mesh, rig, sentinel):
+            present = self.scene.objects.get(obj.name)
+            if present is None or not _same_rna(present, obj):
+                raise BlenderHostError('arm_execution_object_incarnation_changed')
+        def pose_in_metres(bone):
+            matrix = _matrix(rig.pose.bones.get(bone.name).matrix)
+            for row in matrix[:3]:row[3] *= scale
+            return matrix
+        return {
+            'mesh_world': _matrix(mesh.matrix_world), 'rig_world': _matrix(rig.matrix_world),
+            'frame': [int(self.scene.frame_current), float(getattr(self.scene, 'frame_subframe', 0.))],
+            'unit_scale_m': scale,
+            'object_static': [{'object_id': self.object_id(obj),
+                'parent_instance': ident(getattr(obj, 'parent', None)),
+                'constraints': len(getattr(obj, 'constraints', ())),
+                'animated': getattr(obj, 'animation_data', None) is not None,
+                'data_animated': getattr(obj.data, 'animation_data', None) is not None}
+                for obj in (mesh, rig, sentinel)],
+            'bone_static': [{'name': b.name, 'length_m': float(b.length)*scale,
+                'inherit_rotation': bool(getattr(b, 'use_inherit_rotation', True)),
+                'inherit_scale': getattr(b, 'inherit_scale', 'FULL'),
+                'local_location': bool(getattr(b, 'use_local_location', True)),
+                'connected': bool(getattr(b, 'use_connect', False)),
+                'constraints': len(getattr(rig.pose.bones.get(b.name), 'constraints', ())),
+                'rotation_mode': getattr(rig.pose.bones.get(b.name), 'rotation_mode', None)} for b in bones],
+            'heads_m': [[float(v)*scale for v in rig.pose.bones.get(b.name).head] for b in bones],
+            'tails_m': [[float(v)*scale for v in rig.pose.bones.get(b.name).tail] for b in bones],
+            'poses_m': [pose_in_metres(b) for b in bones],
+            'sentinel': {'object_id': self.object_id(sentinel), 'instance': ident(sentinel),
+                'data_instance': ident(sentinel.data), 'world': _matrix(sentinel.matrix_world),
+                'vertices_m': [[float(v)*scale for v in vertex.co] for vertex in sentinel.data.vertices],
+                'faces': [list(poly.vertices) for poly in sentinel.data.polygons]}}
+
+    def _arm_axial_scope(self, mesh, rig, bones, sentinel):
+        """The writable subset is the declared static generated three-bone rig."""
+        if (len(bones) != 3 or len(rig.data.bones) != 3 or getattr(bones[0], 'parent', None) is not None
+                or sentinel is mesh or sentinel is rig or getattr(sentinel, 'type', None) != 'MESH'
+                or len(sentinel.data.vertices) > 64 or len(sentinel.data.polygons) > 128
+                or len(getattr(sentinel, 'modifiers', ()))
+                or getattr(sentinel.data, 'shape_keys', None) is not None):
+            raise BlenderHostError('arm_execution_fixture_scope')
+        for obj in (mesh, rig, sentinel):
+            if (getattr(obj, 'parent', None) is not None or getattr(obj, 'animation_data', None) is not None
+                    or getattr(obj.data, 'animation_data', None) is not None or len(getattr(obj, 'constraints', ()))
+                    or getattr(obj, 'library', None) is not None or getattr(obj.data, 'library', None) is not None):
+                raise BlenderHostError('arm_execution_static_unconstrained_required')
+        if getattr(mesh.data, 'users', 1) != 1 or getattr(rig.data, 'users', 1) != 1:
+            raise BlenderHostError('arm_execution_shared_data_unsupported')
+        for bone in bones:
+            pose = rig.pose.bones.get(bone.name)
+            if (pose is None or len(getattr(pose, 'constraints', ()))
+                    or not getattr(bone, 'use_inherit_rotation', True)
+                    or getattr(bone, 'inherit_scale', 'FULL') != 'FULL'
+                    or not getattr(bone, 'use_local_location', True)
+                    or getattr(bone, 'use_connect', False) or getattr(bone, 'bbone_segments', 1) != 1):
+                raise BlenderHostError('arm_execution_default_bone_inheritance_required')
+        # Only metadata is inspected here, never unrelated mesh geometry.
+        for obj in self.scene.objects:
+            if obj is not mesh and any(getattr(modifier, 'type', None) == 'ARMATURE'
+                    and _same_rna(getattr(modifier, 'object', None), rig)
+                    for modifier in getattr(obj, 'modifiers', ())):
+                raise BlenderHostError('arm_execution_shared_rig_unsupported')
+
+    def correct_arm_axial(self, task):
+        """One owned typed pair, with actual feedback and no automatic retry."""
+        self._main_thread()
+        start = time.perf_counter_ns()
+        result = {'schema': 'arm-axial-execution-result-v1',
+            'event_id': task.get('event_id') if type(task) is dict else None,
+            'status': 'not_applicable', 'reason': '', 'executed': False,
+            'setter_attempts': 0, 'setter_returns': 0, 'task_succeeded': False,
+            'before_source': None, 'after_source': None, 'feedback': None,
+            'timings_ns': {}, 'work': {'source_capture_attempts': 0, 'source_captures': 0,
+                'preview_calls': 0, 'model_calls': 0, 'feedback_rest_area_batches': 0}}
+        audit = {'task': task, 'receipt': result}
+        self._last_arm_axial_audit = audit
+        bound = mesh = rig = bones = sentinel = None
+        stage = 'prewrite_scope'
+
+        def finish():
+            result['timings_ns']['host_total'] = time.perf_counter_ns()-start
+            if bound is not None:result['work']['source'] = bound.work_totals()
+            return result
+
+        with self.transaction():
+            try:
+                if (getattr(self, '_owned_arm_correction_worker', False) is not True
+                        or getattr(self, '_material_readview_only', False)
+                        or not getattr(self.bpy.app, 'background', False)):
+                    raise BlenderHostError('arm_execution_owned_background_worker_required')
+                fields = {'schema', 'event_id', 'selection', 'u_interval_deg', 'max_section_area_loss',
+                    'protected_vertex_ids', 'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance', 'sentinel_name'}
+                if (type(task) is not dict or set(task) != fields or task.get('schema') != 'arm-axial-execution-task-v1'
+                        or type(task['event_id']) is not str or not 0 < len(task['event_id']) <= 256
+                        or any(ord(v) < 32 for v in task['event_id'])):
+                    raise BlenderHostError('arm_execution_task_schema')
+                if self._active_motion() is not None or self._episode_store() is not None:
+                    raise BlenderHostError('arm_execution_other_mutation_domain_active')
+                module = self._arm_twist_source_module(execution=True)
+                correction = self._arm_correction_module
+                np, r = correction.np, correction.r
+                adapter = getattr(self, '_arm_correction_adapter', None)
+                if adapter is None:
+                    adapter = module.ArmTwistSource(self);self._arm_correction_adapter = adapter
+                bound = adapter.bind(task['selection'])
+                mesh = self.scene.objects.get(task['selection']['mesh_name'])
+                rig = self.scene.objects.get(task['selection']['armature_name'])
+                sentinel = self.scene.objects.get(task['sentinel_name'])
+                if mesh is None or rig is None or sentinel is None:
+                    raise BlenderHostError('arm_execution_bound_object_missing')
+                result['timings_ns']['scope'] = time.perf_counter_ns()-start
+                stage = 'before_capture';mark = time.perf_counter_ns()
+                result['work']['source_capture_attempts'] += 1
+                before = bound.capture(_export_static_patch=False, _prepare_expert=False)
+                result['work']['source_captures'] += 1
+                result['timings_ns']['source_before'] = time.perf_counter_ns()-mark
+                static = bound._static;scale = self._scale()
+                result['before_source'] = before['source']
+                audit.update(static_patch=static, before_capture=before)
+                stage = 'prewrite_scope'
+                ident = self._residency_module.identity
+                for obj, key in ((mesh, 'mesh'), (rig, 'armature')):
+                    source_object = before['source'][key]
+                    if (source_object['instance'] != ident(obj)
+                            or source_object['data_instance'] != ident(obj.data)):
+                        raise BlenderHostError('arm_execution_source_object_incarnation_changed')
+                bones = [rig.data.bones.get(name) for name in task['selection']['bone_names']]
+                if any(bone is None for bone in bones):raise BlenderHostError('arm_execution_bound_bone_missing')
+                if len(bound._indices) != len(mesh.data.vertices):
+                    raise BlenderHostError('arm_execution_full_generated_mesh_required')
+                mark = time.perf_counter_ns();self._arm_axial_scope(mesh, rig, bones, sentinel)
+                result['timings_ns']['scope'] += time.perf_counter_ns()-mark
+                patch = dict(static, current_vertices=before['current_vertices'], bone_chain=[
+                    dict(bone, pose_matrix=pose) for bone, pose in zip(static['bone_chain'], before['pose_matrices'])])
+                resolved = {key: task[key] for key in ('u_interval_deg', 'max_section_area_loss', 'protected_vertex_ids',
+                    'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance')}
+                resolved.update(schema=correction.TASK_SCHEMA,
+                    fixed_end_pose_matrices=[before['pose_matrices'][0], before['pose_matrices'][-1]])
+                side_before = self._arm_axial_side(mesh, rig, bones, sentinel, scale)
+                result['before_source'] = before['source']
+                audit.update(static_patch=static, input_patch=patch, resolved_task=resolved,
+                             before_capture=before, side_before=side_before)
+                stage = 'preview';mark = time.perf_counter_ns();result['work']['preview_calls'] += 1
+                proposal = self._arm_correction_preview(patch, resolved)
+                result['timings_ns']['solve'] = time.perf_counter_ns()-mark
+                audit['preview'] = proposal
+                result['preview'] = {'status': proposal['status'], 'reason': proposal['reason'],
+                    'u_deg': proposal.get('optimal_u_deg'), 'objective': proposal.get('objective')}
+                if proposal['status'] != 'candidate':
+                    result.update(status=proposal['status'], reason=proposal['reason'],
+                                  task_succeeded=proposal['status'] == 'no_op')
+                    objective = proposal.get('objective')
+                    result['feedback'] = {'source': 'actual_before_no_write', 'target_met': result['task_succeeded'],
+                        'max_section_area_loss': objective['before']['max_section_area_loss'] if objective else None}
+                    return finish()
+                candidate = proposal['candidate']
+                from mathutils import Matrix
+                if (len(candidate['bone_changes']) != 2 or len(candidate['local_basis_matrices']) != 3
+                        or len(candidate['pose_matrices']) != 3):
+                    raise BlenderHostError('arm_execution_candidate_shape')
+                assignments = []
+                for index, change in zip((1, 2), candidate['bone_changes']):
+                    if change['name'] != bones[index].name or change['basis_matrix'] != candidate['local_basis_matrices'][index]:
+                        raise BlenderHostError('arm_execution_candidate_binding')
+                    basis = [row[:] for row in change['basis_matrix']]
+                    for row in basis[:3]:row[3] /= scale
+                    native = Matrix(basis);_matrix(native)
+                    assignments.append((rig.pose.bones.get(bones[index].name), native))
+                if len(assignments) != 2:raise BlenderHostError('arm_execution_two_changes_required')
+                stage = 'basis_assignment';mark = time.perf_counter_ns()
+                for pose, basis in assignments:
+                    result['setter_attempts'] += 1
+                    pose.matrix_basis = basis
+                    result['setter_returns'] += 1
+                result['timings_ns']['assignment'] = time.perf_counter_ns()-mark
+                result['executed'] = True
+                stage = 'after_capture';mark = time.perf_counter_ns()
+                result['work']['source_capture_attempts'] += 1
+                after = bound.capture(_export_static_patch=False, _prepare_expert=False)
+                result['work']['source_captures'] += 1
+                result['timings_ns']['source_after'] = time.perf_counter_ns()-mark
+                result['after_source'] = after['source'];audit['after_capture'] = after
+                audit['after_static_patch'] = bound._static
+                if (static != bound._static or any(before['source'][key] != after['source'][key]
+                        for key in before['source'] if key not in ('revision', 'max_lbs_readback_error_m'))):
+                    raise BlenderHostError('arm_execution_after_source_binding_changed')
+                stage = 'actual_feedback';mark = time.perf_counter_ns()
+                side_after = self._arm_axial_side(mesh, rig, bones, sentinel, self._scale())
+                audit['side_after'] = side_after
+                sections = static['sections'];points = np.asarray(after['current_vertices'])
+                old_points = np.asarray(before['current_vertices'])
+                result['work']['feedback_rest_area_batches'] += 1
+                areas0 = correction._areas(np.asarray(static['rest_vertices']), sections)
+                actual = correction._objective(points, sections, areas0)
+                def point_error(left, right):
+                    return float(np.linalg.norm(np.asarray(left)-np.asarray(right), axis=-1).max())
+                pose_angles = [];pose_translations = [];candidate_angles = [];candidate_translations = []
+                for index in (0, 1, 2):
+                    old = candidate['pose_matrices'][index];new = after['pose_matrices'][index]
+                    angle = r.angles(r.multiply(r.inverse(old), new))['rotation_deg']
+                    translation = point_error(np.asarray(old)[:3,3], np.asarray(new)[:3,3])
+                    candidate_angles.append(angle);candidate_translations.append(translation)
+                    if index not in (0, 2):continue
+                    pose_angles.append(angle)
+                    pose_translations.append(translation)
+                by_id = {value: index for index, value in enumerate(static['vertex_ids'])}
+                protected = [by_id[index] for index in task['protected_vertex_ids']]
+                protected_delta = point_error(old_points[protected], points[protected])
+                center_delta = point_error([old_points[row].mean(axis=0) for row in sections],
+                                           [points[row].mean(axis=0) for row in sections])
+                bone_center_delta = max(point_error(side_before['heads_m'], side_after['heads_m']),
+                                        point_error(side_before['tails_m'], side_after['tails_m']))
+                target_error = point_error(candidate['current_vertices'], points)
+                static_side_same = all(side_before[key] == side_after[key] for key in
+                    ('mesh_world', 'rig_world', 'frame', 'unit_scale_m', 'object_static', 'bone_static', 'sentinel'))
+                pose_error = max(float(np.max(np.abs(np.asarray(left)-np.asarray(right))))
+                                 for left, right in zip(candidate['pose_matrices'], after['pose_matrices']))
+                feedback = {'source': 'actual_after_capture', 'max_section_area_loss': actual['max_section_area_loss'],
+                    'target_met': actual['max_section_area_loss'] <= task['max_section_area_loss']+task['area_tolerance'],
+                    'end_pose_angle_deg': max(pose_angles), 'end_pose_translation_m': max(pose_translations),
+                    'protected_points_delta_m': protected_delta, 'section_centers_delta_m': center_delta,
+                    'bone_heads_tails_delta_m': bone_center_delta, 'candidate_points_error_m': target_error,
+                    'candidate_pose_angle_deg': max(candidate_angles), 'candidate_pose_translation_m': max(candidate_translations),
+                    'candidate_pose_max_abs': pose_error, 'static_side_unchanged': static_side_same}
+                verified = (feedback['target_met'] and static_side_same and max(pose_angles) <= task['angle_tolerance_deg']
+                    and max(candidate_angles) <= task['angle_tolerance_deg']
+                    and max(pose_translations + candidate_translations + [protected_delta, center_delta, bone_center_delta, target_error]) <= task['position_tolerance_m'])
+                result.update(feedback=feedback, status='satisfied' if verified else 'feedback_failed',
+                    reason='actual_goal_and_preservation_verified' if verified else 'actual_feedback_did_not_verify',
+                    task_succeeded=bool(verified))
+                result['timings_ns']['feedback'] = time.perf_counter_ns()-mark
+                return finish()
+            except Exception as exc:
+                result.update(status='execution_uncertain' if result['setter_attempts'] else 'not_applicable',
+                    reason=stage+':'+str(exc)[:1500], task_succeeded=False,
+                    executed=True if result['setter_returns'] else None if result['setter_attempts'] else False)
+                audit['failure'] = {'stage': stage, 'type': type(exc).__name__, 'message': str(exc)[:1500]}
+                if result['setter_attempts'] and all(value is not None for value in (mesh, rig, bones, sentinel)):
+                    try:
+                        self._depsgraph()
+                        audit['partial_native_after'] = self._arm_axial_side(mesh, rig, bones, sentinel, self._scale())
+                        result['partial_pose_matrices'] = audit['partial_native_after']['poses_m']
+                    except Exception as read_error:audit['partial_readback_error'] = str(read_error)[:1500]
+                return finish()
+
+    def observe_arm_twist(self, selection):
+        """Estimate the current explicitly selected native arm patch, read-only."""
+        self._main_thread()
+        with self.transaction():
+            adapter = getattr(self, '_arm_twist_adapter', None)
+            if adapter is None:
+                adapter = self._arm_twist_source_module().ArmTwistSource(self)
+                self._arm_twist_adapter = adapter
+            bound = getattr(self, '_arm_twist_bound', None)
+            retained = None if bound is None else bound._selection
+            if (type(selection) is dict and 'vertex_indices' not in selection and retained is not None
+                    and getattr(self, '_arm_twist_bound_default_indices', False)):
+                retained = {key: value for key, value in retained.items() if key != 'vertex_indices'}
+            def same(left, right):
+                if type(left) is not type(right):
+                    return False
+                if type(left) is dict:
+                    return left.keys() == right.keys() and all(same(left[k], right[k]) for k in left)
+                if type(left) is list:
+                    return len(left) == len(right) and all(same(a, b) for a, b in zip(left, right))
+                return left == right
+            # bool/int/float equality must not bypass the source's typed bind.
+            if bound is None or not same(selection, retained):
+                bound = adapter.bind(selection)
+                self._arm_twist_bound = bound
+                self._arm_twist_bound_default_indices = 'vertex_indices' not in selection
+            return bound.analyze()
 
     def capture_readonly_evidence(self):
         """Read locked static original poses without making them executable.
@@ -1133,6 +3254,162 @@ class BlenderSceneHost:
                 '_human_eye_readonly_native_render')
             self._readonly_native_module_cache=module
         return module
+
+    def _material_readview_preflight(self, binding):
+        """Candidate-only static appearance domain; never a motion admission."""
+        from pathlib import Path
+        self._main_thread()
+        if not getattr(self, '_material_readview_only', False):
+            raise EpisodePrewriteRefused('material_readview_owned_readonly_worker_required')
+        keys={'schema','source_path','source_sha256','target_id','view','center_world_m','span_m'}
+        if (type(binding) is not dict or set(binding)!=keys or binding['schema']!='static-material-readview-v1'
+                or binding['view']!='head_front' or not _hex_string(binding['source_sha256'],64)
+                or type(binding['target_id']) is not str or len(binding['target_id'])>256
+                or type(binding['center_world_m']) is not list or len(binding['center_world_m'])!=3
+                or any(type(v) not in (float,int) or not math.isfinite(v) for v in binding['center_world_m'])
+                or type(binding['span_m']) not in (float,int) or not .01<=binding['span_m']<=1.):
+            raise EpisodePrewriteRefused('material_readview_binding_invalid')
+        path=Path(binding['source_path']).resolve()
+        if (path!=Path(self.bpy.data.filepath).resolve() or not path.is_file()
+                or path.stat().st_size>64*1024*1024
+                or hashlib.sha256(path.read_bytes()).hexdigest()!=binding['source_sha256']):
+            raise EpisodePrewriteRefused('material_readview_source_changed')
+        objects=list(self.scene.objects)
+        if len(objects)>32:raise EpisodePrewriteRefused('material_readview_object_budget')
+        counts={'vertices':0,'edges':0,'polygons':0,'corners':0,'triangles':0}
+        for obj in objects:
+            if (getattr(obj,'library',None) is not None or getattr(obj,'animation_data',None) is not None
+                    or len(obj.constraints) or getattr(obj,'parent',None) is not None):
+                raise EpisodePrewriteRefused('material_readview_static_source_required')
+            if obj.type not in ('MESH','CAMERA','LIGHT','EMPTY'):
+                raise EpisodePrewriteRefused('material_readview_object_type_unsupported')
+            if obj.type!='MESH':continue
+            if len(obj.modifiers) or obj.data.shape_keys is not None:
+                raise EpisodePrewriteRefused('material_readview_static_mesh_required')
+            mesh=obj.data
+            for name,amount in [('vertices',len(mesh.vertices)),('edges',len(mesh.edges)),
+                    ('polygons',len(mesh.polygons)),('corners',len(mesh.loops)),
+                    ('triangles',sum(max(0,p.loop_total-2) for p in mesh.polygons))]:counts[name]+=amount
+            if (counts['vertices']>32768 or counts['triangles']>65536 or counts['corners']>262144
+                    or counts['edges']>131072 or counts['polygons']>65536):
+                raise EpisodePrewriteRefused('material_readview_geometry_budget')
+        target=next((obj for obj in objects if obj.type=='MESH' and self.object_id(obj)==binding['target_id']),None)
+        if target is None:raise EpisodePrewriteRefused('material_readview_target_missing')
+        if target.hide_render or target.name not in self.view_layer.objects:
+            raise EpisodePrewriteRefused('material_readview_target_hidden')
+        if (not self.view_layer.use or not bool(getattr(target,'visible_camera',True))
+                or bool(getattr(target,'is_holdout',False)) or bool(getattr(target,'is_shadow_catcher',False))):
+            raise EpisodePrewriteRefused('material_readview_target_not_camera_visible')
+        def visible_path(node,blocked=False):
+            blocked=blocked or node.exclude or node.holdout or node.indirect_only or node.collection.hide_render
+            return ((not blocked and target.name in node.collection.objects)
+                or any(visible_path(child,blocked) for child in node.children))
+        if not visible_path(self.view_layer.layer_collection):
+            raise EpisodePrewriteRefused('material_readview_target_collection_hidden')
+        compositor=getattr(self.scene,'compositing_node_group',None) or getattr(self.scene,'node_tree',None)
+        sequence=getattr(self.scene,'sequence_editor',None)
+        strips=getattr(sequence,'strips',getattr(sequence,'sequences_all',())) if sequence else ()
+        if (self.scene.animation_data is not None or compositor is not None and len(compositor.nodes)
+                or len(strips)):
+            raise EpisodePrewriteRefused('material_readview_pipeline_unsupported')
+        counts.update(source_bytes=path.stat().st_size,linear_work_units=sum(counts.values()))
+        return target,counts
+
+    def _material_readview_store(self):
+        namespace=self.bpy.app.driver_namespace
+        key='_human_eye_static_material_readview_v1'
+        if key not in namespace:
+            namespace[key]={'requests':{},'attempts':0,'constructed':0,'returned':0,'active':False,
+                'quarantined':False,'binding':None,'last_audit':None}
+        return namespace[key]
+
+    def material_readview_header(self, binding):
+        with self._lock:
+            target,counts=self._material_readview_preflight(binding)
+            store=self._material_readview_store();digest=_digest(binding)
+            if store['quarantined'] or store['active']:raise EpisodePrewriteRefused('material_readview_worker_unavailable')
+            if store['binding'] is not None and store['binding']!=digest:
+                raise EpisodePrewriteRefused('material_readview_worker_rebinding_forbidden')
+            store['binding']=digest
+            module=self._readonly_native_module()
+            state=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+            evidence=self.capture_readonly_evidence()
+            return {'protocol':'static-material-readview-v1','binding':binding,'binding_digest':digest,
+                'appearance':state,'capture_revision':evidence['capture']['revision'],'counts':counts,
+                'saved_frame':self.scene.frame_current,'process_id':os.getpid(),
+                'clock':self._readonly_clock_module().counter_descriptor(),
+                'read_only':True,'execution_authority':False,'max_attempts':2,
+                'geometry_limits':{'vertices':32768,'triangles':65536,'corners':262144},
+                'native_packet_bytes':len(json.dumps(evidence['native_scene'],allow_nan=False).encode('utf8'))}
+
+    def last_material_readview_audit(self):
+        return json.loads(json.dumps(self._material_readview_store()['last_audit'],allow_nan=False))
+
+    def observe_material_readview(self, request_id, binding, expected_fingerprint, deadline_ns):
+        """An image is constructed evidence, never confirmed consumer delivery."""
+        self._main_thread()
+        with self._lock:
+            self._readonly_request_id(request_id)
+            now=time.perf_counter_ns()
+            if type(deadline_ns) is not int or not now<deadline_ns<=now+30_000_000_000:
+                raise EpisodePrewriteRefused('material_readview_deadline_invalid')
+            store=self._material_readview_store()
+            if store['active'] or store['quarantined']:raise EpisodePrewriteRefused('material_readview_worker_unavailable')
+            if request_id in store['requests']:raise EpisodePrewriteRefused('material_readview_request_reused')
+            if len(store['requests'])>=16:raise EpisodePrewriteRefused('material_readview_request_budget')
+            store['requests'][request_id]=True;store['active']=True
+            audit={'protocol':'static-material-readview-v1','request_id':request_id,'status':'failed',
+                'clock':self._readonly_clock_module().counter_descriptor(),
+                'started_ns':now,'deadline_ns':deadline_ns,'finished_ns':None,'render_attempted':False,
+                'image_constructed':False,'image_returned_to_transport':False,'restored':None,
+                'error':None,'read_only':True,'execution_authority':False}
+            store['last_audit']=audit;constructed={};before=None;result=None
+            try:
+                target,counts=self._material_readview_preflight(binding)
+                if store['binding']!=_digest(binding):raise EpisodePrewriteRefused('material_readview_binding_changed')
+                module=self._readonly_native_module()
+                before=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+                if (not _hex_string(expected_fingerprint,64) or before['fingerprint']!=expected_fingerprint):
+                    raise EpisodePrewriteRefused('material_readview_stale_appearance')
+                evidence=self.capture_readonly_evidence();native=evidence['native_scene'];scale=self._scale()
+                center=[v/scale for v in binding['center_world_m']]
+                frame={'center_bu':center,'direction':[1.,0.,0.],'right':[0.,1.,0.],'up':[0.,0.,1.],
+                    'camera_location_bu':[center[0]+4./scale,center[1],center[2]],
+                    'ortho_scale_bu':binding['span_m']/scale,'clip_start_bu':.001/scale,'clip_end_bu':10./scale}
+                if time.perf_counter_ns()>=deadline_ns:raise EpisodePrewriteRefused('material_readview_deadline_expired')
+                if store['attempts']>=2:raise EpisodePrewriteRefused('material_readview_render_budget')
+                store['attempts']+=1;audit['render_attempted']=True
+                result=self._episode_call(module,'native_material_readview',self.bpy,self.scene,self.view_layer,
+                    native,binding['view'],frame=frame,constructed_sink=constructed)
+                after=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)
+                audit['restored']=after==before and self.capture_readonly_evidence()==evidence
+                if not audit['restored']:raise EpisodeUncertain('material_readview_state_not_restored')
+                self._material_readview_preflight(binding)
+                if time.perf_counter_ns()>=deadline_ns:raise EpisodePrewriteRefused('material_readview_deadline_expired_after_render')
+                if not constructed.get('image_constructed'):raise EpisodeUncertain('material_readview_construction_receipt_missing')
+                audit.update(status='ready',image_returned_to_transport=True)
+                store['returned']+=1
+                return {'protocol':'static-material-readview-v1','request_id':request_id,'binding':binding,
+                    'binding_digest':store['binding'],'appearance':before,'counts':counts,'image':result,
+                    'expected_appearance_fingerprint':expected_fingerprint,
+                    'audit':audit,'delivery':'constructed_not_confirmed_model_read','read_only':True,'execution_authority':False}
+            except BaseException as exc:
+                audit['error']={'type':type(exc).__name__,'message':str(exc)[:2000]}
+                if before is not None:
+                    try:audit['restored']=self._episode_call(module,'material_readview_state',self.bpy,self.scene,self.view_layer,target)==before
+                    except BaseException:audit['restored']=False
+                if audit['restored'] is False:store['quarantined']=True
+                return {'protocol':'static-material-readview-v1','request_id':request_id,'status':'unavailable',
+                    'binding':binding,'binding_digest':store['binding'],'appearance':before,
+                    'expected_appearance_fingerprint':expected_fingerprint,
+                    'audit':audit,'image':None,'read_only':True,'execution_authority':False}
+            finally:
+                if constructed.get('image_constructed'):
+                    store['constructed']+=1;audit.update(image_constructed=True,
+                        png_sha256=constructed.get('sha256'),png_bytes=constructed.get('bytes'))
+                audit.update(finished_ns=time.perf_counter_ns(),attempts_spent=store['attempts'],
+                    constructed_spent=store['constructed'],returned_to_transport=store['returned'])
+                store['active']=False
 
     @staticmethod
     def _readonly_request_id(value):

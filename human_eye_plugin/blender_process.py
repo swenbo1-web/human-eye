@@ -35,8 +35,11 @@ READONLY_EVIDENCE_PROTOCOL = 'owned-readonly-native-evidence-v1-20261031'
 RENDER_AUDIT_PROTOCOL = 'owned-native-render-audit-v1-20261031'
 MULTISCALE_PROTOCOL = 'owned-native-multiscale-v1-20261031'
 NATIVE_OBSERVATION_PROTOCOL = 'typed-native-readonly-observation-v1-20261031'
+SCENE_DELTA_PROTOCOL = 'human-eye-scene-delta-v1'
+ARM_AXIAL_EXECUTION_PROTOCOL = 'owned-arm-axial-execution-v1'
 _MAX_LINE_CHARS = 64 * 1024 * 1024
 _MAX_REQUEST_CHARS = 4096
+_MAX_CAPTURE_REQUEST_CHARS = 64 * 1024
 _DEADLINE_REPLY_GRACE_NS = 2_000_000_000
 
 
@@ -98,6 +101,70 @@ def _unique_object(pairs):
     return result
 
 
+def _validate_arm_twist_report(value, selection):
+    source = value.get('source') if isinstance(value, dict) else None
+    mesh = source.get('mesh') if isinstance(source, dict) else None
+    armature = source.get('armature') if isinstance(source, dict) else None
+    if (not isinstance(source, dict) or value.get('schema') != 'arm-twist-expert-report-v1'
+            or value.get('status') not in ('estimated', 'unknown')
+            or value.get('source_binding') != 'local_armature_source_adapter'
+            or source.get('unit') != 'm' or source.get('coordinate_frame') != 'armature_local'
+            or not isinstance(mesh, dict) or mesh.get('name') != selection.get('mesh_name')
+            or source.get('selected_bones') != selection.get('bone_names')
+            or 'armature_name' in selection and (not isinstance(armature, dict)
+                or armature.get('name') != selection['armature_name'])):
+        raise ValueError('Arm twist report schema or current selection binding mismatch')
+    return value
+
+
+def _validate_arm_axial_result(value, task):
+    """Bind the mutation receipt to this event, including true partial counts."""
+    if (type(value) is not dict or value.get('schema')!='arm-axial-execution-result-v1'
+            or value.get('event_id')!=task.get('event_id')
+            or value.get('status') not in ('satisfied','feedback_failed','no_op',
+                'unreachable','not_applicable','execution_uncertain')
+            or type(value.get('reason')) is not str
+            or type(value.get('task_succeeded')) is not bool
+            or value.get('executed') is not None and type(value.get('executed')) is not bool):
+        raise ValueError('Arm correction receipt schema or event mismatch')
+    if not {'executed','setter_attempts','setter_returns'}.issubset(value):
+        raise ValueError('Arm correction receipt omitted action state')
+    attempts,returns=value['setter_attempts'],value['setter_returns']
+    if (any(v is not None and (type(v) is not int or not 0<=v<=2) for v in (attempts,returns))
+            or returns is not None and attempts is not None and returns>attempts):
+        raise ValueError('Arm correction receipt has invalid setter counts')
+    status=value['status'];executed=value['executed'];succeeded=value['task_succeeded']
+    if status=='execution_uncertain':
+        if (succeeded or executed is False and (attempts,returns)!=(0,0)
+                or (attempts,returns)==(0,0) and executed is not False
+                or attempts==0 and (returns!=0 or executed is not False)
+                or returns is not None and returns>0 and executed is not True
+                or executed is True and (returns is None or returns==0)):
+            raise ValueError('Arm correction uncertainty contradicts known setters')
+    elif status in ('satisfied','feedback_failed'):
+        if (attempts,returns)!=(2,2) or executed is not True or succeeded!=(status=='satisfied'):
+            raise ValueError('Arm correction completion contradicts setter counts')
+    elif (attempts,returns)!=(0,0) or executed is not False or succeeded!=(status=='no_op'):
+        raise ValueError('Arm correction no-write receipt contradicts action state')
+    selection=task['selection']
+    for name in ('before_source','after_source'):
+        source=value.get(name)
+        if source is None:
+            if status in ('satisfied','feedback_failed') or (name=='before_source' and status in ('no_op','unreachable')):
+                raise ValueError('Arm correction completion omitted current source')
+            continue
+        if (type(source) is not dict or source.get('unit')!='m'
+                or source.get('coordinate_frame')!='armature_local'
+                or source.get('selected_bones')!=selection.get('bone_names')
+                or type(source.get('mesh')) is not dict
+                or source['mesh'].get('name')!=selection.get('mesh_name')
+                or type(source.get('armature')) is not dict
+                or source['armature'].get('name')!=selection.get('armature_name')):
+            raise ValueError('Arm correction source selection binding mismatch')
+    json.dumps(value,allow_nan=False)
+    return value
+
+
 class BlenderProcessHost:
     """Serialize capture and transform requests to an owned headless process.
 
@@ -112,7 +179,10 @@ class BlenderProcessHost:
     def __init__(self, blender_executable: str | os.PathLike[str],
                  blend_file: str | os.PathLike[str], *, timeout: float = 30.0,
                  startup_timeout: float = 60.0,
-                 worker_path: str | os.PathLike[str] | None = None) -> None:
+                 worker_path: str | os.PathLike[str] | None = None,
+                 material_readview_only: bool = False) -> None:
+        if type(material_readview_only) is not bool or material_readview_only and worker_path is not None:
+            raise ValueError('Material readview requires the fixed readonly worker')
         for name, value in (("timeout", timeout), ("startup_timeout", startup_timeout)):
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{name} must be finite and greater than zero")
@@ -136,8 +206,10 @@ class BlenderProcessHost:
         self._poisoned = False
         self._sequence = 0
         self._deadline_bindings = {}
+        self._scene_decoder = None
         command = [str(executable), "--factory-startup", "--disable-autoexec", "--background",
                    str(source), *(worker_arguments(root,worker) if worker_path is None else ["--python",str(worker)]), "--", str(root)]
+        if material_readview_only:command.append('material-readview-only-v1')
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
         self._process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, text=True, encoding="utf-8",
@@ -145,9 +217,9 @@ class BlenderProcessHost:
                                          shell=False)
         self._stdout_thread = threading.Thread(target=self._read_stdout, name="human-eye-blender-stdout", daemon=True)
         self._stderr_thread = threading.Thread(target=self._read_stderr, name="human-eye-blender-stderr", daemon=True)
-        self._stdout_thread.start()
-        self._stderr_thread.start()
         try:
+            self._stdout_thread.start()
+            self._stderr_thread.start()
             capabilities = self._request("capabilities", {}, timeout=float(startup_timeout))
             if not isinstance(capabilities, dict) or capabilities.get("protocol_version") != PROTOCOL_VERSION:
                 self._fail("Blender worker protocol version is incompatible")
@@ -160,6 +232,29 @@ class BlenderProcessHost:
     def diagnostics(self) -> tuple[str, ...]:
         """Return a bounded tail of Blender banners and stderr diagnostics."""
         return tuple(self._diagnostics)
+
+    def _check_material_readview(self):
+        if (not getattr(self, '_default_worker', False)
+                or self._capabilities.get('material_readview_protocol')!='static-material-readview-v1'
+                or self._capabilities.get('material_readview_only') is not True
+                or self._capabilities.get('process_id')!=self._process.pid
+                or self._capabilities.get('forward_deadline_clock')!=counter_descriptor()):
+            raise ValueError('No fixed owned readonly material-view worker')
+
+    def material_readview_header(self,binding):
+        self._check_material_readview()
+        return self._request('material_readview_header',{'binding':binding})
+
+    def observe_material_readview(self,request_id,binding,expected_fingerprint,deadline_ns):
+        self._check_material_readview()
+        seconds=(deadline_ns-time.perf_counter_ns())/1e9
+        if seconds<=0:raise ValueError('Material readview deadline expired')
+        return self._request('observe_material_readview',{'request_id':request_id,'binding':binding,
+            'expected_fingerprint':expected_fingerprint,'deadline_ns':deadline_ns},timeout=min(self.timeout,seconds))
+
+    def last_material_readview_audit(self):
+        self._check_material_readview()
+        return self._request('last_material_readview_audit',{})
 
     @property
     def is_alive(self) -> bool:
@@ -175,10 +270,139 @@ class BlenderProcessHost:
         return json.loads(json.dumps(self._capabilities, allow_nan=False))
 
     def capture_scene(self) -> dict[str, Any]:
-        return self._request("capture", {})
+        return self._capture_request("capture", {})
+
+    def _capture_request(self, command, params, *, timeout=None):
+        """Keep resource baselines private to this connection and this lock.
+
+        The public methods still return ordinary captures. Only the worker wire
+        uses resource deltas; evidence and mutation protocols never use them.
+        """
+        with self._lock:
+            if self._capabilities.get('scene_delta_protocol') != SCENE_DELTA_PROTOCOL:
+                return self._request(command, params, timeout=timeout)
+            if self._scene_decoder is None:
+                from .scene_residency import SceneDeltaDecoder
+                self._scene_decoder = SceneDeltaDecoder()
+            arguments = dict(params, _scene_baseline=self._scene_decoder.baseline())
+            result = self._request(command, arguments, timeout=timeout)
+            try:
+                return self._scene_decoder.apply(result)
+            except (ValueError, TypeError, KeyError, IndexError) as exc:
+                self._fail('Invalid resident capture response: ' + str(exc))
+
+    def capture_task_scene(self, selectors) -> dict[str, Any]:
+        return self._capture_request('capture_task', {'selectors': selectors})
+
+    def capture_directory(self, deadline_ns, max_response_bytes):
+        now = time.perf_counter_ns()
+        if type(deadline_ns) is not int or now >= deadline_ns:
+            raise ValueError('directory_deadline_exceeded')
+        if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+            raise ValueError('directory_document_budget')
+        deadline_ns = min(deadline_ns, now + int(self.timeout * 1e9))
+        result = self._request('capture_directory', dict(deadline_ns=deadline_ns,
+            max_response_bytes=max_response_bytes), timeout=(deadline_ns - now) / 1e9)
+        if time.perf_counter_ns() >= deadline_ns:
+            raise ValueError('directory_deadline_exceeded')
+        return result
+
+    def capture_nearest_candidates(self, focal_id, deadline_ns, max_response_bytes, *, selector=None):
+        with self._lock:
+            if selector is None:
+                if type(focal_id) is not str or not focal_id or len(focal_id.encode('utf8')) > 256:
+                    raise ValueError('acquisition_focal_id')
+            else:
+                if focal_id is not None:
+                    raise ValueError('acquisition_focal_selector_conflict')
+                if (type(selector) is not dict or set(selector) not in ({'id'}, {'name'})
+                        or any(type(value) is not str or not value.strip() or len(value.encode('utf8')) > 256
+                               for value in selector.values())):
+                    raise ValueError('acquisition_selector')
+                selector = dict(selector)
+            now_ns = time.perf_counter_ns()
+            if type(deadline_ns) is not int or now_ns >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            deadline_ns = min(deadline_ns, now_ns + int(self.timeout * 1_000_000_000))
+            if deadline_ns <= now_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+                raise ValueError('acquisition_document_budget')
+            params = dict(focal_id=focal_id, deadline_ns=deadline_ns, max_response_bytes=max_response_bytes)
+            if selector is not None:
+                params['selector'] = selector
+            result = self._capture_request('capture_nearest_candidates', params,
+                timeout=(deadline_ns-now_ns)/1_000_000_000)
+            if time.perf_counter_ns() >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            return result
+
+    def capture_surface_scan(self, threshold_m, deadline_ns, max_response_bytes):
+        with self._lock:
+            if type(threshold_m) not in (int, float):
+                raise ValueError('surface_scan_threshold')
+            try:
+                threshold_m = float(threshold_m)
+            except OverflowError as exc:
+                raise ValueError('surface_scan_threshold') from exc
+            if not math.isfinite(threshold_m) or threshold_m < 0:
+                raise ValueError('surface_scan_threshold')
+            now_ns = time.perf_counter_ns()
+            if type(deadline_ns) is not int or now_ns >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            deadline_ns = min(deadline_ns, now_ns + int(self.timeout * 1_000_000_000))
+            if deadline_ns <= now_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            if type(max_response_bytes) is not int or not 1 <= max_response_bytes <= _MAX_LINE_CHARS:
+                raise ValueError('acquisition_document_budget')
+            result = self._capture_request('capture_surface_scan', dict(threshold_m=float(threshold_m),
+                deadline_ns=deadline_ns, max_response_bytes=max_response_bytes),
+                timeout=(deadline_ns-now_ns)/1_000_000_000)
+            if time.perf_counter_ns() >= deadline_ns:
+                raise ValueError('acquisition_deadline_exceeded')
+            return result
+
+    def surface_scan_dependencies(self, capture):
+        """Return a decoded scan's private dependencies without adding wire fields."""
+        decoder = self._scene_decoder
+        return decoder.surface_scan_dependencies(capture) if decoder is not None else None
 
     def capture_evidence(self) -> dict[str, Any]:
         return self._request('capture_evidence', {})
+
+    def observe_arm_twist(self, selection):
+        if not self._default_worker:
+            raise ValueError('Arm twist observation requires the fixed worker')
+        if type(selection) is not dict:
+            raise ValueError('Arm twist selection requires an object')
+        return _validate_arm_twist_report(self._request('observe_arm_twist', {'selection': selection}), selection)
+
+    def correct_arm_axial(self, task):
+        """Submit one fixed owned arm step; uncertain outcomes are never retried."""
+        fields={'schema','event_id','selection','u_interval_deg','max_section_area_loss',
+                'protected_vertex_ids','angle_tolerance_deg','position_tolerance_m','area_tolerance','sentinel_name'}
+        if (not self._default_worker or self._capabilities.get('arm_axial_execution_protocol')!=ARM_AXIAL_EXECUTION_PROTOCOL
+                or self._capabilities.get('process_id')!=self._process.pid
+                or self._capabilities.get('material_readview_only') is True):
+            raise ValueError('Arm correction requires the fixed owned writable worker')
+        if (type(task) is not dict or set(task)!=fields or task.get('schema')!='arm-axial-execution-task-v1'
+                or type(task.get('event_id')) is not str or not 0<len(task['event_id'])<=256
+                or any(ord(char)<32 for char in task['event_id']) or type(task.get('selection')) is not dict):
+            raise ValueError('Invalid typed arm correction request')
+        # Freeze the precise task sent across the process boundary. A caller
+        # mutating its original dict cannot change the expected receipt event.
+        request=json.loads(json.dumps(task,allow_nan=False))
+        with self._lock:
+            result=self._request('correct_arm_axial',{'task':request})
+            try:
+                _validate_arm_axial_result(result,request)
+            except (ValueError,TypeError,KeyError,OverflowError,RecursionError) as exc:
+                self._fail('Invalid arm correction receipt; execution outcome unknown: '+str(exc))
+            if result['status']=='execution_uncertain':
+                self._poisoned=True;self._scene_decoder=None
+                self._diagnostics.append('Arm correction outcome uncertain; owned connection quarantined')
+                self._terminate_child()
+            return result
 
     def mesh_structure_capabilities(self):
         if not self._default_worker:raise ValueError('Raw mesh observation requires the fixed worker')
@@ -381,6 +605,14 @@ class BlenderProcessHost:
                 process_id=self._process.pid, goal_id=goal_id)
         return self._request("apply", params)
 
+    def _readback_after_apply(self, result):
+        """Consume this owned apply response's actual post-setter scene."""
+        if getattr(self, '_default_worker', False) is not True:
+            return self.capture_scene()
+        if type(result) is not dict or type(result.get('scene')) is not dict:
+            raise HostTransportError('Owned apply returned no readback scene')
+        return result['scene']
+
     def _ensure_live(self) -> None:
         if self._closed or self._poisoned:
             raise HostTransportError("Blender connection is closed or invalidated; start a new host and observe again")
@@ -395,8 +627,16 @@ class BlenderProcessHost:
             # Validate before writing: a local serialization failure cannot mutate Blender.
             payload = json.dumps({"id": request_id, "command": command, "params": params},
                                  ensure_ascii=True, allow_nan=False, separators=(",", ":")) + "\n"
-            if len(payload) > _MAX_REQUEST_CHARS:
-                raise ValueError("Blender request exceeds the 4096-character transform protocol limit")
+            capture_request = command in ('capture', 'capture_task', 'capture_nearest_candidates', 'capture_surface_scan')
+            limit = (_MAX_LINE_CHARS if command in ('observe_arm_twist','correct_arm_axial') else
+                _MAX_CAPTURE_REQUEST_CHARS if capture_request else _MAX_REQUEST_CHARS)
+            if len(payload) > limit:
+                if command == 'observe_arm_twist':
+                    raise ValueError('Arm twist selection exceeds the existing line protocol limit')
+                if command == 'correct_arm_axial':
+                    raise ValueError('Arm correction task exceeds the existing line protocol limit')
+                raise ValueError("Blender request exceeds the 65536-character capture protocol limit"
+                    if capture_request else "Blender request exceeds the 4096-character transform protocol limit")
             stop_ns = None
             wire = params.get('forward_deadline') if command == 'apply' else None
             if wire is not None:
@@ -462,6 +702,22 @@ class BlenderProcessHost:
                     and error.get('mutation_uncertain') is False
                     and error.get('known_preentry_refusal') is True
                     and error.get('executed') is False)
+                if command == 'correct_arm_axial':
+                    # A complete host result may have failed worker JSON
+                    # delivery after real writes. Preserve only a validated
+                    # event-bound action receipt, then discard the process.
+                    known=error.get('mutation_receipt')
+                    try:
+                        if known is not None:
+                            _validate_arm_axial_result(known,params['task'])
+                            if known['status']!='execution_uncertain':raise ValueError('uncertain receipt required')
+                    except (ValueError,TypeError,KeyError,OverflowError,RecursionError):
+                        known=None
+                    try:
+                        self._fail('Blender arm mutation could not be verified: '+str(error.get('message','unknown error')))
+                    except HostTransportError as exc:
+                        if known is not None:exc.mutation_result=known
+                        raise
                 if command == "apply" or error.get("mutation_uncertain") or (
                         command == 'native_transform' and not known_native_refusal):
                     self._fail(f"Blender mutation could not be verified: {error.get('message', 'unknown error')}")
@@ -529,6 +785,7 @@ class BlenderProcessHost:
 
     def _fail(self, reason: str) -> None:
         self._poisoned = True
+        self._scene_decoder = None
         self._terminate_child()
         raise HostTransportError(reason, self.diagnostics)
 
@@ -552,6 +809,7 @@ class BlenderProcessHost:
                 except (HostTransportError, HostRemoteError, subprocess.TimeoutExpired):
                     pass
             self._closed = True
+            self._scene_decoder = None
             self._terminate_child()
             for stream in (self._process.stdin, self._process.stdout, self._process.stderr):
                 if stream is not None:
@@ -563,7 +821,7 @@ class BlenderProcessHost:
                         # the other streams and join their reader threads.
                         self._diagnostics.append('Stream close failed: ' + type(exc).__name__)
             for thread in (self._stdout_thread, self._stderr_thread):
-                thread.join(timeout=1.0)
+                if thread.ident is not None:thread.join(timeout=1.0)
 
     def __enter__(self) -> "BlenderProcessHost":
         self._ensure_live()

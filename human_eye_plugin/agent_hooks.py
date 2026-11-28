@@ -48,7 +48,10 @@ def _reject_constant(value: str) -> None:
     raise HookBridgeError("Non-finite JSON numbers are not supported")
 
 
-def _atomic_write(path: Path, data: dict[str, Any], *, _buffered: bool = False) -> None:
+def _atomic_write(path: Path, data: dict[str, Any], *, _buffered: bool = False,
+                  _commit_receipt: dict | None = None) -> None:
+    if _commit_receipt is not None:
+        _commit_receipt['status'] = 'not_committed'
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
     try:
@@ -61,7 +64,11 @@ def _atomic_write(path: Path, data: dict[str, Any], *, _buffered: bool = False) 
                 json.dump(data, handle, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
             handle.flush()
             os.fsync(handle.fileno())
+        if _commit_receipt is not None:
+            _commit_receipt['status'] = 'unknown'
         os.replace(name, path)
+        if _commit_receipt is not None:
+            _commit_receipt['status'] = 'committed'
     finally:
         try:
             os.unlink(name)

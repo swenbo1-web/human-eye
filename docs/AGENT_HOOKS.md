@@ -2,7 +2,7 @@
 
 `human_eye_plugin.agent_hooks` 提供 Codex、Claude Code 的命令 hooks 桥接。宿主收到提示或准备执行已登记的三维操作时直接运行引擎，模型不必先决定是否调用 Human-Eye 工具。MCP 工具列表本身不具备这个触发作用。
 
-本文描述通用静态快照桥接及其未安装的配置示例。当前项目另已安装 [Codex 实时路由](CODEX_LIVE_ROUTING.md)，通过 BlenderMCP 读取当前场景，并验证真实动作前后 hooks。Claude Code 及本文静态快照示例仍按本地协议测试范围说明，发行包未更新。
+本文描述通用静态快照桥接及配置示例。桌面部署使用带版本绑定的实时入口。[安装版核对](INSTALLED_RELEASE_ACTIVATION.md)
 
 ## 接入条件
 

@@ -2,7 +2,7 @@
 
 The stdio owner is trusted to present the form honestly. This module is not a
 sandbox against that owner or arbitrary same-account Python. It is opt-in and
-does not change the default shared Blender transport or its four tools.
+does not change the default shared Blender transport or its tool surface.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from .live_spatial_mcp import (LiveSpatialMCPServer,LIVE_MCP_TOOLS_SCHEMA,
 PROTOCOL='2025-06-18'
 MAX_INPUT=256*1024
 MAX_CALLS=16
-READ_TOOLS={'human_eye_connection_status','human_eye_scene_observe'}
+READ_TOOLS={'human_eye_connection_status','human_eye_scene_observe','human_eye_arm_twist_observe'}
 GOAL_TOOL={
     'name':'human_eye_owned_clearance_goal',
     'description':('Propose one finite original-support clearance goal for this configured owned Blender copy. '

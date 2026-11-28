@@ -28,8 +28,8 @@ class StructureTaskTests(unittest.TestCase):
         return json.loads(response['content'][0]['text']),response
     def state(self):return json.loads((self.root/'read-task.json').read_text())
 
-    def test_four_tools_no_registration_no_host(self):
-        value,response=self.call('a');self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),4)
+    def test_structure_read_needs_registration_before_host_access(self):
+        value,response=self.call('a');self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),5)
         self.assertEqual(value['status'],'error');self.assertIn('registration_required',value['error'])
         self.assertEqual(self.host.raw_calls,0);self.assertFalse((self.root/'read-task.json').exists())
 

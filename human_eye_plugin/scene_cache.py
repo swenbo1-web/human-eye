@@ -3,7 +3,9 @@
 This cache has no observation tokens, execution gates, rollback or host writes.
 Every input is a complete world/metre snapshot. A missing object therefore means
 removed from that snapshot, not inferred occlusion. Exact byte keys, never the
-diagnostic rigid-fit tolerance, govern measurement reuse.
+diagnostic rigid-fit tolerance, govern legacy measurement reuse. The resident
+read owner can instead bind its private normalized meshes to a current capture
+version; these bindings never enter persisted state or action authorization.
 """
 from __future__ import annotations
 
@@ -164,6 +166,45 @@ class SpatialSceneCache:
         self._hits = self._misses = self._computations = 0
         self._support_hits = self._support_misses = 0
         self._estimated_saved_ms = 0.0
+        self._read_meshes = {}
+        self._surface_scan_meshes = {}
+
+    def _bind_read_meshes(self, version, meshes):
+        """Only the resident owner binds its private normalized mesh objects."""
+        with self._lock:
+            self._read_meshes = ({id(mesh): (mesh, (version, mesh.object_id)) for mesh in meshes}
+                                 if version is not None else {})
+            self._surface_scan_meshes = {}
+
+    def _bind_surface_scan_meshes(self, meshes, dependencies, runtime_source_sha256, *, capture):
+        """Bind one decoded scan's private resource dependencies to its meshes."""
+        with self._lock:
+            self._surface_scan_meshes = {}
+            if dependencies is None:
+                return False
+            from .scene_residency import SurfaceScanDependencies
+            if (type(dependencies) is not SurfaceScanDependencies
+                    or not dependencies.matches_capture(capture)):
+                return False
+            if (type(runtime_source_sha256) is not str or len(runtime_source_sha256) != 64
+                    or any(c not in '0123456789abcdef' for c in runtime_source_sha256)):
+                raise ValueError('Invalid surface scan runtime source binding')
+            if len(meshes) > 256 or set(dependencies.objects) != {mesh.object_id for mesh in meshes}:
+                return False
+            self._surface_scan_meshes = {id(mesh): (mesh, _digest(_encode((
+                'surface-scan-object-dependency-v1', runtime_source_sha256,
+                dependencies.objects[mesh.object_id])))) for mesh in meshes}
+            return True
+
+    def _measurement_mesh(self, mesh, *, surface_scan=False):
+        if surface_scan:
+            entry = self._surface_scan_meshes.get(id(mesh))
+            if entry is not None and entry[0] is mesh:
+                return {'surface_scan_resource_dependency': entry[1]}
+        entry = self._read_meshes.get(id(mesh))
+        if entry is not None and entry[0] is mesh:
+            return {'read_resource_version': entry[1]}
+        return _mesh_dict(mesh)
 
     def _bytes(self):
         return (self._blob_bytes + self._frame_bytes + self._measurement_bytes
@@ -362,15 +403,14 @@ class SpatialSceneCache:
     def _observation_solid_support(self, mesh):
         """Exact-content, bounded, process-local support memo for observations.
 
-        Hash the complete current normalized mesh, including every geometry,
-        frame and metadata field consumed by support validation. No caller CRC,
-        scene fingerprint or dirty hint participates. Unknown results are not
+        Legacy callers hash the complete current normalized mesh. Resident
+        readers use the owner's private mesh/capture-version binding instead;
+        model inputs cannot provide such a binding. Unknown results are not
         memoized; serialized result bytes prevent mutations through a return.
         Execution indexes deliberately never opt into this evaluator.
         """
         from .geometry_safety import solid_support_status
-        value = _mesh_dict(mesh)
-        key = _digest(_encode(value))
+        key = _digest(_encode(self._measurement_mesh(mesh)))
         with self._lock:
             cached = self._solid_support.get(key)
             if cached is not None:
@@ -378,7 +418,7 @@ class SpatialSceneCache:
                 self._support_hits += 1
                 return _decode(cached)
             self._support_misses += 1
-            result = solid_support_status(value)
+            result = solid_support_status(_mesh_dict(mesh))
             if result.get('supported') is True:
                 encoded = _encode(result)
                 charge = _charge(encoded, key)
@@ -391,19 +431,33 @@ class SpatialSceneCache:
                     self._trim()
             return copy.deepcopy(result)
 
-    def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version):
+    def pair_measurement(self, focal, reference, compute, *, parameters=None, algorithm_version,
+                         before_compute=None, _surface_scan=False, _diagnostics=None):
         """Return (detached_result, hit) for exactly the same ordered mesh pair.
 
         The caller supplies all evaluator parameters, including tolerances and
         requested output options. Failed/unknown results and exceptions are not
         memoized. Mesh metadata includes axes, pivot, identity and provenance.
+        The optional budget checkpoint runs only after an actual cache miss,
+        before invoking the evaluator or charging a computation.
         """
         if not isinstance(algorithm_version, str) or not algorithm_version:
             raise ValueError("an explicit measurement algorithm version is required")
         if parameters is not None and not isinstance(parameters, dict):
             raise ValueError("measurement parameters must be a mapping")
+        left = self._measurement_mesh(focal, surface_scan=_surface_scan)
+        right = self._measurement_mesh(reference, surface_scan=_surface_scan)
         key = _digest(_encode({"algorithm": algorithm_version, "parameters": parameters or {},
-                              "focal": _mesh_dict(focal), "reference": _mesh_dict(reference)}))
+                              "focal": left, "reference": right}))
+        left_binding = self._surface_scan_meshes.get(id(focal))
+        right_binding = self._surface_scan_meshes.get(id(reference))
+        dependency_bound = (_surface_scan and left_binding is not None and left_binding[0] is focal
+                            and right_binding is not None and right_binding[0] is reference)
+        if _surface_scan and _diagnostics is not None:
+            _diagnostics.update(surface_dependency_used=dependency_bound,
+                surface_dependency_key=key if dependency_bound else None,
+                surface_dependency_objects=[left['surface_scan_resource_dependency'],
+                    right['surface_scan_resource_dependency']] if dependency_bound else None)
         with self._lock:
             cached = self._measurements.get(key)
             if cached is not None:
@@ -412,6 +466,8 @@ class SpatialSceneCache:
                 self._estimated_saved_ms += cached[1]
                 return _decode(cached[0]), True
             self._misses += 1
+            if before_compute is not None:
+                before_compute()
             start = time.perf_counter()
             self._computations += 1
             value = compute()

@@ -76,8 +76,9 @@ class SupportPlaneTransportTests(unittest.TestCase):
         tools = self.server.handle_jsonrpc_message({'jsonrpc': '2.0', 'id': 1,
             'method': 'tools/list'})['result']['tools']
         self.assertEqual([t['name'] for t in tools], ['human_eye_scene_observe',
-            'human_eye_transform', 'human_eye_connection_status', 'human_eye_clearance_segment'])
-        schema = tools[-1]['inputSchema']['properties']['request']
+            'human_eye_transform', 'human_eye_connection_status', 'human_eye_clearance_segment', 'human_eye_arm_twist_observe'])
+        clearance = next(t for t in tools if t['name'] == 'human_eye_clearance_segment')
+        schema = clearance['inputSchema']['properties']['request']
         self.assertEqual(schema, CLEARANCE_SEGMENT_REQUEST_SCHEMA)
         self.assertNotIn('axis', schema['required'])
         self.assertEqual(len(schema['oneOf']), 2)
@@ -91,9 +92,10 @@ class SupportPlaneTransportTests(unittest.TestCase):
             self.assertFalse(branch['additionalProperties'])
         self.assertIn('reference_triangle_index', support['required'])
         self.assertIn('direction_world', support['required'])
-        self.assertEqual(tools[-1]['inputSchema']['properties']['execute']['default'], False)
+        self.assertEqual(clearance['inputSchema']['properties']['execute']['default'], False)
         schema['oneOf'][1]['properties']['solver']['enum'][0] = 'mutated'
-        self.assertEqual(LIVE_MCP_TOOLS_SCHEMA[-1]['inputSchema']['properties']['request']
+        canonical = next(t for t in LIVE_MCP_TOOLS_SCHEMA if t['name'] == 'human_eye_clearance_segment')
+        self.assertEqual(canonical['inputSchema']['properties']['request']
                          ['oneOf'][1]['properties']['solver']['enum'], ['support_plane'])
 
     def test_branch_confusion_missing_selectors_and_coercible_inputs_fail_before_service(self):

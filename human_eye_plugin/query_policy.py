@@ -5,6 +5,9 @@ membership checks require the caller's freshly validated scene namespace.
 """
 from __future__ import annotations
 
+from fractions import Fraction
+import math
+
 from .measurement_presentation import finite_metric, present_measurement, valid_unrounded_measurement
 from .top1_query import summarize_top1
 from .support_plane_discovery import validate_support_plane_discovery_request
@@ -12,6 +15,7 @@ from .support_plane_discovery import validate_support_plane_discovery_request
 
 MAX_EXACT_PAIRS = 255
 MAX_VISUAL_LABEL_IDS = 6
+MAX_SOURCE_REGION_TRIANGLES = 4096
 QUERY_POLICY_REVISION = 'bounded-observation-query-v5-support-plane-discovery-20261028'
 _MODES = {'overview', 'exact_pairs', 'nearest', 'top1'}
 NATIVE_VISUAL_SCHEMA = {
@@ -23,6 +27,36 @@ NATIVE_VISUAL_SCHEMA = {
     },
     'additionalProperties': False,
 }
+
+REGION_TASK_SCHEMA = {
+    'type': 'object',
+    'description': 'Discover complete connected planar rectangles in the current whole scene. Area and directed unit-normal thresholds are inclusive.',
+    'properties': {
+        'area_min_m2': {'type': 'number', 'minimum': 0},
+        'area_max_m2': {'type': 'number', 'minimum': 0},
+        'normal_z_min': {'type': 'number', 'minimum': -1, 'maximum': 1},
+    },
+    'required': ['area_min_m2', 'area_max_m2', 'normal_z_min'],
+    'additionalProperties': False,
+}
+
+
+def validate_region_task(value):
+    fields = ('area_min_m2', 'area_max_m2', 'normal_z_min')
+    if type(value) is not dict or set(value) != set(fields):
+        raise ValueError('region_task requires area_min_m2, area_max_m2 and normal_z_min')
+    normalized, exact = {}, {}
+    for key in fields:
+        number = value[key]
+        if type(number) not in (int, float) or type(number) is float and not math.isfinite(number):
+            raise ValueError('region_task thresholds must be finite numbers')
+        normalized[key] = int(number) if type(number) is float and number.is_integer() else number
+        exact[key] = Fraction(str(normalized[key]))
+    if not 0 <= exact['area_min_m2'] <= exact['area_max_m2']:
+        raise ValueError('region_task requires 0 <= area_min_m2 <= area_max_m2')
+    if not -1 <= exact['normal_z_min'] <= 1:
+        raise ValueError('region_task normal_z_min must be in [-1, 1]')
+    return normalized
 
 
 def _native_visual(value):
@@ -36,6 +70,95 @@ def _native_visual(value):
     return {'mode': mode, 'view': view}
 
 
+def validate_source_region_query(value):
+    """Select current evaluated source faces by row or closed world box."""
+    from .task_query import validate_object_selector
+
+    fields = {'mode', 'region', 'region_ref', 'reference', 'requested_facts'}
+    if type(value) is not dict or value.get('mode') != 'source_region' or set(value) - fields:
+        raise ValueError('source_region query contains unsupported fields')
+    if ('region' in value) == ('region_ref' in value):
+        raise ValueError('source_region requires exactly one of region or region_ref')
+    if value.get('requested_facts') != ['surface_proximity']:
+        raise ValueError('source_region requested_facts must be [surface_proximity]')
+    result = {'mode': 'source_region', 'reference': validate_object_selector(value.get('reference')),
+              'requested_facts': ['surface_proximity']}
+    if 'region' in value:
+        region = value['region']
+        if type(region) is not dict or set(region) not in (
+                {'object', 'source_triangle_indices'}, {'object', 'world_box_m'}):
+            raise ValueError('source_region region requires object and exactly one of source_triangle_indices or world_box_m')
+        selector = validate_object_selector(region['object'])
+        if 'world_box_m' in region:
+            result['region'] = {'object': selector, 'world_box_m': _source_region_world_box(region['world_box_m'])}
+        else:
+            result['region'] = {'object': selector,
+                                'source_triangle_indices': _source_triangle_indices(region['source_triangle_indices'])}
+        return result
+    reference = value['region_ref']
+    keys = {'schema', 'region_id', 'document_epoch', 'host_id', 'instance_id',
+            'capture_generation', 'ordered_geometry_sha256', 'source_triangle_indices'}
+    if (type(reference) is not dict or set(reference) != keys
+            or reference.get('schema') != 'human-eye-source-region-ref-v1'):
+        raise ValueError('source_region region_ref structure is invalid')
+    identity = reference['region_id']
+    if (type(identity) is not str or not identity.startswith('source-region:')
+            or len(identity) != len('source-region:') + 64
+            or any(c not in '0123456789abcdef' for c in identity[len('source-region:'):])):
+        raise ValueError('source_region region_ref region_id is invalid')
+    for key in ('document_epoch', 'ordered_geometry_sha256'):
+        digest = reference[key]
+        if type(digest) is not str or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
+            raise ValueError('source_region region_ref ' + key + ' is invalid')
+    for key in ('host_id', 'instance_id'):
+        if type(reference[key]) is not str or not reference[key] or len(reference[key].encode('utf8')) > 256:
+            raise ValueError('source_region region_ref ' + key + ' is invalid')
+    generation = reference['capture_generation']
+    if generation is not None and (type(generation) is not dict
+            or set(generation) != {'instance_id', 'epoch', 'revision'}
+            or type(generation['instance_id']) is not str or not generation['instance_id']
+            or any(type(generation[key]) is not int or generation[key] < 0 for key in ('epoch', 'revision'))):
+        raise ValueError('source_region region_ref capture_generation is invalid')
+    import copy
+    result['region_ref'] = copy.deepcopy(reference)
+    indices = _source_triangle_indices(reference['source_triangle_indices'])
+    if indices != reference['source_triangle_indices']:
+        raise ValueError('source_region region_ref requires canonical triangle row order')
+    return result
+
+
+def _source_triangle_indices(value):
+    if (type(value) is not list or not value or len(value) > MAX_SOURCE_REGION_TRIANGLES
+            or any(type(index) is not int or index < 0 for index in value)
+            or len(set(value)) != len(value)):
+        raise ValueError('source_triangle_indices requires 1..4096 unique nonnegative integer rows')
+    return sorted(value)
+
+
+def _source_region_world_box(value):
+    if (type(value) is not dict or set(value) != {'min', 'max'}
+            or any(type(row) is not list or len(row) != 3 for row in value.values())):
+        raise ValueError('source_region world_box_m requires min and max 3D arrays')
+    bounds = {}
+    error = 'source_region world_box_m bounds must be finite binary64 numbers'
+    for key in ('min', 'max'):
+        row = []
+        for number in value[key]:
+            if type(number) not in (int, float):
+                raise ValueError(error)
+            try:
+                endpoint = float(number)
+            except OverflowError:
+                raise ValueError(error) from None
+            if not math.isfinite(endpoint) or endpoint != number:
+                raise ValueError(error)
+            row.append(endpoint)
+        bounds[key] = row
+    if any(low > high for low, high in zip(bounds['min'], bounds['max'])):
+        raise ValueError('source_region world_box_m requires min <= max on every axis')
+    return bounds
+
+
 def validate_query(query, *, object_ids=None, focal_id=None):
     """Normalize structure, optionally checking the fresh scene's object IDs.
 
@@ -45,6 +168,46 @@ def validate_query(query, *, object_ids=None, focal_id=None):
     allocation. Explicit label IDs are a separately bounded visual request,
     normalized by full ID; they do not consume exact-pair work slots.
     """
+    if type(query) is dict and query.get('mode') == 'source_region':
+        return validate_source_region_query(query)
+    if type(query) is dict and query.get('mode') == 'active_observation':
+        if set(query) == {'mode'}:
+            return {'mode': 'active_observation'}
+        if set(query) - {'task_query', 'region_task'} not in ({'mode'}, {'mode', 'objects'}):
+            raise ValueError('active_observation accepts mode, one optional object selector, task_query and region_task')
+        from .task_query import validate_object_selector, validate_task_query
+        result = {'mode': 'active_observation'}
+        if 'region_task' in query:
+            if 'objects' in query:
+                raise ValueError('active_observation region_task requires whole-scene discovery without objects')
+            result['region_task'] = validate_region_task(query['region_task'])
+        if 'objects' in query:
+            if type(query['objects']) is not list or len(query['objects']) != 1:
+                raise ValueError('active_observation accepts one visual object selector')
+            result['objects'] = [validate_object_selector(query['objects'][0])]
+        if 'task_query' in query:
+            task = query['task_query']
+            if type(task) is not dict or set(task) != {'mode', 'objects', 'requested_facts'} or task.get('mode') != 'task':
+                raise ValueError('active_observation task_query requires legacy task mode, objects and requested_facts')
+            result['task_query'] = validate_task_query(task)
+        return result
+    if type(query) is dict and query.get('mode') == 'directory':
+        if set(query) != {'mode'}:
+            raise ValueError('directory query accepts only mode')
+        return {'mode': 'directory'}
+    if type(query) is dict and query.get('mode') == 'surface_nearest':
+        if set(query) == {'mode'}:
+            return {'mode': 'surface_nearest'}
+        if set(query) != {'mode', 'objects'} or type(query['objects']) is not list or len(query['objects']) != 1:
+            raise ValueError('surface_nearest query accepts only mode and optionally one object selector')
+        from .task_query import validate_object_selector
+        return {'mode': 'surface_nearest', 'objects': [validate_object_selector(query['objects'][0])]}
+    if type(query) is dict and query.get('mode') == 'surface_scan':
+        from .surface_scan import validate_surface_scan_query
+        return validate_surface_scan_query(query)
+    if type(query) is dict and query.get('mode') == 'task':
+        from .task_query import validate_task_query
+        return validate_task_query(query)
     if type(query) is dict and query.get('mode')=='mesh_surface':
         from .surface_task_service import query as validate_surface_query
         return validate_surface_query(query)

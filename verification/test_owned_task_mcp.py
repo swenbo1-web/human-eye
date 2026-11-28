@@ -50,7 +50,7 @@ class OwnedTaskMCPTests(unittest.TestCase):
 
     def test_owned_entry_has_no_legacy_write_bypass(self):
         server=self.server();response=server.handle(dict(jsonrpc='2.0',id=4,method='tools/list'))
-        self.assertEqual({t['name'] for t in response['result']['tools']},{GOAL_TOOL['name'],'human_eye_scene_observe','human_eye_connection_status'})
+        self.assertEqual({t['name'] for t in response['result']['tools']},{GOAL_TOOL['name'],'human_eye_scene_observe','human_eye_connection_status','human_eye_arm_twist_observe'})
         for name in ('human_eye_transform','human_eye_clearance_segment'):
             response=server.handle(dict(jsonrpc='2.0',id=5,method='tools/call',params={'name':name,'arguments':{'execute':False}}))
             self.assertEqual(response['error']['code'],-32601)

@@ -36,4 +36,4 @@
 
 本批未重试上轮被拒的缓存删除；原b77目录含其原85文件和3份生成缓存，全部原字节保持。新candidate禁止生成引擎pyc，当前目录80文件一致。旧A/B/C与原owner bridge、生产配置、历史state和先前sealed阶段保持。
 
-证据：[本轮目录](../verification/fixes/20261031_v21_common_gateway/)、[接受配对](../verification/fixes/20261031_v21_common_gateway/owned_work/run_003/RESULT.json)、[真实边界](../verification/fixes/20261031_v21_common_gateway/owned_work/boundary_001/RESULT.json)、[独立验收](../verification/fixes/20261031_v21_common_gateway/acceptance_work/FINAL_REVIEW.json)、[raw复核](../verification/fixes/20261031_v21_common_gateway/review_work/RAW_ARTIFACT_REVIEW.json)。
+证据：本轮目录（历史文件 `verification/fixes/20261031_v21_common_gateway/`）、接受配对（历史文件 `verification/fixes/20261031_v21_common_gateway/owned_work/run_003/RESULT.json`）、真实边界（历史文件 `verification/fixes/20261031_v21_common_gateway/owned_work/boundary_001/RESULT.json`）、独立验收（历史文件 `verification/fixes/20261031_v21_common_gateway/acceptance_work/FINAL_REVIEW.json`）、raw复核（历史文件 `verification/fixes/20261031_v21_common_gateway/review_work/RAW_ARTIFACT_REVIEW.json`）。

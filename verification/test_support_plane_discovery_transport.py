@@ -82,8 +82,8 @@ class SupportPlaneDiscoveryTransportTests(unittest.TestCase):
         self.assertEqual(self.host.calls,0)
         return discovery
 
-    def test_schema_declares_optional_bounded_discovery_and_keeps_four_tools(self):
-        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),4)
+    def test_schema_declares_optional_bounded_discovery_on_observe(self):
+        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),5)
         query = LIVE_MCP_TOOLS_SCHEMA[0]['inputSchema']['properties']['query']
         schema = query['properties']['support_plane_discovery']
         self.assertFalse(schema['additionalProperties'])

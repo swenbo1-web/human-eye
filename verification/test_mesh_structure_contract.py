@@ -174,7 +174,7 @@ class MeshStructureContractTests(unittest.TestCase):
         from human_eye_plugin.live_spatial_mcp import LIVE_MCP_TOOLS_SCHEMA
         self.assertEqual({t['name'] for t in LIVE_MCP_TOOLS_SCHEMA},
                          {'human_eye_scene_observe','human_eye_transform',
-                          'human_eye_connection_status','human_eye_clearance_segment'})
+                          'human_eye_connection_status','human_eye_clearance_segment','human_eye_arm_twist_observe'})
 
     def test_utf8_report_bytes_are_checked_separately_from_region_counts(self):
         value=report();source=value['source']['counts']

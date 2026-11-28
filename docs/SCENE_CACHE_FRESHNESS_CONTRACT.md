@@ -18,4 +18,4 @@ gaze函数自行生成键并保存结果。删除alignment手工将旧场景视�
 
 下一步转S2刚体边界与监督收口：先做一批定向诊断，不要求无限扩展所有legacy缓存才能验证已声明有限主干。可信编辑版本、增量BVH和新专业写入器继续作为独立任务。
 
-证据：[本轮阶段](../verification/fixes/20261030_v21_scene_cache/)、[分阶段路线](V21_NEXT_STAGE_PLAN_20261030.json)。
+证据：本轮阶段（历史文件 `verification/fixes/20261030_v21_scene_cache/`）、分阶段路线（历史文件 `V21_NEXT_STAGE_PLAN_20261030.json`）。

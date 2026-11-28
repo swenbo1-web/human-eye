@@ -46,7 +46,7 @@ MAX_STATE = 32 * 1024 * 1024
 _PIN_FIELDS = ("base_version", "implementation_revision", "build_id", "source_kind",
                "protocol_version", "mode")
 _SOURCE_ENTRY_SHA256 = "0e9bbc65b7a919353234a368f8b61a687e6746c6e6504d7e3add3d67eb9b49b5"
-_TARGET_ENTRY_SHA256 = "0b63f86d1c98d5ecb259a55b7cce54860ecc1eec51bb9b67e48934b0b8215dd4"
+_TARGET_ENTRY_SHA256 = '7f6af4f19b7bef7ba7d66e8d8aeb0518f3903a9919db85b3ccde9e43ffd5932d'
 _FIXED_TARGET_BOOTSTRAP = None
 
 

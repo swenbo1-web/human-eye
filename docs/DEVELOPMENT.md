@@ -1,15 +1,25 @@
-# 开发与复现
+# 开发、测试与构建
 
-从当前 checkout 安装依赖后运行 `python -B verification/run_portable_tests.py`。此脚本列明公共可移植模块及历史依赖排除理由；不连接 Blender，不发起模型/API 请求。
+在仓库根目录执行下列命令。运行库要求 Python 3.10 或更新版本，确定性构建脚本使用 Python 3.11 起提供的 `tomllib`。桌面验收使用 NumPy 2.3.5 和 Pillow 12.3.0。
 
-顶层 verification 保留历史测试源码。依赖旧 sealed evidence、机器安装状态或真实 Blender RNA 的测试不等于可移植测试；历史本地报告数字与公共测试脚本的实际计数分别记录。
+```powershell
+python -m pip install -e .
+python -B verification/run_portable_tests.py
+```
 
-所有运行时 `.py` 的原始字节参与身份摘要，Blender host 还固定依赖源的 SHA。`.gitattributes` 禁止自动换行转换，请保留此配置。换行或格式化也是源码变更，需更新依赖 pin、重新验证并构建新身份；不能通过忽略漂移来消除错误。
+公共测试清单包括几何、采集、MCP、Hook 和本地进程生命周期。测试使用临时工作目录与合成场景。依赖历史私有原件或真实 Blender 的项目按各自入口单列。[测试清单](../verification/portable_modules.json)
 
-包基础版本为9.7.2；发行构建另有完整版本及源码摘要。源码checkout、SDK安装与固定入口发布身份不同，不能混称。`human_eye_plugin/runtime_identity.py` 定义摘要规则。使用 `python -B` 避免写入字节码，但不能据此认为任意 loader 不读取旧缓存；只读关键加载链另有同份已校验源字节编译规则。
+## 复现桌面 wheel
 
-本地 `.human-eye`、`.codex` 与发布包不进入仓库。安装配置使用当前机器绝对路径；提交配置示例前移除令牌、用户路径和运行状态。默认入口的通用模板、实际固定包以及宿主Bridge应按兼容合同核对，不复制其他机器的状态文件。
+选用尚不存在的输出目录。构建器从运行身份清单读取源文件，另收录包内两份 JSON，校验 wheel 的 RECORD，并在同一轮检查重复构建的字节。以下命令从源码生成 wheel、源码包和 `BUILD.json`。
 
-本项目未添加新的LICENSE声明。当前仓库中的历史生物机制类比与性能目标是设计方向，完成程度以实际代码及可复现测试为准。没有正式模型收益试验，不应声称已普遍提升所有Agent。
+```powershell
+python -B verification/build_candidate_release.py --version 9.7.2+k049final --output ../human-eye-k049-build
+Get-FileHash ../human-eye-k049-build/human_eye_spatial_plugin-9.7.2+k049final-py3-none-any.whl -Algorithm SHA256
+```
 
-固定候选构建使用Python 3.11+的`verification/build_candidate_release.py --version <唯一发行号> --output <不存在的新目录>`，只收运行身份清单和两项包JSON，不扫描本机测试证据。工具不安装依赖或激活配置；wheel和源码ZIP的运行源字节保持，并校验RECORD及确定性重建。旧build_release/build_release_bundle保留为历史脚本，不作为当前M1候选入口。隔离目录复用依赖环境与全新依赖环境须分别报告；候选功能通过也不能覆盖历史成本失败或变成正式发布。
+期望 wheel 的 SHA-256 为 `308dd624cb4916b28bbe2decae87ac0a80d05dfad793da5afecebc65ac698964`。源码文件的原始换行也是身份的一部分。常规编辑安装用于开发；核对桌面二进制产物使用上述构建入口。[构建脚本](../verification/build_candidate_release.py)
+
+## 在实验完成后提交
+
+将发布所需的源码、兼容性测试和操作说明提交给主线。实验输入、私有模型和运行环境使用批次目录，文档通过固定提交引用已公开的验收报告。[工作目录](HUMAN_EYE_WORKSPACE.md)

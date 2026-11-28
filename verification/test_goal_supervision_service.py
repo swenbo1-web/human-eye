@@ -139,14 +139,18 @@ class GoalSupervisionServiceTests(unittest.TestCase):
         request = self.prepare()
         failed = []
         def crash(path, value, **kwargs):
-            result = _atomic_write(path, value, **kwargs)
             child = value.get('goal_segments', {}).get('records', {}).get('child-1')
-            if (child and child['status'] == 'running' and child['steps']
-                    and child['steps'][-1].get('state') == 'complete'
-                    and 'actual_translation_m' not in child['steps'][-1] and not failed):
+            if (child and child['steps'] and child['steps'][-1].get('state') == 'complete' and not failed):
+                # M5 commits motion with the completion. Keep checking recovery
+                # of an older partial completion as an explicit disk fixture.
+                legacy = copy.deepcopy(value)
+                old_child = legacy['goal_segments']['records']['child-1']
+                old_child.update(status='running', result=None, end_revision=old_child['base_revision'])
+                old_child['steps'][-1].pop('actual_translation_m', None)
+                _atomic_write(path, legacy, **kwargs)
                 failed.append(True)
                 raise OSError('owned simulated crash before independent motion accounting')
-            return result
+            return _atomic_write(path, value, **kwargs)
         with patch('human_eye_plugin.live_service._atomic_write', side_effect=crash):
             with self.assertRaises(OSError):self.execute(request)
         self.assertEqual(self.host.calls, 1)

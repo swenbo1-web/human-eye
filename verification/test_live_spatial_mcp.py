@@ -82,7 +82,7 @@ class LiveSpatialMCPTests(unittest.TestCase):
         tools = self.request("tools/list")["result"]["tools"]
         self.assertEqual([tool["name"] for tool in tools], [
             "human_eye_scene_observe", "human_eye_transform", "human_eye_connection_status",
-            "human_eye_clearance_segment"])
+            "human_eye_clearance_segment", "human_eye_arm_twist_observe"])
         for tool in tools:
             self.assertFalse(tool["inputSchema"]["additionalProperties"])
         action = tools[1]["inputSchema"]["properties"]["action"]

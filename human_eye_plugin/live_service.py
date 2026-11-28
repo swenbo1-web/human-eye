@@ -5,10 +5,12 @@ import base64
 from contextlib import contextmanager, ExitStack
 from contextvars import ContextVar
 import copy
+from fractions import Fraction
 from functools import wraps, partial
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import stat
@@ -21,7 +23,7 @@ from .agent_hooks import _atomic_write, _path, _read_object, _state_lock, StateL
 from .auto_router import _validated_scene, _ValidatedObservation, _trace_span, _trace_annotate as annotate
 from .host_runtime import GuardedHostRuntime, _bound_goal, _goal_fields, _capability_rejection
 from .scene_rendering import render_scene_canvas
-from .runtime_identity import IMPLEMENTATION_REVISION, runtime_identity, validate_expected_identity, check_source_drift
+from .runtime_identity import IMPLEMENTATION_REVISION, runtime_identity, validate_expected_identity, check_source_drift, check_task_source
 from .telemetry import best_effort_trace, current_trace, set_image_request, record_image_artifact
 from .result_contract import scoped_result
 from .query_policy import validate_query
@@ -37,6 +39,7 @@ _IMAGE_UNSPECIFIED = object()
 _REQUEST_BUDGET = ContextVar('human_eye_live_request_budget', default=None)
 _STATE_WRITE_BUFFER_LIMIT = 512 * 1024
 _STATE_COMPARE_STREAM_CHUNKS = 2048
+_REQUEST_BUDGET_SCOPE = 'cooperative_service_entry_through_mcp_prewrite_checkpoints'
 
 _DIAGNOSTIC_MANIFEST_LIMIT = 64
 _DIAGNOSTIC_MANIFEST_BYTES = 256 * 1024
@@ -71,8 +74,34 @@ def _state_json_matches(encoded, previous, *, checkpoint=None):
         return matches and offset == len(encoded)
 
 
+def _request_error_fields(error=None):
+    saved = getattr(error, '_human_eye_request_fields', None)
+    if saved is not None:
+        return copy.deepcopy(saved)
+    request = _REQUEST_BUDGET.get()
+    if request is None:
+        return {}
+    writes = request['state_writes']
+    submitted = request['submitted']
+    execution = request['execution'] or {
+        'executed': None if submitted else False, 'verified': False,
+        'execution_verified': False,
+        'execution_status': 'execution_uncertain' if submitted else 'not_executed',
+        'host_mutation_started': None if submitted else False}
+    return {**execution, 'allow_action': False, 'execution_authority': False,
+        'retry_authorized': False,
+        'connector_state_write_attempted': writes['attempts'] > 0,
+        'connector_state_write_committed': (True if writes['commits'] else
+            None if writes['unknowns'] else False),
+        'connector_state_write_status': writes['last_status'],
+        'connector_state_write_attempts': writes['attempts'],
+        'connector_state_write_commits': writes['commits'],
+        'connector_state_write_unknown': writes['unknowns'] > 0,
+        'state_write_scope': 'connector_state_json_not_audit_or_lock_sidecars'}
+
+
 class RequestBudgetError(ValueError):
-    """A precommit wait/checkpoint refusal, never a claim of hard cancellation."""
+    """A cooperative deadline refusal retaining completed or uncertain effects."""
 
     def __init__(self, kind, stage):
         if kind not in {'busy', 'expired'}:
@@ -81,17 +110,13 @@ class RequestBudgetError(ValueError):
         self.diagnostic = {
             'status': kind, 'code': self.code, 'reason_codes': [self.code],
             'budget_stage': stage,
-            'budget_scope': 'service_entry_to_precommit_checkpoints_not_hard_realtime',
-            'executed': False, 'verified': False, 'execution_verified': False,
-            'allow_action': False, 'execution_status': 'not_executed',
-            'host_mutation_started': False, 'connector_state_write_attempted': False,
-            'state_write_scope': 'connector_state_json_not_audit_or_lock_sidecars',
-            'execution_authority': False, 'retry_authorized': False,
+            'budget_scope': _REQUEST_BUDGET_SCOPE,
+            **_request_error_fields(),
         }
-        super().__init__('[' + self.code + '] Local request budget exhausted before commit at ' + stage)
+        super().__init__('[' + self.code + '] Local request budget exhausted at ' + stage)
 
     def to_error_fields(self):
-        return copy.deepcopy(self.diagnostic)
+        return {**copy.deepcopy(self.diagnostic), **_request_error_fields(self)}
 
 
 class StateBindingError(ValueError):
@@ -179,19 +204,22 @@ def _request(operation):
                     task_context=task_context,
                     include_image=None if operation == 'status' else
                         kwargs.get('include_image', operation not in {
-                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure'})) as trace:
+                            'clearance_segment', 'goal_supervision', 'supervised_clearance_segment', 'mesh_structure',
+                            'arm_twist_observe'})) as trace:
                 if self.request_budget_s is not None:
                     annotate(request_budget_s=self.request_budget_s,
-                        request_budget_scope='service_entry_to_precommit_checkpoints_not_hard_realtime')
+                        request_budget_scope=_REQUEST_BUDGET_SCOPE)
                 with span('service.' + operation, kind='cpu'):
                     result = method(self, *args, **kwargs)
                 if isinstance(result, dict):
-                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task'):
+                    self._remember_execution_result(result)
+                    if operation in {"observe", "preview", "transform"} and result.get('result_kind') not in ('structure_task','surface_task','task_query','surface_nearest','surface_scan','scene_directory','active_observation','source_region'):
                         pair = (args[1] if len(args) > 1 else kwargs.get('action')) if operation != 'observe' else kwargs
                         result = scoped_result(result, operation=operation, goal=kwargs.get('goal'), pair=pair)
                     route = result.get('routing') or {}
                     record_image_artifact('service_result', image_present=(route.get('image') is not None
-                        or bool(route.get('images'))))
+                        or bool(route.get('images'))
+                        or result.get('result_kind') in ('active_observation', 'source_region') and bool(result.get('frames'))))
                     for key in ('observation_id', 'scene_revision', 'cache_hit',
                                 'measurement_cache_hit', 'engine_invoked', 'requires_reobserve'):
                         if key in route:
@@ -207,13 +235,16 @@ def _request(operation):
                     if trace is not None:
                         try:
                             trace.set_outcome(result.get('status', 'completed'))
-                            result['request_trace'] = {'trace_id': trace.trace_id,
-                                'request_id': trace.request_id, 'model_usage': 'unknown',
-                                'delivery': 'service_result_constructed'}
-                            associated = trace_task_context(trace)
-                            if associated is not None:
-                                result['request_trace']['task_context'] = associated
-                                result['request_trace']['task_context_scope'] = 'caller_correlation_only_not_authority'
+                            if result.get('result_kind') in ('task_query', 'surface_nearest', 'surface_scan', 'scene_directory'):
+                                result['trace_id'] = trace.trace_id
+                            else:
+                                result['request_trace'] = {'trace_id': trace.trace_id,
+                                    'request_id': trace.request_id, 'model_usage': 'unknown',
+                                    'delivery': 'service_result_constructed'}
+                                associated = trace_task_context(trace)
+                                if associated is not None:
+                                    result['request_trace']['task_context'] = associated
+                                    result['request_trace']['task_context_scope'] = 'caller_correlation_only_not_authority'
                         except Exception:
                             pass
                 return result
@@ -311,6 +342,26 @@ class LiveSpatialService:
                 port=connection.get("port", 9876), timeout_s=connection.get("timeout_s", 10))
         self.host = host
         self._perception_cache = None
+        from .read_context import ReadContext
+        self._read_context = ReadContext()
+        self._read_generation = None
+        self._read_source_identity()
+
+    def _read_source_identity(self):
+        generation = (self._identity['source_sha256'], id(self.host), self.production_mode)
+        if generation != self._read_generation:
+            self._identity_check = validate_expected_identity(self.config.get('expected_identity'), self._identity)
+            if self._read_generation is not None:
+                self._read_context.reset(clear_measurements=True)
+            self._read_identity_result = self._check_identity(readonly_task=True)
+            self._read_generation = generation
+        return self._read_identity_result
+
+    def _bind_read_result(self, result, source_check):
+        result['binding']['runtime_source_sha256'] = self._identity['source_sha256']
+        if source_check is not None and source_check['status'] == 'loaded_generation':
+            result['binding'].update(source_status='loaded_generation', disk_status='disk_not_checked',
+                source_check_scope=source_check['source_check_scope'])
 
     @contextmanager
     def _request_budget(self):
@@ -318,28 +369,185 @@ class LiveSpatialService:
         if existing is not None and existing['service'] is self:
             yield existing
             return
-        value = None if self.request_budget_s is None else {
-            'service': self, 'deadline': time.monotonic() + self.request_budget_s,
-            'guard_active': True,
+        value = {
+            'service': self,
+            'deadline': None if self.request_budget_s is None else time.monotonic() + self.request_budget_s,
+            'guard_active': True, 'submitted': False, 'execution': None,
+            'state_writes': {'attempts': 0, 'commits': 0, 'unknowns': 0, 'last_status': 'not_attempted'},
         }
         token = _REQUEST_BUDGET.set(value)
         try:
             yield value
+        except Exception as exc:
+            exc._human_eye_request_fields = _request_error_fields()
+            raise
         finally:
             _REQUEST_BUDGET.reset(token)
 
-    def _remaining_request_budget(self):
+    def _remaining_request_budget(self, *, publication=False):
         value = _REQUEST_BUDGET.get()
-        if value is None or value['service'] is not self or not value['guard_active']:
+        if (value is None or value['service'] is not self or value['deadline'] is None
+                or not publication and not value['guard_active']):
             return None
         return value['deadline'] - time.monotonic()
 
-    def _check_request_budget(self, stage):
-        remaining = self._remaining_request_budget()
+    def observe_readview(self,session_id,request_id,*,target_id=None,expected_source_sha256=None):
+        """Opt-in SDK candidate. Not exposed through the default MCP/Hook."""
+        from PIL import Image
+        from .forward_deadline import counter_descriptor
+        started=time.perf_counter_ns();deadline=started+30_000_000_000
+        receipt={'request_id':request_id,'status':'unavailable','images_constructed':0,
+            'construction_status':'not_attempted',
+            'publishable_images':0,'consumer_delivery_confirmed':False,'error':None,
+            'started_ns':started,'finished_ns':None,'read_only':True,'execution_authority':False}
+        self._last_readview_receipt=receipt
+        raw=None
+        try:
+            if type(session_id) is not str or not session_id or type(request_id) is not str or not request_id:
+                raise ValueError('material_readview_request_invalid')
+            if _read_object(self.config_path)!=self.config:raise ValueError('material_readview_config_changed')
+            reject=self._identity_rejection()
+            if reject is not None:raise ValueError('material_readview_runtime_identity_changed')
+            policy=self.config.get('material_readview')
+            if type(policy) is not dict or policy.get('enabled') is not True:
+                raise ValueError('material_readview_not_enabled')
+            binding=policy.get('binding')
+            if type(binding) is not dict:raise ValueError('material_readview_binding_missing')
+            if target_id is not None and target_id!=binding['target_id']:
+                raise ValueError('material_readview_target_conflict')
+            if expected_source_sha256 is not None and expected_source_sha256!=binding['source_sha256']:
+                raise ValueError('material_readview_source_conflict')
+            with self.host.transaction():
+                header=self.host.material_readview_header(binding)
+                binding_digest=hashlib.sha256(json.dumps(binding,sort_keys=True,separators=(',', ':'),
+                    ensure_ascii=False,allow_nan=False).encode('utf8')).hexdigest()
+                if (type(header) is not dict or header.get('protocol')!='static-material-readview-v1'
+                        or header.get('binding')!=binding or header.get('binding_digest')!=binding_digest
+                        or header.get('clock')!=counter_descriptor()
+                        or type(header.get('appearance')) is not dict
+                        or type(header['appearance'].get('fingerprint')) is not str
+                        or len(header['appearance']['fingerprint'])!=64
+                        or any(c not in '0123456789abcdef' for c in header['appearance']['fingerprint'])
+                        or header.get('read_only') is not True or header.get('execution_authority') is not False):
+                    raise ValueError('material_readview_header_invalid')
+                receipt['images_constructed']=None
+                receipt['construction_status']='unknown_until_host_receipt'
+                raw=self.host.observe_material_readview(request_id,binding,header['appearance']['fingerprint'],deadline)
+            # A transport reply alone proves neither zero nor one construction.
+            # Validate the complete request-bound receipt before adopting costs,
+            # including for physical failures after a PNG was constructed.
+            receipt['construction_status']='unknown_invalid_host_receipt'
+            audit=raw.get('audit') if type(raw) is dict else None
+            checked_ns=time.perf_counter_ns()
+            def bounded_int(value):
+                return type(value) is int and 0<=value<(1<<63)
+            def hex64(value):
+                return type(value) is str and len(value)==64 and all(c in '0123456789abcdef' for c in value)
+            valid=(type(raw) is dict and type(audit) is dict
+                and {'protocol','request_id','binding','binding_digest','expected_appearance_fingerprint',
+                    'appearance','image','audit','read_only','execution_authority'}<=set(raw)
+                and {'protocol','request_id','clock','status','started_ns','finished_ns','deadline_ns',
+                    'render_attempted','image_constructed','image_returned_to_transport','restored','error',
+                    'attempts_spent','constructed_spent','returned_to_transport','read_only','execution_authority'}<=set(audit)
+                and raw.get('protocol')=='static-material-readview-v1' and raw.get('request_id')==request_id
+                and raw.get('binding')==binding and raw.get('binding_digest')==binding_digest
+                and raw.get('expected_appearance_fingerprint')==header['appearance']['fingerprint']
+                and raw.get('read_only') is True and raw.get('execution_authority') is False
+                and audit.get('protocol')=='static-material-readview-v1' and audit.get('request_id')==request_id
+                and audit.get('clock')==header['clock'] and audit.get('deadline_ns')==deadline
+                and all(bounded_int(audit.get(key)) for key in ('started_ns','finished_ns','deadline_ns',
+                    'attempts_spent','constructed_spent','returned_to_transport'))
+                and started<=audit.get('started_ns',-1)<=audit.get('finished_ns',-1)<=checked_ns
+                and audit.get('started_ns',deadline)<deadline
+                and all(type(audit.get(key)) is bool for key in
+                    ('render_attempted','image_constructed','image_returned_to_transport'))
+                and (audit.get('restored') is None or type(audit.get('restored')) is bool)
+                and audit.get('read_only') is True and audit.get('execution_authority') is False
+                and 0<=audit.get('returned_to_transport',-1)<=audit.get('constructed_spent',-1)
+                    <=audit.get('attempts_spent',-1)<=2)
+            if valid:
+                attempted=audit['render_attempted'];constructed=audit['image_constructed']
+                returned=audit['image_returned_to_transport'];appearance=raw.get('appearance')
+                valid=(audit['attempts_spent']>=int(attempted)
+                    and audit['constructed_spent']>=int(constructed)
+                    and audit['returned_to_transport']>=int(returned)
+                    and (not constructed or attempted)
+                    and (not returned or constructed and audit['restored'] is True)
+                    and (appearance is None or type(appearance) is dict and hex64(appearance.get('fingerprint')))
+                    and (not constructed or appearance==header['appearance'])
+                    and (not constructed or type(audit['restored']) is bool)
+                    and (not constructed or {'png_bytes','png_sha256'}<=set(audit))
+                    and (not constructed or bounded_int(audit.get('png_bytes')) and audit['png_bytes']>0)
+                    and (not constructed or audit.get('png_sha256') is None or hex64(audit['png_sha256']))
+                    and (constructed or audit.get('png_bytes',0)==0 and audit.get('png_sha256') is None))
+                if audit.get('status')=='ready':
+                    valid=valid and (raw.get('status') in (None,'ready') and attempted and constructed and returned
+                        and appearance==header['appearance'] and audit['restored'] is True
+                        and audit.get('error') is None and hex64(audit.get('png_sha256')))
+                elif audit.get('status')=='failed':
+                    error=audit.get('error')
+                    valid=valid and (raw.get('status')=='unavailable' and raw.get('image') is None and not returned
+                        and type(error) is dict and type(error.get('type')) is str and bool(error['type'])
+                        and type(error.get('message')) is str and len(error['message'])<=2000)
+                else:valid=False
+            if not valid:raise ValueError('material_readview_host_receipt_invalid')
+            receipt['host_audit']=copy.deepcopy(audit)
+            receipt['images_constructed']=int(audit['image_constructed'])
+            receipt['construction_status']='validated_host_receipt'
+            if audit['status']!='ready':
+                raise ValueError('material_readview_not_ready:'+str(audit['error']))
+            image=raw['image'];png=base64.b64decode(image['image_base64'],validate=True)
+            if len(png)>8*1024*1024 or hashlib.sha256(png).hexdigest()!=raw['audit']['png_sha256']:
+                raise ValueError('material_readview_png_binding')
+            with Image.open(io.BytesIO(png)) as picture:
+                if picture.format!='PNG' or picture.size!=(384,384):raise ValueError('material_readview_png_shape')
+                picture.verify()
+            if image.get('source')!='blender_cycles_material_readview':raise ValueError('material_readview_wrong_renderer')
+            if time.perf_counter_ns()>=deadline:raise ValueError('material_readview_deadline_expired_before_publish')
+            receipt.update(status='ready',publishable_images=1)
+            return {'status':'observed','source':'candidate_static_material_readview','session_id':session_id,
+                'runtime_identity':copy.deepcopy(self._identity),'header':header,'receipt':receipt,
+                'image':{'type':'image','mimeType':'image/png','data':image['image_base64']},
+                'view':{k:v for k,v in image.items() if k!='image_base64'},
+                'scope':'one_static_local_appearance_view_not_global_visibility_or_motion_certification',
+                'read_only':True,'execution_authority':False}
+        except BaseException as exc:
+            receipt['error']={'type':type(exc).__name__,'message':str(exc)[:2000]}
+            return {'status':'unavailable','receipt':receipt,'image':None,
+                'read_only':True,'execution_authority':False}
+        finally:
+            receipt['finished_ns']=time.perf_counter_ns()
+
+    def _check_request_budget(self, stage, *, publication=False):
+        remaining = self._remaining_request_budget(publication=publication)
         if remaining is not None and remaining <= 0:
             annotate(request_budget_status='expired', request_budget_stage=stage)
             raise RequestBudgetError('expired', stage)
         return remaining
+
+    @staticmethod
+    def request_error_fields(error=None):
+        return _request_error_fields(error)
+
+    def _remember_execution_result(self, result):
+        request = _REQUEST_BUDGET.get()
+        if request is None or request['service'] is not self:
+            return
+        if 'executed' not in result:
+            return
+        previous = request['execution']
+        if previous and (previous.get('executed') is None
+                or previous.get('executed') is True and result['executed'] is False):
+            return
+        request['execution'] = {key: result[key] for key in
+            ('executed', 'verified', 'execution_verified', 'execution_status', 'host_mutation_started',
+             'historical_receipt', 'replayed', 'current_scene_revalidated')
+            if key in result}
+        request['execution']['operation_status'] = result.get('status')
+        request['execution']['execution_outcome_scope'] = (
+            'historical_receipt' if result.get('historical_receipt') or result.get('replayed') else 'current_request')
+        request['execution'].setdefault('host_mutation_started',
+            False if not request['submitted'] else None if result['executed'] is None else bool(result['executed']))
 
     @contextmanager
     def _observation_scope(self):
@@ -424,6 +632,7 @@ class LiveSpatialService:
         value = _REQUEST_BUDGET.get()
         if value is not None and value['service'] is self:
             value['guard_active'] = False
+            value['submitted'] = True
             annotate(request_budget_enforcement='stopped_after_durable_inflight_commit')
 
     @contextmanager
@@ -470,37 +679,45 @@ class LiveSpatialService:
         return identity
 
     def _identity_rejection(self):
+        return self._check_identity()[0]
+
+    def _check_identity(self, *, readonly_task=False):
+        drift = None
         if not self._identity_check['compatible']:
             return {'status': 'implementation_mismatch', 'executed': False, 'verified': False,
                     'execution_verified': False, 'allow_action': False, 'routing': None,
                     'runtime_identity': self.describe_runtime(),
-                    'reason_codes': self._identity_check['reasons']}
+                    'reason_codes': self._identity_check['reasons']}, drift
         if self.production_mode:
             with span('runtime.source_check', kind='io'):
-                drift = check_source_drift()
+                drift = check_task_source() if readonly_task else check_source_drift()
             if not drift['compatible']:
                 return {'status': 'implementation_mismatch', 'executed': False,
                         'verified': False, 'execution_verified': False, 'allow_action': False,
                         'routing': None, 'runtime_identity': self.describe_runtime(),
-                        'source_check': drift, 'reason_codes': drift['reasons']}
+                        'source_check': drift, 'reason_codes': drift['reasons']}, drift
             # Blender executes a fixed helper loaded from project_root. That
             # root may differ from this Python package's import location.
             from .blender_mcp_host import BlenderMCPHost
             if isinstance(self.host, BlenderMCPHost):
                 expected = next(item['sha256'] for item in self._identity['source_files']
                                 if item['path'] == 'human_eye_plugin/blender_host.py')
+                expected_helper = next(item['sha256'] for item in self._identity['source_files']
+                                       if item['path'] == 'human_eye_plugin/scene_residency.py')
                 try:
                     with span('runtime.host_source_check', kind='io'):
                         actual = hashlib.sha256(self.host.source.read_bytes()).hexdigest()
                 except OSError:
                     actual = None
-                if actual != expected:
+                if (actual != expected
+                        or getattr(self.host, '_readonly_host_source_sha256', None) != expected
+                        or getattr(self.host, '_readonly_scene_residency_sha256', None) != expected_helper):
                     return {'status': 'implementation_mismatch', 'executed': False,
                             'verified': False, 'execution_verified': False,
                             'allow_action': False, 'routing': None,
                             'runtime_identity': self.describe_runtime(),
-                            'reason_codes': ['host_bridge_source_mismatch']}
-        return None
+                            'reason_codes': ['host_bridge_source_mismatch']}, drift
+        return None, drift
 
     def _matching_activation_fence(self, state_fingerprint):
         """Read bounded sibling backup metadata solely to explain a refusal.
@@ -697,8 +914,20 @@ class LiveSpatialService:
             # The existing ASCII encoding bounds both compact text length and
             # Unicode widening. Larger states retain the streaming writer.
             with span('state.persist.atomic_write', kind='io'):
-                _atomic_write(self.state_path, value,
-                              _buffered=len(encoded) <= _STATE_WRITE_BUFFER_LIMIT)
+                request = _REQUEST_BUDGET.get()
+                writes = request['state_writes'] if request is not None and request['service'] is self else None
+                receipt = {'status': 'unknown'}
+                if writes is not None:
+                    writes['attempts'] += 1
+                try:
+                    _atomic_write(self.state_path, value,
+                        _buffered=len(encoded) <= _STATE_WRITE_BUFFER_LIMIT, _commit_receipt=receipt)
+                    receipt['status'] = 'committed'
+                finally:
+                    if writes is not None:
+                        writes['last_status'] = receipt['status']
+                        writes['commits'] += receipt['status'] == 'committed'
+                        writes['unknowns'] += receipt['status'] == 'unknown'
 
     def record_event(self, event, **fields):
         """Minimal operational evidence; no user prompts, source code or mesh data."""
@@ -810,7 +1039,7 @@ class LiveSpatialService:
 
     @_request('observe')
     def observe(self, session_id, task_instruction="", focal_id=None, reference_id=None, *, include_image=True,
-                goal=None, query=None, task_context=None, scene_delta=None):
+                goal=None, query=None, task_context=None, scene_delta=None, _include_witness_triangles=False):
         if not isinstance(session_id, str) or not session_id:
             raise ValueError("session_id required")
         if not isinstance(task_instruction, str):
@@ -818,6 +1047,44 @@ class LiveSpatialService:
         if type(include_image) is not bool:
             raise ValueError("include_image must be boolean")
         query = validate_query(query)
+        if query['mode'] == 'source_region':
+            if (task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('source_region accepts region and reference selectors only in query')
+            return self._observe_source_region(session_id, query, include_image=include_image)
+        if query['mode'] == 'active_observation':
+            if (task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('active_observation accepts visual observation without instruction, pair, goal or scene_delta')
+            selector = query['objects'][0] if 'objects' in query else None
+            return self._observe_active_observation(session_id, include_image=include_image,
+                selector=selector, task_query=query.get('task_query'), region_task=query.get('region_task'))
+        if query['mode'] == 'directory':
+            if (include_image or task_instruction or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('directory requires include_image=false and no instruction, pair, goal or scene_delta')
+            return self._observe_directory(session_id)
+        if query['mode'] == 'surface_scan':
+            if (include_image or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('surface_scan requires text observation without pair selectors, goal or scene_delta')
+            return self._observe_surface_scan(session_id, query)
+        if query['mode'] == 'surface_nearest':
+            selector = query['objects'][0] if 'objects' in query else None
+            if selector is not None and focal_id is not None:
+                raise ValueError('surface_nearest accepts query.objects or focal_id, not both')
+            if (include_image or (selector is None and (type(focal_id) is not str or not focal_id.strip()
+                    or len(focal_id.encode('utf8')) > 256)) or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('surface_nearest requires one target, include_image=false and no reference, goal or scene_delta')
+            return self._observe_surface_nearest(session_id, focal_id, selector=selector)
+        if query['mode'] == 'task':
+            if (include_image or focal_id is not None or reference_id is not None
+                    or goal is not None or scene_delta is not None):
+                raise ValueError('task queries require include_image=false and selectors only in query.objects or query.target/query.candidates')
+            if _include_witness_triangles:
+                return self._observe_task(session_id, query, include_witness_triangles=True)
+            return self._observe_task(session_id, query)
         if query['mode']=='mesh_surface':
             if goal is not None or reference_id is not None or scene_delta is not None:raise ValueError('Surface reads do not accept pair goals or scene deltas')
             from .surface_task_service import observe
@@ -1003,6 +1270,901 @@ class LiveSpatialService:
             scene_revision=routing["scene_revision"], engine_invoked=routing["engine_invoked"])
         return result
 
+    @_request('arm_twist_observe')
+    def observe_arm_twist(self, session_id, selection, *, task_context=None):
+        """Read one explicit local arm selection without the action runtime."""
+        if type(session_id) is not str or not session_id.strip():
+            raise ValueError('session_id required')
+        if type(selection) is not dict:
+            raise ValueError('selection must be an object')
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id}
+        with self._read_context.lock, self._observation_scope():
+            rejected, _ = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            if self.production_mode:
+                from .blender_mcp_host import BlenderMCPHost
+                if isinstance(self.host, BlenderMCPHost):
+                    paths = {'human_eye_plugin/' + name + '.py' for name in
+                        ('rig_pose', 'arm_twist_source', 'arm_twist_expert', 'arm_twist_weights')}
+                    expected = {row['path']: row['sha256'] for row in self._identity['source_files']
+                                if row['path'] in paths}
+                    if getattr(self.host, '_readonly_arm_twist_sources_sha256', None) != expected:
+                        return {'status': 'implementation_mismatch', 'executed': False,
+                            'verified': False, 'execution_verified': False, 'allow_action': False,
+                            'runtime_identity': self.describe_runtime(),
+                            'reason_codes': ['host_bridge_source_mismatch']}
+            self._check_request_budget('before_arm_twist_read')
+            with span('host.arm_twist_observe', kind='host'):
+                result = self.host.observe_arm_twist(selection)
+            self._check_request_budget('after_arm_twist_read')
+            result['source']['runtime_source_sha256'] = self._identity['source_sha256']
+        self.record_event('arm_twist_observe', session_id=session_id, status=result['status'])
+        self._check_request_budget('before_arm_twist_result')
+        return result
+
+    def _observe_directory(self, session_id):
+        """Read a source-bound directory without establishing a full-scene baseline."""
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            capture = getattr(self.host, 'capture_directory', None)
+            if not callable(capture):
+                raise ValueError('directory_host_not_supported')
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                result = capture(deadline, 64 * 1024 * 1024)
+            self._check_request_budget('after_host_capture')
+            self._validate_directory(result)
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            directory_sha256=result['directory_sha256'], engine_invoked=False)
+        self._check_request_budget('before_directory_result')
+        return result
+
+    def _validate_directory(self, packet):
+        from .blender_host import _bounds_midpoint
+        core_keys = {'schema', 'result_kind', 'status', 'unit', 'coordinate_frame',
+                     'objects', 'coverage', 'binding', 'execution_authority'}
+        if (type(packet) is not dict or set(packet) != core_keys | {'directory_sha256', 'capture_state', 'cache_hit'}
+                or packet.get('schema') != 'human-eye-directory-v1'
+                or packet.get('result_kind') != 'scene_directory' or packet.get('status') != 'complete'
+                or packet.get('unit') != 'm' or packet.get('coordinate_frame') != 'world'
+                or packet.get('execution_authority') is not False or type(packet.get('cache_hit')) is not bool):
+            raise ValueError('directory_response_contract')
+        rows = packet['objects']
+        if type(rows) is not list or not 1 <= len(rows) <= 256:
+            raise ValueError('directory_object_coverage')
+        ids = []
+        for row in rows:
+            self._check_request_budget('directory_validate_object')
+            if (type(row) is not dict or set(row) != {'object_id', 'name', 'bbox_min', 'bbox_max', 'center'}
+                    or any(type(row.get(key)) is not str or not row[key] for key in ('object_id', 'name'))
+                    or len(row['object_id'].encode('utf8')) > 256):
+                raise ValueError('directory_object_contract')
+            vectors = [row[key] for key in ('bbox_min', 'bbox_max', 'center')]
+            if any(type(vector) is not list or len(vector) != 3
+                    or any(type(value) not in (int, float) or not math.isfinite(value) for value in vector)
+                    for vector in vectors):
+                raise ValueError('directory_bounds_contract')
+            if (any(a > b for a, b in zip(*vectors[:2]))
+                    or vectors[2] != [_bounds_midpoint(a, b) for a, b in zip(*vectors[:2])]):
+                raise ValueError('directory_bounds_contract')
+            ids.append(row['object_id'])
+        if (type(packet['coverage']) is not dict
+                or any(type(packet['coverage'].get(key)) is not int for key in ('mesh_objects', 'measured_objects'))
+                or len(set(ids)) != len(ids) or packet['coverage'] !=
+                {'status': 'complete', 'mesh_objects': len(rows), 'measured_objects': len(rows)}):
+            raise ValueError('directory_object_coverage')
+        binding = packet['binding']
+        expected_host_sha = next(item['sha256'] for item in self._identity['source_files']
+                                 if item['path'] == 'human_eye_plugin/blender_host.py')
+        if (type(binding) is not dict or set(binding) != {'host_source_sha256', 'host_identity', 'frame', 'subframe', 'scale_length'}
+                or binding['host_source_sha256'] != expected_host_sha or type(binding['frame']) is not int
+                or type(binding['subframe']) not in (int, float) or not math.isfinite(binding['subframe'])
+                or type(binding['scale_length']) not in (int, float)
+                or not math.isfinite(binding['scale_length']) or binding['scale_length'] <= 0):
+            raise ValueError('directory_source_binding')
+        identity = binding['host_identity']
+        if (type(identity) is not dict
+                or set(identity) != {'schema_version', 'document_epoch', 'object_instances', 'capture_scope'}
+                or identity['schema_version'] != '1.0' or identity['capture_scope'] != 'scene_directory'
+                or not _diagnostic_sha256(identity['document_epoch'])
+                or type(identity['object_instances']) is not dict or set(identity['object_instances']) != set(ids)
+                or any(type(value) is not str or not value for value in identity['object_instances'].values())
+                or len(set(identity['object_instances'].values())) != len(rows)):
+            raise ValueError('directory_source_binding')
+        state = packet['capture_state']
+        selection_key = hashlib.sha256(b'["directory"]').hexdigest()
+        if state is not None and (type(state) is not dict
+                or set(state) != {'instance_id', 'epoch', 'revision', 'selection_key'}
+                or type(state['instance_id']) is not str or not state['instance_id']
+                or any(type(state[key]) is not int or state[key] < 0 for key in ('epoch', 'revision'))
+                or state['selection_key'] != selection_key):
+            raise ValueError('directory_capture_state')
+        core = {key: packet[key] for key in core_keys}
+        digest = hashlib.sha256(json.dumps(core, sort_keys=True, separators=(',', ':'),
+            ensure_ascii=False, allow_nan=False).encode('utf8')).hexdigest()
+        if packet['directory_sha256'] != digest:
+            raise ValueError('directory_digest_mismatch')
+
+    def _prepare_observation_task_view(self, captured, query):
+        """Prepare complete task sources and any missing data before observation."""
+        from .read_context import capture_key
+        from .task_query import bind_objects
+
+        target = captured.get('observation_target')
+        directory = target['scene_directory'] if target is not None else captured['meshes']
+        identity = target['full_scene_identity'] if target is not None else captured['host_identity']
+        bound, bindings, pair_reason = bind_objects({'meshes': directory}, query['objects'])
+        required = {item['object_id'] for item in bound if item is not None}
+        meshes = {item['object_id']: item for item in captured['meshes']}
+        parent_indices = {item['object_id']: index for index, item in enumerate(captured['meshes'])}
+        missing = [item['object_id'] for item in directory if item['object_id'] in required - set(meshes)]
+        work = {'supplemental_capture_calls': 0, 'supplemental_objects': 0,
+                'supplement_validation_calls': 0, 'ordered_geometry_hash_calls': 0,
+                'geometry_alias_parse_calls': 0, 'geometry_alias_reuses': 0,
+                'additional_raster_attempts': 0}
+        if missing:
+            self._check_request_budget('before_observation_task_supplement')
+            capture_task = getattr(self.host, 'capture_task_scene', None)
+            if not callable(capture_task):
+                raise ValueError('active_observation_task_supplement_not_supported')
+            selectors = [{'id': oid} for oid in missing]
+            with span('host.capture_task_supplement', kind='host'):
+                work['supplemental_capture_calls'] += 1
+                supplement = capture_task(selectors)
+            self._check_request_budget('after_observation_task_supplement')
+            parent_state, extra_state = capture_key(captured), capture_key(supplement)
+            if parent_state is None or extra_state is None:
+                raise ValueError('active_observation_task_generation_unavailable')
+            if parent_state[:3] != extra_state[:3]:
+                raise ValueError('active_observation_task_generation_changed')
+            extra_identity = supplement.get('host_identity')
+            if type(extra_identity) is not dict or extra_identity.get('document_epoch') != identity['document_epoch']:
+                raise ValueError('active_observation_task_document_epoch_changed')
+            if (type(extra_identity.get('object_instances')) is not dict
+                    or any(extra_identity['object_instances'].get(oid) != identity['object_instances'][oid]
+                           for oid in missing)):
+                raise ValueError('active_observation_task_instance_changed')
+            if supplement.get('task_selection', {}).get('selectors') != selectors:
+                raise ValueError('active_observation_task_supplement_selection_mismatch')
+            _validated_scene(supplement, _task_capture=True, _annotate_scene=False)
+            work['supplement_validation_calls'] += 1
+            extra_meshes = {item['object_id']: item for item in supplement['meshes']}
+            if set(extra_meshes) != set(missing):
+                raise ValueError('active_observation_task_supplement_object_unavailable')
+            names = {item['object_id']: item['name'] for item in directory}
+            if any(item['name'] != names[oid] for oid, item in extra_meshes.items()):
+                raise ValueError('active_observation_task_object_changed')
+            meshes.update(extra_meshes)
+            work['supplemental_objects'] = len(extra_meshes)
+        selected, sources = [], []
+        for item in directory:
+            oid = item['object_id']
+            if oid not in required:
+                continue
+            mesh = meshes[oid]
+            selected.append(dict(mesh, mark_label='#M5%04d' % len(selected)))
+            ordered = {'vertices': mesh['vertices'], 'faces': mesh['faces']}
+            ordered_sha = hashlib.sha256(json.dumps(ordered, sort_keys=True, separators=(',', ':'),
+                ensure_ascii=True, allow_nan=False).encode('utf8')).hexdigest()
+            work['ordered_geometry_hash_calls'] += 1
+            object_index = parent_indices.get(oid)
+            count = len(mesh['faces'])
+            sources.append({'object_id': oid, 'instance_id': identity['object_instances'][oid],
+                'observation_object_index': object_index, 'geometry_id': None,
+                'source_triangle_count': count, 'source_triangle_index_ranges': [[0, count - 1]] if count else [],
+                'ordered_geometry_sha256': ordered_sha})
+        view = {'unit': 'm', 'coordinate_frame': 'world', 'source': captured['source'],
+            'capture_scope': 'observation_task_objects', 'capture_state': copy.deepcopy(captured.get('capture_state')),
+            'meshes': selected, 'execution_authority': False,
+            'host_identity': {'schema_version': '1.0', 'document_epoch': identity['document_epoch'],
+                'capture_scope': 'observation_task_objects',
+                'object_instances': {item['object_id']: identity['object_instances'][item['object_id']] for item in selected}},
+            'task_selection': {'selectors': query['objects'], 'bindings': bindings,
+                'pair_reason': pair_reason, 'candidate_count': len(directory)}}
+        work['reused_observation_objects'] = len(selected) - work['supplemental_objects']
+        return view, sources, work
+
+    def _observation_task_view(self, view, sources, work, query, parent_binding, geometry_ids):
+        """Finalize one derived selection with IDs from the same cached observation."""
+        from .active_observation import fingerprint
+
+        objects = parent_binding['objects']
+        if len(geometry_ids) != len(objects):
+            raise ValueError('active_observation_task_geometry_mapping_mismatch')
+        for source in sources:
+            index = source['observation_object_index']
+            if index is None:
+                continue
+            host = objects[index]
+            if host['host_id'] != source['object_id'] or host['instance_id'] != source['instance_id']:
+                raise ValueError('active_observation_task_geometry_mapping_mismatch')
+            source['geometry_id'] = geometry_ids[index]
+            work['geometry_alias_reuses'] += 1
+        selection_key = fingerprint(['observation_task', parent_binding['source_binding_sha256'], query, sources])
+        if view['capture_state'] is not None:
+            view['capture_state']['selection_key'] = selection_key
+        view['revision'] = 'observation-task:' + selection_key
+        return view
+
+    def _matching_source_region_producer(self, value, frame):
+        """Find the current producer while the read lock is held."""
+        region_ref = value['region_ref']
+        registry = self._read_context.current_prepared('source_regions')
+        if registry is None:
+            return None
+        prepared = registry['regions'].get(region_ref['region_id'])
+        if prepared is None or prepared.region_ref != region_ref or prepared.observation is None:
+            return None
+        original = prepared.observation
+        if (original['region_ref'] != region_ref or original['frames'] != [frame]
+                or original['facts']['visibility'] != value['facts']['visibility']):
+            return None
+        # The service adds runtime source status to the producer's binding.
+        binding = value['binding']
+        if any(binding.get(key) != original_value for key, original_value in prepared.binding.items()):
+            return None
+        region, original_region = value['facts']['region'], original['facts']['region']
+        if any(region[key] != original_region[key] for key in ('host_id', 'instance_id', 'object_name')):
+            return None
+        return prepared
+
+    def _source_region_sample_path(self, value, frame):
+        """Confirm the published sample and PNG against the current producer."""
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return None
+        try:
+            prepared = self._matching_source_region_producer(value, frame)
+            if prepared is None:
+                return None
+            original = prepared.observation
+            visibility = original['facts']['visibility']
+            view = frame['view_name']
+            path = original['frames'][0]['image_path']
+            if 'sampled_pixel' not in visibility:
+                return path if view == 'SCENE' else None
+            pixel = visibility['sampled_pixel']
+            if type(pixel) is not dict or pixel.keys() != {'row', 'column', 'source_triangle_index'}:
+                return None
+            row, column, face = (pixel[key] for key in ('row', 'column', 'source_triangle_index'))
+            binding = prepared.binding
+            scope = binding['image_scope']
+            if (any(type(index) is not int or index < 0 for index in (row, column, face))
+                    or face not in prepared.source_triangle_indices
+                    or face not in visibility['visible_source_triangle_indices']
+                    or any(visibility[key] != frame[key] for key in ('view_name', 'image_ref', 'frame_identity'))
+                    or view not in binding['camera_policy']['order']
+                    or visibility['image_scope'] != frame['image_scope'] or frame['image_scope'] != scope
+                    or scope['participation_mask'][prepared.object_index] is not True
+                    or value['task_result']['binding'] != value['binding']):
+                return None
+            # The producer already validated these resident arrays with the
+            # original PNG. Check the cell without another NPZ read or decode.
+            stored = prepared.images._frames.get(view)
+            if stored is None or frame != {key: item for key, item in stored.items() if key != 'buffers'}:
+                return None
+            buffers = stored['buffers']
+            owners = buffers['owners']
+            offset = prepared.images._patch_mapping['arrays']['face_patch_offsets'][prepared.object_index]
+            if (row >= owners.shape[0] or column >= owners.shape[1]
+                    or owners[row, column] != prepared.object_index
+                    or buffers['triangle_ids'][row, column] != offset + face):
+                return None
+            return path
+        except (AttributeError, KeyError, IndexError, TypeError, ValueError):
+            return None
+        finally:
+            context.lock.release()
+
+    def _source_region_blocker_rows(self, value, frame):
+        """Use retained classifications and bound each address by its own mesh."""
+        from .read_context import capture_key
+
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return []
+        try:
+            prepared = self._matching_source_region_producer(value, frame)
+            if prepared is None or value['task_result']['binding'] != value['binding']:
+                return []
+            original = prepared.observation
+            capture = capture_key(prepared.binding)
+            generation = prepared.region_ref['capture_generation']
+            if (capture is None or capture != capture_key(original['binding']) or generation is None
+                    or capture[:3] != (generation['instance_id'], generation['epoch'], generation['revision'])):
+                return []
+            constructed = original.get('constructed_frames')
+            if (type(constructed) is not list or constructed != value.get('constructed_frames')
+                    or constructed.count(frame) != 1):
+                return []
+            attempts = original['view_attempts']
+            if (attempts != value['view_attempts']
+                    or [attempt['view_name'] for attempt in attempts] != prepared.binding['camera_policy']['order']):
+                return []
+            mask = prepared.binding['image_scope']['participation_mask']
+            rows = []
+            for attempt in attempts:
+                blocker = attempt.get('first_blocker')
+                if (attempt['status'] != 'positive_area_occlusion' or 'first_tie' in attempt
+                        or not isinstance(blocker, dict)):
+                    continue
+                index, face = blocker.get('object_index'), blocker.get('source_triangle_index')
+                area = blocker.get('overlap_area_screen_exact')
+                if (type(index) is not int or not 0 <= index < len(prepared.meshes) or mask[index] is not True
+                        or type(face) is not int or not 0 <= face < len(prepared.meshes[index].faces)
+                        or index == prepared.object_index and face in prepared.source_triangle_indices
+                        or type(area) is not str):
+                    continue
+                try:
+                    if Fraction(area) > 0:
+                        rows.append([attempt['view_name'], index, face])
+                except (ValueError, ZeroDivisionError):
+                    continue
+            return rows
+        except (KeyError, IndexError, TypeError, ValueError):
+            return []
+        finally:
+            context.lock.release()
+
+    def _measure_selective_source_region(self, session_id, query, *, include_image=False):
+        """Exercise the isolated no-image closed-box capture and exact measurement."""
+        from .query_policy import validate_source_region_query
+        from .source_region import measure_selective_region
+
+        if include_image is not False:
+            raise ValueError('selective_source_region_requires_no_image')
+        query = validate_source_region_query(query)
+        selection = query.get('region')
+        if selection is None or 'world_box_m' not in selection:
+            raise ValueError('selective_source_region_requires_world_box')
+        target, reference, box = selection['object'], query['reference'], selection['world_box_m']
+        if target == reference:
+            raise ValueError('selective_source_region_distinct_objects_required')
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        capture_pair = getattr(self.host, 'capture_source_region_pair', None)
+        if not callable(capture_pair):
+            raise ValueError('selective_source_region_host_unavailable')
+
+        started = time.perf_counter_ns()
+        with self._request_budget(), self._read_context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            remaining = self._check_request_budget('before_selective_source_region_capture')
+            deadline_ns = time.perf_counter_ns() + int((30 if remaining is None else remaining) * 1e9)
+            def checkpoint(stage):
+                self._check_request_budget(stage)
+                if time.perf_counter_ns() >= deadline_ns:
+                    raise RequestBudgetError('expired', stage)
+
+            capture_started = time.perf_counter_ns()
+            with span('host.capture_source_region_pair', kind='host'):
+                capture = capture_pair(target, reference, box, deadline_ns, 64 * 1024 * 1024)
+            capture_closed = time.perf_counter_ns()
+            checkpoint('after_selective_source_region_capture')
+            result = measure_selective_region(capture, target, reference, box,
+                getattr(self.host, '_readonly_host_source_sha256', None), checkpoint)
+            result['session_id'] = session_id
+            self._bind_read_result(result, source_check)
+            result['stages']['host_read'] = {'started_ns': capture_started, 'closed_ns': capture_closed,
+                                            'elapsed_ns': capture_closed - capture_started}
+            checkpoint('before_selective_source_region_result')
+            closed = time.perf_counter_ns()
+            result['stages']['service_total'] = {'started_ns': started, 'closed_ns': closed,
+                                                 'elapsed_ns': closed - started}
+            return result
+
+    def _observe_source_region(self, session_id, query, *, include_image):
+        from .active_observation_host import source_binding
+        from .read_context import query_key
+        from .scene_cache import _validate_scene
+        from .source_region import (prepare_region, validate_region_ref, observe_region,
+                                    measure_region, ordered_geometry_identity, display_state,
+                                    resolve_region_selection)
+
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        started = time.perf_counter_ns()
+        construction = {'attempts': 0}
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_source_region_capture')
+            capture_started = time.perf_counter_ns()
+            with span('host.capture', kind='host'):
+                captured = self.host.capture_scene()
+            capture_closed = time.perf_counter_ns()
+            self._check_request_budget('after_source_region_capture')
+            binding = source_binding(captured)
+            if binding['capture_scope'] != 'complete_scene_meshes':
+                raise ValueError('source_region_complete_scene_required')
+            validation_started = time.perf_counter_ns()
+            ordered_geometry_sha256 = ordered_geometry_identity(captured, binding)
+            self._check_request_budget('after_source_region_geometry_identity')
+            if 'region_ref' in query:
+                validate_region_ref(captured, query['region_ref'], self._check_request_budget, _binding=binding,
+                    _ordered_geometry_sha256=ordered_geometry_sha256)
+            validation_closed = time.perf_counter_ns()
+            display_started = time.perf_counter_ns()
+            display = display_state(captured, binding)
+            self._check_request_budget('after_source_region_display_validation')
+            display_closed = time.perf_counter_ns()
+            context.activate(captured, 'source_region',
+                {'binding': binding, 'ordered_geometry_sha256': ordered_geometry_sha256,
+                 'display_identity': display['identity'], 'display_status': display['status']})
+            registry, _ = context.prepared('source_regions', lambda: {'aliases': {}, 'regions': {}})
+            selection = query.get('region')
+            # Closed boxes can describe the same faces in arbitrarily many ways.
+            # Keep only the existing bounded aliases for explicit rows.
+            alias = query_key(selection) if selection is not None and 'source_triangle_indices' in selection else None
+            region_id = (registry['aliases'].get(alias) if selection is not None
+                         else query['region_ref']['region_id'])
+            prepared = registry['regions'].get(region_id)
+            prepare_started = time.perf_counter_ns()
+            prepare_query = query
+            selection_stage = scene_validation_stage = None
+            normalized_from = None
+            if prepared is None and selection is not None:
+                peer = next(iter(registry['regions'].values()), None)
+                reference, selection_stage, scene_validation_stage = resolve_region_selection(
+                    captured, selection, binding, ordered_geometry_sha256, self._check_request_budget,
+                    normalized_from=peer)
+                region_id = reference['region_id']
+                prepared = registry['regions'].get(region_id)
+                if prepared is not None and scene_validation_stage is None:
+                    # A newly resolved index alias does not vouch for fields such as edges.
+                    _validate_scene(captured)
+                    self._check_request_budget('after_source_region_alias_validation')
+                prepare_query = {'region_ref': reference}
+            prepare_hit = prepared is not None
+            if prepared is None:
+                # activate() already bound this registry to the current ordered geometry and display.
+                normalized_from = next(iter(registry['regions'].values()), None)
+                prepared = prepare_region(captured, prepare_query, self._check_request_budget, _binding=binding,
+                    _validated_region_ref='region_ref' in prepare_query,
+                    _ordered_geometry_sha256=ordered_geometry_sha256,
+                    _normalized_from=normalized_from, _scene_validation_stage=scene_validation_stage)
+                region_id = prepared.region_ref['region_id']
+                registry['regions'][region_id] = prepared
+                if len(registry['regions']) > 8:
+                    oldest = next(iter(registry['regions']))
+                    del registry['regions'][oldest]
+                    registry['aliases'] = {key: value for key, value in registry['aliases'].items() if value != oldest}
+            if alias is not None:
+                registry['aliases'][alias] = region_id
+            prepare_closed = time.perf_counter_ns()
+
+            def before_construction(view_name):
+                self._check_request_budget('before_source_region_raster')
+                construction['attempts'] += 1
+                self.record_event('source_region_render_attempt', session_id=session_id,
+                    view_name=view_name, attempt=construction['attempts'], region_id=region_id,
+                    binding_digest=binding['source_binding_sha256'])
+
+            try:
+                directory = self.state_path.parent / (self.state_path.name + '.source_region') / uuid.uuid4().hex
+                result = observe_region(prepared, directory, include_image=include_image,
+                    construction_callback=before_construction, check_budget=self._check_request_budget)
+                measurement_work = {}
+                measurement_started = time.perf_counter_ns()
+                measurement_key = query_key({'mode': 'source_region', 'region_id': region_id,
+                    'reference': query['reference'], 'requested_facts': query['requested_facts']})
+                task, task_hit = context.result(measurement_key, lambda: measure_region(
+                    prepared, query['reference'], context.scene_cache,
+                    self._check_request_budget, measurement_work))
+                measurement_closed = time.perf_counter_ns()
+            except Exception as error:
+                self.record_event('source_region_failed', session_id=session_id,
+                    task_work=getattr(error, 'source_region_work', {'raster_attempts': construction['attempts']}),
+                    error_type=type(error).__name__)
+                raise
+            result['session_id'] = session_id
+            result['task_result'] = task
+            self._bind_read_result(result, source_check)
+            self._bind_read_result(task, source_check)
+            result.setdefault('work', {}).update(capture_calls=1, prepare_cache_hit=prepare_hit,
+                prepare_calls=0 if prepare_hit else 1, ordered_geometry_identity_calls=1,
+                display_source_validation_calls=1 + int(not prepare_hit),
+                capture_source_validation_calls=1, region_ref_validation_calls=int('region_ref' in query),
+                geometry_normalization_calls=int(not prepare_hit and normalized_from is None),
+                geometry_normalization_shared_hit=normalized_from is not None,
+                region_array_preparation_calls=int(not prepare_hit), camera_preparation_calls=int(not prepare_hit))
+            if task_hit:
+                measurement_work = {key: 0 for key in measurement_work}
+            measurement_work['result_cache_hit'] = task_hit
+            result['work']['task_query'] = measurement_work
+            result.setdefault('stages', {}).update(
+                host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
+                              'elapsed_ns': capture_closed - capture_started},
+                region_ref_validation={'started_ns': validation_started, 'closed_ns': validation_closed,
+                                       'elapsed_ns': validation_closed - validation_started},
+                display_validation={'started_ns': display_started, 'closed_ns': display_closed,
+                                    'elapsed_ns': display_closed - display_started},
+                region_prepare_lookup={'started_ns': prepare_started, 'closed_ns': prepare_closed,
+                                       'elapsed_ns': prepare_closed - prepare_started},
+                task_measurement={'started_ns': measurement_started, 'closed_ns': measurement_closed,
+                                  'elapsed_ns': measurement_closed - measurement_started})
+            if not prepare_hit:
+                result['stages']['region_preparation'] = copy.deepcopy(prepared.preparation_stages)
+            if selection_stage is not None:
+                result['work']['world_box_selection_calls'] = 1
+                result['stages']['world_box_selection'] = selection_stage
+                result['stages']['world_box_scene_validation'] = scene_validation_stage
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            observation_mode='source_region', task_work=result['work'])
+        self._check_request_budget('before_source_region_result')
+        closed = time.perf_counter_ns()
+        result['stages']['service_total'] = {'started_ns': started, 'closed_ns': closed,
+                                             'elapsed_ns': closed - started}
+        return result
+
+    def _region_task_observation_producer(self, binding, conditions):
+        """Return the original retained observation while its capture is current."""
+        from .read_context import query_key
+
+        context = self._read_context
+        if not context.lock.acquire(blocking=False):
+            return None
+        try:
+            key = query_key({'mode': 'active_observation', 'include_image': True, 'region_task': conditions})
+            retained = context.retained_result(binding, 'active_observation', key)
+            if retained is None or not self.state_path.is_absolute():
+                return None
+            original = retained[0]
+            if any(original['binding'][key] != binding[key] for key in
+                   ('binding_sha256', 'source_binding_sha256', 'document_epoch', 'scene_revision')):
+                return None
+            return original, self.state_path.with_name(self.state_path.name + '.active_observation')
+        finally:
+            context.lock.release()
+
+    def _observe_active_observation(self, session_id, *, include_image, selector=None, task_query=None, region_task=None):
+        from .active_observation_host import source_binding, observe_capture
+        from .read_context import capture_key, query_key
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        started = time.perf_counter_ns()
+        construction = {'attempts': 0}
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_active_observation_capture')
+            capture_started = time.perf_counter_ns()
+            with span('host.capture', kind='host'):
+                if selector is None:
+                    captured = self.host.capture_scene()
+                else:
+                    capture_target = getattr(self.host, 'capture_active_observation', None)
+                    if not callable(capture_target):
+                        raise ValueError('active_observation_target_host_not_supported')
+                    remaining = self._check_request_budget('before_active_observation_target_capture')
+                    timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+                    deadline = time.perf_counter_ns() + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+                    captured = capture_target(selector, deadline, 64 * 1024 * 1024)
+            capture_closed = time.perf_counter_ns()
+            self._check_request_budget('after_active_observation_capture')
+            binding = source_binding(captured)
+            if selector is None and 'observation_target' in binding:
+                raise ValueError('active_observation_complete_scene_required')
+            if selector is not None and binding.get('observation_target', {}).get('selector') != selector:
+                raise ValueError('active_observation_target_request_binding_mismatch')
+            task_view = None
+            if task_query is not None:
+                task_prepare_started = time.perf_counter_ns()
+                task_view, task_sources, task_work = self._prepare_observation_task_view(captured, task_query)
+                task_prepare_closed = time.perf_counter_ns()
+            context.activate(captured, 'active_observation', binding)
+            binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True,
+                separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+
+            def before_construction(view_name):
+                self._check_request_budget('before_active_observation_raster')
+                construction['attempts'] += 1
+                self.record_event('active_observation_render_attempt', session_id=session_id,
+                    view_name=view_name, attempt=construction['attempts'], binding_digest=binding_digest)
+
+            def compute():
+                directory = self.state_path.parent / (self.state_path.name + '.active_observation') / uuid.uuid4().hex
+                geometry_ids = []
+                region_options = {} if region_task is None else {'region_task': region_task}
+                if region_task is not None and capture_key(captured) is not None:
+                    region_options['_prepare_global_index'] = partial(context.prepared, 'region_task_global_index')
+                observed = observe_capture(captured, directory, include_image=include_image,
+                    construction_callback=before_construction, check_budget=self._check_request_budget,
+                    _geometry_ids_callback=geometry_ids.append, **region_options)
+                return observed, geometry_ids[0]
+
+            lookup_started = time.perf_counter_ns()
+            try:
+                request_key = {'mode': 'active_observation', 'include_image': include_image}
+                if selector is not None:
+                    request_key['objects'] = [selector]
+                if region_task is not None:
+                    request_key['region_task'] = region_task
+                (result, geometry_ids), hit = context.result(query_key(request_key), compute)
+            except Exception as error:
+                self.record_event('active_observation_failed', session_id=session_id,
+                    task_work=getattr(error, 'active_observation_work',
+                        {'raster_attempts': construction['attempts']}),
+                    stages=getattr(error, 'active_observation_stages', {}),
+                    error_type=type(error).__name__)
+                raise
+            lookup_closed = time.perf_counter_ns()
+            generation_work = copy.deepcopy(result.get('work', {}))
+            result['generation_work'] = generation_work
+            result['generation_stages'] = copy.deepcopy(result.get('stages', {}))
+            if hit:
+                result['work'] = {key: 0 for key in generation_work}
+                result['stages'] = {}
+            result.setdefault('work', {}).update(capture_calls=1,
+                result_cache_hit=hit, frame_reuses=len(result.get('frames', [])) if hit else 0)
+            if selector is not None:
+                result['work']['target_acquisition'] = copy.deepcopy(captured['observation_target']['work'])
+            result['stages'].update(
+                host_capture={'started_ns': capture_started, 'closed_ns': capture_closed,
+                              'elapsed_ns': capture_closed - capture_started},
+                result_lookup={'started_ns': lookup_started, 'closed_ns': lookup_closed,
+                               'elapsed_ns': lookup_closed - lookup_started})
+            result['session_id'] = session_id
+            self._bind_read_result(result, source_check)
+            if region_task is not None:
+                for scope in result['scopes']:
+                    self._bind_read_result({'binding': scope['binding']}, source_check)
+            if task_view is not None:
+                from .task_query import task_result
+                task_finalize_started = time.perf_counter_ns()
+                if result['binding']['source_binding_sha256'] != binding['source_binding_sha256']:
+                    raise ValueError('active_observation_task_source_binding_mismatch')
+                task_view = self._observation_task_view(task_view, task_sources, task_work,
+                    task_query, result['binding'], geometry_ids)
+                task_finalize_closed = time.perf_counter_ns()
+                task_started = time.perf_counter_ns()
+                context.activate(task_view, 'observation_task', {
+                    'parent_binding_sha256': result['binding']['binding_sha256'], 'task_query': task_query})
+                task_work.update(normalization_calls=0, exact_pair_count=0,
+                    surface_pair_count=0, closed_solid_pair_count=0)
+                def normalize_task():
+                    task_work['normalization_calls'] += 1
+                    return _validated_scene(task_view, _observation_task_capture=True, _annotate_scene=False)
+                scene, meshes, task_fingerprint = context.normalized(normalize_task)
+                task_work.update(normalized_objects=len(meshes),
+                    normalized_vertices=sum(len(mesh.vertices) for mesh in meshes),
+                    normalized_triangles=sum(len(mesh.faces) for mesh in meshes),
+                    normalized_array_payload_bytes=sum(mesh.vertices.nbytes + mesh.faces.nbytes + mesh.edges.nbytes for mesh in meshes))
+                task, task_hit = context.result(query_key(task_query), lambda: task_result(
+                    scene, meshes, task_fingerprint, task_query, context.scene_cache,
+                    self._check_request_budget, diagnostics=task_work))
+                task_work['result_cache_hit'] = task_hit
+                task['binding']['observation_source'] = {
+                    'schema': 'active-observation-task-source-v1', 'measurement_scope': 'whole_objects',
+                    'capture_scope': 'observation_task_objects',
+                    'parent_binding_sha256': result['binding']['binding_sha256'],
+                    'parent_source_binding_sha256': result['binding']['source_binding_sha256'],
+                    'parent_capture_scope': result['binding']['capture_scope'],
+                    'capture_state': copy.deepcopy(task_view['capture_state']), 'objects': task_sources}
+                self._bind_read_result(task, source_check)
+                result['task_result'] = task
+                result['work']['task_query'] = task_work
+                task_closed = time.perf_counter_ns()
+                result['stages'].update(
+                    task_source_prepare={'started_ns': task_prepare_started, 'closed_ns': task_prepare_closed,
+                        'elapsed_ns': task_prepare_closed - task_prepare_started},
+                    task_source_finalize={'started_ns': task_finalize_started, 'closed_ns': task_finalize_closed,
+                        'elapsed_ns': task_finalize_closed - task_finalize_started},
+                    task_measurement={'started_ns': task_started, 'closed_ns': task_closed,
+                        'elapsed_ns': task_closed - task_started})
+        event_fields = {}
+        if selector is not None:
+            event_fields['target_view_classifications'] = result['target_view_classifications']
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            observation_mode='active_observation', task_work=result['work'], **event_fields)
+        self._check_request_budget('before_active_observation_result')
+        result['stages']['service_total'] = {'started_ns': started,
+            'closed_ns': time.perf_counter_ns()}
+        result['stages']['service_total']['elapsed_ns'] = result['stages']['service_total']['closed_ns'] - started
+        return result
+
+    def _observe_surface_scan(self, session_id, query):
+        """Scan one source-bound scene through the existing read-only lifecycle."""
+        from .read_context import query_key
+        from .surface_scan import _packet, surface_scan_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            capture = getattr(self.host, 'capture_surface_scan', None)
+            if not callable(capture):
+                raise ValueError('surface_scan_host_not_supported')
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                captured = capture(query['threshold_m'], deadline, 64 * 1024 * 1024)
+            self._check_request_budget('after_host_capture')
+            if (type(captured) is not dict or captured.get('threshold_m') != query['threshold_m']):
+                raise ValueError('surface_scan_threshold_binding_mismatch')
+            with span('surface_scan.validate_packet'):
+                validated = _packet(captured, self._check_request_budget, self._identity)
+            dependency_reader = getattr(self.host, 'surface_scan_dependencies', None)
+            dependencies = dependency_reader(captured) if callable(dependency_reader) else None
+            selection = {'query': query, 'binding': captured['binding'],
+                         'scope_issues': captured['scope_issues']}
+            context.activate(captured.get('capture'), 'surface_scan', selection)
+            work = {'kernel_calls': 0, 'pair_calls': 0, 'cache_hits': 0, 'continuation_hits': 0,
+                    'normalization_requests': 0, 'normalizations': 0,
+                    'acquisition_work': copy.deepcopy(captured.get('work', {})),
+                    'measurement_cache_max_measurements': context.scene_cache.max_measurements,
+                    'measurement_cache_before': context.scene_cache.stats()}
+            def normalize_capture():
+                work['normalizations'] += 1
+                return _validated_scene(captured.get('capture'),
+                    _surface_scan_capture=True, _annotate_scene=False)
+            def normalize():
+                work['normalization_requests'] += 1
+                return context.normalized(normalize_capture)
+            key = query_key(query)
+            progress = context.surface_scan_progress(key)
+            with span('observation.surface_scan'):
+                result, hit = context.result(key, lambda: surface_scan_result(
+                    captured, context.scene_cache, self._check_request_budget,
+                    diagnostics=work, _normalize=normalize, _identity=self._identity,
+                    _progress=progress, _validated_packet=validated,
+                    _dependencies=dependencies), cache_partial=False)
+                work['result_cache_hit'] = hit
+                if hit:
+                    work['dispositions'] = copy.deepcopy(progress.get('last_dispositions', []))
+                    work.update(directory_objects=len(captured['coverage']),
+                        bound_pairs=len(captured['pairs']),
+                        candidate_pairs=sum(row['disposition'] == 'retained' for row in captured['pairs']),
+                        endpoint_union=len(captured['capture']['meshes']))
+                work['measurement_cache_after'] = context.scene_cache.stats()
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=result['binding']['scene_revision'],
+            engine_invoked=work['kernel_calls'] > 0, task_work=work)
+        self._check_request_budget('before_surface_scan_result')
+        return result
+
+    def _observe_surface_nearest(self, session_id, focal_id, *, selector=None):
+        """One current candidate capture through the existing read-only boundary."""
+        from .task_query import surface_nearest_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            # Sample the destination clock first so conversion cannot extend an
+            # earlier parent deadline. The connector also caps its own timeout.
+            now = time.perf_counter_ns()
+            remaining = self._check_request_budget('before_host_capture')
+            timeout = getattr(self.host, 'timeout_s', getattr(self.host, 'timeout', 10.))
+            deadline = now + int((timeout if remaining is None else min(timeout, remaining)) * 1e9)
+            with span('host.capture', kind='host'):
+                if selector is None:
+                    captured = self.host.capture_nearest_candidates(focal_id, deadline, 64 * 1024 * 1024)
+                else:
+                    captured = self.host.capture_nearest_candidates(None, deadline, 64 * 1024 * 1024, selector=selector)
+            self._check_request_budget('after_host_capture')
+            if selector is not None:
+                field = 'object_id' if 'id' in selector else 'name'
+                selected = selector.get('id', selector.get('name'))
+                capture = captured.get('capture')
+                if type(capture) is not dict or type(capture.get('meshes')) is not list:
+                    raise ValueError('surface_nearest capture selector mismatch')
+                matches = [item.get('object_id') for item in capture['meshes'] if type(item) is dict and item.get(field) == selected]
+                if (len(matches) != 1 or type(matches[0]) is not str or not matches[0]
+                        or len(matches[0].encode('utf8')) > 256 or captured.get('focal_id') != matches[0]):
+                    raise ValueError('surface_nearest capture selector mismatch')
+            elif captured.get('focal_id') != focal_id:
+                raise ValueError('surface_nearest capture focal_id mismatch')
+            selection = {'focal_id': focal_id, 'selector': selector}
+            context.activate(captured.get('capture'), 'surface_nearest', selection)
+            def normalize():
+                return context.normalized(lambda: _validated_scene(captured.get('capture'),
+                    _surface_nearest_capture=True, _annotate_scene=False))
+            with span('observation.surface_nearest'):
+                work = {'kernel_calls': 0}
+                result, hit = context.result('surface_nearest', lambda: surface_nearest_result(
+                    captured, context.scene_cache, self._check_request_budget, diagnostics=work,
+                    _normalize=normalize, _identity=self._identity))
+                work['result_cache_hit'] = hit
+            names = {item['object_id']: item['name'] for item in captured['capture']['meshes']}
+            def named(oid):
+                return {'id': oid, 'name': names[oid]}
+            result['focal'] = named(result.pop('focal_id'))
+            nearest = result.pop('nearest_ids')
+            result['nearest_objects'] = None if nearest is None else [named(oid) for oid in nearest]
+            result['best_known_objects'] = [named(oid) for oid in result.pop('best_known_ids')]
+            result['best_known_evidence'] = [dict(candidate=named(row['object_id']),
+                **{key: value for key, value in row.items() if key != 'object_id'})
+                for row in result['best_known_evidence']]
+            result['unresolved'] = [dict(named(oid), reason=reason)
+                for oid, reason in sorted(result['unresolved'].items())]
+            result.pop('excluded')
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=result['binding']['scene_revision'],
+            engine_invoked=work['kernel_calls'] > 0, task_work=work)
+        self._check_request_budget('before_surface_nearest_result')
+        return result
+
+    def _observe_task(self, session_id, query, *, include_witness_triangles=False):
+        """Finite current-capture query, independent of action persistence."""
+        from .task_query import task_result
+        if not self.config.get('enabled', True):
+            return {'status': 'disabled', 'session_id': session_id, 'routing': None}
+        geometry = query.get('geometry')
+        if geometry is not None:
+            query = {key: value for key, value in query.items() if key != 'geometry'}
+        context = self._read_context
+        with context.lock, self._observation_scope():
+            rejected, source_check = self._read_source_identity()
+            if rejected is not None:
+                return copy.deepcopy(rejected)
+            self._check_request_budget('before_host_capture')
+            task_capture = getattr(self.host, 'capture_task_scene', None)
+            selected_capture = callable(task_capture)
+            with span('host.capture', kind='host'):
+                captured = task_capture(query['objects']) if selected_capture else self.host.capture_scene()
+            self._check_request_budget('after_host_capture')
+            context.activate(captured, 'task_selected' if selected_capture else 'task_full',
+                query['objects'] if selected_capture else None)
+            with span('scene.validate'):
+                scene, meshes, fingerprint = context.normalized(
+                    lambda: _validated_scene(captured, _task_capture=selected_capture))
+            with span('observation.task_facts'):
+                from .read_context import capture_key, query_key
+                work = {'exact_pair_count': 0, 'surface_pair_count': 0, 'closed_solid_pair_count': 0}
+                key = query_key(query)
+                evidence = {}
+                if include_witness_triangles and selected_capture and geometry is None:
+                    token = capture_key(captured)
+                    identity = scene['host_identity']
+                    if (token is not None and all((token[0], token[3]))
+                            and scene['revision'] == captured['revision']
+                            and identity == captured['host_identity']):
+                        binding = {'document_epoch': identity['document_epoch'],
+                                   'capture_state': dict(zip(('instance_id', 'epoch', 'revision', 'selection_key'), token))}
+                        evidence['witness_capture'] = binding
+                        key = 'whole-object-witness-triangles:' + key
+                result, hit = context.result(key, lambda: task_result(
+                    scene, meshes, fingerprint, query, context.scene_cache,
+                    self._check_request_budget, diagnostics=work, **evidence))
+                work['result_cache_hit'] = hit
+            if geometry is not None:
+                from .task_query import project_task_geometry
+                result['geometry'] = project_task_geometry(
+                    result, meshes, geometry, self._check_request_budget)
+            self._bind_read_result(result, source_check)
+        self.record_event('observe', session_id=session_id, status=result['status'],
+            scene_revision=scene['revision'],
+            engine_invoked=(work['exact_pair_count'] > 0 or work.get('surface_pair_count', 0) > 0
+                            or work.get('closed_solid_pair_count', 0) > 0), task_work=work)
+        self._check_request_budget('before_task_result')
+        return result
+
     @staticmethod
     def _identified(action):
         if not isinstance(action, dict) or any(not isinstance(action.get(k), str) or not action[k]
@@ -1067,7 +2229,7 @@ class LiveSpatialService:
 
     def _transform_locked(self, value, runtime, session_id, action, goal=None, *,
                           prepared=None, segment_step=None, segment_id=None, precommit_deadline=None,
-                          precommit_clock=None, parent_deadline=None):
+                          precommit_clock=None, parent_deadline=None, _completion=None):
         """Shared single-step core; caller already owns the durable state lock."""
         if value.get("inflight") or runtime.status["quarantined"]:
             return {"status": "host_quarantined", "executed": False, "verified": False, "routing": None}
@@ -1119,6 +2281,7 @@ class LiveSpatialService:
                 and context.forward_deadline is not None):
             execute_options['_host_deadline'] = context.forward_deadline(parent_deadline, precommit_deadline)
         result = runtime.execute_action(session_id=session_id, action=action, goal=goal, **execute_options)
+        self._remember_execution_result(result)
         result['runtime_identity'] = self.describe_runtime()
         if goal is not None and result.get("goal_evaluation") == "not_requested":
             result["goal_evaluation"] = "not_evaluated"
@@ -1127,6 +2290,14 @@ class LiveSpatialService:
         if segment_step is not None:
             from .goal_execution import record_step_result
             record_step_result(segment_step, result)
+        if _completion is not None:
+            try:
+                _completion(result)
+            except BaseException:
+                # A planner/accounting failure after the setter cannot erase
+                # its known receipt or make a retry look unsubmitted.
+                self._save(value, runtime)
+                raise
         # Uncertain results keep the durable journal as well as quarantine.
         self._save(value, runtime)
         self.record_event("transform", session_id=session_id, status=result["status"],
@@ -1151,11 +2322,17 @@ class LiveSpatialService:
 
     @_request('clearance_segment')
     def run_clearance_segment(self, session_id, request_id, request, *, execute=False,
-                              include_image=False, task_context=None):
+                              include_image=False, task_context=None,
+                              _initial_observation=None, _plan_handoff=None):
         """Preview or execute one bounded goal; model-selected IDs are not authority."""
         from .goal_execution import run_clearance_segment
+        internal = {}
+        if _initial_observation is not None:
+            internal['_initial_observation'] = _initial_observation
+        if _plan_handoff is not None:
+            internal['_plan_handoff'] = _plan_handoff
         return run_clearance_segment(self, session_id, request_id, request,
-                                     execute=execute, include_image=include_image)
+            execute=execute, include_image=include_image, **internal)
 
     @_request('goal_supervision')
     def goal_supervision(self, operation, goal_id, session_id=None, *,
@@ -1167,13 +2344,15 @@ class LiveSpatialService:
 
     @_request('supervised_clearance_segment')
     def run_supervised_clearance_segment(self, goal_id, session_id, request_id,
-                                         request, *, include_image=False):
+                                         request, *, include_image=False, _plan_handoff=None):
         """Trusted caller still owns task authorization and fresh review."""
         from .goal_supervision import _context
         _context(self)
         from .goal_execution import run_clearance_segment
+        internal = {} if _plan_handoff is None else {'_plan_handoff': _plan_handoff}
         return run_clearance_segment(self, session_id, request_id, request,
-            execute=True, include_image=include_image, _parent_goal_id=goal_id)
+            execute=True, include_image=include_image, _parent_goal_id=goal_id,
+            **internal)
 
     @_request('status')
     def status(self):

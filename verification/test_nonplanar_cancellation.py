@@ -68,7 +68,7 @@ class NonplanarCancellationTests(unittest.TestCase):
     def test_attempted_image_timeout_preserves_quota_and_duplicate_receipt(self):
         # This tests public MCP/ledger failure semantics with an injected typed
         # host timeout. It does not claim a real installed host fault trial.
-        case = task_tests.StructureTaskTests('test_four_tools_no_registration_no_host')
+        case = task_tests.StructureTaskTests('runTest')
         case.setUp()
         self.addCleanup(case.doCleanups)
         case.service.config['structure_patch_mode'] = 'nonplanar_dense_v1'

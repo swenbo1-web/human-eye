@@ -283,9 +283,8 @@ def _visible_witness(point, meshes, view, span):
     return bool(has_surface)
 
 
-def _readability_evidence(color, owners, meshes, target_ids, pixels):
-    """Use real unannotated winning surfaces, never labels, as evidence."""
-    by_id = {mesh.object_id: index for index, mesh in enumerate(meshes)}
+def _contrasting_boundaries(color, owners):
+    """Mark both pixels of a winning-owner boundary with RGB distance >=24."""
     boundary = np.zeros(owners.shape, dtype=bool)
     for axis in (0, 1):
         first = (slice(None, -1), slice(None)) if axis == 0 else (slice(None), slice(None, -1))
@@ -326,6 +325,13 @@ def _readability_evidence(color, owners, meshes, target_ids, pixels):
             changed = (owners[first] != owners[second]) & (contrast >= 24.)
             boundary[first] |= changed
             boundary[second] |= changed
+    return boundary
+
+
+def _readability_evidence(color, owners, meshes, target_ids, pixels):
+    """Use real unannotated winning surfaces, never labels, as evidence."""
+    by_id = {mesh.object_id: index for index, mesh in enumerate(meshes)}
+    boundary = _contrasting_boundaries(color, owners)
     counts = [int(np.count_nonzero(owners == by_id[identity])) for identity in target_ids]
     edges = [int(np.count_nonzero(boundary & (owners == by_id[identity]))) for identity in target_ids]
     fraction = np.linspace(.1, .9, 17)

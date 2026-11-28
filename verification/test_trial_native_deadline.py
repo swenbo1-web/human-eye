@@ -195,7 +195,7 @@ class NativeDeadlineTests(unittest.TestCase):
         budget=EpisodeDeadline(.18); self.addCleanup(budget.close); fixture.bind_deadline(budget)
         original=subprocess.Popen; children=[]
         def slow_startup(*args,**kwargs):
-            child=original([sys.executable,'-I','-B','-c','import time;time.sleep(30)'],**kwargs)
+            child=original([getattr(sys, '_base_executable', sys.executable),'-I','-B','-c','import time;time.sleep(30)'],**kwargs)
             children.append(child); return child
         started=time.monotonic()
         with patch('verification.model_trial.native_client.subprocess.Popen',side_effect=slow_startup):

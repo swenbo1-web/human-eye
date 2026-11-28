@@ -46,8 +46,8 @@ class MeshStructureServiceTests(unittest.TestCase):
         self.assertFalse(any(c['type']=='image' for c in payload['content']))
         self.assertFalse(result['allow_action']);self.assertFalse(result['executed'])
 
-    def test_no_public_fifth_tool_or_new_query_is_advertised(self):
-        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),4)
+    def test_mesh_structure_is_only_available_for_registered_tasks(self):
+        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),5)
         from human_eye_plugin.query_policy import validate_query
         with self.assertRaises(ValueError):validate_query({'mode':'mesh_structure'})
 

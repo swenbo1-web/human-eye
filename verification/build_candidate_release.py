@@ -105,7 +105,10 @@ def build(root,output,version):
         'Install only into a new candidate directory. No official activation is included.\n'
         'Local configurations, raw acceptance evidence and third-party test assets are excluded.\n'
         'The SDK base version and this distribution version are recorded separately.\n').encode()
-    project=(root/'pyproject.toml').read_bytes().replace(b'version = "9.7.2"',('version = "'+version+'"').encode(),1)
+    project = (root / 'pyproject.toml').read_bytes()
+    version_line = ('version = "' + original['project']['version'] + '"').encode()
+    require(project.splitlines().count(version_line) == 1, 'source_project_version')
+    project = project.replace(version_line, ('version = "' + version + '"').encode(), 1)
     members={'CANDIDATE_NOTES.txt':notes,'wheel/'+name:wheel,'source/pyproject.toml':project,
         'source/README.md':(root/'README.md').read_bytes()}
     for record in identity['source_files']:

@@ -18,7 +18,7 @@ OpenAI-compatible 服务可以使用前两种格式，但实际端点、具体�
 
 上述是**协议格式兼容和本地集成测试**，不是各厂商、各模型、各 Agent 的真实鉴权与完整操作验收。当前适配器没有发起真实 provider 请求，也未证明图像已被远端模型消费。`delivery.image_delivered=True` 表示已将图像放进输出载荷；宿主还应核验实际发送及服务端接受结果。
 
-后续 [Codex 实时路由](CODEX_LIVE_ROUTING.md) 已在当前 Codex 会话中单独验证原生 MCP PNG 交付、动作前自动拦截和动作后实际回读。这项宿主证据不替代上表各厂商 API 的鉴权与模型效果测试，也不推广为其他 agent 已实机支持。
+Codex 桌面的 MCP 工具和项目 Hook 使用共同的安装绑定。接入状态按各宿主分别验证。[桌面安装版](INSTALLED_RELEASE_ACTIVATION.md)
 
 [项目配置入口](AGENT_SETUP.md) 可以为独立项目生成 Codex、Claude Code 或通用 MCP 配置。默认预览，显式写入时合并已有设置并备份。当前 Codex 提示前自动观察也已有真实宿主证据；Claude 仍处于本地格式、启动命令及服务连接验证阶段。
 

@@ -26,4 +26,4 @@
 
 数据量以实际 MCP 文本 UTF-8 字节计算；PNG 单独计量。字节节省不等于 token、账单、模型速度或模型质量收益。后者需要正式模型任务对照。
 
-本地磁盘注册已切到v21，新固定进程的动作段brief与实际读取通过。重启后当前聊天已核验相同v21身份，并完成当前只读观察brief及原生图像读取；没有为此重放动作段。安装证据见[安装报告](../verification/fixes/20261030_v21_activation/REPORT.md)，当前聊天加载及观察证据见[重载报告](../verification/fixes/20261030_v21_reload/REPORT.md)。
+本地磁盘注册已切到v21，新固定进程的动作段brief与实际读取通过。重启后当前聊天已核验相同v21身份，并完成当前只读观察brief及原生图像读取；没有为此重放动作段。安装证据见安装报告（历史文件 `verification/fixes/20261030_v21_activation/REPORT.md`），当前聊天加载及观察证据见重载报告（历史文件 `verification/fixes/20261030_v21_reload/REPORT.md`）。

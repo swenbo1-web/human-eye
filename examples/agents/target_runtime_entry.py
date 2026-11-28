@@ -14,12 +14,10 @@ from pathlib import Path
 import sys
 
 
-RELEASE_NAME = "9.7.2+20261029.v1.core.r1"
-DEPENDENCY_PYTHON = Path("D:/hefe/.human-eye/releases/9.7.2+20261028.support.discovery.r1/.venv/Scripts/python.exe")
-SOURCE_SHA256 = "4eff4e3b43d8b3e0a33ee2180b4276596e8ace527a615bc68370add23ee3e1ae"
-IDENTITY = {"base_version": "9.7.2", "implementation_revision": "v20-v1-core-20261029",
-            "source_sha256": SOURCE_SHA256, "build_id": "sha256:" + SOURCE_SHA256,
-            "distribution_version": RELEASE_NAME}
+RELEASE_NAME = '9.7.2+k049final'
+DEPENDENCY_PYTHON = Path('D:\\hefe\\.human-eye\\releases\\9.7.2+20261028.support.discovery.r1\\.venv\\Scripts\\python.exe')
+SOURCE_SHA256 = '7075c79b8aff6821e3cb37882b7123be2728cbf38972f34b93e05ef8afa8e50c'
+IDENTITY = {'base_version': '9.7.2', 'implementation_revision': 'v26-surface-scan-pair-cache-20261112', 'source_sha256': '7075c79b8aff6821e3cb37882b7123be2728cbf38972f34b93e05ef8afa8e50c', 'build_id': 'sha256:7075c79b8aff6821e3cb37882b7123be2728cbf38972f34b93e05ef8afa8e50c', 'distribution_version': '9.7.2+k049final'}
 ROOT_MODULES = ("human_eye_hook.py", "human_eye_foveated_renderer.py", "native_3d_spatial_scratchpad.py",
                 "module_2_low_token_mcp_scene_bridge.py", "module_3_1_mcp_protocol_ipc_engine.py",
                 "module_3_2_vlm_grounding_closed_loop_agent.py", "module_3_3_closed_loop_control_engine.py")
@@ -113,8 +111,8 @@ def validate_binding(*, expected_python=None):
     digest = _sha(json.dumps({"base_version": IDENTITY["base_version"],
         "implementation_revision": IDENTITY["implementation_revision"], "files": manifest},
         sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8"))
-    if len(manifest) != 68 or manifest != binding["source_files"] or digest != SOURCE_SHA256:
-        raise BindingError("Installed target source manifest/build differs from the fixed 68-file core")
+    if len(manifest) != 145 or manifest != binding["source_files"] or digest != SOURCE_SHA256:
+        raise BindingError("Installed target source manifest/build differs from the fixed 145-file core")
     distributions = [dist for dist in metadata.distributions(path=[str(site)])
                      if str(dist.metadata.get("Name", "")).lower().replace("_", "-") == "human-eye-spatial-plugin"]
     if (len(distributions) != 1 or distributions[0].version != RELEASE_NAME

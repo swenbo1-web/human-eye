@@ -14,8 +14,9 @@ import math
 import re
 import time
 import uuid
+from dataclasses import dataclass
 
-from .auto_router import _validated_scene, _trace_span
+from .auto_router import _ValidatedObservation, _trace_span
 from .goal_segment import (validate_clearance_segment_request,
                            solve_segment_candidate, clearance_segment_goal,
                            selection_binding_rejection)
@@ -45,6 +46,7 @@ def _fingerprint(value):
 
 def validate_segment_ledger(value):
     """Old connector states have no ledger; malformed new ledgers fail closed."""
+    validate_arm_axial_ledger(value)
     if 'goal_segments' not in value:
         return
     ledger = value['goal_segments']
@@ -190,15 +192,14 @@ def _capture(service, runtime):
     service._check_request_budget('before_segment_host_capture')
     with runtime._transaction(), _trace_span('host.segment_capture', kind='host', source_name='host_blender'):
         raw = service.host.capture_scene()
-    scene, _, _ = _validated_scene(raw)
-    return scene
+    return _ValidatedObservation(raw)
 
 
 def _pivot(scene, focal_id):
     return next(mesh['pivot_world'] for mesh in scene['meshes'] if mesh['object_id'] == focal_id)
 
 
-def _first_step_plan(scene, request, readback_atol_m):
+def _first_step_plan(scene, request, readback_atol_m, *, _observation=None):
     """Plan the action the first submission can admit, without granting rights.
 
     The caller's normalized request remains the receipt identity. Only the
@@ -212,7 +213,8 @@ def _first_step_plan(scene, request, readback_atol_m):
     available = remaining > 0 and step_limit > 0
     bounded = (dict(request, max_total_translation_m=remaining,
                     max_step_translation_m=step_limit) if available else request)
-    plan = solve_segment_candidate(scene, bounded)
+    plan = (solve_segment_candidate(scene, bounded) if _observation is None else
+        solve_segment_candidate(scene, bounded, _observation=_observation))
     # Keep each solver's existing request shape, with the caller's caps. The
     # explicit planning metadata below carries the effective caps instead.
     for field in ('max_step_translation_m', 'max_total_translation_m'):
@@ -237,7 +239,8 @@ def _first_step_plan(scene, request, readback_atol_m):
 
 
 def run_clearance_segment(service, session_id, request_id, request, *, execute=False,
-                          include_image=False, _parent_goal_id=None):
+                          include_image=False, _parent_goal_id=None,
+                          _initial_observation=None, _plan_handoff=None):
     """Run under one connector lock; never call the locking public transform."""
     _identifier(session_id, 'session_id')
     _identifier(request_id, 'request_id')
@@ -294,8 +297,15 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             deadline = min(deadline, parent_deadline)
             if clock() >= deadline:
                 return _result('review_required', reasons=['parent_goal_time_budget_exhausted'])
-        scene = _capture(service, runtime)
-        binding_rejection = (selection_binding_rejection(scene, request)
+        if not execute and _initial_observation is not None:
+            if type(_initial_observation) is not _ValidatedObservation:
+                raise ValueError('Internal initial observation required')
+            _initial_observation._require_scene(_initial_observation.scene)
+            observation = _initial_observation
+        else:
+            observation = _capture(service, runtime)
+        scene = observation.scene
+        binding_rejection = (selection_binding_rejection(scene, request, _observation=observation)
                              if 'selection_binding' in request else None)
         if binding_rejection is not None:
             # Historical receipts have already returned above. A fresh goal
@@ -303,11 +313,25 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             # and a refused selection must not reserve a running receipt.
             return _result('blocked', reasons=[binding_rejection], executed=False,
                 selection_binding_status='mismatch', requires_reobserve=True)
+        def first_plan():
+            if (_plan_handoff is not None and _plan_handoff.get('request') == request
+                    and _plan_handoff.get('fingerprint') == observation.fingerprint
+                    and _plan_handoff.get('host_binding') == _binding(scene)
+                    and _plan_handoff.get('readback_atol_m') == runtime.router.readback_atol_m):
+                return copy.deepcopy(_plan_handoff['plan'])
+            return _first_step_plan(scene, request, runtime.router.readback_atol_m,
+                _observation=observation)
+
         if not execute:
             # Preview can inspect old hosts without an identity contract, but
             # does not persist observations, reserve IDs, or grant write rights.
-            return _result('preview', candidate=_first_step_plan(scene, request,
-                    runtime.router.readback_atol_m), executed=False,
+            plan = first_plan()
+            if _plan_handoff is not None:
+                _plan_handoff.clear()
+                _plan_handoff.update(request=copy.deepcopy(request), fingerprint=observation.fingerprint,
+                    host_binding=_binding(scene), readback_atol_m=runtime.router.readback_atol_m,
+                    plan=copy.deepcopy(plan))
+            return _result('preview', candidate=plan, executed=False,
                 host_identity_available=_binding(scene) is not None,
                 remaining_write_gates_required=True)
         if _binding(scene) is None:
@@ -317,7 +341,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
         # running receipt. The first loop uses this exact captured plan;
         # Later steps recapture and check the complete snapshot before reusing
         # the preceding readback plan. A changed budget is still solved below.
-        initial_plan = _first_step_plan(scene, request, runtime.router.readback_atol_m)
+        initial_plan = first_plan()
         if clock() >= deadline:
             return _result('review_required', reasons=['segment_time_budget_exhausted_after_initial_plan'])
         segment_id = uuid.uuid4().hex
@@ -338,7 +362,7 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
         last_error = None
         signs = []
 
-        def finish(status, reasons=()):
+        def finish(status, reasons=(), *, persist=True):
             elapsed_ns = max(0, time.monotonic_ns() - started_ns)
             result = _result(status, reasons=reasons, request_id=request_id, segment_id=segment_id,
                 request=copy.deepcopy(request), steps=copy.deepcopy(entry['steps']),
@@ -359,13 +383,24 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             entry['status'] = status
             entry['result'] = copy.deepcopy(result)
             # Receipts contain no PNG, full scene, or mutable runtime state.
-            service._save(value, runtime)
+            if persist:
+                service._save(value, runtime)
+                return publish(result)
+            return result
+
+        def publish(result):
+            # Optional delivery always follows the acknowledged completion.
+            # Rendering/session state never enters that durable step receipt.
+            status = result['status']
             if include_image and status != 'execution_uncertain':
                 try:
+                    image_observation = runtime._last_verified_observation or observation
+                    image_options = ({'_validated_observation': image_observation._fork()}
+                        if image_observation.scene is actual else {})
                     prepared = runtime._before_model_on_captured_scene(scene=actual, session_id=session_id,
                         task_instruction='Final bounded clearance segment observation.',
                         focal_id=request['focal_id'], reference_id=request['reference_id'],
-                        messages=[], format='mcp', include_image=True, supports_images=True)
+                        messages=[], format='mcp', include_image=True, supports_images=True, **image_options)
                     result['routing'] = prepared['routing']
                     result['presentation_scope'] = 'segment_end_snapshot_not_current_after_return'
                 except Exception:
@@ -384,7 +419,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             if clock() >= deadline:
                 return finish('review_required', ['segment_time_budget_exhausted'])
             if feature is not None:
-                scene = _capture(service, runtime)
+                observation = _capture(service, runtime)
+                scene = observation.scene
                 if (scene['revision'] != actual['revision']
                         or _fingerprint(scene) != last_plan_scene_fingerprint):
                     return finish('review_required', ['external_scene_change_between_steps'])
@@ -400,7 +436,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             if last_plan['goal_satisfied']:
                 from .task_verification import evaluate_spatial_goal
                 try:
-                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request))
+                    evaluation = evaluate_spatial_goal(scene, clearance_segment_goal(request),
+                        _observation=observation)
                 except Exception:
                     return finish('review_required', ['goal_evaluation_unavailable'])
                 if evaluation['task_succeeded'] is True:
@@ -424,7 +461,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             bounded = dict(request, max_total_translation_m=min(request['max_total_translation_m'], remaining),
                 max_step_translation_m=min(step_limit, remaining))
             if last_plan['proposed_translation_m'] > min(step_limit, remaining):
-                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature)
+                last_plan = solve_segment_candidate(scene, bounded, expected_feature_signature=feature,
+                    _observation=observation)
                 if last_plan['status'] != 'candidate':
                     return finish('review_required', last_plan['reason_codes'])
             if last_error is not None and last_plan['absolute_error_m'] >= last_error:
@@ -438,7 +476,8 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
                     if request.get('solver') == 'support_plane'
                     else 'Execute the current bounded box-face clearance target.'),
                 focal_id=request['focal_id'], reference_id=request['reference_id'],
-                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False)
+                messages=[], format='mcp', include_image=False, supports_images=False, final_include_image=False,
+                _validated_observation=observation._fork())
             if clock() >= deadline:
                 return finish('review_required', ['segment_time_budget_exhausted_before_submit'])
             step = {'step_id': uuid.uuid4().hex, 'step_index': len(entry['steps']),
@@ -449,45 +488,307 @@ def run_clearance_segment(service, session_id, request_id, request, *, execute=F
             except Exception:
                 pass
             before_pivot = _pivot(scene, request['focal_id'])
+            completion = {'called': False, 'result': None}
+
+            def complete_step(result):
+                nonlocal actual, total_motion, last_error, last_plan, last_plan_scene_fingerprint
+                completion['called'] = True
+                if step['state'] == 'uncertain' or result.get('executed') is None:
+                    completion['result'] = finish('execution_uncertain', ['host_step_outcome_uncertain'], persist=False)
+                    return
+                if result.get('status') not in {'verified', 'no_op'}:
+                    completion['result'] = finish(
+                        'blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
+                        result.get('reason_codes') or [result.get('status', 'step_blocked')], persist=False)
+                    return
+                actual = runtime._last_verified_scene
+                if actual is None:
+                    completion['result'] = finish('execution_uncertain', ['verified_readback_snapshot_unavailable'], persist=False)
+                    return
+                motion = runtime._last_actual_translation_m
+                if motion is None:
+                    motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
+                total_motion += motion
+                # Cheap execution facts precede any fallible residual solver.
+                # _transform_locked commits them even when that solver raises.
+                step['actual_translation_m'] = motion
+                entry['end_revision'] = actual['revision']
+                last_error = last_plan['absolute_error_m']
+                actual_observation = runtime._last_verified_observation
+                options = ({'_observation': actual_observation} if actual_observation is not None else {})
+                last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature, **options)
+                if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
+                    completion['result'] = finish('review_required', ['actual_motion_budget_exceeded'], persist=False)
+                elif _binding(actual) != entry['host_binding']:
+                    completion['result'] = finish('review_required', ['host_object_or_document_identity_changed'], persist=False)
+                elif last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
+                    completion['result'] = finish('satisfied', persist=False)
+                elif last_plan['status'] not in {'candidate', 'goal_satisfied'}:
+                    completion['result'] = finish('review_required', last_plan['reason_codes'], persist=False)
+                elif clock() >= deadline:
+                    completion['result'] = finish('review_required', ['segment_time_budget_exhausted'], persist=False)
+                else:
+                    # Freeze content before the next fresh capture. Mutating a
+                    # retained readback cannot change this comparison input.
+                    last_plan_scene_fingerprint = _fingerprint(actual)
+
             result = service._transform_locked(value, runtime, session_id, action,
                 clearance_segment_goal(request), prepared=prepared, segment_step=step, segment_id=segment_id,
                 precommit_deadline=deadline, precommit_clock=clock,
-                parent_deadline=parent_deadline)
-            if 'result' not in step:
-                record_step_result(step, result)
-            if step['state'] == 'uncertain' or result.get('executed') is None:
-                return finish('execution_uncertain', ['host_step_outcome_uncertain'])
-            if result.get('status') not in {'verified', 'no_op'}:
-                return finish('blocked' if not any(s.get('result', {}).get('executed') for s in entry['steps']) else 'review_required',
-                    result.get('reason_codes') or [result.get('status', 'step_blocked')])
-            actual = runtime._last_verified_scene
-            if actual is None:
-                return finish('execution_uncertain', ['verified_readback_snapshot_unavailable'])
-            motion = math.dist(before_pivot, _pivot(actual, request['focal_id']))
-            total_motion += motion
-            step['actual_translation_m'] = motion
-            entry['end_revision'] = actual['revision']
-            last_error = last_plan['absolute_error_m']
-            last_plan = solve_segment_candidate(actual, request, expected_feature_signature=feature)
+                parent_deadline=parent_deadline, _completion=complete_step)
+            if not completion['called']:
+                # Preparation refusals return before the execution boundary.
+                # Test/embedding overrides may also return their own receipt.
+                if 'result' not in step:
+                    record_step_result(step, result)
+                complete_step(result)
+                service._save(value, runtime)
+            if completion['result'] is not None:
+                return publish(completion['result'])
+            # A nonterminal completion is already durable. Only a new capture
+            # can admit the next correction; the preceding setter is never resent.
+
+
+
+_ARM_FIELDS = {'schema', 'event_id', 'selection', 'u_interval_deg', 'max_section_area_loss',
+    'protected_vertex_ids', 'angle_tolerance_deg', 'position_tolerance_m', 'area_tolerance', 'sentinel_name'}
+_ARM_TERMINAL = {'satisfied', 'feedback_failed', 'no_op', 'unreachable', 'not_applicable'}
+
+
+def validate_arm_axial_request(request):
+    """Validate the finite task, never a caller-supplied bone write list."""
+    if type(request) is not dict or set(request) != _ARM_FIELDS or request.get('schema') != 'arm-axial-execution-task-v1':
+        raise ValueError('arm_axial_task_fields')
+    _identifier(request['event_id'], 'arm event_id')
+    def text(value):
+        return type(value) is str and 0 < len(value) <= 256 and not any(ord(c) < 32 for c in value)
+    selection = request['selection']
+    if (type(selection) is not dict or set(selection) != {'mesh_name', 'armature_name', 'bone_names', 'vertex_indices', 'sections'}
+            or not text(selection['mesh_name']) or not text(selection['armature_name'])
+            or type(selection['bone_names']) is not list or len(selection['bone_names']) != 3
+            or not all(text(name) for name in selection['bone_names']) or len(set(selection['bone_names'])) != 3):
+        raise ValueError('arm_axial_selection')
+    indices = selection['vertex_indices']; sections = selection['sections']
+    if (type(indices) is not list or not 6 <= len(indices) <= 8192
+            or any(type(i) is not int or i < 0 for i in indices) or len(set(indices)) != len(indices)
+            or type(sections) is not list or not 2 <= len(sections) <= 128):
+        raise ValueError('arm_axial_indices')
+    available = set(indices); seen = set()
+    for row in sections:
+        if (type(row) is not list or not 3 <= len(row) <= 256 or any(type(i) is not int or i not in available for i in row)
+                or len(set(row)) != len(row) or seen.intersection(row)):
+            raise ValueError('arm_axial_sections')
+        seen.update(row)
+    protected = request['protected_vertex_ids']
+    if (type(protected) is not list or not protected or any(type(i) is not int or i not in available for i in protected)
+            or len(set(protected)) != len(protected)):
+        raise ValueError('arm_axial_protected_ids')
+    interval = request['u_interval_deg']
+    if (type(interval) is not list or len(interval) != 2 or any(type(v) not in (int, float) or not math.isfinite(v) for v in interval)
+            or not -180 < interval[0] <= interval[1] < 180):
+        raise ValueError('arm_axial_interval')
+    for field, upper in (('angle_tolerance_deg', .001), ('position_tolerance_m', 1e-5), ('area_tolerance', 1e-6)):
+        if type(request[field]) not in (int, float) or not math.isfinite(request[field]) or not 0 < request[field] <= upper:
+            raise ValueError('arm_axial_tolerance:' + field)
+    target = request['max_section_area_loss']
+    if type(target) not in (int, float) or not math.isfinite(target) or not 0 <= target < 1:
+        raise ValueError('arm_axial_target')
+    if not text(request['sentinel_name']) or request['sentinel_name'] in (selection['mesh_name'], selection['armature_name']):
+        raise ValueError('arm_axial_sentinel')
+    return request
+
+
+@dataclass(frozen=True, init=False)
+class ArmAxialTaskSpec:
+    """An immutable owned task snapshot; starting end poses resolve in worker."""
+    _payload: str
+
+    def __init__(self, event_id, selection, u_interval_deg, max_section_area_loss, protected_vertex_ids,
+                 sentinel_name, angle_tolerance_deg=.001, position_tolerance_m=5e-6, area_tolerance=1e-6):
+        request = dict(schema='arm-axial-execution-task-v1', event_id=event_id, selection=selection,
+            u_interval_deg=u_interval_deg, max_section_area_loss=max_section_area_loss,
+            protected_vertex_ids=protected_vertex_ids, sentinel_name=sentinel_name,
+            angle_tolerance_deg=angle_tolerance_deg, position_tolerance_m=position_tolerance_m,
+            area_tolerance=area_tolerance)
+        validate_arm_axial_request(request)
+        object.__setattr__(self, '_payload', json.dumps(request, sort_keys=True, ensure_ascii=True,
+            allow_nan=False, separators=(',', ':')))
+
+    def to_request(self):
+        return json.loads(self._payload)
+
+    @property
+    def event_id(self):
+        return self.to_request()['event_id']
+
+
+def _arm_receipt(value, event_id):
+    required = {'schema', 'event_id', 'status', 'reason', 'executed', 'task_succeeded', 'setter_attempts', 'setter_returns'}
+    if (type(value) is not dict or not required.issubset(value) or value.get('schema') != 'arm-axial-execution-result-v1'
+            or value.get('event_id') != event_id or type(value.get('status')) is not str
+            or value['status'] not in _ARM_TERMINAL | {'execution_uncertain'}
+            or type(value.get('reason')) is not str or not value['reason']
+            or type(value.get('task_succeeded')) is not bool
+            or value.get('executed') is not None and type(value.get('executed')) is not bool):
+        raise ValueError('invalid_arm_execution_receipt')
+    attempted, returned = value.get('setter_attempts'), value.get('setter_returns')
+    if any(v is not None and (type(v) is not int or not 0 <= v <= 2) for v in (attempted, returned)):
+        raise ValueError('invalid_arm_setter_counts')
+    if attempted is not None and returned is not None and returned > attempted:
+        raise ValueError('invalid_arm_setter_counts')
+    status = value['status']
+    if status in {'satisfied', 'feedback_failed'}:
+        valid = attempted == returned == 2 and value['executed'] is True and value['task_succeeded'] is (status == 'satisfied')
+    elif status in {'no_op', 'unreachable', 'not_applicable'}:
+        valid = attempted == returned == 0 and value['executed'] is False and value['task_succeeded'] is (status == 'no_op')
+    else:
+        valid = (not value['task_succeeded']
+            and (returned is None or returned == 0 or value['executed'] is True)
+            and (value['executed'] is not True or returned is not None and returned > 0)
+            and (value['executed'] is not False or attempted == returned == 0)
+            and (attempted != 0 or returned == 0 and value['executed'] is False)
+            and (attempted != 0 or returned != 0 or value['executed'] is False))
+    if not valid:
+        raise ValueError('contradictory_arm_execution_receipt')
+    # Fail before journaling non-JSON values supplied by a broken embedding.
+    json.dumps(value, allow_nan=False)
+    return value
+
+
+def validate_arm_axial_ledger(value):
+    if 'arm_axial_events' not in value:
+        return
+    ledger = value['arm_axial_events']
+    if (type(ledger) is not dict or set(ledger) != {'schema_version', 'records'} or ledger['schema_version'] != '1.0'
+            or type(ledger['records']) is not dict or len(ledger['records']) > MAX_SEGMENT_RECEIPTS):
+        raise ValueError('invalid_arm_event_ledger')
+    for event, record in ledger['records'].items():
+        _identifier(event, 'persisted arm event')
+        if (type(record) is not dict or set(record) != {'request', 'request_fingerprint', 'operation_id', 'started', 'state', 'result'}
+                or type(record['state']) is not str or record['state'] not in {'pending', 'complete', 'execution_uncertain'}
+                or type(record['started']) not in (int, float) or not math.isfinite(record['started'])
+                or type(record['operation_id']) is not str or not record['operation_id']):
+            raise ValueError('invalid_arm_event_record')
+        request = validate_arm_axial_request(record['request'])
+        if request['event_id'] != event or _fingerprint(request) != record['request_fingerprint']:
+            raise ValueError('arm_event_binding_mismatch')
+        if record['state'] == 'pending':
+            if record['result'] is not None:
+                raise ValueError('pending_arm_event_has_result')
+        else:
+            result = _arm_receipt(record['result'], event)
+            if (result['status'] == 'execution_uncertain') != (record['state'] == 'execution_uncertain'):
+                raise ValueError('arm_event_result_state_mismatch')
+    unresolved = [(event, record) for event, record in ledger['records'].items() if record['state'] != 'complete']
+    inflight = value.get('inflight')
+    if unresolved:
+        if len(unresolved) != 1 or type(inflight) is not dict:
+            raise ValueError('arm_event_lost_pending_barrier')
+        event, record = unresolved[0]
+        if (inflight.get('kind') != 'arm_axial' or inflight.get('event_id') != event
+                or inflight.get('operation_id') != record['operation_id']
+                or inflight.get('request_fingerprint') != record['request_fingerprint']):
+            raise ValueError('arm_event_pending_binding_mismatch')
+    elif type(inflight) is dict and inflight.get('kind') == 'arm_axial':
+        raise ValueError('arm_inflight_has_no_pending_event')
+
+
+def _arm_entry_result(event, status, reason, *, unknown=False):
+    return dict(schema='arm-axial-execution-result-v1', event_id=event, status=status, reason=reason,
+        task_succeeded=False, executed=None if unknown else False,
+        setter_attempts=None if unknown else 0, setter_returns=None if unknown else 0,
+        executed_this_call=None if unknown else False, new_setter_count=None if unknown else 0,
+        retry_authorized=False, completion_persistence='not_attempted')
+
+
+def _arm_replay(result):
+    replay = copy.deepcopy(result)
+    replay.update(replayed=True, historical_receipt=True, executed_this_call=False,
+        new_setter_count=0, current_scene_revalidated=False, retry_authorized=False)
+    return replay
+
+
+def run_arm_axial_step(service, spec):
+    """One durable event and one mutation RPC; uncertainty is never a retry."""
+    if type(spec) is not ArmAxialTaskSpec:
+        raise ValueError('frozen_arm_axial_task_required')
+    request = spec.to_request(); event = request['event_id']; fingerprint = _fingerprint(request)
+    retained = getattr(service, '_arm_axial_outcomes', None)
+    if retained is None:
+        retained = {}; service._arm_axial_outcomes = retained
+    if event in retained:
+        old = retained[event]
+        if old['fingerprint'] != fingerprint:
+            return _arm_entry_result(event, 'event_conflict', 'arm_event_parameters_changed')
+        return _arm_replay(old['result'])
+    started = time.perf_counter_ns()
+    lock_started = time.perf_counter_ns()
+    with service._locked() as (value, runtime):
+        timings = {'state_lock_restore': time.perf_counter_ns()-lock_started}
+        records = value.setdefault('arm_axial_events', {'schema_version': '1.0', 'records': {}})['records']
+        previous = records.get(event)
+        if previous is not None:
+            if previous['request_fingerprint'] != fingerprint:
+                return _arm_entry_result(event, 'event_conflict', 'arm_event_parameters_changed')
+            result = previous['result'] or _arm_entry_result(event, 'execution_uncertain', 'arm_event_pending_outcome_unknown', unknown=True)
+            return _arm_replay(result)
+        if not service.config.get('enabled', True) or service._identity_rejection() is not None:
+            return _arm_entry_result(event, 'blocked', 'connector_disabled_or_runtime_identity_changed')
+        if value.get('inflight') or runtime.status.get('quarantined'):
+            return _arm_entry_result(event, 'execution_uncertain', 'pending_host_operation_requires_review', unknown=True)
+        if len(records) >= MAX_SEGMENT_RECEIPTS or len(retained) >= MAX_SEGMENT_RECEIPTS:
+            return _arm_entry_result(event, 'receipt_capacity_exhausted', 'arm_event_receipts_not_evicted')
+        operation = uuid.uuid4().hex
+        entry = dict(request=request, request_fingerprint=fingerprint, operation_id=operation,
+            started=time.time(), state='pending', result=None)
+        records[event] = entry
+        pending = dict(operation_id=operation, session_id='arm:'+operation, started=entry['started'],
+                       kind='arm_axial', event_id=event, request_fingerprint=fingerprint)
+        value['inflight'] = pending
+        save_started = time.perf_counter_ns()
+        try:
             service._save(value, runtime)
-            if total_motion > request['max_total_translation_m'] or motion > request['max_step_translation_m']:
-                return finish('review_required', ['actual_motion_budget_exceeded'])
-            if _binding(actual) != entry['host_binding']:
-                return finish('review_required', ['host_object_or_document_identity_changed'])
-            if last_plan['goal_satisfied'] and result.get('goal_evaluation') == 'goal_satisfied':
-                return finish('satisfied')
-            if last_plan['status'] not in {'candidate', 'goal_satisfied'}:
-                return finish('review_required', last_plan['reason_codes'])
-            if clock() >= deadline:
-                return finish('review_required', ['segment_time_budget_exhausted'])
-            # Freeze the content at planning time rather than hashing the
-            # mutable runtime snapshot on the next iteration. This also stops
-            # an aliased readback being changed together with the next capture.
-            # Terminal steps return above, so they pay no extra fingerprint.
-            last_plan_scene_fingerprint = _fingerprint(actual)
-            # Confirmed but residual remains: only the next fresh capture may
-            # authorize a different candidate. Never resend the preceding step.
+        except Exception as exc:
+            result = _arm_entry_result(event, 'execution_uncertain', 'arm_pending_persistence_failed', unknown=False)
+            result.update(completion_persistence='failed_or_unknown', persistence_error=type(exc).__name__)
+            retained[event] = dict(fingerprint=fingerprint, result=copy.deepcopy(result))
+            return result
+        timings['pending_save'] = time.perf_counter_ns()-save_started
+        service._submitted_request()
+        rpc_started = time.perf_counter_ns()
+        try:
+            result = copy.deepcopy(_arm_receipt(service.host.correct_arm_axial(request), event))
+        except Exception as exc:
+            known = getattr(exc, 'mutation_result', None)
+            try:
+                result = copy.deepcopy(_arm_receipt(known, event))
+                if result['status'] != 'execution_uncertain':raise ValueError('uncertain_error_receipt_required')
+            except (ValueError, TypeError):
+                result = _arm_entry_result(event, 'execution_uncertain', 'arm_mutation_outcome_unknown', unknown=True)
+            result['transport_error'] = type(exc).__name__
+        timings['mutation_rpc'] = time.perf_counter_ns()-rpc_started
+        uncertain = result['status'] == 'execution_uncertain'
+        result.update(replayed=False, historical_receipt=False, retry_authorized=False,
+            executed_this_call=result['executed'], new_setter_count=None if uncertain else result['setter_returns'],
+            completion_persistence='committed', entry_timings_ns=dict(timings))
+        entry['state'] = 'execution_uncertain' if uncertain else 'complete'
+        entry['result'] = copy.deepcopy(result)
+        value['inflight'] = pending if uncertain else None
+        save_started = time.perf_counter_ns()
+        try:
+            service._save(value, runtime)
+        except Exception as exc:
+            # Durable pending remains the restart barrier. Keep the observed
+            # physical result in memory, without inventing rollback or a retry.
+            entry.update(state='pending', result=None); value['inflight'] = pending
+            result.update(completion_persistence='failed_or_unknown', persistence_error=type(exc).__name__)
+        timings['completion_save'] = time.perf_counter_ns()-save_started
+        timings['entry'] = time.perf_counter_ns()-started
+        result['entry_timings_ns'] = timings
+        retained[event] = dict(fingerprint=fingerprint, result=copy.deepcopy(result))
+        return result
 
 
 __all__ = ['run_clearance_segment', 'validate_segment_ledger', 'unfinished_segment',
-           'record_step_result', 'MAX_SEGMENT_RECEIPTS']
+           'record_step_result', 'MAX_SEGMENT_RECEIPTS', 'ArmAxialTaskSpec', 'run_arm_axial_step',
+           'validate_arm_axial_request', 'validate_arm_axial_ledger']

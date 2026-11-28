@@ -31,7 +31,7 @@
 
 新候选未替换默认MCP。真实模型试次、训练和上传均0，公共评测formal资格继续false。下一批优先检验不同尺度、极端视角与真实故障恢复边界，再做固定launcher/安装和受预算约束的模型对照。场景仍限静态刚体箱体/原支撑面及世界Z终态，不推广为通用旋转、扫掠或任意资产。
 
-证据：[本轮目录](../verification/fixes/20261031_v21_readonly_render/)、[标准/锁定](../verification/fixes/20261031_v21_readonly_render/owned_work/core_001/RESULT.json)、[密集/遮挡](../verification/fixes/20261031_v21_readonly_render/owned_work/expanded_001/RESULT.json)、[独立审查](../verification/fixes/20261031_v21_readonly_render/acceptance_work/FINAL_REVIEW.json)。
+证据：本轮目录（历史文件 `verification/fixes/20261031_v21_readonly_render/`）、标准/锁定（历史文件 `verification/fixes/20261031_v21_readonly_render/owned_work/core_001/RESULT.json`）、密集/遮挡（历史文件 `verification/fixes/20261031_v21_readonly_render/owned_work/expanded_001/RESULT.json`）、独立审查（历史文件 `verification/fixes/20261031_v21_readonly_render/acceptance_work/FINAL_REVIEW.json`）。
 
 
 2026-10-31 边界实测与原生取景修复（取代上一批“尚未触发真实故障”的当前状态；旧结果按当时版本保留）：
@@ -46,7 +46,7 @@
 
 新增未修边界按顺序收敛：原生binary32零位移预拒绝并保持预算；共面代表triangle编号变化时仍固定原triangle witness；384全景长宽比/深度场景共同多尺度观察。100m/100km固定world-Z的1µm要求可能不可达，不能改容差拿通过。之后固定安装与模型收益对照。
 
-证据：[尺度/视角/故障目录](../verification/fixes/20261031_v21_scale_fault/)。
+证据：尺度/视角/故障目录（历史文件 `verification/fixes/20261031_v21_scale_fault/`）。
 
 
 2026-10-31 共同多尺度观察SDK验收与产品接入缺口：
@@ -67,7 +67,7 @@
 
 当前LIVE_MCP_TOOLS_SCHEMA仍4tool，production/Hook没有新SDK入口；仅打包核心不能让其自动进入当前聊天。下一步先做独立只读观察lease（不重绑/重置动作episode、不签动作权限），再接实际MCP/Hook、显式来源/能力协商和include_image=false，随后固定launcher/安装事务/真实3D消息验收。未来视觉收益对照须给原生模型合理手动取景及同像素预算，不能拿旧三枚固定视角当普通模型上限；当前共同SDK同API用于输入等价，不是巨大模型收益证明。模型/provider/训练/上传0，formalfalse。
 
-证据：[本阶段报告](../verification/fixes/20261031_v21_multiscale/REPORT.md)、[安装缺口](../verification/fixes/20261031_v21_multiscale/owned_work/INSTALLATION_GAPS.json)。
+证据：本阶段报告（历史文件 `verification/fixes/20261031_v21_multiscale/REPORT.md`）、安装缺口（历史文件 `verification/fixes/20261031_v21_multiscale/owned_work/INSTALLATION_GAPS.json`）。
 
 
 ## 2026-10-31 产品只读观察协议
@@ -82,14 +82,14 @@
 
 78源81文件SDK候选ed296569，只读观察lease独立于动作episode；新8-key能力、完整同call证据/恢复/实际RNA/PNG验证，MCP仍4tool经observe.query.native_visual接1/2原生图；默认auto、projection与无图不probe；文字Hook零图零render。1468回归1467pass/1既有权限skip，41新增方法；7真实产品case/14进程exit0已wait回收，13成功只读call交付17原生图，另6预期拒绝；raw/public RGBA exact，默认BlenderMCP随机端口链通过。独立控制场景仅1次授权-.5mm动作，观察前后原账本exact、原动作过期仍读但拒写；7个输入文件SHA保持。run001验收器失败保留，额外2进程启动，其worker无returncode仅确认不在进程表，不能称总16均reaped。当前b77/76仍在用，新SDK未固定launcher/激活；Hook是模拟handler，未验真实新版本用户消息；模型/provider/训练/上传0。
 
-当前候选及协议实测见[报告](../verification/fixes/20261031_v21_readonly_product/REPORT.md)。固定launcher、安装CAS/旧writer隔离和新版真实用户消息仍待完成。
+当前候选及协议实测见报告（历史文件 `verification/fixes/20261031_v21_readonly_product/REPORT.md`）。固定launcher、安装CAS/旧writer隔离和新版真实用户消息仍待完成。
 
 
 2026-10-31 只读身份门与固定发布：
 
 已安装78源/87文件固定发布readonly.product.r2，build6acbe816；新配置真实MCP进程身份兼容，当前旧聊天b77已被statefingerprint拒绝，须重启后再核加载。安装验收发现r1只读observe遗漏原身份/source检查，r1拒装保留；r2仅复用既有_identity_rejection并更新revision，几何/渲染/动作/预算算法未改。1470回归1469pass/1既有Win1314skip；r2私有admin11case19CLI、11role合同、两组serve/Hook真实哨兵12拒绝/0TCP/0state。固定serve→默认Socket实际3场景/10子进程通过，5native观察7MCP图片，R1/R2七图RGBA exact；独立有限axisbox4setter从4mm到约1.000002mm，原4步/4mm/10s预算内，观察后ledger exact/重放0setter。独审source+mini14+plan25+after55通过。四文件CAS/备份已提交，state仅顶层绑定token改变，历史/原预算不重置；五组Hook结构保留同指新r2。用户global model/effort期间变化仅记录，安装不覆盖，验收相对freshplan快照。未触用户GUI/共享9876；Hook为模拟固定命令，真实用户消息仍待验；模型/provider/训练/上传0。
 
-观察、预览、移动与有限动作段共享现有身份/source准入；status保留无host诊断。只读租期仍不重绑动作episode或返还预算。局部图窗口和源像素机会不等于模型成功率提高；当前模型试次仍为0。见[本阶段报告](../verification/fixes/20261031_v21_readonly_fixed_release/REPORT.md)。
+观察、预览、移动与有限动作段共享现有身份/source准入；status保留无host诊断。只读租期仍不重绑动作episode或返还预算。局部图窗口和源像素机会不等于模型成功率提高；当前模型试次仍为0。见本阶段报告（历史文件 `verification/fixes/20261031_v21_readonly_fixed_release/REPORT.md`）。
 
 本轮激活后独审时global配置与freshplan快照相同；随后另记录本项目五条Hook的trusted_hash变化。安装器不写回或恢复这些信任哈希，操作者未归因，不以此证明真实用户消息Hook已运行。全部历史审查保持原时点边界，不声称global全轮或直到收尾字节不变。
 
@@ -98,28 +98,28 @@
 
 r2当前聊天实际加载6ac/78/installed且身份兼容，无旧stale；本轮真实UserPromptSubmit非3D重启消息正确skip，随后用户完整问答答案经answers_only触发真实自动文字观察，gap=0.004000001586973667m，0移动/0图片/0能力探测，场景与原动作历史保持。纯默认PNG首次原生观察发现恢复失败：重复赋相同PNG触发Blender把无效空linearcolorspace名变sRGB，恢复空值TypeError，原生通道正确隔离且没有伪装投影成功。原r2默认PNG不计图片通过。隔离候选只跳过alreadyPNG setter，三视角初测+4格式3视图双arm共24 typed native调用回归：候选12/12成功，旧默认3次预期失败，21成功帧actualRNA/PNG复核，9组已初始化原/候选RGBA exact；未修改源码或安装。下一P0正式合入/全相关回归/新固定发布，不再重复已通过的重载与真实文字Hook。测试服务已STOP，5个自有Blender均exit0/wait，默认端口已释放。探针漏禁bytecode产生r2内2新pyc，清理遭blocked by policy拒绝后未重试，原87发布文件字节保持、实际89文件如实记录。模型/provider/训练/上传0。
 
-24项新纯解析合同单独记录，未声称已包含原1470回归；24实际native调用也不是24个模型试次。自动文字Hook、已初始化配置原生图、纯默认PNG失败、隔离候选分别按实际证据判断。见[本阶段报告](../verification/fixes/20261031_v21_r2_restart_acceptance/REPORT.md)。
+24项新纯解析合同单独记录，未声称已包含原1470回归；24实际native调用也不是24个模型试次。自动文字Hook、已初始化配置原生图、纯默认PNG失败、隔离候选分别按实际证据判断。见本阶段报告（历史文件 `verification/fixes/20261031_v21_r2_restart_acceptance/REPORT.md`）。
 
 
 2026-10-31 默认PNG正式修复与当前工具验收：
 
 已正式合入同值PNG setter guard并安装r3/d2a4508d，78源87发布文件。原源码真实红测defaultPNG三view失败、其它九初始化配置通过；新完整1508回归1507pass/1既有Win1314skip，包含新2个真实RNA方法及完整36项structured prompt模块。真实固定serve→默认Socket四profile13次native/13MCP图通过，12管理进程exit0/wait，四输入SHA保持，默认空linearcolorspace名经三view+repeat始终空，13帧恢复/PNG/RNA复核，历史12组RGBA exact，0setter/0动作episode，无新增bytecode。独立source/min14/plan25/after55与13图离线复核通过。四文件CAS/备份36627ce795a04bb19239d1c2a8afc3c8已提交，安装state仅绑定token改变。实际当前聊天工具已由6ac/78切到d2a/78兼容，不需用户重启；随后root在空闲9876独占只读新factory上实测当前native SCENE/XY两图成功，raw/public/RNA/空name恢复均过，无图零能力探测/渲染，0移动，原动作历史保持。该桥已关闭，输入SHA及两个额外Blender exit0/wait回执齐，未触用户GUI。原r2及两份策略拒删cache完整保留，没有新清理尝试；新r3仍精确87文件。模型/provider/训练/上传0。
 
-修复仅跳过alreadyPNG赋值，恢复比较、隔离、几何、动作预算与截止均保持。安装器本身不承诺热重载；本轮依据实际当前工具已加载新身份和图片，不要求重启。纯解析、实际RNA、MCP图像及模型试次分别计数，不从像素一致性推断模型收益。见[报告](../verification/fixes/20261031_v21_default_png_release/REPORT.md)。
+修复仅跳过alreadyPNG赋值，恢复比较、隔离、几何、动作预算与截止均保持。安装器本身不承诺热重载；本轮依据实际当前工具已加载新身份和图片，不要求重启。纯解析、实际RNA、MCP图像及模型试次分别计数，不从像素一致性推断模型收益。见报告（历史文件 `verification/fixes/20261031_v21_default_png_release/REPORT.md`）。
 
 
 2026-10-31 只读宿主重连与能力缓存收口：
 
 只读重连已合入并安装1c51f537/78源87发布文件。仅LiveSpatialService.observe进入5命令只读串行域；完整64hex文档epoch改变时失效正/负cap缓存，同epoch不加RPC；legacy无可靠epoch则每次图像重探，保留旧capture准入。仅_connect返回socket前的OSError/TimeoutError不毒化本次只读连接；当前调用仍报错且绝不重试，下一次独立观察才可恢复。已发送/响应未知/JSON或nonce错误仍原poison，closed不复活，动作绑定/总预算/截止/账本/inflight/宿主render隔离不重置。1526相关回归1525pass/1既有Win1314skip，含15新transport与3service方法；独立真实未监听端口/并发writer/close三项通过。同真实service经canonical MCP跨三个owned Blender进程：新source与固定entry各6图，首cap各1、warm各0，离线一次失败后下一独立调用恢复；无图0cap/0render。旧r3同矩阵复现B旧PID图拒绝及离线poison后C全拒，不能算候选成功。15/15管理进程exit0/wait，0setter，3输入SHA保持。实际16render/14公开PNG；旧负例B两raw-only拒绝图补审，旧arm原budget2误标实际4的验收器偏差保留；两candidate各6均合原预算。独立mini14/plan25与旧writer隔离、dirty unknown/CAS拒绝通过。私有admin11case19CLI、11角色合同与12零连接边界通过。四文件CAS安装只变状态绑定token，原两条goal历史保持，新固定入口stdio身份通过；11旧release及22旧封存阶段完整保持。这证明只读可用性修复与新鲜证据，不证明模型三维任务收益；用户GUI、非空动作跨重启继续执行、真实新用户Hook均未据本轮冒认。模型/provider/训练/上传0。
 
-流程为原状态锁→只读域→fresh capture epoch→必要时新cap→原inline PNG/PID/epoch/恢复验证。失败当前call不重发，下一独立call只在确定零发送时可继续。稳定可信epoch保持warm零额外cap RPC；不对无可靠epoch旧桥作此性能承诺。已关闭/毒化/同宿主quarantine保持。本轮当前聊天status实际触发旧配置fence并拒绝执行，需重启后复核，不把fresh stdio当当前聊天热重载；没有连接生产Blender。固定entry真实图片属于独立owned链。见[报告](../verification/fixes/20261031_v21_readonly_reconnect/REPORT.md)。
+流程为原状态锁→只读域→fresh capture epoch→必要时新cap→原inline PNG/PID/epoch/恢复验证。失败当前call不重发，下一独立call只在确定零发送时可继续。稳定可信epoch保持warm零额外cap RPC；不对无可靠epoch旧桥作此性能承诺。已关闭/毒化/同宿主quarantine保持。本轮当前聊天status实际触发旧配置fence并拒绝执行，需重启后复核，不把fresh stdio当当前聊天热重载；没有连接生产Blender。固定entry真实图片属于独立owned链。见报告（历史文件 `verification/fixes/20261031_v21_readonly_reconnect/REPORT.md`）。
 
 
 2026-10-31 有限只读依赖链收口：
 
 原生只读依赖绑定已安装4d2d68ff/78源87文件；原bootstrap全源pin已有保障，本批关闭另bridge根只比host.py及有效pyc错配的有限加载缺口。host字面commit gateway/deadline两个SHA，保留host_source_sha256原host字节含义和八字段V1；只读scope capture/typed模板核构造快照并编译同份bytes，cap绑定loader实际编译hash，helper固定sibling/hash/256KiB上限后编译已验bytes，warm仍核源漂移，clock独立于action缓存；默认worker初载host/clock同样覆盖。无新增RPC、回退投影、动作授权或预算/截止/unknown重置；无图不触发新增helper加载/cap/render。scope外旧capture/apply/supervision模板及legacy episode loader保持，不宣称任意同进程篡改或全部native/action加载链已绑定。1544相关回归1543pass/1既有Win1314skip，18新方法；首两完整回归均因worker示例副本未同步失败并保留，已snapshot/diff后同步examples/blender_worker.py，第三完整回归通过，runtimefreeze未变。独立7组pyc/漂移/snapshot探针、mini14/plan25通过。真实fixed MCP四候选arm交付8图，old正常2图，三类旧pyc反例0图；6份真实3.13有效pyc参考执行被现场证实，实际渲染入口=完成=公开10，17管理进程均exit0/wait。另defaultworker独立2次启动：第一次验收器capture键误用objects导致0render/健康退出，第二次按meshes修正后SCENE/XY两图通过，2child均exit0/wait；合19管理进程其中11Blender，实际12render/12验证图，MCP10和worker2分开记。新旧正常两view RGBA exact，输入SHA/87发布文件不变，0setter。局部clean-source模板96对照样本的paired median额外capture+.696ms、cap+.638ms；非整任务时延，cap p95更高且有76ms离群/并行验证干扰，明确不承诺性能不退化或提速。接受此有限正确性成本，不把零RPC当零CPU。四文件CAS只替换状态绑定token，原两条goal记录保持；12旧release和23旧seal完整保持。当前聊天与fresh stdio分开记录。用户GUI/复杂独立资产/模型三维收益未由此验收，模型/provider/训练/上传0。
 
-这是来源与恢复正确性验收，正常图片像素保持，不把它当成模型视觉/任务收益或速度提升。后续优先进入复杂资产与GUI验收。见[报告](../verification/fixes/20261031_v21_readonly_dependency/REPORT.md)。
+这是来源与恢复正确性验收，正常图片像素保持，不把它当成模型视觉/任务收益或速度提升。后续优先进入复杂资产与GUI验收。见报告（历史文件 `verification/fixes/20261031_v21_readonly_dependency/REPORT.md`）。
 
 
 2026-10-31 重启核验与复杂资产质量诊断：
@@ -130,16 +130,16 @@ r2当前聊天实际加载6ac/78/installed且身份兼容，无旧stale；本轮
 
 质量新发现：25um精确文字保留，但目标自身轮廓足够大使planner不补图，任务间隙仍是亚像素；闭壳图只显示外壳，几何穿入证据不等于看见内部目标。另同边界8v/65v126tri纯规划反例发现复杂焦点直接失去ROI机会，尚非真实产品图反例。下一批优先任务相关接触特征取景/质量说明，再低成本复杂焦点机会筛查；保持原2张384²、完整遮挡与原期限。模型试次仍0，GUI与任意复杂网格尚未验收。
 
-证据：[本阶段报告](../verification/fixes/20261031_v21_complex_quality/REPORT.md)。
+证据：本阶段报告（历史文件 `verification/fixes/20261031_v21_complex_quality/REPORT.md`）。
 
 
 2026-10-31 任务间隙取景候选：源码/SDK候选7a88d58d、78源81文件已验，生产仍4d2d/78且未激活本候选。新增readonly专用V2只处理严格8v12tri外向轴盒、单轴正间隙、其它轴足够重叠、最佳正交gap小于1px；保留原overview，gapZ补XZ、gapX/Y补XY，预测局部至少32px才追加。每call仍最多2张384²，producer三ray与consumer独立三ray共享6F<=4096预算，支持scene F<=682/V<=4096；全部几何参与原生render/depth，三sample不代表完整可见。大坐标局部绑定、共面射线和binary32相机定位不成立即保留旧V1，renderer实际guard不放宽。旧V1/common/action规划和renderer函数AST保持。
 
 完整1568方法中1567pass/1既有Win1314skip，含24新方法。真实5pair10SDKarm实际13帧（旧5/新8），3新增局部gap几何投影均96px、连续PNG核心94/95/94px，且通过独立实际camera-ray/PNG判据；25um SCENE/XY转XZ，0.4mm侧pair转XY，普通4mm与闭壳仍1图，五全景RGBA exact。15Blender+10SDK进程均exit0/wait，完整STATE_BEFORE/AFTER、FINAL_CAPTURE与即时计数均在断言前持久化，原上阶段失败不改。独审46纯组+3camera组和16实际组通过；离线MCP full/brief十投影保留新plan/方向/图片，不能当真实MCP进程验收。普通planner配对median额外约.074ms，microgap约.216ms、side约.253ms；不含validator/RPC/render，更不证明整任务加速。
 
-本批真实矩阵首次全通过；预启动ray审图器纠错、开发期两个validator反例和独审器工作量边界建模错误全部保留。新SDK尚未固定入口安装，旧consumer不能冒认为理解innerV2；下一批先固定发布/兼容与实际MCP，再推进复杂焦点和GUI。正式模型/provider试次仍0。[报告](../verification/fixes/20261031_v21_task_gap/REPORT.md)；[合同](TASK_GAP_NATIVE_CONTRACT.md)。
+本批真实矩阵首次全通过；预启动ray审图器纠错、开发期两个validator反例和独审器工作量边界建模错误全部保留。新SDK尚未固定入口安装，旧consumer不能冒认为理解innerV2；下一批先固定发布/兼容与实际MCP，再推进复杂焦点和GUI。正式模型/provider试次仍0。报告（历史文件 `verification/fixes/20261031_v21_task_gap/REPORT.md`）；[合同](TASK_GAP_NATIVE_CONTRACT.md)。
 
 
 2026-10-31 task-gap固定发布：7a88/78源87文件task.gap.r1已安装。私有11admin/19CLI、11roles与12零连接哨兵拒绝通过，35fixed子进程正常wait（负例预期非零）。实际fixed入口→默认Socket私有三scene（旧sealedfactory输入的新副本）交付6MCP图/4nativecall，thin正常+warmbrief各2图，ordinary与occlusion各1图；raw/public/RNA恢复及与已验SDK像素exact、0setter，3Blender+3frontend全exit0/wait。独审17兼容、47MCP、25plan、79安装后检查通过。V1/V2旧新消费者边界明确，8cap非任意V2兼容证书；旧consumer拒V2准确，新consumer接受旧V1。四文件CAS备份527d9f17bc7f4169acdaffcffd2be9da，state仅config_fingerprint，原goal历史/foreignsettings保持；fresh配置stdio7a88兼容。实际当前聊天仍被stale配置fence拒绝且无新identity，需重启再核验，不把freshstdio当热重载。生产GUI/真实新Hook未据本轮冒认。
 
-同时准备用户明确授权公开GitHub仓库human-eye。公共干净源码85模块1493run中1480pass、13skip（10旧frozen基线、2Blender opt-in、1Win1314），原source-only首轮37个缺历史/fixture错误保留；恢复公开routingfixture后过门，不称所有197测试都无需历史。源码字节固定，Git禁止换行转换，机器状态/凭据/附件/大型验证历史不上传。正式模型试次0。[本轮报告](../verification/fixes/20261031_v21_task_gap_release/REPORT.md)。
+同时准备用户明确授权公开GitHub仓库human-eye。公共干净源码85模块1493run中1480pass、13skip（10旧frozen基线、2Blender opt-in、1Win1314），原source-only首轮37个缺历史/fixture错误保留；恢复公开routingfixture后过门，不称所有197测试都无需历史。源码字节固定，Git禁止换行转换，机器状态/凭据/附件/大型验证历史不上传。正式模型试次0。本轮报告（历史文件 `verification/fixes/20261031_v21_task_gap_release/REPORT.md`）。

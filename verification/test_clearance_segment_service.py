@@ -446,18 +446,18 @@ class ClearanceSegmentServiceTests(unittest.TestCase):
         from human_eye_plugin import goal_execution
         from human_eye_plugin.auto_router import HumanEyeAutoRouter
         clock = SegmentClock()
-        original = HumanEyeAutoRouter.handle_event
+        original = HumanEyeAutoRouter._handle_event
         accepted_gates = []
 
-        def expire_after_geometry(router, event):
-            result = original(router, event)
+        def expire_after_geometry(router, event, **kwargs):
+            result = original(router, event, **kwargs)
             if event.get('event') == 'before_action':
                 accepted_gates.append(result.get('allow_action'))
                 clock.expire()
             return result
 
         with patch.object(goal_execution.time, 'monotonic', side_effect=clock.monotonic), \
-                patch.object(HumanEyeAutoRouter, 'handle_event', new=expire_after_geometry):
+                patch.object(HumanEyeAutoRouter, '_handle_event', new=expire_after_geometry):
             result = self.run_segment()
         self.assertEqual(accepted_gates, [True])
         self.assertEqual(result['status'], 'blocked', result)

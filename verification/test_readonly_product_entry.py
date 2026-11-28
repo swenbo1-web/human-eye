@@ -103,7 +103,7 @@ class ReadonlyProductEntryTests(unittest.TestCase):
             for value in ('image_base64','private-owner','private_path','render_audit','object_instances','host_source_sha256'):
                 self.assertNotIn(value,text)
             self.assertNotIn('images',metadata.get('routing',{}))
-        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),4)
+        self.assertEqual(len(LIVE_MCP_TOOLS_SCHEMA),5)
 
     def test_default_auto_ordinary_scene_delivers_one_native_image(self):
         service=self.native();output=self.observe(service)

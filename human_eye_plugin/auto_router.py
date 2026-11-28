@@ -263,7 +263,9 @@ def _validate_raw_indices(raw, width, vertex_count, field):
 
 
 @_trace_stage("scene.validate")
-def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True) -> tuple:
+def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True,
+                     _task_capture=False, _surface_nearest_capture=False,
+                     _surface_scan_capture=False, _observation_task_capture=False) -> tuple:
     if not isinstance(scene, dict):
         raise ValueError("scene must be an object")
     if scene.get("unit") != "m" or scene.get("coordinate_frame") != "world":
@@ -271,9 +273,19 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
     revision = scene.get("revision")
     if not isinstance(revision, str) or not revision.strip():
         raise ValueError("scene requires a nonempty revision string")
+    if sum(bool(flag) for flag in (_task_capture, _surface_nearest_capture, _surface_scan_capture,
+                                   _observation_task_capture)) > 1:
+        raise ValueError('Observation entries must have one capture scope')
+    scope = ('observation_task_objects' if _observation_task_capture else
+             'surface_scan_candidates' if _surface_scan_capture else
+             'surface_nearest_candidates' if _surface_nearest_capture else
+             'selected_objects' if _task_capture else 'complete_scene_meshes')
+    if scene.get('capture_scope', 'complete_scene_meshes') != scope:
+        raise ValueError('Scene capture_scope does not match this observation entry')
     items = scene.get("meshes")
-    if not isinstance(items, list) or not 1 <= len(items) <= 256:
-        raise ValueError("scene requires 1..256 meshes")
+    minimum, maximum = (0, 4) if _task_capture or _observation_task_capture else (0, 256) if _surface_scan_capture else (1, 256)
+    if not isinstance(items, list) or not minimum <= len(items) <= maximum:
+        raise ValueError('scene requires ' + str(minimum) + '..' + str(maximum) + ' meshes')
     meshes, ids, marks = [], set(), set()
     vertex_count = face_count = 0
     for item in items:
@@ -350,7 +362,7 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
         if (not isinstance(identity, dict) or set(identity) != {
                 'schema_version', 'document_epoch', 'object_instances', 'capture_scope'}
                 or identity.get('schema_version') != '1.0'
-                or identity.get('capture_scope') != 'complete_scene_meshes'
+                or identity.get('capture_scope') != scope
                 or not isinstance(identity.get('document_epoch'), str)
                 or not 1 <= len(identity['document_epoch']) <= 256
                 or not identity['document_epoch'].strip()
@@ -362,6 +374,47 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
                 or len(set(identity['object_instances'].values())) != len(ids)):
             raise ValueError('Invalid host_identity declaration')
         normalized['host_identity'] = copy.deepcopy(identity)
+    if _task_capture or _observation_task_capture:
+        if 'host_identity' not in normalized:
+            raise ValueError('Selected capture requires host_identity')
+        selection = scene.get('task_selection')
+        if type(selection) is not dict or set(selection) != {
+                'selectors', 'bindings', 'pair_reason', 'candidate_count'}:
+            raise ValueError('Invalid task_selection declaration')
+        from .task_query import validate_task_query
+        selectors = validate_task_query({'mode': 'task', 'objects': selection['selectors'],
+                                         'requested_facts': ['aabb']})['objects']
+        bindings = selection['bindings']
+        if (type(selection['candidate_count']) is not int or selection['candidate_count'] < len(ids)
+                or type(bindings) is not list or len(bindings) != len(selectors)):
+            raise ValueError('Invalid selected candidate count or bindings')
+        by_id = {item['object_id']: item for item in normalized['meshes']}
+        resolved = set()
+        for selector, row in zip(selectors, bindings):
+            if type(row) is not dict:
+                raise ValueError('Invalid task binding')
+            if set(row) == {'object_id', 'name'}:
+                item = by_id.get(row['object_id']) if type(row['object_id']) is str else None
+                field = 'object_id' if 'id' in selector else 'name'
+                if (item is None or row['name'] != item['name']
+                        or item[field] != next(iter(selector.values()))):
+                    raise ValueError('Task binding does not match selected geometry')
+                resolved.add(row['object_id'])
+            elif (set(row) != {'status', 'selector', 'reason'} or row['status'] != 'unknown'
+                    or row['selector'] != selector
+                    or row['reason'] not in {'object_not_found', 'object_name_ambiguous'}):
+                raise ValueError('Invalid unresolved task binding')
+        pair_reason = ('pair_selectors_resolve_to_same_object' if len(bindings) == 2
+            and all('object_id' in row for row in bindings)
+            and bindings[0]['object_id'] == bindings[1]['object_id'] else None)
+        if resolved != ids or selection['pair_reason'] != pair_reason:
+            raise ValueError('Selected geometry coverage or pair reason does not match bindings')
+        normalized['capture_scope'] = scope
+        normalized['task_selection'] = copy.deepcopy(selection)
+    if _surface_nearest_capture or _surface_scan_capture:
+        if 'host_identity' not in normalized:
+            raise ValueError('Surface candidate capture requires host_identity')
+        normalized['capture_scope'] = scope
     # Includes identity, topology, pivots, frames and their provenance; stable
     # across processes, unlike the core's in-process cache tokens.
     with _trace_span("scene.hash"):
@@ -378,17 +431,20 @@ def _validated_scene(scene: dict, *, _return_payload=False, _annotate_scene=True
 
 
 class _ValidatedObservation:
-    """One detached capture, for one synchronous internal observation only.
+    """One detached capture shared by synchronous internal consumers.
 
     This Python object never enters an agent event or persisted state. It does
-    not authorize an action or replace any execution/readback validation.
+    not authorize an action. Execution still captures and validates its own
+    prewrite and readback scenes; each router handoff is consumed once.
     """
-    __slots__ = ('_parts', '_owner_thread', '_used')
+    __slots__ = ('_parts', '_owner_thread', '_used', '_measurements', '_capture_state')
 
     def __init__(self, captured):
+        self._capture_state = copy.deepcopy(captured.get('capture_state')) if isinstance(captured, dict) else None
         self._parts = _validated_scene(captured, _return_payload=True)
         self._owner_thread = threading.get_ident()
         self._used = False
+        self._measurements = {}
 
     @property
     def scene(self):
@@ -401,6 +457,29 @@ class _ValidatedObservation:
     @property
     def fingerprint(self):
         return self._parts[2]
+
+    def _require_scene(self, scene):
+        if self._owner_thread != threading.get_ident() or scene is not self.scene:
+            raise ValueError('Validated observation must own this scene on its capturing thread')
+
+    def _fork(self):
+        """Another synchronous consumer of these same detached capture parts."""
+        self._require_scene(self.scene)
+        view = object.__new__(type(self))
+        view._parts, view._owner_thread = self._parts, self._owner_thread
+        view._measurements, view._capture_state = self._measurements, self._capture_state
+        view._used = False
+        return view
+
+    def _measure_pair(self, focal, reference, compute, **options):
+        self._require_scene(self.scene)
+        # Projected candidates are distinct geometry, even with the same ID.
+        if not all(any(mesh is item for mesh in self.meshes) for item in (focal, reference)):
+            return compute(focal, reference, **options)
+        key = (compute, focal.object_id, reference.object_id, tuple(sorted(options.items())))
+        if key not in self._measurements:
+            self._measurements[key] = compute(focal, reference, **options)
+        return copy.deepcopy(self._measurements[key])
 
     def _consume(self):
         if self._owner_thread != threading.get_ident() or self._used:
@@ -524,6 +603,14 @@ class HumanEyeAutoRouter:
         if (type(capture) is not _ValidatedObservation or not isinstance(event, dict)
                 or event.get('event') != 'before_model' or 'scene' in event):
             raise ValueError('Internal validated capture requires an observation-only metadata event')
+        return self._handle_event(event, _observation_parts=capture._consume())
+
+    @_trace_stage('router.event', image_event=True)
+    def _handle_validated_action(self, event, capture):
+        """Use this execution call's independently captured pre/post objects."""
+        if (type(capture) is not _ValidatedObservation or not isinstance(event, dict)
+                or event.get('event') not in {'before_action', 'after_action'} or 'scene' in event):
+            raise ValueError('Internal action capture requires action metadata')
         return self._handle_event(event, _observation_parts=capture._consume())
 
     def _handle_event(self, event, *, _observation_parts=None):
@@ -1668,6 +1755,38 @@ class HumanEyeAutoRouter:
                           "expected_scene_fingerprint": state["fingerprint"]}, ensure_ascii=False))
         return result
 
+    def _cleanup_observation_state(self, item, fingerprint):
+        retry = _attention_retry_state(item.get('attention_retry'), self._clock())
+        if retry is None:
+            if 'attention_retry' in item:
+                item['observation'] = None
+            item.pop('attention_retry', None)
+        else:
+            item['attention_retry'] = retry
+        obs = item.get("observation")
+        if obs and (obs.get('contract_revision') != OBSERVATION_CONTRACT_REVISION
+                    or obs.get("fingerprint") != fingerprint or not
+                    0 <= self._clock() - obs["created"] <= self.observation_ttl_s):
+            item["observation"] = None
+        raw_refill = item.get('refill_retry')
+        # The most recent observation may be text-only, which must not
+        # reset a visual recovery episode. Bind the record to the actual
+        # image request key when that request arrives, before any reuse.
+        refill = _refill_retry_state(raw_refill, self._clock(),
+            key=raw_refill.get('key') if type(raw_refill) is dict else None)
+        if refill is None:
+            if 'refill_retry' in item:
+                item['observation'] = None
+            item.pop('refill_retry', None)
+        else:
+            item['refill_retry'] = refill
+
+    def _cleanup_observations(self):
+        """Apply restore-time expiry to trusted memory without rebuilding scenes."""
+        with self._lock:
+            for item in self._sessions.values():
+                self._cleanup_observation_state(item, item['fingerprint'])
+
     def export_state(self) -> dict:
         """Trusted local persistence only; not a model-writable authorization token."""
         with self._lock:
@@ -1689,30 +1808,7 @@ class HumanEyeAutoRouter:
             if fingerprint != state.get("fingerprint"):
                 raise ValueError("Persisted scene fingerprint mismatch")
             item = copy.deepcopy(state); item["scene"] = scene
-            retry = _attention_retry_state(item.get('attention_retry'), self._clock())
-            if retry is None:
-                if 'attention_retry' in item:
-                    item['observation'] = None
-                item.pop('attention_retry', None)
-            else:
-                item['attention_retry'] = retry
-            obs = item.get("observation")
-            if obs and (obs.get('contract_revision') != OBSERVATION_CONTRACT_REVISION
-                        or obs.get("fingerprint") != fingerprint or not
-                        0 <= self._clock() - obs["created"] <= self.observation_ttl_s):
-                item["observation"] = None
-            raw_refill = item.get('refill_retry')
-            # The most recent observation may be text-only, which must not
-            # reset a visual recovery episode. Bind the record to the actual
-            # image request key when that request arrives, before any reuse.
-            refill = _refill_retry_state(raw_refill, self._clock(),
-                key=raw_refill.get('key') if type(raw_refill) is dict else None)
-            if refill is None:
-                if 'refill_retry' in item:
-                    item['observation'] = None
-                item.pop('refill_retry', None)
-            else:
-                item['refill_retry'] = refill
+            self._cleanup_observation_state(item, fingerprint)
             restored[sid] = item
         with self._lock:
             self._sessions = restored
