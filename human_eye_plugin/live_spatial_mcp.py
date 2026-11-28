@@ -69,6 +69,10 @@ _SOURCE_REGION_REF_SCHEMA = {
 _VECTOR_SCHEMA = {
     "type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3,
 }
+_WORLD_BOX_SCHEMA = {
+    "type": "object", "required": ["min", "max"], "additionalProperties": False,
+    "properties": {"min": copy.deepcopy(_VECTOR_SCHEMA), "max": copy.deepcopy(_VECTOR_SCHEMA)},
+}
 _TASK_GEOMETRY_SCHEMA = {
     'type': 'object',
     'description': 'Opt-in geometry from the original relation bindings. Vertices use world metres; captured triangles are optional.',
@@ -98,8 +102,7 @@ _QUERY_SCHEMA = {
         "region": {"type": "object", "required": ["object"],
             "properties": {"object": copy.deepcopy(SELECTOR_SCHEMA),
                 "source_triangle_indices": copy.deepcopy(_SOURCE_TRIANGLE_ROWS_SCHEMA),
-                "world_box_m": {"type": "object", "required": ["min", "max"], "additionalProperties": False,
-                    "properties": {"min": copy.deepcopy(_VECTOR_SCHEMA), "max": copy.deepcopy(_VECTOR_SCHEMA)}}},
+                "world_box_m": copy.deepcopy(_WORLD_BOX_SCHEMA)},
             "oneOf": [{"required": ["source_triangle_indices"]}, {"required": ["world_box_m"]}],
             "additionalProperties": False,
             "description": "Current evaluated rows or a closed world-metre box with finite binary64 endpoints. All three vertices must be inside. The full selected set participates in measurement."},
@@ -115,12 +118,19 @@ _QUERY_SCHEMA = {
                     "items": {"type": "string", "enum": list(TASK_FACTS)}}},
             "additionalProperties": False},
         'region_task': copy.deepcopy(REGION_TASK_SCHEMA),
-        'focus': {'description': 'On one active_observation object, focus on one source triangle: auto prefers surfaces poorly faced by registered views, normal_world selects a facing surface, or supply its current row. At most two images are constructed; the best verified sample is delivered.',
+        'focus': {'description': 'On one active_observation object, auto prefers a source triangle poorly faced by the registered views, normal_world selects a facing triangle, or supply its current source_triangle_index. Use task_region for a group of current evaluated triangles. At most two images are constructed; the best verified sample is delivered.',
                   'oneOf': [{'const': 'auto'},
                             {'type': 'object', 'required': ['source_triangle_index'], 'additionalProperties': False,
                              'properties': {'source_triangle_index': {'type': 'integer', 'minimum': 0}}},
                             {'type': 'object', 'required': ['normal_world'], 'additionalProperties': False,
-                             'properties': {'normal_world': {**_VECTOR_SCHEMA, 'not': {'const': [0, 0, 0]}}}}]},
+                             'properties': {'normal_world': {**_VECTOR_SCHEMA, 'not': {'const': [0, 0, 0]}}}},
+                            {'type': 'object', 'required': ['task_region'], 'additionalProperties': False,
+                             'properties': {'task_region': {
+                                 'type': 'object', 'required': ['reference'], 'additionalProperties': False,
+                                 'description': 'Select a distinct reference object. A closed world-metre box selects target triangles with all three vertices inside. The reference prioritizes the primary triangle by centroid distance to its world AABB. Without a box the group contains the equal-nearest nondegenerate target triangles by that distance.',
+                                 'properties': {'reference': copy.deepcopy(SELECTOR_SCHEMA),
+                                                'world_box_m': copy.deepcopy(_WORLD_BOX_SCHEMA)},
+                             }}}]},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
             "description": "1..3 explicit candidates in request order; one capture with target. Requires surface_proximity with spatial_relation or closed_solid_relation. Optional aabb supplies bounds."},

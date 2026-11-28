@@ -1,4 +1,4 @@
-"""Select one current source triangle and spend at most one corrective view on it."""
+"""Observe a current source triangle or task region with at most one corrective view."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -6,11 +6,12 @@ import time
 
 import numpy as np
 
-from .active_observation import fingerprint, vector
+from .active_observation import cross, fingerprint, subtract, vector
 from .active_observation_host import CAMERA_DIRECTIONS
+from .query_policy import MAX_SOURCE_REGION_TRIANGLES
 from .source_region import (
     _MIN_SURFACE_PIXELS, _capture_region_frame, _interval, _object_index,
-    _region_image_store, _source_ref, prepare_region,
+    _region_image_store, _source_ref, _world_box_source_indices, prepare_region,
 )
 
 
@@ -78,6 +79,78 @@ def select_triangle(mesh, focus, check_budget):
     return best
 
 
+def select_task_region(captured, binding, object_index, task_region, check_budget):
+    """Select source rows from the exact closed box or a centroid-to-reference-box tie.
+
+    The reference's complete current evaluated mesh supplies a world AABB.
+    Its exact squared distance to each target triangle's centroid sets priority;
+    equal distances use source order. An explicit task box fixes membership.
+    """
+    check_budget('before_task_region_selection')
+    reference_index = _object_index(binding, task_region['reference'])
+    if object_index == reference_index:
+        raise ValueError('focus_task_region_distinct_reference_required')
+    mesh = captured['meshes'][object_index]
+    ref_mesh = captured['meshes'][reference_index]
+    ref_xyz = np.asarray(ref_mesh['vertices'], dtype=np.float64)
+    lo, hi = vector(ref_xyz.min(axis=0).tolist()), vector(ref_xyz.max(axis=0).tolist())
+    box = task_region.get('world_box_m')
+    candidates = range(len(mesh['faces']))
+    if box is not None:
+        points = np.asarray(mesh['vertices'], dtype=np.float64)
+        faces = np.asarray(mesh['faces'], dtype=np.intp)
+        candidates = _world_box_source_indices(points, faces, box).tolist()
+        if len(candidates) > MAX_SOURCE_REGION_TRIANGLES:
+            raise ValueError('focus_task_region_triangle_limit')
+    check_budget('after_task_region_candidates')
+
+    minimum = primary = direction = None
+    nearest = []
+    nearest_count = 0
+    for ordinal, index in enumerate(candidates):
+        if ordinal % 64 == 0:
+            check_budget('focus_task_region_reference_ranking')
+        a, b, c = (vector(mesh['vertices'][i]) for i in mesh['faces'][index])
+        face_normal = cross(subtract(b, a), subtract(c, a))
+        scale = max(map(abs, face_normal))
+        if not scale:
+            continue
+        centroid = ((x + y + z) / 3 for x, y, z in zip(a, b, c))
+        distance = sum(max(l - x, x - h, 0) ** 2 for x, l, h in zip(centroid, lo, hi))
+        if minimum is None or distance < minimum:
+            minimum = distance
+            primary = index
+            direction = face_normal
+            nearest = []
+            nearest_count = 0
+        if box is None and distance == minimum:
+            nearest_count += 1
+            if nearest_count <= MAX_SOURCE_REGION_TRIANGLES:
+                nearest.append(index)
+    if nearest_count > MAX_SOURCE_REGION_TRIANGLES:
+        raise ValueError('focus_task_region_triangle_limit')
+    check_budget('after_task_region_selection')
+
+    normal = None
+    if direction is not None:
+        scale = max(map(abs, direction))
+        values = np.asarray([float(x / scale) for x in direction], dtype=np.float64)
+        normal = (values / np.linalg.norm(values)).tolist()
+    group = nearest if box is None else candidates
+    return {
+        'source_triangle_indices': group, 'primary_source_triangle_index': primary,
+        'front_normal_world': normal, 'reference': binding['objects'][reference_index],
+        'selection_policy': {
+            'group': 'minimum_centroid_distance_to_reference_world_aabb' if box is None
+                     else 'all_three_vertices_in_world_closed_box',
+            'primary': 'minimum_centroid_distance_to_reference_world_aabb_then_source_order',
+            'reference_effect': 'group_and_primary' if box is None else 'primary_only',
+        },
+        'empty_reason': ('no_source_triangles_in_task_world_box' if box is not None and not group
+                         else 'no_matching_nondegenerate_source_triangle'),
+    }
+
+
 @dataclass
 class FocusState:
     source_ref: dict | None
@@ -88,6 +161,8 @@ class FocusState:
     verified: list = field(default_factory=list)
     best_frame: dict | None = None
     best_sample: dict | None = None
+    task_region: dict | None = None
+    attempted_primary: dict = field(default_factory=dict)
 
     @property
     def pixels(self):
@@ -104,25 +179,34 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
     def select():
         started = time.perf_counter_ns()
         mesh = captured['meshes'][index]
-        winner = select_triangle(mesh, focus, check_budget)
+        task = None
+        if isinstance(focus, dict) and 'task_region' in focus:
+            task = select_task_region(captured, binding, index, focus['task_region'], check_budget)
+            source_index = task['primary_source_triangle_index']
+            normal = task['front_normal_world']
+            selected = task['source_triangle_indices']
+        else:
+            winner = select_triangle(mesh, focus, check_budget)
+            source_index, normal = winner if winner is not None else (None, None)
+            selected = [source_index]
         stages['focus_selection'] = _interval(started)
-        if winner is None:
-            return FocusState(None, [])
-        source_index, normal = winner
-        reference = _source_ref(captured, binding, index, [source_index], ordered_sha)
+        if source_index is None:
+            return FocusState(None, [], task_region=task)
+        reference = _source_ref(captured, binding, index, selected, ordered_sha)
         scene = CAMERA_DIRECTIONS['SCENE']
         directions = [('SCENE', scene)]
         if np.linalg.norm(normal - np.asarray(scene) / np.linalg.norm(scene)) > 1e-12:
             directions.append(('FOCUS', normal))
         corners = [vector(mesh['vertices'][v]) for v in mesh['faces'][source_index]]
         centroid = [float(sum(axis) / 3) for axis in zip(*corners)]
-        return FocusState(reference, directions, centroid, normal)
+        return FocusState(reference, directions, centroid, normal, task_region=task)
 
     state, selection_hit = context.prepared('focus_state', select)
+    task = state.task_region
     work['focus_selections'] = int(not selection_hit)
     reason = 'image_not_requested'
     if state.source_ref is None:
-        reason = 'no_matching_nondegenerate_source_triangle'
+        reason = ('no_matching_nondegenerate_source_triangle' if task is None else task['empty_reason'])
     elif display['status'] != 'captured':
         reason = display['reason']
     elif not display['participation_mask'][index]:
@@ -140,7 +224,11 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
             construction_callback(name)
             # An interrupted construction spends its view. A never-started one is still available.
             state.attempted[name] = None
+            if task is not None:
+                state.attempted_primary[name] = None
 
+        pixel_options = {} if task is None else {
+            'primary_source_triangle_index': task['primary_source_triangle_index']}
         for name, _ in state.directions:
             if state.pixels >= _MIN_SURFACE_PIXELS:
                 break
@@ -148,15 +236,17 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
                 continue
             check_budget('focus_before_view')
             frame, sample = _capture_region_frame(prepared, name, None, display, work, stages,
-                                                   charge, check_budget, sampled_pixel=True)
+                                                   charge, check_budget, sampled_pixel=True, **pixel_options)
             pixels = sample['selected_surface_pixels']
             state.attempted[name] = pixels
+            if task is not None:
+                state.attempted_primary[name] = sample['primary_surface_pixels']
             state.verified.append(frame)
             if state.best_frame is None or pixels > state.pixels:
                 state.best_frame = frame
                 state.best_sample = {key: sample[key] for key in
-                    ('view_name', 'frame_identity', 'image_ref', 'selected_surface_pixels', 'sampled_pixel')
-                    if key in sample}
+                    ('view_name', 'frame_identity', 'image_ref', 'selected_surface_pixels', 'sampled_pixel',
+                     'primary_surface_pixels') if key in sample}
                 state.best_sample.update(target_world_m=frame['pose']['target_world_m'],
                                          target_to_eye_unit=frame['pose']['target_to_eye_unit'])
         reason = 'sample_target_met' if state.pixels >= _MIN_SURFACE_PIXELS else 'view_budget_exhausted'
@@ -169,6 +259,13 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
              'minimum_sample_pixels': _MIN_SURFACE_PIXELS, 'complete_surface_visibility': 'unknown',
              'views': [{'view_name': name, 'verified_pixels': count} for name, count in state.attempted.items()],
              'sample': state.best_sample if frame is not None else None}
+    if task is not None:
+        facts.update(scope='multiple_current_evaluated_source_triangles',
+                     primary_source_triangle_index=task['primary_source_triangle_index'],
+                     task_source_triangle_indices=task['source_triangle_indices'],
+                     reference=task['reference'], selection_policy=task['selection_policy'])
+        for view in facts['views']:
+            view['primary_verified_pixels'] = state.attempted_primary[view['view_name']]
     response_binding = {key: binding[key] for key in
                         ('document_epoch', 'capture_state', 'source_binding_sha256', 'scene_revision', 'capture_scope')}
     response_binding['display_identity'] = display['identity']
@@ -199,6 +296,18 @@ def validate_focus_delivery(result, frames):
             or frame['candidate_identity'] != binding['camera_identity']
             or frame['host_binding_sha256'] != binding['binding_sha256']):
         raise ValueError('focus_frame_binding_mismatch')
+    if 'primary_source_triangle_index' in focus:
+        primary = focus['primary_source_triangle_index']
+        count = sample['primary_surface_pixels']
+        selected_pixels = sample['selected_surface_pixels']
+        matching_views = [row for row in focus['views'] if row['view_name'] == sample['view_name']]
+        if (type(primary) is not int or primary not in reference['source_triangle_indices']
+                or focus['task_source_triangle_indices'] != reference['source_triangle_indices']
+                or type(count) is not int or type(selected_pixels) is not int
+                or not 0 <= count <= selected_pixels
+                or len(matching_views) != 1 or matching_views[0]['verified_pixels'] != selected_pixels
+                or matching_views[0]['primary_verified_pixels'] != count):
+            raise ValueError('focus_task_region_pixel_binding_mismatch')
     anchor = sample.get('sampled_pixel')
     if sample['selected_surface_pixels']:
         if (not isinstance(anchor, dict) or anchor['source_triangle_index'] not in reference['source_triangle_indices']

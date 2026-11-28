@@ -166,6 +166,11 @@ def _object_index(binding, selector):
     return matches[0]
 
 
+def _world_box_source_indices(vertices, triangles, box):
+    inside = ((vertices >= box['min']) & (vertices <= box['max'])).all(axis=1)
+    return np.flatnonzero(inside[triangles].all(axis=1))
+
+
 def resolve_region_selection(capture, region, binding, ordered_sha, check_budget, *, normalized_from=None):
     """Resolve an explicit selection to a reference on the current ordered capture."""
     object_index = _object_index(binding, region['object'])
@@ -186,9 +191,7 @@ def resolve_region_selection(capture, region, binding, ordered_sha, check_budget
     else:
         normalized = normalized_from.meshes[object_index]
         vertices, triangles = normalized.vertices, normalized.faces
-    box = region['world_box_m']
-    inside = np.all((vertices >= box['min']) & (vertices <= box['max']), axis=1)
-    selected = np.flatnonzero(inside[triangles].all(axis=1))
+    selected = _world_box_source_indices(vertices, triangles, region['world_box_m'])
     check_budget('after_source_region_world_box_selection')
     if not selected.size:
         raise ValueError('source_region_world_box_empty')
@@ -435,7 +438,11 @@ def _classify_view(region, triangles, pose, check_budget):
 
 
 def _capture_region_frame(prepared, view, geometry_status, image_scope, work, stages,
-                          construction_callback, check_budget, *, sampled_pixel=False):
+                          construction_callback, check_budget, *, sampled_pixel=False,
+                          primary_source_triangle_index=None):
+    if primary_source_triangle_index is not None and (
+            not sampled_pixel or primary_source_triangle_index not in prepared.source_triangle_indices):
+        raise ValueError('source_region_primary_source_not_in_selection')
     check_budget('source_region_before_frame')
     started = time.perf_counter_ns()
     if construction_callback is not None:
@@ -459,6 +466,8 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
     mask = np.isin(buffers['triangle_ids'], selected)
     if sampled_pixel:
         mask &= buffers['owners'] == prepared.object_index
+    if primary_source_triangle_index is not None:
+        mask &= np.isfinite(buffers['depth'])
     visible = sorted(int(index) - offset for index in np.unique(buffers['triangle_ids'][mask]))
     y, x = np.nonzero(mask)
     samples = len(x)
@@ -472,6 +481,9 @@ def _capture_region_frame(prepared, view, geometry_status, image_scope, work, st
         'frame_identity': frame['frame_identity'], 'image_scope': copy.deepcopy(image_scope),
         'selected_source_triangle_count': len(prepared.source_triangle_indices),
         'selected_object_participates': image_scope['participation_mask'][prepared.object_index]}
+    if primary_source_triangle_index is not None:
+        visibility['primary_surface_pixels'] = int(np.count_nonzero(
+            mask & (buffers['triangle_ids'] == offset + primary_source_triangle_index)))
     if sampled_pixel and samples:
         row, column = int(y[0]), int(x[0])
         visibility['sampled_pixel'] = {'row': row, 'column': column,

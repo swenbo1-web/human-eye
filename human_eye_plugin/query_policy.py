@@ -76,7 +76,19 @@ def _observation_focus(value):
             if components and all(map(math.isfinite, components)) and any(components):
                 scale = max(map(abs, components))
                 return {'normal_world': [x / scale if x else 0.0 for x in components]}
-    raise ValueError('active_observation focus requires auto, a nonzero finite normal_world, or a source_triangle_index')
+    if type(value) is dict and set(value) == {'task_region'}:
+        from .task_query import validate_object_selector
+
+        task = value['task_region']
+        if type(task) is not dict or set(task) not in ({'reference'}, {'reference', 'world_box_m'}):
+            raise ValueError('active_observation task_region focus requires reference and optional world_box_m')
+        normalized = {'reference': validate_object_selector(task['reference'])}
+        if 'world_box_m' in task:
+            normalized['world_box_m'] = _source_region_world_box(
+                task['world_box_m'], context='active_observation task_region focus')
+        return {'task_region': normalized}
+    raise ValueError('active_observation focus requires one of auto, a nonzero finite normal_world, '
+                     'a source_triangle_index, or task_region')
 
 
 def _native_visual(value):
@@ -155,12 +167,12 @@ def _source_triangle_indices(value):
     return sorted(value)
 
 
-def _source_region_world_box(value):
+def _source_region_world_box(value, *, context='source_region'):
     if (type(value) is not dict or set(value) != {'min', 'max'}
             or any(type(row) is not list or len(row) != 3 for row in value.values())):
-        raise ValueError('source_region world_box_m requires min and max 3D arrays')
+        raise ValueError(f'{context} world_box_m requires min and max 3D arrays')
     bounds = {}
-    error = 'source_region world_box_m bounds must be finite binary64 numbers'
+    error = f'{context} world_box_m bounds must be finite binary64 numbers'
     for key in ('min', 'max'):
         row = []
         for number in value[key]:
@@ -175,7 +187,7 @@ def _source_region_world_box(value):
             row.append(endpoint)
         bounds[key] = row
     if any(low > high for low, high in zip(bounds['min'], bounds['max'])):
-        raise ValueError('source_region world_box_m requires min <= max on every axis')
+        raise ValueError(f'{context} world_box_m requires min <= max on every axis')
     return bounds
 
 
