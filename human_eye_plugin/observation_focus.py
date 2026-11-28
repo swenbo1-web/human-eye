@@ -2,17 +2,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 import time
 
 import numpy as np
 
 from .active_observation import cross, fingerprint, subtract, vector
 from .active_observation_host import CAMERA_DIRECTIONS
+from .active_observation_images import _meshes_from_objects
 from .query_policy import MAX_SOURCE_REGION_TRIANGLES
 from .source_region import (
-    _MIN_SURFACE_PIXELS, _capture_region_frame, _interval, _object_index,
+    SOURCE_INDEX_DOMAIN, _MIN_SURFACE_PIXELS, _capture_region_frame, _generation, _interval, _object_index,
     _region_image_store, _source_ref, _world_box_source_indices, prepare_region,
 )
+from .task_query import _surface_pair_measurement
 
 
 def _scaled_cross(points):
@@ -79,6 +82,14 @@ def select_triangle(mesh, focus, check_budget):
     return best
 
 
+def _unit_exact_normal(direction):
+    scale = max(map(abs, direction))
+    if not scale:
+        return None
+    values = np.asarray([float(x / scale) for x in direction], dtype=np.float64)
+    return (values / np.linalg.norm(values)).tolist()
+
+
 def select_task_region(captured, binding, object_index, task_region, check_budget):
     """Select source rows from the exact closed box or a centroid-to-reference-box tie.
 
@@ -131,11 +142,7 @@ def select_task_region(captured, binding, object_index, task_region, check_budge
         raise ValueError('focus_task_region_triangle_limit')
     check_budget('after_task_region_selection')
 
-    normal = None
-    if direction is not None:
-        scale = max(map(abs, direction))
-        values = np.asarray([float(x / scale) for x in direction], dtype=np.float64)
-        normal = (values / np.linalg.norm(values)).tolist()
+    normal = None if direction is None else _unit_exact_normal(direction)
     group = nearest if box is None else candidates
     return {
         'source_triangle_indices': group, 'primary_source_triangle_index': primary,
@@ -149,6 +156,88 @@ def select_task_region(captured, binding, object_index, task_region, check_budge
         'empty_reason': ('no_source_triangles_in_task_world_box' if box is not None and not group
                          else 'no_matching_nondegenerate_source_triangle'),
     }
+
+
+def _select_nearest_surface(captured, binding, object_index, task_region, ordered_sha,
+                            cache, work, stages, check_budget):
+    reference_index = _object_index(binding, task_region['reference'])
+    if object_index == reference_index:
+        raise ValueError('focus_task_region_distinct_reference_required')
+    objects = [binding['objects'][i] for i in (object_index, reference_index)]
+    rows = [captured['meshes'][i] for i in (object_index, reference_index)]
+    task = {
+        'source_triangle_indices': [], 'primary_source_triangle_index': None,
+        'front_normal_world': None, 'reference': objects[1],
+        'selection_policy': {
+            'group': 'one_nearest_surface_witness_target_triangle',
+            'primary': 'exact_surface_proximity_winning_triangle',
+            'reference_effect': 'group_and_primary',
+        },
+    }
+
+    def unknown(reason):
+        task.update(empty_reason=reason, nearest_surface={'status': 'unknown', 'reason': reason})
+        return task
+
+    if binding['capture_state'] is None:
+        return unknown('capture_generation_unavailable')
+    check_budget('before_nearest_surface_focus_meshes')
+    started = time.perf_counter_ns()
+    left, right = _meshes_from_objects(
+        (mesh['vertices'], mesh['faces'], (obj['host_id'], obj['instance_id']), obj['object_name'])
+        for obj, mesh in zip(objects, rows, strict=True))
+    stages['nearest_surface_mesh_preparation'] = _interval(started)
+
+    check_budget('before_nearest_surface_focus_measurement')
+    started = time.perf_counter_ns()
+    diagnostics = {}
+    measured = _surface_pair_measurement(
+        left, right, cache, check_budget, source=captured['source'], diagnostics=diagnostics,
+        witness_capture={
+            'document_epoch': binding['document_epoch'], 'capture_state': binding['capture_state'],
+            'ordered_geometry_sha256': ordered_sha,
+        })
+    stages['nearest_surface_measurement'] = _interval(started)
+    work.update(surface_pair_count=diagnostics['surface_pair_count'],
+                surface_pair_cache_hit=diagnostics['surface_pair_cache_hit'])
+    check_budget('after_nearest_surface_focus_measurement')
+
+    distance = measured['distance_m']
+    if (measured['measurement_valid'] is not True or type(distance) not in (float, int)
+            or not math.isfinite(distance) or distance < 0):
+        return unknown(measured.get('reason') or 'nearest_surface_measurement_unavailable')
+    exact = measured.get('exact_witness_triangles')
+    if exact is None:
+        indices = measured.get('witness_triangle_indices')
+        points = [measured['point_a_world'], measured['point_b_world']]
+        encoding = 'binary64_world_m'
+    else:
+        indices, points = exact['indices'], exact['points_m']
+        encoding = 'rational_world_m'
+    if (measured['witness_status'] != 'measured' or not isinstance(indices, (list, tuple))
+            or len(indices) != 2 or any(type(i) is not int or not 0 <= i < len(mesh['faces'])
+                                        for i, mesh in zip(indices, rows, strict=True))
+            or not isinstance(points, (list, tuple)) or len(points) != 2
+            or any(not isinstance(point, (list, tuple)) or len(point) != 3 for point in points)):
+        return unknown(measured.get('witness_reason') or 'nearest_surface_witness_source_unavailable')
+
+    primary = indices[0]
+    a, b, c = (vector(rows[0]['vertices'][vertex]) for vertex in rows[0]['faces'][primary])
+    normal = _unit_exact_normal(cross(subtract(b, a), subtract(c, a)))
+    if normal is None:
+        return unknown('nearest_surface_target_triangle_degenerate')
+    witness = {
+        'scope': 'one_current_triangle_per_endpoint_non_exhaustive', 'index_domain': SOURCE_INDEX_DOMAIN,
+        'ordered_geometry_sha256': ordered_sha, 'point_encoding': encoding,
+    }
+    for label, obj, index, point in zip(('a', 'b'), objects, indices, points, strict=True):
+        witness[label] = {'host_id': obj['host_id'], 'instance_id': obj['instance_id'],
+                          'source_triangle_index': index, 'point_m': point}
+    task.update(source_triangle_indices=[primary], primary_source_triangle_index=primary,
+                front_normal_world=normal, nearest_surface={
+                    'status': 'measured', 'distance_m': distance, 'method': measured['method'], 'witness': witness,
+                })
+    return task
 
 
 @dataclass
@@ -175,13 +264,21 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
     work = dict(raster_attempts=0, raster_completed=0, PNG_bytes=0, NPZ_bytes=0, array_payload_bytes=0,
                 local_verified_images=0, temporary_encoded_archive_bytes=0)
     stages = {}
+    task_region = focus.get('task_region') if isinstance(focus, dict) else None
+    nearest = task_region is not None and task_region.get('relation') == 'nearest_surface'
+    if nearest:
+        work.update(surface_pair_count=0, surface_pair_cache_hit=False)
 
     def select():
         started = time.perf_counter_ns()
         mesh = captured['meshes'][index]
         task = None
-        if isinstance(focus, dict) and 'task_region' in focus:
-            task = select_task_region(captured, binding, index, focus['task_region'], check_budget)
+        if task_region is not None:
+            if nearest:
+                task = _select_nearest_surface(captured, binding, index, task_region, ordered_sha,
+                                               context.scene_cache, work, stages, check_budget)
+            else:
+                task = select_task_region(captured, binding, index, task_region, check_budget)
             source_index = task['primary_source_triangle_index']
             normal = task['front_normal_world']
             selected = task['source_triangle_indices']
@@ -260,8 +357,11 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
              'views': [{'view_name': name, 'verified_pixels': count} for name, count in state.attempted.items()],
              'sample': state.best_sample if frame is not None else None}
     if task is not None:
-        facts.update(scope='multiple_current_evaluated_source_triangles',
-                     primary_source_triangle_index=task['primary_source_triangle_index'],
+        if nearest:
+            facts['nearest_surface'] = task['nearest_surface']
+        else:
+            facts['scope'] = 'multiple_current_evaluated_source_triangles'
+        facts.update(primary_source_triangle_index=task['primary_source_triangle_index'],
                      task_source_triangle_indices=task['source_triangle_indices'],
                      reference=task['reference'], selection_policy=task['selection_policy'])
         for view in facts['views']:
@@ -278,8 +378,33 @@ def observe_focus(captured, selector, focus, directory, context, binding, displa
                 read_only=True, execution_authority=False)
 
 
+def _validate_nearest_surface_focus(focus, binding):
+    nearest = focus['nearest_surface']
+    reference = focus['region_ref']
+    primary = focus['primary_source_triangle_index']
+    rows = focus['task_source_triangle_indices']
+    if nearest['status'] == 'unknown':
+        if reference is not None or primary is not None or rows:
+            raise ValueError('nearest_surface_focus_source_binding_mismatch')
+        return
+    witness = nearest['witness']
+    if (nearest['status'] != 'measured' or binding['capture_state'] is None or type(primary) is not int
+            or reference is None or rows != [primary] or reference['source_triangle_indices'] != rows
+            or reference['document_epoch'] != binding['document_epoch']
+            or reference['capture_generation'] != _generation(binding)
+            or witness['ordered_geometry_sha256'] != reference['ordered_geometry_sha256']
+            or witness['a']['source_triangle_index'] != primary
+            or any(witness['a'][key] != reference[key] for key in ('host_id', 'instance_id'))
+            or any(witness[label][key] != obj[key]
+                   for label, obj in zip(('a', 'b'), (focus['object'], focus['reference']), strict=True)
+                   for key in ('host_id', 'instance_id'))):
+        raise ValueError('nearest_surface_focus_source_binding_mismatch')
+
+
 def validate_focus_delivery(result, frames):
     focus, binding = result['facts']['focus'], result['binding']
+    if 'nearest_surface' in focus:
+        _validate_nearest_surface_focus(focus, binding)
     sample = focus['sample']
     if sample is None and not frames:
         return

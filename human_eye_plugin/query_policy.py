@@ -80,9 +80,15 @@ def _observation_focus(value):
         from .task_query import validate_object_selector
 
         task = value['task_region']
-        if type(task) is not dict or set(task) not in ({'reference'}, {'reference', 'world_box_m'}):
-            raise ValueError('active_observation task_region focus requires reference and optional world_box_m')
+        if type(task) is not dict or set(task) not in (
+                {'reference'}, {'reference', 'world_box_m'}, {'reference', 'relation'}):
+            raise ValueError('active_observation task_region focus requires reference and at most one of '
+                             'world_box_m or relation')
         normalized = {'reference': validate_object_selector(task['reference'])}
+        if 'relation' in task:
+            if task['relation'] != 'nearest_surface':
+                raise ValueError('active_observation task_region relation must be nearest_surface')
+            normalized['relation'] = 'nearest_surface'
         if 'world_box_m' in task:
             normalized['world_box_m'] = _source_region_world_box(
                 task['world_box_m'], context='active_observation task_region focus')

@@ -127,9 +127,11 @@ _QUERY_SCHEMA = {
                             {'type': 'object', 'required': ['task_region'], 'additionalProperties': False,
                              'properties': {'task_region': {
                                  'type': 'object', 'required': ['reference'], 'additionalProperties': False,
-                                 'description': 'Select a distinct reference object. A closed world-metre box selects target triangles with all three vertices inside. The reference prioritizes the primary triangle by centroid distance to its world AABB. Without a box the group contains the equal-nearest nondegenerate target triangles by that distance.',
+                                 'description': 'Select a distinct reference object. A closed world-metre box selects target triangles with all three vertices inside. The reference prioritizes the primary triangle by centroid distance to its world AABB. With reference alone the group contains the equal-nearest nondegenerate target triangles by that distance. Use relation=nearest_surface to focus on one witnessed target triangle nearest to the actual surface of the reference.',
                                  'properties': {'reference': copy.deepcopy(SELECTOR_SCHEMA),
-                                                'world_box_m': copy.deepcopy(_WORLD_BOX_SCHEMA)},
+                                                'world_box_m': copy.deepcopy(_WORLD_BOX_SCHEMA),
+                                                'relation': {'const': 'nearest_surface'}},
+                                 'not': {'required': ['world_box_m', 'relation']},
                              }}}]},
         "target": copy.deepcopy(SELECTOR_SCHEMA),
         "candidates": {"type": "array", "items": copy.deepcopy(SELECTOR_SCHEMA), "minItems": 1, "maxItems": 3,
